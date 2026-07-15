@@ -11,6 +11,13 @@ import org.junit.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
+
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 
 public class ArchiveExtractionGuardTest {
     @Test
@@ -74,5 +81,77 @@ public class ArchiveExtractionGuardTest {
         guard.copy(new ByteArrayInputStream(input), out);
         assertEquals(input.length, out.size());
         assertEquals(input.length, guard.getBytesExtracted());
+    }
+
+    @Test
+    public void manySmallEntriesShareOneCumulativeBudget() throws IOException {
+        ArchiveExtractionGuard guard = new ArchiveExtractionGuard(10, 10, 8, 10);
+        guard.onNewEntry();
+        guard.addBytes(6);
+        guard.onNewEntry();
+        assertThrows(IOException.class, () -> guard.addBytes(5));
+        assertEquals(6, guard.getBytesExtracted());
+    }
+
+    @Test
+    public void singleEntryLimitIsIndependentOfTotalBudget() throws IOException {
+        ArchiveExtractionGuard guard = new ArchiveExtractionGuard(100, 10, 8, 100);
+        guard.onNewEntry();
+        assertThrows(IOException.class, () -> guard.addBytes(9));
+        assertEquals(0, guard.getBytesExtracted());
+    }
+
+    @Test
+    public void temporaryBudgetCanBeReleasedBetweenEntries() throws IOException {
+        ArchiveExtractionGuard guard = new ArchiveExtractionGuard(100, 10, 100, 6);
+        guard.onNewEntry();
+        guard.copyToTemporary(new ByteArrayInputStream(new byte[6]), new ByteArrayOutputStream());
+        assertEquals(6, guard.getTemporaryBytes());
+        guard.releaseTemporaryBytes(6);
+        guard.onNewEntry();
+        guard.copyToTemporary(new ByteArrayInputStream(new byte[6]), new ByteArrayOutputStream());
+        assertEquals(6, guard.getTemporaryBytes());
+        assertEquals(12, guard.getBytesExtracted());
+    }
+
+    @Test
+    public void hostileZipFixtureStopsAtExpandedByteBudget() throws IOException {
+        ByteArrayOutputStream fixture = new ByteArrayOutputStream();
+        try (ZipOutputStream zos = new ZipOutputStream(fixture)) {
+            zos.putNextEntry(new ZipEntry("dense.bin"));
+            zos.write(new byte[32]);
+            zos.closeEntry();
+        }
+
+        ArchiveExtractionGuard guard = new ArchiveExtractionGuard(16, 10, 16, 16);
+        ByteArrayOutputStream extracted = new ByteArrayOutputStream();
+        try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(fixture.toByteArray()))) {
+            ZipEntry entry = zis.getNextEntry();
+            guard.onNewEntry();
+            guard.assertEntrySize(entry.getSize());
+            assertThrows(IOException.class, () -> guard.copyToTemporary(zis, extracted));
+        }
+        assertTrue(extracted.size() <= 16);
+    }
+
+    @Test
+    public void hostileTarFixtureRejectsDeclaredOversizedEntry() throws IOException {
+        ByteArrayOutputStream fixture = new ByteArrayOutputStream();
+        try (TarArchiveOutputStream tos = new TarArchiveOutputStream(fixture)) {
+            TarArchiveEntry entry = new TarArchiveEntry("oversized.bin");
+            entry.setSize(32);
+            tos.putArchiveEntry(entry);
+            tos.write(new byte[32]);
+            tos.closeArchiveEntry();
+        }
+
+        ArchiveExtractionGuard guard = new ArchiveExtractionGuard(64, 10, 16, 64);
+        try (TarArchiveInputStream tis = new TarArchiveInputStream(
+                new ByteArrayInputStream(fixture.toByteArray()))) {
+            TarArchiveEntry entry = tis.getNextEntry();
+            guard.onNewEntry();
+            assertThrows(IOException.class, () -> guard.assertEntrySize(entry.getSize()));
+        }
+        assertEquals(0, guard.getBytesExtracted());
     }
 }
