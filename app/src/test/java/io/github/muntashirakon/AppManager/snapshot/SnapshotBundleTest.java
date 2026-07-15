@@ -745,26 +745,25 @@ public class SnapshotBundleTest {
     }
 
     @Test
-    public void mergeSharedPreferencesXmlKeepsLocalKeysAndReplacesImportedKeys() throws Exception {
-        byte[] current = ("<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n"
-                + "<map>\n"
-                + "  <boolean name=\"keep_local\" value=\"true\" />\n"
-                + "  <string name=\"replace_me\">old</string>\n"
-                + "</map>\n").getBytes(StandardCharsets.UTF_8);
-        byte[] incoming = ("<?xml version='1.0' encoding='utf-8' standalone='yes' ?>\n"
-                + "<map>\n"
-                + "  <string name=\"replace_me\">new</string>\n"
-                + "  <int name=\"imported\" value=\"7\" />\n"
-                + "</map>\n").getBytes(StandardCharsets.UTF_8);
+    public void mergePreferenceImportKeepsLocalKeysAndReplacesImportedKeys() throws Exception {
+        Context context = ApplicationProvider.getApplicationContext();
+        SharedPreferences sp = context.getSharedPreferences(
+                AppPref.getSharedPreferencesName(), Context.MODE_PRIVATE);
+        sp.edit().clear()
+                .putInt("app_theme", 1)
+                .putBoolean("app_op_show_default", false)
+                .commit();
+        byte[] bundle = bundleWithPrefEntry("preferences.xml",
+                "<map><boolean name=\"app_op_show_default\" value=\"true\" /></map>");
 
-        String merged = new String(SnapshotBundle.mergeSharedPreferencesXml(current, incoming),
-                StandardCharsets.UTF_8);
+        SnapshotBundle.ImportResult result = SnapshotBundle.readFrom(context,
+                new ByteArrayInputStream(bundle), prefsOnlyOptions(true));
 
-        assertTrue(merged.contains("name=\"keep_local\""));
-        assertTrue(merged.contains("name=\"replace_me\""));
-        assertTrue(merged.contains(">new<"));
-        assertTrue(merged.contains("name=\"imported\""));
-        assertFalse(merged.contains(">old<"));
+        assertEquals(1, result.prefsRestored);
+        assertEquals("merge must retain a local key absent from the snapshot",
+                1, sp.getInt("app_theme", -1));
+        assertTrue("merge must replace an imported key",
+                sp.getBoolean("app_op_show_default", false));
     }
 
     @Test
