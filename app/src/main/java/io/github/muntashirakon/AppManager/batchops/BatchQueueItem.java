@@ -54,7 +54,7 @@ public class BatchQueueItem implements Parcelable, IJsonSerializer {
     private final int mOp;
     @NonNull
     private ArrayList<String> mPackages;
-    @Nullable
+    @NonNull
     private ArrayList<Integer> mUsers;
     @Nullable
     private final IBatchOpOptions mOptions;
@@ -66,8 +66,7 @@ public class BatchQueueItem implements Parcelable, IJsonSerializer {
                            @Nullable IBatchOpOptions options) {
         mTitleRes = titleRes;
         mOp = requireValidQueueOp(op);
-        mPackages = packages != null ? packages : new ArrayList<>(0);
-        mUsers = users;
+        setTargets(packages, users);
         mOptions = options;
     }
 
@@ -95,13 +94,14 @@ public class BatchQueueItem implements Parcelable, IJsonSerializer {
         return mPackages;
     }
 
-    public void setPackages(@NonNull ArrayList<String> packages) {
-        mPackages = packages;
-    }
-
     @NonNull
     public ArrayList<Integer> getUsers() {
-        if (mUsers == null) {
+        return mUsers;
+    }
+
+    public void setTargets(@Nullable List<String> packages, @Nullable List<Integer> users) {
+        mPackages = packages != null ? new ArrayList<>(packages) : new ArrayList<>(0);
+        if (users == null) {
             int size = mPackages.size();
             int userId = UserHandleHidden.myUserId();
             mUsers = new ArrayList<>(size);
@@ -109,13 +109,9 @@ public class BatchQueueItem implements Parcelable, IJsonSerializer {
                 mUsers.add(userId);
             }
         } else {
+            mUsers = new ArrayList<>(users);
             sanitizeTargets(mPackages, mUsers);
         }
-        return mUsers;
-    }
-
-    public void setUsers(@Nullable ArrayList<Integer> users) {
-        mUsers = users;
     }
 
     @NonNull
@@ -155,9 +151,10 @@ public class BatchQueueItem implements Parcelable, IJsonSerializer {
             throw new JSONException("Invalid batch queue operation: " + op);
         }
         mOp = op;
-        mPackages = new ArrayList<>();
-        mUsers = new ArrayList<>();
-        deserializeTargets(jsonObject.getJSONArray("packages"), jsonObject.getJSONArray("users"), mPackages, mUsers);
+        ArrayList<String> packages = new ArrayList<>();
+        ArrayList<Integer> users = new ArrayList<>();
+        deserializeTargets(jsonObject.getJSONArray("packages"), jsonObject.getJSONArray("users"), packages, users);
+        setTargets(packages, users);
         JSONObject options = jsonObject.optJSONObject("options");
         mOptions = options != null ? IBatchOpOptions.DESERIALIZER.deserialize(options) : null;
     }
@@ -177,8 +174,9 @@ public class BatchQueueItem implements Parcelable, IJsonSerializer {
     protected BatchQueueItem(@NonNull Parcel in) {
         mTitleRes = in.readInt();
         mOp = requireValidQueueOp(in.readInt());
-        mPackages = Objects.requireNonNull(in.createStringArrayList());
-        mUsers = ParcelUtils.readArrayList(in, Integer.class.getClassLoader());
+        ArrayList<String> packages = Objects.requireNonNull(in.createStringArrayList());
+        ArrayList<Integer> users = ParcelUtils.readArrayList(in, Integer.class.getClassLoader());
+        setTargets(packages, users);
         mOptions = ParcelCompat.readParcelable(in, IBatchOpOptions.class.getClassLoader(), IBatchOpOptions.class);
     }
 
@@ -212,10 +210,7 @@ public class BatchQueueItem implements Parcelable, IJsonSerializer {
     }
 
     private static void sanitizeTargets(@NonNull ArrayList<String> packages,
-                                        @Nullable ArrayList<Integer> users) {
-        if (users == null) {
-            return;
-        }
+                                        @NonNull ArrayList<Integer> users) {
         int count = Math.min(packages.size(), users.size());
         int writeIndex = 0;
         for (int i = 0; i < count; ++i) {
