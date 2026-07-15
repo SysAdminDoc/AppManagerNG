@@ -408,7 +408,7 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
                 ? new BatchBackupOptions(operationInfo.flags, operationInfo.backupNames,
                 operationInfo.relativeDirs, operationInfo.exclusionGlobs,
                 operationInfo.protectFromPrune, operationInfo.backupNote, operationInfo.deleteScope)
-                : new BatchBackupOptions(operationInfo.flags, operationInfo.backupNames,
+                : BatchBackupOptions.forTagPolicies(operationInfo.flags, operationInfo.backupNames,
                 operationInfo.relativeDirs, operationInfo.exclusionGlobs,
                 operationInfo.protectFromPrune, operationInfo.backupNote);
         BatchQueueItem queueItem = BatchQueueItem.getBatchOpQueue(operationInfo.op,

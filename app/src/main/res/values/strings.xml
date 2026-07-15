@@ -4144,4 +4144,52 @@
     <string name="shortcut_unfreeze_app">Unfreeze <xliff:g id="app_label" example="Slack">%1$s</xliff:g></string>
     <string name="shortcut_force_stop_app">Force-stop <xliff:g id="app_label" example="Slack">%1$s</xliff:g></string>
     <string name="shortcut_clear_cache_app">Clear cache <xliff:g id="app_label" example="Slack">%1$s</xliff:g></string>
+    <string name="backup_tag_policies">Per-tag backup policies</string>
+    <string name="backup_tag_policies_summary">Apply the first matching tag rule to backup parts, encryption, retention, and destination.</string>
+    <string name="backup_tag_policies_overview">Rules are evaluated from top to bottom. Manual and scheduled backups use the same first match. Missing encryption keys or destinations fall back to current Backup &amp; Restore settings without deleting backups on the unavailable destination.</string>
+    <string name="backup_tag_policy_add">Add tag policy</string>
+    <string name="backup_tag_policy_add_summary">Create an ordered rule for an existing or future app tag.</string>
+    <string name="backup_tag_policy_preview">Preview winning rules</string>
+    <string name="backup_tag_policy_preview_summary">Show which rule currently wins for every tagged app.</string>
+    <string name="backup_tag_policy_rules">Ordered rules</string>
+    <string name="backup_tag_policy_empty">No tag policies. Backups use the current global settings.</string>
+    <string name="backup_tag_policy_tag_prompt">Tag name</string>
+    <string name="backup_tag_policy_tag_helper">Tags use lowercase letters, numbers, underscores, or hyphens. A policy may be created before the tag is assigned.</string>
+    <string name="backup_tag_policy_parts">Backup parts</string>
+    <string name="backup_tag_policy_select_part">Select at least one backup part.</string>
+    <string name="backup_tag_policy_encryption">Encryption</string>
+    <string name="backup_tag_policy_retention_count">Maximum backups</string>
+    <string name="backup_tag_policy_retention_count_helper">0 keeps an unlimited number on this destination.</string>
+    <string name="backup_tag_policy_retention_age">Maximum age in days</string>
+    <string name="backup_tag_policy_retention_age_helper">0 keeps backups indefinitely on this destination.</string>
+    <string name="backup_tag_policy_destination">Destination</string>
+    <string name="backup_tag_policy_configured_destination">Configured backup volume</string>
+    <string name="backup_tag_policy_saved_destination">Saved destination</string>
+    <string name="backup_tag_policy_actions">Policy actions</string>
+    <string name="backup_tag_policy_edit">Edit</string>
+    <string name="backup_tag_policy_move_up">Move up</string>
+    <string name="backup_tag_policy_move_down">Move down</string>
+    <string name="backup_tag_policy_delete">Delete</string>
+    <string name="backup_tag_policy_delete_confirm">Delete the policy for #%1$s? Existing backups are kept.</string>
+    <string name="backup_tag_policy_default">Global defaults</string>
+    <string name="backup_tag_policy_orphan_warning">No app currently uses this tag.</string>
+    <string name="backup_tag_policy_crypto_warning">Encryption is unavailable; backups fall back to the current encryption mode.</string>
+    <string name="backup_tag_policy_parts_warning">Unsupported backup parts are omitted; current parts are used if none remain.</string>
+    <string name="backup_tag_policy_destination_warning">Destination is unavailable; backups fall back to the configured volume.</string>
+    <string name="backup_tag_policy_retention_summary">Keep %1$s backups for %2$s days</string>
+    <string name="backup_tag_policy_unlimited">unlimited</string>
+    <string name="backup_tag_policy_preview_empty">No tagged apps are available to preview.</string>
+    <string name="backup_tag_policy_preview_line"><xliff:g id="package_name" example="com.example.app">%1$s</xliff:g> — <xliff:g id="rule" example="work">%2$s</xliff:g></string>
+    <string name="backup_tag_policy_none_encryption">No encryption</string>
+    <string name="backup_tag_policy_aes_encryption">AES</string>
+    <string name="backup_tag_policy_rsa_encryption">RSA</string>
+    <string name="backup_tag_policy_ecc_encryption">ECC</string>
+    <string name="backup_tag_policy_pgp_encryption">OpenPGP</string>
+    <string name="backup_tag_policy_invalid_number">Enter a whole number from 0 to 36500.</string>
+    <string name="backup_tag_policy_invalid_data_title">Some policies could not be loaded</string>
+    <string name="backup_tag_policy_invalid_data_summary">Invalid or newer policy entries are skipped. Affected apps use global Backup &amp; Restore defaults; existing backups are unchanged.</string>
+    <string name="backup_tag_policy_continue">Continue</string>
+    <string name="backup_tag_policy_manual_summary">Tag policies may override the selected parts for matching apps.</string>
+    <string name="backup_tag_policy_manual_preview_title">Backup policy preview</string>
+    <string name="backup_tag_policy_manual_preview_line"><xliff:g id="package_name" example="com.example.app">%1$s</xliff:g> — <xliff:g id="rule" example="#work">%2$s</xliff:g> — <xliff:g id="parts" example="APK+Ext">%3$s</xliff:g></string>
 </resources>

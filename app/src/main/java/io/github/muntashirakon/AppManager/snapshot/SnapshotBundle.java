@@ -150,6 +150,7 @@ public final class SnapshotBundle {
                     AppPref.getSharedPreferencesName(),
                     "app_notes",
                     "app_tags",
+                    "backup_tag_policies",
                     "filter_presets",
                     "profile_triggers",
                     "profile_trigger_runs",
@@ -1103,6 +1104,9 @@ public final class SnapshotBundle {
             case "filter_presets":
                 return ("_schema".equals(key) && value instanceof Integer)
                         || ("presets".equals(key) && value instanceof String);
+            case "backup_tag_policies":
+                return ("_schema".equals(key) && value instanceof Integer)
+                        || (("policies".equals(key) || "destinations".equals(key)) && value instanceof String);
             case "profile_triggers":
                 return ("_schema".equals(key) && value instanceof Integer)
                         || ("triggers".equals(key) && value instanceof String);

@@ -6,6 +6,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## Unreleased
 
 ### Added
+- Backup & Restore now supports ordered per-tag policies. The first matching app
+  tag can select backup parts, encryption, retention, and a local or persisted
+  SAF destination; manual and scheduled backups share the same resolver and
+  offer winner previews. Missing keys, unsupported parts, or unavailable
+  destinations fall back visibly, while destination-aware locators and pruning
+  keep existing backups on other volumes intact. The policy schema and retained
+  destination registry are included in snapshots.
 - Snapshots can now be encrypted with a passphrase. Export offers an optional
   passphrase (or plaintext), and an encrypted bundle is wrapped in an
   authenticated envelope — Argon2id key derivation (m=19456, t=2, p=1, random

@@ -2,9 +2,11 @@
 
 package io.github.muntashirakon.AppManager.backup;
 
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Process;
 import android.os.UserHandleHidden;
@@ -20,12 +22,15 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.io.Path;
+import io.github.muntashirakon.io.Paths;
 
 /**
  * Pre-backup storage check: refuses to start a backup that would almost certainly
@@ -94,21 +99,63 @@ public final class BackupStorageCheck {
     @WorkerThread
     @NonNull
     public static Result evaluateAggregate(@NonNull List<String> packageNames) {
+        return evaluateAggregateForDestination(packageNames, null);
+    }
+
+    /** Aggregate preflight using the same per-package tag-policy destinations as the backup runner. */
+    @WorkerThread
+    @NonNull
+    public static Result evaluateAggregateWithTagPolicies(@NonNull List<String> packageNames,
+                                                          @BackupFlags.BackupFlag int defaultFlags) {
         if (packageNames.isEmpty()) {
             return new Result(Status.OK, 0, 0, null);
         }
         Context appContext = ContextUtils.getContext();
+        BackupTagPolicyStore store = new BackupTagPolicyStore(appContext);
+        Map<String, AggregateBucket> buckets = new LinkedHashMap<>();
+        for (String packageName : packageNames) {
+            long est = estimateRequiredBytes(appContext, packageName);
+            Uri destination = store.resolve(packageName, defaultFlags).destination;
+            String key = destination != null ? destination.toString() : "";
+            AggregateBucket bucket = buckets.get(key);
+            if (bucket == null) {
+                bucket = new AggregateBucket(destination);
+                buckets.put(key, bucket);
+            }
+            bucket.totalEstimated += est;
+            bucket.maxSinglePackage = Math.max(bucket.maxSinglePackage, est);
+        }
+        Result worst = new Result(Status.OK, 0, 0, null);
+        for (AggregateBucket bucket : buckets.values()) {
+            Result result = classifyAggregate(appContext, bucket.totalEstimated,
+                    bucket.maxSinglePackage, bucket.destination);
+            if (severity(result.status) > severity(worst.status)) worst = result;
+        }
+        return worst;
+    }
+
+    @NonNull
+    private static Result evaluateAggregateForDestination(@NonNull List<String> packageNames,
+                                                          @Nullable Uri destination) {
+        if (packageNames.isEmpty()) return new Result(Status.OK, 0, 0, null);
+        Context appContext = ContextUtils.getContext();
         long totalEstimated = 0;
         long maxSinglePackage = 0;
         for (String packageName : packageNames) {
-            long est = estimateRequiredBytes(appContext, packageName);
-            totalEstimated += est;
-            maxSinglePackage = Math.max(maxSinglePackage, est);
+            long estimated = estimateRequiredBytes(appContext, packageName);
+            totalEstimated += estimated;
+            maxSinglePackage = Math.max(maxSinglePackage, estimated);
         }
-        long free = getFreeBytesOnBackupVolume(appContext);
+        return classifyAggregate(appContext, totalEstimated, maxSinglePackage, destination);
+    }
+
+    @NonNull
+    private static Result classifyAggregate(@NonNull Context appContext, long totalEstimated,
+                                            long maxSinglePackage, @Nullable Uri destination) {
+        long free = getFreeBytesOnBackupVolume(appContext, destination);
         Status status = classify(totalEstimated, free, SAFETY_MARGIN_BYTES);
         if (status == Status.OK || status == Status.WARN_LOW_HEADROOM) {
-            long maxFileSize = getMaxFileSizeOnBackupVolume(appContext);
+            long maxFileSize = getMaxFileSizeOnBackupVolume(appContext, destination);
             if (maxFileSize > 0 && maxSinglePackage > maxFileSize) {
                 return new Result(Status.WARN_MAX_FILE_SIZE, totalEstimated, free,
                         "At least one app's estimated backup (" + (maxSinglePackage / (1024 * 1024)) + " MB) exceeds the "
@@ -120,15 +167,45 @@ public final class BackupStorageCheck {
         return new Result(status, totalEstimated, free, null);
     }
 
+    private static int severity(@NonNull Status status) {
+        switch (status) {
+            case INSUFFICIENT:
+                return 3;
+            case WARN_MAX_FILE_SIZE:
+                return 2;
+            case WARN_LOW_HEADROOM:
+                return 1;
+            default:
+                return 0;
+        }
+    }
+
+    private static final class AggregateBucket {
+        @Nullable
+        final Uri destination;
+        long totalEstimated;
+        long maxSinglePackage;
+
+        AggregateBucket(@Nullable Uri destination) {
+            this.destination = destination;
+        }
+    }
+
     @WorkerThread
     @NonNull
     public static Result evaluate(@NonNull String packageName) {
+        return evaluate(packageName, null);
+    }
+
+    @WorkerThread
+    @NonNull
+    public static Result evaluate(@NonNull String packageName, @Nullable Uri destination) {
         Context appContext = ContextUtils.getContext();
         long estimated = estimateRequiredBytes(appContext, packageName);
-        long free = getFreeBytesOnBackupVolume(appContext);
+        long free = getFreeBytesOnBackupVolume(appContext, destination);
         Status status = classify(estimated, free, SAFETY_MARGIN_BYTES);
         if (status == Status.OK || status == Status.WARN_LOW_HEADROOM) {
-            long maxFileSize = getMaxFileSizeOnBackupVolume(appContext);
+            long maxFileSize = getMaxFileSizeOnBackupVolume(appContext, destination);
             if (maxFileSize > 0 && estimated > maxFileSize) {
                 return new Result(Status.WARN_MAX_FILE_SIZE, estimated, free,
                         "Estimated backup (" + (estimated / (1024 * 1024)) + " MB) exceeds the "
@@ -233,8 +310,12 @@ public final class BackupStorageCheck {
     @WorkerThread
     @VisibleForTesting
     static long getFreeBytesOnBackupVolume(@NonNull Context appContext) {
+        return getFreeBytesOnBackupVolume(appContext, null);
+    }
+
+    private static long getFreeBytesOnBackupVolume(@NonNull Context appContext, @Nullable Uri destination) {
         try {
-            Path baseDir = Prefs.Storage.getAppManagerDirectory();
+            Path baseDir = getBackupDirectory(destination);
             File f = baseDir.getFile();
             if (f == null) {
                 // SAF-backed volume — fall back to internal storage as a coarse proxy
@@ -254,8 +335,12 @@ public final class BackupStorageCheck {
     @WorkerThread
     @VisibleForTesting
     static long getMaxFileSizeOnBackupVolume(@NonNull Context appContext) {
+        return getMaxFileSizeOnBackupVolume(appContext, null);
+    }
+
+    private static long getMaxFileSizeOnBackupVolume(@NonNull Context appContext, @Nullable Uri destination) {
         try {
-            Path baseDir = Prefs.Storage.getAppManagerDirectory();
+            Path baseDir = getBackupDirectory(destination);
             File f = baseDir.getFile();
             if (f == null) {
                 return -1;
@@ -269,6 +354,19 @@ public final class BackupStorageCheck {
             Log.d(TAG, "Could not detect filesystem type: " + t.getMessage());
         }
         return -1;
+    }
+
+    @NonNull
+    private static Path getBackupDirectory(@Nullable Uri destination) {
+        if (destination == null) return Prefs.Storage.getAppManagerDirectory();
+        if (ContentResolver.SCHEME_FILE.equals(destination.getScheme())) {
+            try {
+                return Paths.get(destination).findFile("AppManager");
+            } catch (IOException e) {
+                return Paths.get(destination);
+            }
+        }
+        return Paths.get(destination);
     }
 
     @Nullable

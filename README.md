@@ -69,6 +69,7 @@ Reclaim storage without losing anything: archiving removes an app's APK and cach
 - Aurora Store / F-Droid client launch integration
 - APK signing with custom signatures
 - Backup encryption: OpenPGP (OpenKeychain), RSA, ECC (hybrid + AES), AES
+- Ordered per-tag backup policies with shared manual/scheduled resolution, per-rule parts, encryption, retention, local/SAF destinations, and winner previews
 - Foreground UI component tracking
 
 ### Root/ADB

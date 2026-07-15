@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.batchops.struct;
 import static org.junit.Assert.*;
 
 import android.os.Parcel;
+import android.content.Context;
 
 import androidx.core.os.ParcelCompat;
 
@@ -16,9 +17,13 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
+import io.github.muntashirakon.AppManager.backup.BackupTagPolicyStore;
+import io.github.muntashirakon.AppManager.backup.CryptoUtils;
 import io.github.muntashirakon.AppManager.backup.struct.BackupOpOptions;
 import io.github.muntashirakon.AppManager.backup.struct.DeleteOpOptions;
 import io.github.muntashirakon.AppManager.backup.struct.RestoreOpOptions;
+import io.github.muntashirakon.AppManager.tags.AppTagStore;
+import io.github.muntashirakon.AppManager.utils.ContextUtils;
 
 @RunWith(RobolectricTestRunner.class)
 public class BatchBackupOptionsTest {
@@ -101,6 +106,40 @@ public class BatchBackupOptionsTest {
 
         assertTrue(restoredOpOptions.protectFromPrune);
         assertEquals("Critical state", restoredOpOptions.backupNote);
+    }
+
+    @Test
+    public void policyAwareModeSurvivesJsonAndParcelAndResolvesPerPackage() throws Exception {
+        Context context = ContextUtils.getContext();
+        context.getSharedPreferences(BackupTagPolicyStore.PREFS_NAME, Context.MODE_PRIVATE)
+                .edit().clear().commit();
+        context.getSharedPreferences("app_tags", Context.MODE_PRIVATE).edit().clear().commit();
+        new AppTagStore(context).addTag("example.pkg", "work");
+        new BackupTagPolicyStore(context).add(new BackupTagPolicyStore.Policy("work",
+                BackupFlags.BACKUP_APK_FILES, CryptoUtils.MODE_NO_ENCRYPTION, 4, 21, null));
+        BatchBackupOptions options = BatchBackupOptions.forTagPolicies(
+                BackupFlags.BACKUP_EXT_DATA | BackupFlags.BACKUP_MULTIPLE,
+                new String[]{"nightly"}, null, null, false, null);
+
+        BatchBackupOptions json = new BatchBackupOptions(options.serializeToJson());
+        BackupOpOptions jsonOp = json.getBackupOpOptions("example.pkg", 0);
+        assertEquals(BackupFlags.BACKUP_APK_FILES | BackupFlags.BACKUP_MULTIPLE,
+                jsonOp.flags.getFlags());
+        assertEquals(4, jsonOp.retentionMaxCount);
+        assertEquals(21, jsonOp.retentionMaxAgeDays);
+
+        Parcel parcel = Parcel.obtain();
+        try {
+            options.writeToParcel(parcel, 0);
+            parcel.setDataPosition(0);
+            BackupOpOptions parcelOp = BatchBackupOptions.CREATOR.createFromParcel(parcel)
+                    .getBackupOpOptions("example.pkg", 0);
+            assertEquals(BackupFlags.BACKUP_APK_FILES | BackupFlags.BACKUP_MULTIPLE,
+                    parcelOp.flags.getFlags());
+            assertEquals(4, parcelOp.retentionMaxCount);
+        } finally {
+            parcel.recycle();
+        }
     }
 
     @Test

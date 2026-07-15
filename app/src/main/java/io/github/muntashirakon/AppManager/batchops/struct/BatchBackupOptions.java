@@ -15,6 +15,7 @@ import org.json.JSONObject;
 
 import io.github.muntashirakon.AppManager.backup.BackupPathExclusionPatterns;
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
+import io.github.muntashirakon.AppManager.backup.BackupTagPolicyStore;
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
 import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
 import io.github.muntashirakon.AppManager.backup.struct.BackupOpOptions;
@@ -22,6 +23,7 @@ import io.github.muntashirakon.AppManager.backup.struct.DeleteOpOptions;
 import io.github.muntashirakon.AppManager.backup.struct.RestoreOpOptions;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.history.JsonDeserializer;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
 import io.github.muntashirakon.AppManager.utils.JSONUtils;
@@ -42,6 +44,7 @@ public class BatchBackupOptions implements IBatchOpOptions {
     private final String mBackupNote;
     @DeleteOpOptions.DeleteScope
     private final int mDeleteScope;
+    private final boolean mUseTagPolicies;
 
     public BatchBackupOptions(@BackupFlags.BackupFlag int flags,
                               @Nullable String[] backupNames,
@@ -63,7 +66,7 @@ public class BatchBackupOptions implements IBatchOpOptions {
                               boolean protectFromPrune,
                               @Nullable String backupNote) {
         this(flags, backupNames, relativeDirs, exclusionGlobs, protectFromPrune, backupNote,
-                inferDeleteScope(backupNames, relativeDirs));
+                inferDeleteScope(backupNames, relativeDirs), false);
     }
 
     public BatchBackupOptions(@BackupFlags.BackupFlag int flags,
@@ -73,6 +76,18 @@ public class BatchBackupOptions implements IBatchOpOptions {
                               boolean protectFromPrune,
                               @Nullable String backupNote,
                               @DeleteOpOptions.DeleteScope int deleteScope) {
+        this(flags, backupNames, relativeDirs, exclusionGlobs, protectFromPrune, backupNote,
+                deleteScope, false);
+    }
+
+    private BatchBackupOptions(@BackupFlags.BackupFlag int flags,
+                               @Nullable String[] backupNames,
+                               @Nullable String[] relativeDirs,
+                               @Nullable String[] exclusionGlobs,
+                               boolean protectFromPrune,
+                               @Nullable String backupNote,
+                               @DeleteOpOptions.DeleteScope int deleteScope,
+                               boolean useTagPolicies) {
         mFlags = requireValidFlags(flags);
         mBackupNames = requireValidBackupNames(backupNames);
         mRelativeDirs = requireValidRelativeDirs(relativeDirs);
@@ -80,6 +95,18 @@ public class BatchBackupOptions implements IBatchOpOptions {
         mProtectFromPrune = protectFromPrune;
         mBackupNote = BackupMetadataV5.Metadata.normalizeNote(backupNote);
         mDeleteScope = requireValidDeleteScope(deleteScope, mBackupNames, mRelativeDirs);
+        mUseTagPolicies = useTagPolicies;
+    }
+
+    @NonNull
+    public static BatchBackupOptions forTagPolicies(@BackupFlags.BackupFlag int flags,
+                                                    @Nullable String[] backupNames,
+                                                    @Nullable String[] relativeDirs,
+                                                    @Nullable String[] exclusionGlobs,
+                                                    boolean protectFromPrune,
+                                                    @Nullable String backupNote) {
+        return new BatchBackupOptions(flags, backupNames, relativeDirs, exclusionGlobs,
+                protectFromPrune, backupNote, inferDeleteScope(backupNames, relativeDirs), true);
     }
 
     public BackupOpOptions getBackupOpOptions(@NonNull String packageName, @UserIdInt int userId) {
@@ -90,8 +117,21 @@ public class BatchBackupOptions implements IBatchOpOptions {
         } else {
             backupName = customBackup ? DateUtils.formatMediumDateTime(ContextUtils.getContext(), System.currentTimeMillis()) : null;
         }
-        return new BackupOpOptions(packageName, userId, mFlags, backupName, !customBackup, mExclusionGlobs,
-                mProtectFromPrune, mBackupNote);
+        if (mUseTagPolicies) {
+            BackupTagPolicyStore.Resolution resolution = new BackupTagPolicyStore(ContextUtils.getContext())
+                    .resolve(packageName, mFlags);
+            if (resolution.partsFallback || resolution.cryptoFallback || resolution.destinationFallback) {
+                Log.w(TAG, "Backup policy fallback for " + packageName
+                        + ": parts=" + resolution.partsFallback
+                        + ", encryption=" + resolution.cryptoFallback
+                        + ", destination=" + resolution.destinationFallback);
+            }
+            return new BackupOpOptions(packageName, userId, resolution.flags, backupName, !customBackup,
+                    mExclusionGlobs, mProtectFromPrune, mBackupNote, resolution.cryptoMode,
+                    resolution.maxCount, resolution.maxAgeDays, resolution.destination);
+        }
+        return new BackupOpOptions(packageName, userId, mFlags, backupName, !customBackup,
+                mExclusionGlobs, mProtectFromPrune, mBackupNote);
     }
 
     public RestoreOpOptions getRestoreOpOptions(@NonNull String packageName, @UserIdInt int userId) {
@@ -154,6 +194,7 @@ public class BatchBackupOptions implements IBatchOpOptions {
         mBackupNote = BackupMetadataV5.Metadata.normalizeNote(in.readString());
         mDeleteScope = requireValidDeleteScope(in.dataAvail() > 0 ? in.readInt()
                 : inferDeleteScope(mBackupNames, mRelativeDirs), mBackupNames, mRelativeDirs);
+        mUseTagPolicies = in.dataAvail() > 0 && ParcelCompat.readBoolean(in);
     }
 
     public static final Creator<BatchBackupOptions> CREATOR = new Creator<BatchBackupOptions>() {
@@ -184,6 +225,7 @@ public class BatchBackupOptions implements IBatchOpOptions {
         ParcelCompat.writeBoolean(dest, mProtectFromPrune);
         dest.writeString(BackupMetadataV5.Metadata.normalizeNote(mBackupNote));
         dest.writeInt(requireValidDeleteScope(mDeleteScope, mBackupNames, mRelativeDirs));
+        ParcelCompat.writeBoolean(dest, mUseTagPolicies);
     }
 
     public BatchBackupOptions(@NonNull JSONObject jsonObject) throws JSONException {
@@ -200,6 +242,7 @@ public class BatchBackupOptions implements IBatchOpOptions {
             mBackupNote = BackupMetadataV5.Metadata.normalizeNote(JSONUtils.optString(jsonObject, "backup_note"));
             mDeleteScope = requireValidDeleteScope(jsonObject.optInt("delete_scope",
                     inferDeleteScope(mBackupNames, mRelativeDirs)), mBackupNames, mRelativeDirs);
+            mUseTagPolicies = jsonObject.optBoolean("use_tag_policies", false);
         } catch (IllegalArgumentException e) {
             throw new JSONException(e.getMessage());
         }
@@ -220,6 +263,7 @@ public class BatchBackupOptions implements IBatchOpOptions {
         jsonObject.put("protect_from_prune", mProtectFromPrune);
         jsonObject.put("backup_note", BackupMetadataV5.Metadata.normalizeNote(mBackupNote));
         jsonObject.put("delete_scope", requireValidDeleteScope(mDeleteScope, mBackupNames, mRelativeDirs));
+        jsonObject.put("use_tag_policies", mUseTagPolicies);
         return jsonObject;
     }
 

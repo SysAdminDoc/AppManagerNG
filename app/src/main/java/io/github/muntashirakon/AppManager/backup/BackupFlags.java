@@ -66,6 +66,17 @@ public final class BackupFlags {
     public static final int BACKUP_ADB_DATA = 1 << 12;
     public static final int BACKUP_SYSTEM_DATA = 1 << 13;
 
+    /** Flags which select backup payload parts, excluding batch/restore behaviour. */
+    public static final int BACKUP_CONTENT_FLAGS = BACKUP_APK_FILES
+            | BACKUP_INT_DATA
+            | BACKUP_EXT_DATA
+            | BACKUP_ADB_DATA
+            | BACKUP_EXT_OBB_MEDIA
+            | BACKUP_CACHE
+            | BACKUP_EXTRAS
+            | BACKUP_RULES
+            | BACKUP_SYSTEM_DATA;
+
     private static final LinkedHashMap<Integer, Pair<Integer, Integer>> sBackupFlagsMap = new LinkedHashMap<Integer, Pair<Integer, Integer>>() {{
         put(BACKUP_APK_FILES, new Pair<>(R.string.backup_apk_files, R.string.backup_apk_files_description));
         put(BACKUP_INT_DATA, new Pair<>(R.string.internal_data, R.string.backup_internal_data_description));
