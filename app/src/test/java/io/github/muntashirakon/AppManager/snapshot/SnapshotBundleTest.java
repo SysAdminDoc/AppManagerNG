@@ -14,6 +14,7 @@ import static org.junit.Assert.fail;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import androidx.annotation.NonNull;
 import androidx.test.core.app.ApplicationProvider;
 
 import org.json.JSONArray;
@@ -24,6 +25,7 @@ import org.robolectric.RobolectricTestRunner;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -438,8 +440,15 @@ public class SnapshotBundleTest {
     }
 
     @Test
+    public void deviceLocalSecretsAreNeverExportedOrImported() {
+        assertTrue(SnapshotBundle.EXCLUDED_PREF_NAMES.contains(AppPref.DEVICE_LOCAL_PREF_NAME));
+        assertFalse(SnapshotBundle.ALLOWED_PREF_NAMES.contains(AppPref.DEVICE_LOCAL_PREF_NAME));
+    }
+
+    @Test
     public void appNotesPrefsAreIncludedInSnapshots() {
         assertFalse(SnapshotBundle.EXCLUDED_PREF_NAMES.contains(AppNoteStore.PREFS_NAME));
+        assertTrue(SnapshotBundle.ALLOWED_PREF_NAMES.contains(AppNoteStore.PREFS_NAME));
     }
 
     // -----------------------------------------------------------------------
@@ -507,6 +516,59 @@ public class SnapshotBundleTest {
                 "REAL-DEVICE-SECRET", sp.getString(sensitive, null));
         assertEquals("ordinary key must still be restored under replace mode",
                 3, sp.getInt("app_theme", -1));
+    }
+
+    @Test
+    public void importRejectsUnknownPreferenceFilesWithoutCreatingThem() throws Exception {
+        Context context = ApplicationProvider.getApplicationContext();
+        File prefsDir = new File(context.getFilesDir().getParentFile(), "shared_prefs");
+        File unknownFile = new File(prefsDir, "crafted_snapshot_store.xml");
+        assertFalse(unknownFile.exists());
+        byte[] bundle = bundleWithPrefEntry("crafted_snapshot_store.xml",
+                "<map><boolean name=\"enabled\" value=\"true\" /></map>");
+
+        SnapshotBundle.ImportResult result = SnapshotBundle.readFrom(context,
+                new ByteArrayInputStream(bundle), prefsOnlyOptions(true));
+
+        assertEquals(0, result.prefsRestored);
+        assertFalse(unknownFile.exists());
+    }
+
+    @Test
+    public void importAppliesOnlyRegisteredPreferenceKeysWithDeclaredTypes() throws Exception {
+        Context context = ApplicationProvider.getApplicationContext();
+        SharedPreferences sp = context.getSharedPreferences(
+                AppPref.getSharedPreferencesName(), Context.MODE_PRIVATE);
+        sp.edit().remove("crafted_unknown_key").putInt("app_theme", 1).commit();
+        byte[] bundle = bundleWithPrefEntry("preferences.xml",
+                "<map>"
+                        + "<int name=\"app_theme\" value=\"3\" />"
+                        + "<boolean name=\"crafted_unknown_key\" value=\"true\" />"
+                        + "<string name=\"layout_orientation\">wrong-type</string>"
+                        + "</map>");
+
+        SnapshotBundle.ImportResult result = SnapshotBundle.readFrom(context,
+                new ByteArrayInputStream(bundle), prefsOnlyOptions(true));
+
+        assertEquals(1, result.prefsRestored);
+        assertEquals(3, sp.getInt("app_theme", -1));
+        assertFalse(sp.contains("crafted_unknown_key"));
+        assertFalse("wrong-typed registered values must be dropped",
+                "wrong-type".equals(sp.getAll().get("layout_orientation")));
+    }
+
+    @NonNull
+    private static SnapshotBundle.ImportOptions prefsOnlyOptions(boolean merge) {
+        SnapshotBundle.ImportOptions options = new SnapshotBundle.ImportOptions();
+        options.restoreProfiles = false;
+        options.restoreRules = false;
+        options.restoreTags = false;
+        options.restoreOpHistory = false;
+        options.restoreLogFilters = false;
+        options.restoreFmFavorites = false;
+        options.restoreFreezeTypes = false;
+        options.mergePrefs = merge;
+        return options;
     }
 
     private static byte[] bundleWithPrefEntry(String leaf, String xml) throws Exception {

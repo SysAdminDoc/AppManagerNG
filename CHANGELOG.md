@@ -97,6 +97,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Ported from upstream App Manager (`133b5acb7f`).
 
 ### Fixed
+- Snapshot preference export/import now uses an explicit allowlist of durable
+  app stores and registered key/type schemas. Crafted bundles cannot create
+  arbitrary preference files or inject unknown keys, and the device-local
+  credential store is excluded wholesale.
 - URI-grant imports now reject malformed source or target package fields, and
   broadcast automation rejects negative user IDs instead of silently dropping
   only those targets during execution.
