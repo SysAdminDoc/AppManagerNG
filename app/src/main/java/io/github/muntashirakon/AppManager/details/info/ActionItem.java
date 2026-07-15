@@ -3,7 +3,6 @@
 package io.github.muntashirakon.AppManager.details.info;
 
 import android.content.Context;
-import android.content.res.ColorStateList;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,7 +14,6 @@ import androidx.annotation.StringRes;
 import com.google.android.material.button.MaterialButton;
 
 import io.github.muntashirakon.AppManager.R;
-import io.github.muntashirakon.AppManager.utils.appearance.ColorCodes;
 
 class ActionItem {
     @NonNull
@@ -50,7 +48,6 @@ class ActionItem {
 
     public MaterialButton toActionButton(@NonNull Context context, @NonNull ViewGroup parent) {
         MaterialButton button = (MaterialButton) LayoutInflater.from(context).inflate(R.layout.item_app_info_action, parent, false);
-        button.setBackgroundTintList(ColorStateList.valueOf(ColorCodes.getListItemColor1(context)));
         button.setText(mTitleRes);
         button.setContentDescription(context.getString(R.string.app_info_action_button_content_description,
                 context.getString(mTitleRes)));

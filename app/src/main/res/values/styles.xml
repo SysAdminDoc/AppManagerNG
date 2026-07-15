@@ -67,10 +67,10 @@
     </style>
 
     <style name="Widget.AppTheme.CardView.TrustCta" parent="Widget.Material3.CardView.Filled">
-        <item name="cardCornerRadius">?attr/listItemCornerRadius</item>
-        <item name="cardElevation">1dp</item>
-        <item name="cardBackgroundColor">?attr/colorSurfaceContainerLow</item>
-        <item name="strokeWidth">1dp</item>
+        <item name="cardCornerRadius">0dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="cardBackgroundColor">?attr/colorSurface</item>
+        <item name="strokeWidth">0dp</item>
         <item name="strokeColor">?attr/colorOutlineVariant</item>
     </style>
 
@@ -87,7 +87,7 @@
         <item name="chipMinHeight">32dp</item>
         <item name="chipMinTouchTargetSize">@dimen/premium_chip_touch_target</item>
         <item name="chipCornerRadius">@dimen/premium_radius_control</item>
-        <item name="chipStrokeWidth">1dp</item>
+        <item name="chipStrokeWidth">0dp</item>
         <item name="chipStrokeColor">?attr/colorOutlineVariant</item>
         <item name="android:textAppearance">?attr/textAppearanceLabelMedium</item>
     </style>
@@ -96,8 +96,44 @@
         <item name="chipMinHeight">32dp</item>
         <item name="chipMinTouchTargetSize">@dimen/premium_chip_touch_target</item>
         <item name="chipCornerRadius">@dimen/premium_radius_control</item>
-        <item name="chipStrokeWidth">1dp</item>
+        <item name="chipStrokeWidth">0dp</item>
         <item name="chipStrokeColor">?attr/colorOutlineVariant</item>
         <item name="android:textAppearance">?attr/textAppearanceLabelMedium</item>
+    </style>
+
+    <style name="Widget.AppTheme.Chip.DetailFact" parent="Widget.Material3.Chip.Assist">
+        <item name="chipMinHeight">32dp</item>
+        <item name="chipMinTouchTargetSize">@dimen/premium_chip_touch_target</item>
+        <item name="chipCornerRadius">0dp</item>
+        <item name="chipBackgroundColor">@android:color/transparent</item>
+        <item name="chipStrokeWidth">0dp</item>
+        <item name="chipIconSize">@dimen/premium_status_dot_size</item>
+        <item name="android:textAppearance">@style/TextAppearance.AppTheme.V2.LabelMedium</item>
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
+    </style>
+
+    <style name="Widget.AppTheme.Button.AppInfoAction" parent="Widget.AppTheme.Button.TextButton">
+        <item name="android:minWidth">0dp</item>
+        <item name="android:minHeight">@dimen/premium_button_min_height</item>
+        <item name="android:gravity">center</item>
+        <item name="android:paddingHorizontal">@dimen/premium_space_12</item>
+        <item name="android:textAppearance">@style/TextAppearance.AppTheme.V2.LabelMedium</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="iconGravity">textStart</item>
+        <item name="iconPadding">@dimen/premium_space_8</item>
+        <item name="iconSize">@dimen/premium_icon_20</item>
+        <item name="iconTint">?attr/colorOnSurfaceVariant</item>
+    </style>
+
+    <style name="Widget.AppTheme.TextInputLayout.ReadOnlyFlat" parent="Widget.Material3.TextInputLayout.FilledBox.Dense">
+        <item name="boxBackgroundColor">@android:color/transparent</item>
+        <item name="boxStrokeWidth">0dp</item>
+        <item name="boxStrokeWidthFocused">0dp</item>
+        <item name="boxCornerRadiusTopStart">0dp</item>
+        <item name="boxCornerRadiusTopEnd">0dp</item>
+        <item name="boxCornerRadiusBottomStart">0dp</item>
+        <item name="boxCornerRadiusBottomEnd">0dp</item>
+        <item name="hintTextAppearance">@style/TextAppearance.AppTheme.V2.LabelSmall</item>
+        <item name="hintTextColor">?attr/colorOnSurfaceVariant</item>
     </style>
 </resources>

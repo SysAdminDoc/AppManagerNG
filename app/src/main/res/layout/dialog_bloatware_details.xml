@@ -15,10 +15,11 @@
         android:paddingBottom="@dimen/premium_space_24">
 
         <com.google.android.material.card.MaterialCardView
-            style="@style/Widget.AppTheme.V2.Card.Header"
+            style="@style/Widget.AppTheme.V2.Card.ListRow"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:contentPadding="@dimen/premium_space_16">
+            app:cardBackgroundColor="@android:color/transparent"
+            app:contentPadding="0dp">
 
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
@@ -82,6 +83,12 @@
             </androidx.appcompat.widget.LinearLayoutCompat>
 
         </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.divider.MaterialDivider
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/premium_space_8"
+            app:dividerInsetStart="@dimen/premium_main_divider_inset" />
 
         <io.github.muntashirakon.widget.FlowLayout
             android:id="@+id/tag_cloud"

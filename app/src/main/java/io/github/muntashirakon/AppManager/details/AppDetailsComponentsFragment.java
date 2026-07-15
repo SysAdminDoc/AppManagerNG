@@ -41,9 +41,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -517,6 +519,8 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
         private final int mBlockedExternallyIndicatorColor;
         private final int mTrackerIndicatorColor;
         private final int mRunningIndicatorColor;
+        @NonNull
+        private final Set<String> mExpandedComponents = new HashSet<>();
 
         AppDetailsRecyclerAdapter() {
             mAdapterList = new ArrayList<>();
@@ -570,12 +574,16 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             TextView textView3;
             TextView textView4;
             TextView processNameView;
+            TextView launchModeView;
+            TextView taskAffinityView;
             ImageView imageView;
             MaterialButton shortcutBtn;
             MaterialButton launchBtn;
             MaterialSwitch toggleSwitch;
             TextView blockingMethod;
             Chip chipType;
+            View detailsContainer;
+            MaterialButton detailsToggle;
 
             public ViewHolder(@NonNull View itemView) {
                 super(itemView);
@@ -585,12 +593,16 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                 labelView = itemView.findViewById(R.id.label);
                 nameView = itemView.findViewById(R.id.name);
                 processNameView = itemView.findViewById(R.id.process_name);
+                launchModeView = itemView.findViewById(R.id.launchMode);
+                taskAffinityView = itemView.findViewById(R.id.taskAffinity);
 
                 shortcutBtn = itemView.findViewById(R.id.edit_shortcut_btn);
                 toggleSwitch = itemView.findViewById(R.id.toggle_button);
                 blockingMethod = itemView.findViewById(R.id.method);
                 chipType = itemView.findViewById(R.id.type);
                 launchBtn = itemView.findViewById(R.id.launch);
+                detailsContainer = itemView.findViewById(R.id.details_container);
+                detailsToggle = itemView.findViewById(R.id.details_toggle);
 
                 if (mRequestedProperty == ACTIVITIES) {
                     textView1 = itemView.findViewById(R.id.taskAffinity);
@@ -640,6 +652,40 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             } else if (mRequestedProperty == ACTIVITIES) {
                 getActivityView(holder, position);
             }
+            bindExpansion(holder, position);
+        }
+
+        private void bindExpansion(@NonNull ViewHolder holder, int position) {
+            final AppDetailsItem<?> item;
+            synchronized (mAdapterList) {
+                item = mAdapterList.get(position);
+            }
+            boolean expanded = mExpandedComponents.contains(item.name);
+            holder.detailsContainer.setVisibility(expanded ? View.VISIBLE : View.GONE);
+            boolean supportsActivityMetadata = mRequestedProperty != SERVICES;
+            holder.launchModeView.setVisibility(expanded && supportsActivityMetadata ? View.VISIBLE : View.GONE);
+            holder.taskAffinityView.setVisibility(expanded && supportsActivityMetadata ? View.VISIBLE : View.GONE);
+            if (!expanded) {
+                holder.processNameView.setVisibility(View.GONE);
+            }
+            holder.detailsToggle.setIconResource(expanded ? R.drawable.ic_expand_less : R.drawable.ic_expand_more);
+            holder.detailsToggle.setContentDescription(getString(expanded
+                    ? R.string.hide_component_details
+                    : R.string.show_component_details));
+            View.OnClickListener toggleDetails = v -> {
+                int currentPosition = holder.getBindingAdapterPosition();
+                if (currentPosition == RecyclerView.NO_POSITION) return;
+                final String componentName;
+                synchronized (mAdapterList) {
+                    componentName = mAdapterList.get(currentPosition).name;
+                }
+                if (!mExpandedComponents.remove(componentName)) {
+                    mExpandedComponents.add(componentName);
+                }
+                notifyItemChanged(currentPosition);
+            };
+            holder.itemView.setOnClickListener(toggleDetails);
+            holder.detailsToggle.setOnClickListener(toggleDetails);
         }
 
         @Override
