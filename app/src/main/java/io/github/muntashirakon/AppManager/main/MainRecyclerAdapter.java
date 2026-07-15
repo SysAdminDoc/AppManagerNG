@@ -81,9 +81,7 @@ import io.github.muntashirakon.widget.MultiSelectionView;
 public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecyclerAdapter.ViewHolder>
         implements SectionIndexer {
     private static final String sSections = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    private static final int STATE_STROKE_ALPHA = 0x80;
-    private static final int BADGE_BACKGROUND_ALPHA = 0x2B;
-    private static final int BADGE_STROKE_ALPHA = 0x7A;
+    private static final int MAX_INLINE_STATUSES = 2;
 
     private final MainActivity mActivity;
     private String mSearchQuery;
@@ -101,7 +99,8 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
     private final int mColorError;
     private final int mColorTertiary;
     private final int mColorSelectedStroke;
-    private final int mColorRegularStroke;
+    private final int mColorSurface;
+    private final int mColorSelectedSurface;
     private final int mQueryStringHighlight;
 
     MainRecyclerAdapter(@NonNull MainActivity activity) {
@@ -116,7 +115,8 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         mColorError = getThemeColor(activity, "colorError", Color.RED);
         mColorTertiary = getThemeColor(activity, "colorTertiary", mColorOrange);
         mColorSelectedStroke = getThemeColor(activity, "colorPrimary", mColorOrange);
-        mColorRegularStroke = getThemeColor(activity, "colorOutlineVariant", Color.TRANSPARENT);
+        mColorSurface = getThemeColor(activity, "colorSurface", Color.BLACK);
+        mColorSelectedSurface = getThemeColor(activity, "colorSecondaryContainer", mColorSurface);
         mQueryStringHighlight = ColorCodes.getQueryStringHighlightColor(activity);
     }
 
@@ -330,17 +330,13 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             showQuickActionsPopup(holder.icon, currentItem);
             return true;
         });
-        // Box-stroke colors: selected > uninstalled > disabled > force-stopped > regular
+        // Selection remains explicit without turning the selected app into an outlined card.
         if (item.isSelected) {
-            cardView.setStrokeColor(mColorSelectedStroke);
-        } else if (!item.isInstalled) {
-            cardView.setStrokeColor(getStateStrokeColor(ColorCodes.getAppUninstalledIndicatorColor(context)));
-        } else if (item.isDisabled) {
-            cardView.setStrokeColor(getStateStrokeColor(ColorCodes.getAppDisabledIndicatorColor(context)));
-        } else if (item.isStopped) {
-            cardView.setStrokeColor(getStateStrokeColor(ColorCodes.getAppForceStoppedIndicatorColor(context)));
+            cardView.setCardBackgroundColor(mColorSelectedSurface);
+            cardView.setStrokeWidth(0);
         } else {
-            cardView.setStrokeColor(mColorRegularStroke);
+            cardView.setCardBackgroundColor(mColorSurface);
+            cardView.setStrokeWidth(0);
         }
         // Display yellow star if the app is in debug mode
         holder.debugIcon.setVisibility(item.debuggable ? View.VISIBLE : View.GONE);
@@ -565,6 +561,11 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             holder.backupInfo.setVisibility(View.GONE);
             holder.backupInfoExt.setVisibility(View.GONE);
         }
+        String versionSummary = TextUtils.isEmpty(item.versionTag) ? "-" : item.versionTag;
+        String appTypeSummary = holder.isSystemApp.getText().toString();
+        String sdkSummary = item.sdkString != null ? item.sdkString : "-";
+        holder.metadata.setText(versionSummary + " \u00b7 " + appTypeSummary + " \u00b7 " + sdkSummary);
+        limitVisibleStatuses(holder, MAX_INLINE_STATUSES);
         String installedState = context.getString(item.isInstalled
                 ? R.string.main_list_installed_state : R.string.main_list_uninstalled_state);
         String sdkState = item.sdkString != null ? item.sdkString : "-";
@@ -600,6 +601,26 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         holder.tagIndicator.setClickable(false);
         holder.tagIndicator.setFocusable(false);
         applyBadgeStyle(holder.tagIndicator, mColorSelectedStroke);
+    }
+
+    private static void limitVisibleStatuses(@NonNull ViewHolder holder, int limit) {
+        TextView[] statuses = {
+                holder.trackerIndicator,
+                holder.permIndicator,
+                holder.backupIndicator,
+                holder.tagIndicator,
+        };
+        int visibleCount = 0;
+        for (TextView status : statuses) {
+            if (status == null || status.getVisibility() != View.VISIBLE) {
+                continue;
+            }
+            if (visibleCount < limit) {
+                visibleCount++;
+            } else {
+                status.setVisibility(View.GONE);
+            }
+        }
     }
 
     @Nullable
@@ -697,11 +718,6 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
     }
 
     @ColorInt
-    private static int getStateStrokeColor(@ColorInt int color) {
-        return ColorUtils.setAlphaComponent(color, STATE_STROKE_ALPHA);
-    }
-
-    @ColorInt
     @VisibleForTesting
     static int getTrackerBadgeTextColor(@NonNull Context context, boolean allBlocked, int trackerCount) {
         if (allBlocked || trackerCount < 5) {
@@ -760,15 +776,15 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
     private static void applyBadgeStyle(@NonNull TextView badge, @ColorInt int contentColor,
                                         @ColorInt int textColor) {
         int opaqueContentColor = ColorUtils.setAlphaComponent(contentColor, 0xFF);
-        GradientDrawable background = new GradientDrawable();
-        background.setShape(GradientDrawable.RECTANGLE);
-        background.setColor(ColorUtils.setAlphaComponent(opaqueContentColor, BADGE_BACKGROUND_ALPHA));
-        background.setStroke(
-                badge.getResources().getDimensionPixelSize(R.dimen.main_list_badge_stroke_width),
-                ColorUtils.setAlphaComponent(opaqueContentColor, BADGE_STROKE_ALPHA));
-        background.setCornerRadius(
-                badge.getResources().getDimensionPixelSize(R.dimen.main_list_badge_corner_radius));
-        badge.setBackground(background);
+        GradientDrawable indicator = new GradientDrawable();
+        indicator.setShape(GradientDrawable.OVAL);
+        indicator.setColor(opaqueContentColor);
+        int size = badge.getResources().getDimensionPixelSize(R.dimen.premium_status_dot_size);
+        indicator.setBounds(0, 0, size, size);
+        badge.setBackground(null);
+        badge.setCompoundDrawablesRelative(indicator, null, null, null);
+        badge.setCompoundDrawablePadding(
+                badge.getResources().getDimensionPixelSize(R.dimen.premium_space_4));
         badge.setTextColor(textColor);
     }
 
@@ -1139,6 +1155,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         AppCompatImageView debugIcon;
         TextView label;
         TextView packageName;
+        TextView metadata;
         TextView version;
         TextView isSystemApp;
         TextView date;
@@ -1161,6 +1178,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             debugIcon = itemView.findViewById(R.id.debug_indicator);
             label = itemView.findViewById(R.id.label);
             packageName = itemView.findViewById(R.id.packageName);
+            metadata = itemView.findViewById(R.id.metadata);
             version = itemView.findViewById(R.id.version);
             isSystemApp = itemView.findViewById(R.id.isSystem);
             date = itemView.findViewById(R.id.date);

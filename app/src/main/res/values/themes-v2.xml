@@ -41,11 +41,11 @@
         <item name="textAppearanceTitleMedium">@style/TextAppearance.AppTheme.V2.TitleMedium</item>
         <item name="android:textAppearanceListItem">@style/TextAppearance.AppTheme.V2.TitleMedium</item>
         <item name="android:textAppearanceListItemSecondary">@style/TextAppearance.AppTheme.V2.BodyMedium.Secondary</item>
-        <item name="listItemMarginVertical">@dimen/premium_main_list_margin_vertical</item>
-        <item name="listItemMarginHorizontal">@dimen/premium_space_12</item>
+        <item name="listItemMarginVertical">@dimen/premium_zero</item>
+        <item name="listItemMarginHorizontal">@dimen/premium_zero</item>
         <item name="listItemPaddingVertical">@dimen/premium_main_list_padding_vertical</item>
         <item name="listItemPaddingHorizontal">@dimen/premium_main_list_padding_horizontal</item>
-        <item name="listItemCornerRadius">@dimen/premium_radius_card</item>
+        <item name="listItemCornerRadius">@dimen/premium_zero</item>
         <!-- Night-aware aliases: light in values/, dark in values-night/. Correct for the
              normal theme in both light and dark; AMOLED/Dark override below. -->
         <item name="premiumWarningBg">@color/premium_warning_bg</item>
@@ -139,12 +139,12 @@
         <item name="rippleColor">?attr/colorSecondaryContainer</item>
     </style>
 
-    <style name="Widget.AppTheme.V2.Card.ListRow" parent="Widget.Material3.CardView.Outlined">
-        <item name="cardCornerRadius">@dimen/premium_radius_card</item>
-        <item name="cardElevation">@dimen/premium_elevation_1</item>
-        <item name="cardBackgroundColor">?attr/colorSurfaceContainerLow</item>
+    <style name="Widget.AppTheme.V2.Card.ListRow" parent="Widget.Material3.CardView.Filled">
+        <item name="cardCornerRadius">@dimen/premium_zero</item>
+        <item name="cardElevation">@dimen/premium_elevation_0</item>
+        <item name="cardBackgroundColor">?attr/colorSurface</item>
         <item name="strokeColor">?attr/colorOutlineVariant</item>
-        <item name="strokeWidth">@dimen/premium_stroke_hairline</item>
+        <item name="strokeWidth">@dimen/premium_stroke_none</item>
         <item name="rippleColor">?attr/colorSecondaryContainer</item>
     </style>
 
@@ -174,7 +174,7 @@
         <item name="chipCornerRadius">@dimen/premium_radius_control</item>
         <item name="chipBackgroundColor">?attr/colorSurfaceContainerHigh</item>
         <item name="chipStrokeColor">?attr/colorOutlineVariant</item>
-        <item name="chipStrokeWidth">@dimen/premium_stroke_hairline</item>
+        <item name="chipStrokeWidth">@dimen/premium_stroke_none</item>
         <item name="rippleColor">?attr/colorSecondaryContainer</item>
         <item name="android:textAppearance">@style/TextAppearance.AppTheme.V2.LabelMedium</item>
     </style>
@@ -184,7 +184,7 @@
         <item name="chipMinTouchTargetSize">@dimen/premium_chip_touch_target</item>
         <item name="chipIconSize">@dimen/premium_icon_20</item>
         <item name="chipCornerRadius">@dimen/premium_radius_control</item>
-        <item name="chipStrokeWidth">@dimen/premium_stroke_hairline</item>
+        <item name="chipStrokeWidth">@dimen/premium_stroke_none</item>
         <item name="chipStrokeColor">?attr/colorOutlineVariant</item>
         <item name="chipBackgroundColor">@color/premium_filter_chip_background</item>
         <item name="android:textColor">@color/premium_filter_chip_text</item>
@@ -193,12 +193,12 @@
         <item name="android:textAppearance">@style/TextAppearance.AppTheme.V2.LabelMedium</item>
     </style>
 
-    <style name="Widget.AppTheme.V2.Chip.Suggestion" parent="Widget.Material3.Chip.Suggestion.Elevated">
+    <style name="Widget.AppTheme.V2.Chip.Suggestion" parent="Widget.Material3.Chip.Suggestion">
         <item name="chipMinHeight">@dimen/premium_chip_min_height</item>
         <item name="chipMinTouchTargetSize">@dimen/premium_chip_touch_target</item>
         <item name="chipIconSize">@dimen/premium_icon_20</item>
         <item name="chipCornerRadius">@dimen/premium_radius_control</item>
-        <item name="chipStrokeWidth">@dimen/premium_stroke_hairline</item>
+        <item name="chipStrokeWidth">@dimen/premium_stroke_none</item>
         <item name="chipStrokeColor">?attr/colorOutlineVariant</item>
         <item name="chipBackgroundColor">?attr/colorSurfaceContainerHigh</item>
         <item name="rippleColor">?attr/colorSecondaryContainer</item>
@@ -230,7 +230,6 @@
 
     <style name="TextAppearance.AppTheme.V2.TitleMedium" parent="TextAppearance.Material3.TitleMedium">
         <item name="android:textSize">@dimen/premium_type_title_medium</item>
-        <item name="android:textStyle">bold</item>
         <item name="android:letterSpacing">0</item>
     </style>
 
@@ -255,13 +254,11 @@
 
     <style name="TextAppearance.AppTheme.V2.LabelMedium" parent="TextAppearance.Material3.LabelMedium">
         <item name="android:textSize">@dimen/premium_type_label_medium</item>
-        <item name="android:textStyle">bold</item>
         <item name="android:letterSpacing">0</item>
     </style>
 
     <style name="TextAppearance.AppTheme.V2.LabelSmall" parent="TextAppearance.Material3.LabelSmall">
         <item name="android:textSize">@dimen/premium_type_label_small</item>
-        <item name="android:textStyle">bold</item>
         <item name="android:letterSpacing">0</item>
     </style>
 </resources>

@@ -30,110 +30,114 @@
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/padding_medium"
-                android:layout_marginTop="@dimen/padding_medium"
-                android:background="@drawable/app_info_header_background"
-                android:orientation="vertical"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
                 android:paddingHorizontal="@dimen/padding_medium"
-                android:paddingVertical="@dimen/padding_medium">
+                android:paddingVertical="@dimen/premium_space_12">
 
                 <androidx.appcompat.widget.AppCompatImageView
                     android:id="@+id/icon"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginBottom="@dimen/padding_small"
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    android:layout_marginEnd="@dimen/premium_space_12"
                     android:background="@drawable/item_transparent"
                     android:contentDescription="@string/app_details_app_icon"
                     android:nextFocusDown="@id/label"
                     tools:srcCompat="@mipmap/ic_launcher" />
 
-                <androidx.appcompat.widget.AppCompatTextView
-                    android:id="@+id/label"
-                    android:layout_width="match_parent"
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:background="@drawable/item_transparent"
-                    android:ellipsize="end"
-                    android:gravity="center"
-                    android:maxLines="2"
-                    android:nextFocusUp="@id/icon"
-                    android:nextFocusDown="@id/packageName"
-                    android:textAppearance="?attr/textAppearanceTitleMedium"
-                    android:textIsSelectable="true"
-                    tools:ignore="TouchTargetSizeCheck"
-                    tools:text="@string/app_name" />
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-                <androidx.appcompat.widget.AppCompatTextView
-                    android:id="@+id/packageName"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:background="@drawable/item_transparent"
-                    android:ellipsize="middle"
-                    android:gravity="center"
-                    android:maxLines="1"
-                    android:nextFocusUp="@id/label"
-                    android:nextFocusDown="@id/version"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:textIsSelectable="true"
-                    tools:ignore="TouchTargetSizeCheck"
-                    tools:text="io.github.muntashirakon.AppManager.debug" />
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/item_transparent"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:nextFocusUp="@id/icon"
+                        android:nextFocusDown="@id/packageName"
+                        android:textAppearance="?attr/textAppearanceTitleMedium"
+                        android:textIsSelectable="true"
+                        tools:ignore="TouchTargetSizeCheck"
+                        tools:text="@string/app_name" />
 
-                <androidx.appcompat.widget.AppCompatTextView
-                    android:id="@+id/version"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:background="@drawable/item_transparent"
-                    android:ellipsize="end"
-                    android:gravity="center"
-                    android:maxLines="1"
-                    android:nextFocusUp="@id/packageName"
-                    android:nextFocusDown="@id/tag_cloud"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:textIsSelectable="true"
-                    tools:ignore="TouchTargetSizeCheck"
-                    tools:text="v10.2.0 (1001)" />
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/packageName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/item_transparent"
+                        android:ellipsize="middle"
+                        android:maxLines="1"
+                        android:nextFocusUp="@id/label"
+                        android:nextFocusDown="@id/version"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textIsSelectable="true"
+                        tools:ignore="TouchTargetSizeCheck"
+                        tools:text="io.github.muntashirakon.AppManager.debug" />
+
+                    <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/version"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/item_transparent"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:nextFocusUp="@id/packageName"
+                        android:nextFocusDown="@id/tag_cloud"
+                        android:textAppearance="?attr/textAppearanceBodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textIsSelectable="true"
+                        tools:ignore="TouchTargetSizeCheck"
+                        tools:text="v10.2.0 (1001)" />
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
 
             </androidx.appcompat.widget.LinearLayoutCompat>
+
+            <com.google.android.material.divider.MaterialDivider
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:dividerInsetStart="@dimen/premium_main_divider_inset" />
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/tracker_cta_card"
                 style="@style/Widget.AppTheme.CardView.TrustCta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/padding_medium"
-                android:layout_marginTop="@dimen/padding_medium"
+                android:layout_marginTop="@dimen/premium_space_4"
                 android:visibility="gone"
                 tools:visibility="visible">
 
                 <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="112dp"
-                    android:orientation="vertical"
+                    android:gravity="center_vertical"
+                    android:minHeight="72dp"
+                    android:orientation="horizontal"
                     android:paddingHorizontal="@dimen/padding_medium"
-                    android:paddingVertical="@dimen/padding_medium">
+                    android:paddingVertical="@dimen/premium_space_8">
 
                     <androidx.appcompat.widget.LinearLayoutCompat
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_weight="1"
                         android:baselineAligned="false"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
                         <androidx.appcompat.widget.AppCompatImageView
-                            android:layout_width="@dimen/premium_icon_48"
-                            android:layout_height="@dimen/premium_icon_48"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
                             android:layout_marginEnd="@dimen/padding_small"
-                            android:background="@drawable/main_empty_icon_background"
                             android:contentDescription="@null"
-                            android:padding="@dimen/padding_small"
+                            android:padding="@dimen/premium_space_4"
                             app:srcCompat="@drawable/ic_cctv_off"
-                            app:tint="?attr/colorOnSecondaryContainer" />
+                            app:tint="?attr/colorPrimary" />
 
                         <androidx.appcompat.widget.LinearLayoutCompat
                             android:layout_width="0dp"
@@ -163,11 +167,11 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/tracker_cta_action"
-                        style="@style/Widget.AppTheme.Button.FilledTonalButton.Dense"
+                        style="@style/Widget.AppTheme.Button.TextButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="end"
-                        android:layout_marginTop="@dimen/padding_small"
+                        android:layout_gravity="center_vertical"
+                        android:layout_marginStart="@dimen/premium_space_8"
                         android:minHeight="@dimen/premium_button_min_height"
                         tools:text="@string/block" />
 
@@ -180,35 +184,35 @@
                 style="@style/Widget.AppTheme.CardView.TrustCta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/padding_medium"
-                android:layout_marginTop="@dimen/padding_small"
+                android:layout_marginTop="@dimen/premium_space_4"
                 android:visibility="gone"
                 tools:visibility="visible">
 
                 <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="112dp"
-                    android:orientation="vertical"
+                    android:gravity="center_vertical"
+                    android:minHeight="72dp"
+                    android:orientation="horizontal"
                     android:paddingHorizontal="@dimen/padding_medium"
-                    android:paddingVertical="@dimen/padding_medium">
+                    android:paddingVertical="@dimen/premium_space_8">
 
                     <androidx.appcompat.widget.LinearLayoutCompat
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_weight="1"
                         android:baselineAligned="false"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
                         <androidx.appcompat.widget.AppCompatImageView
-                            android:layout_width="@dimen/premium_icon_48"
-                            android:layout_height="@dimen/premium_icon_48"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
                             android:layout_marginEnd="@dimen/padding_small"
-                            android:background="@drawable/main_empty_icon_background"
                             android:contentDescription="@null"
-                            android:padding="@dimen/padding_small"
+                            android:padding="@dimen/premium_space_4"
                             app:srcCompat="@drawable/ic_shield_key"
-                            app:tint="?attr/colorOnSecondaryContainer" />
+                            app:tint="?attr/colorPrimary" />
 
                         <androidx.appcompat.widget.LinearLayoutCompat
                             android:layout_width="0dp"
@@ -238,11 +242,11 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/perms_cta_action"
-                        style="@style/Widget.AppTheme.Button.FilledTonalButton.Dense"
+                        style="@style/Widget.AppTheme.Button.TextButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="end"
-                        android:layout_marginTop="@dimen/padding_small"
+                        android:layout_gravity="center_vertical"
+                        android:layout_marginStart="@dimen/premium_space_8"
                         android:minHeight="@dimen/premium_button_min_height"
                         tools:text="Revoke" />
 
@@ -255,35 +259,35 @@
                 style="@style/Widget.AppTheme.CardView.TrustCta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/padding_medium"
-                android:layout_marginTop="@dimen/padding_small"
+                android:layout_marginTop="@dimen/premium_space_4"
                 android:visibility="gone"
                 tools:visibility="visible">
 
                 <androidx.appcompat.widget.LinearLayoutCompat
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="104dp"
-                    android:orientation="vertical"
+                    android:gravity="center_vertical"
+                    android:minHeight="72dp"
+                    android:orientation="horizontal"
                     android:paddingHorizontal="@dimen/padding_medium"
-                    android:paddingVertical="@dimen/padding_medium">
+                    android:paddingVertical="@dimen/premium_space_8">
 
                     <androidx.appcompat.widget.LinearLayoutCompat
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_weight="1"
                         android:baselineAligned="false"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
                         <androidx.appcompat.widget.AppCompatImageView
-                            android:layout_width="@dimen/premium_icon_48"
-                            android:layout_height="@dimen/premium_icon_48"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
                             android:layout_marginEnd="@dimen/padding_small"
-                            android:background="@drawable/main_empty_icon_background"
                             android:contentDescription="@null"
-                            android:padding="@dimen/padding_small"
+                            android:padding="@dimen/premium_space_4"
                             app:srcCompat="@drawable/ic_edit"
-                            app:tint="?attr/colorOnSecondaryContainer" />
+                            app:tint="?attr/colorPrimary" />
 
                         <androidx.appcompat.widget.LinearLayoutCompat
                             android:layout_width="0dp"
@@ -304,7 +308,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="@dimen/premium_space_4"
                                 android:ellipsize="end"
-                                android:maxLines="4"
+                                android:maxLines="2"
                                 android:textAppearance="?attr/textAppearanceBodySmall"
                                 android:textColor="?attr/colorOnSurfaceVariant"
                                 tools:text="@string/app_note_empty" />
@@ -315,11 +319,11 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/app_note_action"
-                        style="@style/Widget.AppTheme.Button.FilledTonalButton.Dense"
+                        style="@style/Widget.AppTheme.Button.TextButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="end"
-                        android:layout_marginTop="@dimen/padding_small"
+                        android:layout_gravity="center_vertical"
+                        android:layout_marginStart="@dimen/premium_space_8"
                         android:minHeight="@dimen/premium_button_min_height"
                         tools:text="@string/edit" />
 
@@ -334,7 +338,7 @@
                 <HorizontalScrollView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:fadeScrollbars="false"
+                    android:scrollbars="none"
                     android:overScrollMode="never"
                     android:layoutDirection="ltr">
 
@@ -344,8 +348,8 @@
                         android:layout_height="wrap_content"
                         android:nextFocusUp="@id/version"
                         android:nextFocusDown="@id/tag_cloud"
-                        android:paddingHorizontal="@dimen/padding_medium"
-                        android:paddingVertical="@dimen/padding_small"
+                        android:paddingHorizontal="@dimen/premium_space_8"
+                        android:paddingVertical="@dimen/premium_space_4"
                         tools:listItem="@layout/item_app_info_action" />
 
                 </HorizontalScrollView>
@@ -356,11 +360,10 @@
                 android:id="@+id/tag_cloud"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center_horizontal"
+                android:gravity="start"
                 android:nextFocusUp="@id/horizontal_layout"
                 android:nextFocusDown="@android:id/list"
-                android:paddingHorizontal="@dimen/padding_medium"
-                android:paddingTop="@dimen/padding_small"
+                android:paddingHorizontal="@dimen/premium_space_8"
                 tools:listItem="@layout/item_chip" />
 
             <androidx.recyclerview.widget.RecyclerView

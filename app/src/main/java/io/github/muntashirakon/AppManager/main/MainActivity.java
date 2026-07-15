@@ -143,22 +143,6 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     private boolean mExportVisibleAppList;
     private boolean mExportAppListExtended;
 
-    /** Async breakdown computation; cancelled when superseded by a new list. */
-    @Nullable
-    private java.util.concurrent.Future<?> mCategoryBreakdownFuture;
-
-    /**
-     * Per-package tracker-category counts cached across observer fires so that filter/
-     * sort changes only resum cached vectors instead of refetching every app's tracker
-     * components. Keyed by packageName (a package's tracker SDK list doesn't change
-     * unless the app is reinstalled). Values are small int[] sized to TrackerCategory
-     * .values().length to keep memory in check (~2KB at 600 apps × 8 categories × 4
-     * bytes). The cache lives for the activity's lifetime — package install/uninstall
-     * is rare and a stale entry just means a missed update we'll catch next session.
-     */
-    private final java.util.concurrent.ConcurrentHashMap<String, int[]> mTrackerCategoryCache =
-            new java.util.concurrent.ConcurrentHashMap<>();
-
     private MenuItem mAppUsageMenu;
 
     private final StoragePermission mStoragePermission = StoragePermission.init(this);
@@ -354,7 +338,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
 
         // Set observer
         showProgressIndicator(true);
-        updateMainListState(0, 0, 0);
+        updateMainListState(0);
         viewModel.getApplicationItems().observe(this, applicationItems -> {
             if (mAdapter != null) mAdapter.setDefaultList(applicationItems);
             showProgressIndicator(false);
@@ -370,19 +354,12 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                     }
                 });
             }
-            int trackerSum = 0;
-            int permGrantedSum = 0;
-            for (io.github.muntashirakon.AppManager.main.ApplicationItem item : applicationItems) {
-                if (item.trackerCount != null) trackerSum += item.trackerCount;
-                if (item.dangerousPermGranted != null) permGrantedSum += item.dangerousPermGranted;
-            }
-            updateMainListState(applicationItems.size(), trackerSum, permGrantedSum);
+            updateMainListState(applicationItems.size());
             if (mLastApplicationListLoadStatus != null && mLastApplicationListLoadStatus.isFailed()) {
                 showApplicationListLoadFailure(mLastApplicationListLoadStatus);
             }
             refreshSortChipLabel();
             refreshQuickFilterChips();
-            scheduleAggregateCategoryBreakdown(applicationItems, trackerSum);
         });
         viewModel.getApplicationListLoadStatus().observe(this, status -> {
             mLastApplicationListLoadStatus = status;
@@ -785,13 +762,6 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
 
     @Override
     protected void onDestroy() {
-        // Cancel the category-breakdown worker: it captures this Activity (getString, view writes)
-        // and runs hundreds of PackageInfo binder calls for large installs, so leaving it running
-        // keeps the destroyed Activity reachable until it finishes.
-        if (mCategoryBreakdownFuture != null) {
-            mCategoryBreakdownFuture.cancel(true);
-            mCategoryBreakdownFuture = null;
-        }
         // Drop any pending debounced search so it can't fire into a destroyed activity.
         if (mSearchView != null && mPendingSearch != null) {
             mSearchView.removeCallbacks(mPendingSearch);
@@ -811,162 +781,6 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             {R.id.chip_rules, MainListOptions.FILTER_APPS_WITH_RULES},
             {R.id.chip_granted_perms, MainListOptions.FILTER_APPS_WITH_GRANTED_PERMS},
     };
-
-    /**
-     * Walk the visible apps on a worker thread, fetch each one's tracker components,
-     * categorize via TrackerCategory, and append a breakdown ("320 ad · 280 analytics
-     * · 191 push") to the list status line. Runs on a background thread because each
-     * app needs a PackageInfo lookup + Aho-Corasick search per component — for a
-     * 600-app list that's a noticeable burst we don't want on the UI thread.
-     *
-     * <p>Cancels any in-flight computation before starting a new one so a fast filter
-     * switch doesn't queue redundant passes. No caching — the visible set changes on
-     * every filter/sort, so a fresh pass is always correct.
-     */
-    private void scheduleAggregateCategoryBreakdown(
-            @NonNull java.util.List<io.github.muntashirakon.AppManager.main.ApplicationItem> items,
-            int trackerSum) {
-        if (mCategoryBreakdownFuture != null) {
-            mCategoryBreakdownFuture.cancel(true);
-            mCategoryBreakdownFuture = null;
-        }
-        if (isApplicationListLoadFailed()) return;
-        if (trackerSum == 0 || items.isEmpty()) return;
-        // Snapshot the list for the worker thread.
-        java.util.List<io.github.muntashirakon.AppManager.main.ApplicationItem> snapshot =
-                new java.util.ArrayList<>(items);
-        // Show a placeholder progress indicator on the status line so users know
-        // the breakdown is in flight rather than missing. Replaced by the real
-        // breakdown the moment the worker finishes.
-        showBreakdownProgress();
-        final int categoryCount = io.github.muntashirakon.AppManager.rules.compontents
-                .TrackerCategory.values().length;
-        mCategoryBreakdownFuture = io.github.muntashirakon.AppManager.utils.ThreadUtils
-                .postOnBackgroundThread(() -> {
-            int[] totals = new int[categoryCount];
-            for (io.github.muntashirakon.AppManager.main.ApplicationItem appItem : snapshot) {
-                if (Thread.currentThread().isInterrupted()) return;
-                if (appItem.trackerCount == null || appItem.trackerCount == 0
-                        || !appItem.isInstalled) continue;
-                int[] perApp = mTrackerCategoryCache.get(appItem.packageName);
-                if (perApp == null) {
-                    perApp = computeTrackerCategoriesForPackage(appItem, categoryCount);
-                    if (perApp != null) {
-                        mTrackerCategoryCache.put(appItem.packageName, perApp);
-                    }
-                }
-                if (perApp == null) continue;
-                for (int i = 0; i < categoryCount; i++) {
-                    totals[i] += perApp[i];
-                }
-            }
-            if (Thread.currentThread().isInterrupted()) return;
-            StringBuilder sb = new StringBuilder();
-            io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory[] cats =
-                    io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory.values();
-            for (int i = 0; i < categoryCount; i++) {
-                if (cats[i] == io.github.muntashirakon.AppManager.rules.compontents
-                        .TrackerCategory.OTHER) continue;
-                if (totals[i] == 0) continue;
-                if (sb.length() > 0) sb.append(" · ");
-                sb.append(totals[i]).append(' ').append(getString(cats[i].getLabelRes())
-                        .toLowerCase(java.util.Locale.ROOT));
-            }
-            String breakdown = sb.length() == 0 ? null : sb.toString();
-            io.github.muntashirakon.AppManager.utils.ThreadUtils.postOnMainThread(() -> {
-                if (mListStatusView == null || isDestroyed()) return;
-                if (isApplicationListLoadFailed()) return;
-                if (breakdown == null) {
-                    // Only OTHER: clear the placeholder and leave the base line.
-                    clearBreakdownProgress();
-                    return;
-                }
-                CharSequence current = mListStatusView.getText();
-                if (current == null || current.length() == 0) return;
-                // Strip our placeholder line if present before appending.
-                String currentStr = current.toString();
-                int newline = currentStr.indexOf('\n');
-                String base = newline >= 0 ? currentStr.substring(0, newline) : currentStr;
-                String statusWithBreakdown = getString(R.string.main_status_with_category_breakdown,
-                        base, breakdown);
-                mListStatusView.setText(statusWithBreakdown);
-                setListStatusContentDescription(statusWithBreakdown);
-            });
-        });
-    }
-
-    /**
-     * Compute per-package category vector. Indexed by {@link io.github.muntashirakon
-     * .AppManager.rules.compontents.TrackerCategory#ordinal()} so the caller can sum
-     * cheaply across many apps. Returns {@code null} on PackageInfo lookup failure.
-     */
-    @Nullable
-    private int[] computeTrackerCategoriesForPackage(
-            @NonNull io.github.muntashirakon.AppManager.main.ApplicationItem appItem,
-            int categoryCount) {
-        int userId = appItem.userIds != null && appItem.userIds.length > 0
-                ? appItem.userIds[0]
-                : android.os.UserHandleHidden.myUserId();
-        android.content.pm.PackageInfo pi;
-        try {
-            pi = io.github.muntashirakon.AppManager.compat.PackageManagerCompat.getPackageInfo(
-                    appItem.packageName,
-                    android.content.pm.PackageManager.GET_ACTIVITIES
-                            | android.content.pm.PackageManager.GET_SERVICES
-                            | android.content.pm.PackageManager.GET_RECEIVERS
-                            | android.content.pm.PackageManager.GET_PROVIDERS,
-                    userId);
-        } catch (Throwable t) {
-            return null;
-        }
-        if (pi == null) return null;
-        int[] vec = new int[categoryCount];
-        java.util.Map<String, io.github.muntashirakon.AppManager.rules.RuleType> trackers =
-                io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils
-                        .getTrackerComponentsForPackage(pi);
-        for (String componentName : trackers.keySet()) {
-            String vendor = io.github.muntashirakon.AppManager.rules.compontents
-                    .ComponentUtils.getTrackerLabel(componentName);
-            io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory cat =
-                    io.github.muntashirakon.AppManager.rules.compontents
-                            .TrackerCategory.categorize(vendor);
-            vec[cat.ordinal()]++;
-        }
-        return vec;
-    }
-
-    /**
-     * Append a "Calculating breakdown…" placeholder to the status line so the user
-     * knows the second-line breakdown is in flight, not missing. Replaced by the
-     * real categories the moment the worker finishes; cleared when categorization
-     * yields nothing useful.
-     */
-    private void showBreakdownProgress() {
-        if (mListStatusView == null) return;
-        CharSequence current = mListStatusView.getText();
-        if (current == null || current.length() == 0) return;
-        String currentStr = current.toString();
-        // Avoid stacking multiple placeholders if observer fires re-entrantly.
-        int newline = currentStr.indexOf('\n');
-        String base = newline >= 0 ? currentStr.substring(0, newline) : currentStr;
-        String status = getString(R.string.main_status_with_category_breakdown,
-                base, getString(R.string.main_status_breakdown_calculating));
-        mListStatusView.setText(status);
-        setListStatusContentDescription(status);
-    }
-
-    private void clearBreakdownProgress() {
-        if (mListStatusView == null) return;
-        CharSequence current = mListStatusView.getText();
-        if (current == null) return;
-        String currentStr = current.toString();
-        int newline = currentStr.indexOf('\n');
-        if (newline >= 0) {
-            String base = currentStr.substring(0, newline);
-            mListStatusView.setText(base);
-            setListStatusContentDescription(base);
-        }
-    }
 
     private void maybeShowOnboarding() {
         if (AppPref.consumeDeviceLocalResetNotice()) {
@@ -1064,7 +878,9 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     private void refreshGuidedControls() {
         Chip guideChip = findViewById(R.id.chip_guide);
         if (guideChip != null) {
-            guideChip.setVisibility(Prefs.Experience.isGuidedModeEnabled() ? View.VISIBLE : View.GONE);
+            // The guide remains available from the overflow menu; keeping it out of the
+            // quick-filter row prevents a one-time learning aid from crowding daily controls.
+            guideChip.setVisibility(View.GONE);
         }
     }
 
@@ -1380,7 +1196,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         } else mProgressIndicator.hide();
     }
 
-    private void updateMainListState(int displayedItemCount, int trackerSum, int permGrantedSum) {
+    private void updateMainListState(int displayedItemCount) {
         if (viewModel == null || mEmptyState == null) {
             return;
         }
@@ -1400,62 +1216,12 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                 base = getResources().getQuantityString(R.plurals.main_status_showing_apps,
                         totalItemCount, displayedItemCount, totalItemCount);
             }
-            // Build suffix incrementally so we can chain '· N trackers · M dangerous perms'.
-            StringBuilder line = new StringBuilder(base);
-            if (trackerSum > 0) {
-                line.append(" · ").append(getResources().getQuantityString(
-                        R.plurals.main_status_tracker_suffix, trackerSum, trackerSum));
-            }
-            if (permGrantedSum > 0) {
-                line.append(" · ").append(getResources().getQuantityString(
-                        R.plurals.main_status_perm_suffix, permGrantedSum, permGrantedSum));
-            }
-            String statusLine = line.toString();
-            boolean canFilterTrackers = trackerSum > 0
-                    && !viewModel.hasFilterFlag(MainListOptions.FILTER_APPS_WITH_TRACKERS);
-            boolean canFilterPermissions = permGrantedSum > 0
-                    && !viewModel.hasFilterFlag(MainListOptions.FILTER_APPS_WITH_GRANTED_PERMS);
-            String displayStatusLine = statusLine;
-            if (Prefs.Experience.isGuidedModeEnabled()) {
-                int hintRes = canFilterTrackers ? R.string.main_status_guided_trackers_hint
-                        : canFilterPermissions ? R.string.main_status_guided_permissions_hint
-                        : R.string.main_status_guided_details_hint;
-                displayStatusLine = getString(R.string.main_status_with_guided_hint,
-                        statusLine, getString(hintRes));
-            }
-            mListStatusView.setText(displayStatusLine);
-            // Tap-to-filter shortcut: prefers trackers when present (the bigger user
-            // goal), falls back to perms-granted otherwise. No-op when both filters
-            // are already on; user uses the Clear chip to undo.
-            if (canFilterTrackers) {
-                mListStatusView.setClickable(true);
-                mListStatusView.setFocusable(true);
-                setListStatusActionable(true);
-                mListStatusActionHint = getString(R.string.main_status_filter_trackers_a11y);
-                setListStatusContentDescription(displayStatusLine);
-                mListStatusView.setOnClickListener(v -> {
-                    if (viewModel == null) return;
-                    viewModel.addFilterFlag(MainListOptions.FILTER_APPS_WITH_TRACKERS);
-                    refreshQuickFilterChips();
-                });
-            } else if (canFilterPermissions) {
-                mListStatusView.setClickable(true);
-                mListStatusView.setFocusable(true);
-                setListStatusActionable(true);
-                mListStatusActionHint = getString(R.string.main_status_filter_permissions_a11y);
-                setListStatusContentDescription(displayStatusLine);
-                mListStatusView.setOnClickListener(v -> {
-                    if (viewModel == null) return;
-                    viewModel.addFilterFlag(MainListOptions.FILTER_APPS_WITH_GRANTED_PERMS);
-                    refreshQuickFilterChips();
-                });
-            } else {
-                mListStatusView.setOnClickListener(null);
-                mListStatusView.setClickable(false);
-                setListStatusActionable(false);
-                mListStatusActionHint = null;
-                setListStatusContentDescription(displayStatusLine);
-            }
+            mListStatusView.setText(base);
+            mListStatusView.setOnClickListener(null);
+            mListStatusView.setClickable(false);
+            setListStatusActionable(false);
+            mListStatusActionHint = null;
+            setListStatusContentDescription(base);
         }
         if (displayedItemCount > 0) {
             return;
@@ -1485,10 +1251,6 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
 
     private void showApplicationListLoadFailure(@NonNull MainViewModel.AppListLoadStatus status) {
         showProgressIndicator(false);
-        if (mCategoryBreakdownFuture != null) {
-            mCategoryBreakdownFuture.cancel(true);
-            mCategoryBreakdownFuture = null;
-        }
         if (mSwipeRefresh != null) {
             mSwipeRefresh.setRefreshing(false);
         }

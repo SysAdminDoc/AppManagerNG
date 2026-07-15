@@ -5,9 +5,9 @@
     <dimen name="main_list_icon_size">44dp</dimen>
     <dimen name="main_list_icon_column_width">48dp</dimen>
     <dimen name="main_list_icon_margin_end">12dp</dimen>
-    <dimen name="main_list_min_height">88dp</dimen>
-    <dimen name="main_list_card_margin_vertical">3dp</dimen>
-    <dimen name="main_list_padding_vertical">12dp</dimen>
+    <dimen name="main_list_min_height">76dp</dimen>
+    <dimen name="main_list_card_margin_vertical">0dp</dimen>
+    <dimen name="main_list_padding_vertical">10dp</dimen>
     <dimen name="main_list_title_badge_padding_end">32dp</dimen>
     <dimen name="main_list_badge_min_height">28dp</dimen>
     <dimen name="main_list_badge_min_width">36dp</dimen>
@@ -16,7 +16,7 @@
     <dimen name="main_list_badge_padding_vertical">3dp</dimen>
     <dimen name="main_list_badge_corner_radius">8dp</dimen>
     <dimen name="main_list_badge_stroke_width">1dp</dimen>
-    <dimen name="main_status_min_height">44dp</dimen>
+    <dimen name="main_status_min_height">36dp</dimen>
     <dimen name="main_status_line_spacing">2dp</dimen>
     <dimen name="main_status_corner_radius">10dp</dimen>
     <dimen name="main_empty_icon_container_size">88dp</dimen>

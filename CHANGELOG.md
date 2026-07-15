@@ -100,6 +100,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   shown only once and cannot be recovered.
 
 ### Changed
+- Simplified the shared visual system around compact 17/14/13sp hierarchy,
+  borderless divider-led lists and preferences, a one-line main count/filter
+  control band, concise app metadata, and at most two inline row statuses. App
+  detail now uses an inline identity header, command strip, dot-led facts,
+  collapsible component diagnostics, quieter selection states, and flatter
+  bloatware and usage drill-downs instead of nested cards and status pills.
 - Snapshot preference-merge coverage now exercises the shipping
   `SharedPreferences.Editor` import path; the unused direct-XML merger was
   removed so tests cannot pass against behavior the app never runs.

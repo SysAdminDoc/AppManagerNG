@@ -53,7 +53,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/type"
-                    style="@style/Widget.AppTheme.Chip.MainSuggestion"
+                    style="@style/Widget.AppTheme.Chip.DetailFact"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="start"
@@ -63,6 +63,8 @@
                     android:minHeight="@dimen/premium_chip_min_height"
                     android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelSmall"
                     android:textAllCaps="true"
+                    app:chipIcon="@drawable/ic_cctv_off"
+                    app:chipIconVisible="true"
                     tools:text="Firebase Analytics · Analytics" />
 
                 <com.google.android.material.textview.MaterialTextView
@@ -89,10 +91,13 @@
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/details_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="end">
+            android:gravity="end"
+            android:visibility="gone"
+            tools:visibility="visible">
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/softInput"
@@ -126,6 +131,8 @@
             android:layout_height="wrap_content"
             android:textIsSelectable="true"
             android:textAppearance="?attr/textAppearanceBodySmall"
+            android:visibility="gone"
+            tools:visibility="visible"
             tools:text="@tools:sample/lorem" />
 
         <com.google.android.material.textview.MaterialTextView
@@ -144,16 +151,38 @@
             android:gravity="center_vertical"
             android:textIsSelectable="true"
             android:textAppearance="?attr/textAppearanceBodySmall"
+            android:visibility="gone"
+            tools:visibility="visible"
             tools:text="@tools:sample/lorem" />
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/name"
+        <androidx.appcompat.widget.LinearLayoutCompat
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="monospace"
-            android:textIsSelectable="true"
-            android:textAppearance="?attr/textAppearanceBodySmall"
-            tools:text="@tools:sample/lorem" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/name"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="middle"
+                android:fontFamily="monospace"
+                android:maxLines="1"
+                android:textIsSelectable="true"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                tools:text="@tools:sample/lorem" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/details_toggle"
+                style="@style/Widget.AppTheme.Button.IconButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:contentDescription="@string/show_component_details"
+                app:icon="@drawable/ic_expand_more"
+                app:iconSize="@dimen/premium_icon_20" />
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat
             android:layout_width="match_parent"
@@ -163,12 +192,11 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/launch"
-                style="@style/Widget.AppTheme.Button.OutlinedButton.Dense"
+                style="@style/Widget.AppTheme.Button.TextButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/padding_small"
-                android:layout_marginVertical="@dimen/padding_very_small"
                 android:layout_weight="1"
+                android:minHeight="@dimen/premium_button_min_height"
                 android:text="@string/launch"
                 android:maxLines="1"
                 app:icon="@drawable/ic_play_arrow"
@@ -177,12 +205,11 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/edit_shortcut_btn"
-                style="@style/Widget.AppTheme.Button.OutlinedButton.Dense"
+                style="@style/Widget.AppTheme.Button.TextButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/padding_small"
-                android:layout_marginVertical="@dimen/padding_very_small"
                 android:layout_weight="1"
+                android:minHeight="@dimen/premium_button_min_height"
                 android:text="@string/create_shortcut"
                 android:maxLines="1"
                 app:icon="@drawable/ic_shortcut_record"
@@ -191,5 +218,12 @@
         </androidx.appcompat.widget.LinearLayoutCompat>
 
     </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <com.google.android.material.divider.MaterialDivider
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        app:dividerInsetStart="@dimen/premium_space_16"
+        app:dividerInsetEnd="@dimen/premium_space_16" />
 
 </com.google.android.material.card.MaterialCardView>

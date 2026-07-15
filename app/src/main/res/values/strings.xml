@@ -47,16 +47,16 @@
     <string name="loading">Loading…</string>
     <string name="main_status_loading">Loading apps…</string>
     <plurals name="main_status_showing_apps">
-        <item quantity="one">Showing %1$d of %2$d app</item>
-        <item quantity="other">Showing %1$d of %2$d apps</item>
+        <item quantity="one">%1$d/%2$d app</item>
+        <item quantity="other">%1$d/%2$d apps</item>
     </plurals>
     <plurals name="cleanup_items_failed_suffix">
         <item quantity="one">%1$d item could not be deleted</item>
         <item quantity="other">%1$d items could not be deleted</item>
     </plurals>
     <plurals name="main_status_all_apps">
-        <item quantity="one">Showing %1$d app</item>
-        <item quantity="other">Showing %1$d apps</item>
+        <item quantity="one">%1$d app</item>
+        <item quantity="other">%1$d apps</item>
     </plurals>
     <string name="main_status_with_tracker_suffix"><xliff:g id="status" example="Showing 600 apps">%1$s</xliff:g> · <xliff:g id="trackers" example="4521 trackers">%2$s</xliff:g></string>
     <string name="main_status_with_category_breakdown" translatable="false"><xliff:g id="base" example="Showing 600 apps · 4521 trackers">%1$s</xliff:g>\n<xliff:g id="categories" example="320 ad · 280 analytics">%2$s</xliff:g></string>
@@ -86,8 +86,8 @@
     </plurals>
     <string name="tag_dangerous_perms"><xliff:g id="granted" example="3">%1$d</xliff:g>/<xliff:g id="total" example="8">%2$d</xliff:g> dangerous permissions</string>
     <string name="perms_cta_title"><xliff:g id="granted" example="3">%1$d</xliff:g> of <xliff:g id="total" example="8">%2$d</xliff:g> dangerous permissions granted</string>
-    <string name="perms_cta_subtitle_can_revoke">Revoke every granted dangerous permission for this app. You can re-grant individual permissions from Android Settings if needed.</string>
-    <string name="perms_cta_subtitle_no_privilege">Permission revocation requires root or ADB mode. Switch modes in Settings &gt; Mode of operation.</string>
+    <string name="perms_cta_subtitle_can_revoke">Revoke all granted dangerous permissions.</string>
+    <string name="perms_cta_subtitle_no_privilege">Root or ADB mode required.</string>
     <string name="revoke">Revoke</string>
     <string name="view">View</string>
     <plurals name="installer_tracker_callout">
@@ -2006,6 +2006,8 @@
     <string name="file">File</string>
     <string name="expand_all">Expand all</string>
     <string name="collapse_all">Collapse all</string>
+    <string name="show_component_details">Show component details</string>
+    <string name="hide_component_details">Hide component details</string>
     <string name="pause_unpause">Play/pause</string>
     <string name="audio_player_play">Play</string>
     <string name="audio_player_pause">Pause</string>
@@ -2360,8 +2362,8 @@
         <item quantity="one">All <xliff:g id="count" example="1">%1$d</xliff:g> tracker blocked</item>
         <item quantity="other">All <xliff:g id="count" example="24">%1$d</xliff:g> trackers blocked</item>
     </plurals>
-    <string name="tracker_cta_subtitle_unblocked">Tap to block ad, analytics and crash-reporting components in this app.</string>
-    <string name="tracker_cta_subtitle_all_blocked">Components are blocked from running. Tap to restore.</string>
+    <string name="tracker_cta_subtitle_unblocked">Block ad, analytics, and crash-reporting components.</string>
+    <string name="tracker_cta_subtitle_all_blocked">Blocked from running. Restore if needed.</string>
     <string name="tracker_chip_safe_to_block_hint">Known tracking, advertising or analytics SDK. Safe to disable for most apps.</string>
     <string name="component_switch_allowed_a11y">Component allowed: <xliff:g id="component" example=".AnalyticsService">%1$s</xliff:g>. Double tap to block.</string>
     <string name="component_switch_blocked_a11y">Component blocked: <xliff:g id="component" example=".AnalyticsService">%1$s</xliff:g>. Double tap to allow.</string>

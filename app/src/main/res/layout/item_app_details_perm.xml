@@ -108,4 +108,11 @@
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 
+    <com.google.android.material.divider.MaterialDivider
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        app:dividerInsetStart="@dimen/premium_space_16"
+        app:dividerInsetEnd="@dimen/premium_space_16" />
+
 </com.google.android.material.card.MaterialCardView>
