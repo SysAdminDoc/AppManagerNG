@@ -22,6 +22,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   device-specific tables (app inventory, scan results, backup rows) stay excluded.
 
 ### Security
+- The maintainer-local release preflight now blocks on OWASP Dependency-Check
+  scanner failures or unsuppressed CVSS 9.0+ findings and retains its HTML and
+  SARIF reports plus a hashed audit receipt with the release assets.
 - VirusTotal requests now use finite connect/read deadlines, a total upload
   deadline, disabled redirects, and 1 MiB response caps. Large-file delegated
   URLs are accepted only from the HTTPS `www.virustotal.com` origin, preventing

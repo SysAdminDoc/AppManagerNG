@@ -60,8 +60,8 @@ def dependencyCheckFailBuildOnCvss = Float.parseFloat(
 
 dependencyCheck {
     formats = ['HTML', 'SARIF']
-    // Local runs default to report-only (11.0); pass
-    // -PdependencyCheckFailBuildOnCvss=9.0 when a blocking critical-CVE audit is needed.
+    // Ad-hoc local runs default to report-only (11.0). The maintainer release scripts
+    // always pass -PdependencyCheckFailBuildOnCvss=9.0 and preserve both reports.
     failBuildOnCVSS = dependencyCheckFailBuildOnCvss
     // Suppress vendored-AAR false positives via XML at this path; create on first audit pass.
     suppressionFile = file('config/owasp-suppressions.xml').exists()
