@@ -74,6 +74,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   shown only once and cannot be recovered.
 
 ### Changed
+- Distribution packets now derive tag, commit, version, selected APK metadata,
+  and signing identity from one machine-readable published-release receipt.
+  The release consistency gate validates the receipt against Gradle and Git and
+  rejects stale Markdown, YAML, artifact-size, or SHA-256 values.
 - Bumped the ARSCLib (binary XML / ARSC parser) dependency from the pinned
   commit `66051037ef` to the tagged `V1.4.0` release. The app compiles against it
   and the binary-XML decoder/encoder and manifest-parser test suites pass

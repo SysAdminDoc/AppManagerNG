@@ -4,7 +4,7 @@
 
 Status: packaging helper ready; listing blocked by current Accrescent policy
 and maintainer-only external access.
-Checked: 2026-05-26.
+Checked: 2026-07-15.
 
 This packet is the source-of-truth for preparing AppManagerNG's Accrescent
 submission. It is not proof that an external developer-console upload has been
@@ -16,10 +16,11 @@ product flavor or an explicit policy exception.
 
 - Repository: `https://github.com/SysAdminDoc/AppManagerNG`
 - Tag: `v0.6.5`
+- Commit: `fc03e0332c834c161fcd419525e8530c23f22706`
 - Package name: `io.github.sysadmindoc.AppManagerNG`
 - Display name: `AppManagerNG`
 - Version name: `0.6.5`
-- Version code: `7`
+- Version code: `13`
 - Target SDK: `36`
 - Release: `https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.6.5`
 - Signing certificate SHA-256:
@@ -64,8 +65,10 @@ app/build/outputs/accrescent/AppManagerNG-0.6.5-floss-accrescent.apks.sha256
   and the public docs say new allowlist requests are not being accepted.
 - AppManagerNG is developer-signed; Accrescent does not remotely sign apps.
 - The published signing certificate is documented in `docs/fingerprints.txt`.
+- Published-release values are pinned in
+  `docs/distribution/release-receipt.json` and verified against this packet.
 - The generated APK set must stay under 128 MiB; the current universal
-  `flossRelease` APK is 29,496,173 bytes, so the split APK set is expected to
+  `flossRelease` APK is 18,948,513 bytes, so the split APK set is expected to
   fit but must be checked at generation time.
 - The current 512 x 512 PNG icon is present.
 - The current merged `flossRelease` manifest does not set
@@ -100,7 +103,7 @@ external filing:
 2. Ask Accrescent reviewers for an explicit exception before building/uploading.
 3. Keep the row blocked until Accrescent policy changes.
 
-Relevant Accrescent references checked on 2026-05-26:
+Relevant Accrescent references checked on 2026-07-15:
 
 - `https://accrescent.app/docs/guide/getting-started/new-app.html`
 - `https://accrescent.app/docs/guide/publish/requirements.html`

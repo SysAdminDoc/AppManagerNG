@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/SysAdminDoc/AppManagerNG",
+  "releaseUrl": "https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.6.5",
+  "publishedAt": "2026-07-10T06:42:49Z",
+  "tag": "v0.6.5",
+  "tagObjectSha": "bd1bb4565fa58611bbda7aaaf570b7c3f766bcf8",
+  "tagCommit": "fc03e0332c834c161fcd419525e8530c23f22706",
+  "versionName": "0.6.5",
+  "versionCode": 13,
+  "packageName": "io.github.sysadmindoc.AppManagerNG",
+  "targetSdk": 36,
+  "selectedArtifact": {
+    "name": "AppManagerNG-0.6.5-floss-release.apk",
+    "size": 18948513,
+    "sha256": "986da6fc19e325c5fe35d03523021fa30dd2b483466c5f98a3a8c7c64d6a5fa0",
+    "url": "https://github.com/SysAdminDoc/AppManagerNG/releases/download/v0.6.5/AppManagerNG-0.6.5-floss-release.apk"
+  },
+  "signingCertificateSha256": "215fb470632ea6cd59a4baab350a9e0b99ad110fddfaf5a9ea6461e5d0c2386c"
+}
