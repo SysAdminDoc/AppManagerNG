@@ -3,7 +3,7 @@
 # IzzyOnDroid Listing Packet
 
 Status: ready for maintainer submission.
-Checked: 2026-06-13.
+Checked: 2026-07-15.
 
 This packet is the source-of-truth for the IzzyOnDroid inclusion request. It is
 not proof that the external issue has been filed.
@@ -12,11 +12,16 @@ not proof that the external issue has been filed.
 
 - Repository: `https://github.com/SysAdminDoc/AppManagerNG`
 - Tag: `v0.6.5`
+- Commit: `fc03e0332c834c161fcd419525e8530c23f22706`
 - Package name: `io.github.sysadmindoc.AppManagerNG`
 - Display name: `AppManagerNG`
+- Version name: `0.6.5`
+- Version code: `13`
 - Preferred APK: `AppManagerNG-0.6.5-floss-release.apk`
-- APK size: 29,331,150 bytes, under IzzyOnDroid's current 30 MB rule of thumb.
-- SHA-256: `d4ad0cdbf7505dcff4b6f03d1018021f8e9395b98c0028e65751cb106a83ecde`
+- APK size: 18,948,513 bytes, under IzzyOnDroid's current 30 MB rule of thumb.
+- SHA-256: `986da6fc19e325c5fe35d03523021fa30dd2b483466c5f98a3a8c7c64d6a5fa0`
+- Signing certificate SHA-256:
+  `21:5F:B4:70:63:2E:A6:CD:59:A4:BA:AB:35:0A:9E:0B:99:AD:11:0F:DD:FA:F5:A9:EA:64:61:E5:D0:C2:38:6C`
 - Release: `https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.6.5`
 
 The `floss` artifact is the listing target. The `full` artifact also exists on
@@ -27,7 +32,7 @@ surfaces behind user opt-in gates and should not be the IzzyOnDroid artifact.
 
 The build produces per-ABI splits (`armeabi-v7a`, `arm64-v8a`, `x86`, `x86_64`)
 plus a universal APK. Per-ABI splits contain only the native libraries for one
-architecture and are strictly smaller than the universal APK (29.3 MB measured at
+architecture and are strictly smaller than the universal APK (18,948,513 bytes measured at
 v0.6.5). The local release build enforces a hard size gate
 (`APK_SIZE_LIMIT_BYTES`, default 30 MiB) per APK — any split exceeding it fails
 the build. IzzyOnDroid should be configured to match the universal
@@ -76,7 +81,7 @@ Preferred APK:
 AppManagerNG-0.6.5-floss-release.apk
 
 APK SHA-256:
-d4ad0cdbf7505dcff4b6f03d1018021f8e9395b98c0028e65751cb106a83ecde
+986da6fc19e325c5fe35d03523021fa30dd2b483466c5f98a3a8c7c64d6a5fa0
 
 Notes:
 - AppManagerNG is a maintained fork of MuntashirAkon/AppManager with a unique
@@ -89,6 +94,8 @@ Notes:
   rationale is documented at docs/distribution/package-visibility.md.
 - Reproducible-release verification is documented at
   docs/distribution/reproducible-builds.md.
+- Published tag, commit, version, artifact, hash, size, and signing identity are
+  pinned in docs/distribution/release-receipt.json.
 ```
 
 ## Maintainer Action Required
