@@ -119,6 +119,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Ported from upstream App Manager (`133b5acb7f`).
 
 ### Fixed
+- Logcat reader resume/restart now wakes every waiter consistently, and APK
+  change detection uses an eagerly initialized singleton without a racy lazy
+  check.
 - Batch queue targets are now copied and sanitized when created, deserialized,
   or replaced. Reading users no longer mutates the queue, so journal JSON and
   the executed target set cannot diverge based on getter call order.

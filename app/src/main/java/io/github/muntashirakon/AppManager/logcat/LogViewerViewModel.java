@@ -210,7 +210,7 @@ public class LogViewerViewModel extends AndroidViewModel {
                     Log.e(TAG, e);
                 } finally {
                     mPaused = false;
-                    mLock.notify();
+                    mLock.notifyAll();
                 }
             }
         });
@@ -240,7 +240,7 @@ public class LogViewerViewModel extends AndroidViewModel {
         mExecutor.submit(() -> {
             synchronized (mLock) {
                 mPaused = false;
-                mLock.notify();
+                mLock.notifyAll();
             }
         });
     }
