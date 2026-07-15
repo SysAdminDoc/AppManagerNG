@@ -16,6 +16,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Pattern;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
@@ -270,6 +271,18 @@ public class BackupManagerTest {
         BackupException majorityFailed = assertThrows(BackupException.class,
                 () -> RestoreOp.requireAcceptableExtraRestoreResult(1, 2));
         assertTrue(majorityFailed.getMessage().contains("The restore may be partial"));
+    }
+
+    @Test
+    public void apkExtractionFiltersMatchMetadataNamesLiterally() {
+        String[] filters = RestoreOp.getLiteralApkExtractionFilters(new String[]{
+                "base.apk", "split_config.arm64_v8a.apk", "split[feature]+.apk"
+        });
+
+        assertTrue(Pattern.compile(filters[0]).matcher("base.apk").matches());
+        assertFalse(Pattern.compile(filters[0]).matcher("baseXapk").matches());
+        assertTrue(Pattern.compile(filters[2]).matcher("split[feature]+.apk").matches());
+        assertFalse(Pattern.compile(filters[2]).matcher("splitf.apk").matches());
     }
 
     @Test
