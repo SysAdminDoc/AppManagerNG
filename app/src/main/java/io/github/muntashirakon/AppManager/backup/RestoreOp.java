@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.ApkFile;
@@ -451,7 +452,8 @@ class RestoreOp implements Closeable {
             }
             // Extract apk files to the package staging directory
             try {
-                TarUtils.extract(mBackupInfo.tarType, backupSourceFiles, packageStagingDirectory, allApkNames, null, null);
+                TarUtils.extract(mBackupInfo.tarType, backupSourceFiles, packageStagingDirectory,
+                        getLiteralApkExtractionFilters(allApkNames), null, null);
             } catch (Exception th) {
                 throw new BackupException("Failed to extract the apk file(s).", th);
             }
@@ -520,6 +522,15 @@ class RestoreOp implements Closeable {
                 throw new BackupException("Apparently the install wasn't complete in the previous section.", e);
             }
         }
+    }
+
+    @NonNull
+    static String[] getLiteralApkExtractionFilters(@NonNull String[] apkNames) {
+        String[] filters = new String[apkNames.length];
+        for (int i = 0; i < apkNames.length; ++i) {
+            filters[i] = Pattern.quote(apkNames[i]);
+        }
+        return filters;
     }
 
     private void restoreKeyStore() throws BackupException {
