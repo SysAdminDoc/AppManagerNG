@@ -151,5 +151,19 @@ $sbomPath = Join-Path $publishDir "AppManagerNG-reproducible.cdx.json"
 Invoke-ReleaseSbomGeneration -SbomPath $sbomPath
 $assetLines += $sbomPath
 
+$python = Get-Command $PythonCmd -ErrorAction SilentlyContinue
+if ($null -eq $python) {
+    throw "Python command '$PythonCmd' was not found; cannot run the dependency CVE release gate."
+}
+& $python.Source "scripts\run_dependency_cve_gate.py" `
+    --gradle-cmd $GradleCmd `
+    --out-dir $publishDir
+if ($LASTEXITCODE -ne 0) {
+    throw "Blocking dependency CVE release gate failed."
+}
+$assetLines += (Join-Path $publishDir "dependency-check-report.html")
+$assetLines += (Join-Path $publishDir "dependency-check-report.sarif")
+$assetLines += (Join-Path $publishDir "dependency-cve-receipt.json")
+
 Set-Content -Path $combinedSha -Value $shaLines -Encoding ascii
 Set-Content -Path $assetList -Value $assetLines -Encoding ascii

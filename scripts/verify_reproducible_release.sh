@@ -106,3 +106,11 @@ sbom_path="$PUBLISH_DIR/AppManagerNG-reproducible.cdx.json"
 "$PYTHON_CMD" scripts/generate-cyclonedx-sbom.py --output "$sbom_path"
 "$PYTHON_CMD" scripts/generate-cyclonedx-sbom.py --check "$sbom_path"
 printf '%s\n' "$sbom_path" >> "$ASSET_LIST"
+
+"$PYTHON_CMD" scripts/run_dependency_cve_gate.py \
+    --gradle-cmd "$GRADLE_CMD" \
+    --out-dir "$PUBLISH_DIR"
+printf '%s\n' \
+    "$PUBLISH_DIR/dependency-check-report.html" \
+    "$PUBLISH_DIR/dependency-check-report.sarif" \
+    "$PUBLISH_DIR/dependency-cve-receipt.json" >> "$ASSET_LIST"
