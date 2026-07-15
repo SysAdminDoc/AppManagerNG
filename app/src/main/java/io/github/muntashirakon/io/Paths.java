@@ -319,7 +319,7 @@ public final class Paths {
             if (part.isEmpty() || part.equals(".")) continue;
             newParts.add(part);
         }
-        path = TextUtils.join(PATH_SEPARATOR, newParts);
+        path = joinPathParts(newParts);
         if (isAbsolute) {
             if (path.isEmpty()) {
                 return PATH_SEPARATOR;
@@ -359,11 +359,23 @@ public final class Paths {
                 newParts.pop();
             }
         }
-        path = TextUtils.join(PATH_SEPARATOR, newParts);
+        path = joinPathParts(newParts);
         if (isAbsolute) {
             return PATH_SEPARATOR + path;
         }
         return path.isEmpty() ? null : path;
+    }
+
+    @NonNull
+    private static String joinPathParts(@NonNull Iterable<String> parts) {
+        StringBuilder path = new StringBuilder();
+        for (String part : parts) {
+            if (path.length() > 0) {
+                path.append(PATH_SEPARATOR);
+            }
+            path.append(part);
+        }
+        return path.toString();
     }
 
     @AnyThread
@@ -416,7 +428,7 @@ public final class Paths {
         if (!newParts.isEmpty() && !newParts.peek().equals("..")) {
             newParts.pop();
         }
-        path = TextUtils.join(PATH_SEPARATOR, newParts);
+        path = joinPathParts(newParts);
         if (isAbsolute) {
             return PATH_SEPARATOR + path;
         }
@@ -435,7 +447,7 @@ public final class Paths {
             if (part.isEmpty() || part.equals(".")) continue;
             newParts.add(part);
         }
-        String name = TextUtils.join(PATH_SEPARATOR, newParts);
+        String name = joinPathParts(newParts);
         if (name.isEmpty()) {
             return path;
         }
@@ -470,7 +482,7 @@ public final class Paths {
                 newParts.push(lastPart.substring(0, lastIndexOfDot));
             }
         }
-        path = TextUtils.join(PATH_SEPARATOR, newParts);
+        path = joinPathParts(newParts);
         if (isAbsolute) {
             return PATH_SEPARATOR + path;
         }
