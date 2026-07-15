@@ -1366,39 +1366,6 @@ public final class SnapshotBundle {
 
     @NonNull
     @VisibleForTesting
-    static byte[] mergeSharedPreferencesXml(@NonNull byte[] currentBytes,
-                                            @NonNull byte[] incomingBytes)
-            throws SnapshotImportException {
-        if (currentBytes.length == 0) {
-            return incomingBytes;
-        }
-        try {
-            Document current = parseXmlMap(currentBytes);
-            Document incoming = parseXmlMap(incomingBytes);
-            Element currentMap = current.getDocumentElement();
-            Element incomingMap = incoming.getDocumentElement();
-            NodeList importedEntries = incomingMap.getChildNodes();
-            for (int i = 0; i < importedEntries.getLength(); ++i) {
-                Node importedNode = importedEntries.item(i);
-                if (!(importedNode instanceof Element)) {
-                    continue;
-                }
-                Element importedElement = (Element) importedNode;
-                String name = importedElement.getAttribute("name");
-                if (name == null || name.isEmpty()) {
-                    continue;
-                }
-                removePreferenceNode(currentMap, name);
-                currentMap.appendChild(current.importNode(importedElement, true));
-            }
-            return toXmlBytes(current);
-        } catch (IOException | ParserConfigurationException | SAXException | TransformerException e) {
-            throw new SnapshotImportException("Could not merge SharedPreferences XML: " + e.getMessage());
-        }
-    }
-
-    @NonNull
-    @VisibleForTesting
     static byte[] mergeRuleBytes(@NonNull byte[] currentBytes, @NonNull byte[] incomingBytes) {
         LinkedHashSet<String> rows = new LinkedHashSet<>();
         collectRuleRows(rows, currentBytes);
