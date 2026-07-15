@@ -60,11 +60,13 @@ public class ApkWhatsNewFinder {
 
     private static final int INFO_COUNT = 7;
 
-    private static ApkWhatsNewFinder sInstance;
+    private static final ApkWhatsNewFinder INSTANCE = new ApkWhatsNewFinder();
+
+    private ApkWhatsNewFinder() {
+    }
 
     public static ApkWhatsNewFinder getInstance() {
-        if (sInstance == null) sInstance = new ApkWhatsNewFinder();
-        return sInstance;
+        return INSTANCE;
     }
 
     /**
