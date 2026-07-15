@@ -119,6 +119,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Ported from upstream App Manager (`133b5acb7f`).
 
 ### Fixed
+- Batch queue targets are now copied and sanitized when created, deserialized,
+  or replaced. Reading users no longer mutates the queue, so journal JSON and
+  the executed target set cannot diverge based on getter call order.
 - Logcat `threadtime` parsing now uses anchored, possessive UID/PID/TID tokens,
   preventing long malformed native-crash lines from triggering a backtracking
   spike while retaining Android formats with and without the UID column.

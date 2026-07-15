@@ -314,8 +314,7 @@ public class BatchOpsService extends ForegroundService {
             case Activity.RESULT_FIRST_USER:  // Failed
                 Objects.requireNonNull(opResult);
                 Objects.requireNonNull(queueItem);
-                queueItem.setPackages(opResult.getFailedPackages());
-                queueItem.setUsers(opResult.getAssociatedUsers());
+                queueItem.setTargets(opResult.getFailedPackages(), opResult.getAssociatedUsers());
                 String detailsMessage = getString(R.string.full_stop_tap_to_see_details);
                 String message = getDesiredErrorString(this, queueItem.getOp(), opResult.getFailedPackages().size());
                 Intent intent = new Intent(this, BatchOpsResultsActivity.class);
