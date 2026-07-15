@@ -93,6 +93,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Ported from upstream App Manager (`133b5acb7f`).
 
 ### Fixed
+- App Usage refreshes now capture immutable date, interval, comparison, and user
+  inputs; cancel or supersede older work; and reject stale out-of-order results.
+  Partial multi-user results remain available, while an all-user query failure
+  is shown as a retryable error distinct from a successful empty interval.
 - Importing an encrypted OAndBackup no longer leaks the decrypted key material /
   OpenPGP binding on the common "keep imported files" path — the source crypto is
   now always released when the conversion finishes (which also removes a latent
