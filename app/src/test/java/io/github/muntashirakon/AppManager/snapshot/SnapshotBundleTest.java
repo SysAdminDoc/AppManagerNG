@@ -451,6 +451,16 @@ public class SnapshotBundleTest {
         assertTrue(SnapshotBundle.ALLOWED_PREF_NAMES.contains(AppNoteStore.PREFS_NAME));
     }
 
+    @Test
+    public void backupTagPoliciesAreIncludedWithOnlySchemaAndPolicyPayload() {
+        assertTrue(SnapshotBundle.ALLOWED_PREF_NAMES.contains("backup_tag_policies"));
+        assertTrue(SnapshotBundle.isAllowedPrefEntry("backup_tag_policies", "_schema", 1));
+        assertTrue(SnapshotBundle.isAllowedPrefEntry("backup_tag_policies", "policies", "[]"));
+        assertTrue(SnapshotBundle.isAllowedPrefEntry("backup_tag_policies", "destinations", "[]"));
+        assertFalse(SnapshotBundle.isAllowedPrefEntry("backup_tag_policies", "policies", 1));
+        assertFalse(SnapshotBundle.isAllowedPrefEntry("backup_tag_policies", "unexpected", "value"));
+    }
+
     // -----------------------------------------------------------------------
     // Sensitive-key boundary (P0): secrets must never be exported or imported
     // -----------------------------------------------------------------------

@@ -5,6 +5,9 @@ package io.github.muntashirakon.AppManager.backup;
 import static io.github.muntashirakon.AppManager.backup.BackupManager.KEYSTORE_PREFIX;
 
 import android.annotation.UserIdInt;
+import android.content.ContentResolver;
+import android.net.Uri;
+import android.util.Base64;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -20,7 +23,9 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -31,6 +36,7 @@ import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.logcat.helper.SaveLogHelper;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.PathReader;
 import io.github.muntashirakon.io.PathWriter;
@@ -38,6 +44,7 @@ import io.github.muntashirakon.io.Paths;
 
 public class BackupItems {
     public static final String BACKUP_DIRECTORY = "backups";
+    private static final String POLICY_VOLUME_DIRECTORY = "policy_volume";
     private static final String APK_SAVING_DIRECTORY = "apks";
 
     private static final String ICON_FILE = "icon.png";
@@ -57,32 +64,64 @@ public class BackupItems {
     }
 
     @NonNull
+    private static Path getBaseDirectory(@Nullable Uri destination, boolean create) throws IOException {
+        if (destination == null) return getBaseDirectory();
+        if (ContentResolver.SCHEME_FILE.equals(destination.getScheme())) {
+            return create ? Paths.get(destination).findOrCreateDirectory("AppManager")
+                    : Paths.get(destination).findFile("AppManager");
+        }
+        Path path = Paths.get(destination);
+        if (create && !path.exists()) path.mkdirs();
+        return path;
+    }
+
+    @NonNull
     public static BackupItem findBackupItem(@NonNull String relativeDir) throws FileNotFoundException {
-        return new BackupItem(getBaseDirectory().findFile(relativeDir));
+        Locator locator = decodeLocator(relativeDir);
+        try {
+            return new BackupItem(getBaseDirectory(locator.destination, false).findFile(locator.path), relativeDir);
+        } catch (FileNotFoundException e) {
+            throw e;
+        } catch (IOException e) {
+            FileNotFoundException exception = new FileNotFoundException("Could not resolve backup locator.");
+            exception.initCause(e);
+            throw exception;
+        }
     }
 
     @NonNull
     public static BackupItem findOrCreateBackupItem(@UserIdInt int userId, @Nullable String backupName, @NonNull String packageName) throws IOException {
+        return findOrCreateBackupItem(userId, backupName, packageName, null);
+    }
+
+    @NonNull
+    public static BackupItem findOrCreateBackupItem(@UserIdInt int userId, @Nullable String backupName,
+                                                    @NonNull String packageName,
+                                                    @Nullable Uri destination) throws IOException {
         Path backupPath;
         List<BackupItem> previousBackupItems = null;
         if (MetadataManager.getCurrentBackupMetaVersion() >= 5) {
             List<Backup> previousBackups = BackupUtils.retrieveBackupFromDb(userId, backupName, packageName);
             if (!previousBackups.isEmpty()) {
                 previousBackupItems = new ArrayList<>(previousBackups.size());
+                String destinationKey = encodeDestination(destination);
                 for (Backup backup : previousBackups) {
-                    previousBackupItems.add(backup.getItem());
+                    if (destinationKey.equals(getDestinationKey(backup.relativeDir))) {
+                        previousBackupItems.add(backup.getItem());
+                    }
                 }
             }
             String backupUuid = UUID.randomUUID().toString();
-            backupPath = getBaseDirectory()
+            backupPath = getBaseDirectory(destination, true)
                     .findOrCreateDirectory(BACKUP_DIRECTORY)
                     .findOrCreateDirectory(backupUuid);
         } else {
-            backupPath = getBaseDirectory()
+            backupPath = getBaseDirectory(destination, true)
                     .findOrCreateDirectory(packageName)
                     .findOrCreateDirectory(BackupUtils.getV4BackupName(userId, backupName));
         }
-        BackupItem backupItem = new BackupItem(backupPath, true);
+        BackupItem backupItem = new BackupItem(backupPath, true,
+                encodeRelativeDir(destination, relativePathFor(backupPath)));
         backupItem.setBackupName(BackupUtils.getCompatBackupName(backupName));
         backupItem.setPreviousBackups(previousBackupItems);
         return backupItem;
@@ -90,14 +129,21 @@ public class BackupItems {
 
     @NonNull
     public static BackupItem createBackupItemGracefully(@UserIdInt int userId, @Nullable String backupName, @NonNull String packageName) throws IOException {
+        return createBackupItemGracefully(userId, backupName, packageName, null);
+    }
+
+    @NonNull
+    public static BackupItem createBackupItemGracefully(@UserIdInt int userId, @Nullable String backupName,
+                                                        @NonNull String packageName,
+                                                        @Nullable Uri destination) throws IOException {
         Path backupPath;
         if (MetadataManager.getCurrentBackupMetaVersion() >= 5) {
             String backupUuid = UUID.randomUUID().toString();
-            backupPath = getBaseDirectory()
+            backupPath = getBaseDirectory(destination, true)
                     .findOrCreateDirectory(BACKUP_DIRECTORY)
                     .findOrCreateDirectory(backupUuid);
         } else {
-            Path baseDir = getBaseDirectory().findOrCreateDirectory(packageName);
+            Path baseDir = getBaseDirectory(destination, true).findOrCreateDirectory(packageName);
             String backupItemName = BackupUtils.getV4BackupName(userId, backupName);
             String newBackupName = backupItemName;
             int i = 0;
@@ -106,7 +152,8 @@ public class BackupItems {
             }
             backupPath = baseDir.createNewDirectory(newBackupName);
         }
-        BackupItem backupItem = new BackupItem(backupPath, true);
+        BackupItem backupItem = new BackupItem(backupPath, true,
+                encodeRelativeDir(destination, relativePathFor(backupPath)));
         backupItem.setBackupName(BackupUtils.getCompatBackupName(backupName));
         return backupItem;
     }
@@ -114,8 +161,24 @@ public class BackupItems {
     @NonNull
     public static List<BackupItem> findAllBackupItems() {
         Path baseDirectory = getBaseDirectory();
+        List<BackupItem> backupItems = new ArrayList<>();
+        collectBackupItems(baseDirectory, null, backupItems);
+        Set<String> seenDestinations = new HashSet<>();
+        seenDestinations.add(Prefs.Storage.getVolumePath().toString());
+        for (Uri destination : new BackupTagPolicyStore(ContextUtils.getContext()).getKnownDestinations()) {
+            if (!seenDestinations.add(destination.toString())) continue;
+            try {
+                collectBackupItems(getBaseDirectory(destination, false), destination, backupItems);
+            } catch (IOException | RuntimeException ignore) {
+                // Missing/revoked destinations remain in the policy and can recover later.
+            }
+        }
+        return backupItems;
+    }
+
+    private static void collectBackupItems(@NonNull Path baseDirectory, @Nullable Uri destination,
+                                           @NonNull List<BackupItem> backupItems) {
         Path[] paths = baseDirectory.listFiles(Path::isDirectory);
-        List<BackupItem> backupItems = new ArrayList<>(paths.length);
         for (Path path : paths) {
             if (SaveLogHelper.SAVED_LOGS_DIR.equals(path.getName())) {
                 continue;
@@ -128,12 +191,93 @@ public class BackupItems {
             }
             // Other backups can store multiple backups per folder
             backupItems.addAll(Arrays.stream(path.listFiles(Path::isDirectory))
-                    .map(BackupItem::new)
+                    .map(item -> new BackupItem(item,
+                            encodeRelativeDir(destination, path.getName() + "/" + item.getName())))
                     .collect(Collectors.toList()));
         }
         // We don't need to check further at this stage.
         // It's the caller's job to check the contents if needed.
-        return backupItems;
+    }
+
+    @NonNull
+    private static String relativePathFor(@NonNull Path backupPath) {
+        return backupPath.requireParent().getName() + "/" + backupPath.getName();
+    }
+
+    @NonNull
+    static String encodeRelativeDir(@Nullable Uri destination, @NonNull String path) {
+        String normalizedPath = path.replace('\\', '/');
+        String encoded = encodeDestination(destination);
+        return encoded.isEmpty() ? normalizedPath
+                : POLICY_VOLUME_DIRECTORY + "/" + encoded + "/" + normalizedPath;
+    }
+
+    @NonNull
+    static String getDestinationKey(@Nullable String relativeDir) {
+        if (relativeDir == null) return "";
+        String prefix = POLICY_VOLUME_DIRECTORY + "/";
+        if (!relativeDir.startsWith(prefix)) return "";
+        int end = relativeDir.indexOf('/', prefix.length());
+        return end > prefix.length() ? relativeDir.substring(prefix.length(), end) : "";
+    }
+
+    @NonNull
+    private static String encodeDestination(@Nullable Uri destination) {
+        if (destination == null) return "";
+        return Base64.encodeToString(destination.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                Base64.URL_SAFE | Base64.NO_WRAP | Base64.NO_PADDING);
+    }
+
+    @NonNull
+    private static Locator decodeLocator(@NonNull String relativeDir) throws FileNotFoundException {
+        String normalized = relativeDir.replace('\\', '/');
+        String prefix = POLICY_VOLUME_DIRECTORY + "/";
+        if (!normalized.startsWith(prefix)) return new Locator(null, normalized);
+        int end = normalized.indexOf('/', prefix.length());
+        if (end <= prefix.length() || end == normalized.length() - 1) {
+            throw new FileNotFoundException("Invalid policy backup locator.");
+        }
+        try {
+            String raw = new String(Base64.decode(normalized.substring(prefix.length(), end),
+                    Base64.URL_SAFE | Base64.NO_WRAP | Base64.NO_PADDING),
+                    java.nio.charset.StandardCharsets.UTF_8);
+            Uri destination = Uri.parse(raw);
+            String scheme = destination.getScheme();
+            if ((!ContentResolver.SCHEME_FILE.equals(scheme)
+                    && !ContentResolver.SCHEME_CONTENT.equals(scheme)) || destination.getPath() == null) {
+                throw new IllegalArgumentException("Unsupported URI.");
+            }
+            String path = normalized.substring(end + 1);
+            if (path.startsWith("/")) throw new IllegalArgumentException("Unsafe path.");
+            for (String segment : path.split("/", -1)) {
+                if (segment.isEmpty() || ".".equals(segment) || "..".equals(segment)) {
+                    throw new IllegalArgumentException("Unsafe path.");
+                }
+            }
+            return new Locator(destination, path);
+        } catch (IllegalArgumentException e) {
+            FileNotFoundException exception = new FileNotFoundException("Invalid policy backup locator.");
+            exception.initCause(e);
+            throw exception;
+        }
+    }
+
+    @VisibleForTesting
+    @Nullable
+    static Uri decodeDestination(@NonNull String relativeDir) throws FileNotFoundException {
+        return decodeLocator(relativeDir).destination;
+    }
+
+    private static final class Locator {
+        @Nullable
+        final Uri destination;
+        @NonNull
+        final String path;
+
+        Locator(@Nullable Uri destination, @NonNull String path) {
+            this.destination = destination;
+            this.path = path;
+        }
     }
 
     @NonNull
@@ -184,6 +328,8 @@ public class BackupItems {
         private final Path mBackupPath;
         @NonNull
         private final Path mTempBackupPath;
+        @Nullable
+        private final String mStoredRelativeDir;
         private final Object mCryptoGuard = new Object();
         @Nullable
         private Crypto mCrypto;
@@ -199,8 +345,10 @@ public class BackupItems {
         @Nullable
         private List<BackupItem> mPreviousBackups;
 
-        private BackupItem(@NonNull Path backupPath, boolean backupMode) throws IOException {
+        private BackupItem(@NonNull Path backupPath, boolean backupMode,
+                           @Nullable String storedRelativeDir) throws IOException {
             mBackupPath = backupPath;
+            mStoredRelativeDir = storedRelativeDir;
             mBackupMode = backupMode;
             if (mBackupMode) {
                 mBackupPath.mkdirs();  // Create backup path if not exists
@@ -210,7 +358,12 @@ public class BackupItems {
 
         // Read-only instance: the point is not to throw IOException
         private BackupItem(@NonNull Path backupPath) {
+            this(backupPath, null);
+        }
+
+        private BackupItem(@NonNull Path backupPath, @Nullable String storedRelativeDir) {
             mBackupPath = backupPath;
+            mStoredRelativeDir = storedRelativeDir;
             mBackupMode = false;
             mTempBackupPath = mBackupPath;
         }
@@ -250,6 +403,7 @@ public class BackupItems {
         }
 
         public String getRelativeDir() {
+            if (mStoredRelativeDir != null) return mStoredRelativeDir;
             if (isV5AndUp()) {
                 // {AppManagerDir}/backups/{UUID}/
                 return BackupUtils.getV5RelativeDir(mBackupPath.getName());
@@ -270,7 +424,7 @@ public class BackupItems {
             if (!mBackupMode) {
                 return this;
             }
-            BackupItem backupItem = new BackupItem(mTempBackupPath);
+            BackupItem backupItem = new BackupItem(mTempBackupPath, mStoredRelativeDir);
             if (mBackupNameSet) {
                 backupItem.setBackupName(mBackupName);
             }

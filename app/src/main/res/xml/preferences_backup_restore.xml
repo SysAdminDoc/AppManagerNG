@@ -1,5 +1,6 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     app:title="@string/backup_restore">
 
@@ -42,6 +43,13 @@
         app:key="backup_volume"
         app:title="@string/backup_volume"
         app:summary="@string/pref_backup_volume_msg"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        android:fragment="io.github.muntashirakon.AppManager.settings.BackupTagPoliciesPreferences"
+        app:key="backup_tag_policies"
+        app:title="@string/backup_tag_policies"
+        app:summary="@string/backup_tag_policies_summary"
         app:iconSpaceReserved="false" />
 
     <Preference

@@ -101,6 +101,26 @@ public final class BackupRetentionPolicy {
         }
     }
 
+    /** Apply an explicit policy only to the destination which received the new backup. */
+    @WorkerThread
+    public static int pruneForPackage(@NonNull String packageName, int maxCount, int maxAgeDays,
+                                      @NonNull String newRelativeDir) {
+        if (maxCount <= 0 && maxAgeDays <= 0) return 0;
+        try {
+            String destinationKey = BackupItems.getDestinationKey(newRelativeDir);
+            List<Backup> rows = new ArrayList<>();
+            for (Backup backup : BackupUtils.getBackupMetadataFromDbNoLockValidate(packageName)) {
+                if (destinationKey.equals(BackupItems.getDestinationKey(backup.relativeDir))) {
+                    rows.add(backup);
+                }
+            }
+            return pruneFromList(rows, maxCount, maxAgeDays, System.currentTimeMillis());
+        } catch (Exception t) {
+            Log.w(TAG, "Backup retention pruneForPackage(" + packageName + ") failed", t);
+            return 0;
+        }
+    }
+
     @WorkerThread
     private static int pruneFromList(@NonNull List<Backup> backups, int maxCount,
                                      int maxAgeDays, long nowMillis) {
@@ -166,7 +186,8 @@ public final class BackupRetentionPolicy {
         for (Backup b : all) {
             if (b == null || b.packageName == null) continue;
             String name = b.backupName == null ? "" : b.backupName;
-            String key = b.packageName + "\0" + b.userId + "\0" + name;
+            String key = b.packageName + "\0" + b.userId + "\0" + name + "\0"
+                    + BackupItems.getDestinationKey(b.relativeDir);
             List<Backup> bucket = groups.get(key);
             if (bucket == null) {
                 bucket = new ArrayList<>();

@@ -157,6 +157,17 @@ public final class AppTagStore {
     }
 
     /**
+     * Return the canonical representation used by the tag store, or {@code null}
+     * when {@code candidate} is not a valid tag. This keeps integrations such as
+     * ordered backup policies from duplicating the tag grammar.
+     */
+    @AnyThread
+    @Nullable
+    public static String normalizeTag(@NonNull String candidate) {
+        return normaliseTag(candidate);
+    }
+
+    /**
      * Convenience filter: true when {@code packageName} carries every tag in
      * {@code required}. Empty required-set matches every package.
      */

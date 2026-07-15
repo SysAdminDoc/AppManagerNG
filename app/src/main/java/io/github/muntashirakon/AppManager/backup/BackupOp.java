@@ -121,6 +121,9 @@ class BackupOp implements Closeable {
     private final boolean mProtectFromPrune;
     @Nullable
     private final String mBackupNote;
+    @NonNull
+    @CryptoUtils.Mode
+    private final String mCryptoMode;
 
     BackupOp(@NonNull String packageName, @NonNull BackupFlags backupFlags,
              @NonNull BackupItems.BackupItem backupItem, @UserIdInt int userId)
@@ -139,6 +142,15 @@ class BackupOp implements Closeable {
              @NonNull BackupItems.BackupItem backupItem, @UserIdInt int userId,
              @Nullable String[] exclusionGlobs, boolean protectFromPrune, @Nullable String backupNote)
             throws BackupException {
+        this(packageName, backupFlags, backupItem, userId, exclusionGlobs, protectFromPrune,
+                backupNote, CryptoUtils.getMode());
+    }
+
+    BackupOp(@NonNull String packageName, @NonNull BackupFlags backupFlags,
+             @NonNull BackupItems.BackupItem backupItem, @UserIdInt int userId,
+             @Nullable String[] exclusionGlobs, boolean protectFromPrune, @Nullable String backupNote,
+             @NonNull @CryptoUtils.Mode String cryptoMode)
+            throws BackupException {
         mPackageName = packageName;
         mBackupItem = backupItem;
         mUserId = userId;
@@ -146,6 +158,7 @@ class BackupOp implements Closeable {
         mExclusionGlobs = BackupPathExclusionPatterns.sanitize(exclusionGlobs);
         mProtectFromPrune = protectFromPrune;
         mBackupNote = BackupMetadataV5.Metadata.normalizeNote(backupNote);
+        mCryptoMode = cryptoMode;
         mPm = ContextUtils.getContext().getPackageManager();
         try {
             mPackageInfo = PackageManagerCompat.getPackageInfo(mPackageName,
@@ -303,7 +316,7 @@ class BackupOp implements Closeable {
             // Unknown tar type, set default
             tarType = TarUtils.TAR_GZIP;
         }
-        String crypto = CryptoUtils.getMode();
+        String crypto = mCryptoMode;
         BackupCryptSetupHelper cryptoHelper = new BackupCryptSetupHelper(crypto, MetadataManager.getCurrentBackupMetaVersion());
         mBackupItem.setCrypto(cryptoHelper.crypto);
         BackupMetadataV5.Info backupInfo = new BackupMetadataV5.Info(backupTime, mBackupFlags,
