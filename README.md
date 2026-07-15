@@ -158,10 +158,12 @@ Verify with [AppVerifier](https://github.com/soupslurpr/AppVerifier) or:
 apksigner verify --print-certs AppManagerNG-<version>.apk | grep SHA-256
 ```
 
-Before publishing, maintainers run a local two-build reproducibility gate: the
-signed APK is built twice from a clean checkout, binary SHA-256 hashes are
-compared, and `.sha256` sidecars are produced only when the bytes match. Run the
-check with [`scripts/verify_reproducible_release.ps1`](scripts/verify_reproducible_release.ps1)
+Before publishing, maintainers run a local release gate: OWASP Dependency-Check
+must complete with no unsuppressed CVSS 9.0+ findings, then the signed APK is
+built twice from a clean checkout and its binary SHA-256 hashes must match. The
+HTML/SARIF dependency reports and their hash receipt are retained with the SBOM
+and APK sidecars. Run the check with
+[`scripts/verify_reproducible_release.ps1`](scripts/verify_reproducible_release.ps1)
 on Windows or [`scripts/verify_reproducible_release.sh`](scripts/verify_reproducible_release.sh)
 on Linux/macOS shells; details are in [docs/distribution/reproducible-builds.md](docs/distribution/reproducible-builds.md).
 Run [`scripts/verify-release-consistency.sh`](scripts/verify-release-consistency.sh)
