@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingStart="@dimen/padding_medium"
-        android:paddingTop="@dimen/padding_medium"
+        android:paddingTop="@dimen/padding_small"
         android:paddingEnd="@dimen/padding_medium"
         android:paddingBottom="@dimen/padding_small">
 
@@ -24,11 +24,10 @@
             android:orientation="horizontal">
 
             <FrameLayout
-                android:layout_width="52dp"
-                android:layout_height="52dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:layout_marginEnd="@dimen/padding_small"
-                android:background="@drawable/main_empty_icon_background"
-                android:padding="14dp">
+                android:padding="10dp">
 
                 <androidx.appcompat.widget.AppCompatImageView
                     android:layout_width="match_parent"
@@ -66,14 +65,14 @@
         <io.github.muntashirakon.widget.MaterialAlertView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/padding_medium"
+            android:layout_marginTop="@dimen/padding_small"
             android:text="@string/disclaimer_privileged_operations"
             app:alertType="warn" />
 
         <androidx.appcompat.widget.AppCompatTextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/padding_medium"
+            android:layout_marginTop="@dimen/padding_small"
             android:text="@string/disclaimer_third_party"
             android:textAppearance="?attr/textAppearanceBodyMedium"
             android:textColor="?attr/colorOnSurfaceVariant" />
@@ -88,7 +87,7 @@
         <androidx.appcompat.widget.AppCompatTextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/padding_medium"
+            android:layout_marginTop="@dimen/padding_small"
             android:text="@string/disclaimer_footer"
             android:textAppearance="?attr/textAppearanceBodySmall"
             android:textColor="?attr/colorOnSurfaceVariant" />

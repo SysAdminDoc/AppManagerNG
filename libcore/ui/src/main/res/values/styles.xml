@@ -269,21 +269,21 @@
         <item name="cardCornerRadius">10dp</item>
     </style>
 
-    <style name="Widget.AppTheme.CardView.ListItem" parent="Widget.Material3.CardView.Outlined">
+    <style name="Widget.AppTheme.CardView.ListItem" parent="Widget.Material3.CardView.Filled">
         <item name="cardCornerRadius">?attr/listItemCornerRadius</item>
-        <item name="cardElevation">1dp</item>
-        <item name="strokeWidth">1dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeWidth">0dp</item>
         <item name="strokeColor">?attr/colorOutlineVariant</item>
-        <item name="cardBackgroundColor">?attr/colorSurfaceContainerLow</item>
+        <item name="cardBackgroundColor">?attr/colorSurface</item>
         <item name="rippleColor">?attr/colorSecondaryContainer</item>
     </style>
 
-    <style name="Widget.AppTheme.CardView.Preference" parent="Widget.Material3.CardView.Outlined">
+    <style name="Widget.AppTheme.CardView.Preference" parent="Widget.Material3.CardView.Filled">
         <item name="cardCornerRadius">?attr/listItemCornerRadius</item>
-        <item name="cardElevation">1dp</item>
-        <item name="strokeWidth">1dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeWidth">0dp</item>
         <item name="strokeColor">?attr/colorOutlineVariant</item>
-        <item name="cardBackgroundColor">?attr/colorSurfaceContainerLow</item>
+        <item name="cardBackgroundColor">?attr/colorSurface</item>
         <item name="rippleColor">?attr/colorSecondaryContainer</item>
     </style>
 
@@ -339,9 +339,9 @@
     <style name="Widget.AppTheme.MultiSelectionActionsView" parent="android:Widget">
         <item name="android:background">@macro/m3_comp_nav_bar_container_color</item>
         <item name="backgroundTint">@null</item>
-        <item name="elevation">@dimen/m3_sys_elevation_level2</item>
-        <item name="itemTextAppearanceInactive">?attr/textAppearanceBodyMedium</item>
-        <item name="itemTextAppearanceActive">?attr/textAppearanceBodyMedium</item>
+        <item name="elevation">0dp</item>
+        <item name="itemTextAppearanceInactive">?attr/textAppearanceLabelMedium</item>
+        <item name="itemTextAppearanceActive">?attr/textAppearanceLabelMedium</item>
         <item name="itemIconSize">24dp</item>
         <item name="itemIconTint">@color/m3_textfield_indicator_text_color</item>
         <item name="itemTextColor">@color/m3_textfield_indicator_text_color</item>

@@ -18,7 +18,7 @@
             android:paddingHorizontal="@dimen/padding_medium">
 
             <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.AppTheme.TextInputLayout.Small"
+                style="@style/Widget.AppTheme.TextInputLayout.ReadOnlyFlat"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/padding_small"
@@ -37,7 +37,7 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.AppTheme.TextInputLayout.Small"
+                style="@style/Widget.AppTheme.TextInputLayout.ReadOnlyFlat"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -64,7 +64,7 @@
             android:paddingHorizontal="@dimen/padding_medium">
 
             <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.AppTheme.TextInputLayout.Small"
+                style="@style/Widget.AppTheme.TextInputLayout.ReadOnlyFlat"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/padding_small"
@@ -83,7 +83,7 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.AppTheme.TextInputLayout.Small"
+                style="@style/Widget.AppTheme.TextInputLayout.ReadOnlyFlat"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -116,7 +116,7 @@
                 android:text="@string/data_usage_msg" />
 
             <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.AppTheme.TextInputLayout.Small"
+                style="@style/Widget.AppTheme.TextInputLayout.ReadOnlyFlat"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/padding_small"
@@ -134,7 +134,7 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.AppTheme.TextInputLayout.Small"
+                style="@style/Widget.AppTheme.TextInputLayout.ReadOnlyFlat"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/padding_small"

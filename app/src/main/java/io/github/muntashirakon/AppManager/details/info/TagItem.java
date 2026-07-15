@@ -4,7 +4,7 @@ package io.github.muntashirakon.AppManager.details.info;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
-import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,7 +13,6 @@ import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
-import androidx.core.graphics.ColorUtils;
 
 import com.google.android.material.chip.Chip;
 
@@ -56,9 +55,13 @@ class TagItem {
             chip.setText(mTextRes);
         } else chip.setText(mText);
         if (mColorSet) {
-            chip.setChipBackgroundColor(ColorStateList.valueOf(mColor));
-            double luminance = ColorUtils.calculateLuminance(mColor);
-            chip.setTextColor(luminance < 0.5 ? Color.WHITE : Color.BLACK);
+            GradientDrawable indicator = new GradientDrawable();
+            indicator.setShape(GradientDrawable.OVAL);
+            indicator.setColor(mColor);
+            int size = context.getResources().getDimensionPixelSize(R.dimen.premium_status_dot_size);
+            indicator.setSize(size, size);
+            chip.setChipIcon(indicator);
+            chip.setChipIconVisible(true);
         }
         if (mOnClickListener != null) {
             chip.setOnClickListener(mOnClickListener);

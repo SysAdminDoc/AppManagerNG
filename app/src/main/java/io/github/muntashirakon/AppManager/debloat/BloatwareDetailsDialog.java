@@ -4,9 +4,8 @@ package io.github.muntashirakon.AppManager.debloat;
 
 import android.app.Application;
 import android.content.Intent;
-import android.content.res.ColorStateList;
-import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.view.LayoutInflater;
@@ -20,14 +19,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.appcompat.widget.LinearLayoutCompat;
-import androidx.core.graphics.ColorUtils;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.chip.Chip;
 import com.google.android.material.textview.MaterialTextView;
 
 import java.util.ArrayList;
@@ -260,18 +257,24 @@ public class BloatwareDetailsDialog extends CapsuleBottomSheetDialogFragment {
     }
 
     private void addTag(@NonNull ViewGroup parent, @StringRes int titleRes, @ColorInt int background) {
-        Chip chip = (Chip) LayoutInflater.from(requireContext()).inflate(R.layout.item_chip, parent, false);
-        chip.setText(titleRes);
-        chip.setChipBackgroundColor(ColorStateList.valueOf(background));
-        double luminance = ColorUtils.calculateLuminance(background);
-        chip.setTextColor(luminance < 0.5 ? Color.WHITE : Color.BLACK);
-        parent.addView(chip);
+        MaterialTextView fact = (MaterialTextView) LayoutInflater.from(requireContext())
+                .inflate(R.layout.item_inline_fact, parent, false);
+        fact.setText(titleRes);
+        GradientDrawable indicator = new GradientDrawable();
+        indicator.setShape(GradientDrawable.OVAL);
+        indicator.setColor(background);
+        int size = getResources().getDimensionPixelSize(R.dimen.premium_status_dot_size);
+        indicator.setSize(size, size);
+        fact.setCompoundDrawablesRelativeWithIntrinsicBounds(indicator, null, null, null);
+        fact.setCompoundDrawablePadding(getResources().getDimensionPixelSize(R.dimen.premium_space_8));
+        parent.addView(fact);
     }
 
     private void addTag(@NonNull ViewGroup parent, @NonNull CharSequence title) {
-        Chip chip = (Chip) LayoutInflater.from(requireContext()).inflate(R.layout.item_chip, parent, false);
-        chip.setText(title);
-        parent.addView(chip);
+        MaterialTextView fact = (MaterialTextView) LayoutInflater.from(requireContext())
+                .inflate(R.layout.item_inline_fact, parent, false);
+        fact.setText(title);
+        parent.addView(fact);
     }
 
     public static class BloatwareDetailsViewModel extends AndroidViewModel {

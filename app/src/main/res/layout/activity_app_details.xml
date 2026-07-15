@@ -41,6 +41,8 @@
             app:tabRippleColor="?attr/colorSecondaryContainer"
             app:tabSelectedTextColor="?attr/colorOnSurface"
             app:tabTextColor="?attr/colorOnSurfaceVariant"
+            app:tabTextAppearance="@style/TextAppearance.AppTheme.V2.LabelMedium"
+            app:tabMinWidth="88dp"
             app:tabMode="scrollable" />
 
         <androidx.viewpager2.widget.ViewPager2

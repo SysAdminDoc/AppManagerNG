@@ -33,37 +33,40 @@
             android:layout_height="wrap_content"
             android:indeterminate="true" />
 
-        <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/list_status"
+        <androidx.appcompat.widget.LinearLayoutCompat
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="@dimen/premium_space_16"
-            android:layout_marginTop="@dimen/premium_space_8"
-            android:layout_marginBottom="@dimen/premium_space_4"
-            android:background="@drawable/main_status_background"
-            android:gravity="center_vertical"
             android:minHeight="@dimen/premium_main_status_min_height"
-            android:paddingHorizontal="@dimen/premium_space_20"
-            android:paddingVertical="@dimen/premium_space_12"
-            android:lineSpacingExtra="@dimen/main_status_line_spacing"
-            android:text="@string/main_status_loading"
-            android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelMedium"
-            android:textColor="?attr/colorOnSurface"
-            android:visibility="gone"
-            tools:visibility="visible" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <HorizontalScrollView
-            android:id="@+id/quick_filter_scroll"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:clipToPadding="false"
-            android:fillViewport="true"
-            android:fadingEdgeLength="@dimen/premium_space_16"
-            android:paddingHorizontal="@dimen/premium_space_16"
-            android:paddingTop="@dimen/premium_space_4"
-            android:paddingBottom="@dimen/premium_space_8"
-            android:requiresFadingEdge="horizontal"
-            android:scrollbars="none">
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/list_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/premium_space_16"
+                android:layout_marginEnd="@dimen/premium_space_8"
+                android:gravity="center_vertical"
+                android:minHeight="@dimen/premium_main_status_min_height"
+                android:paddingVertical="@dimen/premium_space_4"
+                android:lineSpacingExtra="@dimen/main_status_line_spacing"
+                android:text="@string/main_status_loading"
+                android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelMedium"
+                android:textColor="?attr/colorOnSurface"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <HorizontalScrollView
+                android:id="@+id/quick_filter_scroll"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:clipToPadding="false"
+                android:fillViewport="false"
+                android:fadingEdgeLength="@dimen/premium_space_16"
+                android:paddingEnd="@dimen/premium_space_16"
+                android:requiresFadingEdge="horizontal"
+                android:scrollbars="none">
 
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/quick_filter_group"
@@ -80,6 +83,7 @@
                     android:layout_height="wrap_content"
                     android:checkable="false"
                     android:text="@string/sort"
+                    android:visibility="gone"
                     app:chipIcon="@drawable/ic_sort"
                     app:chipIconVisible="true"
                     app:closeIconVisible="false" />
@@ -91,6 +95,7 @@
                     android:layout_height="wrap_content"
                     android:checkable="false"
                     android:text="@string/guide"
+                    android:visibility="gone"
                     app:chipIcon="@drawable/ic_information_circle"
                     app:chipIconVisible="true"
                     app:closeIconVisible="false" />
@@ -102,6 +107,7 @@
                     android:layout_height="wrap_content"
                     android:checkable="false"
                     android:text="@string/main_filter_install_date"
+                    android:visibility="gone"
                     app:chipIcon="@drawable/ic_calendar_month"
                     app:chipIconVisible="true"
                     app:closeIconVisible="false" />
@@ -138,7 +144,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checkable="true"
-                    android:text="@string/filter_running_apps" />
+                    android:text="@string/filter_running_apps"
+                    android:visibility="gone" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_backups"
@@ -154,7 +161,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checkable="true"
-                    android:text="@string/filter_force_stopped_apps" />
+                    android:text="@string/filter_force_stopped_apps"
+                    android:visibility="gone" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_trackers"
@@ -162,7 +170,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checkable="true"
-                    android:text="@string/filter_apps_with_trackers" />
+                    android:text="@string/filter_apps_with_trackers"
+                    android:visibility="gone" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_rules"
@@ -170,7 +179,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checkable="true"
-                    android:text="@string/filter_apps_with_rules" />
+                    android:text="@string/filter_apps_with_rules"
+                    android:visibility="gone" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_granted_perms"
@@ -178,7 +188,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checkable="true"
-                    android:text="@string/filter_apps_with_granted_perms" />
+                    android:text="@string/filter_apps_with_granted_perms"
+                    android:visibility="gone" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_clear_filters"
@@ -190,9 +201,11 @@
                     android:visibility="gone"
                     app:closeIconVisible="true" />
 
-            </com.google.android.material.chip.ChipGroup>
+                </com.google.android.material.chip.ChipGroup>
 
-        </HorizontalScrollView>
+            </HorizontalScrollView>
+
+        </androidx.appcompat.widget.LinearLayoutCompat>
 
     </io.github.muntashirakon.widget.AppBarLayout>
 

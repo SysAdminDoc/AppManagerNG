@@ -13,7 +13,7 @@
     <dimen name="premium_space_32">32dp</dimen>
 
     <!-- Radius scale -->
-    <dimen name="premium_radius_card">8dp</dimen>
+    <dimen name="premium_radius_card">6dp</dimen>
     <dimen name="premium_radius_modal">10dp</dimen>
     <dimen name="premium_radius_control">8dp</dimen>
 
@@ -34,33 +34,35 @@
 
     <!-- Type scale -->
     <dimen name="premium_type_title_large">20sp</dimen>
-    <dimen name="premium_type_title_medium">16sp</dimen>
+    <dimen name="premium_type_title_medium">17sp</dimen>
     <dimen name="premium_type_body_large">16sp</dimen>
     <dimen name="premium_type_body_medium">14sp</dimen>
-    <dimen name="premium_type_body_small">12sp</dimen>
-    <dimen name="premium_type_label_medium">12sp</dimen>
-    <dimen name="premium_type_label_small">11sp</dimen>
+    <dimen name="premium_type_body_small">13sp</dimen>
+    <dimen name="premium_type_label_medium">13sp</dimen>
+    <dimen name="premium_type_label_small">12sp</dimen>
 
     <!-- MainActivity shell -->
-    <dimen name="premium_app_bar_height">68dp</dimen>
-    <dimen name="premium_main_status_min_height">52dp</dimen>
-    <dimen name="premium_main_list_top_padding">10dp</dimen>
-    <dimen name="premium_main_list_bottom_padding">32dp</dimen>
+    <dimen name="premium_app_bar_height">56dp</dimen>
+    <dimen name="premium_main_status_min_height">36dp</dimen>
+    <dimen name="premium_main_list_top_padding">0dp</dimen>
+    <dimen name="premium_main_list_bottom_padding">24dp</dimen>
 
     <!-- Main row -->
-    <dimen name="premium_main_list_margin_vertical">4dp</dimen>
-    <dimen name="premium_main_list_padding_horizontal">18dp</dimen>
-    <dimen name="premium_main_list_padding_vertical">14dp</dimen>
-    <dimen name="premium_main_icon_frame">56dp</dimen>
-    <dimen name="premium_badge_min_height">24dp</dimen>
-    <dimen name="premium_badge_min_width">24dp</dimen>
-    <dimen name="premium_badge_max_width">84dp</dimen>
-    <dimen name="premium_badge_padding_horizontal">8dp</dimen>
-    <dimen name="premium_badge_padding_vertical">2dp</dimen>
+    <dimen name="premium_main_list_margin_vertical">0dp</dimen>
+    <dimen name="premium_main_list_padding_horizontal">16dp</dimen>
+    <dimen name="premium_main_list_padding_vertical">10dp</dimen>
+    <dimen name="premium_main_icon_frame">48dp</dimen>
+    <dimen name="premium_main_divider_inset">76dp</dimen>
+    <dimen name="premium_badge_min_height">20dp</dimen>
+    <dimen name="premium_badge_min_width">0dp</dimen>
+    <dimen name="premium_badge_max_width">104dp</dimen>
+    <dimen name="premium_badge_padding_horizontal">0dp</dimen>
+    <dimen name="premium_badge_padding_vertical">0dp</dimen>
+    <dimen name="premium_status_dot_size">7dp</dimen>
     <dimen name="premium_favorite_hit_size">32dp</dimen>
 
     <!-- Controls -->
-    <dimen name="premium_chip_min_height">38dp</dimen>
+    <dimen name="premium_chip_min_height">36dp</dimen>
     <dimen name="premium_chip_touch_target">48dp</dimen>
     <dimen name="premium_button_min_height">48dp</dimen>
     <dimen name="premium_scanner_card_min_height">76dp</dimen>

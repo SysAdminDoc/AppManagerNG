@@ -47,7 +47,7 @@
                 android:textAlignment="viewStart"
                 android:textAppearance="?android:attr/textAppearanceListItemSecondary"
                 android:ellipsize="end"
-                android:maxLines="5"
+                android:maxLines="2"
                 tools:text="@tools:sample/lorem[10]" />
 
         </RelativeLayout>
@@ -63,4 +63,12 @@
             android:orientation="vertical" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="72dp"
+        android:layout_marginEnd="16dp"
+        android:background="?attr/colorOutlineVariant" />
 </com.google.android.material.card.MaterialCardView>
