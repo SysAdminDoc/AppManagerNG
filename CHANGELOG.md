@@ -93,6 +93,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   shown only once and cannot be recovered.
 
 ### Changed
+- Snapshot preference-merge coverage now exercises the shipping
+  `SharedPreferences.Editor` import path; the unused direct-XML merger was
+  removed so tests cannot pass against behavior the app never runs.
 - Distribution packets now derive tag, commit, version, selected APK metadata,
   and signing identity from one machine-readable published-release receipt.
   The release consistency gate validates the receipt against Gradle and Git and
