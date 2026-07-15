@@ -97,10 +97,11 @@ public final class ArchiveExtractionGuard {
 
     /** Register a new archive entry. Call once per entry before extracting its content. */
     public void onNewEntry() throws IOException {
-        if (++mEntriesSoFar > mMaxEntries) {
+        if (mEntriesSoFar >= mMaxEntries) {
             throw new IOException("Archive bomb detected: more than " + mMaxEntries
                     + " entries. Aborting extraction.");
         }
+        ++mEntriesSoFar;
         mEntryBytes = 0;
     }
 
@@ -114,6 +115,12 @@ public final class ArchiveExtractionGuard {
 
     /** Account for {@code count} uncompressed bytes, throwing if the ceiling is exceeded. */
     public void addBytes(long count) throws IOException {
+        assertCanAddBytes(count);
+        mBytesSoFar += count;
+        mEntryBytes += count;
+    }
+
+    private void assertCanAddBytes(long count) throws IOException {
         if (count < 0) {
             throw new IllegalArgumentException("Byte count cannot be negative.");
         }
@@ -125,8 +132,6 @@ public final class ArchiveExtractionGuard {
             throw new IOException("Archive bomb detected: one entry exceeds "
                     + mMaxEntryBytes + " bytes. Aborting extraction.");
         }
-        mBytesSoFar += count;
-        mEntryBytes += count;
     }
 
     /**
@@ -152,10 +157,17 @@ public final class ArchiveExtractionGuard {
         byte[] buffer = new byte[IoUtils.DEFAULT_BUFFER_SIZE];
         int len;
         while ((len = in.read(buffer)) != -1) {
-            addBytes(len);
-            reserveTemporaryBytes(len);
+            addTemporaryBytes(len);
             out.write(buffer, 0, len);
         }
+    }
+
+    private void addTemporaryBytes(long count) throws IOException {
+        assertCanAddBytes(count);
+        assertCanReserveTemporaryBytes(count);
+        mBytesSoFar += count;
+        mEntryBytes += count;
+        mTemporaryBytes += count;
     }
 
     /** Drain an entry that will not be imported while still charging its expanded bytes. */
@@ -168,6 +180,11 @@ public final class ArchiveExtractionGuard {
     }
 
     public void reserveTemporaryBytes(long count) throws IOException {
+        assertCanReserveTemporaryBytes(count);
+        mTemporaryBytes += count;
+    }
+
+    private void assertCanReserveTemporaryBytes(long count) throws IOException {
         if (count < 0) {
             throw new IllegalArgumentException("Temporary byte count cannot be negative.");
         }
@@ -175,7 +192,6 @@ public final class ArchiveExtractionGuard {
             throw new IOException("Archive bomb detected: temporary output exceeds "
                     + mMaxTemporaryBytes + " bytes. Aborting extraction.");
         }
-        mTemporaryBytes += count;
     }
 
     public void releaseTemporaryBytes(long count) {
