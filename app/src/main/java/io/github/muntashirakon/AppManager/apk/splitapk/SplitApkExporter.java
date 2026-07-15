@@ -25,7 +25,9 @@ import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import io.github.muntashirakon.AppManager.apk.ApkFile;
 import io.github.muntashirakon.AppManager.apk.ApkUtils;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -43,6 +45,8 @@ import io.github.muntashirakon.io.Paths;
  * version_code (long), version_name (string), backup_components [ size (long), type (string) ]
  */
 public final class SplitApkExporter {
+    private static final String TAG = SplitApkExporter.class.getSimpleName();
+
     @WorkerThread
     public static void saveApks(@NonNull PackageInfo packageInfo, @NonNull Path apksFile) throws IOException {
         try (OutputStream outputStream = apksFile.openOutputStream();
@@ -117,6 +121,12 @@ public final class SplitApkExporter {
 
     @NonNull
     static List<Path> getAllApkFiles(@NonNull ApplicationInfo applicationInfo) {
+        return getAllApkFiles(applicationInfo, SplitApkExporter::getApkPackageName);
+    }
+
+    @NonNull
+    static List<Path> getAllApkFiles(@NonNull ApplicationInfo applicationInfo,
+                                     @NonNull ApkPackageResolver packageResolver) {
         List<Path> apkFiles = new ArrayList<>();
         Set<String> seenApkPaths = new LinkedHashSet<>();
         addApkFile(apkFiles, seenApkPaths, applicationInfo.publicSourceDir);
@@ -134,11 +144,31 @@ public final class SplitApkExporter {
             File[] apks = sourceDir.listFiles((dir, name) -> name.endsWith(".apk"));
             if (apks != null) {
                 for (File apk : apks) {
-                    addApkFile(apkFiles, seenApkPaths, apk.getAbsolutePath());
+                    String apkPath = apk.getAbsolutePath();
+                    if (seenApkPaths.contains(apkPath)) {
+                        continue;
+                    }
+                    String packageName = packageResolver.getPackageName(apk);
+                    if (!applicationInfo.packageName.equals(packageName)) {
+                        Log.w(TAG, "Skipping unrelated sibling APK %s (package=%s, expected=%s).",
+                                apk, packageName, applicationInfo.packageName);
+                        continue;
+                    }
+                    addApkFile(apkFiles, seenApkPaths, apkPath);
                 }
             }
         }
         return apkFiles;
+    }
+
+    @Nullable
+    static String getApkPackageName(@NonNull File apkFile) {
+        try {
+            return ApkUtils.getManifestAttributes(ApkUtils.getManifestFromApk(apkFile)).get("package");
+        } catch (ApkFile.ApkFileException | RuntimeException e) {
+            Log.w(TAG, "Could not parse sibling APK manifest: " + apkFile, e);
+            return null;
+        }
     }
 
     @NonNull
@@ -165,5 +195,10 @@ public final class SplitApkExporter {
             return;
         }
         apkFiles.add(Paths.get(apkPath));
+    }
+
+    interface ApkPackageResolver {
+        @Nullable
+        String getPackageName(@NonNull File apkFile);
     }
 }

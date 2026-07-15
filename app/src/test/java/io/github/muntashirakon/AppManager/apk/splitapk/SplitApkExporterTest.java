@@ -4,6 +4,8 @@ package io.github.muntashirakon.AppManager.apk.splitapk;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.pm.ApplicationInfo;
@@ -17,11 +19,15 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
@@ -40,7 +46,7 @@ public class SplitApkExporterTest {
         touch(packageDir, "notes.txt");
         ApplicationInfo info = appInfo(base);
 
-        List<Path> apkFiles = SplitApkExporter.getAllApkFiles(info);
+        List<Path> apkFiles = SplitApkExporter.getAllApkFiles(info, apk -> info.packageName);
 
         assertEquals(set("base.apk", "split_config.en.apk", "split_config.hdpi.apk"), names(apkFiles));
     }
@@ -53,18 +59,52 @@ public class SplitApkExporterTest {
         ApplicationInfo info = appInfo(base);
         info.splitPublicSourceDirs = new String[]{split.getAbsolutePath()};
 
-        List<Path> apkFiles = SplitApkExporter.getAllApkFiles(info);
+        List<Path> apkFiles = SplitApkExporter.getAllApkFiles(info, apk -> info.packageName);
 
         assertEquals(set("base.apk", "split_config.en.apk"), names(apkFiles));
+    }
+
+    @Test
+    public void getAllApkFilesFiltersForeignAndUnparseableDirectorySiblings() throws IOException {
+        File packageDir = tmp.newFolder("mixed-package-directory");
+        File base = touch(packageDir, "base.apk");
+        touch(packageDir, "split_config.en.apk");
+        touch(packageDir, "foreign.apk");
+        touch(packageDir, "unparseable.apk");
+        ApplicationInfo info = appInfo(base);
+
+        List<Path> apkFiles = SplitApkExporter.getAllApkFiles(info, apk -> {
+            if ("split_config.en.apk".equals(apk.getName())) return info.packageName;
+            if ("foreign.apk".equals(apk.getName())) return "com.example.foreign";
+            return null;
+        });
+
+        assertEquals(set("base.apk", "split_config.en.apk"), names(apkFiles));
+    }
+
+    @Test
+    public void getApkPackageNameReadsBinaryManifest() throws IOException {
+        File apk = apkWithManifest(tmp.newFolder("manifest-package"), "base.apk");
+
+        assertEquals("com.huawei.hwid", SplitApkExporter.getApkPackageName(apk));
+    }
+
+    @Test
+    public void getApkPackageNameRejectsMalformedApk() throws IOException {
+        File malformed = touch(tmp.newFolder("malformed-package"), "foreign.apk");
+
+        assertNull(SplitApkExporter.getApkPackageName(malformed));
     }
 
     @Test
     public void getDeviceSpecificSplitApkNamesReturnsOnlyConfigSplits() throws IOException {
         File packageDir = tmp.newFolder("device-specific-package");
         File base = touch(packageDir, "base.apk");
-        touch(packageDir, "split_config.arm64_v8a.apk");
-        touch(packageDir, "feature.payments.apk");
+        File configSplit = touch(packageDir, "split_config.arm64_v8a.apk");
+        File featureSplit = touch(packageDir, "feature.payments.apk");
         ApplicationInfo info = appInfo(base);
+        info.splitPublicSourceDirs = new String[]{
+                configSplit.getAbsolutePath(), featureSplit.getAbsolutePath()};
 
         List<String> splitNames = SplitApkExporter.getDeviceSpecificSplitApkNames(info);
 
@@ -165,6 +205,23 @@ public class SplitApkExporterTest {
             throw new IOException("Could not create " + file);
         }
         return file;
+    }
+
+    private static File apkWithManifest(File parent, String name) throws IOException {
+        File apk = new File(parent, name);
+        try (InputStream manifest = SplitApkExporterTest.class.getResourceAsStream(
+                "/xml/HMS_Core_Android_Manifest.bin.xml");
+             ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            assertNotNull(manifest);
+            zip.putNextEntry(new ZipEntry("AndroidManifest.xml"));
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = manifest.read(buffer)) != -1) {
+                zip.write(buffer, 0, read);
+            }
+            zip.closeEntry();
+        }
+        return apk;
     }
 
     private static Set<String> names(List<Path> paths) {
