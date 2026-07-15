@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.apk.whatsnew;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 
 import android.content.pm.ApplicationInfo;
 import android.os.Build;
@@ -21,6 +22,11 @@ import io.github.muntashirakon.AppManager.utils.LangUtils;
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = Build.VERSION_CODES.N)
 public class ApkWhatsNewFinderTest {
+    @Test
+    public void getInstanceReturnsEagerSingleton() {
+        assertSame(ApkWhatsNewFinder.getInstance(), ApkWhatsNewFinder.getInstance());
+    }
+
     @Test
     public void findChangesDoesNotMutateInputs() {
         Set<String> newInfo = setOf("common", "added");
