@@ -6,7 +6,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.Objects;
-import java.util.StringTokenizer;
 
 import io.github.muntashirakon.AppManager.rules.RuleType;
 
@@ -125,18 +124,13 @@ public abstract class RuleEntry {
     }
 
     @NonNull
-    private static StringTokenizer valueTokenizer(@NonNull String[] fields, int startIndex) {
-        StringBuilder valueFields = new StringBuilder();
-        for (int i = startIndex; i < fields.length; ++i) {
-            if (i > startIndex) valueFields.append('\t');
-            valueFields.append(fields[i]);
-        }
-        return new StringTokenizer(valueFields.toString(), "\t");
+    private static RuleValueReader valueTokenizer(@NonNull String[] fields, int startIndex) {
+        return new RuleValueReader(fields, startIndex);
     }
 
     @NonNull
     private static RuleEntry getRuleEntry(@NonNull String packageName, @NonNull String name,
-                                          @NonNull RuleType type, @NonNull StringTokenizer tokenizer)
+                                          @NonNull RuleType type, @NonNull RuleValueReader tokenizer)
             throws IllegalArgumentException {
         switch (type) {
             case ACTIVITY:

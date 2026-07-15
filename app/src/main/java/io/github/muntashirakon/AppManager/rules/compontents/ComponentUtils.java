@@ -23,6 +23,7 @@ import org.xmlpull.v1.XmlPullParser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Collection;
@@ -210,7 +211,7 @@ public final class ComponentUtils {
     public static void storeRules(@NonNull OutputStream os, @NonNull List<RuleEntry> rules, boolean isExternal)
             throws IOException {
         for (RuleEntry entry : rules) {
-            os.write((entry.flattenToString(isExternal) + "\n").getBytes());
+            os.write((entry.flattenToString(isExternal) + "\n").getBytes(StandardCharsets.UTF_8));
         }
     }
 

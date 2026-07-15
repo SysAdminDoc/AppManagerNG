@@ -5,7 +5,6 @@ package io.github.muntashirakon.AppManager.rules.struct;
 import androidx.annotation.NonNull;
 
 import java.util.Objects;
-import java.util.StringTokenizer;
 
 import io.github.muntashirakon.AppManager.rules.RuleType;
 import io.github.muntashirakon.AppManager.utils.FreezeUtils;
@@ -19,10 +18,10 @@ public class FreezeRule extends RuleEntry {
         mFreezeType = validateFreezeType(freezeType);
     }
 
-    public FreezeRule(@NonNull String packageName, @NonNull StringTokenizer tokenizer) {
+    public FreezeRule(@NonNull String packageName, @NonNull RuleValueReader tokenizer) {
         super(packageName, STUB, RuleType.FREEZE);
-        if (tokenizer.hasMoreElements()) {
-            mFreezeType = parseFreezeType(tokenizer.nextElement().toString());
+        if (tokenizer.hasNext()) {
+            mFreezeType = parseFreezeType(tokenizer.next());
         } else throw new IllegalArgumentException("Invalid format: freeze_type not found");
     }
 
