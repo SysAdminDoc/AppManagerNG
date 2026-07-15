@@ -166,6 +166,14 @@ and APK sidecars. Run the check with
 [`scripts/verify_reproducible_release.ps1`](scripts/verify_reproducible_release.ps1)
 on Windows or [`scripts/verify_reproducible_release.sh`](scripts/verify_reproducible_release.sh)
 on Linux/macOS shells; details are in [docs/distribution/reproducible-builds.md](docs/distribution/reproducible-builds.md).
+
+Untrusted app-list, rule, snapshot-manifest, and archive inputs also have a
+bounded local Jazzer gate. Run `./gradlew :app:fuzzUntrustedImports` (or pass
+`-PfuzzRuns=<count>`); each target uses a fixed seed and a 64 KiB input ceiling.
+Crashes are written under `app/build/fuzz-crashes/`. Copy a minimized reproducer
+into the matching `app/src/test/resources/fuzz-corpus/` directory so the normal
+unit suite retains it as a regression fixture.
+
 Run [`scripts/verify-release-consistency.sh`](scripts/verify-release-consistency.sh)
 before release notes or APK publication to confirm the README badges, Fastlane
 changelog, Gradle wrapper, SDK pins, and local `CLAUDE.md` match the build

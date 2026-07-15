@@ -5,6 +5,10 @@ plugins {
     id('dev.rikka.tools.refine') version "${refine_version}"
 }
 
+configurations {
+    jazzer
+}
+
 android {
     namespace = 'io.github.muntashirakon.AppManager'  // Source namespace kept; applicationId is the install identity
     compileSdk = compile_sdk
@@ -254,6 +258,7 @@ dependencies {
     testImplementation "junit:junit:${junit_version}"
     testImplementation "org.json:json:${json_version}"
     testImplementation "org.robolectric:robolectric:${robolectric_version}"
+    jazzer "com.code-intelligence:jazzer:${jazzer_version}"
 
     // Room v7 -> v8 migration test (see app/src/androidTest/.../AppsDbMigrationTest)
     androidTestImplementation "androidx.room:room-testing:${room_version}"
@@ -261,6 +266,54 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:1.2.1"
     androidTestImplementation "androidx.test.uiautomator:uiautomator:${uiautomator_version}"
     androidTestImplementation "junit:junit:${junit_version}"
+}
+
+def fuzzRuns = providers.gradleProperty("fuzzRuns").orElse("2000")
+def fuzzTargets = [
+        appList : "io.github.muntashirakon.AppManager.apk.list.AppListImportFuzzTarget",
+        rules   : "io.github.muntashirakon.AppManager.rules.struct.RuleImportFuzzTarget",
+        snapshot: "io.github.muntashirakon.AppManager.snapshot.SnapshotManifestFuzzTarget",
+        archive : "io.github.muntashirakon.AppManager.utils.ArchiveImportFuzzTarget",
+]
+def flossUnitTestName = "testFlossDebugUnitTest"
+def fuzzTasks = fuzzTargets.collect { targetName, targetClass ->
+    tasks.register("fuzz${targetName.capitalize()}Import", JavaExec) {
+        group = "verification"
+        description = "Runs the bounded Jazzer target for ${targetName} imports."
+        dependsOn flossUnitTestName
+        mainClass = "com.code_intelligence.jazzer.Jazzer"
+        workingDir = rootProject.projectDir
+        maxHeapSize = "1024m"
+        doFirst {
+            def unitTest = tasks.getByName(flossUnitTestName)
+            classpath = files(unitTest.testClassesDirs, unitTest.classpath, configurations.jazzer)
+            def corpusDir = layout.buildDirectory.dir("fuzz-corpus/${targetName}").get().asFile
+            def crashDir = layout.buildDirectory.dir("fuzz-crashes/${targetName}").get().asFile
+            delete corpusDir
+            corpusDir.mkdirs()
+            crashDir.mkdirs()
+            copy {
+                from file("src/test/resources/fuzz-corpus/${targetName}")
+                into corpusDir
+            }
+            args = [
+                    "--target_class=${targetClass}",
+                    "-runs=${fuzzRuns.get()}",
+                    "-seed=1337",
+                    "-max_len=65536",
+                    "-timeout=5",
+                    "-rss_limit_mb=2048",
+                    "-artifact_prefix=${crashDir}${File.separator}",
+                    corpusDir.absolutePath,
+            ]
+        }
+    }
+}
+
+tasks.register("fuzzUntrustedImports") {
+    group = "verification"
+    description = "Runs all deterministic, bounded coverage-guided import fuzz targets."
+    dependsOn fuzzTasks
 }
 
 preBuild.dependsOn ":server:build"

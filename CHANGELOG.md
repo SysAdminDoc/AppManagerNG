@@ -22,6 +22,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   device-specific tables (app inventory, scan results, backup rows) stay excluded.
 
 ### Security
+- App-list, rule, snapshot-manifest, and archive import seams now have bounded,
+  deterministic Jazzer targets seeded with current and legacy formats; tracked
+  corpus inputs also run as ordinary regressions. Archive budget rejection is
+  atomic, so a failed entry or temporary-allocation check cannot partially
+  charge state used by the remainder of an import.
 - The maintainer-local release preflight now blocks on OWASP Dependency-Check
   scanner failures or unsuppressed CVSS 9.0+ findings and retains its HTML and
   SARIF reports plus a hashed audit receipt with the release assets.

@@ -60,6 +60,7 @@ public class ArchiveExtractionGuardTest {
         guard.onNewEntry();
         guard.onNewEntry();
         assertThrows(IOException.class, guard::onNewEntry);
+        assertEquals(3, guard.getEntriesExtracted());
     }
 
     @Test
@@ -112,6 +113,21 @@ public class ArchiveExtractionGuardTest {
         guard.copyToTemporary(new ByteArrayInputStream(new byte[6]), new ByteArrayOutputStream());
         assertEquals(6, guard.getTemporaryBytes());
         assertEquals(12, guard.getBytesExtracted());
+    }
+
+    @Test
+    public void temporaryBudgetFailureDoesNotPartiallyChargeExpandedBytes() throws IOException {
+        ArchiveExtractionGuard guard = new ArchiveExtractionGuard(100, 10, 100, 4);
+        guard.onNewEntry();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+        assertThrows(IOException.class,
+                () -> guard.copyToTemporary(new ByteArrayInputStream(new byte[6]), out));
+
+        assertEquals(0, guard.getBytesExtracted());
+        assertEquals(0, guard.getCurrentEntryBytes());
+        assertEquals(0, guard.getTemporaryBytes());
+        assertEquals(0, out.size());
     }
 
     @Test
