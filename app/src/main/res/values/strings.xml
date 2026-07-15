@@ -398,6 +398,8 @@
     <string name="no_content">No content</string>
     <string name="app_usage_empty_title">No usage data</string>
     <string name="app_usage_empty_message">Try another time range or refresh after Android has collected usage stats.</string>
+    <string name="app_usage_load_failed_title">Couldn\'t load usage data</string>
+    <string name="app_usage_load_failed_message">Android did not return usage data for any available user. Check usage access and try again.</string>
     <string name="app_usage_no_mobile_data">No mobile data</string>
     <string name="app_usage_no_wifi_data">No Wi-Fi data</string>
     <string name="app_usage_data_plain"><xliff:g id="sent" example="1 MB">%1$s</xliff:g> sent, <xliff:g id="received" example="5 MB">%2$s</xliff:g> received</string>

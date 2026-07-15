@@ -125,7 +125,6 @@ public class AppUsageActivity extends BaseActivity implements SwipeRefreshLayout
         mSwipeRefresh.setOnChildScrollUpCallback((parent, child) -> recyclerView.canScrollVertically(-1));
 
         viewModel.getPackageUsageInfoList().observe(this, packageUsageInfoList -> {
-            ProgressIndicatorCompat.setVisibility(progressIndicator, false);
             mAppUsageAdapter.setDefaultList(packageUsageInfoList);
             // Focus on the first item
             recyclerView.post(() -> {
@@ -136,6 +135,22 @@ public class AppUsageActivity extends BaseActivity implements SwipeRefreshLayout
                     }
                 }
             });
+        });
+        viewModel.getUsageLoadStatus().observe(this, status -> {
+            switch (status.state) {
+                case LOADING:
+                    ProgressIndicatorCompat.setVisibility(progressIndicator, true);
+                    break;
+                case LOADED:
+                    ProgressIndicatorCompat.setVisibility(progressIndicator, false);
+                    showUsageDataEmptyState();
+                    break;
+                case FAILED:
+                    ProgressIndicatorCompat.setVisibility(progressIndicator, false);
+                    mAppUsageAdapter.setDefaultList(Collections.emptyList());
+                    showUsageLoadErrorState();
+                    break;
+            }
         });
         viewModel.getPackageUsageInfo().observe(this, packageUsageInfo -> {
             AppUsageDetailsDialog fragment = AppUsageDetailsDialog.getInstance(packageUsageInfo,
@@ -164,6 +179,7 @@ public class AppUsageActivity extends BaseActivity implements SwipeRefreshLayout
         if (!SelfPermissions.checkUsageStatsPermission()) {
             ProgressIndicatorCompat.setVisibility(progressIndicator, false);
             mWaitingForUsageAccess = false;
+            viewModel.cancelUsageLoad();
             if (mAppUsageAdapter != null) {
                 mAppUsageAdapter.setDefaultList(Collections.emptyList());
             }
@@ -248,7 +264,6 @@ public class AppUsageActivity extends BaseActivity implements SwipeRefreshLayout
 
     private void setSortBy(@SortOrder int sort) {
         if (viewModel != null) {
-            ProgressIndicatorCompat.setVisibility(progressIndicator, true);
             viewModel.setSortOrder(sort);
         }
     }
@@ -279,6 +294,20 @@ public class AppUsageActivity extends BaseActivity implements SwipeRefreshLayout
         mEmptyStateAction.setIconResource(R.drawable.ic_open_in_new);
         mEmptyStateAction.setVisibility(View.VISIBLE);
         mEmptyStateAction.setOnClickListener(v -> openUsageAccessSettings());
+    }
+
+    private void showUsageLoadErrorState() {
+        if (mEmptyStateIcon == null || mEmptyStateTitle == null || mEmptyStateSummary == null
+                || mEmptyStateAction == null) {
+            return;
+        }
+        mEmptyStateIcon.setImageResource(R.drawable.ic_information_circle);
+        mEmptyStateTitle.setText(R.string.app_usage_load_failed_title);
+        mEmptyStateSummary.setText(R.string.app_usage_load_failed_message);
+        mEmptyStateAction.setText(R.string.try_again);
+        mEmptyStateAction.setIconResource(R.drawable.ic_refresh);
+        mEmptyStateAction.setVisibility(View.VISIBLE);
+        mEmptyStateAction.setOnClickListener(v -> onRefresh());
     }
 
     private void openUsageAccessSettings() {
