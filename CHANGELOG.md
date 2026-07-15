@@ -97,6 +97,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Ported from upstream App Manager (`133b5acb7f`).
 
 ### Fixed
+- Backup metadata version 8 now checksums Android KeyStore master keys as raw
+  binary bytes instead of a lossy platform-default String round-trip. Restore
+  still reproduces the legacy transform for metadata versions 1–7, preserving
+  compatibility with existing backups.
 - App Usage refreshes now capture immutable date, interval, comparison, and user
   inputs; cancel or supersede older work; and reject stale out-of-order results.
   Partial multi-user results remain available, while an all-user query failure
