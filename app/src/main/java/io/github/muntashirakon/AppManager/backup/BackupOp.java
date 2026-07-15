@@ -523,14 +523,12 @@ class BackupOp implements Closeable {
         try {
             Path masterKeyFile = KeyStoreUtils.getMasterKey(mUserId);
             // Master key exists, so take its checksum to verify it during the restore
-            String masterKeyChecksum = DigestUtils.getHexDigest(mMetadata.info.checksumAlgo,
-                    masterKeyFile.getContentAsString().getBytes());
-            try {
-                mChecksum.add(MASTER_KEY, masterKeyChecksum);
-            } catch (IOException e) {
-                throw new BackupException("Failed to write master key checksum.", e);
-            }
+            String masterKeyChecksum = MasterKeyChecksum.calculate(mMetadata.info.checksumAlgo,
+                    mMetadata.info.version, masterKeyFile);
+            mChecksum.add(MASTER_KEY, masterKeyChecksum);
         } catch (FileNotFoundException ignore) {
+        } catch (IOException e) {
+            throw new BackupException("Failed to write master key checksum.", e);
         }
         // Store the KeyStore files
         Path cachePath = Paths.get(FileUtils.getCachePath());
