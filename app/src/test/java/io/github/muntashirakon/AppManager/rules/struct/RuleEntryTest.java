@@ -364,6 +364,9 @@ public class RuleEntryTest {
                 () -> RuleEntry.unflattenFromString(PACKAGE_NAME, ".activity\tACTIVITY\t\ttrue", false));
         assertThrows(IllegalArgumentException.class,
                 () -> RuleEntry.unflattenFromString("", ".activity\tACTIVITY\ttrue", false));
+        assertThrows(IllegalArgumentException.class,
+                () -> RuleEntry.unflattenFromString(PACKAGE_NAME,
+                        ".permission\tPERMISSION\ttrue\t\t32", false));
     }
 
     @Test

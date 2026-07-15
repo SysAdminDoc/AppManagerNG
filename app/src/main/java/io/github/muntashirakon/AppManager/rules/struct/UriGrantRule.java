@@ -5,7 +5,6 @@ package io.github.muntashirakon.AppManager.rules.struct;
 import androidx.annotation.NonNull;
 
 import java.util.Objects;
-import java.util.StringTokenizer;
 
 import io.github.muntashirakon.AppManager.rules.RuleType;
 import io.github.muntashirakon.AppManager.uri.UriManager;
@@ -19,10 +18,10 @@ public class UriGrantRule extends RuleEntry {
         mUriGrant = uriGrant;
     }
 
-    public UriGrantRule(@NonNull String packageName, @NonNull StringTokenizer tokenizer) {
+    public UriGrantRule(@NonNull String packageName, @NonNull RuleValueReader tokenizer) {
         super(packageName, STUB, RuleType.URI_GRANT);
-        if (tokenizer.hasMoreElements()) {
-            mUriGrant = UriManager.UriGrant.unflattenFromString(tokenizer.nextElement().toString());
+        if (tokenizer.hasNext()) {
+            mUriGrant = UriManager.UriGrant.unflattenFromString(tokenizer.next());
         } else throw new IllegalArgumentException("Invalid format: uriGrant not found");
     }
 

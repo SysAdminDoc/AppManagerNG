@@ -11,7 +11,6 @@ import androidx.annotation.StringDef;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Objects;
-import java.util.StringTokenizer;
 
 import io.github.muntashirakon.AppManager.rules.RuleType;
 
@@ -86,10 +85,10 @@ public class ComponentRule extends RuleEntry {
     }
 
     public ComponentRule(@NonNull String packageName, @NonNull String name, RuleType componentType,
-                         @NonNull StringTokenizer tokenizer) throws IllegalArgumentException {
+                         @NonNull RuleValueReader tokenizer) throws IllegalArgumentException {
         super(packageName, name, componentType);
-        if (tokenizer.hasMoreElements()) {
-            mComponentStatus = fixComponentStatus(parseComponentStatus(tokenizer.nextElement().toString()));
+        if (tokenizer.hasNext()) {
+            mComponentStatus = fixComponentStatus(parseComponentStatus(tokenizer.next()));
         } else throw new IllegalArgumentException("Invalid format: componentStatus not found");
     }
 

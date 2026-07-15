@@ -13,6 +13,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -62,7 +63,8 @@ public class RulesImporter implements Closeable {
     public void addRulesFromUri(Uri uri) throws IOException {
         try (InputStream inputStream = ContextUtils.getContext().getContentResolver().openInputStream(uri)) {
             if (inputStream == null) throw new IOException("Content provider has crashed.");
-            try (BufferedReader TSVFile = new BufferedReader(new InputStreamReader(inputStream))) {
+            try (BufferedReader TSVFile = new BufferedReader(
+                    new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
                 String dataRow;
                 while ((dataRow = TSVFile.readLine()) != null) {
                     importRow(dataRow);
@@ -73,7 +75,8 @@ public class RulesImporter implements Closeable {
 
     public void addRulesFromPath(Path path) throws IOException {
         try (InputStream inputStream = path.openInputStream()) {
-            try (BufferedReader TSVFile = new BufferedReader(new InputStreamReader(inputStream))) {
+            try (BufferedReader TSVFile = new BufferedReader(
+                    new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
                 String dataRow;
                 while ((dataRow = TSVFile.readLine()) != null) {
                     importRow(dataRow);
@@ -93,7 +96,7 @@ public class RulesImporter implements Closeable {
      * and keep importing the rest, matching the per-entry skip pattern already
      * used by {@code ComponentUtils.readIFWRules}.
      */
-    private void importRow(@NonNull String dataRow) {
+    void importRow(@NonNull String dataRow) {
         RuleEntry entry;
         try {
             entry = RuleEntry.unflattenFromString(null, dataRow, true);
@@ -101,15 +104,16 @@ public class RulesImporter implements Closeable {
             Log.w(TAG, "Skipping malformed rule line: " + dataRow, e);
             return;
         }
+        if (!mTypesToImport.contains(entry.type)) {
+            return;
+        }
         for (int i = 0; i < mUserIds.length; ++i) {
             if (mComponentsBlockers[i].get(entry.packageName) == null) {
                 // Get a read-only instance, commit will be called manually
                 mComponentsBlockers[i].put(entry.packageName, ComponentsBlocker.getInstance(entry.packageName, mUserIds[i]));
             }
-            if (mTypesToImport.contains(entry.type)) {
-                //noinspection ConstantConditions Returned ComponentsBlocker will never be null here
-                mComponentsBlockers[i].get(entry.packageName).addEntry(entry);
-            }
+            //noinspection ConstantConditions Returned ComponentsBlocker will never be null here
+            mComponentsBlockers[i].get(entry.packageName).addEntry(entry);
         }
     }
 

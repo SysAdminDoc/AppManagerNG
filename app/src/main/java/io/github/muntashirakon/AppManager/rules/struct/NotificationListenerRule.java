@@ -5,7 +5,6 @@ package io.github.muntashirakon.AppManager.rules.struct;
 import androidx.annotation.NonNull;
 
 import java.util.Objects;
-import java.util.StringTokenizer;
 
 import io.github.muntashirakon.AppManager.rules.RuleType;
 
@@ -17,10 +16,10 @@ public class NotificationListenerRule extends RuleEntry {
         this.mIsGranted = isGranted;
     }
 
-    public NotificationListenerRule(@NonNull String packageName, String name, @NonNull StringTokenizer tokenizer) {
+    public NotificationListenerRule(@NonNull String packageName, String name, @NonNull RuleValueReader tokenizer) {
         super(packageName, name, RuleType.NOTIFICATION);
-        if (tokenizer.hasMoreElements()) {
-            mIsGranted = parseBoolean(tokenizer.nextElement().toString(), "isGranted");
+        if (tokenizer.hasNext()) {
+            mIsGranted = parseBoolean(tokenizer.next(), "isGranted");
         } else throw new IllegalArgumentException("Invalid format: isGranted not found");
     }
 

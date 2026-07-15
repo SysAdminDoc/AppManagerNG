@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 public class PathReader extends InputStreamReader {
     /**
@@ -20,6 +21,6 @@ public class PathReader extends InputStreamReader {
      *                               reading.
      */
     public PathReader(@NonNull Path file) throws IOException {
-        super(file.openInputStream());
+        super(file.openInputStream(), StandardCharsets.UTF_8);
     }
 }
