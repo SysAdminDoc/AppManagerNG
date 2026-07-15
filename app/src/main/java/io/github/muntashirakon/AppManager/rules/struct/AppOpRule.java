@@ -5,7 +5,6 @@ package io.github.muntashirakon.AppManager.rules.struct;
 import androidx.annotation.NonNull;
 
 import java.util.Objects;
-import java.util.StringTokenizer;
 
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.rules.RuleType;
@@ -21,12 +20,12 @@ public class AppOpRule extends RuleEntry {
         mMode = validateMode(mode);
     }
 
-    public AppOpRule(@NonNull String packageName, String opInt, @NonNull StringTokenizer tokenizer)
+    public AppOpRule(@NonNull String packageName, String opInt, @NonNull RuleValueReader tokenizer)
             throws RuntimeException {
         super(packageName, opInt, RuleType.APP_OP);
         mOp = validateOp(parseInt(opInt, "op"));
-        if (tokenizer.hasMoreElements()) {
-            mMode = validateMode(parseInt(tokenizer.nextElement().toString(), "mode"));
+        if (tokenizer.hasNext()) {
+            mMode = validateMode(parseInt(tokenizer.next(), "mode"));
         } else throw new IllegalArgumentException("Invalid format: mode not found");
     }
 

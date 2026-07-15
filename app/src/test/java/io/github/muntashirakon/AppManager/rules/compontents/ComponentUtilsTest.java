@@ -8,13 +8,17 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
 
 import io.github.muntashirakon.AppManager.rules.RuleType;
+import io.github.muntashirakon.AppManager.rules.struct.ComponentRule;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
 
@@ -55,6 +59,18 @@ public class ComponentUtilsTest {
         assertTrue(escaped.contains("&lt;"));
         assertTrue(escaped.contains("&gt;"));
         assertTrue(escaped.contains("&quot;"));
+    }
+
+    @Test
+    public void storeRulesWritesUtf8Deterministically() throws IOException {
+        ComponentRule rule = new ComponentRule("com.example.应用", ".Écran",
+                RuleType.ACTIVITY, ComponentRule.COMPONENT_TO_BE_DISABLED);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        ComponentUtils.storeRules(outputStream, Collections.singletonList(rule), true);
+
+        assertEquals(rule.flattenToString(true) + "\n",
+                new String(outputStream.toByteArray(), StandardCharsets.UTF_8));
     }
 
     @Test

@@ -5,7 +5,6 @@ package io.github.muntashirakon.AppManager.rules.struct;
 import androidx.annotation.NonNull;
 
 import java.util.Objects;
-import java.util.StringTokenizer;
 
 import io.github.muntashirakon.AppManager.rules.RuleType;
 
@@ -18,10 +17,10 @@ public class PermissionReferenceRule extends RuleEntry {
     }
 
     public PermissionReferenceRule(@NonNull String packageName, @NonNull String permName,
-                                   @NonNull StringTokenizer tokenizer) throws IllegalArgumentException {
+                                   @NonNull RuleValueReader tokenizer) throws IllegalArgumentException {
         super(packageName, permName, RuleType.PERMISSION_REFERENCE);
-        if (tokenizer.hasMoreElements()) {
-            mGranted = parseBoolean(tokenizer.nextElement().toString(), "granted");
+        if (tokenizer.hasNext()) {
+            mGranted = parseBoolean(tokenizer.next(), "granted");
         } else throw new IllegalArgumentException("Invalid format: granted not found");
     }
 

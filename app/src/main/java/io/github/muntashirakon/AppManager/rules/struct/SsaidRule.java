@@ -5,7 +5,6 @@ package io.github.muntashirakon.AppManager.rules.struct;
 import androidx.annotation.NonNull;
 
 import java.util.Objects;
-import java.util.StringTokenizer;
 
 import io.github.muntashirakon.AppManager.rules.RuleType;
 
@@ -22,10 +21,10 @@ public class SsaidRule extends RuleEntry {
         mSsaid = validateSsaid(packageName, ssaid);
     }
 
-    public SsaidRule(@NonNull String packageName, @NonNull StringTokenizer tokenizer) {
+    public SsaidRule(@NonNull String packageName, @NonNull RuleValueReader tokenizer) {
         super(packageName, STUB, RuleType.SSAID);
-        if (tokenizer.hasMoreElements()) {
-            mSsaid = validateSsaid(packageName, tokenizer.nextElement().toString());
+        if (tokenizer.hasNext()) {
+            mSsaid = validateSsaid(packageName, tokenizer.next());
         } else throw new IllegalArgumentException("Invalid format: ssaid not found");
     }
 

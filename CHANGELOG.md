@@ -97,6 +97,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Ported from upstream App Manager (`133b5acb7f`).
 
 ### Fixed
+- Rule TSV parsing now preserves empty positional fields instead of shifting
+  later values. Rule, configuration, and IFW text I/O is pinned to UTF-8, and
+  imports no longer instantiate or recommit package blockers for deselected
+  rule types.
 - Backup metadata version 8 now checksums Android KeyStore master keys as raw
   binary bytes instead of a lossy platform-default String round-trip. Restore
   still reproduces the legacy transform for metadata versions 1–7, preserving

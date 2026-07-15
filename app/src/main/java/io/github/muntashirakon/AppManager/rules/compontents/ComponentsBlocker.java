@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -353,7 +354,7 @@ public final class ComponentsBlocker extends RulesStorageManager {
         try {
             rulesStream = mRulesFile.startWrite();
             Log.d(TAG, "Rules: %s", rules);
-            rulesStream.write(rules.getBytes());
+            rulesStream.write(rules.getBytes(StandardCharsets.UTF_8));
             mRulesFile.finishWrite(rulesStream);
             //noinspection OctalInteger
             mRulesFile.getBaseFile().setMode(0666);

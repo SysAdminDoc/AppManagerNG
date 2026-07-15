@@ -5,7 +5,6 @@ package io.github.muntashirakon.AppManager.rules.struct;
 import androidx.annotation.NonNull;
 
 import java.util.Objects;
-import java.util.StringTokenizer;
 
 import io.github.muntashirakon.AppManager.compat.NetworkPolicyManagerCompat;
 import io.github.muntashirakon.AppManager.rules.RuleType;
@@ -19,10 +18,10 @@ public class NetPolicyRule extends RuleEntry {
         mNetPolicies = requireNonNegativeInt(netPolicies, "netPolicies");
     }
 
-    public NetPolicyRule(@NonNull String packageName, @NonNull StringTokenizer tokenizer) {
+    public NetPolicyRule(@NonNull String packageName, @NonNull RuleValueReader tokenizer) {
         super(packageName, STUB, RuleType.NET_POLICY);
-        if (tokenizer.hasMoreElements()) {
-            mNetPolicies = parseNonNegativeInt(tokenizer.nextElement().toString(), "netPolicies");
+        if (tokenizer.hasNext()) {
+            mNetPolicies = parseNonNegativeInt(tokenizer.next(), "netPolicies");
         } else throw new IllegalArgumentException("Invalid format: netPolicies not found");
     }
 

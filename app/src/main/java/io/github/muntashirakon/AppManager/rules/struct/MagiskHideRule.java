@@ -5,7 +5,6 @@ package io.github.muntashirakon.AppManager.rules.struct;
 import androidx.annotation.NonNull;
 
 import java.util.Objects;
-import java.util.StringTokenizer;
 
 import io.github.muntashirakon.AppManager.magisk.MagiskProcess;
 import io.github.muntashirakon.AppManager.rules.RuleType;
@@ -19,16 +18,16 @@ public class MagiskHideRule extends RuleEntry {
         mMagiskProcess = magiskProcess;
     }
 
-    public MagiskHideRule(@NonNull String packageName, @NonNull String processName, @NonNull StringTokenizer tokenizer)
+    public MagiskHideRule(@NonNull String packageName, @NonNull String processName, @NonNull RuleValueReader tokenizer)
             throws IllegalArgumentException {
         super(packageName, processName.equals(STUB) ? packageName : processName, RuleType.MAGISK_HIDE);
         mMagiskProcess = new MagiskProcess(packageName, name); // name cannot be STUB
         mMagiskProcess.setAppZygote(name.endsWith("_zygote"));
-        if (tokenizer.hasMoreElements()) {
-            mMagiskProcess.setEnabled(parseBoolean(tokenizer.nextElement().toString(), "isHidden"));
+        if (tokenizer.hasNext()) {
+            mMagiskProcess.setEnabled(parseBoolean(tokenizer.next(), "isHidden"));
         } else throw new IllegalArgumentException("Invalid format: isHidden not found");
-        if (tokenizer.hasMoreElements()) {
-            mMagiskProcess.setIsolatedProcess(parseBoolean(tokenizer.nextElement().toString(), "isIsolated"));
+        if (tokenizer.hasNext()) {
+            mMagiskProcess.setIsolatedProcess(parseBoolean(tokenizer.next(), "isIsolated"));
         }
     }
 

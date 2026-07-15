@@ -9,7 +9,6 @@ import androidx.annotation.NonNull;
 import androidx.core.content.pm.PermissionInfoCompat;
 
 import java.util.Objects;
-import java.util.StringTokenizer;
 
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PermissionCompat;
@@ -35,14 +34,14 @@ public class PermissionRule extends RuleEntry {
         mAppOp = AppOpsManagerCompat.permissionToOpCode(name);
     }
 
-    public PermissionRule(@NonNull String packageName, @NonNull String permName, @NonNull StringTokenizer tokenizer)
+    public PermissionRule(@NonNull String packageName, @NonNull String permName, @NonNull RuleValueReader tokenizer)
             throws IllegalArgumentException {
         super(packageName, permName, RuleType.PERMISSION);
-        if (tokenizer.hasMoreElements()) {
-            mIsGranted = parseBoolean(tokenizer.nextElement().toString(), "isGranted");
+        if (tokenizer.hasNext()) {
+            mIsGranted = parseBoolean(tokenizer.next(), "isGranted");
         } else throw new IllegalArgumentException("Invalid format: isGranted not found");
-        if (tokenizer.hasMoreElements()) {
-            mFlags = parseNonNegativeInt(tokenizer.nextElement().toString(), "flags");
+        if (tokenizer.hasNext()) {
+            mFlags = parseNonNegativeInt(tokenizer.next(), "flags");
         } else {
             // Don't throw exception in order to provide backward compatibility
             mFlags = 0;

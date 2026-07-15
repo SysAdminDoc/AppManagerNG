@@ -5,7 +5,6 @@ package io.github.muntashirakon.AppManager.rules.struct;
 import androidx.annotation.NonNull;
 
 import java.util.Objects;
-import java.util.StringTokenizer;
 
 import io.github.muntashirakon.AppManager.rules.RuleType;
 
@@ -17,10 +16,10 @@ public class BatteryOptimizationRule extends RuleEntry {
         mEnabled = enabled;
     }
 
-    public BatteryOptimizationRule(@NonNull String packageName, @NonNull StringTokenizer tokenizer) {
+    public BatteryOptimizationRule(@NonNull String packageName, @NonNull RuleValueReader tokenizer) {
         super(packageName, STUB, RuleType.BATTERY_OPT);
-        if (tokenizer.hasMoreElements()) {
-            mEnabled = parseBoolean(tokenizer.nextElement().toString(), "enabled");
+        if (tokenizer.hasNext()) {
+            mEnabled = parseBoolean(tokenizer.next(), "enabled");
         } else throw new IllegalArgumentException("Invalid format: enabled not found");
     }
 

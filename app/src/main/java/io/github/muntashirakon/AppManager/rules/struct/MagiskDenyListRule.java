@@ -5,7 +5,6 @@ package io.github.muntashirakon.AppManager.rules.struct;
 import androidx.annotation.NonNull;
 
 import java.util.Objects;
-import java.util.StringTokenizer;
 
 import io.github.muntashirakon.AppManager.magisk.MagiskProcess;
 import io.github.muntashirakon.AppManager.rules.RuleType;
@@ -19,16 +18,16 @@ public class MagiskDenyListRule extends RuleEntry {
         mMagiskProcess = magiskProcess;
     }
 
-    public MagiskDenyListRule(@NonNull String packageName, @NonNull String processName, @NonNull StringTokenizer tokenizer)
+    public MagiskDenyListRule(@NonNull String packageName, @NonNull String processName, @NonNull RuleValueReader tokenizer)
             throws IllegalArgumentException {
         super(packageName, processName, RuleType.MAGISK_DENY_LIST);
         mMagiskProcess = new MagiskProcess(packageName, name);
         mMagiskProcess.setAppZygote(name.endsWith("_zygote"));
-        if (tokenizer.hasMoreElements()) {
-            mMagiskProcess.setEnabled(parseBoolean(tokenizer.nextElement().toString(), "isDenied"));
+        if (tokenizer.hasNext()) {
+            mMagiskProcess.setEnabled(parseBoolean(tokenizer.next(), "isDenied"));
         } else throw new IllegalArgumentException("Invalid format: isHidden not found");
-        if (tokenizer.hasMoreElements()) {
-            mMagiskProcess.setIsolatedProcess(parseBoolean(tokenizer.nextElement().toString(), "isIsolated"));
+        if (tokenizer.hasNext()) {
+            mMagiskProcess.setIsolatedProcess(parseBoolean(tokenizer.next(), "isIsolated"));
         }
     }
 
