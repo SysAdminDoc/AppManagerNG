@@ -22,6 +22,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   device-specific tables (app inventory, scan results, backup rows) stay excluded.
 
 ### Security
+- Backup verification and restore now refuse legacy CRC32 checksum metadata;
+  the backup remains readable for inventory/migration, but non-cryptographic
+  checksums can no longer authorize a restore.
+- Successful pre-v4 AES/RSA/ECC restores now report that their legacy 32-bit
+  GCM authentication tag provides weak ciphertext integrity and recommend
+  recreating the backup; compatibility and extras warnings no longer erase it.
+- Extras restore now distinguishes applied, skipped, and failed rules; a strict
+  majority of attempted rules failing marks the restore partial instead of
+  reporting unconditional success.
 - App-list, rule, snapshot-manifest, and archive import seams now have bounded,
   deterministic Jazzer targets seeded with current and legacy formats; tracked
   corpus inputs also run as ordinary regressions. Archive budget rejection is

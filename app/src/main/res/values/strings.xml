@@ -1697,6 +1697,7 @@
     <string name="restore_api_risk_scoped_storage">Scoped storage enforcement changed between these versions — file paths in the backup may not resolve.</string>
     <string name="restore_api_risk_runtime_permissions">The runtime permission model changed between these versions — permission grants in the backup may not apply.</string>
     <string name="restore_api_risk_package_visibility">Package visibility filtering changed between these versions — cross-app references in the backup may not resolve.</string>
+    <string name="restore_legacy_gcm_integrity_warning">This encrypted backup uses a legacy 32-bit GCM authentication tag. Its ciphertext integrity is weak; re-create the backup after restore to upgrade to 128-bit authentication.</string>
     <string name="backup_rules_description">Back up rules configured within AppManagerNG. <b>Warning:</b> Depending on the permissions, not all rules can be reapplied during restore.</string>
     <string name="backup_system_data">System data</string>
     <string name="backup_system_data_description">Root-only backup for Android System: Wi-Fi networks, Bluetooth pairings, and account databases.</string>

@@ -11,6 +11,8 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.LooperMode;
 
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -215,6 +217,59 @@ public class BackupManagerTest {
         });
 
         assertTrue(exception.getMessage().contains("Could not read APK archive."));
+    }
+
+    @Test
+    public void testVerifyAndRestoreRejectCrc32Backup() throws Exception {
+        Prefs.Storage.setVolumePath(tmpBackupPath.getUri().toString());
+        assertNotNull(rscBackupPath.findFile("AppManager")
+                .copyTo(tmpBackupPath, true));
+        Path metadataFile = tmpBackupPath.findFile("AppManager")
+                .findFile("dnsfilter.android")
+                .findFile("0")
+                .findFile(MetadataManager.META_V2_FILE);
+        String metadata = metadataFile.getContentAsString()
+                .replace("\"checksum_algo\": \"SHA-256\"", "\"checksum_algo\": \"CRC32\"");
+        writeString(metadataFile, metadata);
+        BackupManager backupManager = new BackupManager();
+
+        BackupException verifyException = assertThrows(BackupException.class,
+                () -> backupManager.verify("dnsfilter.android/0"));
+        assertTrue(verifyException.getMessage().contains("non-cryptographic CRC32"));
+
+        RestoreOpOptions options = new RestoreOpOptions(
+                "dnsfilter.android", 0, "dnsfilter.android/0", 1110);
+        BackupException restoreException = assertThrows(BackupException.class,
+                () -> backupManager.restore(options, null));
+        assertTrue(restoreException.getMessage().contains("non-cryptographic CRC32"));
+    }
+
+    @Test
+    public void legacyGcmWarningOnlyAppliesToEncryptedPreV4Backups() throws Exception {
+        BackupMetadataV5.Info legacyAes = backupInfo(3, CryptoUtils.MODE_AES);
+        BackupMetadataV5.Info modernAes = backupInfo(4, CryptoUtils.MODE_AES);
+        BackupMetadataV5.Info legacyUnencrypted = backupInfo(3, CryptoUtils.MODE_NO_ENCRYPTION);
+
+        String warning = RestoreOp.getLegacyGcmIntegrityWarning(legacyAes);
+        assertNotNull(warning);
+        assertTrue(warning.contains("32-bit GCM"));
+        assertNull(RestoreOp.getLegacyGcmIntegrityWarning(modernAes));
+        assertNull(RestoreOp.getLegacyGcmIntegrityWarning(legacyUnencrypted));
+    }
+
+    @Test
+    public void extrasRestoreEscalatesOnlyWhenFailuresAreTheMajority() throws BackupException {
+        RestoreOp.requireAcceptableExtraRestoreResult(0, 0);
+        RestoreOp.requireAcceptableExtraRestoreResult(2, 1);
+        RestoreOp.requireAcceptableExtraRestoreResult(1, 1);
+
+        BackupException allFailed = assertThrows(BackupException.class,
+                () -> RestoreOp.requireAcceptableExtraRestoreResult(0, 1));
+        assertTrue(allFailed.getMessage().contains("failed for 1 of 1 attempted rules"));
+
+        BackupException majorityFailed = assertThrows(BackupException.class,
+                () -> RestoreOp.requireAcceptableExtraRestoreResult(1, 2));
+        assertTrue(majorityFailed.getMessage().contains("The restore may be partial"));
     }
 
     @Test
@@ -573,5 +628,20 @@ public class BackupManagerTest {
         }
         fail("Missing checksum entry for " + filename);
         return checksums;
+    }
+
+    private static BackupMetadataV5.Info backupInfo(int version, String crypto) throws Exception {
+        JSONObject info = new JSONObject()
+                .put("version", version)
+                .put("backup_time", 1L)
+                .put("flags", BackupFlags.BACKUP_APK_FILES)
+                .put("user_handle", 0)
+                .put("tar_type", TarUtils.TAR_GZIP)
+                .put("checksum_algo", DigestUtils.SHA_256)
+                .put("crypto", crypto);
+        if (!CryptoUtils.MODE_NO_ENCRYPTION.equals(crypto)) {
+            info.put("iv", "00");
+        }
+        return new BackupMetadataV5.Info(info);
     }
 }
