@@ -30,6 +30,7 @@ import android.os.UserHandleHidden;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.content.ContextCompat;
 
 import org.json.JSONException;
@@ -246,7 +247,8 @@ public class AutomationReceiver extends BroadcastReceiver {
     }
 
     @NonNull
-    private ArrayList<Integer> getUsers(@NonNull Intent intent, int packageCount) {
+    @VisibleForTesting
+    ArrayList<Integer> getUsers(@NonNull Intent intent, int packageCount) {
         ArrayList<Integer> users = intent.getIntegerArrayListExtra(EXTRA_USERS);
         if (users == null) {
             int[] userArray = intent.getIntArrayExtra(EXTRA_USERS);
@@ -271,9 +273,14 @@ public class AutomationReceiver extends BroadcastReceiver {
                 users.add(userId);
             }
         } else if (users.size() == 1 && packageCount > 1) {
-            int userId = users.get(0);
+            Integer userId = users.get(0);
             while (users.size() < packageCount) {
                 users.add(userId);
+            }
+        }
+        for (Integer userId : users) {
+            if (userId == null || userId < 0) {
+                throw new IllegalArgumentException("Invalid " + EXTRA_USER + ": " + userId);
             }
         }
         if (users.size() != packageCount) {
