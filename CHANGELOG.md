@@ -31,6 +31,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Extras restore now distinguishes applied, skipped, and failed rules; a strict
   majority of attempted rules failing marks the restore partial instead of
   reporting unconditional success.
+- APK restore now treats base and split filenames as literal archive filters,
+  preventing regex metacharacters in metadata from matching unintended entries.
 - App-list, rule, snapshot-manifest, and archive import seams now have bounded,
   deterministic Jazzer targets seeded with current and legacy formats; tracked
   corpus inputs also run as ordinary regressions. Archive budget rejection is
