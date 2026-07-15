@@ -30,6 +30,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
@@ -50,6 +51,9 @@ import io.github.muntashirakon.AppManager.settings.Ops;
 
 public class AppPref {
     private static final String PREF_NAME = "preferences";
+    public static final String DEVICE_LOCAL_PREF_NAME = "device_local_secrets";
+    private static final String DEVICE_BINDING_KEY = "device_local_binding_id";
+    private static final String DEVICE_LOCAL_RESET_NOTICE_KEY = "device_local_secrets_reset_notice";
 
     private static final int PREF_SKIP = 5;
 
@@ -312,17 +316,18 @@ public class AppPref {
     public static Object get(PrefKey key) {
         int index = PrefKey.indexOf(key);
         AppPref appPref = getInstance();
+        SharedPreferences preferences = appPref.getPreferencesForKey(PrefKey.sKeys[index]);
         switch (PrefKey.sTypes[index]) {
             case TYPE_BOOLEAN:
-                return appPref.mPreferences.getBoolean(PrefKey.sKeys[index], (boolean) appPref.getDefaultValue(key));
+                return preferences.getBoolean(PrefKey.sKeys[index], (boolean) appPref.getDefaultValue(key));
             case TYPE_FLOAT:
-                return appPref.mPreferences.getFloat(PrefKey.sKeys[index], (float) appPref.getDefaultValue(key));
+                return preferences.getFloat(PrefKey.sKeys[index], (float) appPref.getDefaultValue(key));
             case TYPE_INTEGER:
-                return appPref.mPreferences.getInt(PrefKey.sKeys[index], (int) appPref.getDefaultValue(key));
+                return preferences.getInt(PrefKey.sKeys[index], (int) appPref.getDefaultValue(key));
             case TYPE_LONG:
-                return appPref.mPreferences.getLong(PrefKey.sKeys[index], (long) appPref.getDefaultValue(key));
+                return preferences.getLong(PrefKey.sKeys[index], (long) appPref.getDefaultValue(key));
             case TYPE_STRING:
-                return Objects.requireNonNull(appPref.mPreferences.getString(PrefKey.sKeys[index],
+                return Objects.requireNonNull(preferences.getString(PrefKey.sKeys[index],
                         (String) appPref.getDefaultValue(key)));
         }
         throw new IllegalArgumentException("Unknown key or type.");
@@ -351,12 +356,15 @@ public class AppPref {
 
     @NonNull
     private final SharedPreferences mPreferences;
+    private final SharedPreferences mDeviceLocalPreferences;
 
     private final Context mContext;
 
     private AppPref(@NonNull Context context) {
         mContext = context;
         mPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        mDeviceLocalPreferences = context.getSharedPreferences(DEVICE_LOCAL_PREF_NAME,
+                Context.MODE_PRIVATE);
         init();
     }
 
@@ -367,7 +375,7 @@ public class AppPref {
         // persisted other threads' pending-but-unflushed puts, and the immediate
         // commit() after apply() forced a synchronous fsync on the calling thread
         // (main-thread disk I/O / ANR risk, plus a redundant double flush).
-        SharedPreferences.Editor editor = mPreferences.edit();
+        SharedPreferences.Editor editor = getPreferencesForKey(PrefKey.sKeys[index]).edit();
         if (value instanceof Boolean) editor.putBoolean(PrefKey.sKeys[index], (Boolean) value);
         else if (value instanceof Float) editor.putFloat(PrefKey.sKeys[index], (Float) value);
         else if (value instanceof Integer) editor.putInt(PrefKey.sKeys[index], (Integer) value);
@@ -381,7 +389,7 @@ public class AppPref {
         if (index == -1) throw new IllegalArgumentException("Invalid key: " + key);
         // Set default value if the requested value is null
         if (value == null) value = getDefaultValue(PrefKey.sPrefKeyList.get(index));
-        SharedPreferences.Editor editor = mPreferences.edit();
+        SharedPreferences.Editor editor = getPreferencesForKey(key).edit();
         if (value instanceof Boolean) editor.putBoolean(key, (Boolean) value);
         else if (value instanceof Float) editor.putFloat(key, (Float) value);
         else if (value instanceof Integer) editor.putInt(key, (Integer) value);
@@ -397,15 +405,15 @@ public class AppPref {
         Object defaultValue = getDefaultValue(PrefKey.sPrefKeyList.get(index));
         switch (PrefKey.sTypes[index]) {
             case TYPE_BOOLEAN:
-                return mPreferences.getBoolean(key, (boolean) defaultValue);
+                return getPreferencesForKey(key).getBoolean(key, (boolean) defaultValue);
             case TYPE_FLOAT:
-                return mPreferences.getFloat(key, (float) defaultValue);
+                return getPreferencesForKey(key).getFloat(key, (float) defaultValue);
             case TYPE_INTEGER:
-                return mPreferences.getInt(key, (int) defaultValue);
+                return getPreferencesForKey(key).getInt(key, (int) defaultValue);
             case TYPE_LONG:
-                return mPreferences.getLong(key, (long) defaultValue);
+                return getPreferencesForKey(key).getLong(key, (long) defaultValue);
             case TYPE_STRING:
-                return Objects.requireNonNull(mPreferences.getString(key, (String) defaultValue));
+                return Objects.requireNonNull(getPreferencesForKey(key).getString(key, (String) defaultValue));
         }
         throw new IllegalArgumentException("Unknown key or type.");
     }
@@ -415,32 +423,43 @@ public class AppPref {
         int index = PrefKey.indexOf(key);
         switch (PrefKey.sTypes[index]) {
             case TYPE_BOOLEAN:
-                return mPreferences.getBoolean(PrefKey.sKeys[index], (boolean) getDefaultValue(key));
+                return getPreferencesForKey(PrefKey.sKeys[index]).getBoolean(PrefKey.sKeys[index],
+                        (boolean) getDefaultValue(key));
             case TYPE_FLOAT:
-                return mPreferences.getFloat(PrefKey.sKeys[index], (float) getDefaultValue(key));
+                return getPreferencesForKey(PrefKey.sKeys[index]).getFloat(PrefKey.sKeys[index],
+                        (float) getDefaultValue(key));
             case TYPE_INTEGER:
-                return mPreferences.getInt(PrefKey.sKeys[index], (int) getDefaultValue(key));
+                return getPreferencesForKey(PrefKey.sKeys[index]).getInt(PrefKey.sKeys[index],
+                        (int) getDefaultValue(key));
             case TYPE_LONG:
-                return mPreferences.getLong(PrefKey.sKeys[index], (long) getDefaultValue(key));
+                return getPreferencesForKey(PrefKey.sKeys[index]).getLong(PrefKey.sKeys[index],
+                        (long) getDefaultValue(key));
             case TYPE_STRING:
-                return Objects.requireNonNull(mPreferences.getString(PrefKey.sKeys[index],
+                return Objects.requireNonNull(getPreferencesForKey(PrefKey.sKeys[index]).getString(PrefKey.sKeys[index],
                         (String) getDefaultValue(key)));
         }
         throw new IllegalArgumentException("Unknown key or type.");
     }
 
     private void init() {
-        SharedPreferences.Editor editor = mPreferences.edit();
-        Map<String, ?> all = mPreferences.getAll();
+        reconcileDeviceLocalStore();
+        SharedPreferences.Editor portableEditor = mPreferences.edit();
+        SharedPreferences.Editor deviceLocalEditor = mDeviceLocalPreferences.edit();
+        Map<String, ?> portableValues = mPreferences.getAll();
+        Map<String, ?> deviceLocalValues = mDeviceLocalPreferences.getAll();
         for (int i = 0; i < PrefKey.sKeys.length; ++i) {
             String key = PrefKey.sKeys[i];
             int type = PrefKey.sTypes[i];
+            boolean deviceLocal = SENSITIVE_PREF_KEYS.contains(key);
+            SharedPreferences preferences = deviceLocal ? mDeviceLocalPreferences : mPreferences;
+            SharedPreferences.Editor editor = deviceLocal ? deviceLocalEditor : portableEditor;
+            Map<String, ?> all = deviceLocal ? deviceLocalValues : portableValues;
             // (Re)write the default when the key is missing OR stored with the wrong value type.
             // A corrupt/hand-edited/snapshot-imported preferences file can hold a registered key
             // with a mismatched type (e.g. an int key stored as a String); the strongly-typed
             // getters would then throw ClassCastException on every read and brick that screen. This
             // previously only seeded defaults for absent keys, so such a key was never repaired.
-            if (mPreferences.contains(key) && isCorrectType(all.get(key), type)) {
+            if (preferences.contains(key) && isCorrectType(all.get(key), type)) {
                 continue;
             }
             switch (type) {
@@ -460,7 +479,65 @@ public class AppPref {
                     editor.putString(key, (String) getDefaultValue(PrefKey.sPrefKeyList.get(i)));
             }
         }
-        editor.apply();
+        portableEditor.apply();
+        deviceLocalEditor.apply();
+    }
+
+    /**
+     * Keep live credentials bound to one Android installation. The portable marker is restored by
+     * Android Backup while its device-local peer is excluded; a missing/mismatched peer therefore
+     * means this state crossed a device boundary. Legacy secrets are deliberately discarded instead
+     * of migrated because Android may have restored them before this version first runs.
+     */
+    private void reconcileDeviceLocalStore() {
+        boolean hadLegacySecrets = false;
+        SharedPreferences.Editor portableEditor = mPreferences.edit();
+        SharedPreferences.Editor deviceLocalEditor = mDeviceLocalPreferences.edit();
+        for (String key : SENSITIVE_PREF_KEYS) {
+            if (mPreferences.contains(key)) {
+                hadLegacySecrets = true;
+                portableEditor.remove(key);
+            }
+        }
+
+        String portableBinding = getStoredString(mPreferences, DEVICE_BINDING_KEY);
+        String localBinding = getStoredString(mDeviceLocalPreferences, DEVICE_BINDING_KEY);
+        boolean transferred = portableBinding != null
+                && (localBinding == null || !portableBinding.equals(localBinding));
+        if (hadLegacySecrets || transferred) {
+            deviceLocalEditor.clear();
+            portableEditor.putBoolean(DEVICE_LOCAL_RESET_NOTICE_KEY, true);
+            localBinding = null;
+        }
+        if (portableBinding == null && localBinding != null) {
+            portableBinding = localBinding;
+        } else if (portableBinding == null || localBinding == null || !portableBinding.equals(localBinding)) {
+            portableBinding = UUID.randomUUID().toString();
+        }
+        portableEditor.putString(DEVICE_BINDING_KEY, portableBinding).apply();
+        deviceLocalEditor.putString(DEVICE_BINDING_KEY, portableBinding).apply();
+    }
+
+    @Nullable
+    private static String getStoredString(@NonNull SharedPreferences preferences,
+                                          @NonNull String key) {
+        Object value = preferences.getAll().get(key);
+        return value instanceof String ? (String) value : null;
+    }
+
+    @NonNull
+    private SharedPreferences getPreferencesForKey(@NonNull String key) {
+        return SENSITIVE_PREF_KEYS.contains(key) ? mDeviceLocalPreferences : mPreferences;
+    }
+
+    /** Returns and clears the one-shot warning created after a restore or legacy-secret purge. */
+    public static boolean consumeDeviceLocalResetNotice() {
+        SharedPreferences preferences = getInstance().mPreferences;
+        if (!preferences.getBoolean(DEVICE_LOCAL_RESET_NOTICE_KEY, false)) {
+            return false;
+        }
+        preferences.edit().remove(DEVICE_LOCAL_RESET_NOTICE_KEY).apply();
+        return true;
     }
 
     private static boolean isCorrectType(@Nullable Object value, int type) {

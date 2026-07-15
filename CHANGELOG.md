@@ -22,6 +22,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   device-specific tables (app inventory, scan results, backup rows) stay excluded.
 
 ### Security
+- Android backup and device transfer now keep live credentials and transient
+  recovery state device-local. Authorization/Tasker secrets and the VirusTotal
+  key live in an excluded preference store; legacy or transferred values are
+  discarded, the pairing secrets rotate, and the app shows a one-time re-pair
+  warning. Keystore password metadata, interrupted batch journals, installer
+  crash state, and privileged-server secrets are excluded from modern and
+  legacy backup rules, while `am_keystore.bks` remains recoverable with the
+  user-held recovery password.
 - A corrupt or crafted imported snapshot can no longer brick a settings screen.
   Preference initialization now detects a registered key stored with the wrong
   value type (e.g. an integer key written as a string) and resets it to its

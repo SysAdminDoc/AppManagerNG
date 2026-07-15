@@ -969,6 +969,15 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     }
 
     private void maybeShowOnboarding() {
+        if (AppPref.consumeDeviceLocalResetNotice()) {
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle(R.string.device_local_credentials_reset_title)
+                    .setMessage(R.string.device_local_credentials_reset_message)
+                    .setCancelable(false)
+                    .setPositiveButton(R.string.got_it, (dialog, which) -> maybeShowOnboarding())
+                    .show();
+            return;
+        }
         if (!OnboardingFragment.shouldShow()) {
             // Onboarding already done — surface the main-list tour for users who
             // haven't seen it yet (covers fresh installs after onboarding picks
