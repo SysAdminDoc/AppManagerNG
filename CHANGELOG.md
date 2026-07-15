@@ -22,6 +22,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   device-specific tables (app inventory, scan results, backup rows) stay excluded.
 
 ### Security
+- VirusTotal requests now use finite connect/read deadlines, a total upload
+  deadline, disabled redirects, and 1 MiB response caps. Large-file delegated
+  URLs are accepted only from the HTTPS `www.virustotal.com` origin, preventing
+  API-key forwarding to an untrusted server.
 - Snapshot imports and Swift Backup, OAndBackup, and Titanium Backup conversions
   now enforce cumulative expanded-byte, entry-count, single-entry, and temporary-
   disk budgets. Limit failures abort before commit and clean partial output,
