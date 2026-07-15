@@ -320,7 +320,13 @@ class RestoreOp implements Closeable {
         if (oldChecksum == null) {
             throw new BackupException("Master key exists but it didn't exist when the backup was made.");
         }
-        String newChecksum = DigestUtils.getHexDigest(mBackupInfo.checksumAlgo, masterKey.getContentAsString().getBytes());
+        String newChecksum;
+        try {
+            newChecksum = MasterKeyChecksum.calculate(mBackupInfo.checksumAlgo,
+                    mBackupInfo.version, masterKey);
+        } catch (IOException e) {
+            throw new BackupException("Could not read master key for checksum verification.", e);
+        }
         if (!newChecksum.equals(oldChecksum)) {
             throw new BackupException("Checksums for master key did not match.");
         }
