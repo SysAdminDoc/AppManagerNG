@@ -76,6 +76,7 @@ import io.github.muntashirakon.AppManager.profiles.ProfileManager;
 import io.github.muntashirakon.AppManager.rules.RulesStorageManager;
 import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.ArchiveExtractionGuard;
+import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.io.Path;
 
 /**
@@ -88,8 +89,8 @@ import io.github.muntashirakon.io.Path;
  * restore on a different applicationId (e.g. upstream App Manager →
  * AppManagerNG) does not need to rewrite the SQLite owner identity.
  *
- * <p>{@code keystore} and {@code server_secrets} preference files are excluded
- * from export wholesale, and the individual secret keys inside the main
+ * <p>{@code keystore}, {@code server_secrets}, and {@code device_local_secrets}
+ * preference files are excluded from export wholesale, and the individual secret keys inside the main
  * {@code preferences} file (authorization key, Tasker signing secret, VirusTotal
  * API key — see {@link AppPref#SENSITIVE_PREF_KEYS}) are stripped on export and
  * never applied on import, so a leaked or crafted bundle can neither disclose nor
@@ -130,10 +131,29 @@ public final class SnapshotBundle {
      * across devices does not decrypt anything and only widens the leak surface.
      * {@code server_secrets} holds the sole authenticator for the local privileged
      * channel and must be regenerated independently on every installation.
+     * {@code device_local_secrets} contains the other credentials deliberately
+     * bound to one installation.
      */
     @VisibleForTesting
     static final Set<String> EXCLUDED_PREF_NAMES = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList("keystore", "server_secrets")));
+            new HashSet<>(Arrays.asList("keystore", "server_secrets",
+                    AppPref.DEVICE_LOCAL_PREF_NAME)));
+
+    /**
+     * Durable, portable SharedPreferences stores owned by the app. Operational stores such as
+     * installer crash recovery, interrupted batch journals, privileged-server configuration,
+     * Android widget IDs, and device-local secrets intentionally stay outside snapshots.
+     */
+    @VisibleForTesting
+    static final Set<String> ALLOWED_PREF_NAMES = Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList(
+                    AppPref.getSharedPreferencesName(),
+                    "app_notes",
+                    "app_tags",
+                    "filter_presets",
+                    "profile_triggers",
+                    "profile_trigger_runs",
+                    "fm_open_with_defaults")));
 
     /**
      * Hard limit on bundled entry size to bound memory during import. 64 MB is
@@ -188,7 +208,7 @@ public final class SnapshotBundle {
             List<File> prefFiles = listSharedPrefFiles(appContext);
             for (File prefFile : prefFiles) {
                 String name = stripXmlSuffix(prefFile.getName());
-                if (EXCLUDED_PREF_NAMES.contains(name)) {
+                if (EXCLUDED_PREF_NAMES.contains(name) || !ALLOWED_PREF_NAMES.contains(name)) {
                     excluded.add("prefs/" + name);
                     continue;
                 }
@@ -485,7 +505,8 @@ public final class SnapshotBundle {
                 } else if (name.startsWith(ENTRY_PREFS_DIR) && name.endsWith(".xml")) {
                     String leaf = name.substring(ENTRY_PREFS_DIR.length());
                     String prefName = stripXmlSuffix(leaf);
-                    if (!isSafeLeaf(leaf) || EXCLUDED_PREF_NAMES.contains(prefName)) {
+                    if (!isSafeLeaf(leaf) || EXCLUDED_PREF_NAMES.contains(prefName)
+                            || !ALLOWED_PREF_NAMES.contains(prefName)) {
                         continue;
                     }
                     pendingPrefs.add(new PendingFile(leaf, bytes));
@@ -1017,7 +1038,9 @@ public final class SnapshotBundle {
                                            boolean merge) {
         if (!pf.leaf.endsWith(".xml")) return false;
         String prefName = stripXmlSuffix(pf.leaf);
-        if (EXCLUDED_PREF_NAMES.contains(prefName)) return false;
+        if (EXCLUDED_PREF_NAMES.contains(prefName) || !ALLOWED_PREF_NAMES.contains(prefName)) {
+            return false;
+        }
         // Apply the imported entries THROUGH the live SharedPreferences instance
         // rather than overwriting the backing XML file. Android caches one
         // SharedPreferencesImpl per file (and AppPref holds a long-lived reference
@@ -1028,10 +1051,13 @@ public final class SnapshotBundle {
         // coherent, so the import actually takes effect with no restart required.
         try {
             Map<String, Object> entries = parsePrefEntries(pf.bytes);
-            // An imported bundle must never set a live secret; drop any sensitive keys
-            // it carries (a malicious or pre-fix bundle could still contain them).
-            for (String sensitive : AppPref.SENSITIVE_PREF_KEYS) {
-                entries.remove(sensitive);
+            int parsedEntryCount = entries.size();
+            entries.entrySet().removeIf(entry ->
+                    !isAllowedPrefEntry(prefName, entry.getKey(), entry.getValue()));
+            if (parsedEntryCount > 0 && entries.isEmpty()) {
+                Log.w(TAG, "Skipping preferences \"" + prefName
+                        + "\": it contains no registered portable keys.");
+                return false;
             }
             SharedPreferences sp = appContext.getSharedPreferences(prefName, Context.MODE_PRIVATE);
             // Preserve the device's own sensitive values so a replace-mode import
@@ -1061,6 +1087,48 @@ public final class SnapshotBundle {
             Log.w(TAG, "Could not apply imported preferences from " + pf.leaf + " during snapshot import.", e);
             return false;
         }
+    }
+
+    @VisibleForTesting
+    static boolean isAllowedPrefEntry(@NonNull String prefName, @NonNull String key,
+                                      @Nullable Object value) {
+        if (AppPref.getSharedPreferencesName().equals(prefName)) {
+            return AppPref.isPortablePreference(key, value);
+        }
+        switch (prefName) {
+            case "app_notes":
+            case "app_tags":
+                return ("_schema".equals(key) && value instanceof Integer)
+                        || (value instanceof String && PackageUtils.validateName(key));
+            case "filter_presets":
+                return ("_schema".equals(key) && value instanceof Integer)
+                        || ("presets".equals(key) && value instanceof String);
+            case "profile_triggers":
+                return ("_schema".equals(key) && value instanceof Integer)
+                        || ("triggers".equals(key) && value instanceof String);
+            case "profile_trigger_runs":
+                return isDynamicPrefEntry(key, "last_run_", value, Long.class, 128)
+                        || isDynamicPrefEntry(key, "last_result_", value, String.class, 128)
+                        || isDynamicPrefEntry(key, "last_diagnostics_", value, String.class, 128)
+                        || isDynamicPrefEntry(key, "run_history_", value, String.class, 128);
+            case "fm_open_with_defaults":
+                return isDynamicPrefEntry(key, "file:", value, String.class, 4096)
+                        || isDynamicPrefEntry(key, "extension:", value, String.class, 255);
+            default:
+                return false;
+        }
+    }
+
+    private static boolean isDynamicPrefEntry(@NonNull String key, @NonNull String prefix,
+                                              @Nullable Object value, @NonNull Class<?> valueType,
+                                              int maxSuffixLength) {
+        if (!valueType.isInstance(value) || !key.startsWith(prefix)) return false;
+        String suffix = key.substring(prefix.length());
+        if (suffix.isEmpty() || suffix.length() > maxSuffixLength) return false;
+        for (int i = 0; i < suffix.length(); ++i) {
+            if (Character.isISOControl(suffix.charAt(i))) return false;
+        }
+        return true;
     }
 
     private static void putTypedPref(@NonNull SharedPreferences.Editor editor,

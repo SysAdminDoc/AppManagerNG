@@ -290,6 +290,18 @@ public class AppPref {
             PrefKey.getKey(PrefKey.PREF_TASKER_PLUGIN_SIGNING_SECRET_STR),
             PrefKey.getKey(PrefKey.PREF_VIRUS_TOTAL_API_KEY_STR))));
 
+    /**
+     * Return whether a parsed value is a registered, portable main preference with the
+     * declared type. Snapshot import uses this as a fail-closed schema boundary instead of
+     * accepting arbitrary keys or values into the live settings store.
+     */
+    public static boolean isPortablePreference(@NonNull String key, @Nullable Object value) {
+        int index = PrefKey.indexOf(key);
+        return index >= 0
+                && !SENSITIVE_PREF_KEYS.contains(key)
+                && isCorrectType(value, PrefKey.sTypes[index]);
+    }
+
     /** Name of the SharedPreferences file backing {@link AppPref}. */
     @NonNull
     public static String getSharedPreferencesName() {
