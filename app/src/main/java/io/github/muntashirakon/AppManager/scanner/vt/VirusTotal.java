@@ -11,29 +11,39 @@ import androidx.annotation.WorkerThread;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.CpuUtils;
-import io.github.muntashirakon.AppManager.utils.ExUtils;
 import io.github.muntashirakon.io.IoUtils;
 import io.github.muntashirakon.io.Path;
-import io.github.muntashirakon.AppManager.logs.Log;
 
 public class VirusTotal {
-    private static final String TAG = VirusTotal.class.getSimpleName();
     // ~10 minutes of 30 s polls after the initial wait.
     private static final int MAX_POLL_ATTEMPTS = 20;
+    static final int CONNECT_TIMEOUT_MILLIS = 15_000;
+    static final int READ_TIMEOUT_MILLIS = 60_000;
+    static final long UPLOAD_TIMEOUT_MILLIS = 20L * 60 * 1000;
+    static final int MAX_JSON_RESPONSE_BYTES = 1024 * 1024;
+    private static final int UPLOAD_CHUNK_BYTES = 64 * 1024;
+    private static final String VIRUSTOTAL_UPLOAD_HOST = "www.virustotal.com";
 
     public interface FullScanResponseInterface {
         boolean uploadFile();
@@ -100,9 +110,27 @@ public class VirusTotal {
     }
 
     private final String mApiKey;
+    private final int mConnectTimeoutMillis;
+    private final int mReadTimeoutMillis;
+    private final long mUploadTimeoutMillis;
+    private final int mMaxJsonResponseBytes;
 
     public VirusTotal(@NonNull String apiKey) {
+        this(apiKey, CONNECT_TIMEOUT_MILLIS, READ_TIMEOUT_MILLIS, UPLOAD_TIMEOUT_MILLIS,
+                MAX_JSON_RESPONSE_BYTES);
+    }
+
+    VirusTotal(@NonNull String apiKey, int connectTimeoutMillis, int readTimeoutMillis,
+               long uploadTimeoutMillis, int maxJsonResponseBytes) {
         mApiKey = Objects.requireNonNull(apiKey);
+        if (connectTimeoutMillis <= 0 || readTimeoutMillis <= 0 || uploadTimeoutMillis <= 0
+                || maxJsonResponseBytes <= 0) {
+            throw new IllegalArgumentException("VirusTotal I/O limits must be positive.");
+        }
+        mConnectTimeoutMillis = connectTimeoutMillis;
+        mReadTimeoutMillis = readTimeoutMillis;
+        mUploadTimeoutMillis = uploadTimeoutMillis;
+        mMaxJsonResponseBytes = maxJsonResponseBytes;
     }
 
     public void fetchFileReportOrScan(@NonNull Path file,
@@ -122,9 +150,9 @@ public class VirusTotal {
             throw new FileNotFoundException("Fetch error: " + responseReport.error);
         }
         // Scan or retry
-        VtError error = Objects.requireNonNull(responseReport.error);
         boolean waitFirst = false;
-        if ("NotFoundError".equals(error.code)) {
+        if (!queued && responseReport.error != null
+                && "NotFoundError".equals(responseReport.error.code)) {
             // Initiate scan
             if (!response.uploadFile()) {
                 // Scanning disabled
@@ -234,9 +262,8 @@ public class VirusTotal {
                                               @Nullable String password) throws IOException {
         // First retrieve the upload URL
         URL url = new URL(URL_LARGE_FILE_UPLOAD);
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        HttpURLConnection connection = openConfiguredConnection(url);
         try {
-            connection.setUseCaches(false);
             connection.setRequestMethod("POST");
             connection.setDoInput(true);
             // Set headers
@@ -247,11 +274,12 @@ public class VirusTotal {
             if (status < 300) {
                 // Success
                 // Upload the actual file
-                URL uploadUrl = getLargeFileUploadUrl(connection);
+                URL uploadUrl = getLargeFileUploadUrl(connection, mMaxJsonResponseBytes);
+                validateUploadUrl(uploadUrl);
                 return uploadAnyFile(uploadUrl, filename, is, password);
             } else {
                 // Failed
-                return new ResponseV3<>(null, getErrorResponse(connection));
+                return new ResponseV3<>(null, getErrorResponse(connection, mMaxJsonResponseBytes));
             }
         } finally {
             connection.disconnect();
@@ -263,10 +291,11 @@ public class VirusTotal {
     public ResponseV3<String> uploadAnyFile(@NonNull URL uploadUrl, @NonNull String filename,
                                             @NonNull InputStream is, @Nullable String password)
             throws IOException {
-        HttpURLConnection connection = (HttpURLConnection) uploadUrl.openConnection();
+        validateUploadUrl(uploadUrl);
+        HttpURLConnection connection = openConfiguredConnection(uploadUrl);
         try {
-            connection.setUseCaches(false);
             connection.setDoOutput(true);
+            connection.setChunkedStreamingMode(UPLOAD_CHUNK_BYTES);
             connection.setRequestMethod("POST");
             connection.setDoInput(true);
             // Set headers
@@ -274,14 +303,7 @@ public class VirusTotal {
             connection.setRequestProperty("x-apikey", mApiKey);
             connection.setRequestProperty("content-type", "multipart/form-data; boundary=" + FORM_DATA_BOUNDARY);
             // Set form data
-            OutputStream outputStream = connection.getOutputStream();
-            if (password != null) {
-                addMultipartFormData(outputStream, "password", password);
-            }
-            addMultipartFormData(outputStream, "file", filename, is);
-            outputStream.write("\r\n".getBytes(StandardCharsets.UTF_8));
-            outputStream.write(("--" + FORM_DATA_BOUNDARY + "--\r\n").getBytes(StandardCharsets.UTF_8));
-            outputStream.flush();
+            writeUploadBodyWithDeadline(connection, filename, is, password);
             // Response
             int status = connection.getResponseCode();
             if (status < 300) {
@@ -295,10 +317,10 @@ public class VirusTotal {
                 //    }
                 //  }
                 //}
-                return new ResponseV3<>(getAnalysisId(connection), null);
+                return new ResponseV3<>(getAnalysisId(connection, mMaxJsonResponseBytes), null);
             } else {
                 // Failed
-                return new ResponseV3<>(null, getErrorResponse(connection));
+                return new ResponseV3<>(null, getErrorResponse(connection, mMaxJsonResponseBytes));
             }
         } finally {
             connection.disconnect();
@@ -309,9 +331,8 @@ public class VirusTotal {
     @NonNull
     public ResponseV3<VtFileReport> fetchFileReport(@NonNull String id) throws IOException {
         URL url = new URL(URL_FILE_REPORT + id);
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        HttpURLConnection connection = openConfiguredConnection(url);
         try {
-            connection.setUseCaches(false);
             connection.setRequestMethod("GET");
             connection.setDoInput(true);
             // Set headers
@@ -322,14 +343,15 @@ public class VirusTotal {
             if (status < 300) {
                 // Success
                 try {
-                    JSONObject jsonObject = new JSONObject(getResponseV3(connection));
+                    JSONObject jsonObject = new JSONObject(
+                            getResponseV3(connection, mMaxJsonResponseBytes));
                     return new ResponseV3<>(new VtFileReport(jsonObject), null);
                 } catch (JSONException e) {
                     throw new IOException(e);
                 }
             } else {
                 // Failed
-                return new ResponseV3<>(null, getErrorResponse(connection));
+                return new ResponseV3<>(null, getErrorResponse(connection, mMaxJsonResponseBytes));
             }
         } finally {
             connection.disconnect();
@@ -343,9 +365,14 @@ public class VirusTotal {
 
     @NonNull
     public static String getAnalysisId(@NonNull HttpURLConnection connection) throws IOException {
+        return getAnalysisId(connection, MAX_JSON_RESPONSE_BYTES);
+    }
+
+    @NonNull
+    static String getAnalysisId(@NonNull HttpURLConnection connection, int maxBytes) throws IOException {
         // https://docs.virustotal.com/reference/files-scan
         try {
-            JSONObject dataObject = new JSONObject(getResponseV3(connection))
+            JSONObject dataObject = new JSONObject(getResponseV3(connection, maxBytes))
                     .getJSONObject("data");
             assert dataObject.getString("type").equals("analysis");
             return dataObject.getString("id");
@@ -356,9 +383,15 @@ public class VirusTotal {
 
     @NonNull
     public static URL getLargeFileUploadUrl(@NonNull HttpURLConnection connection) throws IOException {
+        return getLargeFileUploadUrl(connection, MAX_JSON_RESPONSE_BYTES);
+    }
+
+    @NonNull
+    static URL getLargeFileUploadUrl(@NonNull HttpURLConnection connection, int maxBytes)
+            throws IOException {
         // https://docs.virustotal.com/reference/files-upload-url
         try {
-            return new URL(new JSONObject(getResponseV3(connection)).getString("data"));
+            return new URL(new JSONObject(getResponseV3(connection, maxBytes)).getString("data"));
         } catch (JSONException e) {
             throw new IOException(e);
         }
@@ -384,45 +417,142 @@ public class VirusTotal {
     @WorkerThread
     @NonNull
     public static String getResponseV3(@NonNull HttpURLConnection connection) throws IOException {
-        StringBuilder response = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                connection.getInputStream(), StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                response.append(line);
-            }
+        return getResponseV3(connection, MAX_JSON_RESPONSE_BYTES);
+    }
+
+    @NonNull
+    static String getResponseV3(@NonNull HttpURLConnection connection, int maxBytes)
+            throws IOException {
+        int contentLength = connection.getContentLength();
+        if (contentLength > maxBytes) {
+            throw responseTooLarge(maxBytes);
         }
-        return response.toString();
+        try (InputStream inputStream = connection.getInputStream()) {
+            return readUtf8Bounded(inputStream, maxBytes);
+        }
     }
 
     @WorkerThread
     @NonNull
     public static VtError getErrorResponse(@NonNull HttpURLConnection connection) throws IOException {
+        return getErrorResponse(connection, MAX_JSON_RESPONSE_BYTES);
+    }
+
+    @NonNull
+    static VtError getErrorResponse(@NonNull HttpURLConnection connection, int maxBytes)
+            throws IOException {
         int status = connection.getResponseCode();
-        // First try input stream
-        String inResponse = ExUtils.exceptionAsNull(() -> getResponseV3(connection));
-        if (inResponse != null) {
-            return new VtError(status, inResponse);
+        int contentLength = connection.getContentLength();
+        if (contentLength > maxBytes) {
+            throw responseTooLarge(maxBytes);
         }
-        // Try error stream
-        StringBuilder response;
         InputStream errorStream = connection.getErrorStream();
         if (errorStream == null) {
-            response = null;
-        } else {
-            response = new StringBuilder();
             try {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                        errorStream, StandardCharsets.UTF_8))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        response.append(line);
-                    }
-                }
-            } catch (IOException e) {
-                Log.w(TAG, e);
+                errorStream = connection.getInputStream();
+            } catch (IOException ignore) {
+                return new VtError(status, null);
             }
         }
-        return new VtError(status, response != null ? response.toString() : null);
+        try (InputStream inputStream = errorStream) {
+            return new VtError(status, readUtf8Bounded(inputStream, maxBytes));
+        }
+    }
+
+    @NonNull
+    protected HttpURLConnection openConnection(@NonNull URL url) throws IOException {
+        return (HttpURLConnection) url.openConnection();
+    }
+
+    @NonNull
+    private HttpURLConnection openConfiguredConnection(@NonNull URL url) throws IOException {
+        HttpURLConnection connection = openConnection(url);
+        connection.setInstanceFollowRedirects(false);
+        connection.setUseCaches(false);
+        connection.setConnectTimeout(mConnectTimeoutMillis);
+        connection.setReadTimeout(mReadTimeoutMillis);
+        return connection;
+    }
+
+    static void validateUploadUrl(@NonNull URL uploadUrl) throws IOException {
+        int port = uploadUrl.getPort();
+        if (!"https".equalsIgnoreCase(uploadUrl.getProtocol())
+                || !VIRUSTOTAL_UPLOAD_HOST.equalsIgnoreCase(uploadUrl.getHost())
+                || (port != -1 && port != 443)
+                || uploadUrl.getUserInfo() != null) {
+            throw new IOException("Refusing untrusted VirusTotal upload origin.");
+        }
+    }
+
+    private void writeUploadBodyWithDeadline(@NonNull HttpURLConnection connection,
+                                             @NonNull String filename,
+                                             @NonNull InputStream is,
+                                             @Nullable String password) throws IOException {
+        ExecutorService executor = Executors.newSingleThreadExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "VirusTotalUpload");
+            thread.setDaemon(true);
+            return thread;
+        });
+        Future<?> upload = executor.submit(() -> {
+            try (OutputStream outputStream = connection.getOutputStream()) {
+                if (password != null) {
+                    addMultipartFormData(outputStream, "password", password);
+                }
+                addMultipartFormData(outputStream, "file", filename, is);
+                outputStream.write("\r\n".getBytes(StandardCharsets.UTF_8));
+                outputStream.write(("--" + FORM_DATA_BOUNDARY + "--\r\n")
+                        .getBytes(StandardCharsets.UTF_8));
+                outputStream.flush();
+            }
+            return null;
+        });
+        try {
+            upload.get(mUploadTimeoutMillis, TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            connection.disconnect();
+            upload.cancel(true);
+            throw new SocketTimeoutException("VirusTotal upload exceeded the configured deadline.");
+        } catch (InterruptedException e) {
+            connection.disconnect();
+            upload.cancel(true);
+            Thread.currentThread().interrupt();
+            InterruptedIOException interrupted = new InterruptedIOException(
+                    "VirusTotal upload was interrupted.");
+            interrupted.initCause(e);
+            throw interrupted;
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof IOException) {
+                throw (IOException) cause;
+            }
+            if (cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
+            }
+            throw new IOException("VirusTotal upload failed.", cause);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @NonNull
+    private static String readUtf8Bounded(@NonNull InputStream inputStream, int maxBytes)
+            throws IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream(Math.min(maxBytes, 8192));
+        byte[] buffer = new byte[8192];
+        int total = 0;
+        int read;
+        while ((read = inputStream.read(buffer)) != -1) {
+            if (read > maxBytes - total) {
+                throw responseTooLarge(maxBytes);
+            }
+            outputStream.write(buffer, 0, read);
+            total += read;
+        }
+        return new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
+    }
+
+    @NonNull
+    private static IOException responseTooLarge(int maxBytes) {
+        return new IOException("VirusTotal response exceeded " + maxBytes + " bytes.");
     }
 }
