@@ -43,6 +43,7 @@ import io.github.muntashirakon.AppManager.compat.BackupCompat;
 import io.github.muntashirakon.AppManager.compat.DeviceIdleManagerCompat;
 import io.github.muntashirakon.AppManager.compat.NetworkPolicyManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
+import io.github.muntashirakon.AppManager.crypto.AESCrypto;
 import io.github.muntashirakon.AppManager.crypto.CryptoException;
 import io.github.muntashirakon.AppManager.ipc.ProxyBinder;
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -122,6 +123,12 @@ class RestoreOp implements Closeable {
             mBackupItem.cleanup();
             throw new BackupException("Could not read backup info. Possibly due to a malformed json file.", e);
         }
+        try {
+            BackupChecksumPolicy.requireCryptographicChecksum(mBackupInfo);
+        } catch (BackupException e) {
+            mBackupItem.cleanup();
+            throw e;
+        }
         // Setup crypto
         if (!CryptoUtils.isAvailable(mBackupInfo.crypto)) {
             mBackupItem.cleanup();
@@ -176,6 +183,7 @@ class RestoreOp implements Closeable {
             throw e;
         }
         checkApiLevelCompatibility();
+        checkEncryptionIntegrityCompatibility();
     }
 
     private void checkApiLevelCompatibility() {
@@ -201,6 +209,28 @@ class RestoreOp implements Closeable {
             warning.append("\n").append(context.getString(R.string.restore_api_risk_package_visibility));
         }
         addRestoreExtraWarning(warning.toString());
+    }
+
+    private void checkEncryptionIntegrityCompatibility() {
+        String warning = getLegacyGcmIntegrityWarning(mBackupInfo);
+        if (warning != null) {
+            addRestoreExtraWarning(warning);
+        }
+    }
+
+    @Nullable
+    static String getLegacyGcmIntegrityWarning(@NonNull BackupMetadataV5.Info backupInfo) {
+        if (!AESCrypto.metadataUsesLegacyAuthTag(backupInfo.version)) {
+            return null;
+        }
+        switch (backupInfo.crypto) {
+            case CryptoUtils.MODE_AES:
+            case CryptoUtils.MODE_RSA:
+            case CryptoUtils.MODE_ECC:
+                return ContextUtils.getContext().getString(R.string.restore_legacy_gcm_integrity_warning);
+            default:
+                return null;
+        }
     }
 
     @Override
@@ -841,7 +871,6 @@ class RestoreOp implements Closeable {
         if (!mIsInstalled) {
             throw new BackupException("Misc restore is requested but the app isn't installed.");
         }
-        mRestoreExtraWarnings.clear();
         PseudoRules rules = new PseudoRules(mPackageName, mUserId);
         // Backward compatibility for restoring permissions
         loadMiscRules(rules);
@@ -861,13 +890,17 @@ class RestoreOp implements Closeable {
                 baseCapabilities.canRestoreUriGrants,
                 baseCapabilities.canRestoreSsaid,
                 magiskHideAvailable || magiskDenyListAvailable);
+        int appliedRules = 0;
+        int failedRules = 0;
         for (RuleEntry entry : entries) {
+            boolean applied = false;
             try {
                 switch (entry.type) {
                     case APP_OP:
                         if (capabilities.canRestoreAppOps) {
                             appOpsManager.setMode(Integer.parseInt(entry.name), mUid, mPackageName,
                                     ((AppOpRule) entry).getMode());
+                            applied = true;
                         } else {
                             recordExtraSkip(entry, capabilities);
                         }
@@ -876,6 +909,7 @@ class RestoreOp implements Closeable {
                         if (capabilities.canRestoreNetworkPolicy) {
                             NetworkPolicyManagerCompat.setUidPolicy(mUid,
                                     ((NetPolicyRule) entry).getPolicies());
+                            applied = true;
                         } else {
                             recordExtraSkip(entry, capabilities);
                         }
@@ -891,6 +925,7 @@ class RestoreOp implements Closeable {
                             } else {
                                 PermUtils.revokePermission(mPackageInfo, permission, appOpsManager, true);
                             }
+                            applied = true;
                         } else {
                             recordExtraSkip(entry, capabilities);
                         }
@@ -899,6 +934,7 @@ class RestoreOp implements Closeable {
                     case BATTERY_OPT:
                         if (capabilities.canRestoreBatteryOptimization) {
                             DeviceIdleManagerCompat.disableBatteryOptimization(mPackageName);
+                            applied = true;
                         } else {
                             recordExtraSkip(entry, capabilities);
                         }
@@ -906,10 +942,16 @@ class RestoreOp implements Closeable {
                     case MAGISK_HIDE: {
                         MagiskHideRule magiskHideRule = (MagiskHideRule) entry;
                         if (magiskHideAvailable) {
-                            MagiskHide.apply(magiskHideRule.getMagiskProcess(), false);
+                            if (!MagiskHide.apply(magiskHideRule.getMagiskProcess(), false)) {
+                                throw new IOException("MagiskHide command failed");
+                            }
+                            applied = true;
                         } else if (magiskDenyListAvailable) {
                             // Fall-back to Magisk DenyList
-                            MagiskDenyList.apply(magiskHideRule.getMagiskProcess(), false);
+                            if (!MagiskDenyList.apply(magiskHideRule.getMagiskProcess(), false)) {
+                                throw new IOException("Magisk DenyList command failed");
+                            }
+                            applied = true;
                         } else {
                             recordExtraSkip(entry, capabilities);
                         }
@@ -917,7 +959,10 @@ class RestoreOp implements Closeable {
                     }
                     case MAGISK_DENY_LIST: {
                         if (magiskDenyListAvailable) {
-                            MagiskDenyList.apply(((MagiskDenyListRule) entry).getMagiskProcess(), false);
+                            if (!MagiskDenyList.apply(((MagiskDenyListRule) entry).getMagiskProcess(), false)) {
+                                throw new IOException("Magisk DenyList command failed");
+                            }
+                            applied = true;
                         } else {
                             recordExtraSkip(entry, capabilities);
                         }
@@ -927,6 +972,7 @@ class RestoreOp implements Closeable {
                         if (capabilities.canRestoreNotificationListeners) {
                             notificationManager.setNotificationListenerAccessGrantedForUser(
                                     new ComponentName(mPackageName, entry.name), mUserId, true);
+                            applied = true;
                         } else {
                             recordExtraSkip(entry, capabilities);
                         }
@@ -942,6 +988,7 @@ class RestoreOp implements Closeable {
                             uriManager.grantUri(newUriGrant);
                             uriManager.writeGrantedUriPermissions();
                             mRequiresRestart = true;
+                            applied = true;
                         } else {
                             recordExtraSkip(entry, capabilities);
                         }
@@ -951,6 +998,7 @@ class RestoreOp implements Closeable {
                             new SsaidSettings(mUserId).setSsaid(mPackageName, mUid,
                                     ((SsaidRule) entry).getSsaid());
                             mRequiresRestart = true;
+                            applied = true;
                         } else {
                             recordExtraSkip(entry, capabilities);
                         }
@@ -958,6 +1006,7 @@ class RestoreOp implements Closeable {
                     case FREEZE:
                         int freezeType = ((FreezeRule) entry).getFreezeType();
                         FreezeUtils.storeFreezeMethod(mPackageName, freezeType);
+                        applied = true;
                         break;
                 }
             } catch (Exception e) {
@@ -966,7 +1015,21 @@ class RestoreOp implements Closeable {
                 // exceptions instead of causing a failure or worse, a crash
                 recordExtraFailure(entry, e);
                 Log.e(TAG, e);
+                ++failedRules;
             }
+            if (applied) {
+                ++appliedRules;
+            }
+        }
+        requireAcceptableExtraRestoreResult(appliedRules, failedRules);
+    }
+
+    static void requireAcceptableExtraRestoreResult(int appliedRules, int failedRules)
+            throws BackupException {
+        if (failedRules > appliedRules) {
+            throw new BackupException("Extras restore failed for " + failedRules + " of "
+                    + (appliedRules + failedRules) + " attempted rules; applied " + appliedRules
+                    + ". The restore may be partial.");
         }
     }
 

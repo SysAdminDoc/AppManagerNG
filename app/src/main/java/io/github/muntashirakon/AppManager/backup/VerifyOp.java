@@ -40,6 +40,12 @@ class VerifyOp implements Closeable {
             mBackupItem.cleanup();
             throw new BackupException("Could not read backup info. Possibly due to a malformed json file.", e);
         }
+        try {
+            BackupChecksumPolicy.requireCryptographicChecksum(mBackupInfo);
+        } catch (BackupException e) {
+            mBackupItem.cleanup();
+            throw e;
+        }
         // Setup crypto
         if (!CryptoUtils.isAvailable(mBackupInfo.crypto)) {
             mBackupItem.cleanup();
