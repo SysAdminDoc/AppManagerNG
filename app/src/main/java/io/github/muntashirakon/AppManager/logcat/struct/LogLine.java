@@ -35,17 +35,19 @@ public class LogLine {
      */
     private static final Pattern LOG_PATTERN = Pattern.compile(
             // Timestamp
-            "(\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}\\.\\d{3})\\s+" +
-                    // UID PID
-                    "(.+\\d+)\\s+" +
+            "^(\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2}\\.\\d{3})\\s+" +
+                    // Optional UID, then PID. Possessive token/number matching keeps malformed
+                    // native crash lines from causing quadratic backtracking.
+                    "(?:(\\S++)\\s+)?" +
+                    "(\\d++)\\s+" +
                     // TID
-                    "(\\d+)\\s+" +
+                    "(\\d++)\\s+" +
                     // Log level
                     "([ADEIVWF])\\s+" +
                     // Tag
                     "(.+?)" +
                     // Message
-                    ": (.*)");
+                    ": (.*)$");
     /**
      * This is the old pattern used prior to v4.0.0. Format: {timestamp} {level}/{tag}(\s{pid}): message
      */
@@ -297,29 +299,29 @@ public class LogLine {
         }
         // Group 1: Timestamp
         logLine.setTimestamp(Objects.requireNonNull(matcher.group(1)));
-        // Group 2: UID PID
-        String[] uidPid = Objects.requireNonNull(matcher.group(2)).split("\\s+", 2);
+        // Group 2: Optional UID
         try {
-            if (uidPid.length == 2) {
-                String owner = uidPid[0];
+            String owner = matcher.group(2);
+            if (owner != null) {
                 int uid = Owners.parseUid(owner);
                 logLine.setUidOwner(owner);
                 logLine.setUid(uid);
                 // Set package name
                 logLine.setPackageName(retrievePackageName(uid));
             }
-            logLine.setPid(Integer.parseInt(uidPid[uidPid.length == 2 ? 1 : 0]));
-            // Group 3: TID
-            logLine.setTid(Integer.parseInt(matcher.group(3)));
+            // Group 3: PID
+            logLine.setPid(Integer.parseInt(matcher.group(3)));
+            // Group 4: TID
+            logLine.setTid(Integer.parseInt(matcher.group(4)));
         } catch (IllegalArgumentException e) {
             return false;
         }
-        // Group 4: Log level
-        logLine.setLogLevel(convertCharToLogLevel(Objects.requireNonNull(matcher.group(4)).charAt(0)));
-        // Group 5: Tag
-        logLine.setTag(Objects.requireNonNull(matcher.group(5)).trim());
-        // Group 6: Message
-        logLine.setLogOutput(Objects.requireNonNull(matcher.group(6)));
+        // Group 5: Log level
+        logLine.setLogLevel(convertCharToLogLevel(Objects.requireNonNull(matcher.group(5)).charAt(0)));
+        // Group 6: Tag
+        logLine.setTag(Objects.requireNonNull(matcher.group(6)).trim());
+        // Group 7: Message
+        logLine.setLogOutput(Objects.requireNonNull(matcher.group(7)));
         return true;
     }
 
