@@ -147,8 +147,7 @@ public class BatchOpsJournalTest {
     }
 
     @Test
-    public void getUsersRepairsMismatchedTargets() {
-        BatchQueueItem queueItem = createQueueItem();
+    public void constructionSanitizesMismatchedTargetsBeforeSerialization() throws Exception {
         ArrayList<String> packages = new ArrayList<>();
         packages.add("com.example.one");
         packages.add("bad package");
@@ -156,9 +155,15 @@ public class BatchOpsJournalTest {
         ArrayList<Integer> users = new ArrayList<>();
         users.add(10);
         users.add(0);
-        queueItem.setPackages(packages);
-        queueItem.setUsers(users);
+        BatchQueueItem queueItem = BatchQueueItem.getBatchOpQueue(
+                BatchOpsManager.OP_FREEZE, packages, users, null);
 
+        JSONObject serialized = queueItem.serializeToJson();
+
+        assertEquals(1, serialized.getJSONArray("packages").length());
+        assertEquals("com.example.one", serialized.getJSONArray("packages").getString(0));
+        assertEquals(1, serialized.getJSONArray("users").length());
+        assertEquals(10, serialized.getJSONArray("users").getInt(0));
         assertEquals(1, queueItem.getUsers().size());
         assertEquals(1, queueItem.getPackages().size());
         assertEquals("com.example.one", queueItem.getPackages().get(0));

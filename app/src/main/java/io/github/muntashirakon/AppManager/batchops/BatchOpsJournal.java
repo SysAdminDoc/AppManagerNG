@@ -153,7 +153,6 @@ public final class BatchOpsJournal {
             JSONObject existing = freshEntry ? null : readEntryJson(context);
             long id = existing != null ? existing.optLong(KEY_ID, now) : now;
             long createdAt = existing != null ? existing.optLong(KEY_CREATED_AT, now) : now;
-            item.getUsers();
             JSONObject entry = new JSONObject()
                     .put(KEY_ID, id)
                     .put(KEY_STATE, state)
