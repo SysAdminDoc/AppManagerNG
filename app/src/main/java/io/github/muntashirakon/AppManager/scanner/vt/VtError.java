@@ -2,13 +2,12 @@
 
 package io.github.muntashirakon.AppManager.scanner.vt;
 
-import android.text.TextUtils;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import io.github.muntashirakon.AppManager.logs.Log;
 
 public class VtError {
@@ -20,7 +19,7 @@ public class VtError {
 
     public VtError(int httpErrorCode, @Nullable String rawJson) {
         this.httpErrorCode = httpErrorCode;
-        if (TextUtils.isEmpty(rawJson)) {
+        if (rawJson == null || rawJson.isEmpty()) {
             code = null;
             message = null;
         } else {
