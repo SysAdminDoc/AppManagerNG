@@ -67,6 +67,16 @@ public class UriManagerTest {
     }
 
     @Test
+    public void uriGrantRejectsMalformedPackageFields() {
+        assertThrows(IllegalArgumentException.class,
+                () -> UriManager.UriGrant.unflattenFromString(
+                        "0,10,10,com.source,shifted,true,1,1234,content://example/items"));
+        assertThrows(IllegalArgumentException.class,
+                () -> UriManager.UriGrant.unflattenFromString(
+                        "0,10,10,com.source,not a package,true,1,1234,content://example/items"));
+    }
+
+    @Test
     public void uriGrantRejectsMalformedScalarFields() {
         UriManager.UriGrant parsed = UriManager.UriGrant.unflattenFromString(
                 " 0 ,10,10,com.source,com.target, TRUE ,1, 1234 ,content://example/items");

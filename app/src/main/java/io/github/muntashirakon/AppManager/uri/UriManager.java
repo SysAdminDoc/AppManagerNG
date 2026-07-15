@@ -27,6 +27,7 @@ import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.OsEnvironment;
+import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.compat.xml.TypedXmlPullParser;
 import io.github.muntashirakon.compat.xml.TypedXmlSerializer;
 import io.github.muntashirakon.compat.xml.Xml;
@@ -217,14 +218,22 @@ public class UriManager {
             int sourceUserId = parseNonNegativeInt(parts[0], "sourceUserId");
             int targetUserId = parseNonNegativeInt(parts[1], "targetUserId");
             int userHandle = parseUserHandle(parts[2]);
-            String sourcePkg = parts[3];
-            String targetPkg = parts[4];
+            String sourcePkg = parsePackageName(parts[3], "sourcePkg");
+            String targetPkg = parsePackageName(parts[4], "targetPkg");
             boolean prefix = parseBoolean(parts[5], "prefix");
             int modeFlags = parseNonNegativeInt(parts[6], "modeFlags");
             long createdTime = parseNonNegativeLong(parts[7], "createdTime");
             Uri uri = Uri.parse(parts[8]);
             return new UriGrant(sourceUserId, targetUserId, userHandle, sourcePkg, targetPkg, uri,
                     prefix, modeFlags, createdTime);
+        }
+
+        @NonNull
+        private static String parsePackageName(@NonNull String value, @NonNull String fieldName) {
+            if (!PackageUtils.validateName(value)) {
+                throw new IllegalArgumentException("Invalid URI grant " + fieldName + ".");
+            }
+            return value;
         }
 
         /**
