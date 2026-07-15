@@ -661,13 +661,25 @@ public class SnapshotBundleTest {
     }
 
     @Test
-    public void readRejectsBundleWithTooManyEntries() {
-        try {
-            SnapshotBundle.assertReasonableEntryCount(SnapshotBundle.MAX_BUNDLE_ENTRIES + 1);
-            fail("Expected SnapshotImportException for too many bundle entries");
-        } catch (SnapshotImportException expected) {
-            assertTrue(expected.getMessage().contains("too many entries"));
+    public void readRejectsActualBundleWithTooManyEntries() throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            String manifest = new JSONObject()
+                    .put("schema_version", 1)
+                    .put("format", SnapshotBundle.FORMAT_ID)
+                    .toString();
+            zos.putNextEntry(new ZipEntry("manifest.json"));
+            zos.write(manifest.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+            for (int i = 1; i <= SnapshotBundle.MAX_BUNDLE_ENTRIES; ++i) {
+                zos.putNextEntry(new ZipEntry("ignored/entry-" + i));
+                zos.closeEntry();
+            }
         }
+        SnapshotImportException expected = assertThrows(SnapshotImportException.class,
+                () -> SnapshotBundle.readFrom(null, new ByteArrayInputStream(baos.toByteArray()),
+                        new SnapshotBundle.ImportOptions()));
+        assertTrue(expected.getMessage().contains("too many entries"));
     }
 
     @Test

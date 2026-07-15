@@ -22,6 +22,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   device-specific tables (app inventory, scan results, backup rows) stay excluded.
 
 ### Security
+- Snapshot imports and Swift Backup, OAndBackup, and Titanium Backup conversions
+  now enforce cumulative expanded-byte, entry-count, single-entry, and temporary-
+  disk budgets. Limit failures abort before commit and clean partial output,
+  preventing many-entry and compressed-archive resource exhaustion.
 - Android backup and device transfer now keep live credentials and transient
   recovery state device-local. Authorization/Tasker secrets and the VirusTotal
   key live in an excluded preference store; legacy or transferred values are
