@@ -10,6 +10,10 @@
 
         <include domain="sharedpref" path="." />
         <exclude domain="sharedpref" path="WebViewChromiumPrefs.xml" />
+        <exclude domain="sharedpref" path="device_local_secrets.xml" />
+        <exclude domain="sharedpref" path="keystore.xml" />
+        <exclude domain="sharedpref" path="io.github.sysadmindoc.AppManagerNG.batch_ops_journal.xml" />
+        <exclude domain="sharedpref" path="installer_state.xml" />
         <exclude domain="sharedpref" path="server_secrets.xml" />
     </cloud-backup>
     <device-transfer>
@@ -23,6 +27,10 @@
 
         <include domain="sharedpref" path="." />
         <exclude domain="sharedpref" path="WebViewChromiumPrefs.xml" />
+        <exclude domain="sharedpref" path="device_local_secrets.xml" />
+        <exclude domain="sharedpref" path="keystore.xml" />
+        <exclude domain="sharedpref" path="io.github.sysadmindoc.AppManagerNG.batch_ops_journal.xml" />
+        <exclude domain="sharedpref" path="installer_state.xml" />
         <exclude domain="sharedpref" path="server_secrets.xml" />
     </device-transfer>
 </data-extraction-rules>

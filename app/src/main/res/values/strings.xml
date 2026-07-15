@@ -1150,6 +1150,8 @@
     <string name="batch_ops_journal_recovery_reason">Last failure: %1$s</string>
     <string name="batch_ops_journal_recovery_progress"><xliff:g id="completed" example="3">%1$d</xliff:g> of <xliff:g id="total" example="10">%2$d</xliff:g> targets were already completed. Retry will run only the remaining <xliff:g id="remaining" example="7">%3$d</xliff:g> targets.</string>
     <string name="batch_ops_journal_retry">Retry batch</string>
+    <string name="device_local_credentials_reset_title">Device-only credentials reset</string>
+    <string name="device_local_credentials_reset_message">AppManagerNG found credentials from an older install or device transfer. For your protection, authorization links and Tasker plug-in configurations must be paired again, and the VirusTotal API key must be re-entered. Your file-backed encryption keystore remains available; after a transfer, enter its recovery password when prompted.</string>
     <string name="batch_results_no_failed_apps_title">No failed apps listed</string>
     <string name="batch_results_no_failed_apps_message">No failed apps were reported. Review the log for the reason this result was shown.</string>
     <string name="batch_results_logs_title">Execution log</string>
