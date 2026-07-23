@@ -1,117 +1,190 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0 -->
-
 # Research — AppManagerNG
+Date: 2026-07-22 — replaces all prior research.
 
-Date: 2026-07-14 — replaces all prior research.
+Confidence labels: [Verified] checked in the local tree or an authoritative source;
+[Likely] strong indirect evidence; [Assumption] reasoned but unproven;
+[Needs live validation] requires a device/emulator or an unreleased dependency.
 
 ## Executive Summary
 
-[Verified] AppManagerNG is a mature, local-first Android package manager for power users, spanning inspection, installation, backup/restore, rules, profiles, debloat, file management, diagnostics, and privileged operation without making accounts or telemetry part of the core product. Its strongest current shape is breadth plus unusually strong recovery and offline controls; the highest-value direction is to harden the remaining trust boundaries and asynchronous workflows before adding more surface area.
+AppManagerNG is a mature, local-first, GPL-3.0-or-later Android package manager for power
+users (Java + Android Views, minSdk 21, `floss`/`full` flavors), forked from upstream App
+Manager at post-v4.0.5 and kept unusually current. This pass confirms the fork has already
+absorbed every host-verifiable finding from the 2026-07-14 research (log-scrubber embedded
+PII, `IntentCompat` BadParcelable guard, VirusTotal timeouts, cumulative decompression
+budgets, CRC32/GCM restore integrity, latest-wins App Usage) and the headline upstream
+v4.1.0 features (Android 17 `IPackageManagerV37` enumeration, filter-by-installer, cached
+`hasActivities`). Upstream has shipped **no new tag since v4.1.0 (2026-06-29)** — only six
+release-day commits, all already-ported or cosmetic — so the remaining opportunity is narrow
+and comes from **competitor feature harvest**, not upstream catch-up. The codebase is already
+ahead of the field on data-layer correctness; the highest-value direction is a small set of
+transparency/inspection features that ride data NG already computes, plus two concrete
+security-hardening passes.
 
-Top opportunities, in priority order:
-
-1. Isolate device-local secrets and transient state from Android cloud/device transfer.
-2. Impose cumulative decompression budgets on every importer and converter.
-3. Make VirusTotal I/O finite and validate delegated upload origins.
-4. Make App Usage refresh latest-request-wins with an explicit failure state.
-5. Derive distribution packets and verification from published release artifacts.
-6. Restore a blocking maintainer-local dependency-CVE release gate.
-7. Fuzz untrusted import formats with persistent regression corpora.
-8. Publish a concrete coordinated-disclosure policy.
-9. Repair canonical documentation drift with link and truth tests.
-10. Add ordered per-tag backup policies as a local-first automation differentiator.
+Top opportunities, priority order:
+1. Install-confirmation dialog: show requested permissions + min/target SDK (InstallerX parity).
+2. Extend the `archive` fuzz target with path-traversal / symlink / TOCTOU payloads.
+3. Intent-redirection & PendingIntent-provenance audit of exported components.
+4. Native-lib readiness (16 KB-alignment / 32-bit-only / compressed-libs) as a Finder filter + chip.
+5. Non-blocking progress during full-list cache invalidation (turn upstream #2000 pain into a NG win).
+6. Restricted-settings detector for sideloaded apps (accessibility/notification-listener/health).
 
 ## Product Map
 
-- [Verified] **Core workflows:** inventory/search/filter installed and external apps; inspect manifests, permissions, AppOps, signing, trackers, libraries, usage, and changes; install/export/verify APK sets; back up/restore/convert app state; manage rules, profiles, routines, files, logs, and debloat operations.
-- [Likely] **User personas:** rooted power users; rootless Shizuku/ADB/Dhizuku operators; ROM maintainers; privacy/security auditors; APK developers; users who require offline FLOSS behavior.
-- [Verified] **Platforms and distribution:** Android API 21+, Java/Views/XML with Material Components, Gradle 9.6.1/AGP 9.2.1, native and privileged-server modules, `floss` and opt-in-network `full` flavors, GitHub Releases/Obtainium plus F-Droid, IzzyOnDroid, and Accrescent preparation.
-- [Verified] **Key integrations and data flows:** Android PackageManager/PackageInstaller and UsageStats; libsu, Shizuku/Sui, ADB, and Dhizuku; SAF-backed local/network destinations; encrypted snapshots and backup converters; bundled/updateable debloat and tracker data; VirusTotal only in the opt-in `full` flavor.
+- [Verified] **Core workflows:** inventory/search/filter (37 Finder predicates incl. installer,
+  compileSdk, min/target SDK, signature, intent-action, domain-links); inspect
+  manifests/permissions/AppOps/trackers/native libs/usage/signing; install/export/verify APK
+  sets; back up/restore/convert; freeze/debloat/rules/profiles/routines; file manager, logcat,
+  terminal, interceptor.
+- [Likely] **Personas:** rooted power users; rootless Shizuku/ADB/Dhizuku operators; ROM
+  maintainers; privacy/security auditors; APK developers; offline-FLOSS users.
+- [Verified] **Platforms/distribution:** API 21–37 (compileSdk 37, targetSdk 36), AGP 9.2.1 /
+  Gradle 9.6.1, NDK; `floss` (F-Droid, IzzyOnDroid) and opt-in-network `full` (GitHub
+  Releases, Obtainium); Accrescent prepared; reproducible-build + SBOM + CVSS-9 release gate.
+- [Verified] **Integrations/data flows:** PackageManager/PackageInstaller/UsageStats; libsu
+  6.0.0, Shizuku API 13.1.5/Sui, libadb-android 3.1.1, Dhizuku; Room 2.7.2; SAF; BouncyCastle
+  1.84; ARSCLib V1.4.0; apksig-android 4.4.0; VirusTotal (`full` only). 417 unit tests +
+  4 Jazzer fuzz targets (`appList`, `rules`, `snapshot`, `archive`); Robolectric 4.16.1.
 
 ## Competitive Landscape
 
-- [Verified] **Upstream App Manager:** sets the parity baseline and exposes current user pain such as the 100%-reproducible App Usage interval ANR in issue #1994. Learn from narrow, test-backed fixes; avoid wholesale ports that overwrite NG identity, release policy, or API-21 support.
-- [Verified] **Hail and Blocker:** excel at explicit privilege modes, freeze recovery, state-driven progress, and advanced component rules. Learn their recovery semantics; avoid raw IFW expression editing until validation, rollback, and a concrete user case exist.
-- [Verified] **LibChecker:** presents dense static package/signing/library evidence clearly. Learn its confidence-aware presentation; avoid claiming exact third-party-library versions when obfuscation makes that inference unreliable.
-- [Verified] **Canta and UAD-ng:** make debloat intent and recovery legible. NG already verifies postconditions and has rescue artifacts, so learn their guided recovery/bisect flow rather than adding another removal engine.
-- [Verified] **InstallerX-Revived:** provides strong split-selection explanations, install-origin controls, and mismatch warnings. NG already covers most installer parity; retain the transparent preflight model without becoming an app store.
-- [Verified] **Neo Backup:** demonstrates explicit backup-part selection, retention, and migration handling. Learn fail-closed restore and format compatibility; avoid ROM-integrated assumptions that a normal app cannot satisfy.
-- [Likely] **AppDash and Swift Backup:** commercial value concentrates in automation, tags, versioned recovery, and policy reuse. The fitting lesson is ordered, local tag-to-backup policy; avoid mandatory accounts, proprietary cloud SDKs, price tracking, and subscription-only recovery.
+- **InstallerX-Revived** (26.05.01, 5.7k★): install dialog shows requested permissions +
+  target/min SDK + version comparison and per-install `InstallFlags` inheriting global
+  profiles. NG already shows version/upgrade/downgrade + split-cert mismatch
+  (`PackageInstallerActivity.java:354-365,630-710`) but **not** the permission/SDK panel —
+  learn that. Avoid becoming a store or a silent-install engine.
+- **LibChecker** (2.5.4): per-app 16 KB page-size + ABI + stripped-symbol readiness and rich
+  static signals. NG **already detects 16 KB alignment** (`scanner/NativeLibraries.java:256`,
+  `has16KbLoadSegmentAlignment`) — learn to make it *filterable and badged*, not just a
+  detail string. Avoid remote metadata fetches and Compose-era chart UIs that fight the Views
+  ceiling.
+- **Hail** (v1.10.0): URI-scheme automation API to trigger freeze from Tasker; auto-unfreeze
+  on launch; multi-tag. NG has `automation/` + QS freeze tile; learn the documented intent
+  contract. Avoid Xposed dependence. (Execution is privilege-gated — largely already in
+  `Roadmap_Blocked.md`.)
+- **SD Maid SE** (v1.7.5-rc0): CorpseFinder traces file ownership across *all* storage;
+  fixed Samsung One UI force-stop. NG's `LeftoverScanner` is manual — the event-driven,
+  cross-storage sweep is the lesson (already a blocked item). Avoid general storage-cleaner
+  scope creep.
+- **UAD-ng / Canta** (v1.2.0 / active): curated risk-tiered debloat DB with one-tap restore
+  and a durable "what I removed" ledger. NG has `debloat/` + `OemBloatRiskTable`; learn the
+  persistent removal ledger (blocked P3). Avoid presenting any package as universally safe.
+- **Obtainium / Neo Store** (v1.6.10 / 1.2.6): per-item update checkboxes and default-handler
+  warnings. NG is not an updater (version-watch panel is a blocked full-flavor item); the
+  transferable lesson is per-item (not all-or-nothing) batch selection UX.
+- **AppDash / Swift Backup** (commercial): paywall tag-*group* organization, SMB/Drive backup
+  targets, and backup-on-update triggers. Signal: tag-group batch org and non-local backup
+  destinations are the undervalued OSS gap — but non-local targets conflict with the
+  local-first creed and belong in `full` only, if at all.
 
 ## Security, Privacy, and Reliability
 
-- [Verified] **Android backup has a weaker secret boundary than SnapshotBundle.** `app/src/main/res/xml/backup_rules.xml:7-13,20-26` and `full_backup_rules.xml:6-12` include all internal files and shared preferences except a few named paths. That transfers the authorization key, Tasker HMAC secret, and VirusTotal API key from `utils/AppPref.java:278-292,357-360`, despite the source declaring that they must not leave the device. It also transfers device-bound `keystore.xml`, retryable `${applicationId}.batch_ops_journal.xml`, and crash-only `installer_state.xml`; `crypto/ks/KeyStoreManager.java:507-523`, `batchops/BatchOpsJournal.java:110-125`, and `main/MainActivity.java:431-469` show why restored state can be undecryptable or stale. Android Auto Backup explicitly includes preferences/files and restores them before first launch.
-- [Verified] **Compressed-input budgets are incomplete.** `snapshot/SnapshotBundle.java:456-509` caps each entry and the count but buffers all accepted entries without a cumulative expanded-byte ceiling; 10,000 individually valid entries can exceed memory far beyond the 256 MiB input cap. `backup/convert/SBConverter.java:223-258,382-397`, `OABConverter.java:339-375`, and `TBConverter.java:288-362` copy third-party ZIP/TAR content without the tested `utils/ArchiveExtractionGuard.java` used elsewhere.
-- [Verified] **VirusTotal calls can hang or consume unbounded memory.** `scanner/vt/VirusTotal.java:237,266,312` opens connections without connect/read timeouts or an explicit redirect policy, accepts a server-supplied upload URL without scheme/host validation, and accumulates success/error bodies without a cap at `:386-426`. Other NG clients already use finite timeouts and disabled redirects, so a shared policy is available without adding a dependency.
-- [Verified] **App Usage refresh is race-prone and failures look empty.** `usage/AppUsageViewModel.java:75-87,161-199` queues every date/interval change on a global executor, reads mutable request fields inside the worker, has no cancellation/generation token, and ignores per-user exceptions. Rapid changes can overlap and stale results can win; `usage/AppUsageActivity.java:108-178,256` cannot distinguish all-query failure from no usage. Upstream issue #1994 reports a 100%-reproducible ANR on this exact interval switch.
-- [Verified] **The 17 existing 2026-07-14 deep-audit rows remain valid and are not duplicated.** They cover backup checksum/versioning and restore integrity (`BackupOp`, `RestoreOp`, `BackupMetadataV5`, `VerifyOp`); snapshot allowlisting/merge divergence (`SnapshotBundle`); rule/URI/automation parsing (`RuleEntry`, `PathReader`, `RulesImporter`, `UriManager`, `AutomationReceiver`); split export and regex safety (`SplitApkExporter`, `LogLine`); and small concurrency/state contracts (`BatchQueueItem`, `LogViewerViewModel`, `ApkWhatsNewFinder`). Their inline paths remain the implementation evidence.
-- [Verified] **No currently pinned core dependency was found vulnerable in the advisories checked.** Bouncy Castle 1.84 is above the relevant fix; the process gap is that `build.gradle:58-65` defaults OWASP Dependency Check to nonblocking CVSS 11 after hosted workflows were intentionally removed, while the local reproducible-release scripts generate an SBOM but do not run the CVSS-9 gate.
-- [Verified] **Coordinated disclosure is underspecified.** `.github/SECURITY.md` is absent and GitHub private vulnerability reporting is disabled; `CONTRIBUTING.md:55-63` only points reporters to an unspecified profile contact. GitHub recommends a repository security policy with supported versions and a private reporting route.
+- [Verified] **Archive extraction is well-guarded but under-fuzzed for traversal.**
+  `utils/ArchiveExtractionGuard.java` is wired across every extraction path (converters
+  `SBConverter`/`OABConverter`/`TBConverter`, `fm/FmArchiveUtils.java`,
+  `snapshot/SnapshotBundle.java`, `utils/TarUtils.java`), and `FmArchiveUtils.normalizeZipEntryName`
+  rejects `..`, absolute, and drive-letter entries. The gap is coverage: the `archive` Jazzer
+  target (`app/build.gradle:272-277`) should carry explicit zip-slip / symlink-entry / TOCTOU
+  payloads, given 2025-26 CVE activity in this class (CVE-2026-27800, CVE-2026-37531).
+- [Verified] **PendingIntent / intent-redirection surface is unaudited.** A privileged app is
+  a prime target for the BadParcelable/lazy-Bundle (CVE-2023-45777) and PendingIntent-
+  provenance-confusion classes. `intercept/ActivityInterceptor.java` re-dispatches received
+  intents and has an open TODO for receiver flags (`:149`); exported components that forward
+  intents need explicit component targets, `FLAG_IMMUTABLE` PendingIntents, and type-safe
+  `getParcelableExtra` calls. No systematic audit exists.
+- [Verified] **Prior-pass host findings are all fixed** — `logcat/reader/ScrubberUtils.java`
+  patterns are now explicitly un-anchored with `\b`; `intercept/IntentCompat.java:520-543`
+  wraps unparceling in try/catch returning `<unreadable extras>`. Do not re-open these.
+- [Verified] **No dependency CVE forces action.** BouncyCastle 1.84 already fixes
+  CVE-2026-3505/-5588/-5598 for the `jdk15to18` artifacts in use; 1.85 has a duplicate-class
+  regression (bc-java #2356) and no `bcpkix-jdk15to18:1.85.1` — hold at 1.84. Every
+  AndroidX/Material pin is the last API-21-safe release; the whole cluster is gated behind the
+  one-way minSdk 21→23 door (`docs/policy/minsdk-21-ceiling.md`).
+- [Needs live validation] **Perceived-freeze on full-list refresh (upstream #2000).** NG's
+  cached `hasActivities` Room column (`db/entity/App.java`) avoids upstream's "with activities"
+  filter hang, but startup cache invalidation can still block Backup/Restore for seconds with
+  no progress signal. Confirm on-device, then add non-blocking progress + async guard.
 
 ## Architecture Assessment
 
-- [Verified] **Prefer targeted policy/request boundaries, not a rewrite.** The largest risk-heavy classes include `details/info/AppInfoFragment.java`, `details/AppDetailsViewModel.java`, `fm/FmFragment.java`, `main/MainActivity.java`, and `snapshot/SnapshotBundle.java`. When touched, extract pure backup classification, archive-budget, HTTP-policy, and App Usage request/result objects so host tests can exercise them while preserving Views/XML and API 21.
-- [Verified] **Release truth is not mechanically enforced.** Published `v0.6.5` is code 13 at tag commit `fc03e0332`; the GitHub floss asset is 18,948,513 bytes with SHA-256 `986da6fc19e325c5fe35d03523021fa30dd2b483466c5f98a3a8c7c64d6a5fa0`. `docs/distribution/accrescent-listing.md:22` and `fdroid-listing.md:20` still say code 7, F-Droid points to a different commit, and `izzyondroid-listing.md:18-19,78-79` carries an older size/hash. `scripts/verify-release-consistency.sh:163-174` misses the actual `Version code:` spelling yet prints success.
-- [Verified] **Canonical documentation has measurable drift.** `CLAUDE.md` refers to removed `PROJECT_CONTEXT.md` and a deleted scheduled CVE workflow; `docs/architecture/README.md` omits tracked topics; `launcher-icon-aliases.md` and `04-filter-finder.md` describe shipped work as future; `docs/roadmap/COMPLETED.md` calls re-enabled tests ignored; `docs/policy/2026-05-26-minsdk-23-decision.md` links a deleted workflow; and `design/README.md` links ignored files unavailable in a clean clone. `DocumentationArchiveContractTest.java` checks only a subset of these contracts.
-- [Verified] **Untrusted parser testing is example-based, not generative.** Snapshot, rule, list, backup, and archive fixtures are extensive, but no coverage-guided fuzz target exists for `SnapshotBundle`, `RulesImporter`, `PathReader`, `ListImporter`, `VerifyOp`, or `TarUtils`. Jazzer supports JUnit/Gradle and persistent regression corpora; make the archive-budget item its prerequisite.
-- [Verified] **Gson is a contained upgrade risk, not a rewrite mandate.** Gson now documents maintenance mode and warns about Android/R8 reflection; NG minifies releases, but the owned debloat DTO fields are already explicitly named. Keep Gson for API-21/Java compatibility, centralize strict construction as those formats change, and retain legacy/minified compatibility fixtures rather than introducing Moshi/Kotlin solely for serialization.
-- [Verified] **Category coverage:** accessibility, large-screen/mobile, i18n/l10n, multi-user/profile, migration, and device-only upgrade validation already have shipped infrastructure or explicit entries in `Roadmap_Blocked.md`; adding duplicates would reduce actionability. Observability is addressed by explicit App Usage failures plus existing support bundles/crash capture, not telemetry. Distribution, testing, docs, security, and offline resilience have net-new items here. A general plugin ecosystem and multi-user collaboration are intentionally rejected below.
+- [Verified] **`IFilterableAppInfo` does not expose static-inspection flags.** Two desirable
+  Finder predicates — native-lib readiness (16 KB / 32-bit-only / compressed) and weak
+  (v1-only) signing — are blocked on the same seam: the filter model exposes subjects/sha256
+  and SDK/size fields but not ELF-alignment or signature-scheme flags. Extending
+  `IFilterableAppInfo` once unblocks both (the weak-signature filter is already a
+  `Roadmap_Blocked.md` P3). `filters/options/` is the extension point; `NativeLibraries`
+  already computes the data.
+- [Verified] **Installer dialog is data-rich but transparency-poor.** `PackageInstallerActivity`/
+  `PackageInstallerViewModel` parse full `ApkFile`/`PackageInfo` (permissions, SDK levels are
+  available) but the confirmation dialog (`res/layout/dialog_installer.xml`) surfaces version/
+  cert only. Rendering the already-parsed permissions + SDK is a pure UI/binding change.
+- [Verified] **Test gaps concentrate in UI/Fragment layers.** Core subsystems (backup/restore,
+  filters, profiles, permissions, debloat, signing) are well covered; Activities/Fragments,
+  live logcat, and interactive terminal rely on device smoke. New host items should ship with
+  Robolectric/JUnit coverage (installer-dialog binding, native-lib option predicate,
+  fuzz-corpus regressions) to stay in the host-verifiable lane.
+- [Verified] **~47 TODOs are aged deferrals, not blockers** (mostly 2020-2023): e.g.
+  `LocalServerManager.java:417` (per-session SSL — already a blocked security item),
+  `PermUtils.java:368` (AOSP policy-fixed flags), `dex/DexClasses.java:33-37` (lower-SDK
+  Smali). None gate core function.
 
 ## Rejected Ideas
 
-- [Verified] **Cloud-first backup, mandatory accounts, proprietary destinations, or price tracking** — AppDash/Swift Backup monetization conflicts with NG's offline FLOSS core; SAF already delegates provider choice.
-- [Verified] **Compose rewrite or minSdk-23 bump solely for current Material/Room/WorkManager** — their release notes confirm the new floor, but this would abandon the explicit API-21/Views contract without install-share evidence.
-- [Verified] **Hosted GitHub Actions revival** — commit `4ebc3f9ec` intentionally removed workflows; restore the missing CVE protection in the maintainer-local release path instead.
-- [Likely] **Arbitrary privileged plugin SDK** — awesome-Shizuku/root ecosystems show demand, but third-party privileged code would create a disproportionate security, hidden-API, and compatibility burden.
-- [Verified] **Exact third-party-library version claims from static signatures** — LibChecker-adjacent research shows poor neighboring-version discrimination under R8/obfuscation; keep confidence visible instead.
-- [Verified] **Advanced raw IFW condition editor** — Blocker's releases show the capability, but NG lacks a concrete demand signal and safe validation/recovery contract.
-- [Verified] **Broad Gson-to-Moshi/Kotlin rewrite** — Gson's warning is real, but current owned DTOs are Java and explicitly named; compatibility fixtures and constrained factories are lower-risk.
-- [Verified] **A new split-details expander** — `AppInfoFragment.java:1685-1704` already opens every `ApkFile.Entry`, whose `toLocalizedString` includes split type/name, size, required/isolated state, and compatibility; the older audit request is stale.
-- [Needs live validation] **MTE scanner gate in the active roadmap** — useful for native diagnostics, but it requires an MTE-capable device and belongs with device-gated validation rather than host-actionable work.
-- [Verified] **Desktop fleet management, work-profile cloning/DPC ownership, or multi-user collaboration** — these are different product/ownership models, not extensions of an on-device package manager.
+- **Re-port Android 17 list fix / App Usage ANR fix** — already present
+  (`PackageManagerCompat.java:179`; `AppUsageViewModel` latest-wins). Source: upstream
+  #2000/#1994.
+- **Filter-by-installer-source, compileSdk/min/target-SDK/intent-action/domain-links filters**
+  — already shipped (`filters/options/InstallerOption.java` et al.). Source: upstream #2008.
+- **Bump Material 1.14 / Room 2.8 / WorkManager 2.11 / core 1.19 / activity 1.12** — all
+  require minSdk 23; single one-way door. Source: Google Maven metadata + minsdk-21-ceiling.md.
+- **BouncyCastle 1.85 bump** — packaging regression (bc-java #2355/#2356), no security force.
+- **SMB / Google Drive backup targets, cloud sync** — contradicts local-first creed; `full`-only
+  at best, high maintenance. Source: AppDash/Swift Backup paywall.
+- **apksig v3.2 / PQC signature display** — apksig-android exposes no `isVerifiedUsingV32Scheme()`;
+  Android 17 PQC is ML-DSA via Keystore, not a new APK scheme (top is v3.1). Already blocked.
+  Source: source.android.com/docs/security/features/apksigning/v3-1.
+- **Compose migration / chart-heavy analytics dashboards** — permanent Views ceiling; UI-heavy
+  work fights the toolkit. Data-layer wins preferred.
 
 ## Sources
 
-### OSS and commercial products
-
-- https://github.com/MuntashirAkon/AppManager
-- https://github.com/MuntashirAkon/AppManager/issues/1994
+- https://github.com/MuntashirAkon/AppManager/commits/master
+- https://github.com/MuntashirAkon/AppManager/releases
+- https://github.com/MuntashirAkon/AppManager/commit/836c7248eafe5d7b73e21d919eb31c34dd06a348
 - https://github.com/MuntashirAkon/AppManager/issues/2000
-- https://github.com/aistra0528/Hail
-- https://github.com/lihenggui/blocker/releases
-- https://github.com/LibChecker/LibChecker
-- https://github.com/samolego/Canta
-- https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation
-- https://github.com/NeoApplications/Neo-Backup
+- https://github.com/MuntashirAkon/AppManager/issues/1994
+- https://github.com/MuntashirAkon/AppManager/issues/2008
+- https://github.com/MuntashirAkon/AppManager/issues/2003
+- https://github.com/MuntashirAkon/AppManager/issues/1986
 - https://github.com/wxxsfxyzm/InstallerX-Revived
-- https://appdash.app/
-- https://www.swiftbackup.app/configs
-
-### Standards, security, and testing
-
-- https://developer.android.com/identity/data/autobackup
+- https://github.com/LibChecker/LibChecker
+- https://github.com/aistra0528/Hail/releases/tag/v1.10.0
+- https://github.com/d4rken-org/sdmaid-se/releases/tag/v1.7.5-rc0
+- https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/releases
+- https://github.com/samolego/Canta
+- https://github.com/ImranR98/Obtainium/releases/tag/v1.6.10
+- https://github.com/RikkaApps/Shizuku/releases/tag/v13.6.0
+- https://developer.android.com/about/versions/16/behavior-changes-16
+- https://developer.android.com/about/versions/16/features
 - https://developer.android.com/privacy-and-security/risks/zip-path-traversal
-- https://developer.android.com/about/versions/17/behavior-changes-17
-- https://source.android.com/docs/security/features/apksigning
-- https://github.com/CodeIntelligenceTesting/jazzer
-- https://google.github.io/oss-fuzz/getting-started/new-project-guide/jvm-lang/
-- https://github.com/google/gson
-- https://github.com/google/gson/blob/main/Troubleshooting.md
-- https://docs.github.com/en/code-security/getting-started/quickstart-for-securing-your-repository
-- https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/configure-vulnerability-reporting/configure-for-a-repository
-- https://docs.virustotal.com/reference/files-upload-url
-- https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.6.5
-
-### Dependencies, research, and community
-
-- https://github.com/material-components/material-components-android/releases
-- https://developer.android.com/jetpack/androidx/releases/room
-- https://developer.android.com/jetpack/androidx/releases/work
-- https://github.com/advisories/GHSA-4cx2-fc23-5wg6
-- https://arxiv.org/abs/2509.04091
-- https://stackoverflow.com/questions/61596881/usagestatsmanager-not-returning-correct-weekly-or-monthly-results
+- https://source.android.com/docs/security/features/apksigning/v3-1
+- https://github.com/advisories/GHSA-cj8j-37rh-8475
+- https://github.com/bcgit/bc-java/issues/2356
+- https://github.com/material-components/material-components-android
+- https://developer.android.com/jetpack/androidx/versions
+- https://github.com/michalbednarski/TheLastBundleMismatch
+- https://arxiv.org/pdf/2603.02539
+- https://github.com/zed-industries/zed/security/advisories/GHSA-v385-xh3h-rrfr
+- https://www.thehackerwire.com/agl-app-framework-main-critical-zip-slip-toctou-path-traversal/
+- https://play.google.com/store/apps/details?id=flar2.appdashboard
+- https://levelup.gitconnected.com/root-detection-is-dead-what-actually-works-in-android-2026-b7f801e50531
 
 ## Open Questions
 
-- [Needs product decision] Should Android device transfer retain `files/am_keystore.bks` while excluding device-bound `keystore.xml` and require the recovery password, or exclude both and require explicit key export/import? The secret and transient-state exclusions do not depend on this choice.
-- [Needs maintainer data] What proportion of active installs still use API 21–22? Public dependency release notes prove the ceiling, but only private install data can decide when raising minSdk becomes justified.
+- Does the startup cache-invalidation actually block Backup/Restore on-device in NG (as it
+  does upstream #2000), or does the cached-column model already fully mitigate it? Determines
+  whether the progress-state item is a real fix or a no-op polish. [Needs live validation]
+- What is the correct AppOps op / API to detect that an app is blocked by the Android 14+
+  "restricted settings" gate across API 34-36? Determines feasibility of the detector item.
+  [Needs live validation]
