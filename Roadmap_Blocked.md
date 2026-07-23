@@ -368,6 +368,26 @@ ROADMAP.md once the blocker is resolved.
   Blocker: requires filing a submission request at codeberg.org/IzzyOnDroid/repo — operator action, not code.
   Complexity: S
 
+## Documentation-Write-Gated (2026-07-15)
+
+### P2
+
+- [ ] P2 — Publish a concrete coordinated-disclosure policy
+  Why: the public repository has no `SECURITY.md`, private vulnerability reporting is disabled, and the existing instruction points to an unspecified profile contact for a root-capable app handling credentials and backups.
+  Evidence: `.github/SECURITY.md` absent; `CONTRIBUTING.md:55-63`; GitHub coordinated/private vulnerability reporting guidance.
+  Touches: `.github/SECURITY.md`, `CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/bug_report.yml`.
+  Acceptance: the Security tab exposes supported versions, an explicit non-public reporting route, requested report fields, acknowledgment/disclosure expectations, and a warning against public exploit details; CONTRIBUTING and the bug template link to the same policy without conflicting instructions.
+  Blocker: this implementation pass explicitly forbids creating new Markdown files and staging Markdown other than `README.md` and `CHANGELOG.md`; satisfying the Security-tab acceptance requires a new tracked `.github/SECURITY.md` plus tracked `CONTRIBUTING.md` edits.
+  Complexity: S
+
+- [ ] P2 — Make tracked documentation truth and links testable
+  Why: canonical docs refer to removed files/workflows and describe shipped features/tests as future or disabled, so a clean clone gives maintainers contradictory architecture and release guidance.
+  Evidence: `CLAUDE.md`; `docs/architecture/README.md`; `launcher-icon-aliases.md`; `04-filter-finder.md`; `docs/roadmap/COMPLETED.md`; `docs/policy/2026-05-26-minsdk-23-decision.md`; `design/README.md`; `DocumentationArchiveContractTest.java`.
+  Touches: those existing docs, docs indexes, `app/src/test/.../DocumentationArchiveContractTest.java`, local docs-check command.
+  Acceptance: no tracked doc names absent `PROJECT_CONTEXT.md` or deleted workflows; architecture indexes enumerate tracked topics; shipped launcher/tag/test status matches source/history; every relative link resolves in a clean clone; the local documentation contract test fails on reintroduced drift.
+  Blocker: the acceptance criteria require editing and committing tracked Markdown throughout `docs/` and `design/`, while this implementation pass explicitly permits staging only `README.md` and `CHANGELOG.md` Markdown.
+  Complexity: M
+
 
 
 ## Device/Privileged-Mode-Gated (2026-07-14 research)
