@@ -71,22 +71,6 @@ fixed, so these are net-new. Every item below is host-implementable and host-tes
 
 ### P3
 
-- [ ] P3 — Native-lib readiness Finder filter + App Details chip (16 KB / 32-bit-only / compressed)
-  Why: NG already detects 16 KB load-segment alignment but only as a scanner string; making it
-  a Finder predicate + at-a-glance chip lets users sweep the whole device for apps that will
-  break or bloat on Android 15/16 (LibChecker parity).
-  Evidence: `scanner/NativeLibraries.java:256` (`has16KbLoadSegmentAlignment`), :339-341
-  (`native_lib_16kb_aligned` string); `filters/options/` (no native-lib predicate);
-  github.com/LibChecker/LibChecker.
-  Touches: `filters/options/` (new `NativeLibOption`), the `IFilterableAppInfo` seam (expose
-  ELF-alignment / 32-bit-only / compressed-native-libs flags), `details/` + main-list row chip.
-  Cross-ref: shares the `IFilterableAppInfo` extension with the blocked "weak-signature Finder
-  filter" item — do both once the seam is extended.
-  Acceptance: a Finder filter lists apps that are not 16 KB-ready / 32-bit-only / ship
-  compressed native libs; App Details and the main row show a readiness chip; a host test
-  covers the predicate over fixture ELF data. (Chip visual check needs on-device theme pass.)
-  Complexity: M
-
 - [ ] P3 — Restricted-settings detector for sideloaded apps
   Why: Android 14+ gates accessibility, notification-listener, and health access behind the
   "allow restricted settings" prompt for sideloaded apps; surfacing which installed apps are

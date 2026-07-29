@@ -66,6 +66,7 @@ import io.github.muntashirakon.AppManager.filters.options.ComponentsOption;
 import io.github.muntashirakon.AppManager.filters.options.FreezeOption;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
+import io.github.muntashirakon.AppManager.scanner.NativeLibReadiness;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.ssaid.SsaidSettings;
 import io.github.muntashirakon.AppManager.types.PackageSizeInfo;
@@ -95,6 +96,7 @@ public class FilterableAppInfo implements IFilterableAppInfo {
     private String[] mSignatureSubjectLines;
     private String[] mSignatureSha256Checksums;
     private Map<ComponentInfo, Integer> mAllComponents;
+    private NativeLibReadiness mNativeLibReadiness;
     private Map<ComponentInfo, Integer> mTrackerComponents;
     private List<String> mUsedPermissions;
     private List<FilterablePermissionInfo> mPermissionDetails;
@@ -282,6 +284,15 @@ public class FilterableAppInfo implements IFilterableAppInfo {
             mAllComponents = components;
         }
         return mAllComponents;
+    }
+
+    @Override
+    @NonNull
+    public NativeLibReadiness getNativeLibReadiness() {
+        if (mNativeLibReadiness == null) {
+            mNativeLibReadiness = NativeLibReadiness.fromApk(mApplicationInfo.publicSourceDir);
+        }
+        return mNativeLibReadiness;
     }
 
     private synchronized void ensureIntentFiltersLoaded() {

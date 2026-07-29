@@ -2381,6 +2381,12 @@
     <string name="native_lib_16kb_aligned">16 KB aligned</string>
     <string name="native_lib_16kb_not_aligned">Not 16 KB aligned</string>
     <string name="native_lib_16kb_alignment_unknown">16 KB alignment unknown</string>
+    <string name="native_lib_readiness_ready">Native libraries: 16 KB-ready</string>
+    <string name="native_lib_readiness_not_ready">Native libraries: not 16 KB-ready</string>
+    <string name="native_lib_readiness_unknown">Native libraries: readiness unknown</string>
+    <string name="native_lib_readiness_32bit_only">32-bit only</string>
+    <string name="native_lib_readiness_compressed">Compressed native libraries</string>
+    <string name="native_lib_readiness_none">No native libraries</string>
     <string name="file_modified_are_you_sure">The file was modified. Discard all your changes and exit?</string>
     <string name="save_and_exit">Save and exit</string>
     <string name="pref_saved_apk_name_format">Saved APK name format</string>

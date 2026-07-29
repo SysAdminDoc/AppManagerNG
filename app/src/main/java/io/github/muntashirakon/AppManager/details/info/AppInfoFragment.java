@@ -1718,6 +1718,16 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         if (!tagCloud.hasCode) {
             tagItems.add(new TagItem().setTextRes(R.string.no_code));
         }
+        // Native-code readiness. Only the "not ready" state is coloured: a chip that shouts on
+        // every healthy app teaches users to ignore it.
+        for (int labelRes : tagCloud.nativeLibReadiness.getChipLabelResources()) {
+            TagItem tagItem = new TagItem().setTextRes(labelRes);
+            if (labelRes == R.string.native_lib_readiness_not_ready
+                    || labelRes == R.string.native_lib_readiness_32bit_only) {
+                tagItem.setColor(ColorCodes.getRemovalCautionIndicatorColor(context));
+            }
+            tagItems.add(tagItem);
+        }
         if (tagCloud.isOverlay) {
             TagItem overlayTag = new TagItem();
             tagItems.add(overlayTag);
