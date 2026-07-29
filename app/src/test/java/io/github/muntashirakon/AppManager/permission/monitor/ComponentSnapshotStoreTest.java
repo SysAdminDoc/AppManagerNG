@@ -36,9 +36,9 @@ public class ComponentSnapshotStoreTest {
 
     @Test
     public void parserDropsNullAndEmptyArrayEntries() {
-        String json = "{\"schema_version\":1,\"snapshots\":{"
+        String json = "{\"schema_version\":2,\"snapshots\":{"
                 + "\"com.foo\":{\"version_code\":1,"
-                + "\"components\":[null,\"\",\"com.foo.Main\"],"
+                + "\"components\":{\"\":{},\"com.foo.Main\":{\"type\":\"activity\",\"exported\":true}},"
                 + "\"tracker_components\":[null,\"\",\"com.foo.Tracker\"]}}}";
 
         ComponentSnapshot snapshot = ComponentSnapshotStore.parse(json).get("com.foo");

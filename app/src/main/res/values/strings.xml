@@ -3753,6 +3753,12 @@
     <string name="pref_app_change_auditor_msg">Notify when an updated app adds or removes manifest components or known tracker components. Opt-in; runs locally with no network use.</string>
     <string name="app_change_auditor_title">%1$s changed components</string>
     <string name="app_change_auditor_body">Components: +%1$d/-%2$d. Trackers: +%3$d/-%4$d. %5$s</string>
+    <string name="app_change_auditor_permission_title"><xliff:g id="app_label" example="Example">%1$s</xliff:g> changed custom permissions</string>
+    <string name="app_change_auditor_permission_contested">Another app signed by a different developer also declares: <xliff:g id="permissions" example="com.example.PERM">%1$s</xliff:g></string>
+    <string name="app_change_auditor_permission_weakened">Protection level lowered on: <xliff:g id="permissions" example="com.example.PERM">%1$s</xliff:g></string>
+    <string name="app_change_auditor_permission_new_request">Newly requested: <xliff:g id="permissions" example="com.example.PERM">%1$s</xliff:g></string>
+    <string name="app_change_auditor_permission_declared">Newly declared: <xliff:g id="permissions" example="com.example.PERM">%1$s</xliff:g></string>
+    <string name="app_change_auditor_permission_orphaned">Requested but declared by no installed app: <xliff:g id="permissions" example="com.example.PERM">%1$s</xliff:g></string>
     <string name="app_change_reappearance_title">%1$s reappeared</string>
     <string name="app_change_reappearance_body">%1$s was installed again after a successful AppManagerNG uninstall. Review operation history before disabling or uninstalling it again.</string>
     <!-- Install Source Attribution Detail (T9/shipped iter-77) -->

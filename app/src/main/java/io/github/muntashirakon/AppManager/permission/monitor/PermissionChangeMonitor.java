@@ -21,7 +21,9 @@ import androidx.core.content.pm.PermissionInfoCompat;
 
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.muntashirakon.AppManager.R;
@@ -91,8 +93,10 @@ public final class PermissionChangeMonitor {
             store.put(packageName, after);
             return null;
         }
-        PermissionChangeDiff.Result diff = PermissionChangeDiff.compute(packageName, before, after);
+        PermissionChangeDiff.Result diff = PermissionChangeDiff.compute(packageName, before, after,
+                collectForeignDeclarations(store, packageName), collectKnownPermissionNames(appContext));
         store.put(packageName, after);
+        reportCustomPermissionSignals(appContext, packageName, diff);
         // Notify on any newly-added dangerous permission regardless of the
         // version-code delta. A re-install/sideload that gains dangerous perms
         // while keeping or *lowering* its versionCode is the more suspicious
@@ -112,6 +116,46 @@ public final class PermissionChangeMonitor {
             }
         }
         return diff;
+    }
+
+    /**
+     * Records the custom-permission signals that are not covered by the dangerous-permission
+     * notification: an unrelated signer claiming a name we own, a declaration whose protection
+     * level dropped, a newly requested non-dangerous permission, and a request nobody declares.
+     * These land in the change feed rather than as a high-priority notification — they are audit
+     * evidence, not an interrupt.
+     */
+    @WorkerThread
+    private static void reportCustomPermissionSignals(@NonNull Context appContext,
+                                                      @NonNull String packageName,
+                                                      @NonNull PermissionChangeDiff.Result diff) {
+        StringBuilder body = new StringBuilder();
+        appendSignal(body, appContext, R.string.app_change_auditor_permission_contested,
+                diff.contestedOwnership);
+        appendSignal(body, appContext, R.string.app_change_auditor_permission_weakened,
+                diff.weakenedDeclarations);
+        appendSignal(body, appContext, R.string.app_change_auditor_permission_new_request,
+                diff.newlyRequested);
+        appendSignal(body, appContext, R.string.app_change_auditor_permission_declared,
+                diff.newlyDeclared);
+        appendSignal(body, appContext, R.string.app_change_auditor_permission_orphaned,
+                diff.orphanedRequests);
+        if (body.length() == 0) {
+            return;
+        }
+        String title = appContext.getString(R.string.app_change_auditor_permission_title,
+                resolveLabel(appContext, packageName));
+        new AppChangeFeedStore(appContext).append(
+                AppChangeFeedEntry.now("custom_permissions", packageName, title, body.toString()));
+    }
+
+    private static void appendSignal(@NonNull StringBuilder body, @NonNull Context appContext,
+                                     int labelRes, @NonNull Set<String> values) {
+        if (values.isEmpty()) {
+            return;
+        }
+        if (body.length() > 0) body.append('\n');
+        body.append(appContext.getString(labelRes, shortJoin(values)));
     }
 
     /**
@@ -153,22 +197,68 @@ public final class PermissionChangeMonitor {
         PackageManager pm = appContext.getPackageManager();
         long versionCode = PackageInfoCompat.getLongVersionCode(pi);
         Set<String> dangerous = new HashSet<>();
+        Set<String> requested = new HashSet<>();
         if (pi.requestedPermissions != null) {
             for (String name : pi.requestedPermissions) {
-                if (name == null) continue;
+                if (name == null || name.isEmpty()) continue;
+                requested.add(name);
                 try {
                     PermissionInfo info = pm.getPermissionInfo(name, 0);
-                    int prot = PermissionInfoCompat.getProtection(info);
-                    if (prot == PermissionInfo.PROTECTION_DANGEROUS) {
+                    if (PermissionInfoCompat.getProtection(info) == PermissionInfo.PROTECTION_DANGEROUS) {
                         dangerous.add(name);
                     }
                 } catch (PackageManager.NameNotFoundException ignore) {
-                    // Custom permission that no app declares (or signature/normal
-                    // perm where the declarer is removed) — silently skip.
+                    // Custom permission that no app declares (or signature/normal perm where the
+                    // declarer is removed). It stays in `requested` so the orphan check can see it.
                 }
             }
         }
-        return new PermissionSnapshot(versionCode, dangerous);
+        Map<String, DeclaredPermission> declared = new TreeMap<>();
+        if (pi.permissions != null) {
+            String signer = SigningCertChangeMonitor.currentSignerDigest(appContext, pi.packageName);
+            for (PermissionInfo info : pi.permissions) {
+                if (info == null || info.name == null || info.name.isEmpty()) continue;
+                declared.put(info.name, new DeclaredPermission(info.name,
+                        PermissionInfoCompat.getProtection(info), signer));
+            }
+        }
+        return new PermissionSnapshot(versionCode, dangerous, requested, declared);
+    }
+
+    /**
+     * Custom permissions declared by every package other than {@code packageName}, so a name that
+     * two unrelated signers both claim can be spotted.
+     */
+    @WorkerThread
+    @NonNull
+    private static Map<String, DeclaredPermission> collectForeignDeclarations(
+            @NonNull PermissionSnapshotStore store, @NonNull String packageName) {
+        Map<String, DeclaredPermission> out = new TreeMap<>();
+        for (Map.Entry<String, PermissionSnapshot> entry : store.readAll().entrySet()) {
+            if (packageName.equals(entry.getKey())) continue;
+            out.putAll(entry.getValue().declaredPermissions);
+        }
+        return out;
+    }
+
+    @WorkerThread
+    @NonNull
+    private static Set<String> collectKnownPermissionNames(@NonNull Context appContext) {
+        Set<String> out = new HashSet<>();
+        try {
+            for (PackageInfo pi : appContext.getPackageManager()
+                    .getInstalledPackages(PackageManager.GET_PERMISSIONS)) {
+                if (pi == null || pi.permissions == null) continue;
+                for (PermissionInfo info : pi.permissions) {
+                    if (info != null && info.name != null) out.add(info.name);
+                }
+            }
+        } catch (Exception t) {
+            Log.w(TAG, "Could not enumerate declared permissions", t);
+            // An empty set disables the orphan check rather than reporting every request as orphaned.
+            return new HashSet<>();
+        }
+        return out;
     }
 
     @WorkerThread
