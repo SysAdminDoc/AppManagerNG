@@ -152,6 +152,34 @@ public final class SigningCertChangeMonitor {
         return new SigningCertSnapshot(versionCode, shas);
     }
 
+    /**
+     * @return a stable digest of the package's signer set, or {@code null} when it cannot be
+     * resolved. Used to attribute ownership of a declared permission name to a signer.
+     */
+    @WorkerThread
+    @Nullable
+    static String currentSignerDigest(@NonNull Context appContext, @Nullable String packageName) {
+        if (packageName == null || packageName.isEmpty()) {
+            return null;
+        }
+        try {
+            SigningCertSnapshot snapshot = computeCurrentSnapshot(appContext, packageName);
+            if (snapshot.certShas256.isEmpty()) {
+                return null;
+            }
+            // The set is sorted, so joining it is order-independent and comparable across reads.
+            StringBuilder sb = new StringBuilder();
+            for (String sha : snapshot.certShas256) {
+                if (sb.length() > 0) sb.append(',');
+                sb.append(sha);
+            }
+            return sb.toString();
+        } catch (PackageManager.NameNotFoundException | RuntimeException e) {
+            Log.w(TAG, "Could not resolve the signer of " + packageName, e);
+            return null;
+        }
+    }
+
     @Nullable
     private static Signature[] extractSigners(@NonNull PackageInfo pi) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && pi.signingInfo != null) {
