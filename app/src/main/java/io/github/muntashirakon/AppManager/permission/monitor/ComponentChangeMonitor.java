@@ -8,9 +8,13 @@ import static io.github.muntashirakon.AppManager.compat.PackageManagerCompat.MAT
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.ComponentInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ProviderInfo;
+import android.content.pm.ServiceInfo;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -23,12 +27,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
 import io.github.muntashirakon.AppManager.logs.Log;
-import io.github.muntashirakon.AppManager.rules.RuleType;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
@@ -116,15 +120,52 @@ public final class ComponentChangeMonitor {
     @NonNull
     private static ComponentSnapshot computeSnapshotFromPackageInfo(@NonNull PackageInfo pi) {
         long versionCode = PackageInfoCompat.getLongVersionCode(pi);
-        Map<String, RuleType> componentMap = PackageUtils.collectComponentClassNames(pi);
-        Set<String> components = new HashSet<>(componentMap.keySet());
+        Map<String, ComponentRecord> records = new TreeMap<>();
+        collect(records, pi.activities, ComponentRecord.TYPE_ACTIVITY);
+        collect(records, pi.services, ComponentRecord.TYPE_SERVICE);
+        collect(records, pi.receivers, ComponentRecord.TYPE_RECEIVER);
+        collectProviders(records, pi.providers);
+        // Anything the shared collector knows about but the typed arrays did not surface still
+        // belongs in the snapshot, just without manifest facts.
+        for (String componentName : PackageUtils.collectComponentClassNames(pi).keySet()) {
+            if (componentName != null && !componentName.isEmpty() && !records.containsKey(componentName)) {
+                records.put(componentName, ComponentRecord.unknown());
+            }
+        }
         Set<String> trackers = new HashSet<>();
-        for (String componentName : components) {
+        for (String componentName : records.keySet()) {
             if (ComponentUtils.isTracker(componentName)) {
                 trackers.add(componentName);
             }
         }
-        return new ComponentSnapshot(versionCode, components, trackers);
+        return new ComponentSnapshot(versionCode, records, trackers);
+    }
+
+    private static void collect(@NonNull Map<String, ComponentRecord> out,
+                                @Nullable ComponentInfo[] components,
+                                @NonNull String type) {
+        if (components == null) return;
+        for (ComponentInfo info : components) {
+            if (info == null || info.name == null || info.name.isEmpty()) continue;
+            String permission = info instanceof ActivityInfo ? ((ActivityInfo) info).permission
+                    : info instanceof ServiceInfo ? ((ServiceInfo) info).permission
+                    : null;
+            out.put(info.name, new ComponentRecord(type, info.exported, info.enabled, permission));
+        }
+    }
+
+    private static void collectProviders(@NonNull Map<String, ComponentRecord> out,
+                                         @Nullable ProviderInfo[] providers) {
+        if (providers == null) return;
+        for (ProviderInfo info : providers) {
+            if (info == null || info.name == null || info.name.isEmpty()) continue;
+            // A provider is only as guarded as its weakest side; record the read guard, falling
+            // back to the write guard when reads are unguarded.
+            String permission = info.readPermission != null ? info.readPermission
+                    : info.writePermission;
+            out.put(info.name, new ComponentRecord(ComponentRecord.TYPE_PROVIDER, info.exported,
+                    info.enabled, permission));
+        }
     }
 
     @WorkerThread
@@ -157,6 +198,9 @@ public final class ComponentChangeMonitor {
 
     @NonNull
     private static String summarize(@NonNull ComponentChangeDiff.Result diff) {
+        // Privilege expansion outranks the raw appeared/disappeared counts.
+        if (!diff.newlyExported.isEmpty()) return "newly exported: " + shortJoin(diff.newlyExported);
+        if (!diff.weakenedGuards.isEmpty()) return "guard changed: " + shortJoin(diff.weakenedGuards);
         if (!diff.addedTrackers.isEmpty()) return "added trackers: " + shortJoin(diff.addedTrackers);
         if (!diff.removedTrackers.isEmpty()) return "removed trackers: " + shortJoin(diff.removedTrackers);
         if (!diff.addedComponents.isEmpty()) return "added components: " + shortJoin(diff.addedComponents);

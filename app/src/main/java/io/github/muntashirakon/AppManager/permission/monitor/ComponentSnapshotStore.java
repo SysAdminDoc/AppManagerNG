@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.Set;
 
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -34,7 +35,7 @@ public final class ComponentSnapshotStore {
     @VisibleForTesting
     static final String FILE_NAME = "component_snapshots.json";
     @VisibleForTesting
-    static final int SCHEMA_VERSION = 1;
+    static final int SCHEMA_VERSION = 2;
     @VisibleForTesting
     static final long MAX_STORE_BYTES = 16L * 1024L * 1024L;
 
@@ -86,6 +87,11 @@ public final class ComponentSnapshotStore {
         if (json.trim().isEmpty()) return out;
         try {
             JSONObject root = new JSONObject(json);
+            if (root.optInt("schema_version", 0) != SCHEMA_VERSION) {
+                // An older schema carries no exported/guard state. Discard it so the next prime
+                // rebuilds a full baseline instead of alerting on facts that were never recorded.
+                return out;
+            }
             JSONObject snapshots = root.optJSONObject("snapshots");
             if (snapshots == null) return out;
             for (Iterator<String> it = snapshots.keys(); it.hasNext(); ) {
@@ -93,7 +99,7 @@ public final class ComponentSnapshotStore {
                 JSONObject entry = snapshots.optJSONObject(packageName);
                 if (entry == null) continue;
                 out.put(packageName, new ComponentSnapshot(entry.optLong("version_code", -1),
-                        readStringSet(entry.optJSONArray("components")),
+                        readRecords(entry.optJSONObject("components")),
                         readStringSet(entry.optJSONArray("tracker_components"))));
             }
         } catch (JSONException ignore) {
@@ -112,7 +118,7 @@ public final class ComponentSnapshotStore {
             for (Map.Entry<String, ComponentSnapshot> e : all.entrySet()) {
                 JSONObject entry = new JSONObject();
                 entry.put("version_code", e.getValue().versionCode);
-                entry.put("components", toJsonArray(e.getValue().components));
+                entry.put("components", toRecordObject(e.getValue().records));
                 entry.put("tracker_components", toJsonArray(e.getValue().trackerComponents));
                 snapshots.put(e.getKey(), entry);
             }
@@ -121,6 +127,39 @@ public final class ComponentSnapshotStore {
         } catch (JSONException e) {
             return "{\"schema_version\":" + SCHEMA_VERSION + ",\"snapshots\":{}}";
         }
+    }
+
+    @NonNull
+    private static Map<String, ComponentRecord> readRecords(@Nullable JSONObject object) {
+        Map<String, ComponentRecord> out = new TreeMap<>();
+        if (object == null) return out;
+        for (Iterator<String> it = object.keys(); it.hasNext(); ) {
+            String name = it.next();
+            JSONObject entry = object.optJSONObject(name);
+            if (entry == null || name.isEmpty()) continue;
+            out.put(name, new ComponentRecord(
+                    entry.optString("type", ComponentRecord.TYPE_UNKNOWN),
+                    entry.optBoolean("exported", false),
+                    entry.optBoolean("enabled", true),
+                    entry.isNull("permission") ? null : entry.optString("permission", null)));
+        }
+        return out;
+    }
+
+    @NonNull
+    private static JSONObject toRecordObject(@NonNull Map<String, ComponentRecord> records)
+            throws JSONException {
+        JSONObject object = new JSONObject();
+        for (Map.Entry<String, ComponentRecord> e : records.entrySet()) {
+            ComponentRecord record = e.getValue();
+            JSONObject entry = new JSONObject();
+            entry.put("type", record.type);
+            entry.put("exported", record.exported);
+            entry.put("enabled", record.enabled);
+            if (record.permission != null) entry.put("permission", record.permission);
+            object.put(e.getKey(), entry);
+        }
+        return object;
     }
 
     @NonNull

@@ -61,7 +61,7 @@ public class PermissionSnapshotStoreTest {
     public void roundTripDropsNullPermissionEntries() {
         // Hand-crafted JSON with a null perm in the array — serializer would
         // never write one, but the parser tolerates pathological input.
-        String json = "{\"schema_version\":1,\"snapshots\":{"
+        String json = "{\"schema_version\":2,\"snapshots\":{"
                 + "\"com.foo\":{\"version_code\":1,"
                 + "\"dangerous_perms\":[null,\"\",\"android.permission.CAMERA\"]}}}";
         Map<String, PermissionSnapshot> out = PermissionSnapshotStore.parse(json);
@@ -75,7 +75,7 @@ public class PermissionSnapshotStoreTest {
         // A snapshot file written by an older schema variant might omit
         // version_code. The parser must still surface the row so the diff
         // works on the next update.
-        String json = "{\"schema_version\":1,\"snapshots\":{"
+        String json = "{\"schema_version\":2,\"snapshots\":{"
                 + "\"com.foo\":{\"dangerous_perms\":[\"android.permission.CAMERA\"]}}}";
         Map<String, PermissionSnapshot> out = PermissionSnapshotStore.parse(json);
         PermissionSnapshot foo = out.get("com.foo");

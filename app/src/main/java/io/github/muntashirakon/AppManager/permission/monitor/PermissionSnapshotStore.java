@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.Set;
 
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -56,7 +57,7 @@ public final class PermissionSnapshotStore {
     @VisibleForTesting
     static final String FILE_NAME = "permission_snapshots.json";
     @VisibleForTesting
-    static final int SCHEMA_VERSION = 1;
+    static final int SCHEMA_VERSION = 2;
     /**
      * Hard ceiling on the on-disk store. A well-formed store for every
      * installed package is far smaller than this; a file larger than the cap is
@@ -126,6 +127,11 @@ public final class PermissionSnapshotStore {
         if (json.trim().isEmpty()) return out;
         try {
             JSONObject root = new JSONObject(json);
+            if (root.optInt("schema_version", 0) != SCHEMA_VERSION) {
+                // An older schema recorded only the dangerous set. Discard it so the next prime
+                // rebuilds a full baseline instead of alerting on facts that were never recorded.
+                return out;
+            }
             JSONObject snapshots = root.optJSONObject("snapshots");
             if (snapshots == null) return out;
             for (Iterator<String> it = snapshots.keys(); it.hasNext(); ) {
@@ -133,20 +139,61 @@ public final class PermissionSnapshotStore {
                 JSONObject entry = snapshots.optJSONObject(packageName);
                 if (entry == null) continue;
                 long versionCode = entry.optLong("version_code", -1);
-                JSONArray perms = entry.optJSONArray("dangerous_perms");
-                Set<String> permSet = new HashSet<>();
-                if (perms != null) {
-                    for (int i = 0; i < perms.length(); ++i) {
-                        String p = perms.optString(i, null);
-                        if (p != null && !p.isEmpty()) permSet.add(p);
-                    }
-                }
-                out.put(packageName, new PermissionSnapshot(versionCode, permSet));
+                Set<String> dangerous = readStringSet(entry.optJSONArray("dangerous_perms"));
+                Set<String> requested = readStringSet(entry.optJSONArray("requested_perms"));
+                if (requested.isEmpty()) requested = dangerous;
+                out.put(packageName, new PermissionSnapshot(versionCode, dangerous, requested,
+                        readDeclared(entry.optJSONObject("declared_perms"))));
             }
         } catch (JSONException ignore) {
             // Treated as empty store, intentionally.
         }
         return out;
+    }
+
+    @NonNull
+    private static Set<String> readStringSet(@Nullable JSONArray array) {
+        Set<String> out = new HashSet<>();
+        if (array == null) return out;
+        for (int i = 0; i < array.length(); ++i) {
+            String value = array.optString(i, null);
+            if (value != null && !value.isEmpty()) out.add(value);
+        }
+        return out;
+    }
+
+    @NonNull
+    private static JSONArray toJsonArray(@NonNull Set<String> values) {
+        JSONArray array = new JSONArray();
+        for (String value : values) array.put(value);
+        return array;
+    }
+
+    @NonNull
+    private static Map<String, DeclaredPermission> readDeclared(@Nullable JSONObject object) {
+        Map<String, DeclaredPermission> out = new TreeMap<>();
+        if (object == null) return out;
+        for (Iterator<String> it = object.keys(); it.hasNext(); ) {
+            String name = it.next();
+            JSONObject entry = object.optJSONObject(name);
+            if (entry == null || name.isEmpty()) continue;
+            out.put(name, new DeclaredPermission(name, entry.optInt("protection", -1),
+                    entry.isNull("signer") ? null : entry.optString("signer", null)));
+        }
+        return out;
+    }
+
+    @NonNull
+    private static JSONObject toDeclaredObject(@NonNull Map<String, DeclaredPermission> declared)
+            throws JSONException {
+        JSONObject object = new JSONObject();
+        for (Map.Entry<String, DeclaredPermission> e : declared.entrySet()) {
+            JSONObject entry = new JSONObject();
+            entry.put("protection", e.getValue().protectionLevel);
+            if (e.getValue().ownerSigner != null) entry.put("signer", e.getValue().ownerSigner);
+            object.put(e.getKey(), entry);
+        }
+        return object;
     }
 
     @WorkerThread
@@ -171,9 +218,9 @@ public final class PermissionSnapshotStore {
             for (Map.Entry<String, PermissionSnapshot> e : all.entrySet()) {
                 JSONObject entry = new JSONObject();
                 entry.put("version_code", e.getValue().versionCode);
-                JSONArray perms = new JSONArray();
-                for (String p : e.getValue().dangerousPermissions) perms.put(p);
-                entry.put("dangerous_perms", perms);
+                entry.put("dangerous_perms", toJsonArray(e.getValue().dangerousPermissions));
+                entry.put("requested_perms", toJsonArray(e.getValue().requestedPermissions));
+                entry.put("declared_perms", toDeclaredObject(e.getValue().declaredPermissions));
                 snapshots.put(e.getKey(), entry);
             }
             root.put("snapshots", snapshots);

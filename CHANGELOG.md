@@ -6,6 +6,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## Unreleased
 
 ### Added
+- The App Change Auditor now records and diffs security-relevant manifest
+  deltas, not just which components exist. Snapshots (schema 2) keep each
+  component's type, effective exported/enabled state, and guard permission, plus
+  every requested permission and every declared custom permission with its
+  protection level and owner signer. Updates are flagged when a component
+  becomes reachable, loses or swaps its guard, when a declaration's protection
+  level drops, when a permission is newly requested or requested with nobody
+  declaring it, and when an unrelated signer claims a permission name. Schema-1
+  data is discarded and re-primed rather than producing false alerts.
 - Corrupt automation state is now recoverable instead of silently discarded.
   Profile triggers keep the last document that parsed and a verbatim copy of a
   document that did not, salvage the valid entries of a partly damaged one, and

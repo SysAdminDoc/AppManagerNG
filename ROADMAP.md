@@ -185,20 +185,6 @@ fixed, so these are net-new. Every item below is host-implementable and host-tes
   >=128 MiB fixture completes within a documented heap bound with no orphaned temporary files.
   Complexity: L
 
-- [ ] P1 — Expand App Change Auditor to security-relevant manifest deltas
-  Why: current snapshots discard exported/enabled/guard and custom-permission ownership data,
-  missing update-time privilege expansion and confused-deputy signals.
-  Evidence: `permission/monitor/ComponentSnapshot.java`, `PermissionSnapshot.java`,
-  `ComponentChangeMonitor.java`; Android exported-component/custom-permission guidance;
-  arxiv:2605.27667 and arxiv:2508.02008.
-  Touches: `permission/monitor/` snapshot schemas, package parsing, diff/feed UI and migration.
-  Acceptance: versioned snapshots record component type, effective exported/enabled state and
-  guard permission plus requested/declared custom permissions, protection level, and owner
-  signer; alerts cover false-to-true export, removed/weakened guards, new requests, orphaned
-  permissions, and same-name ownership by unrelated signers; v1 data reprimes without false
-  alerts; host fixtures cover each transition.
-  Complexity: L
-
 ### P2
 
 - [ ] P2 — Disposition affected Guava/protobuf release-runtime dependencies
