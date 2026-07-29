@@ -153,6 +153,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Ported from upstream App Manager (`133b5acb7f`).
 
 ### Fixed
+- Encrypted snapshot export and import now stream through app-private staging
+  instead of holding the bundle — twice — in heap, so peak memory no longer
+  scales with bundle size. Authentication still completes before anything is
+  parsed or applied: decrypted bytes go to private staging and are discarded
+  unless the GCM tag verifies. Restored files are replaced atomically and all
+  selected database sections commit in a single transaction, so a late failure
+  can no longer leave old files next to newly inserted rows.
 - Installing an APK with OBB expansion files is now rollback-safe. The OBBs are
   extracted and validated into private staging before anything on the device is
   touched, the existing per-user expansion files are only replaced after the APK
