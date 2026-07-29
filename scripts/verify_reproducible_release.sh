@@ -8,7 +8,10 @@ cd "$ROOT_DIR"
 
 GRADLE_CMD="${GRADLE_CMD:-./gradlew}"
 PYTHON_CMD="${PYTHON_CMD:-python3}"
-OUT_DIR="${REPRO_OUT_DIR:-build/reproducible-release}"
+# Deliberately outside build/: each build in this comparison runs `clean`, which empties the
+# root project's build directory. Keeping the evidence in there means the second build destroys
+# the first build's artifacts — and destroys the published artifacts and reports on the way out.
+OUT_DIR="${REPRO_OUT_DIR:-reproducible-release}"
 APK_ROOT="app/build/outputs/apk"
 FIRST_DIR="$OUT_DIR/first"
 SECOND_DIR="$OUT_DIR/second"
