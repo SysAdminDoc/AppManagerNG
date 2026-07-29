@@ -1,17 +1,11 @@
 {
-  "schema": 1,
-  "version": "2026-05-17",
-  "source": "app/src/main/assets generated from scripts/android-debloat-list",
-  "files": {
-    "debloat": {
-      "url": "https://raw.githubusercontent.com/SysAdminDoc/AppManagerNG/main/app/src/main/assets/debloat.json",
-      "sha256": "2006caa15d77d0c5b9c04e4cf5f57631f0e8f56b09edf6105abbc66e8b12194a",
-      "bytes": 1063205
-    },
-    "suggestions": {
-      "url": "https://raw.githubusercontent.com/SysAdminDoc/AppManagerNG/main/app/src/main/assets/suggestions.json",
-      "sha256": "d285a4ce6ea29e3efa47d79e4ef5a929fc1f8d02e54701382b6397cc96f5c96b",
-      "bytes": 7637
+  "schema": 2,
+  "signed": "ewogICJleHBpcmVzIjogIjIwMjYtMTAtMjdUMTU6NDk6MTVaIiwKICAiZmlsZXMiOiB7CiAgICAiZGVibG9hdCI6IHsKICAgICAgImJ5dGVzIjogMTA2MzIwNSwKICAgICAgInNoYTI1NiI6ICIyMDA2Y2FhMTVkNzdkMGM1YjljMDRlNGNmNWY1NzYzMWYwZThmNTZiMDllZGY2MTA1YWJiYzY2ZThiMTIxOTRhIiwKICAgICAgInVybCI6ICJodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vU3lzQWRtaW5Eb2MvQXBwTWFuYWdlck5HL21haW4vYXBwL3NyYy9tYWluL2Fzc2V0cy9kZWJsb2F0Lmpzb24iCiAgICB9LAogICAgInN1Z2dlc3Rpb25zIjogewogICAgICAiYnl0ZXMiOiA3NjM3LAogICAgICAic2hhMjU2IjogImQyODVhNGNlNmVhMjllM2VmYTQ3ZDc5ZTRlZjVhOTI5ZmMxZjhkMDJlNTQ3MDEzODJiNjM5N2NjOTZmNWM5NmIiLAogICAgICAidXJsIjogImh0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9TeXNBZG1pbkRvYy9BcHBNYW5hZ2VyTkcvbWFpbi9hcHAvc3JjL21haW4vYXNzZXRzL3N1Z2dlc3Rpb25zLmpzb24iCiAgICB9CiAgfSwKICAiZ2VuZXJhdGlvbiI6IDEsCiAgInNjaGVtYSI6IDIsCiAgInZlcnNpb24iOiAiMjAyNi0wNy0yOSIKfQ==",
+  "signatures": [
+    {
+      "keyId": "ng-debloat-2026-07",
+      "alg": "SHA256withECDSA",
+      "sig": "MEYCIQDHG8RzRUCnQRpUtCQ9P0NzuiFfhHf9Hih79vxvOgDamgIhANbqG+6mTE07CyQNU2NhWVuT+yZAoMmmOTbtQHcr2jIM"
     }
-  }
+  ]
 }
