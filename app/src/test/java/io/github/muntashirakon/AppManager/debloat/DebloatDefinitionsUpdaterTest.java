@@ -5,11 +5,13 @@ package io.github.muntashirakon.AppManager.debloat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
 import com.google.gson.Gson;
 
 import org.junit.Test;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 public class DebloatDefinitionsUpdaterTest {
@@ -44,5 +46,13 @@ public class DebloatDefinitionsUpdaterTest {
         assertFalse(DebloatDefinitionsUpdater.isValidDatasetPair(gson,
                 "[{\"type\":\"oem\",\"description\":\"Test\",\"removal\":\"safe\"}]",
                 suggestionsJson));
+    }
+
+    @Test
+    public void onlyAdvancingGenerationsAreApplied() throws IOException {
+        assertTrue(DebloatDefinitionsUpdater.isUpdateRequired(2, 1));
+        assertTrue(DebloatDefinitionsUpdater.isUpdateRequired(1, 0));
+        assertFalse(DebloatDefinitionsUpdater.isUpdateRequired(3, 3));
+        assertThrows(IOException.class, () -> DebloatDefinitionsUpdater.isUpdateRequired(2, 3));
     }
 }
