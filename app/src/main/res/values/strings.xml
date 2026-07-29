@@ -2165,9 +2165,9 @@
     <string name="advanced_protection">Advanced Protection</string>
     <string name="installer_advanced_protection_blocked">Advanced Protection is enabled on this device. Android blocks all sideloaded app installs while this policy is active. To install apps from sources other than Google Play, disable Advanced Protection in Android settings first.</string>
     <string name="main_list_loading_batch_blocked">Still building the app list — batch actions will be available once it finishes.</string>
-    <string name="installer_sdk_levels">Targets API <xliff:g id="target" example="36">%1$d</xliff:g>, runs on API <xliff:g id="min" example="21">%2$d</xliff:g> and above</string>
+    <string name="installer_sdk_levels">Targets API <xliff:g id="target" example="36">%1$d</xliff:g> · Minimum API <xliff:g id="min" example="21">%2$d</xliff:g></string>
     <string name="installer_sdk_levels_target_only">Targets API <xliff:g id="target" example="36">%1$d</xliff:g></string>
-    <string name="installer_sdk_levels_min_only">Runs on API <xliff:g id="min" example="21">%1$d</xliff:g> and above</string>
+    <string name="installer_sdk_levels_min_only">Minimum API <xliff:g id="min" example="21">%1$d</xliff:g></string>
     <plurals name="installer_permissions_dangerous">
         <item quantity="one">Requests <xliff:g id="total" example="12">%1$d</xliff:g> permission, <xliff:g id="dangerous" example="3">%2$d</xliff:g> of them sensitive: <xliff:g id="names" example="Camera, Location">%3$s</xliff:g></item>
         <item quantity="other">Requests <xliff:g id="total" example="12">%1$d</xliff:g> permissions, <xliff:g id="dangerous" example="3">%2$d</xliff:g> of them sensitive: <xliff:g id="names" example="Camera, Location">%3$s</xliff:g></item>
