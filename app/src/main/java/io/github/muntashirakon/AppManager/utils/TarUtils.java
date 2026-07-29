@@ -187,6 +187,21 @@ public final class TarUtils {
                                 "\nExpected dest: " + new File(realDestPath, entry.getName()) +
                                 "\nActual path: " + (filename != null ? new File(realDestPath, filename) : realDestPath));
                     }
+                    if (entry.isSymbolicLink()) {
+                        // Validate the link target before anything is created: a rejected entry
+                        // must not leave a stray node behind in the extraction root.
+                        String candidateLink = entry.getLinkName();
+                        boolean dataAppCandidate = candidateLink.startsWith("/data/app/");
+                        if (dataAppCandidate) {
+                            candidateLink = getAbsolutePathToDataApp(candidateLink, realDataAppPath);
+                        }
+                        if (!dataAppCandidate
+                                && !isSymlinkTargetContained(candidateLink, filename, realDestPath)) {
+                            throw new IOException("Symlink traversal vulnerability detected!"
+                                    + "\nLink: " + new File(realDestPath, filename)
+                                    + "\nTarget: " + candidateLink);
+                        }
+                    }
                     Path file;
                     if (entry.isDirectory()) {
                         file = dest.createDirectoriesIfRequired(filename);

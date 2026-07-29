@@ -43,6 +43,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   device-specific tables (app inventory, scan results, backup rows) stay excluded.
 
 ### Security
+- Archive extraction is now contained against symlink redirection, not just
+  hostile entry names. A ZIP entry whose path traverses a symbolic link already
+  present in the destination is refused, and every extracted path is re-resolved
+  against the destination root before it is written. A TAR entry whose symlink
+  target escapes the root is now rejected before any node is created, so a
+  refused entry no longer leaves a stray file behind. Real ZIP and TAR fixtures
+  covering zip slip, absolute and drive-letter paths, symlink escape, and a
+  planted-link write now run as regression tests.
 - Remote debloat definitions are now authenticated. The update manifest carries
   its document verbatim inside a signed envelope, verified against a public key
   pinned in the app (ECDSA P-256/SHA-256), and unsigned, tampered, expired,

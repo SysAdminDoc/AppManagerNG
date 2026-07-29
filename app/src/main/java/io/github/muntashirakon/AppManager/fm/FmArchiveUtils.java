@@ -9,6 +9,7 @@ import androidx.annotation.WorkerThread;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -91,6 +92,10 @@ final class FmArchiveUtils {
             progressCallback.onProgress(archive.getName(), 0, total);
         }
         ArchiveExtractionGuard bombGuard = new ArchiveExtractionGuard(archive.length());
+        // Name validation alone is not containment: the destination itself can be a symlink, or be
+        // replaced by one after the archive was opened. Resolve the root once and re-check every
+        // file we are about to write against it, so a swapped-in link cannot redirect the write.
+        String realDestPath = destination.getRealFilePath();
         try (ZipInputStream zipInputStream = new ZipInputStream(new BufferedInputStream(archive.openInputStream()))) {
             ZipEntry zipEntry;
             int done = 0;
@@ -98,12 +103,20 @@ final class FmArchiveUtils {
                 throwIfInterrupted();
                 bombGuard.onNewEntry();
                 String entryName = normalizeZipEntryName(zipEntry.getName());
+                assertNoSymlinkComponents(destination, entryName);
                 if (zipEntry.isDirectory()) {
-                    destination.createDirectoriesIfRequired(entryName);
+                    Path directory = destination.createDirectoriesIfRequired(entryName);
+                    assertContained(directory, realDestPath, entryName);
                 } else {
                     String outputName = resolveOutputName(destination, entryName, conflictResolver);
                     if (outputName != null) {
                         Path outputFile = destination.createNewArbitraryFile(outputName, null);
+                        try {
+                            assertContained(outputFile, realDestPath, entryName);
+                        } catch (IOException e) {
+                            outputFile.delete();
+                            throw e;
+                        }
                         try (OutputStream outputStream = new BufferedOutputStream(outputFile.openOutputStream())) {
                             bombGuard.copy(zipInputStream, outputStream);
                         }
@@ -188,6 +201,61 @@ final class FmArchiveUtils {
     }
 
     @NonNull
+    /**
+     * Rejects an entry whose path traverses a symbolic link that already exists inside the
+     * destination. A perfectly innocent-looking entry name can otherwise be redirected anywhere by
+     * a link planted beforehand — the classic validate-then-write escape that name normalisation
+     * cannot see.
+     */
+    private static void assertNoSymlinkComponents(@NonNull Path destination, @NonNull String entryName)
+            throws IOException {
+        Path current = destination;
+        int from = 0;
+        int slash;
+        while ((slash = entryName.indexOf(Paths.PATH_SEPARATOR_CHAR, from)) >= 0) {
+            String component = entryName.substring(from, slash);
+            from = slash + 1;
+            if (component.isEmpty()) {
+                continue;
+            }
+            Path child = current.findFileOrNull(component);
+            if (child == null) {
+                // Nothing exists along the rest of the path, so there is nothing to follow.
+                return;
+            }
+            if (child.isSymbolicLink()) {
+                throw new IOException("Unsafe archive entry path: " + entryName
+                        + " traverses the symbolic link " + component);
+            }
+            current = child;
+        }
+    }
+
+    /**
+     * Rejects a target whose resolved location is not under {@code realDestPath}. This is the
+     * check that survives a destination that is (or becomes) a symlink, which name normalisation
+     * alone cannot see.
+     */
+    private static void assertContained(@NonNull Path target, @Nullable String realDestPath,
+                                        @NonNull String entryName) throws IOException {
+        if (realDestPath == null) {
+            // The destination has no real filesystem path (SAF/virtual); entry-name normalisation
+            // is the containment guarantee there, and it already ran.
+            return;
+        }
+        String realTargetPath = target.getRealFilePath();
+        if (realTargetPath == null) {
+            return;
+        }
+        // getRealFilePath() canonicalises through the platform, so accept either separator.
+        if (!realTargetPath.equals(realDestPath)
+                && !realTargetPath.startsWith(realDestPath + Paths.PATH_SEPARATOR_CHAR)
+                && !realTargetPath.startsWith(realDestPath + File.separatorChar)) {
+            throw new IOException("Unsafe archive entry path: " + entryName
+                    + " resolved outside " + realDestPath);
+        }
+    }
+
     static String normalizeZipEntryName(@NonNull String entryName) throws IOException {
         String normalizedName = entryName.replace('\\', Paths.PATH_SEPARATOR_CHAR);
         if (normalizedName.startsWith(Paths.PATH_SEPARATOR) || normalizedName.matches("^[A-Za-z]:.*")) {
