@@ -5,7 +5,53 @@
 AppManagerNG's maintainer release process verifies that two clean builds from
 the same source tree produce byte-identical APKs before publishing artifacts.
 
-## How it works
+## The one command
+
+Reproducibility is one gate among several, and a release must clear all of
+them. `scripts/release_gate.py` runs every gate in order and refuses to emit a
+receipt unless each one passes:
+
+```bash
+python scripts/release_gate.py --tag v0.6.6 \
+    --expected-signing-cert <sha256 of the release certificate>
+```
+
+| Stage | Refuses the release when |
+|---|---|
+| `source` | the working tree is dirty, or `--tag` does not resolve to HEAD |
+| `consistency` | any version-bearing surface disagrees |
+| `floor` | a pinned dependency has drifted past its ceiling |
+| `translation` | a source string regressed, or the report's own counts disagree |
+| `tests` | a host unit test fails, or the task reports success with no results |
+| `lint` | a lint issue is not in the baseline, or the baseline has stale entries |
+| `reproducible` | two clean builds differ, or the SBOM, page-alignment, or blocking CVE check fails |
+| `artifact` | the built APK's package, version, SDK level, or signer is not the one the sources declare |
+
+The receipt is written last and only on success, to
+`build/release-gate/release-gate-receipt.json`. It binds the released commit
+and tag to the SHA-256 of every published artifact and report, the signing
+certificate fingerprint, the identity the sources declared, and the versions of
+the tools that produced them — so a receipt can never describe a build that did
+not pass, or an artifact other than the one that was checked.
+
+Stage selection (`--only` / `--skip`) exists for maintainer iteration. The
+receipt records exactly which stages ran, so a partial run is visibly partial.
+
+### The lint baseline
+
+The gate runs lint with the committed baseline moved aside and compares the
+results itself. Letting lint apply its own baseline hides entries that no
+longer match, so a baseline rots indefinitely; running unfiltered answers both
+questions from one analysis — what is new, and what is stale. Issues are
+matched by rule, module-relative file, and message, never by line number, so
+unrelated edits do not manufacture findings.
+
+When the baseline has drifted, `--refresh-lint-baseline` installs the baseline
+that lint regenerated during the same run and stops so the diff can be
+reviewed before it is committed. The gate never edits the baseline into shape
+itself.
+
+## How reproducibility is checked
 
 1. **Two clean builds** - the maintainer runs
    `scripts/verify_reproducible_release.ps1` or

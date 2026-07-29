@@ -1,0 +1,7 @@
+Data-integrity and installer safety release.
+
+- APK + OBB installs are now rollback-safe; a failed install no longer replaces expansion files.
+- Debloat definitions are signed, verified against a pinned key, and activated atomically.
+- Local metadata, snapshots, and automation state now fail closed instead of losing data.
+- App updates are audited for newly exported components and weakened permission guards.
+- Archive extraction is contained against symlink redirection.

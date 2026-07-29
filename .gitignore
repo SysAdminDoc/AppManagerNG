@@ -71,3 +71,7 @@ RESEARCH_FEATURE_PLAN*.md
 # AI config
 AGENTS.md
 .codex/
+
+# Python bytecode from the local release/quality scripts
+__pycache__/
+*.pyc
