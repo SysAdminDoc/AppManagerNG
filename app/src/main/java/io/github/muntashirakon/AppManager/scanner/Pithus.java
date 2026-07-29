@@ -11,6 +11,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.regex.Pattern;
 
+import io.github.muntashirakon.AppManager.settings.NetworkRequestLedger;
+
 public class Pithus {
     private static final String BASE_URL = "https://beta.pithus.org/report";
     private static final int CONNECT_TIMEOUT_MILLIS = 10_000;
@@ -31,10 +33,13 @@ public class Pithus {
             connection.setInstanceFollowRedirects(false);
             connection.setUseCaches(false);
             connection.setRequestMethod("GET");
-            if (isReportAvailableResponse(connection.getResponseCode())) {
-                return url.toString();
-            }
-            return null;
+            boolean available = isReportAvailableResponse(connection.getResponseCode());
+            // Record only that the lookup happened and how it ended — no hash, no URL, no body.
+            NetworkRequestLedger.record(NetworkRequestLedger.CLIENT_PITHUS, true);
+            return available ? url.toString() : null;
+        } catch (IOException | RuntimeException e) {
+            NetworkRequestLedger.record(NetworkRequestLedger.CLIENT_PITHUS, false);
+            throw e;
         } finally {
             connection.disconnect();
         }
