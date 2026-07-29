@@ -69,24 +69,6 @@ fixed, so these are net-new. Every item below is host-implementable and host-tes
 
 ### P2
 
-- [ ] P2 — Fuzz the archive extraction paths against path-traversal, symlink, and TOCTOU payloads
-  Why: extraction is guarded (`ArchiveExtractionGuard` is wired across every path) but the
-  `archive` Jazzer target does not explicitly exercise zip-slip/symlink/TOCTOU — the CVE
-  class with the most 2025-26 activity for archive-handling apps.
-  Evidence: `utils/ArchiveExtractionGuard.java`; `fm/FmArchiveUtils.java` (normalizeZipEntryName);
-  `app/build.gradle:272-277` (`archive` fuzz target); CVE-2026-27800, CVE-2026-37531;
-  developer.android.com/privacy-and-security/risks/zip-path-traversal.
-  2026-07-29 evidence update: `ArchiveImportFuzzTarget` already exercises synthetic symlink
-  containment and the corpus has traversal/relative-path seeds; remaining scope is real ZIP/TAR
-  extraction, real symlink entries, destination replacement, and TOCTOU fault simulation.
-  Touches: `app/src/test/.../*ArchiveFuzz*` or the existing archive fuzz harness, tracked
-  fuzz corpus under `app/src/test/resources/fuzz-corpus/`, `ArchiveExtractionGuardTest.java`.
-  Acceptance: real ZIP/TAR extraction ingests archive fixtures containing traversal, absolute
-  and drive-letter paths plus actual symlink entries; destination replacement and an injected
-  validation-to-write race cannot escape the extraction root; fixtures also run as regression
-  tests and stay green.
-  Complexity: S
-
 - [ ] P2 — Audit exported components for intent redirection and PendingIntent provenance
   Why: a root-capable app is a prime target for BadParcelable/lazy-Bundle and PendingIntent
   provenance-confusion; the interceptor re-dispatches received intents and no systematic
