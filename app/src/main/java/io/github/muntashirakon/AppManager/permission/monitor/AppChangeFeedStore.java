@@ -13,8 +13,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -22,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.utils.DurableFile;
 
 /**
  * Atomic JSON-on-disk store for the unified app-change audit feed.
@@ -39,7 +38,7 @@ public final class AppChangeFeedStore {
     static final long MAX_STORE_BYTES = 4L * 1024L * 1024L;
 
     @NonNull
-    private final File mFile;
+    private final DurableFile mFile;
 
     public AppChangeFeedStore(@NonNull Context appContext) {
         this(new File(appContext.getFilesDir(), FILE_NAME));
@@ -47,43 +46,24 @@ public final class AppChangeFeedStore {
 
     @VisibleForTesting
     AppChangeFeedStore(@NonNull File file) {
-        mFile = file;
+        mFile = new DurableFile(file);
     }
 
     @WorkerThread
-    public synchronized void append(@NonNull AppChangeFeedEntry entry) {
+    public synchronized boolean append(@NonNull AppChangeFeedEntry entry) {
         List<AppChangeFeedEntry> entries = new ArrayList<>(readAll());
         entries.add(0, entry);
         if (entries.size() > MAX_ENTRIES) {
             entries = new ArrayList<>(entries.subList(0, MAX_ENTRIES));
         }
-        writeAll(entries);
+        return writeAll(entries);
     }
 
     @WorkerThread
     @NonNull
     public synchronized List<AppChangeFeedEntry> readAll() {
-        if (!mFile.isFile()) return Collections.emptyList();
-        long len = mFile.length();
-        if (len <= 0L || len > MAX_STORE_BYTES) {
-            if (len > MAX_STORE_BYTES) {
-                Log.w(TAG, "Feed store is implausibly large (" + len + " bytes); treating as empty.");
-            }
-            return Collections.emptyList();
-        }
-        try (FileInputStream fis = new FileInputStream(mFile)) {
-            byte[] buf = new byte[(int) len];
-            int read = 0;
-            while (read < buf.length) {
-                int n = fis.read(buf, read, buf.length - read);
-                if (n < 0) break;
-                read += n;
-            }
-            return parse(new String(buf, 0, read, StandardCharsets.UTF_8));
-        } catch (IOException | RuntimeException e) {
-            Log.w(TAG, "Could not read app-change feed; treating as empty.", e);
-            return Collections.emptyList();
-        }
+        String json = mFile.read(MAX_STORE_BYTES);
+        return json != null ? parse(json) : Collections.emptyList();
     }
 
     @VisibleForTesting
@@ -138,31 +118,14 @@ public final class AppChangeFeedStore {
     }
 
     @WorkerThread
-    private synchronized void writeAll(@NonNull List<AppChangeFeedEntry> entries) {
-        String body = serialize(entries);
-        File tmp = new File(mFile.getParentFile(), FILE_NAME + ".tmp");
+    private synchronized boolean writeAll(@NonNull List<AppChangeFeedEntry> entries) {
         try {
-            File parent = tmp.getParentFile();
-            if (parent != null) {
-                //noinspection ResultOfMethodCallIgnored
-                parent.mkdirs();
-            }
-            try (FileOutputStream fos = new FileOutputStream(tmp)) {
-                fos.write(body.getBytes(StandardCharsets.UTF_8));
-                fos.getFD().sync();
-            }
-            if (!tmp.renameTo(mFile)) {
-                Log.w(TAG, "Atomic rename failed for app-change feed; falling back to delete+rename.");
-                //noinspection ResultOfMethodCallIgnored
-                mFile.delete();
-                if (!tmp.renameTo(mFile)) {
-                    Log.w(TAG, "App-change feed rename failed twice; leaving stale tmp at " + tmp);
-                }
-            }
+            mFile.write(serialize(entries).getBytes(StandardCharsets.UTF_8));
+            return true;
         } catch (IOException e) {
-            Log.w(TAG, "Could not write app-change feed.", e);
-            //noinspection ResultOfMethodCallIgnored
-            tmp.delete();
+            // Fail closed: the previous feed is still intact and readable.
+            Log.w(TAG, "Could not write the app-change feed; the previous one was kept.", e);
+            return false;
         }
     }
 }
