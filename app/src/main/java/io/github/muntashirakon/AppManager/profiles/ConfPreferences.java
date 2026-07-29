@@ -402,6 +402,21 @@ public class ConfPreferences extends PreferenceFragmentCompat {
                     + RoutineScheduler.formatTriggerSummary(mActivity, trigger);
         }
         items[items.length - 1] = getString(R.string.profile_trigger_add);
+        ProfileTriggerStore.Health health = mTriggerStore.inspect();
+        if (health.needsAttention()) {
+            showRoutineTriggerRecoveryDialog(health, () -> new MaterialAlertDialogBuilder(mActivity)
+                    .setTitle(R.string.profile_routine_triggers)
+                    .setItems(items, (dialog, which) -> {
+                        if (which == triggers.size()) {
+                            showAddRoutineTriggerDialog(profileId);
+                        } else {
+                            showRoutineTriggerActions(triggers.get(which));
+                        }
+                    })
+                    .setNegativeButton(R.string.close, null)
+                    .show());
+            return;
+        }
         new MaterialAlertDialogBuilder(mActivity)
                 .setTitle(R.string.profile_routine_triggers)
                 .setItems(items, (dialog, which) -> {
@@ -412,6 +427,52 @@ public class ConfPreferences extends PreferenceFragmentCompat {
                     }
                 })
                 .setNegativeButton(R.string.close, null)
+                .show();
+    }
+
+    /**
+     * Corrupt automation state never disables automation on its own: the damaged document is kept
+     * verbatim, valid entries are salvaged, and the user decides whether to export or reset.
+     */
+    private void showRoutineTriggerRecoveryDialog(@NonNull ProfileTriggerStore.Health health,
+                                                  @NonNull Runnable onContinue) {
+        StringBuilder message = new StringBuilder();
+        if (health.documentCorrupt) {
+            message.append(getString(health.restoredFromLastGood
+                    ? R.string.profile_trigger_recovery_restored
+                    : R.string.profile_trigger_recovery_unreadable));
+        }
+        if (health.droppedEntries > 0) {
+            if (message.length() > 0) message.append("\n\n");
+            message.append(getResources().getQuantityString(R.plurals.profile_trigger_recovery_dropped,
+                    health.droppedEntries, health.droppedEntries));
+        }
+        if (message.length() == 0) {
+            message.append(getString(R.string.profile_trigger_recovery_quarantined));
+        }
+        new MaterialAlertDialogBuilder(mActivity)
+                .setTitle(R.string.profile_trigger_recovery_title)
+                .setMessage(message)
+                .setPositiveButton(R.string.profile_trigger_recovery_continue, (dialog, which) -> onContinue.run())
+                .setNeutralButton(R.string.profile_trigger_recovery_export, (dialog, which) -> {
+                    String raw = mTriggerStore.getQuarantinedDocument();
+                    if (raw == null) {
+                        UIUtils.displayShortToast(R.string.profile_trigger_recovery_nothing_to_export);
+                        return;
+                    }
+                    Utils.copyToClipboard(mActivity, getString(R.string.profile_routine_triggers), raw);
+                    mTriggerStore.clearQuarantine();
+                })
+                .setNegativeButton(R.string.profile_trigger_recovery_reset, (dialog, which) ->
+                        new MaterialAlertDialogBuilder(mActivity)
+                                .setTitle(R.string.profile_trigger_recovery_reset)
+                                .setMessage(R.string.profile_trigger_recovery_reset_confirm)
+                                .setPositiveButton(R.string.profile_trigger_recovery_reset, (d, w) -> {
+                                    mTriggerStore.reset();
+                                    updateRoutineTriggersPref();
+                                })
+                                .setNegativeButton(R.string.cancel, null)
+                                .show())
                 .show();
     }
 

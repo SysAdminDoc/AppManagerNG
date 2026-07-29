@@ -76,11 +76,15 @@ fixed, so these are net-new. Every item below is host-implementable and host-tes
   Evidence: `utils/ArchiveExtractionGuard.java`; `fm/FmArchiveUtils.java` (normalizeZipEntryName);
   `app/build.gradle:272-277` (`archive` fuzz target); CVE-2026-27800, CVE-2026-37531;
   developer.android.com/privacy-and-security/risks/zip-path-traversal.
+  2026-07-29 evidence update: `ArchiveImportFuzzTarget` already exercises synthetic symlink
+  containment and the corpus has traversal/relative-path seeds; remaining scope is real ZIP/TAR
+  extraction, real symlink entries, destination replacement, and TOCTOU fault simulation.
   Touches: `app/src/test/.../*ArchiveFuzz*` or the existing archive fuzz harness, tracked
   fuzz corpus under `app/src/test/resources/fuzz-corpus/`, `ArchiveExtractionGuardTest.java`.
-  Acceptance: the `archive` target ingests seeds containing `../` traversal, absolute paths,
-  drive-letter paths, and symlink entries; no seed escapes the extraction root; regression
-  corpus entries run as ordinary unit tests and stay green.
+  Acceptance: real ZIP/TAR extraction ingests archive fixtures containing traversal, absolute
+  and drive-letter paths plus actual symlink entries; destination replacement and an injected
+  validation-to-write race cannot escape the extraction root; fixtures also run as regression
+  tests and stay green.
   Complexity: S
 
 - [ ] P2 — Audit exported components for intent redirection and PendingIntent provenance
@@ -160,4 +164,100 @@ fixed, so these are net-new. Every item below is host-implementable and host-tes
   Acceptance: apps blocked by the restricted-settings gate show a labelled indicator in the
   permission view; a host test covers the mapping. (The exact AppOps op / API across API 34-36
   needs on-device confirmation — see RESEARCH Open Questions.)
+  Complexity: M
+
+## Research-Driven Additions (2026-07-29)
+
+### P0
+
+### P1
+
+- [ ] P1 — Make snapshot import/export bounded-memory and all-or-nothing
+  Why: export/decrypt duplicates up to 256 MiB in heap and restore can commit a mixture of old
+  files and newly inserted database rows after a late failure.
+  Evidence: `snapshot/SnapshotBundle.java:332-345,445-466,567-619,733-999,1233-1240`;
+  `snapshot/SnapshotCrypto.java:77-121`.
+  Touches: `snapshot/SnapshotBundle.java`, `SnapshotCrypto.java`, Room transaction boundary,
+  private staging/rollback cleanup.
+  Acceptance: encryption/decryption streams through bounded private staging; authentication
+  completes before apply; selected DB sections use one transaction and files use atomic
+  replacement; injected failure after every section leaves a complete old or new state; a
+  >=128 MiB fixture completes within a documented heap bound with no orphaned temporary files.
+  Complexity: L
+
+- [ ] P1 — Expand App Change Auditor to security-relevant manifest deltas
+  Why: current snapshots discard exported/enabled/guard and custom-permission ownership data,
+  missing update-time privilege expansion and confused-deputy signals.
+  Evidence: `permission/monitor/ComponentSnapshot.java`, `PermissionSnapshot.java`,
+  `ComponentChangeMonitor.java`; Android exported-component/custom-permission guidance;
+  arxiv:2605.27667 and arxiv:2508.02008.
+  Touches: `permission/monitor/` snapshot schemas, package parsing, diff/feed UI and migration.
+  Acceptance: versioned snapshots record component type, effective exported/enabled state and
+  guard permission plus requested/declared custom permissions, protection level, and owner
+  signer; alerts cover false-to-true export, removed/weakened guards, new requests, orphaned
+  permissions, and same-name ownership by unrelated signers; v1 data reprimes without false
+  alerts; host fixtures cover each transition.
+  Complexity: L
+
+### P2
+
+- [ ] P2 — Disposition affected Guava/protobuf release-runtime dependencies
+  Why: affected versions resolve on both release runtime classpaths but fall below the local
+  CVSS 9.0 blocking threshold; actual packaged reachability is not yet proven.
+  Evidence: `app/gradle.lockfile:209,223`; `scripts/run_dependency_cve_gate.py:17`;
+  GHSA-5mg8-w23w-74h3, GHSA-7g45-4rm6-3mm3, GHSA-735f-pc8j-v9w8.
+  Touches: `app/build.gradle`, dependency constraints/exclusions, lockfiles/checksums,
+  final-APK inspection and dependency report.
+  Acceptance: minified `flossRelease` and `fullRelease` APKs are inspected for reachable
+  affected code; Guava is constrained to >=32.1.3-android and protobuf to >=3.25.5 or excluded
+  when proven unnecessary; smali and Smali-to-Java regressions pass; every affected
+  below-threshold runtime dependency receives an explicit release disposition.
+  Complexity: S
+
+- [ ] P2 — Add installer storage preflight and recovery
+  Why: install sessions omit their APK byte size and selected APK/OBB staging can start before
+  the user knows storage is insufficient.
+  Evidence: `apk/installer/PackageInstallerCompat.java:697-715,880-960`;
+  Android `SessionParams.setSize` and `StorageManager.getAllocatableBytes`.
+  Touches: installer selection/view model/UI, `PackageInstallerCompat.openSession`, storage
+  compatibility helper and tests.
+  Acceptance: selected split and per-user OBB bytes are summed with overflow/unknown handling
+  before mutation; the session receives APK size; API 26+ compares allocatable bytes off-main
+  and offers `ACTION_MANAGE_STORAGE` with required/free values; older APIs use a documented
+  fallback; host tests cover insufficient, unknown, overflow, and multi-user cases.
+  Complexity: M
+
+- [ ] P2 — Create one fail-closed local release/quality orchestrator and receipt
+  Why: reproducibility, consistency, tests, lint, artifact identity, certificate, SBOM, and CVE
+  checks are split, so a release can omit a gate or produce evidence for a different artifact.
+  Evidence: `verify_reproducible_release.{ps1,sh}`, `scripts/verify-release-consistency.sh`,
+  `docs/distribution/release-receipt.json`, `app/lint-baseline.xml` (4,132 issues);
+  commit `4ebc3f9ec` intentionally removed hosted workflows.
+  Touches: local release scripts, lint baseline/config, translation-quality script, receipt
+  schema and release documentation; no hosted CI.
+  Acceptance: one command aborts on dirty/non-exact source, test failure, consistency drift,
+  new lint issues, malformed translation counts, wrong APK package/version/SDK/certificate,
+  non-reproducibility, or CVE failure; it prunes stale baseline entries and emits a receipt
+  binding HEAD/tag, APK/SBOM/report hashes, signing fingerprint, and tool versions.
+  Complexity: M
+
+- [ ] P2 — Complete privacy-safe optional-network receipts
+  Why: the transparency ledger promises last-use evidence but VirusTotal and Pithus always
+  display “never,” preventing users and support bundles from auditing optional egress.
+  Evidence: `settings/NetworkTransparencyLedger.java:58-74`.
+  Touches: optional-network clients, ledger persistence/model/UI, localized strings and tests.
+  Acceptance: every optional client records redacted success/failure time, destination, and
+  purpose without payloads, package inventories, response bodies, or secrets; localized
+  never/success/failure states and support export are covered by tests.
+  Complexity: M
+
+- [ ] P2 — Calibrate tracker/library scanner certainty and provenance
+  Why: class-signature detectors degrade under obfuscation, but the UI/export can imply that no
+  match proves no tracker.
+  Evidence: `scanner/ScannerViewModel.java:249-312,583-614`; `StaticDataset.java`;
+  `res/values/strings.xml` (`no_tracker_found`); arxiv:2504.13547 and ICSE 2026 detector study.
+  Touches: scanner result model/UI/export, dataset metadata, strings and fixture tests.
+  Acceptance: absence reads “no known matches”; every match/export includes dataset version,
+  rule/signature provenance, tentative/ETIP status, supported confidence, and an obfuscation
+  limitation; tests cover exact, ambiguous, and no-match output.
   Complexity: M
