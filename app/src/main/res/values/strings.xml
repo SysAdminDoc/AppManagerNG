@@ -2155,6 +2155,11 @@
     <string name="installer_developer_verification_failure_reason">Developer verification: %1$s (%2$s)</string>
     <string name="advanced_protection">Advanced Protection</string>
     <string name="installer_advanced_protection_blocked">Advanced Protection is enabled on this device. Android blocks all sideloaded app installs while this policy is active. To install apps from sources other than Google Play, disable Advanced Protection in Android settings first.</string>
+    <string name="installer_insufficient_storage_title">Not enough storage</string>
+    <string name="installer_insufficient_storage_message">Installing <xliff:g id="app" example="Frostwire">%1$s</xliff:g> needs about <xliff:g id="required" example="1.2 GB">%2$s</xliff:g>, but only <xliff:g id="free" example="500 MB">%3$s</xliff:g> is available.\n\nFree up space and try again. Continuing anyway will most likely fail part-way through.</string>
+    <string name="installer_insufficient_storage_short">Not enough storage: needs %1$s, %2$s free</string>
+    <string name="installer_insufficient_storage_free_up">Free up space</string>
+    <string name="installer_insufficient_storage_install_anyway">Install anyway</string>
     <string name="developer_verification_failure_unknown">unknown verifier failure</string>
     <string name="developer_verification_failure_network">network unavailable during developer verification</string>
     <string name="developer_verification_failure_blocked">developer identity blocked or unverified</string>

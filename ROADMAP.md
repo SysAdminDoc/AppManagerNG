@@ -140,19 +140,6 @@ fixed, so these are net-new. Every item below is host-implementable and host-tes
 
 ### P2
 
-- [ ] P2 — Add installer storage preflight and recovery
-  Why: install sessions omit their APK byte size and selected APK/OBB staging can start before
-  the user knows storage is insufficient.
-  Evidence: `apk/installer/PackageInstallerCompat.java:697-715,880-960`;
-  Android `SessionParams.setSize` and `StorageManager.getAllocatableBytes`.
-  Touches: installer selection/view model/UI, `PackageInstallerCompat.openSession`, storage
-  compatibility helper and tests.
-  Acceptance: selected split and per-user OBB bytes are summed with overflow/unknown handling
-  before mutation; the session receives APK size; API 26+ compares allocatable bytes off-main
-  and offers `ACTION_MANAGE_STORAGE` with required/free values; older APIs use a documented
-  fallback; host tests cover insufficient, unknown, overflow, and multi-user cases.
-  Complexity: M
-
 - [ ] P2 — Create one fail-closed local release/quality orchestrator and receipt
   Why: reproducibility, consistency, tests, lint, artifact identity, certificate, SBOM, and CVE
   checks are split, so a release can omit a gate or produce evidence for a different artifact.
