@@ -108,6 +108,7 @@ import java.util.concurrent.Future;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.permission.RestrictedSettingsDetector;
 import io.github.muntashirakon.AppManager.accessibility.AccessibilityMultiplexer;
 import io.github.muntashirakon.AppManager.accessibility.NoRootAccessibilityService;
 import io.github.muntashirakon.AppManager.apk.ApkFile;
@@ -1717,6 +1718,18 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         }
         if (!tagCloud.hasCode) {
             tagItems.add(new TagItem().setTextRes(R.string.no_code));
+        }
+        if (tagCloud.restrictedSettings == RestrictedSettingsDetector.Status.RESTRICTED) {
+            // Android greys out accessibility / notification-listener / health toggles for
+            // sideloaded apps with no explanation; this is the explanation.
+            tagItems.add(new TagItem()
+                    .setTextRes(R.string.restricted_settings_blocked)
+                    .setColor(ColorCodes.getRemovalCautionIndicatorColor(context))
+                    .setOnClickListener(v -> new MaterialAlertDialogBuilder(v.getContext())
+                            .setTitle(R.string.restricted_settings_blocked)
+                            .setMessage(R.string.restricted_settings_blocked_message)
+                            .setNegativeButton(R.string.close, null)
+                            .show()));
         }
         // Native-code readiness. Only the "not ready" state is coloured: a chip that shouts on
         // every healthy app teaches users to ignore it.
