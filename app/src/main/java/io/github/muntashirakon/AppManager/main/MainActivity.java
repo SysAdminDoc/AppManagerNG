@@ -550,9 +550,25 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         mOnBackPressedCallback.setEnabled(false);
     }
 
+    /**
+     * Refuses a batch action while the app list is still being built for the first time, and says
+     * why. Acting on a list that is not there yet would silently target the wrong set.
+     */
+    private boolean isBlockedByListLoad() {
+        if (mLastApplicationListLoadStatus == null
+                || !mLastApplicationListLoadStatus.blocksBatchOperations()) {
+            return false;
+        }
+        UIUtils.displayLongToast(R.string.main_list_loading_batch_blocked);
+        return true;
+    }
+
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
+        if (id != R.id.action_select_visible && isBlockedByListLoad()) {
+            return true;
+        }
         if (id == R.id.action_select_visible) {
             if (mAdapter != null && mMultiSelectionView != null) {
                 mAdapter.selectAll();

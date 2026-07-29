@@ -69,37 +69,6 @@ fixed, so these are net-new. Every item below is host-implementable and host-tes
 
 ### P2
 
-- [ ] P2 — Installer confirmation: show requested permissions and min/target SDK
-  Why: the install dialog surfaces version/cert only, though `ApkFile`/`PackageInfo` already
-  parse permissions and SDK levels; InstallerX-Revived's permission + SDK + version panel is
-  its most-cited transparency feature and is a pure UI/binding change here.
-  Evidence: `apk/installer/PackageInstallerActivity.java` (version/downgrade shown at :354-365,
-  cert mismatch at :630-710); `apk/installer/PackageInstallerViewModel.java`;
-  `res/layout/dialog_installer.xml`; github.com/wxxsfxyzm/InstallerX-Revived.
-  Touches: `res/layout/dialog_installer.xml`, `PackageInstallerActivity`/`PackageInstallerViewModel`
-  (expose parsed requested-permissions list + `minSdkVersion`/`targetSdkVersion`), strings.
-  Complements (does not duplicate) the blocked "installer preflight: initiating package +
-  select-all splits" item, which is device-gated.
-  Acceptance: the confirmation dialog lists requested permissions (grouped, dangerous flagged)
-  and shows target/min SDK alongside the existing version comparison; a Robolectric test binds
-  a fixture APK and asserts the permission/SDK rows render.
-  Complexity: M
-
-- [ ] P2 — Non-blocking progress during full-list cache invalidation
-  Why: upstream #2000's loudest complaint is a perceived freeze while the app list cache
-  invalidates on launch, blocking Backup/Restore; NG's cached `hasActivities` avoids the
-  filter-hang half, but the invalidation still has no progress signal.
-  Evidence: upstream #2000 (maintainer-confirmed ~12s block, 2026-07-03); `main/MainViewModel.java`
-  (list load/refresh); `db/entity/App.java` (cached `hasActivities`).
-  Touches: `main/MainViewModel.java`, `main/MainActivity.java` (progress/indeterminate state),
-  batch/backup entry points that wait on list readiness.
-  Acceptance: while the list cache invalidates, the UI shows determinate/indeterminate progress
-  instead of an unresponsive surface, and Backup/Restore actions are either enabled
-  incrementally or clearly gated with a reason; a host test asserts the loading state is
-  emitted before results. Confirm the real-device block first (see RESEARCH Open Questions) —
-  if the cached model already mitigates it, downgrade to progress-polish only.
-  Complexity: M
-
 ### P3
 
 - [ ] P3 — Native-lib readiness Finder filter + App Details chip (16 KB / 32-bit-only / compressed)
@@ -140,27 +109,3 @@ fixed, so these are net-new. Every item below is host-implementable and host-tes
 
 ### P2
 
-- [ ] P2 — Create one fail-closed local release/quality orchestrator and receipt
-  Why: reproducibility, consistency, tests, lint, artifact identity, certificate, SBOM, and CVE
-  checks are split, so a release can omit a gate or produce evidence for a different artifact.
-  Evidence: `verify_reproducible_release.{ps1,sh}`, `scripts/verify-release-consistency.sh`,
-  `docs/distribution/release-receipt.json`, `app/lint-baseline.xml` (4,132 issues);
-  commit `4ebc3f9ec` intentionally removed hosted workflows.
-  Touches: local release scripts, lint baseline/config, translation-quality script, receipt
-  schema and release documentation; no hosted CI.
-  Acceptance: one command aborts on dirty/non-exact source, test failure, consistency drift,
-  new lint issues, malformed translation counts, wrong APK package/version/SDK/certificate,
-  non-reproducibility, or CVE failure; it prunes stale baseline entries and emits a receipt
-  binding HEAD/tag, APK/SBOM/report hashes, signing fingerprint, and tool versions.
-  Complexity: M
-
-- [ ] P2 — Calibrate tracker/library scanner certainty and provenance
-  Why: class-signature detectors degrade under obfuscation, but the UI/export can imply that no
-  match proves no tracker.
-  Evidence: `scanner/ScannerViewModel.java:249-312,583-614`; `StaticDataset.java`;
-  `res/values/strings.xml` (`no_tracker_found`); arxiv:2504.13547 and ICSE 2026 detector study.
-  Touches: scanner result model/UI/export, dataset metadata, strings and fixture tests.
-  Acceptance: absence reads “no known matches”; every match/export includes dataset version,
-  rule/signature provenance, tentative/ETIP status, supported confidence, and an obfuscation
-  limitation; tests cover exact, ambiguous, and no-match output.
-  Complexity: M

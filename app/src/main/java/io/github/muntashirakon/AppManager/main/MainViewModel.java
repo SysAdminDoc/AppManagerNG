@@ -1307,6 +1307,17 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
             return staleItemCount > 0;
         }
 
+        /**
+         * Whether a batch operation started right now would act on an incomplete picture.
+         *
+         * <p>Only a first load blocks. Once a list has been shown, a refresh leaves the previous
+         * one on screen and selections made against it remain valid, so gating a reload would take
+         * away a working surface to protect against nothing.
+         */
+        public boolean blocksBatchOperations() {
+            return state == AppListLoadState.LOADING && !hasStaleItems();
+        }
+
         @NonNull
         public String getErrorSummary() {
             if (TextUtils.isEmpty(errorClass)) {
