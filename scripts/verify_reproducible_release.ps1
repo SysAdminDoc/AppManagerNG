@@ -62,7 +62,10 @@ function Invoke-ReproducibleBuild {
     )
 
     Write-Host "Clean build $Label"
-    & $GradleCmd --no-daemon --stacktrace clean ':app:assembleRelease' 2>&1 | ForEach-Object {
+    # --no-build-cache: `clean` empties the project's build directory but not Gradle's build
+    # cache, so without this the second build restores task outputs produced by the first one.
+    # That makes the two builds dependent and the comparison meaningless.
+    & $GradleCmd --no-daemon --no-build-cache --stacktrace clean ':app:assembleRelease' 2>&1 | ForEach-Object {
         Write-Host $_
     }
     $exitCode = $LASTEXITCODE
