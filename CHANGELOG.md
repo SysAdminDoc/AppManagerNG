@@ -43,6 +43,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   device-specific tables (app inventory, scan results, backup rows) stay excluded.
 
 ### Security
+- Guava and protobuf-java are now constrained up on the release runtime
+  classpaths. smali pulled Guava 31.1-android and jadx/aapt2-proto pulled
+  protobuf-java 3.22.3 onto both release runtimes; they are pinned to
+  32.1.3-android and 3.25.5 and a test fails if an affected version returns.
+  Direct inspection of the minified `flossRelease` and `fullRelease` APKs
+  confirms neither library survives R8 into the shipped DEX.
 - Archive extraction is now contained against symlink redirection, not just
   hostile entry names. A ZIP entry whose path traverses a symbolic link already
   present in the destination is refused, and every extracted path is re-resolved

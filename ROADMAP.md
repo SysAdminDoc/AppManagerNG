@@ -156,19 +156,6 @@ fixed, so these are net-new. Every item below is host-implementable and host-tes
 
 ### P2
 
-- [ ] P2 — Disposition affected Guava/protobuf release-runtime dependencies
-  Why: affected versions resolve on both release runtime classpaths but fall below the local
-  CVSS 9.0 blocking threshold; actual packaged reachability is not yet proven.
-  Evidence: `app/gradle.lockfile:209,223`; `scripts/run_dependency_cve_gate.py:17`;
-  GHSA-5mg8-w23w-74h3, GHSA-7g45-4rm6-3mm3, GHSA-735f-pc8j-v9w8.
-  Touches: `app/build.gradle`, dependency constraints/exclusions, lockfiles/checksums,
-  final-APK inspection and dependency report.
-  Acceptance: minified `flossRelease` and `fullRelease` APKs are inspected for reachable
-  affected code; Guava is constrained to >=32.1.3-android and protobuf to >=3.25.5 or excluded
-  when proven unnecessary; smali and Smali-to-Java regressions pass; every affected
-  below-threshold runtime dependency receives an explicit release disposition.
-  Complexity: S
-
 - [ ] P2 — Add installer storage preflight and recovery
   Why: install sessions omit their APK byte size and selected APK/OBB staging can start before
   the user knows storage is insufficient.
