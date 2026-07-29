@@ -9,6 +9,9 @@ import androidx.annotation.VisibleForTesting;
 import org.bouncycastle.crypto.generators.Argon2BytesGenerator;
 import org.bouncycastle.crypto.params.Argon2Parameters;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
@@ -49,6 +52,9 @@ public final class SnapshotCrypto {
     private static final int KEY_LEN = 32; // AES-256
     private static final int HEADER_LEN = MAGIC.length + 1 + SALT_LEN + NONCE_LEN;
     private static final String AES_GCM = "AES/GCM/NoPadding";
+    /** Bounds the transient heap a streaming encrypt/decrypt needs, independent of bundle size. */
+    @VisibleForTesting
+    static final int STREAM_CHUNK = 64 * 1024;
 
     // Argon2id parameters (OWASP Password Storage Cheat Sheet minimums).
     private static final int ARGON2_MEMORY_KB = 19456;
@@ -92,6 +98,97 @@ public final class SnapshotCrypto {
             return out;
         } finally {
             Arrays.fill(key, (byte) 0);
+        }
+    }
+
+    /**
+     * Streaming counterpart of {@link #encrypt(byte[], char[])}: reads the plaintext bundle and
+     * writes the envelope without ever holding either in full.
+     */
+    public static void encryptTo(@NonNull InputStream plaintextIn, @NonNull OutputStream out,
+                                 @NonNull char[] passphrase)
+            throws GeneralSecurityException, IOException {
+        byte[] salt = randomBytes(SALT_LEN);
+        byte[] nonce = randomBytes(NONCE_LEN);
+        byte[] header = buildHeader(salt, nonce);
+        byte[] key = deriveKey(passphrase, salt);
+        try {
+            Cipher cipher = Cipher.getInstance(AES_GCM);
+            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, "AES"),
+                    new GCMParameterSpec(TAG_BITS, nonce));
+            cipher.updateAAD(header);
+            out.write(header);
+            pump(cipher, plaintextIn, out);
+            out.flush();
+        } finally {
+            Arrays.fill(key, (byte) 0);
+        }
+    }
+
+    /**
+     * Streaming counterpart of {@link #decrypt(byte[], char[])}.
+     *
+     * <p>GCM only authenticates at the end, so the plaintext this writes must be treated as
+     * unverified until the call returns normally. Callers write it to private staging and only
+     * consume it after a clean return — a {@link SnapshotImportException} means the staged bytes
+     * must be discarded.
+     */
+    public static void decryptTo(@NonNull InputStream envelopeIn, @NonNull OutputStream out,
+                                 @NonNull char[] passphrase)
+            throws GeneralSecurityException, SnapshotImportException, IOException {
+        byte[] header = new byte[HEADER_LEN];
+        readFully(envelopeIn, header);
+        if (!looksEncrypted(header)) {
+            throw new SnapshotImportException("Not an encrypted AppManagerNG snapshot.");
+        }
+        int version = header[MAGIC.length] & 0xff;
+        if (version != VERSION) {
+            throw new SnapshotImportException("Unsupported encrypted-snapshot version: " + version);
+        }
+        byte[] salt = Arrays.copyOfRange(header, MAGIC.length + 1, MAGIC.length + 1 + SALT_LEN);
+        byte[] nonce = Arrays.copyOfRange(header, MAGIC.length + 1 + SALT_LEN, HEADER_LEN);
+        byte[] key = deriveKey(passphrase, salt);
+        try {
+            Cipher cipher = Cipher.getInstance(AES_GCM);
+            cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"),
+                    new GCMParameterSpec(TAG_BITS, nonce));
+            cipher.updateAAD(header);
+            pump(cipher, envelopeIn, out);
+            out.flush();
+        } catch (AEADBadTagException e) {
+            throw new SnapshotImportException(
+                    "Wrong passphrase, or the encrypted snapshot has been altered.");
+        } finally {
+            Arrays.fill(key, (byte) 0);
+        }
+    }
+
+    private static void pump(@NonNull Cipher cipher, @NonNull InputStream in,
+                             @NonNull OutputStream out)
+            throws GeneralSecurityException, IOException {
+        byte[] buffer = new byte[STREAM_CHUNK];
+        int read;
+        while ((read = in.read(buffer)) != -1) {
+            byte[] chunk = cipher.update(buffer, 0, read);
+            if (chunk != null && chunk.length > 0) {
+                out.write(chunk);
+            }
+        }
+        byte[] last = cipher.doFinal();
+        if (last != null && last.length > 0) {
+            out.write(last);
+        }
+    }
+
+    private static void readFully(@NonNull InputStream in, @NonNull byte[] buffer)
+            throws IOException, SnapshotImportException {
+        int read = 0;
+        while (read < buffer.length) {
+            int n = in.read(buffer, read, buffer.length - read);
+            if (n < 0) {
+                throw new SnapshotImportException("Encrypted snapshot is truncated.");
+            }
+            read += n;
         }
     }
 

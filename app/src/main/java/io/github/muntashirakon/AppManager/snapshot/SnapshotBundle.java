@@ -25,12 +25,14 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PushbackInputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
@@ -67,6 +69,9 @@ import io.github.muntashirakon.AppManager.db.dao.FreezeTypeDao;
 import io.github.muntashirakon.AppManager.db.dao.LogFilterDao;
 import io.github.muntashirakon.AppManager.db.entity.FmFavorite;
 import io.github.muntashirakon.AppManager.db.entity.FreezeType;
+import io.github.muntashirakon.AppManager.utils.DurableFile;
+import io.github.muntashirakon.io.IoUtils;
+import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.FreezeUtils;
 import io.github.muntashirakon.AppManager.db.entity.LogFilter;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
@@ -332,17 +337,22 @@ public final class SnapshotBundle {
     public static ExportResult writeEncryptedTo(@NonNull Context context, @NonNull OutputStream rawOut,
                                                  @NonNull char[] passphrase)
             throws IOException, GeneralSecurityException {
-        ByteArrayOutputStream plaintext = new ByteArrayOutputStream();
-        ExportResult result = writeTo(context, plaintext);
-        byte[] zipBytes = plaintext.toByteArray();
+        // The plaintext ZIP goes to app-private staging rather than the heap, so peak memory does
+        // not scale with the bundle; the staging file is deleted whatever happens.
+        File staging = createStagingFile("snapshot-export");
         try {
-            byte[] envelope = SnapshotCrypto.encrypt(zipBytes, passphrase);
-            rawOut.write(envelope);
-            rawOut.flush();
+            ExportResult result;
+            try (OutputStream out = new BufferedOutputStream(new FileOutputStream(staging))) {
+                result = writeTo(context, out);
+            }
+            try (InputStream plaintext = new BufferedInputStream(new FileInputStream(staging))) {
+                SnapshotCrypto.encryptTo(plaintext, rawOut, passphrase);
+            }
+            return result;
         } finally {
-            java.util.Arrays.fill(zipBytes, (byte) 0);
+            //noinspection ResultOfMethodCallIgnored
+            staging.delete();
         }
-        return result;
     }
 
     private interface SectionSerializer {
@@ -427,8 +437,9 @@ public final class SnapshotBundle {
     public static ManifestSummary readManifestOnly(@NonNull InputStream rawIn,
                                                    @Nullable char[] passphrase)
             throws IOException, SnapshotImportException, GeneralSecurityException {
-        byte[] plaintext = decryptIfNeeded(readAllBounded(rawIn), passphrase);
-        return readManifestOnly(new ByteArrayInputStream(plaintext));
+        try (StagedInput staged = stage(rawIn, passphrase)) {
+            return readManifestOnly(staged.stream);
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -445,25 +456,90 @@ public final class SnapshotBundle {
     public static ImportResult readFrom(@NonNull Context context, @NonNull InputStream rawIn,
                                         @NonNull ImportOptions options, @Nullable char[] passphrase)
             throws IOException, SnapshotImportException, GeneralSecurityException {
-        byte[] plaintext = decryptIfNeeded(readAllBounded(rawIn), passphrase);
-        return readFrom(context, new ByteArrayInputStream(plaintext), options);
+        try (StagedInput staged = stage(rawIn, passphrase)) {
+            return readFrom(context, staged.stream, options);
+        }
     }
 
+    /**
+     * Presents the bundle as a plaintext stream, decrypting through bounded private staging when
+     * it is an envelope. GCM only authenticates at the end, so nothing is parsed — let alone
+     * applied — until {@link SnapshotCrypto#decryptTo} has returned without throwing.
+     */
     @NonNull
-    private static byte[] decryptIfNeeded(@NonNull byte[] data, @Nullable char[] passphrase)
-            throws SnapshotImportException, GeneralSecurityException {
-        if (!SnapshotCrypto.looksEncrypted(data)) {
-            return data;
+    private static StagedInput stage(@NonNull InputStream rawIn, @Nullable char[] passphrase)
+            throws IOException, SnapshotImportException, GeneralSecurityException {
+        // Peek just far enough to tell an envelope from a plain ZIP without buffering the bundle.
+        PushbackInputStream in = new PushbackInputStream(rawIn, SnapshotCrypto.MAGIC.length);
+        byte[] prefix = new byte[SnapshotCrypto.MAGIC.length];
+        int prefixLength = readAtMost(in, prefix);
+        boolean encrypted = prefixLength == prefix.length && SnapshotCrypto.looksEncrypted(prefix);
+        in.unread(prefix, 0, prefixLength);
+        if (!encrypted) {
+            return new StagedInput(in, null);
         }
         if (passphrase == null || passphrase.length == 0) {
             throw new PassphraseRequiredException("This snapshot is encrypted; a passphrase is required.");
         }
-        return SnapshotCrypto.decrypt(data, passphrase);
+        File staging = createStagingFile("snapshot-import");
+        try {
+            try (OutputStream out = new BufferedOutputStream(new FileOutputStream(staging))) {
+                SnapshotCrypto.decryptTo(in, out, passphrase);
+            }
+            if (staging.length() > MAX_BUNDLE_BYTES) {
+                throw new SnapshotImportException("Snapshot bundle is too large.");
+            }
+            return new StagedInput(new BufferedInputStream(new FileInputStream(staging)), staging);
+        } catch (Throwable t) {
+            //noinspection ResultOfMethodCallIgnored
+            staging.delete();
+            throw t;
+        }
     }
 
+    /** A plaintext bundle stream plus the staging file backing it, if any. */
+    private static final class StagedInput implements Closeable {
+        @NonNull
+        final InputStream stream;
+        @Nullable
+        final File staging;
+
+        StagedInput(@NonNull InputStream stream, @Nullable File staging) {
+            this.stream = stream;
+            this.staging = staging;
+        }
+
+        @Override
+        public void close() {
+            IoUtils.closeQuietly(stream);
+            if (staging != null) {
+                //noinspection ResultOfMethodCallIgnored
+                staging.delete();
+            }
+        }
+    }
+
+    private static int readAtMost(@NonNull InputStream in, @NonNull byte[] buffer) throws IOException {
+        int read = 0;
+        while (read < buffer.length) {
+            int n = in.read(buffer, read, buffer.length - read);
+            if (n < 0) break;
+            read += n;
+        }
+        return read;
+    }
+
+    /**
+     * Creates an empty file in app-private storage. Staging must never touch shared storage: it
+     * briefly holds unverified — and, for exports, plaintext — snapshot content.
+     */
     @NonNull
-    private static byte[] readAllBounded(@NonNull InputStream in) throws IOException, SnapshotImportException {
-        return readEntryBounded(in, MAX_BUNDLE_BYTES, "bundle");
+    private static File createStagingFile(@NonNull String prefix) throws IOException {
+        File dir = new File(ContextUtils.getContext().getCacheDir(), "snapshot-staging");
+        if (!dir.isDirectory() && !dir.mkdirs()) {
+            throw new IOException("Could not create the snapshot staging directory.");
+        }
+        return File.createTempFile(prefix, ".tmp", dir);
     }
 
     @WorkerThread
@@ -605,18 +681,37 @@ public final class SnapshotBundle {
                 }
             }
         }
-        if (options.restoreOpHistory && opHistoryBytes != null) {
-            opHistoryRestored = importOpHistory(new String(opHistoryBytes, StandardCharsets.UTF_8));
+        // Every database section commits together: a failure in a later section must not leave
+        // the rows an earlier one inserted behind.
+        final byte[] opHistoryPayload = opHistoryBytes;
+        final byte[] logFiltersPayload = logFiltersBytes;
+        final byte[] fmFavoritesPayload = fmFavoritesBytes;
+        final byte[] freezeTypesPayload = freezeTypesBytes;
+        int[] dbCounts = new int[4];
+        boolean hasDbSections = (options.restoreOpHistory && opHistoryPayload != null)
+                || (options.restoreLogFilters && logFiltersPayload != null)
+                || (options.restoreFmFavorites && fmFavoritesPayload != null)
+                || (options.restoreFreezeTypes && freezeTypesPayload != null);
+        if (hasDbSections) {
+            AppsDb.getInstance().runInTransaction(() -> {
+                if (options.restoreOpHistory && opHistoryPayload != null) {
+                    dbCounts[0] = importOpHistory(new String(opHistoryPayload, StandardCharsets.UTF_8));
+                }
+                if (options.restoreLogFilters && logFiltersPayload != null) {
+                    dbCounts[1] = importLogFilters(new String(logFiltersPayload, StandardCharsets.UTF_8));
+                }
+                if (options.restoreFmFavorites && fmFavoritesPayload != null) {
+                    dbCounts[2] = importFmFavorites(new String(fmFavoritesPayload, StandardCharsets.UTF_8));
+                }
+                if (options.restoreFreezeTypes && freezeTypesPayload != null) {
+                    dbCounts[3] = importFreezeTypes(new String(freezeTypesPayload, StandardCharsets.UTF_8));
+                }
+            });
         }
-        if (options.restoreLogFilters && logFiltersBytes != null) {
-            logFiltersRestored = importLogFilters(new String(logFiltersBytes, StandardCharsets.UTF_8));
-        }
-        if (options.restoreFmFavorites && fmFavoritesBytes != null) {
-            fmFavoritesRestored = importFmFavorites(new String(fmFavoritesBytes, StandardCharsets.UTF_8));
-        }
-        if (options.restoreFreezeTypes && freezeTypesBytes != null) {
-            freezeTypesRestored = importFreezeTypes(new String(freezeTypesBytes, StandardCharsets.UTF_8));
-        }
+        opHistoryRestored = dbCounts[0];
+        logFiltersRestored = dbCounts[1];
+        fmFavoritesRestored = dbCounts[2];
+        freezeTypesRestored = dbCounts[3];
 
         return new ImportResult(manifest, prefsRestored, profilesRestored, tagsRestored,
                 rulesRestored, opHistoryRestored, logFiltersRestored, fmFavoritesRestored,
@@ -1231,8 +1326,10 @@ public final class SnapshotBundle {
     }
 
     private static boolean writeBytesTo(@NonNull File target, @NonNull byte[] bytes) {
-        try (FileOutputStream fos = new FileOutputStream(target)) {
-            fos.write(bytes);
+        // Atomic replacement: a failure part-way through leaves the existing file untouched
+        // instead of truncating it into a half-restored state.
+        try {
+            new DurableFile(target).write(bytes);
             return true;
         } catch (IOException e) {
             Log.w(TAG, "Could not write " + target + " during snapshot import.", e);

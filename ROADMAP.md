@@ -172,19 +172,6 @@ fixed, so these are net-new. Every item below is host-implementable and host-tes
 
 ### P1
 
-- [ ] P1 — Make snapshot import/export bounded-memory and all-or-nothing
-  Why: export/decrypt duplicates up to 256 MiB in heap and restore can commit a mixture of old
-  files and newly inserted database rows after a late failure.
-  Evidence: `snapshot/SnapshotBundle.java:332-345,445-466,567-619,733-999,1233-1240`;
-  `snapshot/SnapshotCrypto.java:77-121`.
-  Touches: `snapshot/SnapshotBundle.java`, `SnapshotCrypto.java`, Room transaction boundary,
-  private staging/rollback cleanup.
-  Acceptance: encryption/decryption streams through bounded private staging; authentication
-  completes before apply; selected DB sections use one transaction and files use atomic
-  replacement; injected failure after every section leaves a complete old or new state; a
-  >=128 MiB fixture completes within a documented heap bound with no orphaned temporary files.
-  Complexity: L
-
 ### P2
 
 - [ ] P2 — Disposition affected Guava/protobuf release-runtime dependencies
