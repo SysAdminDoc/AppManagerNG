@@ -35,6 +35,14 @@ public final class ProfileTriggerStore {
     private static final String PREFS_NAME = "profile_triggers";
     private static final String KEY_VERSION = "_schema";
     private static final String KEY_ALL = "triggers";
+    /** The last document that parsed as a whole, kept so a corrupt one can never be the only copy. */
+    @VisibleForTesting
+    static final String KEY_LAST_GOOD = "triggers_last_good";
+    /** Verbatim copy of a document that failed to parse, retained for export/inspection. */
+    @VisibleForTesting
+    static final String KEY_QUARANTINE = "triggers_corrupt";
+    @VisibleForTesting
+    static final String KEY_QUARANTINE_AT = "triggers_corrupt_at";
     private static final int SCHEMA_VERSION = 1;
 
     /**
@@ -170,28 +178,79 @@ public final class ProfileTriggerStore {
         return false;
     }
 
+    /**
+     * Reports whether stored automation state needed recovery, so the UI can warn instead of
+     * silently presenting an empty trigger list.
+     */
+    @AnyThread
+    @NonNull
+    public Health inspect() {
+        synchronized (LOCK) {
+            String raw = mPrefs.getString(KEY_ALL, null);
+            ParseResult result = parse(raw);
+            boolean restored = false;
+            if (result.documentCorrupt) {
+                ParseResult lastGood = parse(mPrefs.getString(KEY_LAST_GOOD, null));
+                restored = !lastGood.documentCorrupt && !lastGood.map.isEmpty();
+            }
+            return new Health(result.documentCorrupt, result.droppedEntries, restored,
+                    mPrefs.getString(KEY_QUARANTINE, null),
+                    mPrefs.getLong(KEY_QUARANTINE_AT, 0L));
+        }
+    }
+
+    /**
+     * @return the retained copy of the document that failed to parse, for export.
+     */
+    @AnyThread
+    @Nullable
+    public String getQuarantinedDocument() {
+        return mPrefs.getString(KEY_QUARANTINE, null);
+    }
+
+    /**
+     * Drops the quarantined copy once the user has exported or dismissed it. Automation state is
+     * untouched.
+     */
+    @AnyThread
+    public void clearQuarantine() {
+        synchronized (LOCK) {
+            mPrefs.edit().remove(KEY_QUARANTINE).remove(KEY_QUARANTINE_AT).apply();
+        }
+    }
+
+    /**
+     * Discards every stored trigger along with the recovery copies. Only for the explicit
+     * "reset automation" action — nothing calls this as a side effect of a parse failure.
+     */
+    @AnyThread
+    public void reset() {
+        synchronized (LOCK) {
+            mPrefs.edit()
+                    .remove(KEY_ALL)
+                    .remove(KEY_LAST_GOOD)
+                    .remove(KEY_QUARANTINE)
+                    .remove(KEY_QUARANTINE_AT)
+                    .apply();
+        }
+    }
+
     @VisibleForTesting
     @NonNull
     Map<String, ProfileTrigger> readMap() {
-        String raw = mPrefs.getString(KEY_ALL, null);
-        if (raw == null || raw.isEmpty()) return new LinkedHashMap<>();
-        LinkedHashMap<String, ProfileTrigger> out = new LinkedHashMap<>();
-        try {
-            JSONArray array = new JSONArray(raw);
-            for (int i = 0; i < array.length(); ++i) {
-                JSONObject element = array.optJSONObject(i);
-                if (element == null) continue;
-                try {
-                    ProfileTrigger trigger = ProfileTrigger.fromJson(element);
-                    out.put(trigger.id, trigger);
-                } catch (JSONException ignored) {
-                    // Malformed individual entries are skipped, not fatal.
-                }
+        synchronized (LOCK) {
+            String raw = mPrefs.getString(KEY_ALL, null);
+            ParseResult result = parse(raw);
+            if (!result.documentCorrupt) {
+                // Individually malformed entries are dropped; the valid siblings survive.
+                return result.map;
             }
-        } catch (JSONException ignored) {
-            // Corrupted JSON wipes back to an empty list rather than throwing.
+            // A document that does not parse at all must never be silently replaced by an empty
+            // list: keep a verbatim copy and fall back to the last document that did parse.
+            quarantine(raw);
+            ParseResult lastGood = parse(mPrefs.getString(KEY_LAST_GOOD, null));
+            return lastGood.documentCorrupt ? new LinkedHashMap<>() : lastGood.map;
         }
-        return out;
     }
 
     @VisibleForTesting
@@ -204,6 +263,90 @@ public final class ProfileTriggerStore {
                 // Should not happen with builder-validated data; skip on the off chance.
             }
         }
-        mPrefs.edit().putString(KEY_ALL, array.toString()).apply();
+        synchronized (LOCK) {
+            String previous = mPrefs.getString(KEY_ALL, null);
+            SharedPreferences.Editor editor = mPrefs.edit();
+            if (previous != null && !previous.isEmpty() && !parse(previous).documentCorrupt) {
+                // Promote the document being replaced: it is the last one known to parse.
+                editor.putString(KEY_LAST_GOOD, previous);
+            }
+            editor.putString(KEY_ALL, array.toString()).apply();
+        }
+    }
+
+    private void quarantine(@Nullable String raw) {
+        if (raw == null || raw.isEmpty() || raw.equals(mPrefs.getString(KEY_QUARANTINE, null))) {
+            return;
+        }
+        mPrefs.edit()
+                .putString(KEY_QUARANTINE, raw)
+                .putLong(KEY_QUARANTINE_AT, System.currentTimeMillis())
+                .apply();
+    }
+
+    @NonNull
+    private static ParseResult parse(@Nullable String raw) {
+        LinkedHashMap<String, ProfileTrigger> out = new LinkedHashMap<>();
+        if (raw == null || raw.isEmpty()) {
+            return new ParseResult(out, false, 0);
+        }
+        int dropped = 0;
+        try {
+            JSONArray array = new JSONArray(raw);
+            for (int i = 0; i < array.length(); ++i) {
+                JSONObject element = array.optJSONObject(i);
+                if (element == null) {
+                    ++dropped;
+                    continue;
+                }
+                try {
+                    ProfileTrigger trigger = ProfileTrigger.fromJson(element);
+                    out.put(trigger.id, trigger);
+                } catch (JSONException ignored) {
+                    // Malformed individual entries are skipped, not fatal.
+                    ++dropped;
+                }
+            }
+        } catch (JSONException e) {
+            return new ParseResult(new LinkedHashMap<>(), true, 0);
+        }
+        return new ParseResult(out, false, dropped);
+    }
+
+    private static final class ParseResult {
+        @NonNull
+        final LinkedHashMap<String, ProfileTrigger> map;
+        final boolean documentCorrupt;
+        final int droppedEntries;
+
+        ParseResult(@NonNull LinkedHashMap<String, ProfileTrigger> map, boolean documentCorrupt,
+                    int droppedEntries) {
+            this.map = map;
+            this.documentCorrupt = documentCorrupt;
+            this.droppedEntries = droppedEntries;
+        }
+    }
+
+    /** Recovery state of the on-disk automation document. */
+    public static final class Health {
+        public final boolean documentCorrupt;
+        public final int droppedEntries;
+        public final boolean restoredFromLastGood;
+        @Nullable
+        public final String quarantinedDocument;
+        public final long quarantinedAt;
+
+        Health(boolean documentCorrupt, int droppedEntries, boolean restoredFromLastGood,
+               @Nullable String quarantinedDocument, long quarantinedAt) {
+            this.documentCorrupt = documentCorrupt;
+            this.droppedEntries = droppedEntries;
+            this.restoredFromLastGood = restoredFromLastGood;
+            this.quarantinedDocument = quarantinedDocument;
+            this.quarantinedAt = quarantinedAt;
+        }
+
+        public boolean needsAttention() {
+            return documentCorrupt || droppedEntries > 0 || quarantinedDocument != null;
+        }
     }
 }

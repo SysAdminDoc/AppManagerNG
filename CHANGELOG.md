@@ -6,6 +6,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## Unreleased
 
 ### Added
+- Corrupt automation state is now recoverable instead of silently discarded.
+  Profile triggers keep the last document that parsed and a verbatim copy of a
+  document that did not, salvage the valid entries of a partly damaged one, and
+  surface a recovery dialog offering export or an explicit reset — an unreadable
+  file can no longer be overwritten by the next edit.
 - Backup & Restore now supports ordered per-tag policies. The first matching app
   tag can select backup parts, encryption, retention, and a local or persisted
   SAF destination; manual and scheduled backups share the same resolver and
@@ -29,6 +34,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   device-specific tables (app inventory, scan results, backup rows) stay excluded.
 
 ### Security
+- Remote debloat definitions are now authenticated. The update manifest carries
+  its document verbatim inside a signed envelope, verified against a public key
+  pinned in the app (ECDSA P-256/SHA-256), and unsigned, tampered, expired,
+  unpinned-key, or rolled-back metadata is rejected. Both payload files are
+  named by the same signed document and are published together through a single
+  generation pointer, so a mixed or half-written generation can never be read;
+  the previous generation is retained as the known-good fallback.
 - Backup verification and restore now refuse legacy CRC32 checksum metadata;
   the backup remains readable for inventory/migration, but non-cryptographic
   checksums can no longer authorize a restore.
@@ -132,6 +144,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Ported from upstream App Manager (`133b5acb7f`).
 
 ### Fixed
+- Installing an APK with OBB expansion files is now rollback-safe. The OBBs are
+  extracted and validated into private staging before anything on the device is
+  touched, the existing per-user expansion files are only replaced after the APK
+  session succeeds, and a failure part-way through the replacement restores the
+  previous generation and reports a retryable partial result per user. A
+  cancelled or failed install leaves the old OBBs untouched instead of deleting
+  them up front.
+- Local metadata stores now fail closed. The permission, component, signing
+  certificate, and app-change-feed stores share one durable-write primitive that
+  reports a failed `fsync`, never deletes the current file to retry a rename, and
+  deterministically recovers `.new`/backup leftovers on the next read. The shared
+  atomic-file helper no longer reports a failed sync as success or drops the only
+  good copy when a replacing rename fails.
 - Logcat reader resume/restart now wakes every waiter consistently, and APK
   change detection uses an eagerly initialized singleton without a racy lazy
   check.
