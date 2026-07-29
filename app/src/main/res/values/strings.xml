@@ -1202,6 +1202,10 @@
     <string name="backup_obb_media">OBB and media</string>
     <string name="failed_to_extract_obb_files">Could not extract OBB files</string>
     <string name="obb_files_extracted_successfully">OBB files extracted</string>
+    <plurals name="failed_to_activate_obb_files_for_users">
+        <item quantity="one">Could not update OBB files for user <xliff:g example="10" id="user_ids">%2$s</xliff:g>. The previous files were kept — retry the installation to update them.</item>
+        <item quantity="other">Could not update OBB files for users <xliff:g example="0, 10" id="user_ids">%2$s</xliff:g>. The previous files were kept — retry the installation to update them.</item>
+    </plurals>
     <string name="backup_multiple">Back up multiple</string>
     <string name="backup_all_users">All users</string>
     <string name="pref_app_language">Language</string>
@@ -1464,6 +1468,19 @@
         <item quantity="other">%1$d schedules, %2$d enabled</item>
     </plurals>
     <string name="profile_trigger_add">Add schedule</string>
+    <string name="profile_trigger_recovery_title">Automation state needs attention</string>
+    <string name="profile_trigger_recovery_restored">The saved automation data could not be read, so the last readable copy was restored. Recent changes may be missing. Your triggers are still active.</string>
+    <string name="profile_trigger_recovery_unreadable">The saved automation data could not be read and there was no readable earlier copy. The damaged data was kept so you can export it. Your triggers are not shown, but nothing was deleted.</string>
+    <plurals name="profile_trigger_recovery_dropped">
+        <item quantity="one">%1$d saved trigger could not be read and was skipped. The rest are unaffected.</item>
+        <item quantity="other">%1$d saved triggers could not be read and were skipped. The rest are unaffected.</item>
+    </plurals>
+    <string name="profile_trigger_recovery_quarantined">A damaged copy of the automation data is still stored. Export it or discard it.</string>
+    <string name="profile_trigger_recovery_continue">Continue</string>
+    <string name="profile_trigger_recovery_export">Copy damaged data</string>
+    <string name="profile_trigger_recovery_nothing_to_export">No damaged data is stored</string>
+    <string name="profile_trigger_recovery_reset">Reset automation</string>
+    <string name="profile_trigger_recovery_reset_confirm">This deletes every saved trigger for all profiles, along with the recovery copies. This cannot be undone.</string>
     <string name="profile_trigger_cap_title">Trigger limit reached</string>
     <string name="profile_trigger_cap_message">Each profile can have at most <xliff:g id="max" example="10">%1$d</xliff:g> triggers. Remove an existing trigger before adding a new one.</string>
     <string name="profile_trigger_run_history">Recent runs:</string>

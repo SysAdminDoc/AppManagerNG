@@ -32,6 +32,7 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.os.UserHandleHidden;
 import android.provider.Settings;
+import android.text.TextUtils;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
@@ -664,6 +665,7 @@ public final class PackageInstallerCompat {
     public boolean install(@NonNull ApkFile apkFile, @NonNull List<String> selectedSplitIds,
                            @NonNull InstallerOptions options, @Nullable ProgressHandler progressHandler) {
         ThreadUtils.ensureWorkerThread();
+        ObbInstallStager obbStager = null;
         try {
             mApkFile = apkFile;
             mPackageName = Objects.requireNonNull(apkFile.getPackageName());
@@ -684,11 +686,20 @@ public final class PackageInstallerCompat {
                     return false;
                 }
             }
-            // Copy OBB files synchronously so the install is not reported as
-            // complete before expansion files land.  OBBs live in per-user
-            // external storage, so copy for every targeted user.
-            for (int u : allRequestedUsers) {
-                copyObb(apkFile, u);
+            // Extract and validate the OBB files before anything is mutated. The live per-user OBB
+            // generation is only replaced once the APK session itself has succeeded, so a failure
+            // here (or a cancelled/failed install) leaves the previous expansion files intact.
+            if (apkFile.hasObb()) {
+                obbStager = newObbStager();
+                try {
+                    obbStager.stage(apkFile::extractObb);
+                } catch (IOException | RuntimeException e) {
+                    Log.e(TAG, "Install: Could not stage the OBB files.", e);
+                    ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(R.string.failed_to_extract_obb_files));
+                    installCompleted(mSessionId, STATUS_FAILURE_INVALID, null,
+                            "STATUS_FAILURE_INVALID: " + e.getMessage());
+                    return false;
+                }
             }
             userId = allRequestedUsers[0];
             String originatingPackage = options.isSetOriginatingPackage() ? options.getOriginatingPackage() : null;
@@ -741,11 +752,49 @@ public final class PackageInstallerCompat {
             }
             Log.d(TAG, "Install: Running installation...");
             // Commit
-            return commit(userId);
+            boolean installed = commit(userId);
+            if (installed && obbStager != null) {
+                activateObb(obbStager, allRequestedUsers);
+            }
+            return installed;
         } finally {
+            if (obbStager != null) {
+                obbStager.close();
+            }
             unregisterReceiver();
             restoreVerifySettings();
         }
+    }
+
+    @NonNull
+    private ObbInstallStager newObbStager() {
+        return new ObbInstallStager(FileUtils.getTempPath("obb-staging",
+                mPackageName + "-" + System.nanoTime()));
+    }
+
+    /**
+     * Publishes the staged OBB generation for every targeted user. A per-user failure is rolled
+     * back by the stager and surfaced as a retryable partial result — the APK itself is installed.
+     */
+    @WorkerThread
+    private void activateObb(@NonNull ObbInstallStager obbStager, @NonNull int[] allRequestedUsers) {
+        List<String> failedUsers = new ArrayList<>();
+        for (int u : allRequestedUsers) {
+            try {
+                obbStager.activate(ApkUtils.getOrCreateObbDir(mPackageName, u));
+            } catch (IOException | RuntimeException e) {
+                Log.e(TAG, "Install: Could not activate the OBB files for user " + u, e);
+                failedUsers.add(String.valueOf(u));
+            }
+        }
+        if (failedUsers.isEmpty()) {
+            ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(R.string.obb_files_extracted_successfully));
+            return;
+        }
+        String userList = TextUtils.join(", ", failedUsers);
+        int failedCount = failedUsers.size();
+        ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToastPl(
+                R.plurals.failed_to_activate_obb_files_for_users, failedCount, failedCount, userList));
     }
 
     public boolean install(@NonNull Path[] apkFiles, @NonNull String packageName, @NonNull InstallerOptions options) {
@@ -1109,35 +1158,6 @@ public final class PackageInstallerCompat {
         }
         installCompleted(mSessionId, STATUS_SUCCESS, null, null);
         return true;
-    }
-
-    @WorkerThread
-    private void copyObb(@NonNull ApkFile apkFile, @UserIdInt int userId) {
-        if (!apkFile.hasObb()) return;
-        boolean tmpCloseApkFile = mCloseApkFile;
-        // Disable closing apk file in case the installation is finished already.
-        mCloseApkFile = false;
-        try {
-            // Get writable OBB directory
-            Path writableObbDir = ApkUtils.getOrCreateObbDir(mPackageName, userId);
-            // Delete old files
-            for (Path oldFile : writableObbDir.listFiles()) {
-                oldFile.delete();
-            }
-            apkFile.extractObb(writableObbDir);
-            ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(R.string.obb_files_extracted_successfully));
-        } catch (Exception e) {
-            Log.e(TAG, e);
-            ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(R.string.failed_to_extract_obb_files));
-        } finally {
-            if (mInstallWatcher.getCount() != 0) {
-                // Reset close apk file if the installation isn't completed
-                mCloseApkFile = tmpCloseApkFile;
-            } else {
-                // Install completed, close apk file if requested
-                if (tmpCloseApkFile) apkFile.close();
-            }
-        }
     }
 
     private void cleanOldSessions() {
