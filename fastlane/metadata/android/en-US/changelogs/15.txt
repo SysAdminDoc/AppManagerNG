@@ -1,0 +1,7 @@
+Truthfulness and release-integrity release.
+
+- Installs are refused up front when storage cannot hold them.
+- The install prompt now lists requested permissions and SDK levels.
+- Scanner results say what they are and are not evidence of.
+- New Finder filter and chip for native code that breaks on Android 15+.
+- App Details explains Android's restricted-settings gate for sideloaded apps.

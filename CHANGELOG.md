@@ -3,7 +3,7 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## Unreleased
+## v0.6.7 — 2026-07-29
 
 ### Added
 - The installer now checks storage before it starts. It sums the selected
