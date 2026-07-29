@@ -69,6 +69,7 @@ import io.github.muntashirakon.AppManager.magisk.MagiskUtils;
 import io.github.muntashirakon.AppManager.misc.OsEnvironment;
 import io.github.muntashirakon.AppManager.misc.XposedModuleInfo;
 import io.github.muntashirakon.AppManager.rules.RuleType;
+import io.github.muntashirakon.AppManager.scanner.NativeLibReadiness;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
 import io.github.muntashirakon.AppManager.rules.struct.ComponentRule;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
@@ -447,6 +448,7 @@ public class AppInfoViewModel extends AndroidViewModel {
                 }
                 tagCloud.staticSharedLibraryNames = staticSharedLibraryNames.toArray(new String[0]);
             }
+            tagCloud.nativeLibReadiness = NativeLibReadiness.fromApk(applicationInfo.publicSourceDir);
             if (ThreadUtils.isInterrupted()) {
                 return;
             }
@@ -749,6 +751,9 @@ public class AppInfoViewModel extends AndroidViewModel {
                 CredentialProviderManifestInfo.unsupported(Build.VERSION.SDK_INT);
         @NonNull
         public ManifestMetadataInfo manifestMetadataInfo = ManifestMetadataInfo.empty();
+        /** Whether the app's bundled native code is ready for 16 KB pages and 64-bit-only devices. */
+        @NonNull
+        public NativeLibReadiness nativeLibReadiness = NativeLibReadiness.UNKNOWN;
         public boolean warnsCleartextDeprecation;
         public boolean hasKeyStoreItems;
         public boolean hasMasterKeyInKeyStore;

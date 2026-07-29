@@ -21,6 +21,7 @@ import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.InstallSourceInfoCompat;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.debloat.DebloatObject;
+import io.github.muntashirakon.AppManager.scanner.NativeLibReadiness;
 import io.github.muntashirakon.AppManager.details.info.DomainLinkConflictDetector;
 import io.github.muntashirakon.AppManager.usage.AppUsageStatsManager;
 
@@ -68,6 +69,16 @@ public interface IFilterableAppInfo {
 
     @NonNull
     Map<ComponentInfo, Integer> getAllComponents();
+
+    /**
+     * Readiness of the package's bundled native code. Defaults to
+     * {@link NativeLibReadiness#UNKNOWN} for models that do not read the APK, so a filter can
+     * distinguish "examined and fine" from "never looked at".
+     */
+    @NonNull
+    default NativeLibReadiness getNativeLibReadiness() {
+        return NativeLibReadiness.UNKNOWN;
+    }
 
     @NonNull
     default Map<String, Set<String>> getComponentIntentActions() {

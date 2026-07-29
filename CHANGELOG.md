@@ -32,6 +32,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   file, and message rather than by line number, which also surfaces baseline
   entries that no longer match anything.
 
+- Native-library readiness is now a Finder filter and an App Details chip. The
+  device can be swept for apps whose libraries are not 16 KB page-aligned (and
+  so will not run on Android 15+ devices using 16 KB pages), that ship only
+  32-bit code, or that store their libraries compressed. A package whose
+  libraries could not be read is never reported as ready — it is reachable
+  through its own filter key instead. The main-list row does not carry the chip:
+  the list model does not open APKs, so it could only ever say "unknown".
 - Batch actions attempted while the app list is still being built for the first
   time now say so instead of quietly acting on an empty selection. A refresh of
   an already-shown list is not gated — the previous list stays usable.
