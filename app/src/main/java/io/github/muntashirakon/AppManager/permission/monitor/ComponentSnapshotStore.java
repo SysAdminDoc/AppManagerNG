@@ -14,8 +14,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -25,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.utils.DurableFile;
 
 /**
  * Atomic JSON-on-disk store of per-package component snapshots.
@@ -40,7 +39,7 @@ public final class ComponentSnapshotStore {
     static final long MAX_STORE_BYTES = 16L * 1024L * 1024L;
 
     @NonNull
-    private final File mFile;
+    private final DurableFile mFile;
 
     public ComponentSnapshotStore(@NonNull Context appContext) {
         this(new File(appContext.getFilesDir(), FILE_NAME));
@@ -48,14 +47,14 @@ public final class ComponentSnapshotStore {
 
     @VisibleForTesting
     ComponentSnapshotStore(@NonNull File file) {
-        mFile = file;
+        mFile = new DurableFile(file);
     }
 
     @WorkerThread
-    public synchronized void put(@NonNull String packageName, @NonNull ComponentSnapshot snapshot) {
+    public synchronized boolean put(@NonNull String packageName, @NonNull ComponentSnapshot snapshot) {
         Map<String, ComponentSnapshot> all = readAll();
         all.put(packageName, snapshot);
-        writeAll(all);
+        return writeAll(all);
     }
 
     @WorkerThread
@@ -65,37 +64,19 @@ public final class ComponentSnapshotStore {
     }
 
     @WorkerThread
-    public synchronized void remove(@NonNull String packageName) {
+    public synchronized boolean remove(@NonNull String packageName) {
         Map<String, ComponentSnapshot> all = readAll();
-        if (all.remove(packageName) != null) {
-            writeAll(all);
+        if (all.remove(packageName) == null) {
+            return true;
         }
+        return writeAll(all);
     }
 
     @VisibleForTesting
     @NonNull
     synchronized Map<String, ComponentSnapshot> readAll() {
-        if (!mFile.isFile()) return new HashMap<>();
-        long len = mFile.length();
-        if (len <= 0L || len > MAX_STORE_BYTES) {
-            if (len > MAX_STORE_BYTES) {
-                Log.w(TAG, "Component snapshot store is implausibly large (" + len + " bytes); treating as empty.");
-            }
-            return new HashMap<>();
-        }
-        try (FileInputStream fis = new FileInputStream(mFile)) {
-            byte[] buf = new byte[(int) len];
-            int read = 0;
-            while (read < buf.length) {
-                int n = fis.read(buf, read, buf.length - read);
-                if (n < 0) break;
-                read += n;
-            }
-            return parse(new String(buf, 0, read, StandardCharsets.UTF_8));
-        } catch (IOException | RuntimeException e) {
-            Log.w(TAG, "Could not read component snapshot store; treating as empty.", e);
-            return new HashMap<>();
-        }
+        String json = mFile.read(MAX_STORE_BYTES);
+        return json != null ? parse(json) : new HashMap<>();
     }
 
     @VisibleForTesting
@@ -161,31 +142,14 @@ public final class ComponentSnapshotStore {
     }
 
     @WorkerThread
-    private synchronized void writeAll(@NonNull Map<String, ComponentSnapshot> all) {
-        String body = serialize(all);
-        File tmp = new File(mFile.getParentFile(), FILE_NAME + ".tmp");
+    private synchronized boolean writeAll(@NonNull Map<String, ComponentSnapshot> all) {
         try {
-            File parent = tmp.getParentFile();
-            if (parent != null) {
-                //noinspection ResultOfMethodCallIgnored
-                parent.mkdirs();
-            }
-            try (FileOutputStream fos = new FileOutputStream(tmp)) {
-                fos.write(body.getBytes(StandardCharsets.UTF_8));
-                fos.getFD().sync();
-            }
-            if (!tmp.renameTo(mFile)) {
-                Log.w(TAG, "Atomic rename failed for component snapshot store; falling back to delete+rename.");
-                //noinspection ResultOfMethodCallIgnored
-                mFile.delete();
-                if (!tmp.renameTo(mFile)) {
-                    Log.w(TAG, "Component snapshot store rename failed twice; leaving stale tmp at " + tmp);
-                }
-            }
+            mFile.write(serialize(all).getBytes(StandardCharsets.UTF_8));
+            return true;
         } catch (IOException e) {
-            Log.w(TAG, "Could not write component snapshot store.", e);
-            //noinspection ResultOfMethodCallIgnored
-            tmp.delete();
+            // Fail closed: the previous store is still intact and readable.
+            Log.w(TAG, "Could not write the component snapshot store; the previous one was kept.", e);
+            return false;
         }
     }
 }

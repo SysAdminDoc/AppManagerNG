@@ -107,18 +107,26 @@ public class AtomicExtendedFile {
      * returned by {@link #startWrite()}.  This will close, sync, and
      * commit the new data.  The next attempt to read the atomic file
      * will return the new file stream.
+     *
+     * @throws IOException if the data could not be synced to disk or the replacement failed. The
+     *                     previous content of the base file is left in place in that case, so the
+     *                     caller can treat the write as not having happened.
      */
-    public void finishWrite(@Nullable FileOutputStream str) {
+    public void finishWrite(@Nullable FileOutputStream str) throws IOException {
         if (str == null) {
             return;
         }
-        if (!sync(str)) {
-            Log.e(TAG, "Failed to sync file output stream");
-        }
+        boolean synced = sync(str);
         try {
             str.close();
         } catch (IOException e) {
             Log.e(TAG, "Failed to close file output stream", e);
+            synced = false;
+        }
+        if (!synced) {
+            //noinspection ResultOfMethodCallIgnored
+            mNewName.delete();
+            throw new IOException("Failed to sync " + mNewName);
         }
         rename(mNewName, mBaseName);
     }
@@ -131,9 +139,6 @@ public class AtomicExtendedFile {
     public void failWrite(@Nullable FileOutputStream str) {
         if (str == null) {
             return;
-        }
-        if (!sync(str)) {
-            Log.e(TAG, "Failed to sync file output stream");
         }
         try {
             str.close();
@@ -215,12 +220,13 @@ public class AtomicExtendedFile {
         try {
             stream.getFD().sync();
             return true;
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to sync file output stream", e);
+            return false;
         }
-        return true;
     }
 
-    private static void rename(@NonNull File source, @NonNull File target) {
+    private static void rename(@NonNull File source, @NonNull File target) throws IOException {
         // We used to delete the target file before rename, but that isn't atomic, and the rename()
         // syscall should atomically replace the target file. However in the case where the target
         // file is a directory, a simple rename() won't work. We need to delete the file in this
@@ -228,20 +234,25 @@ public class AtomicExtendedFile {
         // mBaseName.getParentFile().mkdirs()) before creating the AtomicFile, and it worked
         // regardless, so this deletion became some kind of API.
         if (target.isDirectory() && !target.delete()) {
-            Log.e(TAG, "Failed to delete file which is a directory " + target);
+            throw new IOException("Failed to delete file which is a directory " + target);
         }
         if (source.renameTo(target)) {
             return;
         }
-        if (target.exists()) {
-            if (!target.delete()) {
-                Log.e(TAG, "Failed to delete existing target " + target);
+        // The replacing rename failed. Never delete the target to make room for a retry: if that
+        // retry fails too the only good copy is gone. Move it to the legacy backup name instead,
+        // which both startWrite() and openRead() restore, so a crash here still leaves valid data.
+        File legacyBackup = new File(target.getPath() + ".bak");
+        if (!source.equals(legacyBackup) && target.exists() && target.renameTo(legacyBackup)) {
+            if (source.renameTo(target)) {
+                //noinspection ResultOfMethodCallIgnored
+                legacyBackup.delete();
                 return;
             }
-            if (source.renameTo(target)) {
-                return;
+            if (!legacyBackup.renameTo(target)) {
+                Log.e(TAG, "Failed to restore " + target + " from " + legacyBackup);
             }
         }
-        Log.e(TAG, "Failed to rename " + source + " to " + target);
+        throw new IOException("Failed to rename " + source + " to " + target);
     }
 }
