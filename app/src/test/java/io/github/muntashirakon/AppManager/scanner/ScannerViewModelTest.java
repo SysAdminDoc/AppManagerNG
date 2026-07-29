@@ -14,6 +14,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
+import java.util.Arrays;
 import java.util.Collections;
 
 @RunWith(RobolectricTestRunner.class)
@@ -39,6 +40,31 @@ public class ScannerViewModelTest {
         assertEquals("Tracker", item.getString("type"));
         assertEquals(3, item.getInt("match_count"));
         assertEquals("com.example.analytics.Sdk", item.getJSONArray("classes").getString(0));
+        // Provenance travels with the match, so an exported report can be read on its own.
+        assertEquals("Example Analytics", item.getString("display_label"));
+        assertEquals(ScannerCertainty.DETECTION_METHOD, item.getString("detection_method"));
+        assertFalse(item.getBoolean("tentative"));
+        assertEquals("confirmed", item.getString("confidence"));
+    }
+
+    @Test
+    public void exportedMatchesDistinguishTentativeSignaturesFromConfirmedOnes() throws Exception {
+        SignatureInfo tentative = new SignatureInfo("com.example.maybe.", "²Example Maybe");
+        tentative.setCount(2);
+        SignatureInfo unmatched = new SignatureInfo("com.example.analytics.", "Example Analytics");
+        unmatched.setCount(0);
+
+        JSONArray items = ScannerViewModel.signatureMatchesToJson(Arrays.asList(tentative, unmatched));
+
+        JSONObject first = items.getJSONObject(0);
+        assertTrue(first.getBoolean("tentative"));
+        assertEquals("tentative", first.getString("confidence"));
+        assertEquals("Example Maybe", first.getString("display_label"));
+
+        JSONObject second = items.getJSONObject(1);
+        assertFalse("a signature that matched nothing is not a second-degree entry",
+                second.getBoolean("tentative"));
+        assertEquals("but it still supports nothing", "tentative", second.getString("confidence"));
     }
 
     @Test

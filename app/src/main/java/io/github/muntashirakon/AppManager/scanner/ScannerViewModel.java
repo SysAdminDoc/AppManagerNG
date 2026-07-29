@@ -249,7 +249,7 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
     public String buildScanReportJson() throws JSONException {
         long now = System.currentTimeMillis();
         JSONObject report = new JSONObject();
-        report.put("schema_version", 1);
+        report.put("schema_version", 2);
         report.put("generated_at", now);
         report.put("generated_at_label", DateUtils.formatLongDateTime(getApplication(), now));
         report.put("app_manager_version_name", BuildConfig.VERSION_NAME);
@@ -267,6 +267,7 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
         report.put("library_matches", signatureMatchesToJson(mLibraryClassesLiveData.getValue()));
         report.put("native_libraries", stringCollectionToJson(mNativeLibraries));
         report.put("missing_signatures", stringCollectionToJson(mMissingClassesLiveData.getValue()));
+        report.put("limitations", buildLimitationsJson());
         report.put("virus_total", buildVirusTotalJson());
         report.put("pithus", buildPithusJson());
         return report.toString(2);
@@ -289,13 +290,32 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
         for (SignatureInfo signature : signatures) {
             JSONObject item = new JSONObject();
             item.put("label", signature.label);
+            item.put("display_label", ScannerCertainty.displayLabel(signature.label));
             item.put("signature", signature.signature);
             item.put("type", signature.type);
             item.put("match_count", signature.getCount());
+            // Provenance: what matched, how, and how far the match can be taken.
+            item.put("detection_method", ScannerCertainty.DETECTION_METHOD);
+            item.put("tentative", ScannerCertainty.isTentative(signature.label));
+            item.put("confidence", ScannerCertainty.confidenceOf(signature).id);
             item.put("classes", stringCollectionToJson(signature.classes));
             items.put(item);
         }
         return items;
+    }
+
+    /**
+     * States the boundary of the report in the report itself: a consumer reading only the JSON
+     * must not be able to mistake "no match" for "no tracker".
+     */
+    @VisibleForTesting
+    @NonNull
+    JSONObject buildLimitationsJson() throws JSONException {
+        JSONObject limitations = new JSONObject();
+        limitations.put("detection_method", ScannerCertainty.DETECTION_METHOD);
+        limitations.put("absence", getApplication().getString(R.string.scanner_absence_limitation));
+        limitations.put("match", getApplication().getString(R.string.scanner_match_limitation));
+        return limitations;
     }
 
     @VisibleForTesting

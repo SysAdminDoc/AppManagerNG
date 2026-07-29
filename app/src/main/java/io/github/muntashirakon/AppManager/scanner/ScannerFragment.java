@@ -444,6 +444,8 @@ public class ScannerFragment extends Fragment {
             foundTrackerList.append("\n");
         }
         foundTrackerList.append(databaseSummary);
+        foundTrackerList.append("\n").append(getSmallerText(
+                getResultLimitation(requireContext(), totalTrackersFound)));
 
         int totalTrackerClasses = mViewModel.getTrackerClasses().size();
         // Get summary
@@ -484,6 +486,19 @@ public class ScannerFragment extends Fragment {
         });
     }
 
+    /**
+     * States what the result is evidence of, next to the result itself. Absence is the dangerous
+     * case: an unqualified "no trackers" reads as a clean bill of health, which one class-name
+     * detector cannot support.
+     */
+    @VisibleForTesting
+    @NonNull
+    static String getResultLimitation(@NonNull Context context, int totalTrackersFound) {
+        return context.getString(totalTrackersFound == 0
+                ? R.string.scanner_absence_limitation
+                : R.string.scanner_match_limitation);
+    }
+
     @VisibleForTesting
     @NonNull
     static CharSequence getTrackerDatabaseSummary(@NonNull Context context) {
@@ -514,10 +529,18 @@ public class ScannerFragment extends Fragment {
         SpannableStringBuilder builder = new SpannableStringBuilder(getPrimaryText(mActivity, organization.label));
         builder.append("\n").append(getSmallerText(getTrackerOrganizationSummary(organization)));
         for (SignatureInfo signatureInfo : organization.signatures) {
+            // Each rule carries its own standing: a second-degree signature is not the same
+            // evidence as a confirmed one, and collapsing them would overstate the result.
+            int matchCount = signatureInfo.getCount();
             builder.append("\n")
                     .append(getMonospacedText(signatureInfo.signature))
-                    .append(getSmallerText(" (" + signatureInfo.getCount() + ")"));
+                    .append("\n")
+                    .append(getSmallerText(getResources().getQuantityString(
+                            R.plurals.scanner_match_confidence_row, matchCount,
+                            getString(ScannerCertainty.confidenceOf(signatureInfo).labelRes),
+                            matchCount)));
         }
+        builder.append("\n").append(getSmallerText(getString(R.string.scanner_detection_method)));
         return builder;
     }
 
