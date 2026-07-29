@@ -37,14 +37,15 @@ public class AppArchiveResultReceiver extends BroadcastReceiver {
         }
         String packageName = intent.getStringExtra(PackageInstaller.EXTRA_PACKAGE_NAME);
         if (AppArchiveManager.isPendingUserAction(intent)) {
-            Intent confirmIntent = IntentCompat.getParcelableExtra(intent, Intent.EXTRA_INTENT, Intent.class);
+            Intent confirmIntent = InstallerConfirmIntentGuard.sanitize(
+                    IntentCompat.getParcelableExtra(intent, Intent.EXTRA_INTENT, Intent.class),
+                    context.getPackageName());
             if (confirmIntent == null) {
                 UIUtils.displayLongToast(operation == AppArchiveManager.OP_ARCHIVE
                         ? R.string.failed_to_archive_app
                         : R.string.failed_to_unarchive_app, label);
                 return;
             }
-            confirmIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             try {
                 context.startActivity(confirmIntent);
             } catch (Exception th) {

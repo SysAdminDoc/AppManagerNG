@@ -61,7 +61,7 @@ public class AMExceptionHandler implements Thread.UncaughtExceptionHandler {
         Intent i = buildCrashShareIntent(report, crashUri, System.currentTimeMillis());
         PendingIntent pendingIntent = PendingIntentCompat.getActivity(mContext, 0,
                 Intent.createChooser(i, mContext.getText(R.string.send_crash_report)),
-                PendingIntent.FLAG_ONE_SHOT, true);
+                PendingIntent.FLAG_ONE_SHOT, false);
         NotificationCompat.Builder builder = NotificationUtils.getHighPriorityNotificationBuilder(mContext)
                 .setAutoCancel(true)
                 .setDefaults(Notification.DEFAULT_ALL)

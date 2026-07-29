@@ -63,7 +63,10 @@ class PackageInstallerBroadcastReceiver extends BroadcastReceiver {
                 context.sendBroadcast(broadcastIntent2);
                 // Open confirmIntent using the PackageInstallerActivity.
                 // If the confirmIntent isn't open via an activity, it will fail for large apk files
-                Intent confirmIntent = IntentCompat.getParcelableExtra(intent, Intent.EXTRA_INTENT, Intent.class);
+                // The payload arrives through a mutable PendingIntent; never forward it verbatim.
+                Intent confirmIntent = InstallerConfirmIntentGuard.sanitize(
+                        IntentCompat.getParcelableExtra(intent, Intent.EXTRA_INTENT, Intent.class),
+                        context.getPackageName());
                 Intent intent2 = new Intent(context, PackageInstallerActivity.class);
                 intent2.setAction(PackageInstallerActivity.ACTION_PACKAGE_INSTALLED);
                 intent2.putExtra(Intent.EXTRA_INTENT, confirmIntent);
