@@ -11,18 +11,18 @@ not proof that the external issue has been filed.
 ## Current Release
 
 - Repository: `https://github.com/SysAdminDoc/AppManagerNG`
-- Tag: `v0.6.5`
-- Commit: `fc03e0332c834c161fcd419525e8530c23f22706`
+- Tag: `v0.6.7`
+- Commit: `88721f985953c267215085ea026af57a82eb17af`
 - Package name: `io.github.sysadmindoc.AppManagerNG`
 - Display name: `AppManagerNG`
-- Version name: `0.6.5`
-- Version code: `13`
-- Preferred APK: `AppManagerNG-0.6.5-floss-release.apk`
-- APK size: 18,948,513 bytes, under IzzyOnDroid's current 30 MB rule of thumb.
-- SHA-256: `986da6fc19e325c5fe35d03523021fa30dd2b483466c5f98a3a8c7c64d6a5fa0`
+- Version name: `0.6.7`
+- Version code: `15`
+- Preferred APK: `AppManagerNG-0.6.7-floss-release.apk`
+- APK size: 19,087,728 bytes, under IzzyOnDroid's current 30 MB rule of thumb.
+- SHA-256: `8888e02e6f02cf1088e614182f5e8b3fcc5d1857e65c4d0c196dea1872c4845d`
 - Signing certificate SHA-256:
   `21:5F:B4:70:63:2E:A6:CD:59:A4:BA:AB:35:0A:9E:0B:99:AD:11:0F:DD:FA:F5:A9:EA:64:61:E5:D0:C2:38:6C`
-- Release: `https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.6.5`
+- Release: `https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.6.7`
 
 The `floss` artifact is the listing target. The `full` artifact also exists on
 GitHub Releases for Obtainium users, but it enables optional online report
@@ -32,8 +32,8 @@ surfaces behind user opt-in gates and should not be the IzzyOnDroid artifact.
 
 The build produces per-ABI splits (`armeabi-v7a`, `arm64-v8a`, `x86`, `x86_64`)
 plus a universal APK. Per-ABI splits contain only the native libraries for one
-architecture and are strictly smaller than the universal APK (18,948,513 bytes measured at
-v0.6.5). The local release build enforces a hard size gate
+architecture and are strictly smaller than the universal APK (19,087,728 bytes measured at
+v0.6.7). The local release build enforces a hard size gate
 (`APK_SIZE_LIMIT_BYTES`, default 30 MiB) per APK — any split exceeding it fails
 the build. IzzyOnDroid should be configured to match the universal
 `AppManagerNG-*-floss-release.apk` artifact (sub-30 MB) or the `arm64-v8a` split
@@ -72,16 +72,16 @@ Repository:
 https://github.com/SysAdminDoc/AppManagerNG
 
 Latest release:
-https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.6.5
+https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.6.7
 
 Package:
 io.github.sysadmindoc.AppManagerNG
 
 Preferred APK:
-AppManagerNG-0.6.5-floss-release.apk
+AppManagerNG-0.6.7-floss-release.apk
 
 APK SHA-256:
-986da6fc19e325c5fe35d03523021fa30dd2b483466c5f98a3a8c7c64d6a5fa0
+8888e02e6f02cf1088e614182f5e8b3fcc5d1857e65c4d0c196dea1872c4845d
 
 Notes:
 - AppManagerNG is a maintained fork of MuntashirAkon/AppManager with a unique
