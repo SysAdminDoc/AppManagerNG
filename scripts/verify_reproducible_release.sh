@@ -35,7 +35,11 @@ build_once() {
     local destination_dir="$2"
 
     echo "=== Clean build ${label} ==="
-    "$GRADLE_CMD" --no-daemon --stacktrace clean :app:assembleRelease
+    # --no-build-cache: `clean` empties the project's build directory but not Gradle's build
+    # cache, so without this the second build restores task outputs produced by the first one.
+    # That makes the two builds dependent and the comparison meaningless — it would confirm the
+    # cache is consistent, not that the build is reproducible.
+    "$GRADLE_CMD" --no-daemon --no-build-cache --stacktrace clean :app:assembleRelease
     echo "=== Clean build ${label} complete ==="
 
     mapfile -t apks < <(find "$APK_ROOT" -path '*/release/*.apk' -type f | sort)
