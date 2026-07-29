@@ -33,6 +33,7 @@ import android.os.RemoteException;
 import android.os.UserHandleHidden;
 import android.provider.Settings;
 import android.text.TextUtils;
+import android.text.format.Formatter;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
@@ -686,6 +687,32 @@ public final class PackageInstallerCompat {
                     return false;
                 }
             }
+            List<ApkFile.Entry> selectedEntries = new ArrayList<>();
+            for (ApkFile.Entry entry : apkFile.getEntries()) {
+                if (selectedSplitIds.contains(entry.id)) {
+                    selectedEntries.add(entry);
+                }
+            }
+            Log.d(TAG, "Install: selected entries: %s", selectedSplitIds);
+            // Gate on storage before anything large is written: the declared entry sizes are enough
+            // to decide, and reading them does not extract or sign anything.
+            if (!checkStorage(InstallStorageCheck.estimateFor(apkFile, selectedSplitIds, false,
+                    allRequestedUsers.length))) {
+                return false;
+            }
+            // Resolving the entries extracts (and optionally signs) them into our own cache, so it
+            // still happens before the expansion files are staged and before a session is created —
+            // a doomed install leaves no session and no replaced OBB generation behind.
+            long totalSize = 0;
+            for (ApkFile.Entry selectedEntry : selectedEntries) {
+                try {
+                    totalSize += selectedEntry.getFile(options.isSignApkFiles()).length();
+                } catch (IOException e) {
+                    callFinish(STATUS_FAILURE_INVALID);
+                    Log.e(TAG, "Install: Cannot retrieve the selected APK files.", e);
+                    return false;
+                }
+            }
             // Extract and validate the OBB files before anything is mutated. The live per-user OBB
             // generation is only replaced once the APK session itself has succeeded, so a failure
             // here (or a cancelled/failed install) leaves the previous expansion files intact.
@@ -708,24 +735,9 @@ public final class PackageInstallerCompat {
             if (!openSession(userId, installFlags, options.getInstallerName(),
                     options.getInstallLocation(), originatingPackage, originatingUri,
                     options.getInstallScenario(), options.getPackageSource(),
-                    options.requestUpdateOwnership(), options.isDisableApkVerification())) {
+                    options.requestUpdateOwnership(), options.isDisableApkVerification(), totalSize)) {
                 return false;
             }
-            List<ApkFile.Entry> selectedEntries = new ArrayList<>();
-            long totalSize = 0;
-            for (ApkFile.Entry entry : apkFile.getEntries()) {
-                if (selectedSplitIds.contains(entry.id)) {
-                    selectedEntries.add(entry);
-                    try {
-                        totalSize += entry.getFile(options.isSignApkFiles()).length();
-                    } catch (IOException e) {
-                        callFinish(STATUS_FAILURE_INVALID);
-                        Log.e(TAG, "Install: Cannot retrieve the selected APK files.", e);
-                        return abandon();
-                    }
-                }
-            }
-            Log.d(TAG, "Install: selected entries: %s", selectedSplitIds);
             MessageDigest sessionDigest = newSha256Digest();
             // Write apk files
             for (ApkFile.Entry entry : selectedEntries) {
@@ -764,6 +776,36 @@ public final class PackageInstallerCompat {
             unregisterReceiver();
             restoreVerifySettings();
         }
+    }
+
+    /**
+     * Refuses an install that provably cannot fit. An unknown requirement or an unavailable
+     * free-space figure does not gate — the check can only block on evidence.
+     *
+     * @return {@code true} when the install may proceed.
+     */
+    @WorkerThread
+    private boolean checkStorage(@NonNull InstallStorageCheck.Estimate estimate) {
+        InstallStorageCheck.Result result = InstallStorageCheck.check(estimate,
+                InstallStorageCheck.getAllocatableBytesForInstall(mContext));
+        if (!result.isBlocking()) {
+            if (result.status == InstallStorageCheck.Status.UNKNOWN) {
+                Log.d(TAG, "Install: storage requirement or free space unknown; not gating.");
+            }
+            return true;
+        }
+        String required = result.estimate.isOverflow()
+                ? "overflowed"
+                : Formatter.formatShortFileSize(mContext, result.getRequiredBytes());
+        String free = result.freeBytes == InstallStorageCheck.UNKNOWN
+                ? "unknown"
+                : Formatter.formatShortFileSize(mContext, result.freeBytes);
+        Log.e(TAG, "Install: not enough storage. Required: %s, free: %s", required, free);
+        ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(
+                R.string.installer_insufficient_storage_short, required, free));
+        installCompleted(mSessionId, STATUS_FAILURE_STORAGE, null,
+                "STATUS_FAILURE_STORAGE: Required " + required + ", free " + free + ".");
+        return false;
     }
 
     @NonNull
@@ -824,18 +866,26 @@ public final class PackageInstallerCompat {
                     return false;
                 }
             }
+            long[] apkSizes = new long[apkFiles.length];
+            long totalSize = 0;
+            for (int i = 0; i < apkFiles.length; ++i) {
+                apkSizes[i] = apkFiles[i].length();
+                if (apkSizes[i] > 0) {
+                    totalSize += apkSizes[i];
+                }
+            }
+            // No expansion files on this path — it installs already-resolved APK paths.
+            if (!checkStorage(InstallStorageCheck.estimate(apkSizes, 0, allRequestedUsers.length))) {
+                return false;
+            }
             userId = allRequestedUsers[0];
             String originatingPackage = options.isSetOriginatingPackage() ? options.getOriginatingPackage() : null;
             Uri originatingUri = options.isSetOriginatingPackage() ? options.getOriginatingUri() : null;
             if (!openSession(userId, installFlags, options.getInstallerName(),
                     options.getInstallLocation(), originatingPackage, originatingUri,
                     options.getInstallScenario(), options.getPackageSource(),
-                    options.requestUpdateOwnership(), options.isDisableApkVerification())) {
+                    options.requestUpdateOwnership(), options.isDisableApkVerification(), totalSize)) {
                 return false;
-            }
-            long totalSize = 0;
-            for (Path apkFile : apkFiles) {
-                totalSize += apkFile.length();
             }
             MessageDigest sessionDigest = newSha256Digest();
             // Write apk files
@@ -933,7 +983,8 @@ public final class PackageInstallerCompat {
                                 String installerName, int installLocation,
                                 @Nullable String originatingPackage, @Nullable Uri originatingUri,
                                 int installScenario, int packageSource,
-                                boolean requestUpdateOwnership, boolean disableVerification) {
+                                boolean requestUpdateOwnership, boolean disableVerification,
+                                long sessionSizeBytes) {
         // Changing package installer in stock Huawei with UID 2000 does not work
         boolean canChangeInstaller = mHasInstallPackagePermission && (!HuaweiUtils.isStockHuawei() || Users.getSelfOrRemoteUid() != Ops.SHELL_UID);
         String requestedInstallerPackageName = canChangeInstaller ? installerName : null;
@@ -976,6 +1027,11 @@ public final class PackageInstallerCompat {
         Refine.<PackageInstallerHidden.SessionParams>unsafeCast(sessionParams).installFlags |= installFlags;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             Refine.<PackageInstallerHidden.SessionParams>unsafeCast(sessionParams).installerPackageName = requestedInstallerPackageName;
+        }
+        // Declare how many bytes the session will hold so the platform can reserve (and, on a
+        // low-storage device, free) the space up front instead of failing part-way through a write.
+        if (sessionSizeBytes > 0) {
+            sessionParams.setSize(sessionSizeBytes);
         }
         // Set installation location
         sessionParams.setInstallLocation(installLocation);

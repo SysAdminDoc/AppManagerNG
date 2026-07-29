@@ -34,6 +34,7 @@ import android.os.IBinder;
 import android.os.UserHandleHidden;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.format.Formatter;
 import android.text.style.RelativeSizeSpan;
 import android.view.View;
 
@@ -85,6 +86,7 @@ import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.types.ForegroundService;
+import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.ClipboardUtils;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
@@ -190,6 +192,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     private boolean mSplitCertMismatchDialogShown;
     private boolean mSplitCertMismatchCheckInProgress;
     private boolean mSplitCompatibilityWarningShown;
+    private boolean mStoragePreflightDone;
     private boolean mCallerWantsResult;
     private int mLastInstallStatusCode = PackageInstallerCompat.STATUS_FAILURE_INVALID;
     @Nullable
@@ -442,12 +445,79 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
 
     @UiThread
     private void install() {
+        if (!mStoragePreflightDone) {
+            // Ask off-main whether the selection can even fit; the installer refuses a provably
+            // impossible install anyway, so tell the user before the session is created rather
+            // than after a long copy fails.
+            mStoragePreflightDone = true;
+            ApkFile apkFile = mModel.getApkFile();
+            List<String> selectedSplits = mModel.getSelectedSplitsForInstallation();
+            int userCount = mInstallerOptions.getUserId() == UserHandleHidden.USER_ALL
+                    ? Users.getAllUserIds().length : 1;
+            ThreadUtils.postOnBackgroundThread(() -> {
+                InstallStorageCheck.Result result;
+                try {
+                    result = InstallStorageCheck.check(
+                            InstallStorageCheck.estimateFor(apkFile, selectedSplits, false, userCount),
+                            InstallStorageCheck.getAllocatableBytesForInstall(getApplicationContext()));
+                } catch (Throwable th) {
+                    Log.w(TAG, "Could not run the installer storage preflight.", th);
+                    result = null;
+                }
+                InstallStorageCheck.Result finalResult = result;
+                ThreadUtils.postOnMainThread(() -> {
+                    if (isDestroyed()) {
+                        return;
+                    }
+                    if (finalResult != null && finalResult.isBlocking()) {
+                        showInsufficientStorageDialog(finalResult);
+                    } else {
+                        install();
+                    }
+                });
+            });
+            return;
+        }
         if (mModel.getApkFile().hasObb() && !SelfPermissions.checkSelfOrRemotePermission(Manifest.permission.INSTALL_PACKAGES)) {
             // Need to request permissions if not given
             mStoragePermission.request(granted -> {
                 if (granted) requestInstallerNotificationsAndLaunch();
             });
         } else requestInstallerNotificationsAndLaunch();
+    }
+
+    @UiThread
+    private void showInsufficientStorageDialog(@NonNull InstallStorageCheck.Result result) {
+        String required = result.estimate.isOverflow()
+                ? getString(R.string.state_unknown)
+                : Formatter.formatShortFileSize(this, result.getRequiredBytes());
+        String free = result.freeBytes == InstallStorageCheck.UNKNOWN
+                ? getString(R.string.state_unknown)
+                : Formatter.formatShortFileSize(this, result.freeBytes);
+        com.google.android.material.dialog.MaterialAlertDialogBuilder builder =
+                new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.installer_insufficient_storage_title)
+                .setMessage(getString(R.string.installer_insufficient_storage_message,
+                        mModel.getAppLabel(), required, free))
+                .setCancelable(false)
+                .setNegativeButton(R.string.cancel, (dialog, which) -> triggerCancel())
+                .setNeutralButton(R.string.installer_insufficient_storage_install_anyway,
+                        (dialog, which) -> install());
+        Intent manageStorage = InstallStorageCheck.buildManageStorageIntent(this, result.getRequiredBytes());
+        if (manageStorage != null) {
+            builder.setPositiveButton(R.string.installer_insufficient_storage_free_up, (dialog, which) -> {
+                try {
+                    startActivity(manageStorage);
+                } catch (Throwable th) {
+                    Log.w(TAG, "No storage manager available.", th);
+                    UIUtils.displayLongToast(R.string.no_apps_to_handle);
+                }
+                // The install is not retried automatically: the user has to come back and confirm
+                // once space has actually been freed.
+                triggerCancel();
+            });
+        }
+        builder.show();
     }
 
     @UiThread

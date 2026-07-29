@@ -542,6 +542,23 @@ public final class ApkFile implements AutoCloseable {
         return !mObbFiles.isEmpty();
     }
 
+    /**
+     * Total number of bytes the bundled expansion files occupy once extracted, {@code 0} when the
+     * bundle carries none, or {@code -1} when at least one entry does not declare its uncompressed
+     * size (a storage preflight has to treat that as unknown rather than as zero).
+     */
+    public long getObbSize() {
+        long total = 0;
+        for (ZipEntry obbEntry : mObbFiles) {
+            long size = obbEntry.getSize();
+            if (size < 0) {
+                return -1;
+            }
+            total += size;
+        }
+        return total;
+    }
+
     @WorkerThread
     public void extractObb(Path writableObbDir) throws IOException {
         if (!hasObb() || mZipFile == null) return;
