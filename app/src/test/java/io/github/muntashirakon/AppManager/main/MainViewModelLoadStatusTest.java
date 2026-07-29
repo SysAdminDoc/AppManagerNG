@@ -39,6 +39,54 @@ public class MainViewModelLoadStatusTest {
         resetMainFilters();
     }
 
+    /**
+     * The list surface must never be silently blank while the cache is being rebuilt: LOADING has
+     * to be published before the work starts, not alongside the results it produces.
+     */
+    @Test
+    public void loadingIsAnnouncedBeforeAnyResultsArrive() throws Exception {
+        TestMainViewModel viewModel = newViewModel();
+        List<MainViewModel.AppListLoadState> states = new ArrayList<>();
+        List<String> events = new ArrayList<>();
+        Observer<MainViewModel.AppListLoadStatus> statusObserver = status -> {
+            states.add(status.state);
+            events.add("status:" + status.state);
+        };
+        Observer<List<ApplicationItem>> listObserver = items -> events.add("items:" + items.size());
+        viewModel.setNextItems(Collections.singletonList(app("com.example.first")));
+
+        try {
+            viewModel.getApplicationListLoadStatus().observeForever(statusObserver);
+            viewModel.getApplicationItems().observeForever(listObserver);
+            waitForCurrentTask(viewModel);
+
+            assertEquals(MainViewModel.AppListLoadState.LOADING, states.get(0));
+            assertEquals("status:" + MainViewModel.AppListLoadState.LOADING, events.get(0));
+            assertEquals(MainViewModel.AppListLoadState.LOADED, last(states));
+
+            // A refresh re-announces LOADING before it publishes anything new.
+            int before = events.size();
+            viewModel.setNextItems(Collections.singletonList(app("com.example.second")));
+            viewModel.loadApplicationItems();
+            waitForCurrentTask(viewModel);
+            assertEquals("status:" + MainViewModel.AppListLoadState.LOADING, events.get(before));
+        } finally {
+            viewModel.getApplicationListLoadStatus().removeObserver(statusObserver);
+            viewModel.getApplicationItems().removeObserver(listObserver);
+            viewModel.close();
+        }
+    }
+
+    /** While the list is rebuilding, batch actions have to say why rather than quietly do nothing. */
+    @Test
+    public void batchActionsAreGatedWithAReasonWhileTheListIsRebuilding() {
+        assertTrue(MainViewModel.AppListLoadStatus.loading(0).blocksBatchOperations());
+        assertFalse("a stale list is still a usable list to act on",
+                MainViewModel.AppListLoadStatus.loading(12).blocksBatchOperations());
+        assertFalse(MainViewModel.AppListLoadStatus.loaded(12).blocksBatchOperations());
+        assertFalse(MainViewModel.AppListLoadStatus.loaded(0).blocksBatchOperations());
+    }
+
     @Test
     public void failedReloadKeepsLastGoodListAndPublishesRecoverableState() throws Exception {
         TestMainViewModel viewModel = newViewModel();
