@@ -15,6 +15,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   level drops, when a permission is newly requested or requested with nobody
   declaring it, and when an unrelated signer claims a permission name. Schema-1
   data is discarded and re-primed rather than producing false alerts.
+- The optional-network transparency ledger now shows real evidence. VirusTotal
+  and Pithus record the time of their last successful and last failed request,
+  so those rows no longer always read "never". Only the outcome and the time are
+  kept — no URLs, hashes, package names, headers, or response bodies — and the
+  record can be cleared.
 - Corrupt automation state is now recoverable instead of silently discarded.
   Profile triggers keep the last document that parsed and a verbatim copy of a
   document that did not, salvage the valid entries of a partly damaged one, and

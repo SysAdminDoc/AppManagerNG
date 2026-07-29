@@ -29,6 +29,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import io.github.muntashirakon.AppManager.settings.NetworkRequestLedger;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.CpuUtils;
@@ -270,7 +271,7 @@ public class VirusTotal {
             connection.setRequestProperty("accept", "application/json");
             connection.setRequestProperty("x-apikey", mApiKey);
             // Response
-            int status = connection.getResponseCode();
+            int status = getRecordedResponseCode(connection);
             if (status < 300) {
                 // Success
                 // Upload the actual file
@@ -305,7 +306,7 @@ public class VirusTotal {
             // Set form data
             writeUploadBodyWithDeadline(connection, filename, is, password);
             // Response
-            int status = connection.getResponseCode();
+            int status = getRecordedResponseCode(connection);
             if (status < 300) {
                 // Success
                 // Example response: {
@@ -339,7 +340,7 @@ public class VirusTotal {
             connection.setRequestProperty("accept", "application/json");
             connection.setRequestProperty("x-apikey", mApiKey);
             // Response
-            int status = connection.getResponseCode();
+            int status = getRecordedResponseCode(connection);
             if (status < 300) {
                 // Success
                 try {
@@ -441,6 +442,7 @@ public class VirusTotal {
     @NonNull
     static VtError getErrorResponse(@NonNull HttpURLConnection connection, int maxBytes)
             throws IOException {
+        // The outcome was already recorded when the request completed; do not record it twice.
         int status = connection.getResponseCode();
         int contentLength = connection.getContentLength();
         if (contentLength > maxBytes) {
@@ -462,6 +464,21 @@ public class VirusTotal {
     @NonNull
     protected HttpURLConnection openConnection(@NonNull URL url) throws IOException {
         return (HttpURLConnection) url.openConnection();
+    }
+
+    /**
+     * Obtains the response code and notes in the transparency ledger that a request left the
+     * device, recording only the outcome and the time — never the URL, hash, headers or body.
+     */
+    private static int getRecordedResponseCode(@NonNull HttpURLConnection connection) throws IOException {
+        try {
+            int status = connection.getResponseCode();
+            NetworkRequestLedger.record(NetworkRequestLedger.CLIENT_VIRUS_TOTAL, status < 400);
+            return status;
+        } catch (IOException | RuntimeException e) {
+            NetworkRequestLedger.record(NetworkRequestLedger.CLIENT_VIRUS_TOTAL, false);
+            throw e;
+        }
     }
 
     @NonNull
