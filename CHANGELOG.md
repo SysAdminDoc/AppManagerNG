@@ -21,6 +21,44 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Install sessions now declare their total byte size, letting Android reserve
   the space (and evict cache to make room) up front instead of failing part-way
   through a write.
+- The release process is now one fail-closed command,
+  `scripts/release_gate.py`. It runs the source, consistency, dependency-floor,
+  translation, test, lint, reproducibility, and artifact-identity gates in
+  order, and only then writes a receipt binding the released commit and tag to
+  the SHA-256 of every artifact and report, the signing certificate
+  fingerprint, and the tool versions that produced them — so evidence can never
+  describe a build that did not pass, or an artifact other than the one
+  checked. Lint is now judged against the baseline by rule, module-relative
+  file, and message rather than by line number, which also surfaces baseline
+  entries that no longer match anything.
+
+- Batch actions attempted while the app list is still being built for the first
+  time now say so instead of quietly acting on an empty selection. A refresh of
+  an already-shown list is not gated — the previous list stays usable.
+- The install confirmation now shows what the APK asks for before it is
+  installed: how many permissions it requests, which of those the platform
+  classifies as sensitive (named), and the API levels it targets and supports.
+  A permission this device's platform does not define is listed rather than
+  dropped, and never presented as harmless; an SDK level the manifest did not
+  declare is omitted rather than shown as zero.
+- The scanner now says what its results are evidence of. An empty result reads
+  "No known tracker matches" and states why no match is not proof of absence
+  (renamed identifiers, reflection, runtime-loaded code, and signatures added
+  upstream after the build all evade class-name matching). Each matched rule is
+  labelled confirmed or tentative — second-degree dataset entries and rules that
+  matched no class are never presented as confirmed — and names the detector
+  that produced it. Exported reports (schema 2) carry the same per-match
+  provenance plus an explicit limitations block, so a report read on its own
+  cannot be mistaken for a clean bill of health.
+
+### Fixed
+- The installer's "Install anyway" action reused a duplicated string; both
+  paths now share one.
+- The reproducible-build check compared two builds that were not independent.
+  `clean` empties the project's build directory but not Gradle's build cache,
+  so the second build restored task outputs produced by the first — confirming
+  the cache was consistent rather than that the build was reproducible. Both
+  builds now run with the build cache disabled.
 
 ## v0.6.6 — 2026-07-29
 
