@@ -177,6 +177,20 @@ dependencies {
     compileOnly project(path: ':hiddenapi')
     coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:${desugar_jdk_version}"
 
+    // Transitive dependencies that land on the release runtime classpath below their fixed
+    // version. They sit under the local CVSS 9.0 blocking threshold, so the CVE gate does not
+    // stop the build — pin them explicitly instead of shipping a knowingly affected version.
+    constraints {
+        implementation("com.google.guava:guava:${guava_version}") {
+            because "smali/smali-dexlib2 resolve 31.1-android onto the release runtime classpath;" +
+                    " GHSA-7g45-4rm6-3mm3 and GHSA-5mg8-w23w-74h3 are fixed in 32.1.3-android"
+        }
+        implementation("com.google.protobuf:protobuf-java:${protobuf_version}") {
+            because "jadx-core and aapt2-proto resolve 3.22.3 onto the release runtime classpath;" +
+                    " GHSA-735f-pc8j-v9w8 is fixed in 3.25.5"
+        }
+    }
+
     // Core Libraries
     implementation project(path: ':libcore:compat')
     implementation project(path: ':libcore:io')
