@@ -3,6 +3,25 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## Unreleased
+
+### Added
+- The installer now checks storage before it starts. It sums the selected
+  splits, one private staging copy of the expansion files, and one activated
+  copy per targeted user, then compares that against the bytes the platform will
+  actually hand an install (allocatable bytes on Android 8+, usable space on
+  older releases). An install that cannot fit is refused before any expansion
+  file is staged and before a session is created, and the confirmation dialog
+  reports how much is needed against how much is free with a shortcut to the
+  system storage manager. A size that cannot be determined never reads as zero
+  and a total that cannot be represented is refused rather than wrapped, so the
+  gate only ever blocks on evidence.
+
+### Changed
+- Install sessions now declare their total byte size, letting Android reserve
+  the space (and evict cache to make room) up front instead of failing part-way
+  through a write.
+
 ## v0.6.6 — 2026-07-29
 
 ### Added
