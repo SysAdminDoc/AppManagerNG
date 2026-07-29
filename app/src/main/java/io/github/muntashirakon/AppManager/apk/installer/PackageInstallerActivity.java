@@ -34,6 +34,7 @@ import android.os.IBinder;
 import android.os.UserHandleHidden;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.TextUtils;
 import android.text.format.Formatter;
 import android.text.style.RelativeSizeSpan;
 import android.view.View;
@@ -501,7 +502,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                         mModel.getAppLabel(), required, free))
                 .setCancelable(false)
                 .setNegativeButton(R.string.cancel, (dialog, which) -> triggerCancel())
-                .setNeutralButton(R.string.installer_insufficient_storage_install_anyway,
+                .setNeutralButton(R.string.installer_split_cert_install_anyway,
                         (dialog, which) -> install());
         Intent manageStorage = InstallStorageCheck.buildManageStorageIntent(this, result.getRequiredBytes());
         if (manageStorage != null) {
@@ -1141,6 +1142,13 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             lines.add(getResources().getQuantityString(
                     R.plurals.installer_tracker_callout, trackers, trackers));
         }
+        // What the APK asks for and what it targets — the two facts that decide whether an install
+        // is reasonable, and the last point at which the user can still decline.
+        CharSequence sdkLine = formatSdkLevels(mModel.getNewPackageInfo());
+        if (sdkLine != null) {
+            lines.add(sdkLine);
+        }
+        lines.add(formatRequestedPermissions(mModel.getNewPackageInfo()));
         for (InstallDependencyChecker.Issue issue : issues) {
             CharSequence line = formatDependencyIssue(issue);
             if (line != null) {
@@ -1159,6 +1167,53 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             out.append(lines.get(i));
         }
         return out;
+    }
+
+    /** {@code null} when the manifest declared neither SDK level, so nothing is claimed. */
+    @Nullable
+    private CharSequence formatSdkLevels(@Nullable PackageInfo packageInfo) {
+        int targetSdk = InstallerManifestSummary.getTargetSdk(packageInfo);
+        int minSdk = InstallerManifestSummary.getMinSdk(packageInfo);
+        if (targetSdk != InstallerManifestSummary.SDK_UNKNOWN
+                && minSdk != InstallerManifestSummary.SDK_UNKNOWN) {
+            return getString(R.string.installer_sdk_levels, targetSdk, minSdk);
+        }
+        if (targetSdk != InstallerManifestSummary.SDK_UNKNOWN) {
+            return getString(R.string.installer_sdk_levels_target_only, targetSdk);
+        }
+        if (minSdk != InstallerManifestSummary.SDK_UNKNOWN) {
+            return getString(R.string.installer_sdk_levels_min_only, minSdk);
+        }
+        return null;
+    }
+
+    @NonNull
+    private CharSequence formatRequestedPermissions(@Nullable PackageInfo packageInfo) {
+        InstallerManifestSummary.Permissions permissions =
+                InstallerManifestSummary.summarizePermissions(getPackageManager(), packageInfo);
+        if (permissions.isEmpty()) {
+            return getString(R.string.installer_permissions_none);
+        }
+        int total = permissions.getTotal();
+        if (permissions.dangerous.isEmpty()) {
+            return getResources().getQuantityString(R.plurals.installer_permissions_plain, total, total);
+        }
+        return getResources().getQuantityString(R.plurals.installer_permissions_dangerous, total,
+                total, permissions.dangerous.size(),
+                TextUtils.join(", ", shortenPermissionNames(permissions.dangerous)));
+    }
+
+    /** Strips the {@code android.permission.} prefix so the prompt stays readable. */
+    @VisibleForTesting
+    @NonNull
+    static List<String> shortenPermissionNames(@NonNull List<String> permissions) {
+        List<String> shortened = new ArrayList<>(permissions.size());
+        for (String permission : permissions) {
+            int lastDot = permission.lastIndexOf('.');
+            shortened.add(lastDot >= 0 && lastDot < permission.length() - 1
+                    ? permission.substring(lastDot + 1) : permission);
+        }
+        return shortened;
     }
 
     @Nullable
