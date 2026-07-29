@@ -501,7 +501,10 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         if (ACTION_PACKAGE_INSTALLED.equals(intent.getAction())) {
             mSessionId = intent.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, -1);
             mPackageName = intent.getStringExtra(PackageInstaller.EXTRA_PACKAGE_NAME);
-            Intent confirmIntent = IntentCompat.getParcelableExtra(intent, Intent.EXTRA_INTENT, Intent.class);
+            // The payload arrives through a mutable PendingIntent; never launch it verbatim.
+            Intent confirmIntent = InstallerConfirmIntentGuard.sanitize(
+                    IntentCompat.getParcelableExtra(intent, Intent.EXTRA_INTENT, Intent.class),
+                    getPackageName());
             String sessionSha256 = intent.getStringExtra(PackageInstallerBroadcastReceiver.EXTRA_SESSION_SHA256);
             try {
                 if (mPackageName == null || confirmIntent == null) throw new Exception("Empty confirmation intent.");

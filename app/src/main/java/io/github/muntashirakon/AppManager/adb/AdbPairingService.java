@@ -186,6 +186,8 @@ public class AdbPairingService extends Service {
         Intent inputIntent = new Intent(this, getClass())
                 .setAction(ACTION_START_PAIRING)
                 .putExtra(EXTRA_PORT, port);
+        // Mutable is required: RemoteInput needs the system to fill the typed pairing code in.
+        // The base intent already names this service explicitly, so nothing else can be reached.
         PendingIntent inputPendingIntent = PendingIntentCompat.getForegroundService(this, 2, inputIntent, PendingIntent.FLAG_UPDATE_CURRENT, true);
         Intent inAppInputIntent = new Intent(this, AdbPairingInputActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);

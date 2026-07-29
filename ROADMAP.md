@@ -69,22 +69,6 @@ fixed, so these are net-new. Every item below is host-implementable and host-tes
 
 ### P2
 
-- [ ] P2 — Audit exported components for intent redirection and PendingIntent provenance
-  Why: a root-capable app is a prime target for BadParcelable/lazy-Bundle and PendingIntent
-  provenance-confusion; the interceptor re-dispatches received intents and no systematic
-  audit of exported components exists.
-  Evidence: `intercept/ActivityInterceptor.java:149` (TODO receiver flags); `AndroidManifest.xml`
-  exported components; CVE-2023-45777 (TheLastBundleMismatch); PendingIntent provenance
-  paper arxiv 2603.02539.
-  Touches: `AndroidManifest.xml` (audit exported activities/services/receivers),
-  `intercept/`, any `PendingIntent.getActivity/Broadcast` call sites, `compat/` Parcelable reads.
-  Acceptance: every exported component that forwards a received Intent targets an explicit
-  component (no implicit re-broadcast of untrusted intents); all `PendingIntent`s are
-  `FLAG_IMMUTABLE` unless mutation is required and justified; Parcelable extras are read via
-  type-safe `IntentCompat`/`BundleCompat` getters; a host test asserts an unresolved/foreign
-  Parcelable extra is rejected rather than re-forwarded.
-  Complexity: M
-
 - [ ] P2 — Installer confirmation: show requested permissions and min/target SDK
   Why: the install dialog surfaces version/cert only, though `ApkFile`/`PackageInfo` already
   parse permissions and SDK levels; InstallerX-Revived's permission + SDK + version panel is

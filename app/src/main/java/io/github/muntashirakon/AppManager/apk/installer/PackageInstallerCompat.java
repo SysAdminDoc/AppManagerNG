@@ -883,8 +883,11 @@ public final class PackageInstallerCompat {
         } else {
             Log.d(TAG, "Commit: Calling activity to request permission...");
             intentReceiver = null;
-            Intent callbackIntent = new Intent(PackageInstallerBroadcastReceiver.ACTION_PI_RECEIVER);
-            callbackIntent.setPackage(BuildConfig.APPLICATION_ID);
+            // Explicit component, not just our package: this PendingIntent has to stay mutable so
+            // the platform installer can fill in its status extras, and a package-scoped base
+            // intent would let a holder redirect the broadcast to any receiver we export.
+            Intent callbackIntent = new Intent(PackageInstallerBroadcastReceiver.ACTION_PI_RECEIVER)
+                    .setClass(mContext, PackageInstallerBroadcastReceiver.class);
             PendingIntent pendingIntent = PendingIntentCompat.getBroadcast(mContext, 0, callbackIntent, 0, true);
             sender = pendingIntent.getIntentSender();
         }
@@ -1342,8 +1345,10 @@ public final class PackageInstallerCompat {
             } else {
                 Log.d(TAG, "Uninstall: Calling activity to request permission...");
                 intentReceiver = null;
-                Intent callbackIntent = new Intent(PackageInstallerBroadcastReceiver.ACTION_PI_RECEIVER);
-                callbackIntent.setPackage(BuildConfig.APPLICATION_ID);
+                // Explicit component: see the note in commit(). Mutability is required by the
+                // platform installer, so the target must not be left resolvable.
+                Intent callbackIntent = new Intent(PackageInstallerBroadcastReceiver.ACTION_PI_RECEIVER)
+                        .setClass(mContext, PackageInstallerBroadcastReceiver.class);
                 PendingIntent pendingIntent = PendingIntentCompat.getBroadcast(mContext, 0, callbackIntent, 0, true);
                 sender = pendingIntent.getIntentSender();
             }

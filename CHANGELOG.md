@@ -43,6 +43,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   device-specific tables (app inventory, scan results, backup rows) stay excluded.
 
 ### Security
+- The installer confirmation intent is no longer forwarded verbatim. It arrives
+  through a mutable `PendingIntent`, so it is now rejected unless it names a
+  target outside this app, and the caller's flags — URI-permission grants above
+  all — are dropped before it is launched. The installer and app-archive
+  callback intents also name an explicit component instead of just this package,
+  so a holder of the mutable `PendingIntent` cannot redirect them, and the crash
+  report's share intent is immutable.
 - Guava and protobuf-java are now constrained up on the release runtime
   classpaths. smali pulled Guava 31.1-android and jadx/aapt2-proto pulled
   protobuf-java 3.22.3 onto both release runtimes; they are pinned to

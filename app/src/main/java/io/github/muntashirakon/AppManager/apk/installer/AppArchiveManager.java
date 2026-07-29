@@ -93,11 +93,13 @@ public final class AppArchiveManager {
                                                   @Nullable CharSequence appLabel, @Operation int operation) {
         Intent callbackIntent = new Intent(context, AppArchiveResultReceiver.class)
                 .setAction(ACTION_ARCHIVE_RESULT)
-                .setPackage(context.getPackageName())
+                .setClass(context, AppArchiveResultReceiver.class)
                 .putExtra(PackageInstaller.EXTRA_PACKAGE_NAME, packageName)
                 .putExtra(EXTRA_APP_LABEL, appLabel != null ? appLabel.toString() : packageName)
                 .putExtra(EXTRA_OPERATION, operation);
         int requestCode = Objects.hash(packageName, operation);
+        // Mutable is required — the platform installer fills in the status extras — so the base
+        // intent names an explicit component and cannot be redirected by whoever holds it.
         PendingIntent pendingIntent = PendingIntentCompat.getBroadcast(context, requestCode, callbackIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT, true);
         return pendingIntent.getIntentSender();
