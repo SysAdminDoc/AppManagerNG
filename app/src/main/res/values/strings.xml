@@ -2387,6 +2387,8 @@
     <string name="native_lib_readiness_32bit_only">32-bit only</string>
     <string name="native_lib_readiness_compressed">Compressed native libraries</string>
     <string name="native_lib_readiness_none">No native libraries</string>
+    <string name="restricted_settings_blocked">Restricted settings blocked</string>
+    <string name="restricted_settings_blocked_message">Android is blocking this app from being granted accessibility, notification-listener, or health access because it was installed from outside an app store. To allow it, open the app\'s info screen in Android settings, tap the overflow menu, and choose “Allow restricted settings”.</string>
     <string name="file_modified_are_you_sure">The file was modified. Discard all your changes and exit?</string>
     <string name="save_and_exit">Save and exit</string>
     <string name="pref_saved_apk_name_format">Saved APK name format</string>

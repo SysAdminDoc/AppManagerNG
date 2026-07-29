@@ -68,6 +68,7 @@ import io.github.muntashirakon.AppManager.magisk.MagiskProcess;
 import io.github.muntashirakon.AppManager.magisk.MagiskUtils;
 import io.github.muntashirakon.AppManager.misc.OsEnvironment;
 import io.github.muntashirakon.AppManager.misc.XposedModuleInfo;
+import io.github.muntashirakon.AppManager.permission.RestrictedSettingsDetector;
 import io.github.muntashirakon.AppManager.rules.RuleType;
 import io.github.muntashirakon.AppManager.scanner.NativeLibReadiness;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
@@ -449,6 +450,9 @@ public class AppInfoViewModel extends AndroidViewModel {
                 tagCloud.staticSharedLibraryNames = staticSharedLibraryNames.toArray(new String[0]);
             }
             tagCloud.nativeLibReadiness = NativeLibReadiness.fromApk(applicationInfo.publicSourceDir);
+            tagCloud.restrictedSettings = isExternalApk
+                    ? RestrictedSettingsDetector.Status.UNSUPPORTED
+                    : RestrictedSettingsDetector.getStatus(applicationInfo.uid, packageName);
             if (ThreadUtils.isInterrupted()) {
                 return;
             }
@@ -754,6 +758,10 @@ public class AppInfoViewModel extends AndroidViewModel {
         /** Whether the app's bundled native code is ready for 16 KB pages and 64-bit-only devices. */
         @NonNull
         public NativeLibReadiness nativeLibReadiness = NativeLibReadiness.UNKNOWN;
+        /** Whether Android's restricted-settings gate is currently blocking this app. */
+        @NonNull
+        public RestrictedSettingsDetector.Status restrictedSettings =
+                RestrictedSettingsDetector.Status.UNSUPPORTED;
         public boolean warnsCleartextDeprecation;
         public boolean hasKeyStoreItems;
         public boolean hasMasterKeyInKeyStore;

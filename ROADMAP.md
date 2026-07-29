@@ -71,19 +71,6 @@ fixed, so these are net-new. Every item below is host-implementable and host-tes
 
 ### P3
 
-- [ ] P3 — Restricted-settings detector for sideloaded apps
-  Why: Android 14+ gates accessibility, notification-listener, and health access behind the
-  "allow restricted settings" prompt for sideloaded apps; surfacing which installed apps are
-  currently blocked is a genuine inspector signal no NG screen provides.
-  Evidence: developer.android.com/about/versions/16/behavior-changes-16 (restricted settings);
-  `permission/` and `details/` permission views (no restricted-settings indicator);
-  `compat/AppOpsManagerCompat.java`.
-  Touches: `compat/AppOpsManagerCompat.java` (query the restricted-settings op),
-  `details/`/`permissions/` (indicator row), strings.
-  Acceptance: apps blocked by the restricted-settings gate show a labelled indicator in the
-  permission view; a host test covers the mapping. (The exact AppOps op / API across API 34-36
-  needs on-device confirmation — see RESEARCH Open Questions.)
-  Complexity: M
 
 ## Research-Driven Additions (2026-07-29)
 

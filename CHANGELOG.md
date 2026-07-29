@@ -32,6 +32,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   file, and message rather than by line number, which also surfaces baseline
   entries that no longer match anything.
 
+- App Details now explains why a sideloaded app's accessibility,
+  notification-listener, and health toggles are greyed out. Android's
+  restricted-settings gate is read through the app-op that backs it — resolved
+  by name, because its numeric code has moved between releases — and an app the
+  gate cannot be read for is reported as unknown rather than as allowed.
 - Native-library readiness is now a Finder filter and an App Details chip. The
   device can be swept for apps whose libraries are not 16 KB page-aligned (and
   so will not run on Android 15+ devices using 16 KB pages), that ship only
