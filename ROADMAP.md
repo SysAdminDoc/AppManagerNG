@@ -78,5 +78,24 @@ fixed, so these are net-new. Every item below is host-implementable and host-tes
 
 ### P1
 
+- [ ] P1 — Bring the CVE gate's configurations under dependency verification
+  Why: the release gate's blocking CVE scan cannot run at all. `dependencyCheckAggregate`
+  resolves `:app:androidLintTool`, whose POMs have no entries in
+  `gradle/verification-metadata.xml`, so Gradle aborts the task before the scanner starts.
+  A release therefore currently has no CVE evidence, and the gate correctly refuses to
+  produce a receipt without it.
+  Evidence: `python scripts/run_dependency_cve_gate.py --out-dir reproducible-release/publish`
+  → "Dependency verification failed for configuration ':app:androidLintTool'", 7 artifacts:
+  manifest-merger-32.2.1.pom, guava-33.3.1-jre.pom, aapt2-proto-9.2.1-15009934.pom,
+  builder-model-9.2.1.pom, kotlinx-coroutines-core-jvm-1.9.0.pom, kotlin-stdlib-2.2.10.pom,
+  checker-qual-3.43.0.pom.
+  Touches: `gradle/verification-metadata.xml`, `scripts/run_dependency_cve_gate.py`,
+  `docs/distribution/dependency-verification.md`.
+  Acceptance: the checksums are added from a verified source rather than by blanket
+  `--write-verification-metadata` (which would trust whatever was downloaded); the CVE gate runs
+  to completion and writes `dependency-cve-receipt.json`; a host test covers the failure mode so
+  a future configuration addition surfaces as a gate failure rather than a silent skip.
+  Complexity: M
+
 ### P2
 
