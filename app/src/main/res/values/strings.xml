@@ -686,7 +686,16 @@
     <string name="clear_data_from_uninstalled_apps_description">Review leftover data for apps removed with <tt>DONT_DELETE_DATA</tt>.</string>
     <string name="clear_app_cache">Clear app cache</string>
     <string name="clear_app_cache_description">Clears the cache of all apps</string>
-    <string name="no_tracker_found">No tracker found</string>
+    <string name="no_tracker_found">No known tracker matches</string>
+    <string name="scanner_confidence_confirmed">Confirmed signature</string>
+    <string name="scanner_confidence_tentative">Tentative signature</string>
+    <string name="scanner_detection_method">Detected by matching class names against the bundled signature list.</string>
+    <string name="scanner_absence_limitation">No match is not proof of absence: renamed identifiers, reflection, and code loaded at runtime all evade class-name matching, and signatures added upstream after this build are not in the bundled list.</string>
+    <string name="scanner_match_limitation">A match means matching code is present in the package. It does not establish that the code runs or that data leaves the device.</string>
+    <plurals name="scanner_match_confidence_row">
+        <item quantity="one"><xliff:g id="confidence" example="Confirmed signature">%1$s</xliff:g> · <xliff:g id="count" example="1">%2$d</xliff:g> class match</item>
+        <item quantity="other"><xliff:g id="confidence" example="Confirmed signature">%1$s</xliff:g> · <xliff:g id="count" example="4">%2$d</xliff:g> class matches</item>
+    </plurals>
     <string name="failed_packages">Failed packages</string>
     <string name="package_scan_failed">Package scan failed</string>
     <string name="package_scan_failed_message">AppManagerNG could not load the package list for this operation.</string>
@@ -2155,11 +2164,23 @@
     <string name="installer_developer_verification_failure_reason">Developer verification: %1$s (%2$s)</string>
     <string name="advanced_protection">Advanced Protection</string>
     <string name="installer_advanced_protection_blocked">Advanced Protection is enabled on this device. Android blocks all sideloaded app installs while this policy is active. To install apps from sources other than Google Play, disable Advanced Protection in Android settings first.</string>
+    <string name="main_list_loading_batch_blocked">Still building the app list — batch actions will be available once it finishes.</string>
+    <string name="installer_sdk_levels">Targets API <xliff:g id="target" example="36">%1$d</xliff:g>, runs on API <xliff:g id="min" example="21">%2$d</xliff:g> and above</string>
+    <string name="installer_sdk_levels_target_only">Targets API <xliff:g id="target" example="36">%1$d</xliff:g></string>
+    <string name="installer_sdk_levels_min_only">Runs on API <xliff:g id="min" example="21">%1$d</xliff:g> and above</string>
+    <plurals name="installer_permissions_dangerous">
+        <item quantity="one">Requests <xliff:g id="total" example="12">%1$d</xliff:g> permission, <xliff:g id="dangerous" example="3">%2$d</xliff:g> of them sensitive: <xliff:g id="names" example="Camera, Location">%3$s</xliff:g></item>
+        <item quantity="other">Requests <xliff:g id="total" example="12">%1$d</xliff:g> permissions, <xliff:g id="dangerous" example="3">%2$d</xliff:g> of them sensitive: <xliff:g id="names" example="Camera, Location">%3$s</xliff:g></item>
+    </plurals>
+    <plurals name="installer_permissions_plain">
+        <item quantity="one">Requests <xliff:g id="total" example="1">%1$d</xliff:g> permission, none of them sensitive</item>
+        <item quantity="other">Requests <xliff:g id="total" example="4">%1$d</xliff:g> permissions, none of them sensitive</item>
+    </plurals>
+    <string name="installer_permissions_none">Requests no permissions</string>
     <string name="installer_insufficient_storage_title">Not enough storage</string>
     <string name="installer_insufficient_storage_message">Installing <xliff:g id="app" example="Frostwire">%1$s</xliff:g> needs about <xliff:g id="required" example="1.2 GB">%2$s</xliff:g>, but only <xliff:g id="free" example="500 MB">%3$s</xliff:g> is available.\n\nFree up space and try again. Continuing anyway will most likely fail part-way through.</string>
     <string name="installer_insufficient_storage_short">Not enough storage: needs %1$s, %2$s free</string>
     <string name="installer_insufficient_storage_free_up">Free up space</string>
-    <string name="installer_insufficient_storage_install_anyway">Install anyway</string>
     <string name="developer_verification_failure_unknown">unknown verifier failure</string>
     <string name="developer_verification_failure_network">network unavailable during developer verification</string>
     <string name="developer_verification_failure_blocked">developer identity blocked or unverified</string>
