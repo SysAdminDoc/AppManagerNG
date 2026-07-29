@@ -581,7 +581,8 @@ def stage_lint(repo_root: Path, gradle_cmd: str, refresh: bool) -> StageResult:
 
 
 def stage_reproducible(repo_root: Path, gradle_cmd: str, out_dir: Path) -> StageResult:
-    env_out = repo_root / "build" / "reproducible-release"
+    # Matches scripts/verify_reproducible_release.sh: outside build/, which each clean empties.
+    env_out = repo_root / "reproducible-release"
     result = run(
         bash_script(repo_root, "scripts/verify_reproducible_release.sh"),
         repo_root,
@@ -666,7 +667,7 @@ def collect_release_apks(repo_root: Path, explicit: Sequence[str] | None) -> lis
         if missing:
             raise GateError("these APKs do not exist: " + ", ".join(missing))
         return paths
-    publish_dir = repo_root / "build" / "reproducible-release" / "publish"
+    publish_dir = repo_root / "reproducible-release" / "publish"
     if publish_dir.is_dir():
         published = sorted(publish_dir.glob("*.apk"))
         if published:

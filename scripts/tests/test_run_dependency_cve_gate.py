@@ -75,5 +75,26 @@ class DependencyCveGateTest(unittest.TestCase):
                 gate.run_gate(["gradlew"], self.root, self.out_dir)
 
 
+    def test_the_posix_wrapper_is_swapped_for_the_batch_one_on_windows(self) -> None:
+        (self.root / "gradlew.bat").write_text("@echo off", encoding="utf-8")
+        with mock.patch.object(gate.os, "name", "nt"):
+            resolved = gate.resolve_gradle_command(["./gradlew"], self.root)
+        self.assertTrue(resolved[0].endswith("gradlew.bat"),
+                        f"expected the batch wrapper, got {resolved[0]}")
+
+    def test_a_posix_host_keeps_the_wrapper_it_was_given(self) -> None:
+        with mock.patch.object(gate.os, "name", "posix"):
+            self.assertEqual(["./gradlew"], gate.resolve_gradle_command(["./gradlew"], self.root))
+
+    def test_an_explicit_launcher_is_never_second_guessed(self) -> None:
+        with mock.patch.object(gate.os, "name", "nt"):
+            self.assertEqual(["/opt/gradle/bin/gradle", "-q"],
+                             gate.resolve_gradle_command(["/opt/gradle/bin/gradle", "-q"], self.root))
+
+    def test_an_empty_command_is_refused(self) -> None:
+        with self.assertRaises(gate.GateError):
+            gate.resolve_gradle_command([], self.root)
+
+
 if __name__ == "__main__":
     unittest.main()

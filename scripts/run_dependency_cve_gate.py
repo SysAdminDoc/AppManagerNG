@@ -7,6 +7,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -34,14 +35,32 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def resolve_gradle_command(gradle_command: Sequence[str], repo_root: Path) -> list[str]:
+    """Picks a Gradle launcher this interpreter can actually exec.
+
+    Callers hand us ``./gradlew`` because that is what works from a shell. Python's subprocess
+    does not go through a shell, and on Windows the POSIX wrapper is a shell script rather than
+    an executable image, so launching it fails with "not a valid Win32 application". The Windows
+    batch wrapper is used instead when it exists.
+    """
+    if not gradle_command:
+        raise GateError("Gradle command must not be empty")
+    resolved = list(gradle_command)
+    launcher = Path(resolved[0])
+    if os.name == "nt" and launcher.name in ("gradlew", "gradlew.sh"):
+        batch = repo_root / "gradlew.bat"
+        if batch.is_file():
+            resolved[0] = str(batch)
+    return resolved
+
+
 def run_gate(
     gradle_command: Sequence[str],
     repo_root: Path,
     out_dir: Path,
     report_dir: Path | None = None,
 ) -> list[Path]:
-    if not gradle_command:
-        raise GateError("Gradle command must not be empty")
+    gradle_command = resolve_gradle_command(gradle_command, repo_root)
     report_dir = report_dir or repo_root / "build" / "reports"
     report_paths = [report_dir / name for name in REPORT_NAMES.values()]
     for report in report_paths:

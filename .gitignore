@@ -75,3 +75,6 @@ AGENTS.md
 # Python bytecode from the local release/quality scripts
 __pycache__/
 *.pyc
+
+# Local reproducible-release verification output
+/reproducible-release/
