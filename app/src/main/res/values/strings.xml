@@ -3593,6 +3593,8 @@
     <string name="network_ledger_compile">Compile: %1$s</string>
     <string name="network_ledger_toggle">Status: %1$s</string>
     <string name="network_ledger_last_fetch">Last fetch: %1$s</string>
+    <string name="network_ledger_last_success">Last success: <xliff:g id="timestamp" example="2026-07-29 14:05">%1$s</xliff:g></string>
+    <string name="network_ledger_last_failure">Last failure: <xliff:g id="timestamp" example="2026-07-29 14:05">%1$s</xliff:g></string>
     <string name="network_ledger_available">available</string>
     <string name="network_ledger_compiled_out">compiled out (floss)</string>
     <string name="network_ledger_never">never</string>

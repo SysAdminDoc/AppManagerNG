@@ -167,16 +167,6 @@ fixed, so these are net-new. Every item below is host-implementable and host-tes
   binding HEAD/tag, APK/SBOM/report hashes, signing fingerprint, and tool versions.
   Complexity: M
 
-- [ ] P2 — Complete privacy-safe optional-network receipts
-  Why: the transparency ledger promises last-use evidence but VirusTotal and Pithus always
-  display “never,” preventing users and support bundles from auditing optional egress.
-  Evidence: `settings/NetworkTransparencyLedger.java:58-74`.
-  Touches: optional-network clients, ledger persistence/model/UI, localized strings and tests.
-  Acceptance: every optional client records redacted success/failure time, destination, and
-  purpose without payloads, package inventories, response bodies, or secrets; localized
-  never/success/failure states and support export are covered by tests.
-  Complexity: M
-
 - [ ] P2 — Calibrate tracker/library scanner certainty and provenance
   Why: class-signature detectors degrade under obfuscation, but the UI/export can imply that no
   match proves no tracker.

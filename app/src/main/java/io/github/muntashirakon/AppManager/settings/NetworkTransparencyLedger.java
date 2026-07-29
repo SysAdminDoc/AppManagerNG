@@ -15,6 +15,7 @@ import java.util.Locale;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.utils.ContextUtils;
 
 /**
  * Assembles the current state of each optional network feature for display
@@ -33,15 +34,28 @@ public final class NetworkTransparencyLedger {
         public final boolean compileAvailable;
         public final boolean enabled;
         public final long lastRequestMillis;
+        /** Epoch millis of the last request that succeeded, or {@code 0} if there was none. */
+        public final long lastSuccessMillis;
+        /** Epoch millis of the last request that failed, or {@code 0} if there was none. */
+        public final long lastFailureMillis;
 
         Entry(@NonNull String name, @NonNull String endpointClass, @NonNull String payloadCategory,
               boolean compileAvailable, boolean enabled, long lastRequestMillis) {
+            this(name, endpointClass, payloadCategory, compileAvailable, enabled, lastRequestMillis,
+                    0L, 0L);
+        }
+
+        Entry(@NonNull String name, @NonNull String endpointClass, @NonNull String payloadCategory,
+              boolean compileAvailable, boolean enabled, long lastRequestMillis,
+              long lastSuccessMillis, long lastFailureMillis) {
             this.name = name;
             this.endpointClass = endpointClass;
             this.payloadCategory = payloadCategory;
             this.compileAvailable = compileAvailable;
             this.enabled = enabled;
             this.lastRequestMillis = lastRequestMillis;
+            this.lastSuccessMillis = lastSuccessMillis;
+            this.lastFailureMillis = lastFailureMillis;
         }
     }
 
@@ -50,6 +64,11 @@ public final class NetworkTransparencyLedger {
 
     @NonNull
     public static List<Entry> buildEntries() {
+        return buildEntries(ContextUtils.getContext());
+    }
+
+    @NonNull
+    public static List<Entry> buildEntries(@NonNull Context context) {
         boolean networkAvailable = FeatureController.areOptionalNetworkFeaturesAvailable();
         boolean internetEnabled = networkAvailable && FeatureController.isInternetEnabled();
 
@@ -61,7 +80,9 @@ public final class NetworkTransparencyLedger {
                 "APK file upload + SHA256 report lookup",
                 networkAvailable,
                 internetEnabled && FeatureController.isVirusTotalEnabled(),
-                0 // on-demand, no stored timestamp
+                0, // on-demand: the outcome timestamps below are the evidence
+                NetworkRequestLedger.getLastSuccess(context, NetworkRequestLedger.CLIENT_VIRUS_TOTAL),
+                NetworkRequestLedger.getLastFailure(context, NetworkRequestLedger.CLIENT_VIRUS_TOTAL)
         ));
 
         entries.add(new Entry(
@@ -70,7 +91,9 @@ public final class NetworkTransparencyLedger {
                 "SHA256 hash lookup (read-only)",
                 networkAvailable,
                 internetEnabled,
-                0 // on-demand, no stored timestamp
+                0, // on-demand: the outcome timestamps below are the evidence
+                NetworkRequestLedger.getLastSuccess(context, NetworkRequestLedger.CLIENT_PITHUS),
+                NetworkRequestLedger.getLastFailure(context, NetworkRequestLedger.CLIENT_PITHUS)
         ));
 
         entries.add(new Entry(
@@ -113,13 +136,18 @@ public final class NetworkTransparencyLedger {
                     entry.enabled
                             ? context.getString(R.string.network_ledger_enabled)
                             : context.getString(R.string.network_ledger_disabled))).append('\n');
-            if (entry.lastRequestMillis > 0) {
-                sb.append(context.getString(R.string.network_ledger_last_fetch,
-                        sdf.format(new Date(entry.lastRequestMillis))));
-            } else {
-                sb.append(context.getString(R.string.network_ledger_last_fetch,
-                        context.getString(R.string.network_ledger_never)));
-            }
+            sb.append(context.getString(R.string.network_ledger_last_fetch,
+                    entry.lastRequestMillis > 0
+                            ? sdf.format(new Date(entry.lastRequestMillis))
+                            : context.getString(R.string.network_ledger_never)));
+            sb.append("\n").append(context.getString(R.string.network_ledger_last_success,
+                    entry.lastSuccessMillis > 0
+                            ? sdf.format(new Date(entry.lastSuccessMillis))
+                            : context.getString(R.string.network_ledger_never)));
+            sb.append("\n").append(context.getString(R.string.network_ledger_last_failure,
+                    entry.lastFailureMillis > 0
+                            ? sdf.format(new Date(entry.lastFailureMillis))
+                            : context.getString(R.string.network_ledger_never)));
         }
         return sb.toString();
     }
