@@ -28,16 +28,16 @@ The `floss` artifact is the listing target. The `full` artifact also exists on
 GitHub Releases for Obtainium users, but it enables optional online report
 surfaces behind user opt-in gates and should not be the IzzyOnDroid artifact.
 
-## Per-ABI Split Sizes
+## APK Size
 
-The build produces per-ABI splits (`armeabi-v7a`, `arm64-v8a`, `x86`, `x86_64`)
-plus a universal APK. Per-ABI splits contain only the native libraries for one
-architecture and are strictly smaller than the universal APK (19,087,728 bytes measured at
-v0.6.7). The local release build enforces a hard size gate
-(`APK_SIZE_LIMIT_BYTES`, default 30 MiB) per APK — any split exceeding it fails
-the build. IzzyOnDroid should be configured to match the universal
-`AppManagerNG-*-floss-release.apk` artifact (sub-30 MB) or the `arm64-v8a` split
-for the smallest download.
+Releases publish a single universal APK per flavor, carrying native libraries for
+`armeabi-v7a`, `arm64-v8a`, `x86`, and `x86_64`. It measures 19,087,728 bytes at
+v0.6.7, well under IzzyOnDroid's 30 MB rule of thumb. The local release build
+enforces a hard size gate (`APK_SIZE_LIMIT_BYTES`, default 30 MiB) per APK.
+
+Per-ABI splits are configured in `app/build.gradle` but are **not enabled**, so no
+split APKs are produced or published. IzzyOnDroid should be configured to match the
+universal `AppManagerNG-*-floss-release.apk` artifact.
 
 ## Policy Checks
 

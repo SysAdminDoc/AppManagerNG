@@ -68,8 +68,9 @@ app/build/outputs/accrescent/AppManagerNG-0.6.7-floss-accrescent.apks.sha256
 - Published-release values are pinned in
   `docs/distribution/release-receipt.json` and verified against this packet.
 - The generated APK set must stay under 128 MiB; the current universal
-  `flossRelease` APK is 18,948,513 bytes, so the split APK set is expected to
-  fit but must be checked at generation time.
+  `flossRelease` APK is 19,087,728 bytes. Per-ABI splits are configured but not
+  enabled, so only this universal APK is produced today; if splits are ever
+  turned on, the set size must be re-checked at generation time.
 - The current 512 x 512 PNG icon is present.
 - The current merged `flossRelease` manifest does not set
   `android:debuggable`, `android:testOnly`, or `android:usesCleartextTraffic`.
