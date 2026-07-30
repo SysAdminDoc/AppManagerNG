@@ -31,10 +31,10 @@ capabilities, the same component blocking and tracker scanning — but layered b
 interface that doesn't punish casual users for opening it.
 
 > [!NOTE]
-> This is an early-stage project. v0.1.0 is the rebranded baseline — the code below is the
-> upstream AppManager source pinned at commit `3d11bcb` (2026-04-16). Subsequent releases will
-> introduce the AppManagerNG UX overhaul incrementally, in working increments, with full
-> attribution to upstream contributions preserved.
+> AppManagerNG began as a rebranded baseline of the upstream AppManager source at commit
+> `3d11bcb`, bootstrapped on 2026-04-30. The NG UX overhaul has been landing incrementally
+> since, in working increments, with attribution to upstream contributions preserved. See
+> [CHANGELOG.md](CHANGELOG.md) for what each release changed.
 
 ## What's new in NG
 
@@ -103,6 +103,8 @@ Version targets:
 - **v0.5.0** ✅ 2026-05-25 — Discovery & Polish: in-app changelog viewer + auto-display after update, global in-app Settings search, plus the Iter-91 → Iter-142 batch (scheduled auto-backup polish, AES metadata v7 HKDF per-archive keys, ADB tcpip reuse, KernelSU/Magisk drop-cap diagnostics, Dhizuku detection, Restricted Settings unlock walkthrough, installer privilege cascade, OEM debloat-blocker bypass, per-app rollback, snapshot-bundle portability v2, Component rules preview, Tasker am:// intents, QS freeze tile, FM recursive search and ZIP create/extract, AGP 9.2.0). See `CHANGELOG.md`.
 - **v0.5.x** — post-release consolidation plus the pass-2 feature backlog: background-run rule persistence, multi-volume cache trimming, activity-launch polish, structured log exports, scanner/file/editor reliability work.
 - **v0.6.0** ✅ 2026-06-14 — Rootless Power: Routine Operations / Scheduler executor and UI, plus Premium Polish Phase 2. Adds package-filtered app-event routine triggers, backup/archive restore hardening (weak-tag warning, decompression-bomb guard), IPC binder-cache reliability, and an audit pass of crash/leak/microcopy fixes. Multi-tag and saved-filter data layers already landed.
+- **v0.6.1 – v0.6.5** ✅ — Hardening and polish: resource-leak fixes and narrowed exception handling (v0.6.1), Settings-search and one-click-operation V2 layouts (v0.6.2 – v0.6.3), and the 2026-07-02 deep-audit pass across theming, terminal, log viewer, scanner, and widgets (v0.6.5).
+- **v0.6.7** ✅ 2026-07-29 — Truthfulness and release integrity: installer storage preflight, permission/SDK disclosure in the install prompt, calibrated scanner certainty and provenance, native-library readiness filter and chip, restricted-settings detector, and one fail-closed local release gate. Supersedes v0.6.6, which was never published.
 
 ## Install
 
@@ -118,7 +120,7 @@ Every AppManagerNG release ships **two build flavors**. Both are the same app; t
 `floss` is the default flavor in source; `full` is the optional variant. If you don't need VirusTotal / Pithus / debloat-definition auto-updates, `floss` is the right choice. See [docs/distribution/build-flavors.md](docs/distribution/build-flavors.md) for the maintainer contract.
 
 ### Direct download
-Grab the signed APK from [GitHub Releases](https://github.com/SysAdminDoc/AppManagerNG/releases/latest) — pick `full` or `floss` per the table above. Use `arm64-v8a` for modern devices or `universal` for maximum compatibility (older 32-bit ARM and x86_64 emulators).
+Grab the APK from [GitHub Releases](https://github.com/SysAdminDoc/AppManagerNG/releases/latest) — pick `full` or `floss` per the table above. Each release ships one universal APK per flavor, carrying native libraries for `armeabi-v7a`, `arm64-v8a`, `x86`, and `x86_64`, so the same file installs on every supported device. Per-ABI split APKs are not currently published.
 
 ### Via Obtainium
 
@@ -159,14 +161,29 @@ Verify with [AppVerifier](https://github.com/soupslurpr/AppVerifier) or:
 apksigner verify --print-certs AppManagerNG-<version>.apk | grep SHA-256
 ```
 
-Before publishing, maintainers run a local release gate: OWASP Dependency-Check
-must complete with no unsuppressed CVSS 9.0+ findings, then the signed APK is
-built twice from a clean checkout and its binary SHA-256 hashes must match. The
-HTML/SARIF dependency reports and their hash receipt are retained with the SBOM
-and APK sidecars. Run the check with
-[`scripts/verify_reproducible_release.ps1`](scripts/verify_reproducible_release.ps1)
-on Windows or [`scripts/verify_reproducible_release.sh`](scripts/verify_reproducible_release.sh)
-on Linux/macOS shells; details are in [docs/distribution/reproducible-builds.md](docs/distribution/reproducible-builds.md).
+Before publishing, maintainers run one fail-closed local release gate,
+[`scripts/release_gate.py`](scripts/release_gate.py). It checks, in order, that the
+working tree is clean and matches the release tag, that every version-bearing
+surface agrees, that pinned dependencies have not drifted, that the translation
+report is internally consistent, that the host test suite passes, that no lint
+issue sits outside the baseline, that two clean builds produce byte-identical
+APKs, and that the built APK's package, version, SDK levels, and signing
+certificate are the ones the sources declare. A receipt binding the commit and
+tag to every artifact hash, the signing fingerprint, and the tool versions is
+written only after all of it passes. Details, including the two-build
+reproducibility check invoked by the gate, are in
+[docs/distribution/reproducible-builds.md](docs/distribution/reproducible-builds.md).
+
+The gate also runs OWASP Dependency-Check as a blocking stage (no unsuppressed
+CVSS 9.0+ findings), retaining the HTML/SARIF reports and their hash receipt
+alongside the SBOM and APK sidecars.
+
+> [!IMPORTANT]
+> As of v0.6.7 that CVE stage cannot run: `dependencyCheckAggregate` resolves a
+> configuration whose POMs are absent from `gradle/verification-metadata.xml`, so
+> Gradle aborts it before the scanner starts. **v0.6.7 therefore ships without CVE
+> evidence.** Every other stage above passed for that release. Tracked as a P1
+> item in [ROADMAP.md](ROADMAP.md).
 
 Untrusted app-list, rule, snapshot-manifest, and archive inputs also have a
 bounded local Jazzer gate. Run `./gradlew :app:fuzzUntrustedImports` (or pass
