@@ -38,13 +38,85 @@ interface that doesn't punish casual users for opening it.
 
 ## What's new in NG
 
+Everything below is additive to the upstream feature set — the inherited capabilities are
+listed further down. For the release-by-release detail, see [CHANGELOG.md](CHANGELOG.md).
+
 ### Permission Inspector
 
-A new main-menu entry that flips the standard "app -> permissions" view on its head. Pick a permission group (Camera, Microphone, Location, Contacts, SMS, Phone, Files & media, Calendar, Body sensors, Physical activity, Nearby devices, Notifications) and see every installed app that holds it, with a one-tap toggle per app and a master **Revoke for all apps** action in the toolbar. Changes persist through the same rule store the per-app permissions tab uses, so they survive reinstalls.
+Flips the standard "app → permissions" view on its head. Pick a permission group (Camera,
+Microphone, Location, Contacts, SMS, Phone, Files & media, Calendar, Body sensors, Physical
+activity, Nearby devices, Notifications) and see every installed app that holds it, with a
+one-tap toggle per app and a master **Revoke for all apps** action. Changes persist through the
+same rule store the per-app permissions tab uses, so they survive reinstalls.
 
 ### App Archiving (Android 15+)
 
-Reclaim storage without losing anything: archiving removes an app's APK and cache but keeps its data and launcher icon, so unarchiving picks up exactly where you left off. AppManagerNG drives the native Android 15 archiving API — archive or unarchive a single app from its App Info page, or select multiple apps and do it as a batch operation. Archived apps are detected and shown as such in the app list. Works on user apps without root (the system asks you to confirm each request).
+Reclaim storage without losing anything: archiving removes an app's APK and cache but keeps its
+data and launcher icon, so unarchiving picks up where you left off. Drives the native Android 15
+archiving API — single app from App Info, or many at once as a batch operation. Archived apps
+are detected and labelled in the app list. Works on user apps without root.
+
+### Routine ops
+
+Profiles that run themselves. Schedule a profile, or trigger it on app install/update/uninstall
+with an optional package glob (`com.vendor.*`) so it fires only for the apps you care about.
+Backups gained ordered per-tag policies: the first matching tag decides which parts are backed
+up, how they are encrypted, how long they are kept, and whether they land locally or on a SAF
+destination — with a preview of which rule wins before you commit.
+
+### Finder
+
+Query your device instead of scrolling it. Filter apps by trackers (including by class name or
+regex), permissions, app ops, signature, installer, SDK levels, size, usage, backup state,
+bloatware classification, intent actions, and domain links — then save the filter and reuse it.
+Native-library readiness is a predicate too: sweep for apps that are not 16 KB page-aligned (so
+they will not run on Android 15+ devices using 16 KB pages), ship only 32-bit code, or store
+their libraries compressed.
+
+### Snapshot bundles
+
+Export a portable, encrypted record of your app state — rules, profiles, preferences — and
+restore it selectively on another device, previewing each section before it is applied. Bundles
+are AES-256-GCM with an Argon2id-derived key, authenticated before anything is written, and
+streamed rather than held in memory, so a large bundle neither exhausts RAM nor half-applies.
+
+### An installer that tells you what it is doing
+
+Before an install commits, the prompt names the sensitive permissions the APK requests and the
+API levels it targets and supports, and reports the trackers it found. Installs that cannot fit
+are refused up front, with required-vs-free storage and a shortcut to the system storage
+manager. APK and OBB installation is rollback-safe: expansion files are staged and validated
+before the live ones are touched, so a failed install leaves the previous version intact.
+
+### A scanner that states its limits
+
+Tracker and library results say what they are evidence of. An empty result reads "No known
+tracker matches" and explains why absence is not proof — renamed identifiers, reflection, and
+runtime-loaded code all evade class-name matching. Each match is labelled confirmed or
+tentative and names the detector behind it, and exported reports carry the same provenance.
+
+### Sideload-aware diagnostics
+
+App Details explains Android's restricted-settings gate, which silently greys out accessibility,
+notification-listener, and health toggles for apps installed outside a store — and how to lift
+it. Alongside it: privileged-mode capability detection (root, Shizuku, ADB, Dhizuku, KernelSU),
+an installer privilege cascade that falls back gracefully, and a biometric gate on the terminal
+and on backup deletion.
+
+### Discovery and polish
+
+Material 3 with dynamic colours and a pure-black theme, an onboarding capability wizard, a Pro
+Mode toggle that keeps advanced surfaces out of the way until you want them, global in-app
+Settings search, an in-app changelog viewer, and Quick Settings tiles for freeze and force-stop.
+
+### Releases you can check
+
+Every release is built twice from a clean checkout and published only if both builds are
+byte-identical. A single fail-closed gate runs the tests, lint, version-consistency, and
+artifact-identity checks and emits a receipt binding the commit and tag to every artifact hash,
+the signing fingerprint, and the tool versions. A CycloneDX SBOM ships with each release, and
+the signing fingerprint is published at a [stable URL](https://raw.githubusercontent.com/SysAdminDoc/AppManagerNG/main/docs/fingerprints.txt)
+for tools like AppVerifier.
 
 ## Features (inherited from upstream baseline)
 
