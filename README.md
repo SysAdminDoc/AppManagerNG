@@ -44,7 +44,7 @@ A new main-menu entry that flips the standard "app -> permissions" view on its h
 
 ### App Archiving (Android 15+)
 
-Reclaim storage without losing anything: archiving removes an app's APK and cache but keeps its data and launcher icon, so unarchiving picks up exactly where you left off. AppManagerNG drives the native Android 15 archiving API — archive or unarchive a single app from its App Info page, or select multiple apps and do it as a batch operation. Archived apps are detected and shown as such in the app list. Works on user apps without root (the system asks you to confirm each request). No other open-source package manager ships this yet.
+Reclaim storage without losing anything: archiving removes an app's APK and cache but keeps its data and launcher icon, so unarchiving picks up exactly where you left off. AppManagerNG drives the native Android 15 archiving API — archive or unarchive a single app from its App Info page, or select multiple apps and do it as a batch operation. Archived apps are detected and shown as such in the app list. Works on user apps without root (the system asks you to confirm each request).
 
 ## Features (inherited from upstream baseline)
 
