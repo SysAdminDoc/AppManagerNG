@@ -284,10 +284,12 @@ class Server implements Closeable {
             if (mSocket == null) {
                 return PeerAuthority.UID_UNKNOWN;
             }
-            int localPort = mSocket.getLocalPort();
-            int remotePort = mSocket.getPort();
+            // The peer's own row, not ours: its local port is the peer's ephemeral port and its
+            // remote port is the port we accepted on.
+            int peerPort = mSocket.getPort();
+            int listeningPort = mSocket.getLocalPort();
             for (String table : PROC_NET_TCP_TABLES) {
-                int uid = PeerAuthority.findPeerUid(readLines(table), localPort, remotePort);
+                int uid = PeerAuthority.findPeerUid(readLines(table), peerPort, listeningPort);
                 if (uid != PeerAuthority.UID_UNKNOWN) {
                     return uid;
                 }
