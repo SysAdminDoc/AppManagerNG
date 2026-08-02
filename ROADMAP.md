@@ -150,38 +150,6 @@ repeat the work:
 
 ### P2
 
-- [ ] P2 — Filter-expression highlighting uses pure red/blue and matches inside words
-  Category: visual
-  Where: `app/src/main/java/io/github/muntashirakon/AppManager/filters/EditFiltersDialogFragment.java:45-52`
-  (`HIGHLIGHT_MAP`) and `:204-212` (the `ForegroundColorSpan` loop)
-  Problem: two defects in one place. (1) The highlighter applies `ForegroundColorSpan(Color.RED)` and
-  `ForegroundColorSpan(Color.BLUE)` — fully saturated `#FF0000` / `#0000FF` — to text inside a themed
-  `TextInputLayout`. Pure blue against the app's dark and AMOLED surfaces is roughly 2.4:1, far below
-  the WCAG AA 4.5:1 minimum for body text; pure red against the light theme's white surface is roughly
-  4:1, also below AA. So one of the two keyword colours is unreadable in whichever theme the user
-  picks. These are the only hardcoded UI colours left outside the ANSI terminal palette and the SVG
-  parser. (2) The loop uses `text.indexOf(keyword)` with no token boundary, so `true` and `false` are
-  highlighted as substrings — a filter naming a package such as `com.truecaller` gets `true` coloured
-  mid-word.
-  Evidence: `grep -n "HIGHLIGHT_MAP" -A 12` on that file shows
-  `s.setSpan(new ForegroundColorSpan(color), index, index + keyword.length(), ...)` at line 209 inside
-  `while (index >= 0) { ... index = text.indexOf(keyword, index + keyword.length()); }`. A
-  project-wide sweep for `Color.RED|BLUE|WHITE|BLACK|…` finds no other hardcoded colour on a themed
-  surface.
-  Fix: resolve both colours from the existing V2 token set at runtime instead of using literals — the
-  operators from `?attr/colorPrimary` / `premium_color_primary` and the boolean literals from the
-  `premium_info_content` semantic token, both of which already switch per mode via
-  `app/src/main/res/values/colors-v2.xml` and `values-night/colors-v2.xml`. Use the same
-  `getThemeColor(...)` helper pattern as `MainRecyclerAdapter.java:115-118`. For (2), match
-  `true`/`false` on word boundaries with a precompiled `Pattern` and leave the single-character
-  operators as literal matches.
-  Acceptance: no `Color.` constant remains in that file; highlighted text meets 4.5:1 against the
-  surface in light, dark and AMOLED; a unit test asserts `com.truecaller` receives no span while a
-  standalone `true` does.
-  Confidence: Verified — the colour values and span code are confirmed by reading; the contrast ratios
-  are computed from the literals rather than measured on a device.
-  Effort: M
-
 - [ ] P2 — The lint baseline hides 4060 issues, including every crash found in this audit
   Category: testing
   Where: `app/lint-baseline.xml` (2.2 MB, 4060 suppressed issues); `app/build.gradle:106-111`
