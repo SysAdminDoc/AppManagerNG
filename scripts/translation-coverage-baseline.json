@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "policy": "A locale may not gain missing translatable source strings without a reviewed baseline update.",
+  "sourceCount": 3609,
+  "locales": {
+    "ar": {
+      "maxMissing": 2289
+    },
+    "ar-rSA": {
+      "maxMissing": 3567
+    },
+    "az": {
+      "maxMissing": 3609
+    },
+    "ban": {
+      "maxMissing": 3609
+    },
+    "be": {
+      "maxMissing": 3606
+    },
+    "bn-rBD": {
+      "maxMissing": 3244
+    },
+    "cs-rCZ": {
+      "maxMissing": 3064
+    },
+    "da": {
+      "maxMissing": 3382
+    },
+    "de": {
+      "maxMissing": 2350
+    },
+    "el": {
+      "maxMissing": 3424
+    },
+    "eo": {
+      "maxMissing": 3541
+    },
+    "es-rES": {
+      "maxMissing": 2464
+    },
+    "fa": {
+      "maxMissing": 2435
+    },
+    "fr": {
+      "maxMissing": 2308
+    },
+    "hi": {
+      "maxMissing": 2662
+    },
+    "hu": {
+      "maxMissing": 3346
+    },
+    "in-rID": {
+      "maxMissing": 2544
+    },
+    "it-rIT": {
+      "maxMissing": 2320
+    },
+    "iw": {
+      "maxMissing": 3442
+    },
+    "ja": {
+      "maxMissing": 2611
+    },
+    "ko": {
+      "maxMissing": 2487
+    },
+    "lv": {
+      "maxMissing": 3478
+    },
+    "nb-rNO": {
+      "maxMissing": 2573
+    },
+    "nl": {
+      "maxMissing": 2289
+    },
+    "pl": {
+      "maxMissing": 2289
+    },
+    "pt": {
+      "maxMissing": 2320
+    },
+    "pt-rBR": {
+      "maxMissing": 2470
+    },
+    "ro": {
+      "maxMissing": 3023
+    },
+    "ru-rRU": {
+      "maxMissing": 2320
+    },
+    "si": {
+      "maxMissing": 3603
+    },
+    "sq": {
+      "maxMissing": 3334
+    },
+    "sv": {
+      "maxMissing": 3565
+    },
+    "tr-rTR": {
+      "maxMissing": 2321
+    },
+    "uk-rUA": {
+      "maxMissing": 2400
+    },
+    "vi": {
+      "maxMissing": 2321
+    },
+    "zh-rCN": {
+      "maxMissing": 2289
+    },
+    "zh-rTW": {
+      "maxMissing": 2424
+    }
+  }
+}
