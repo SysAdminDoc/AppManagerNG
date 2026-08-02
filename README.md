@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.6.7-blue.svg" />
+  <img alt="Version" src="https://img.shields.io/badge/version-0.6.8-blue.svg" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0--or--later-green.svg" />
   <img alt="Platform" src="https://img.shields.io/badge/platform-Android%205.0%2B-brightgreen.svg" />
   <img alt="Min SDK" src="https://img.shields.io/badge/minSdk-21-orange.svg" />
@@ -177,6 +177,7 @@ Version targets:
 - **v0.6.0** ✅ 2026-06-14 — Rootless Power: Routine Operations / Scheduler executor and UI, plus Premium Polish Phase 2. Adds package-filtered app-event routine triggers, backup/archive restore hardening (weak-tag warning, decompression-bomb guard), IPC binder-cache reliability, and an audit pass of crash/leak/microcopy fixes. Multi-tag and saved-filter data layers already landed.
 - **v0.6.1 – v0.6.5** ✅ — Hardening and polish: resource-leak fixes and narrowed exception handling (v0.6.1), Settings-search and one-click-operation V2 layouts (v0.6.2 – v0.6.3), and the 2026-07-02 deep-audit pass across theming, terminal, log viewer, scanner, and widgets (v0.6.5).
 - **v0.6.7** ✅ 2026-07-29 — Truthfulness and release integrity: installer storage preflight, permission/SDK disclosure in the install prompt, calibrated scanner certainty and provenance, native-library readiness filter and chip, restricted-settings detector, and one fail-closed local release gate. Supersedes v0.6.6, which was never published.
+- **v0.6.8** ✅ 2026-08-02 — Privileged-core hardening: malformed Android Binary XML is always a parse error rather than an unchecked exception, the privileged command channel establishes who connected before reading the handshake token, replies can no longer name the class the other side instantiates, the server's launch arguments are validated before they select a user or a package, the filesystem service's real boundary is written down and its NUL-truncation gap closed, and the diagnostic log stops being world-readable. The release CVE gate runs again.
 
 ## Install
 
