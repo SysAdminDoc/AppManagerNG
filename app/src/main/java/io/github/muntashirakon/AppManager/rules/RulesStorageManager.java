@@ -14,12 +14,15 @@ import androidx.annotation.WorkerThread;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.NetworkPolicyManagerCompat;
@@ -44,15 +47,21 @@ import io.github.muntashirakon.AppManager.rules.struct.UriGrantRule;
 import io.github.muntashirakon.AppManager.uri.UriManager;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.FreezeUtils;
+import io.github.muntashirakon.io.AtomicExtendedFile;
+import io.github.muntashirakon.io.ExtendedFile;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.PathReader;
 import io.github.muntashirakon.io.Paths;
 
 public class RulesStorageManager implements Closeable {
     private static final String TAG = RulesStorageManager.class.getSimpleName();
+    private static final ConcurrentHashMap<String, ReentrantLock> TRANSACTION_LOCKS = new ConcurrentHashMap<>();
 
     @NonNull
     private final ArrayList<RuleEntry> mEntries;
+    @NonNull
+    private final ReentrantLock mTransactionLock;
+    private boolean mTransactionLockHeld;
 
     @GuardedBy("entries")
     @NonNull
@@ -78,9 +87,25 @@ public class RulesStorageManager implements Closeable {
     }
 
     protected RulesStorageManager(@NonNull String packageName, @UserIdInt int userId) {
+        this(packageName, userId, false);
+    }
+
+    /**
+     * Create a rules manager, optionally taking the package/user transaction lock before loading
+     * the file. Mutable callers use the locked form so their read-modify-write cycle cannot race
+     * another caller in this process.
+     */
+    protected RulesStorageManager(@NonNull String packageName, @UserIdInt int userId,
+                                   boolean lockBeforeLoad) {
         this.packageName = packageName;
         this.userId = userId;
         mEntries = new ArrayList<>();
+        mTransactionLock = TRANSACTION_LOCKS.computeIfAbsent(packageName + "\u0000" + userId,
+                key -> new ReentrantLock());
+        if (lockBeforeLoad) {
+            mTransactionLock.lock();
+            mTransactionLockHeld = true;
+        }
         try {
             loadEntries(getDesiredFile(false), false);
         } catch (Exception ignored) {
@@ -89,15 +114,40 @@ public class RulesStorageManager implements Closeable {
 
     public void setReadOnly() {
         this.readOnly = true;
+        releaseTransactionLock();
     }
 
     public void setMutable() {
+        if (!readOnly) return;
+        if (!mTransactionLockHeld) {
+            mTransactionLock.lock();
+            mTransactionLockHeld = true;
+            reloadEntriesFromDisk();
+        }
         this.readOnly = false;
     }
 
     @Override
     public void close() {
-        if (!readOnly) commit();
+        try {
+            if (!readOnly) commit();
+        } finally {
+            setReadOnly();
+        }
+    }
+
+    /**
+     * Return whether this manager currently owns its package/user transaction lock.
+     */
+    protected final boolean isTransactionLockHeld() {
+        return mTransactionLockHeld;
+    }
+
+    private void releaseTransactionLock() {
+        if (mTransactionLockHeld) {
+            mTransactionLockHeld = false;
+            mTransactionLock.unlock();
+        }
     }
 
     @GuardedBy("entries")
@@ -292,6 +342,30 @@ public class RulesStorageManager implements Closeable {
 
     @GuardedBy("entries")
     protected void loadEntries(Path file, boolean isExternal) throws IOException {
+        List<RuleEntry> entries = readEntries(file, isExternal);
+        synchronized (mEntries) {
+            mEntries.addAll(entries);
+        }
+    }
+
+    private void reloadEntriesFromDisk() {
+        try {
+            List<RuleEntry> entries = readEntries(getDesiredFile(false), false);
+            synchronized (mEntries) {
+                mEntries.clear();
+                mEntries.addAll(entries);
+            }
+        } catch (Exception e) {
+            // Keep the last known-good in-memory snapshot if a transient read fails after the
+            // transaction lock has been acquired. A failed refresh must never turn a later commit
+            // into an empty rules file.
+            Log.w(TAG, "Could not refresh rules for " + packageName, e);
+        }
+    }
+
+    @NonNull
+    private List<RuleEntry> readEntries(Path file, boolean isExternal) throws IOException {
+        ArrayList<RuleEntry> entries = new ArrayList<>();
         String dataRow;
         try (BufferedReader TSVFile = new BufferedReader(new PathReader(file))) {
             while ((dataRow = TSVFile.readLine()) != null) {
@@ -305,11 +379,10 @@ public class RulesStorageManager implements Closeable {
                     Log.w(TAG, "Skipping malformed rule line for " + packageName + ": " + dataRow, e);
                     continue;
                 }
-                synchronized (mEntries) {
-                    mEntries.add(entry);
-                }
+                entries.add(entry);
             }
         }
+        return entries;
     }
 
     @WorkerThread
@@ -337,7 +410,12 @@ public class RulesStorageManager implements Closeable {
     protected void saveEntries(Path tsvRulesFile, boolean isExternal) throws IOException, RemoteException {
         synchronized (mEntries) {
             if (mEntries.isEmpty()) {
-                tsvRulesFile.delete();
+                ExtendedFile localFile = tsvRulesFile.getFile();
+                if (localFile != null) {
+                    new AtomicExtendedFile(localFile).delete();
+                } else {
+                    tsvRulesFile.delete();
+                }
                 return;
             }
             // Serialize fully into memory BEFORE touching the on-disk file: openOutputStream()
@@ -346,8 +424,23 @@ public class RulesStorageManager implements Closeable {
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
             ComponentUtils.storeRules(buffer, mEntries, isExternal);
             byte[] data = buffer.toByteArray();
-            try (OutputStream TSVFile = tsvRulesFile.openOutputStream()) {
-                TSVFile.write(data);
+            ExtendedFile localFile = tsvRulesFile.getFile();
+            if (localFile != null) {
+                AtomicExtendedFile atomicFile = new AtomicExtendedFile(localFile);
+                FileOutputStream outputStream = null;
+                try {
+                    outputStream = atomicFile.startWrite();
+                    outputStream.write(data);
+                    atomicFile.finishWrite(outputStream);
+                    outputStream = null;
+                } catch (IOException e) {
+                    atomicFile.failWrite(outputStream);
+                    throw e;
+                }
+            } else {
+                try (OutputStream TSVFile = tsvRulesFile.openOutputStream()) {
+                    TSVFile.write(data);
+                }
             }
         }
     }
