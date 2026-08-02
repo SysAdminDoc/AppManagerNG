@@ -1,0 +1,6 @@
+Reliability and release-quality hardening.
+
+- Rules writes are serialized and atomically persisted.
+- APK bundle identity is validated before installation.
+- Finder presets and routine filter scoping are available.
+- Translation coverage is ratcheted locally and recorded in the release receipt.

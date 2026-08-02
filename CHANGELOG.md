@@ -3,23 +3,27 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## v0.6.9 — 2026-08-02
+## v0.6.10 — 2026-08-02
 
 ### Fixed
-- Replaced translation coverage warnings with a host-only locale ratchet that excludes resource
-  qualifiers, blocks stale keys and new coverage regressions, and records coverage counts in
-  release-gate receipts.
+- Serialized rules read-modify-write transactions by package and user, refreshed long-lived
+  read-only component views before mutation, and switched local TSV persistence to atomic replace
+  writes so concurrent rule changes cannot truncate or silently overwrite each other.
+- APK bundle preflight now rejects embedded APKs whose package or version identity differs from
+  the base, preserves DRM-free APKM provenance separately from encrypted APKM, and cleans up
+  invalid bundle caches before installation selection.
 - Finder now exposes saved filter presets from the toolbar, including save/load, rename, and
   confirmed deletion with the store's normalized-name and corruption-safe behavior.
 - Profile routines can now carry an optional Finder filter through trigger storage and queued
   execution, narrow both app-profile types to matching package/user targets, and record filtered
   no-op and failure outcomes without changing legacy trigger JSON behavior.
-- APK bundle preflight now rejects embedded APKs whose package or version identity differs from
-  the base, preserves DRM-free APKM provenance separately from encrypted APKM, and cleans up
-  invalid bundle caches before installation selection.
-- Serialized rules read-modify-write transactions by package and user, refreshed long-lived
-  read-only component views before mutation, and switched local TSV persistence to atomic replace
-  writes so concurrent rule changes cannot truncate or silently overwrite each other.
+- Replaced translation coverage warnings with a host-only locale ratchet that excludes resource
+  qualifiers, blocks stale keys and new coverage regressions, and records coverage counts in
+  release-gate receipts.
+
+## v0.6.9 — 2026-08-02
+
+### Fixed
 - Promoted `NewApi`, `WrongThreadInterprocedural`, and
   `SpecifyForegroundServiceType` to blocking lint checks. Added explicit API guards
   and thread-boundary annotations for the remaining compatibility paths, and removed
