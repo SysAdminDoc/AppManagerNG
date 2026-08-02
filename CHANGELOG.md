@@ -6,6 +6,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## v0.6.9 — 2026-08-02
 
 ### Fixed
+- APK bundle preflight now rejects embedded APKs whose package or version identity differs from
+  the base, preserves DRM-free APKM provenance separately from encrypted APKM, and cleans up
+  invalid bundle caches before installation selection.
 - Serialized rules read-modify-write transactions by package and user, refreshed long-lived
   read-only component views before mutation, and switched local TSV persistence to atomic replace
   writes so concurrent rule changes cannot truncate or silently overwrite each other.

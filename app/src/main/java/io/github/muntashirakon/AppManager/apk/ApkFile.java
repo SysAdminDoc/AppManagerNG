@@ -91,6 +91,8 @@ public final class ApkFile implements AutoCloseable {
     private static final String ATTR_CONFIG_FOR_SPLIT = "configForSplit";
     private static final String ATTR_SPLIT = "split";
     private static final String ATTR_PACKAGE = "package";
+    private static final String ATTR_VERSION_CODE = "versionCode";
+    private static final String ATTR_VERSION_CODE_MAJOR = "versionCodeMajor";
     private static final String CONFIG_PREFIX = "config.";
 
     private static final String UN_APKM_PKG = "io.github.muntashirakon.unapkm";
@@ -174,6 +176,14 @@ public final class ApkFile implements AutoCloseable {
      */
     public static final int APK_SPLIT = 6;
 
+    /** Stable provenance labels for the container that supplied an APK set. */
+    public static final String CONTAINER_APK = "apk";
+    public static final String CONTAINER_APKS = "apks";
+    public static final String CONTAINER_APKM_ENCRYPTED = "apkm-encrypted";
+    public static final String CONTAINER_APKM_DRM_FREE = "apkm-drm-free";
+    public static final String CONTAINER_XAPK = "xapk";
+    public static final String CONTAINER_INSTALLED_APK_SET = "installed-apk-set";
+
     public static final List<String> SUPPORTED_EXTENSIONS = Collections.unmodifiableList(
             Arrays.asList("apk", "apkm", "apks", "xapk"));
     public static final List<String> SUPPORTED_MIMES = Collections.unmodifiableList(
@@ -190,6 +200,8 @@ public final class ApkFile implements AutoCloseable {
     private ApksMetadata mApksMetadata;
     @NonNull
     private final String mPackageName;
+    @NonNull
+    private final String mContainerType;
     @NonNull
     private final List<ZipEntry> mObbFiles = new ArrayList<>();
     private final FileCache mFileCache = new FileCache();
@@ -231,17 +243,20 @@ public final class ApkFile implements AutoCloseable {
                     break;
             }
         }
+        boolean drmFreeApkm = false;
         if (extension.equals("apkm")) {
             try {
                 if (FileUtils.isZip(apkSource)) {
-                    // DRM-free APKM file, mark it as APKS
-                    // FIXME(#227): Give it a special name and verify integrity
+                    // DRM-free APKM is a ZIP bundle, but retain its provenance instead of silently
+                    // presenting it as a normal APKS container.
+                    drmFreeApkm = true;
                     extension = "apks";
                 }
             } catch (IOException | SecurityException e) {
                 throw new ApkFileException(e);
             }
         }
+        mContainerType = getContainerTypeForExtension(extension, drmFreeApkm);
         // Cache the file or use file descriptor for non-APKM files
         if (extension.equals("apkm")) {
             // Convert to APKS
@@ -288,10 +303,8 @@ public final class ApkFile implements AutoCloseable {
             // Get manifest attributes
             ByteBuffer manifest = getManifestFromApk(mCacheFilePath);
             HashMap<String, String> manifestAttrs = getManifestAttributes(manifest);
-            if (!manifestAttrs.containsKey(ATTR_PACKAGE)) {
-                throw new ApkFileException("Manifest doesn't contain any package name.");
-            }
-            packageName = manifestAttrs.get(ATTR_PACKAGE);
+            packageName = getRequiredPackageName(manifestAttrs, "base.apk");
+            getVersionIdentity(manifestAttrs, "base.apk");
             mBaseEntry = new Entry(mCacheFilePath, manifest, manifestAttrs);
             mEntries.add(mBaseEntry);
         } else {
@@ -306,6 +319,7 @@ public final class ApkFile implements AutoCloseable {
             try {
                 Enumeration<? extends ZipEntry> zipEntries = mZipFile.entries();
                 Set<String> splitNames = new HashSet<>();
+                List<BundleManifest> bundleManifests = new ArrayList<>();
                 int entryCount = 0;
                 while (zipEntries.hasMoreElements()) {
                     assertReasonableBundleEntryCount(++entryCount);
@@ -317,6 +331,10 @@ public final class ApkFile implements AutoCloseable {
                             // Get manifest attributes
                             ByteBuffer manifest = getManifestFromApk(zipInputStream);
                             HashMap<String, String> manifestAttrs = getManifestAttributes(manifest);
+                            String apkPackageName = getRequiredPackageName(manifestAttrs, fileName);
+                            String versionIdentity = getVersionIdentity(manifestAttrs, fileName);
+                            bundleManifests.add(new BundleManifest(fileName, apkPackageName, versionIdentity,
+                                    !manifestAttrs.containsKey(ATTR_SPLIT)));
                             if (manifestAttrs.containsKey("split")) {
                                 recordSplitName(manifestAttrs, splitNames, fileName);
                                 Entry entry = new Entry(fileName, zipEntry, APK_SPLIT, manifest, manifestAttrs);
@@ -327,9 +345,7 @@ public final class ApkFile implements AutoCloseable {
                                 }
                                 mBaseEntry = new Entry(fileName, zipEntry, APK_BASE, manifest, manifestAttrs);
                                 mEntries.add(mBaseEntry);
-                                if (manifestAttrs.containsKey(ATTR_PACKAGE)) {
-                                    packageName = manifestAttrs.get(ATTR_PACKAGE);
-                                } else throw new ApkFileException("Package name not found.");
+                                packageName = apkPackageName;
                             }
                         } catch (IOException e) {
                             throw new ApkFileException(e);
@@ -355,6 +371,7 @@ public final class ApkFile implements AutoCloseable {
                     }
                 }
                 if (mBaseEntry == null) throw new ApkFileException("No base apk found.");
+                validateBundleManifests(bundleManifests);
                 // Sort the entries based on type and rank
                 Collections.sort(mEntries, (o1, o2) -> {
                     Integer int1 = o1.type;
@@ -368,11 +385,116 @@ public final class ApkFile implements AutoCloseable {
             } catch (Throwable th) {
                 IoUtils.closeQuietly(mZipFile);
                 IoUtils.closeQuietly(mFd);
+                IoUtils.closeQuietly(mFileCache);
                 throw th;
             }
         }
         if (packageName == null) throw new ApkFileException("Package name not found.");
         mPackageName = packageName;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String getContainerTypeForExtension(@NonNull String extension, boolean drmFreeApkm) {
+        if (drmFreeApkm) return CONTAINER_APKM_DRM_FREE;
+        if ("apkm".equals(extension)) {
+            return CONTAINER_APKM_ENCRYPTED;
+        }
+        if ("apks".equals(extension)) return CONTAINER_APKS;
+        if ("xapk".equals(extension)) return CONTAINER_XAPK;
+        return CONTAINER_APK;
+    }
+
+    @NonNull
+    private static String getRequiredPackageName(@NonNull HashMap<String, String> manifestAttrs,
+                                                 @NonNull String fileName) throws ApkFileException {
+        String packageName = manifestAttrs.get(ATTR_PACKAGE);
+        if (packageName == null || packageName.isEmpty()) {
+            throw new ApkFileException("Package name missing from " + fileName + ".");
+        }
+        return packageName;
+    }
+
+    @NonNull
+    @VisibleForTesting
+    static String getVersionIdentity(@NonNull HashMap<String, String> manifestAttrs,
+                                     @NonNull String fileName) throws ApkFileException {
+        String versionCode = getVersionAttribute(manifestAttrs, ATTR_VERSION_CODE);
+        if (versionCode == null || versionCode.isEmpty()) {
+            throw new ApkFileException("Version code missing from " + fileName + ".");
+        }
+        String versionCodeMajor = getVersionAttribute(manifestAttrs, ATTR_VERSION_CODE_MAJOR);
+        if (versionCodeMajor == null || versionCodeMajor.isEmpty()) versionCodeMajor = "0";
+        try {
+            long major = Long.parseLong(versionCodeMajor);
+            long code = Long.parseLong(versionCode);
+            if (major < 0 || code < 0) throw new NumberFormatException("negative version code");
+            return major + ":" + code;
+        } catch (NumberFormatException e) {
+            throw new ApkFileException("Invalid version code in " + fileName + ".", e);
+        }
+    }
+
+    @Nullable
+    private static String getVersionAttribute(@NonNull HashMap<String, String> manifestAttrs,
+                                              @NonNull String name) {
+        String value = manifestAttrs.get(name);
+        if (value == null) value = manifestAttrs.get("android:" + name);
+        return value;
+    }
+
+    private static void validateBundleManifests(@NonNull List<BundleManifest> bundleManifests)
+            throws ApkFileException {
+        BundleManifest base = null;
+        for (BundleManifest manifest : bundleManifests) {
+            if (manifest.base) {
+                if (base != null) throw new ApkFileException("Duplicate base apk found.");
+                base = manifest;
+            }
+        }
+        if (base == null) throw new ApkFileException("No base apk found.");
+        for (BundleManifest manifest : bundleManifests) {
+            if (!base.packageName.equals(manifest.packageName)) {
+                throw new ApkFileException("Package identity mismatch in " + manifest.fileName + ".");
+            }
+            if (!base.versionIdentity.equals(manifest.versionIdentity)) {
+                throw new ApkFileException("Version identity mismatch in " + manifest.fileName + ".");
+            }
+        }
+    }
+
+    @VisibleForTesting
+    static void validateManifestIdentity(@NonNull HashMap<String, String> baseManifestAttrs,
+                                         @NonNull HashMap<String, String> candidateManifestAttrs,
+                                         @NonNull String fileName) throws ApkFileException {
+        String basePackage = getRequiredPackageName(baseManifestAttrs, "base.apk");
+        String candidatePackage = getRequiredPackageName(candidateManifestAttrs, fileName);
+        if (!basePackage.equals(candidatePackage)) {
+            throw new ApkFileException("Package identity mismatch in " + fileName + ".");
+        }
+        String baseVersion = getVersionIdentity(baseManifestAttrs, "base.apk");
+        String candidateVersion = getVersionIdentity(candidateManifestAttrs, fileName);
+        if (!baseVersion.equals(candidateVersion)) {
+            throw new ApkFileException("Version identity mismatch in " + fileName + ".");
+        }
+    }
+
+    private static final class BundleManifest {
+        @NonNull
+        final String fileName;
+        @NonNull
+        final String packageName;
+        @NonNull
+        final String versionIdentity;
+        final boolean base;
+
+        private BundleManifest(@NonNull String fileName, @NonNull String packageName,
+                               @NonNull String versionIdentity, boolean base) {
+            this.fileName = fileName;
+            this.packageName = packageName;
+            this.versionIdentity = versionIdentity;
+            this.base = base;
+        }
     }
 
     @VisibleForTesting
@@ -447,6 +569,7 @@ public final class ApkFile implements AutoCloseable {
     private ApkFile(@NonNull ApplicationInfo info, int sparseArrayKey) throws ApkFileException {
         mSparseArrayKey = sparseArrayKey;
         mPackageName = info.packageName;
+        mContainerType = CONTAINER_INSTALLED_APK_SET;
         mCacheFilePath = new File(info.publicSourceDir);
         File sourceDir = mCacheFilePath.getParentFile();
         if (sourceDir == null || "/data/app".equals(sourceDir.getAbsolutePath())) {
@@ -532,6 +655,14 @@ public final class ApkFile implements AutoCloseable {
     @NonNull
     public String getPackageName() {
         return mPackageName;
+    }
+
+    /**
+     * Return the stable provenance label for the input container.
+     */
+    @NonNull
+    public String getContainerType() {
+        return mContainerType;
     }
 
     public boolean isSplit() {
