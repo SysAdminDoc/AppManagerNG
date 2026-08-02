@@ -1309,16 +1309,6 @@
             column="33"/>
     </issue>
 
-    <issue
-        id="NewApi"
-        message="Call requires API level 26 (current min is 21): `android.content.Intent#removeFlags`"
-        errorLine1="                        intent.removeFlags(Intent.FLAG_ACTIVITY_NEW_TASK);"
-        errorLine2="                               ~~~~~~~~~~~">
-        <location
-            file="src/main/java/io/github/muntashirakon/AppManager/intercept/ActivityInterceptor.java"
-            line="1092"
-            column="32"/>
-    </issue>
 
     <issue
         id="NewApi"

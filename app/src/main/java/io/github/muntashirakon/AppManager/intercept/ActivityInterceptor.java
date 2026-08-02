@@ -1089,7 +1089,7 @@ public class ActivityInterceptor extends BaseActivity {
                         // it prevents result delivery, which breaks ACTION_OPEN_DOCUMENT and
                         // any other intent that expects a result (Issue #1767). Strip it so the
                         // launched activity stays in our task and the result is forwarded.
-                        intent.removeFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        IntentCompat.removeFlags(intent, Intent.FLAG_ACTIVITY_NEW_TASK);
                         mIntentLauncher.launch(intent);
                     } catch (SecurityException e) {
                         handlePrivilegedLaunchResult(ActivityManagerCompat.startActivity(intent, mUserHandle),
