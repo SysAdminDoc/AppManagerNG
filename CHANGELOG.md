@@ -28,6 +28,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Completed accessibility click handling for the usage chart and bottom-sheet surface;
   the chart now completes clicks through `performClick()`, and the sheet uses native
   clickable touch dispatch instead of a raw touch listener.
+- Corrected the local `CLAUDE.md` branding note to distinguish the one intentional
+  upstream-compatibility label from non-rendered `xliff` translator examples.
 - Updated filter-expression highlighting to use the themed primary and
   informational colors, and restricted boolean highlighting to whole words so
   package names such as `com.truecaller` remain unstyled.
