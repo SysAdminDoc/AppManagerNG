@@ -4,8 +4,10 @@ package io.github.muntashirakon.AppManager.scanner;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import android.net.Uri;
 import android.util.Pair;
 
 import org.json.JSONArray;
@@ -13,12 +15,51 @@ import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicReference;
+
+import io.github.muntashirakon.AppManager.self.filecache.FileCache;
+import io.github.muntashirakon.io.Path;
 
 @RunWith(RobolectricTestRunner.class)
 public class ScannerViewModelTest {
+    @Test
+    public void cacheFailurePostsToastWithoutThrowingOnWorkerThread() throws Exception {
+        FailingFileCache fileCache = new FailingFileCache();
+        ScannerViewModel viewModel = new ScannerViewModel(RuntimeEnvironment.getApplication(), fileCache);
+        viewModel.setApkUri(Uri.parse("content://example.invalid/missing.apk"));
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        Thread worker = new Thread(() -> {
+            try {
+                viewModel.cacheFileIfRequired();
+            } catch (Throwable throwable) {
+                failure.set(throwable);
+            }
+        });
+
+        worker.start();
+        worker.join();
+
+        assertTrue(fileCache.called);
+        assertNull("cache failure must not escape the worker task", failure.get());
+        viewModel.onCleared();
+    }
+
+    private static final class FailingFileCache extends FileCache {
+        private boolean called;
+
+        @Override
+        public File getCachedFile(Path source) throws IOException {
+            called = true;
+            throw new IOException("test cache failure");
+        }
+    }
+
     @Test
     public void sanitizeReportFilePartKeepsPortableCharacters() {
         assertEquals("com.example_app_1.apk",

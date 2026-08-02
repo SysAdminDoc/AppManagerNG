@@ -56,6 +56,7 @@ import io.github.muntashirakon.AppManager.utils.ExUtils;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
 import io.github.muntashirakon.AppManager.utils.MultithreadedExecutor;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.algo.AhoCorasick;
 import io.github.muntashirakon.io.IoUtils;
@@ -86,7 +87,7 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
 
     private CountDownLatch mWaitForFile;
     private CountDownLatch mWaitForPackageInfo;
-    private final FileCache mFileCache = new FileCache();
+    private final FileCache mFileCache;
     private final MultithreadedExecutor mExecutor = MultithreadedExecutor.getNewInstance();
     private final MutableLiveData<Pair<String, String>[]> mApkChecksumsLiveData = new MutableLiveData<>();
     private final MutableLiveData<ApkVerifier.Result> mApkVerifierResultLiveData = new MutableLiveData<>();
@@ -102,7 +103,13 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
     private final MutableLiveData<String> mPithusReportLiveData = new MutableLiveData<>();
 
     public ScannerViewModel(@NonNull Application application) {
+        this(application, new FileCache());
+    }
+
+    @VisibleForTesting
+    ScannerViewModel(@NonNull Application application, @NonNull FileCache fileCache) {
         super(application);
+        mFileCache = fileCache;
         mVt = VirusTotal.getInstance();
     }
 
@@ -434,8 +441,9 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
         return fsRoot.findFile(className.replace('.', '/') + ".smali").getUri();
     }
 
+    @VisibleForTesting
     @WorkerThread
-    private void cacheFileIfRequired() {
+    void cacheFileIfRequired() {
         // Test if this path is readable
         if (mApkFile == null || !FileUtils.canReadUnprivileged(mApkFile)) {
             // Not readable, cache the file
@@ -445,7 +453,8 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
                 Log.w(TAG, e);
                 // Every summary loader dereferences mApkFile after waitForFile();
                 // surface the failure instead of silently showing a blank scan.
-                UIUtils.displayLongToast(R.string.failed_to_fetch_package_info);
+                ThreadUtils.postOnMainThread(() ->
+                        UIUtils.displayLongToast(R.string.failed_to_fetch_package_info));
             }
         }
     }
