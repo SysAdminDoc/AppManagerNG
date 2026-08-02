@@ -31,6 +31,17 @@ import java.util.List;
 @RunWith(RobolectricTestRunner.class)
 public class IntentCompatTest {
     @Test
+    public void removeFlags_clearsOnlyRequestedFlags() {
+        Intent intent = new Intent().addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+        IntentCompat.removeFlags(intent, Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        assertEquals(Intent.FLAG_ACTIVITY_CLEAR_TOP,
+                intent.getFlags() & (Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
+    }
+
+    @Test
     public void unflattenFromString_roundTripsNullExtra() {
         Intent input = new Intent(Intent.ACTION_VIEW);
         input.putExtra("nullable", (String) null);

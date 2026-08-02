@@ -148,27 +148,6 @@ repeat the work:
 ### P1
 
 
-- [ ] P1 — Unguarded API-26 `Intent#removeFlags` crashes the Activity Interceptor on API 21-25
-  Category: correctness
-  Where: `app/src/main/java/io/github/muntashirakon/AppManager/intercept/ActivityInterceptor.java:1092`
-  Problem: `intent.removeFlags(Intent.FLAG_ACTIVITY_NEW_TASK)` is called with no `SDK_INT` guard.
-  `Intent#removeFlags` is API 26 and `min_sdk` is 21, so API 21-25 devices throw `NoSuchMethodError`
-  when launching a fixed component from the Activity Interceptor. The enclosing
-  `catch (SecurityException e)` cannot contain a `NoSuchMethodError`. The call was added deliberately
-  to fix result delivery for `ACTION_OPEN_DOCUMENT` (upstream issue #1767), so its behaviour must be
-  preserved rather than simply deleted.
-  Evidence: `sed -n '1082,1095p'` on that file shows
-  `try { intent.removeFlags(...); mIntentLauncher.launch(intent); } catch (SecurityException e)` with
-  no version check anywhere in the block; lint reports `NewApi` "Call requires API level 26 (current
-  min is 21): `android.content.Intent#removeFlags`" at line 1092, suppressed in `app/lint-baseline.xml`.
-  Fix: use the version-independent equivalent, which is exactly what `removeFlags` does internally:
-  `intent.setFlags(intent.getFlags() & ~Intent.FLAG_ACTIVITY_NEW_TASK)`. No `SDK_INT` branch is needed.
-  Acceptance: the `NewApi` baseline entry for this line is deleted and lint stays clean; launching a
-  fixed component that expects a result still receives it (the issue #1767 path), checked on API 21-22
-  and on a current API level.
-  Confidence: Verified
-  Effort: S
-
 - [ ] P1 — Scanner shows a toast from a worker thread, crashing on the cache-failure path
   Category: correctness
   Where: `app/src/main/java/io/github/muntashirakon/AppManager/scanner/ScannerViewModel.java:437-451`
