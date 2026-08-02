@@ -16,6 +16,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   receipt; the findings it reports are being triaged separately.
 
 ### Fixed
+- Promoted `NewApi`, `WrongThreadInterprocedural`, and
+  `SpecifyForegroundServiceType` to blocking lint checks. Added explicit API guards
+  and thread-boundary annotations for the remaining compatibility paths, and removed
+  all entries for those checks from the app baseline while retaining the high-volume
+  categories as documented debt.
+- Marked `AdvancedSearchView`'s pure matchers as any-thread operations and removed
+  their stale worker-to-UI lint findings.
 - Updated filter-expression highlighting to use the themed primary and
   informational colors, and restricted boolean highlighting to whole words so
   package names such as `com.truecaller` remain unstyled.

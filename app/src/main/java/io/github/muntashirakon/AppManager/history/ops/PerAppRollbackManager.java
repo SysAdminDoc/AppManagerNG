@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.history.ops;
 
+import android.annotation.SuppressLint;
 import android.app.AppOpsManager;
 import android.content.Context;
 
@@ -267,6 +268,8 @@ public final class PerAppRollbackManager {
     }
 
     @NonNull
+    // AppOpsManagerCompat exposes zero on releases where each operation is absent.
+    @SuppressLint("NewApi")
     private static int[] getBackgroundAppOps() {
         List<Integer> ops = new ArrayList<>(2);
         if (AppOpsManagerCompat.OP_RUN_IN_BACKGROUND != 0) {

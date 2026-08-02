@@ -116,7 +116,8 @@
         <item name="android:minWidth">0dp</item>
         <item name="android:minHeight">@dimen/premium_button_min_height</item>
         <item name="android:gravity">center</item>
-        <item name="android:paddingHorizontal">@dimen/premium_space_12</item>
+        <item name="android:paddingStart">@dimen/premium_space_12</item>
+        <item name="android:paddingEnd">@dimen/premium_space_12</item>
         <item name="android:textAppearance">@style/TextAppearance.AppTheme.V2.LabelMedium</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="iconGravity">textStart</item>

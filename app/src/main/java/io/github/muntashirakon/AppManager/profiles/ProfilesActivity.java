@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.profiles;
 
+import android.os.Build;
 import static io.github.muntashirakon.AppManager.profiles.ProfileApplierActivity.ST_ADVANCED;
 import static io.github.muntashirakon.AppManager.profiles.ProfileApplierActivity.ST_SIMPLE;
 
@@ -582,13 +583,17 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
                 } else if (id == R.id.action_quick_freeze_tile) {
                     if (QuickFreezeTileController.isSelectedProfile(profile.profileId)) {
                         QuickFreezeTileController.clearSelectedProfile();
-                        QuickFreezeTileService.requestTileStateUpdate(mActivity);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            QuickFreezeTileService.requestTileStateUpdate(mActivity);
+                        }
                         UIUtils.displayShortToast(R.string.quick_freeze_tile_profile_cleared);
                     } else if (!QuickFreezeTileController.isProfileEligible(profile)) {
                         UIUtils.displayShortToast(R.string.quick_freeze_tile_requires_freeze);
                     } else {
                         QuickFreezeTileController.setSelectedProfile(profile.profileId);
-                        QuickFreezeTileService.requestAddTile(mActivity);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            QuickFreezeTileService.requestAddTile(mActivity);
+                        }
                         UIUtils.displayShortToast(R.string.quick_freeze_tile_profile_set, profile.name);
                     }
                 } else if (id == R.id.action_shortcut) {

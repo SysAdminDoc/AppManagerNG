@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.runningapps;
 
+import android.annotation.SuppressLint;
 import android.app.AppOpsManager;
 import android.os.Build;
 
@@ -18,6 +19,9 @@ final class BackgroundRunAppOpPlan {
     }
 
     @NonNull
+    // The compatibility holder initializes these fields to zero below their API levels;
+    // sdkInt is the caller's explicit API matrix and is covered by the plan tests.
+    @SuppressLint("NewApi")
     static int[] getAppOpsForSdk(int sdkInt) {
         if (sdkInt < Build.VERSION_CODES.N) {
             return new int[0];

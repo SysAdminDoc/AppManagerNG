@@ -13,6 +13,7 @@ import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.VisibleForTesting;
 import androidx.core.app.PendingIntentCompat;
 import androidx.core.content.ContextCompat;
@@ -27,6 +28,7 @@ import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 
+@RequiresApi(Build.VERSION_CODES.N)
 public class ForceStopTileService extends TileService {
     private static final String TAG = ForceStopTileService.class.getSimpleName();
 
@@ -42,7 +44,7 @@ public class ForceStopTileService extends TileService {
     }
 
     public static void requestAddTile(@NonNull Context context) {
-        if (!supportsRequestAddTile(Build.VERSION.SDK_INT)) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             requestTileStateUpdate(context);
             return;
         }

@@ -21,7 +21,6 @@ import java.util.Locale;
 
 import io.github.muntashirakon.AppManager.fm.FmProvider;
 import io.github.muntashirakon.AppManager.self.filecache.FileCache;
-import io.github.muntashirakon.io.Paths;
 import io.github.muntashirakon.AppManager.logs.Log;
 
 public class ClipboardUtils {
@@ -44,7 +43,7 @@ public class ClipboardUtils {
             try {
                 File cacheFile = FileCache.getGlobalFileCache().getCachedFile(textBytes, "txt");
                 // Use FileProvider to get content Uri for the file
-                Uri contentUri = FmProvider.getContentUri(Paths.get(cacheFile));
+                Uri contentUri = FmProvider.getContentUri(cacheFile);
                 // Grant temporary read permission
                 clip = ClipData.newUri(context.getContentResolver(), label, contentUri);
             } catch (IOException e) {

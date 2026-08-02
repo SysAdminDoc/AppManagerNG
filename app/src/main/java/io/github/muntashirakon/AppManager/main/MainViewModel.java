@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.main;
 
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.Application;
 import android.content.Intent;
@@ -729,6 +730,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         }
     }
 
+    @SuppressLint("WrongThreadInterprocedural") // AdvancedSearchView's matcher is pure and does not touch the widget.
     @WorkerThread
     private void filterItemsByQuery(@NonNull List<ApplicationItem> applicationItems) {
         List<ApplicationItem> filteredApplicationItems;

@@ -980,7 +980,8 @@ class RestoreOp implements Closeable {
                         break;
                     }
                     case NOTIFICATION:
-                        if (capabilities.canRestoreNotificationListeners) {
+                        if (capabilities.canRestoreNotificationListeners
+                                && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
                             notificationManager.setNotificationListenerAccessGrantedForUser(
                                     new ComponentName(mPackageName, entry.name), mUserId, true);
                             applied = true;
@@ -1005,7 +1006,7 @@ class RestoreOp implements Closeable {
                         }
                         break;
                     case SSAID:
-                        if (capabilities.canRestoreSsaid) {
+                        if (capabilities.canRestoreSsaid && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             new SsaidSettings(mUserId).setSsaid(mPackageName, mUid,
                                     ((SsaidRule) entry).getSsaid());
                             mRequiresRestart = true;
