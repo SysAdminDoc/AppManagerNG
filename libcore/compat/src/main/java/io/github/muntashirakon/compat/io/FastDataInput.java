@@ -43,6 +43,13 @@ public class FastDataInput implements DataInput, Closeable {
     private int mBufferLim;
 
     /**
+     * Set once {@link #release()} has handed this instance back to {@link #sInCache}. It makes a
+     * second release a no-op — otherwise the same instance could be handed to two unrelated, and
+     * differently trusted, parses — and turns a use-after-release into a checked failure.
+     */
+    private boolean mReleased;
+
+    /**
      * Values that have been "interned" by {@link #readInternedUTF()}.
      */
     private int mStringRefCount = 0;
@@ -108,10 +115,19 @@ public class FastDataInput implements DataInput, Closeable {
      * interact with the object after releasing it.
      */
     public void release() {
+        if (mReleased) {
+            // Already recycled. Returning it to the cache again could hand the same instance
+            // to two callers at once.
+            return;
+        }
+        mReleased = true;
         mIn = null;
         mBufferPos = 0;
         mBufferLim = 0;
         mStringRefCount = 0;
+        // Drop the interned strings too: a stale table must never reach the next parse, which
+        // may be reading input of an entirely different provenance.
+        Arrays.fill(mStringRefs, null);
 
         if (mBufferCap == DEFAULT_BUFFER_SIZE && mUse4ByteSequence) {
             // Try to return to the cache.
@@ -127,9 +143,13 @@ public class FastDataInput implements DataInput, Closeable {
         mBufferPos = 0;
         mBufferLim = 0;
         mStringRefCount = 0;
+        mReleased = false;
     }
 
     private void fill(int need) throws IOException {
+        if (mIn == null) {
+            throw new IOException("Read from a released FastDataInput");
+        }
         final int remain = mBufferLim - mBufferPos;
         System.arraycopy(mBuffer, mBufferPos, mBuffer, 0, remain);
         mBufferPos = 0;
@@ -149,7 +169,9 @@ public class FastDataInput implements DataInput, Closeable {
 
     @Override
     public void close() throws IOException {
-        mIn.close();
+        if (mIn != null) {
+            mIn.close();
+        }
         release();
     }
 
@@ -264,6 +286,14 @@ public class FastDataInput implements DataInput, Closeable {
 
             return s;
         } else {
+            // The reference arrives straight off the wire, so it may point past
+            // anything this stream has actually defined. Refuse it as a checked
+            // failure rather than letting an ArrayIndexOutOfBoundsException
+            // escape past callers that only contain IOException.
+            if (ref >= mStringRefCount) {
+                throw new IOException("Undefined interned string reference " + ref
+                        + ", only " + mStringRefCount + " defined");
+            }
             return mStringRefs[ref];
         }
     }
