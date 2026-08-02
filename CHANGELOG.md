@@ -16,6 +16,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   receipt; the findings it reports are being triaged separately.
 
 ### Fixed
+- Replaced the seven unguarded App Details tooltip calls with
+  API-safe TooltipCompat calls, preserving tooltips while keeping API 21-25
+  devices free of NoSuchMethodError crashes.
 - Restored the Kotlin common-component locks required by the Floss and Full
   androidTest lint configurations, so `:app:lint` no longer aborts while
   generating its lint model.
