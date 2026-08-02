@@ -75,6 +75,27 @@ class DependencyCveGateTest(unittest.TestCase):
                 gate.run_gate(["gradlew"], self.root, self.out_dir)
 
 
+    def test_a_dependency_verification_abort_blocks_the_release_without_a_receipt(self) -> None:
+        """Gradle can fail before the scanner ever starts.
+
+        A configuration whose artifacts have no entry in verification-metadata.xml aborts
+        resolution, so no report is written and nothing is scanned. That must read as a gate
+        failure with no receipt at all -- a receipt claiming ``passed`` on an unscanned build,
+        or a silent skip, would let a release ship with no CVE evidence behind it.
+        """
+
+        def scanner(command, **kwargs):
+            # Resolution aborted: the report directory stays empty.
+            self.report_dir.mkdir(parents=True, exist_ok=True)
+            return subprocess.CompletedProcess(command, 1)
+
+        with mock.patch.object(gate.subprocess, "run", side_effect=scanner):
+            with self.assertRaisesRegex(gate.GateError, "produced no report") as raised:
+                gate.run_gate(["gradlew"], self.root, self.out_dir)
+        self.assertIn("scanner exit code 1", str(raised.exception))
+        self.assertFalse((self.out_dir / gate.RECEIPT_NAME).exists(),
+                         "a receipt must not exist for a build that was never scanned")
+
     def test_the_posix_wrapper_is_swapped_for_the_batch_one_on_windows(self) -> None:
         (self.root / "gradlew.bat").write_text("@echo off", encoding="utf-8")
         with mock.patch.object(gate.os, "name", "nt"):
