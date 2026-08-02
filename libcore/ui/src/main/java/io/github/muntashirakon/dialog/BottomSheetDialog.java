@@ -19,7 +19,6 @@ import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatDialog;
 import android.util.TypedValue;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -350,14 +349,9 @@ public class BottomSheetDialog extends AppCompatDialog {
                         return super.performAccessibilityAction(host, action, args);
                     }
                 });
-        bottomSheet.setOnTouchListener(
-                new View.OnTouchListener() {
-                    @Override
-                    public boolean onTouch(View view, MotionEvent event) {
-                        // Consume the event and prevent it from falling through
-                        return true;
-                    }
-                });
+        // Keep the sheet itself as the touch target so events cannot fall through to the
+        // coordinator. FrameLayout's native clickable handling also invokes performClick().
+        bottomSheet.setClickable(true);
         return container;
     }
 
