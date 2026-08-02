@@ -47,6 +47,45 @@ public class ApkFileTest {
     }
 
     @Test
+    public void manifestIdentityAcceptsMatchingPackageAndVersion() throws ApkFile.ApkFileException {
+        ApkFile.validateManifestIdentity(manifestAttrs("com.example.app", "42", null),
+                manifestAttrs("com.example.app", "42", "config.en"), "split_config.en.apk");
+    }
+
+    @Test
+    public void manifestIdentityRejectsForeignPackage() {
+        assertThrows(ApkFile.ApkFileException.class,
+                () -> ApkFile.validateManifestIdentity(manifestAttrs("com.example.app", "42", null),
+                        manifestAttrs("com.other.app", "42", "config.en"), "foreign.apk"));
+    }
+
+    @Test
+    public void manifestIdentityRejectsMixedVersion() {
+        assertThrows(ApkFile.ApkFileException.class,
+                () -> ApkFile.validateManifestIdentity(manifestAttrs("com.example.app", "42", null),
+                        manifestAttrs("com.example.app", "43", "config.en"), "newer.apk"));
+    }
+
+    @Test
+    public void manifestIdentityRejectsMissingVersion() {
+        HashMap<String, String> missingVersion = new HashMap<>();
+        missingVersion.put("package", "com.example.app");
+        assertThrows(ApkFile.ApkFileException.class,
+                () -> ApkFile.validateManifestIdentity(manifestAttrs("com.example.app", "42", null),
+                        missingVersion, "missing-version.apk"));
+    }
+
+    @Test
+    public void containerTypePreservesApkmProvenance() {
+        assertEquals(ApkFile.CONTAINER_APKM_ENCRYPTED,
+                ApkFile.getContainerTypeForExtension("apkm", false));
+        assertEquals(ApkFile.CONTAINER_APKM_DRM_FREE,
+                ApkFile.getContainerTypeForExtension("apks", true));
+        assertEquals(ApkFile.CONTAINER_APKS,
+                ApkFile.getContainerTypeForExtension("apks", false));
+    }
+
+    @Test
     public void readBoundedUtf8EntryReadsSmallMetadata() throws IOException {
         ZipEntry zipEntry = new ZipEntry("info.json");
         byte[] bytes = "{\"info_version\":1}".getBytes(StandardCharsets.UTF_8);
@@ -78,6 +117,15 @@ public class ApkFileTest {
     private static HashMap<String, String> manifestAttrs(String splitName) {
         HashMap<String, String> manifestAttrs = new HashMap<>();
         manifestAttrs.put("split", splitName);
+        return manifestAttrs;
+    }
+
+    private static HashMap<String, String> manifestAttrs(String packageName, String versionCode,
+                                                         String splitName) {
+        HashMap<String, String> manifestAttrs = new HashMap<>();
+        manifestAttrs.put("package", packageName);
+        manifestAttrs.put("android:versionCode", versionCode);
+        if (splitName != null) manifestAttrs.put("split", splitName);
         return manifestAttrs;
     }
 }
