@@ -179,32 +179,7 @@ a device.
   rather than loaded.
   Complexity: M
 
-- [ ] P2 — Guard `ServerRunner` argv parsing and `RootServiceMain` argv trust
-  Why: `ServerRunner` indexes `param[1]` after `s.split(":")` with no length guard, so an
-  argv element without a colon throws. `RootServiceMain` trusts `args[0]` as a
-  `ComponentName` with no allowlist and `args[1]` as the client uid, and that uid then
-  selects the user id and the package whose code is loaded. Both assume argv came from the
-  app's own launcher — worth confirming nothing else can spawn the trampoline.
-  Evidence: `server/.../ServerRunner.java:49,69-70`;
-  `server/.../RootServiceMain.java:161-162,215,217,223`.
-  Touches: `server/src/main/java/io/github/muntashirakon/AppManager/server/ServerRunner.java`,
-  `server/src/main/java/io/github/muntashirakon/AppManager/server/RootServiceMain.java`.
-  Acceptance: malformed argv produces a clean, logged startup failure instead of an unchecked
-  exception; the component name is checked against the expected package; host tests cover a
-  colon-free element, a missing argument, and an unexpected component.
-  Complexity: S
-
 ### P3
-
-- [ ] P3 — Strengthen old-server identity before `killProcess`
-  Why: `killOldServer` treats `/proc/<pid>/cmdline` name equality as a sufficient identity
-  check, i.e. assumes no unrelated process can be named `Constants.SERVER_NAME`.
-  Evidence: `server/src/main/java/io/github/muntashirakon/AppManager/server/ServerRunner.java:113`.
-  Touches: `server/src/main/java/io/github/muntashirakon/AppManager/server/ServerRunner.java`.
-  Acceptance: identity is confirmed with at least one property the name alone does not give
-  (uid ownership, or a handshake against the candidate); a host test with a same-named
-  impostor process entry asserts it is not killed.
-  Complexity: S
 
 - [ ] P3 — Re-examine privileged log redaction and log file permissions
   Why: `FLog.sanitize` redacts by regex — an `auth|token|secret|password|passwd` assignment

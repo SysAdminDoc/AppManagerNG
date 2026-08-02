@@ -16,6 +16,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   truncated to a single character.
 - Hex attribute values are rejected up front when they have an odd length or a
   non-hex character, instead of failing part-way through decoding.
+- The privileged server now refuses to start on a malformed parameter string
+  instead of failing part-way through parsing it, and the failure it logs never
+  echoes the argument — it carries the privileged-channel token. A parameter
+  value may now contain colons, which the previous parser truncated.
+- Starting a root service validates its command line — component name, client
+  uid and action — before any of it selects a user, a package, or a class to
+  load, and refuses to load code from a package that does not belong to the
+  declared uid.
+- Replacing an older privileged server now confirms the candidate process is
+  owned by the same uid before killing it. A matching process name alone is not
+  an identity: any process can name itself after the server.
 - The privileged filesystem service now refuses read and write requests whose
   length or offset it cannot honour — negative lengths, a write larger than the
   transport pipe, an offset below the "current position" sentinel, or an offset

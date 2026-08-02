@@ -23,6 +23,44 @@ public final class ConfigParams {
     public ConfigParams() {
     }
 
+    /**
+     * Parse the serialized parameter string handed to the server launcher on its command line:
+     * comma-separated {@code key:value} pairs. A value may itself contain colons.
+     *
+     * @throws IllegalArgumentException if an entry has no colon or an empty key. The launcher
+     *                                  reports this as a startup failure instead of dying on an
+     *                                  unchecked exception part-way through parsing.
+     */
+    @NonNull
+    public static ConfigParams parse(@NonNull String serializedParams) {
+        ConfigParams configParams = new ConfigParams();
+        if (serializedParams.isEmpty()) {
+            return configParams;
+        }
+        for (String entry : serializedParams.split(",", -1)) {
+            if (entry.isEmpty()) {
+                // The launcher script concatenates fragments that each begin with a comma.
+                continue;
+            }
+            int sep = entry.indexOf(':');
+            if (sep < 0) {
+                throw new IllegalArgumentException("Malformed parameter without a separator: "
+                        + redactEntry(entry));
+            }
+            if (sep == 0) {
+                throw new IllegalArgumentException("Malformed parameter with an empty key");
+            }
+            configParams.put(entry.substring(0, sep), entry.substring(sep + 1));
+        }
+        return configParams;
+    }
+
+    @NonNull
+    private static String redactEntry(@NonNull String entry) {
+        // An entry with no separator cannot be attributed to a key, so never echo its content.
+        return "<" + entry.length() + " chars>";
+    }
+
     public void put(@NonNull String key, @NonNull String value) {
         switch (key) {
             case PARAM_DEBUG:

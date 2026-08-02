@@ -15,8 +15,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 
 import io.github.muntashirakon.AppManager.server.common.ConfigParams;
-import io.github.muntashirakon.AppManager.server.common.Constants;
 import io.github.muntashirakon.AppManager.server.common.FLog;
+import io.github.muntashirakon.AppManager.server.common.ServerUtils;
 
 import static io.github.muntashirakon.AppManager.server.common.ConfigParams.PARAM_UID;
 
@@ -63,11 +63,13 @@ public final class ServerRunner {
                     .getMethod("systemMain")
                     .invoke(null);
             // Parse arguments
-            String[] split = paramsStr.split(",");
-            final ConfigParams configParams = new ConfigParams();
-            for (String s : split) {
-                String[] param = s.split(":");
-                configParams.put(param[0], param[1]);
+            final ConfigParams configParams;
+            try {
+                configParams = ConfigParams.parse(paramsStr);
+            } catch (IllegalArgumentException e) {
+                // Never echo the raw argument: it carries the privileged-channel token.
+                FLog.log("Refusing to start: " + e.getMessage());
+                return;
             }
             configParams.put(PARAM_UID, "" + Process.myUid());
             // Set server info
@@ -103,19 +105,35 @@ public final class ServerRunner {
     }
 
     /**
-     * Kill old server by process ID, process name is verified before killed.
+     * Kill old server by process ID. Both the process name and its owning uid are verified
+     * before the kill, because the name alone is chosen by whoever started the process.
      *
      * @param oldPid Process ID of the old server
      */
     private static void killOldServer(int oldPid) {
         try {
-            String processName = getProcessName(oldPid);
-            if (Constants.SERVER_NAME.equals(processName)) {
-                Process.killProcess(oldPid);
-                FLog.log("Killed old server with pid " + oldPid);
+            if (!ServerUtils.isOldServer(getProcessName(oldPid), getProcessUid(oldPid), Process.myUid())) {
+                FLog.log("Refusing to kill pid " + oldPid + ": not our server");
+                return;
             }
+            Process.killProcess(oldPid);
+            FLog.log("Killed old server with pid " + oldPid);
         } catch (RuntimeException e) {
             FLog.log(e);
+        }
+    }
+
+    /**
+     * Owner of a process, read from its {@code /proc} entry.
+     *
+     * @return The uid owning the process, or {@code -1} when it cannot be determined
+     */
+    private static int getProcessUid(int pid) {
+        try {
+            return Os.stat("/proc/" + pid).st_uid;
+        } catch (ErrnoException | RuntimeException e) {
+            FLog.log(e);
+            return -1;
         }
     }
 
