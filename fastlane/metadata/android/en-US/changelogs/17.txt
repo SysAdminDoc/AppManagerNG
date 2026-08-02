@@ -1,0 +1,5 @@
+Lint and accessibility hardening release.
+
+- API, thread, and foreground-service lint checks are now blocking.
+- RTL spacing and touch accessibility findings are fixed.
+- Advanced Search threading and local branding guidance are corrected.

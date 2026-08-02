@@ -3,17 +3,7 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## v0.6.8 — 2026-08-02
-
-### Build
-- The release CVE gate runs again. It resolves configurations no ordinary build
-  touches, and none of their POMs had a checksum in the dependency-verification
-  metadata, so Gradle aborted the scan before it started and v0.6.7 shipped with
-  no CVE evidence at all. The 178 missing checksums were added from the checksums
-  the upstream repositories publish beside each artifact — not from whatever the
-  local build cache happened to hold — and each entry records which published
-  checksum it was compared against. The scanner now completes and writes its
-  receipt; the findings it reports are being triaged separately.
+## v0.6.9 — 2026-08-02
 
 ### Fixed
 - Promoted `NewApi`, `WrongThreadInterprocedural`, and
@@ -30,6 +20,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   clickable touch dispatch instead of a raw touch listener.
 - Corrected the local `CLAUDE.md` branding note to distinguish the one intentional
   upstream-compatibility label from non-rendered `xliff` translator examples.
+
+## v0.6.8 — 2026-08-02
+
+### Build
+- The release CVE gate runs again. It resolves configurations no ordinary build
+  touches, and none of their POMs had a checksum in the dependency-verification
+  metadata, so Gradle aborted the scan before it started and v0.6.7 shipped with
+  no CVE evidence at all. The 178 missing checksums were added from the checksums
+  the upstream repositories publish beside each artifact — not from whatever the
+  local build cache happened to hold — and each entry records which published
+  checksum it was compared against. The scanner now completes and writes its
+  receipt; the findings it reports are being triaged separately.
+
+### Fixed
 - Updated filter-expression highlighting to use the themed primary and
   informational colors, and restricted boolean highlighting to whole words so
   package names such as `com.truecaller` remain unstyled.
