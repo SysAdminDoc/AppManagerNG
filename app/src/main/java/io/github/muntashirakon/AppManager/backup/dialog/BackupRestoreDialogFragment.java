@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.backup.dialog;
 
+import android.annotation.SuppressLint;
 import android.annotation.UserIdInt;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -394,6 +395,7 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
                 .show();
     }
 
+    @SuppressLint("WrongThreadInterprocedural") // Queue validation is a pure operation switch.
     @UiThread
     private void startOperation(@NonNull BackupRestoreDialogViewModel.OperationInfo operationInfo) {
         mMode = operationInfo.mode;

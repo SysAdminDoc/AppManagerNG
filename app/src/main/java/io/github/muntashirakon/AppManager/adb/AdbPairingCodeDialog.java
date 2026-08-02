@@ -12,6 +12,7 @@ import android.widget.Button;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatTextView;
 import androidx.core.content.ContextCompat;
@@ -32,6 +33,7 @@ public final class AdbPairingCodeDialog {
     }
 
     @SuppressLint("InflateParams")
+    @RequiresApi(android.os.Build.VERSION_CODES.R)
     public static void show(@NonNull FragmentActivity activity, @Nullable Runnable onDismiss) {
         View view = View.inflate(activity, R.layout.dialog_adb_pairing_code, null);
         AppCompatTextView statusView = view.findViewById(R.id.adb_pairing_status);

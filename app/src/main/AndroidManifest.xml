@@ -229,7 +229,8 @@
             android:exported="false"
             android:noHistory="true"
             android:taskAffinity=""
-            android:theme="@style/AppTheme.TransparentBackground" />
+            android:theme="@style/AppTheme.TransparentBackground"
+            tools:targetApi="30" />
         <!--
             Trampoline for static launcher shortcuts. See
             io/github/muntashirakon/AppManager/shortcut/ShortcutDispatchActivity.java for the
@@ -1670,7 +1671,8 @@
             android:exported="true"
             android:icon="@drawable/ic_snowflake"
             android:label="@string/quick_freeze_tile_label"
-            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            tools:targetApi="24">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
@@ -1684,7 +1686,8 @@
             android:exported="true"
             android:icon="@drawable/ic_stop"
             android:label="@string/force_stop_tile_label"
-            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            tools:targetApi="24">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
