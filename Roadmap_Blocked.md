@@ -165,6 +165,22 @@ ROADMAP.md once the blocker is resolved.
 
 ### P3
 
+- [ ] P3 — Complete the unaudited device, native, locale, and no-test-module pass
+  Why: the 2026-08-02 audit was static and host-only, so the remaining runtime and
+  coverage-sensitive areas must not be assumed clean.
+  Scope: device/emulator UI rendering and motion/focus/touch/contrast checks; native C/C++
+  under `app/src/main/cpp/` and the JNI boundary; non-English locale pseudolocale overflow
+  and truncation; Room schema and migration behavior; the `benchmark/` module; packages
+  `viewer/`, `types/`, `magisk/`, and `progress/`; and privileged root/ADB runtime behavior.
+  Evidence: no emulator or device was attached during the audit; the four named packages
+  have no unit-test directory.
+  Blocker: requires device/emulator access, a pseudolocale and a11y/visual test surface,
+  rooted runtime coverage, and a separate native/JNI review. It is not host-verifiable
+  offline under the invisible-testing contract.
+  Acceptance: each scoped area has either findings logged with fixes or an explicit review
+  result showing it clean, with runtime evidence preserved in the appropriate tracked report.
+  Complexity: M
+
 - [ ] P3 — Clickable main-list badges have <48dp touch targets
   Why: `tracker_indicator` and `perm_indicator` are clickable (`setClickable(true)` + click listener) but render at `premium_badge_min_height/width` = 24dp with no TouchDelegate. Two clickable badges share one `FlowLayout` parent, so a single `TouchDelegate` (one target rect per view) can't cover both.
   Evidence: MainRecyclerAdapter.java:420-422,457-459; item_main_v2.xml:115-116,136-137; dimens-v2.xml:76-77

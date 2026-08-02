@@ -151,24 +151,3 @@ repeat the work:
 ### P2
 
 ### P3
-
-- [ ] P3 — Unaudited areas needing their own pass
-  Category: docs
-  Where: repository-wide
-  Problem: the 2026-08-02 pass was static and host-only. The following were not covered and must not be
-  assumed clean: (a) any on-device or emulator run — no UI was rendered, so all visual, motion,
-  focus-order, touch-target and measured-contrast checks remain unverified by observation; (b) the
-  native C/C++ under `app/src/main/cpp/` and the JNI boundary; (c) the ~40 non-English locales beyond
-  string-level checks — no pseudolocale, overflow or truncation review; (d) Room schema and migration
-  correctness under `schema/`; (e) the `benchmark/` module; (f) the packages `viewer/`, `types/`,
-  `magisk/` and `progress/`, the only ones with no unit-test directory at all; (g) runtime behaviour of
-  the privileged root/ADB modes, which needs a rooted device.
-  Evidence: no emulator or device was attached during the audit;
-  `find app/src/test/java/io/github/muntashirakon/AppManager -maxdepth 1 -type d` lists a directory for
-  every main package except those four.
-  Fix: schedule a device-backed UX/visual pass covering light, dark and AMOLED plus RTL and a
-  pseudolocale, and a separate native/JNI review.
-  Acceptance: each listed area has either findings logged against it or an explicit note that it was
-  reviewed and found clean.
-  Confidence: Verified
-  Effort: M
