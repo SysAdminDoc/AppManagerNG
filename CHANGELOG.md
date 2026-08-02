@@ -15,6 +15,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   checksum it was compared against. The scanner now completes and writes its
   receipt; the findings it reports are being triaged separately.
 
+### Fixed
+- Restored the Kotlin common-component locks required by the Floss and Full
+  androidTest lint configurations, so `:app:lint` no longer aborts while
+  generating its lint model.
+- Declared WorkManager's `SystemForegroundService` as `dataSync` in the app
+  manifest, preventing scheduled auto-backup foreground promotion from failing
+  on Android 14 and newer.
+
 ### Security
 - Malformed Android Binary XML is now always reported as a parse error. Backup
   metadata, copies of `/data/system/*.xml` and files opened from the file manager

@@ -126,3 +126,315 @@ a device.
 
 ### P3
 
+
+## Audit Findings — 2026-08-02
+
+Source: a read-only, multi-pass audit at revision `c1e609861`. Baseline recorded before any
+inspection: `:app:testFlossDebugUnitTest` + `:libcore:compat:test` = 2491 tests, 0 failures, 1
+skipped; `py -3.12 -m unittest discover -s scripts/tests` = 47 tests, 0 failures;
+`./gradlew :app:lint` **fails** (see the first P0 below — pre-existing baseline failure). Every
+item was traced to a reachable caller and checked against existing guards, `CLAUDE.md` and the
+last 50 commits before being logged.
+
+Investigated and deliberately **not** logged — do not re-raise these:
+`CutPasteId` in `AppDetailsComponentsFragment` (deliberate view-slot aliasing, not a paste error);
+`NewApi` on `AppLocaleOptions.stripExtensions` (guarded by an `SDK_INT < TIRAMISU` early return in
+`AppInfoFragment#showAppLocalePicker`); `NewApi` tooltips in `MultiSelectionActionsView`,
+`ModeOfOpsPreference` and `AudioPlayerDialogFragment` (all correctly `SDK_INT`-guarded); missing
+night overrides for the `premium_*_light/_dark/_amoled` colours (correct raw-token plus
+semantic-alias architecture — `values-night/colors-v2.xml` overrides the aliases); AMOLED tokens
+(all six are referenced); `notifyDataSetChanged` in `MainActivity` (one-shot import path only, the
+main list already diffs via `AdapterUtils`); unused `ArrayUtils.remove(ArraySet)` (vendored AOSP
+file kept verbatim by design); `Overdraw` (14 layouts, negligible impact).
+
+Two dimensions were swept and found **genuinely clean** — recorded here so the next pass does not
+repeat the work:
+
+- **Security.** No `WebView` anywhere in the app, so the usual JavaScript/file-access/JS-bridge
+  surface does not exist. Every `PendingIntent` factory call already passes an explicit mutability
+  flag (the only three grep hits are method declarations returning `PendingIntent`, not factory
+  calls). Of 36 exported components with no `android:permission`, the sensitive ones are gated in
+  code rather than by manifest permission: `AutomationUriActivity` — reachable from the web via
+  `BROWSABLE` `am://` links — runs behind the app's authentication gate (`onAuthenticated`) and then
+  shows an explicit confirmation naming the action, target and user
+  (`automation_request_confirm_message` = "Action: %1$s\\nTarget: %2$s\\nUser: %3$s"). The backup
+  rules correctly keep `server_secrets.xml` out of both cloud backup and device transfer, and those
+  excludes sit inside an `<include domain="sharedpref" path="."/>`, so they take effect. The nine
+  `FullBackupContent` lint Fatals are redundant `<exclude>` entries for domains that were never
+  included — noise, not a leak. The privileged core (`server`, `libserver`, `libcore/io`,
+  `libcore/compat`) was hardened across the nine commits ending at `c1e609861` and was not re-audited
+  here.
+- **Performance.** No material issue found. `Overdraw` affects 14 layouts but is negligible;
+  `notifyDataSetChanged` survives only on a one-shot import path; `StaticDataset` uses lazy static
+  caches rather than parsing its large resource tables eagerly. Note this was assessed statically —
+  no profiling or device run was performed, so see the "Unaudited areas" item below.
+
+### P1
+
+- [ ] P1 — Seven unguarded API-26 `setTooltipText()` calls crash App Details on API 21-25
+  Category: correctness
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsComponentsFragment.java`
+  lines 130, 487, 493, 502, 934, 952, 1200
+  Problem: `View.setTooltipText(CharSequence)` was added in API 26 and `min_sdk` is 21. None of these
+  seven call sites sits behind an `SDK_INT` check, so on an API 21-25 device each throws
+  `NoSuchMethodError`. Line 130 runs during the fragment's view-creation path, so opening App Details
+  → any component tab (Activities / Services / Receivers / Providers) crashes outright; the rest fire
+  during list binding. API 21-22 support is a deliberate, documented commitment
+  (`versions.gradle:5-8`, `docs/policy/minsdk-21-ceiling.md`), so this is not a theoretical range.
+  Evidence: `grep -n "SDK_INT\|RequiresApi\|TargetApi"` on that file returns one unrelated hit at line
+  1037. Lint independently flags exactly these seven lines as `NewApi` — "Call requires API level 26
+  (current min is 21): `android.view.View#setTooltipText`" — suppressed in `app/lint-baseline.xml`.
+  Cross-check: lint flags none of the repo's other tooltip call sites, because
+  `MultiSelectionActionsView.java:530`, `ModeOfOpsPreference.java:418` and
+  `AudioPlayerDialogFragment.java:417/450` are each already wrapped in an `SDK_INT >= O` check —
+  confirming lint is correctly separating guarded from unguarded here.
+  Fix: replace all seven with `androidx.appcompat.widget.TooltipCompat.setTooltipText(view, text)`,
+  which no-ops safely below API 26. This is already the established pattern in this codebase —
+  `AppDetailsPermissionsFragment.java:861` and `PermissionAppsAdapter.java:91` use it. Line 487 passes
+  `null` to clear the tooltip; `TooltipCompat` accepts `null` for the same purpose.
+  Acceptance: no direct `View#setTooltipText` call remains in that file; the seven `NewApi` entries are
+  deleted from `app/lint-baseline.xml` and lint stays clean; App Details component tabs open without
+  `NoSuchMethodError` on an API 21 or 22 emulator.
+  Confidence: Verified
+  Effort: S
+
+- [ ] P1 — Unguarded API-26 `Intent#removeFlags` crashes the Activity Interceptor on API 21-25
+  Category: correctness
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/intercept/ActivityInterceptor.java:1092`
+  Problem: `intent.removeFlags(Intent.FLAG_ACTIVITY_NEW_TASK)` is called with no `SDK_INT` guard.
+  `Intent#removeFlags` is API 26 and `min_sdk` is 21, so API 21-25 devices throw `NoSuchMethodError`
+  when launching a fixed component from the Activity Interceptor. The enclosing
+  `catch (SecurityException e)` cannot contain a `NoSuchMethodError`. The call was added deliberately
+  to fix result delivery for `ACTION_OPEN_DOCUMENT` (upstream issue #1767), so its behaviour must be
+  preserved rather than simply deleted.
+  Evidence: `sed -n '1082,1095p'` on that file shows
+  `try { intent.removeFlags(...); mIntentLauncher.launch(intent); } catch (SecurityException e)` with
+  no version check anywhere in the block; lint reports `NewApi` "Call requires API level 26 (current
+  min is 21): `android.content.Intent#removeFlags`" at line 1092, suppressed in `app/lint-baseline.xml`.
+  Fix: use the version-independent equivalent, which is exactly what `removeFlags` does internally:
+  `intent.setFlags(intent.getFlags() & ~Intent.FLAG_ACTIVITY_NEW_TASK)`. No `SDK_INT` branch is needed.
+  Acceptance: the `NewApi` baseline entry for this line is deleted and lint stays clean; launching a
+  fixed component that expects a result still receives it (the issue #1767 path), checked on API 21-22
+  and on a current API level.
+  Confidence: Verified
+  Effort: S
+
+- [ ] P1 — Scanner shows a toast from a worker thread, crashing on the cache-failure path
+  Category: correctness
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/scanner/ScannerViewModel.java:437-451`
+  (`cacheFileIfRequired`, toast at line 448); submitted at `:127-134`
+  Problem: `cacheFileIfRequired()` is annotated `@WorkerThread` and is submitted to a
+  `MultithreadedExecutor`, whose threads come from `Executors.newFixedThreadPool` and therefore have
+  no Looper. Its `catch (IOException e)` block calls
+  `UIUtils.displayLongToast(R.string.failed_to_fetch_package_info)`, which is annotated `@UiThread`
+  and calls `Toast.makeText(...).show()`. Showing a toast from a thread that has not called
+  `Looper.prepare()` throws `RuntimeException: Can't toast on a thread that has not called
+  Looper.prepare()`. Because this is an error path — the APK could not be cached — it only fires when
+  something has already gone wrong, which is precisely when the user needs a message rather than a
+  crash. The comment above it ("surface the failure instead of silently showing a blank scan") shows
+  the intent was to improve error reporting.
+  Evidence: `ScannerViewModel.java:90` `MultithreadedExecutor.getNewInstance()`;
+  `MultithreadedExecutor.java:40` returns `Executors.newFixedThreadPool(getThreadCount())`;
+  `UIUtils.java:327-330` shows `displayLongToast(@StringRes int)` annotated `@UiThread` calling
+  `Toast.makeText(...).show()`. Lint reports `WrongThreadInterprocedural` "(WorkerThread to UiThread):
+  ScannerViewModel#cacheFileIfRequired -> UIUtils#displayLongToast" at line 428, suppressed in
+  `app/lint-baseline.xml`.
+  Fix: post the toast to the main thread instead of calling it inline — wrap the `displayLongToast`
+  call in the project's existing main-thread helper (`ThreadUtils`/`UiThreadHandler`, matching what
+  neighbouring view models already use). Better still, surface the failure through a LiveData the
+  fragment already observes so the message follows the screen lifecycle.
+  Acceptance: a Robolectric/JUnit test that forces `mFileCache.getCachedFile(...)` to throw
+  `IOException` and asserts `cacheFileIfRequired()` returns without throwing; the corresponding
+  `WrongThreadInterprocedural` baseline entry is removed and lint stays clean.
+  Confidence: Verified
+  Effort: S
+
+### P2
+
+- [ ] P2 — The file-permission dialog is hardcoded in English and is never translated
+  Category: ux
+  Where: `app/src/main/res/layout/dialog_change_file_mode.xml` lines 30, 37, 44, 60, 91, 122, 148, 155, 162
+  Problem: nine user-visible labels — "Owner", "Group", "Others", "Read", "Write", "Execute",
+  "set-user-ID bit", "set-group-ID bit", "sticky bit" — are literal `android:text` values rather than
+  `@string` references. The app ships roughly 40 locales, so every non-English user sees an
+  English-only permissions dialog. The inconsistency is visible within the same file: line 184
+  correctly uses `@string/apply_recursively`.
+  Evidence: `grep -n 'text=' app/src/main/res/layout/dialog_change_file_mode.xml` lists the nine
+  literals beside the one correct `@string` reference. Lint reports all nine as `HardcodedText`, and
+  they are 9 of the only 10 `HardcodedText` issues in the entire project (the tenth is the "1x"
+  playback-speed label in `dialog_audio_player.xml:133`, worth fixing in the same pass). All are
+  suppressed in `app/lint-baseline.xml`. Reachable from File Manager → file → change file mode via
+  `app/src/main/java/io/github/muntashirakon/AppManager/fm/dialogs/ChangeFileModeDialogFragment.java`.
+  Fix: extract the nine literals into `app/src/main/res/values/strings.xml` with descriptive names
+  (e.g. `file_mode_owner`, `file_mode_read`, `file_mode_setuid_bit`) and reference them from the
+  layout, reusing the Unix-permission vocabulary already present in the file-manager strings.
+  Acceptance: no `android:text` literal remains in that layout; the nine `HardcodedText` entries are
+  removed from `app/lint-baseline.xml` and lint stays clean; the dialog renders translated strings
+  under a non-English locale.
+  Confidence: Verified
+  Effort: S
+
+- [ ] P2 — Filter-expression highlighting uses pure red/blue and matches inside words
+  Category: visual
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/filters/EditFiltersDialogFragment.java:45-52`
+  (`HIGHLIGHT_MAP`) and `:204-212` (the `ForegroundColorSpan` loop)
+  Problem: two defects in one place. (1) The highlighter applies `ForegroundColorSpan(Color.RED)` and
+  `ForegroundColorSpan(Color.BLUE)` — fully saturated `#FF0000` / `#0000FF` — to text inside a themed
+  `TextInputLayout`. Pure blue against the app's dark and AMOLED surfaces is roughly 2.4:1, far below
+  the WCAG AA 4.5:1 minimum for body text; pure red against the light theme's white surface is roughly
+  4:1, also below AA. So one of the two keyword colours is unreadable in whichever theme the user
+  picks. These are the only hardcoded UI colours left outside the ANSI terminal palette and the SVG
+  parser. (2) The loop uses `text.indexOf(keyword)` with no token boundary, so `true` and `false` are
+  highlighted as substrings — a filter naming a package such as `com.truecaller` gets `true` coloured
+  mid-word.
+  Evidence: `grep -n "HIGHLIGHT_MAP" -A 12` on that file shows
+  `s.setSpan(new ForegroundColorSpan(color), index, index + keyword.length(), ...)` at line 209 inside
+  `while (index >= 0) { ... index = text.indexOf(keyword, index + keyword.length()); }`. A
+  project-wide sweep for `Color.RED|BLUE|WHITE|BLACK|…` finds no other hardcoded colour on a themed
+  surface.
+  Fix: resolve both colours from the existing V2 token set at runtime instead of using literals — the
+  operators from `?attr/colorPrimary` / `premium_color_primary` and the boolean literals from the
+  `premium_info_content` semantic token, both of which already switch per mode via
+  `app/src/main/res/values/colors-v2.xml` and `values-night/colors-v2.xml`. Use the same
+  `getThemeColor(...)` helper pattern as `MainRecyclerAdapter.java:115-118`. For (2), match
+  `true`/`false` on word boundaries with a precompiled `Pattern` and leave the single-character
+  operators as literal matches.
+  Acceptance: no `Color.` constant remains in that file; highlighted text meets 4.5:1 against the
+  surface in light, dark and AMOLED; a unit test asserts `com.truecaller` receives no span while a
+  standalone `true` does.
+  Confidence: Verified — the colour values and span code are confirmed by reading; the contrast ratios
+  are computed from the literals rather than measured on a device.
+  Effort: M
+
+- [ ] P2 — The lint baseline hides 4060 issues, including every crash found in this audit
+  Category: testing
+  Where: `app/lint-baseline.xml` (2.2 MB, 4060 suppressed issues); `app/build.gradle:106-111`
+  Problem: all three crashes logged above were already detected by lint and silently absorbed by the
+  baseline. The baseline currently suppresses 78 `NewApi`, 79 `ThreadConstraint`, 12
+  `WrongThreadInterprocedural`, 10 `Fatal` and 261 `Error`-severity findings. Combined with the P0
+  above (lint cannot run at all today), nothing prevents the next unguarded API-26 call from reaching
+  a release — and with `min_sdk = 21` that is the widest possible exposure. The baseline has become a
+  place where real defects go quiet rather than a record of accepted debt.
+  Evidence: counting `id="…"` occurrences in `app/lint-baseline.xml` yields 4060 total, with the
+  distribution above. The `NewApi` entries include the seven `setTooltipText` lines and the
+  `Intent#removeFlags` line proven crashing above; the `WrongThreadInterprocedural` entries include the
+  `ScannerViewModel` toast proven crashing above.
+  Fix: do not try to empty the baseline. After fixing the three crash items, delete their entries, then
+  lift the high-signal checks out of the baseline entirely and promote them to build failures — add
+  `lint { error 'NewApi', 'WrongThreadInterprocedural', 'SpecifyForegroundServiceType' }` to
+  `app/build.gradle` — so any new occurrence fails the build. Leave the high-volume, low-signal
+  categories (`UnknownNullness` 1774, `DuplicateStrings` 1054) baselined, and record in `docs/policy/`
+  which categories are intentionally baselined and why.
+  Acceptance: `./gradlew :app:lint` runs (needs the P0 above first) and passes; a deliberately
+  introduced unguarded API-26 call fails the build instead of being absorbed; the baseline contains no
+  `NewApi`, `WrongThreadInterprocedural` or `SpecifyForegroundServiceType` entry.
+  Confidence: Verified
+  Effort: M
+
+### P3
+
+- [ ] P3 — `AdvancedSearchView#matches` is annotated `@UiThread` but is a pure matcher called from workers
+  Category: maintainability
+  Where: the annotation on `AdvancedSearchView#matches`; callers at `main/MainViewModel.java:736,753`,
+  `details/AppDetailsViewModel.java:567,636,664`, `runningapps/RunningAppsViewModel.java:571`
+  Problem: eight of the twelve `WrongThreadInterprocedural` violations in the project come from this
+  one wrong annotation. Every list-filtering path correctly runs on a worker thread and calls
+  `matches`, which is annotated `@UiThread` despite being a pure string matcher that touches no UI. The
+  annotation is both false and actively harmful: it fills the baseline with noise that trains readers
+  to skim past thread warnings, which is how the genuine `ScannerViewModel` toast violation stayed
+  buried in the same list.
+  Evidence: the twelve `WrongThreadInterprocedural` entries in `app/lint-baseline.xml` are eight
+  `-> AdvancedSearchView#matches`, one `-> View#getContext`, one `-> UIUtils#displayLongToast` (the
+  real bug logged above), and two whose message did not resolve.
+  Fix: read `matches` to confirm it touches no view state, then change the annotation to `@AnyThread`
+  and delete the eight stale baseline entries. If it does touch view state, the correct fix is the
+  reverse — move that state out of the matcher — so read it before changing the annotation.
+  Acceptance: the eight `AdvancedSearchView#matches` entries are gone from `app/lint-baseline.xml` and
+  lint reports no new `WrongThreadInterprocedural`.
+  Confidence: Verified
+  Effort: S
+
+- [ ] P3 — Two layouts set `paddingEnd` without `paddingStart`, breaking RTL symmetry
+  Category: a11y
+  Where: `app/src/main/res/layout/activity_main_v2.xml:67`;
+  `app/src/main/res/layout/item_app_details_primary.xml:39`
+  Problem: both define an end padding with no matching start padding, so spacing becomes asymmetric
+  when the layout direction flips. Neither is an obscure screen — the first is the main activity shell,
+  the second is the row used by every App Details component list. The app ships `values-ar`,
+  `values-ar-rSA` and `values-fa`, so RTL is a supported configuration.
+  Evidence: lint reports `RtlSymmetry` ("When you define `paddingEnd` you should probably also define
+  `paddingStart` for right-to-left symmetry") for exactly these two lines; both are suppressed in
+  `app/lint-baseline.xml`, and they are the only two `RtlSymmetry` issues in the project.
+  Fix: add the matching `android:paddingStart` using the same `@dimen` token as the end padding, or
+  collapse to a symmetric `paddingHorizontal` where both sides should match. Verify under
+  Settings → Developer options → Force RTL layout direction.
+  Acceptance: both `RtlSymmetry` baseline entries are removed and lint stays clean; the main list and
+  an App Details component row show even leading/trailing spacing in an RTL locale.
+  Confidence: Verified — the layout attributes are confirmed by reading; the visual asymmetry was not
+  observed on a device.
+  Effort: S
+
+- [ ] P3 — Two custom touch handlers never call `performClick()`, so assistive tech cannot activate them
+  Category: a11y
+  Where: `BarChartView#onTouchEvent` (`BarChartView.java:727`); `BottomSheetDialog.java:353,356`
+  (a `FrameLayout` with `setOnTouchListener`)
+  Problem: a view that consumes touches in `onTouchEvent` / `OnTouchListener` without calling
+  `performClick()` never fires the accessibility click action, so screen-reader and switch-access users
+  cannot trigger it. `BarChartView` is the usage/data chart; the `BottomSheetDialog` `FrameLayout` is
+  the tap-outside-to-dismiss target, so dismissing a sheet by tap is unreachable to those users.
+  Evidence: lint reports all three as `ClickableViewAccessibility` — "`BarChartView#onTouchEvent`
+  should call `BarChartView#performClick` when a click is detected" and "Custom view `FrameLayout` has
+  `setOnTouchListener` called on it but does not override `performClick`" — all suppressed in
+  `app/lint-baseline.xml`, and they are the only three such issues in the project.
+  Fix: in `BarChartView`, override `performClick()` (calling `super.performClick()`) and invoke it from
+  `onTouchEvent` on `ACTION_UP` when the gesture resolves to a click. For the bottom-sheet
+  `FrameLayout`, call `view.performClick()` in the `onTouch` handler on `ACTION_UP` before returning.
+  Confirm the sheet retains a non-touch dismissal route (back gesture or drag handle) before treating
+  it as done.
+  Acceptance: the three `ClickableViewAccessibility` baseline entries are removed and lint stays clean;
+  TalkBack can activate the chart and dismiss the bottom sheet.
+  Confidence: Verified — the lint findings and call sites are confirmed by reading; TalkBack behaviour
+  was not exercised on a device.
+  Effort: S
+
+- [ ] P3 — `CLAUDE.md` overstates the remaining upstream-branding copy debt
+  Category: docs
+  Where: `CLAUDE.md`, section "Hardcoded 'App Manager' string references"
+  Problem: the note claims `grep -n "App Manager"` across `app/src/main/res/` "returns hundreds of hits
+  … copy inside dialogs/help screens still says 'App Manager'" and that a sweep is pending. For the
+  English strings that is no longer true: exactly one user-visible occurrence remains, and it is
+  intentional. A stale note describing a large phantom task misdirects future work, and the repo's own
+  self-healing-memory rule asks for notes like this to be corrected in place once disproven.
+  Evidence: stripping `xliff:g example="…"` translator-hint attributes from
+  `app/src/main/res/values/strings.xml` and scanning only `<string>` bodies leaves a single visible hit
+  — `pref_export_upstream_compat` = "Export for upstream App Manager" — which correctly names the
+  upstream project. The other 21 raw matches all sit inside `example=` attributes, which are never
+  rendered to users.
+  Fix: rewrite that section to state the verified position (English copy is clean; the one remaining
+  reference is intentional) and, if non-English locales still carry stale product names, scope the note
+  to those locales with a real count instead of "hundreds".
+  Acceptance: the note matches what a fresh grep shows, with the `xliff` caveat stated so the next
+  reader does not have to re-derive it.
+  Confidence: Verified
+  Effort: S
+
+- [ ] P3 — Unaudited areas needing their own pass
+  Category: docs
+  Where: repository-wide
+  Problem: the 2026-08-02 pass was static and host-only. The following were not covered and must not be
+  assumed clean: (a) any on-device or emulator run — no UI was rendered, so all visual, motion,
+  focus-order, touch-target and measured-contrast checks remain unverified by observation; (b) the
+  native C/C++ under `app/src/main/cpp/` and the JNI boundary; (c) the ~40 non-English locales beyond
+  string-level checks — no pseudolocale, overflow or truncation review; (d) Room schema and migration
+  correctness under `schema/`; (e) the `benchmark/` module; (f) the packages `viewer/`, `types/`,
+  `magisk/` and `progress/`, the only ones with no unit-test directory at all; (g) runtime behaviour of
+  the privileged root/ADB modes, which needs a rooted device.
+  Evidence: no emulator or device was attached during the audit;
+  `find app/src/test/java/io/github/muntashirakon/AppManager -maxdepth 1 -type d` lists a directory for
+  every main package except those four.
+  Fix: schedule a device-backed UX/visual pass covering light, dark and AMOLED plus RTL and a
+  pseudolocale, and a separate native/JNI review.
+  Acceptance: each listed area has either findings logged against it or an explicit note that it was
+  reviewed and found clean.
+  Confidence: Verified
+  Effort: M
