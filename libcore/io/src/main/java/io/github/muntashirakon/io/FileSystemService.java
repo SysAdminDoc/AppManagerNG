@@ -342,6 +342,9 @@ class FileSystemService extends IFileSystemService.Stub {
     @Override
     public IOResult pread(int handle, int len, long offset) {
         try {
+            // A read may legitimately ask for more than one pipe-full; the implementation
+            // clamps it. Only nonsensical values are refused.
+            checkLenOffset(len, offset, Integer.MAX_VALUE);
             return new IOResult(openFiles.get(handle).pread(len, offset));
         } catch (IOException | ErrnoException e) {
             return new IOResult(e);
@@ -351,10 +354,35 @@ class FileSystemService extends IFileSystemService.Stub {
     @Override
     public IOResult pwrite(int handle, int len, long offset) {
         try {
+            // A write is fed from the peer's pipe, so it can never legitimately exceed the
+            // pipe capacity; the pre-API-28 path would otherwise apply len as a limit on a
+            // fixed-capacity direct buffer and throw an unchecked exception.
+            checkLenOffset(len, offset, PIPE_CAPACITY);
             openFiles.get(handle).pwrite(len, offset, true);
             return new IOResult();
         } catch (IOException | ErrnoException e) {
             return new IOResult(e);
+        }
+    }
+
+    /**
+     * Reject caller-supplied lengths and offsets that the I/O paths cannot honour, so they
+     * surface as an {@link IOResult} error instead of an unchecked exception inside a
+     * privileged process. {@code offset == -1} is the "use the current file position"
+     * sentinel; any other negative offset is malformed.
+     */
+    static void checkLenOffset(int len, long offset, int maxLen) throws IOException {
+        if (len < 0) {
+            throw new IOException("Negative length " + len);
+        }
+        if (len > maxLen) {
+            throw new IOException("Length " + len + " exceeds the maximum of " + maxLen);
+        }
+        if (offset < -1) {
+            throw new IOException("Negative offset " + offset);
+        }
+        if (offset > 0 && offset > Long.MAX_VALUE - len) {
+            throw new IOException("Offset " + offset + " plus length " + len + " overflows");
         }
     }
 
