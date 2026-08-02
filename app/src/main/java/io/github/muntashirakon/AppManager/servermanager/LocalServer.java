@@ -276,7 +276,7 @@ public class LocalServer {
         if (th != null) {
             throw new IOException(th);
         }
-        return (Shell.Result) callerResult.getReplyObj();
+        return callerResult.getShellResult();
     }
 
     @WorkerThread

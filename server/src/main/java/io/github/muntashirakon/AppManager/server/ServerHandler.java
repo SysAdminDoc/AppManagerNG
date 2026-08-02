@@ -5,7 +5,6 @@ package io.github.muntashirakon.AppManager.server;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
-import android.os.Parcel;
 import android.os.Parcelable;
 
 import androidx.annotation.NonNull;
@@ -127,17 +126,21 @@ class ServerHandler implements DataTransmission.OnReceiveCallback, Closeable {
                         close();
                         return;
                     case BaseCaller.TYPE_SHELL:
-                        ShellCaller shellCaller = ParcelableUtil.unmarshall(baseCaller.getRawBytes(), ShellCaller.CREATOR);
-                        Shell shell = Shell.getShell("");
-                        Shell.Result shellResult = shell.exec(shellCaller.getCommand());
-                        result = new CallerResult();
-                        Parcel parcel = Parcel.obtain();
-                        try {
-                            parcel.writeValue(shellResult);
-                            result.setReply(parcel.marshall());
-                        } finally {
-                            parcel.recycle();
+                        byte[] rawBytes = baseCaller.getRawBytes();
+                        if (rawBytes == null) {
+                            throw new IOException("Shell request carried no payload");
                         }
+                        ShellCaller shellCaller = ParcelableUtil.unmarshall(rawBytes, ShellCaller.CREATOR);
+                        String command = shellCaller.getCommand();
+                        if (command == null) {
+                            throw new IOException("Shell request carried no command");
+                        }
+                        Shell shell = Shell.getShell("");
+                        Shell.Result shellResult = shell.exec(command);
+                        result = new CallerResult();
+                        // Written with the concrete type, not writeValue(): the reply must not
+                        // name the class the app instantiates when it reads this back.
+                        result.setReply(ParcelableUtil.marshall(shellResult));
                 }
                 LifecycleAgent.sServerInfo.successCount++;
             } catch (IOException | RuntimeException e) {
