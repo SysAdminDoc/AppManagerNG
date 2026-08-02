@@ -2044,6 +2044,7 @@
     <string name="audio_player_repeat_all">Repeat playlist</string>
     <string name="audio_player_repeat_one">Repeat current track</string>
     <string name="audio_player_playback_speed_a11y">Playback speed: %1$s</string>
+    <string name="audio_player_playback_speed_default">1x</string>
     <string name="audio_player_unknown_title">Unknown title</string>
     <string name="audio_player_unknown_artist">Unknown artist</string>
     <string name="audio_player_unknown_album">Unknown album</string>
@@ -3045,6 +3046,15 @@
     <string name="unix_file_permissions">Mode</string>
     <string name="file_group_id">Group (GID)</string>
     <string name="file_owner_id">Owner (UID)</string>
+    <string name="file_mode_owner">Owner</string>
+    <string name="file_mode_group">Group</string>
+    <string name="file_mode_others">Others</string>
+    <string name="file_mode_read">Read</string>
+    <string name="file_mode_write">Write</string>
+    <string name="file_mode_execute">Execute</string>
+    <string name="file_mode_setuid_bit">set-user-ID bit</string>
+    <string name="file_mode_setgid_bit">set-group-ID bit</string>
+    <string name="file_mode_sticky_bit">sticky bit</string>
     <string name="calculating_file_size">Calculating…</string>
     <string name="sort_by_filename">Name</string>
     <string name="sort_by_last_modified">Last modified</string>
