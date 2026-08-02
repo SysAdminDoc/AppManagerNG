@@ -3,7 +3,7 @@
 package io.github.muntashirakon.AppManager.filters;
 
 import android.app.Dialog;
-import android.graphics.Color;
+import android.content.Context;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.Spanned;
@@ -14,17 +14,20 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.filters.options.FilterOption;
@@ -42,14 +45,8 @@ public class EditFiltersDialogFragment extends DialogFragment implements EditFil
         void onItemAltered(@NonNull FilterItem item);
     }
 
-    private static final Map<String, Integer> HIGHLIGHT_MAP = new HashMap<String, Integer>() {{
-        put("&", Color.RED);
-        put("|", Color.RED);
-        put("(", Color.RED);
-        put(")", Color.RED);
-        put("true", Color.BLUE);
-        put("false", Color.BLUE);
-    }};
+    private static final String[] OPERATOR_HIGHLIGHTS = {"&", "|", "(", ")"};
+    private static final Pattern BOOLEAN_PATTERN = Pattern.compile("\\b(?:true|false)\\b");
 
     private static class ExprTester extends AbsExpressionEvaluator {
         private final FilterItem mFilterItem;
@@ -200,21 +197,46 @@ public class EditFiltersDialogFragment extends DialogFragment implements EditFil
         if (s == null) {
             return;
         }
-        String text = s.toString();
-        for (Map.Entry<String, Integer> entry : HIGHLIGHT_MAP.entrySet()) {
-            String keyword = entry.getKey();
-            int color = entry.getValue();
-            int index = text.indexOf(keyword);
-            while (index >= 0) {
-                s.setSpan(new ForegroundColorSpan(color), index, index + keyword.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                index = text.indexOf(keyword, index + keyword.length());
-            }
-        }
+        Context context = mFinderFilterEditor.getContext();
+        int operatorColor = getThemeColor(context, "colorPrimary",
+                ContextCompat.getColor(context, R.color.premium_color_primary));
+        int booleanColor = ContextCompat.getColor(context, R.color.premium_info_content);
+        highlightExpression(s, operatorColor, booleanColor);
         if (!mExprTester.evaluate(s.toString())) {
             CharSequence error = mExprTester.getLastError();
             mFinderFilterEditorLayout.setError(error);
         } else {
             mFinderFilterEditorLayout.setError(null);
         }
+    }
+
+    @VisibleForTesting
+    static void highlightExpression(@NonNull Editable text, int operatorColor, int booleanColor) {
+        ForegroundColorSpan[] existingSpans = text.getSpans(0, text.length(), ForegroundColorSpan.class);
+        for (ForegroundColorSpan existingSpan : existingSpans) {
+            text.removeSpan(existingSpan);
+        }
+
+        String source = text.toString();
+        for (String operator : OPERATOR_HIGHLIGHTS) {
+            int index = source.indexOf(operator);
+            while (index >= 0) {
+                text.setSpan(new ForegroundColorSpan(operatorColor), index,
+                        index + operator.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                index = source.indexOf(operator, index + operator.length());
+            }
+        }
+
+        Matcher booleanMatcher = BOOLEAN_PATTERN.matcher(source);
+        while (booleanMatcher.find()) {
+            text.setSpan(new ForegroundColorSpan(booleanColor), booleanMatcher.start(),
+                    booleanMatcher.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+    }
+
+    private static int getThemeColor(@NonNull Context context, @NonNull String attrName,
+                                     int fallbackColor) {
+        int attrId = context.getResources().getIdentifier(attrName, "attr", context.getPackageName());
+        return attrId != 0 ? MaterialColors.getColor(context, attrId, fallbackColor) : fallbackColor;
     }
 }
