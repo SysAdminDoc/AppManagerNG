@@ -4423,17 +4423,6 @@
     </issue>
 
     <issue
-        id="SpecifyForegroundServiceType"
-        message="Missing dataSync foregroundServiceType in the AndroidManifest.xml"
-        errorLine1="            return new ForegroundInfo(notificationId, notification,"
-        errorLine2="                   ^">
-        <location
-            file="src/main/java/io/github/muntashirakon/AppManager/backup/schedule/AutoBackupWorker.java"
-            line="231"
-            column="20"/>
-    </issue>
-
-    <issue
         id="EllipsizeMaxLines"
         message="Combining `ellipsize=middle` and `maxLines=1` can lead to crashes. Use `singleLine=true` instead."
         errorLine1="                        android:maxLines=&quot;1&quot;"
