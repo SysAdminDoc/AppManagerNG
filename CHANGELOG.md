@@ -16,6 +16,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   truncated to a single character.
 - Hex attribute values are rejected up front when they have an odd length or a
   non-hex character, instead of failing part-way through decoding.
+- The privileged filesystem service now refuses a path carrying an embedded NUL,
+  which the native layer would have truncated — so the path acted on is always
+  the path that was given. Changing a file's owner no longer follows a symlink,
+  matching the reads, and the service's actual security boundary (who holds the
+  binder, not which path they name) is now written down in the code so it cannot
+  be widened by accident. Traversal and absolute paths remain accepted by design;
+  the file manager, backup and debloating all need whole-filesystem access.
 - The privileged command channel now checks who connected, not just what they
   present. The handshake token is a bearer credential, so a connecting peer's
   owning uid is established first — from the socket's own credentials on the unix

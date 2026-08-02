@@ -117,26 +117,6 @@ a device.
 
 ### P1
 
-- [ ] P1 — Anchor and normalize paths in the privileged filesystem service
-  Why: no method in `FileSystemService` normalizes, canonicalizes or anchors the
-  caller-supplied path, and the threat model notes path traversal and symlink-following are
-  assumed to be handled elsewhere without that assumption being written down or tested. The
-  sinks are arbitrary `chown`, `symlink`/`link` and SELinux label writes executing as root.
-  Evidence: `libcore/io/src/main/java/io/github/muntashirakon/io/FileSystemService.java:230`
-  (`Os.chown`), `:249` (`SELinux.setFileContext`), `:256/:258` (`Os.symlink`/`Os.link`),
-  `:286` (`openChannel(String path, int mode, String fifo)`), `:146` (path passed unchanged
-  into `OsCompat.utimensat`, whose JNI shim at
-  `app/src/main/cpp/io_github_muntashirakon_compat_system_OsCompat.cpp:356` does no checking
-  either).
-  Touches: `libcore/io/src/main/java/io/github/muntashirakon/io/FileSystemService.java`,
-  `libcore/compat/src/main/java/io/github/muntashirakon/compat/system/OsCompat.java`.
-  Acceptance: the caller-gating contract is documented at the top of `FileSystemService`;
-  paths are resolved and checked against the intended root before any privileged syscall, or
-  the row is closed with a test proving `RootServiceServer` already rejects the traversal;
-  Robolectric cases cover `../` escape, an absolute path outside the root, and a symlink
-  pointing out of the root.
-  Complexity: L
-
 ### P2
 
 ### P3
