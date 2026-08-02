@@ -78,25 +78,30 @@ fixed, so these are net-new. Every item below is host-implementable and host-tes
 
 ### P1
 
-- [ ] P1 — Bring the CVE gate's configurations under dependency verification
-  Why: the release gate's blocking CVE scan cannot run at all. `dependencyCheckAggregate`
-  resolves `:app:androidLintTool`, whose POMs have no entries in
-  `gradle/verification-metadata.xml`, so Gradle aborts the task before the scanner starts.
-  A release therefore currently has no CVE evidence, and the gate correctly refuses to
-  produce a receipt without it.
-  Evidence: `python scripts/run_dependency_cve_gate.py --out-dir reproducible-release/publish`
-  → "Dependency verification failed for configuration ':app:androidLintTool'", 7 artifacts:
-  manifest-merger-32.2.1.pom, guava-33.3.1-jre.pom, aapt2-proto-9.2.1-15009934.pom,
-  builder-model-9.2.1.pom, kotlinx-coroutines-core-jvm-1.9.0.pom, kotlin-stdlib-2.2.10.pom,
-  checker-qual-3.43.0.pom.
-  Touches: `gradle/verification-metadata.xml`, `scripts/run_dependency_cve_gate.py`,
+- [ ] P1 - Triage the 12 CVSS 9.0+ findings the CVE gate now reports
+  Why: with dependency verification fixed the gate runs to completion for the first time, and
+  it blocks: `dependencyCheckAggregate` reports 12 findings above the 9.0 threshold. Until each
+  is either upgraded or suppressed with a written justification, no release can produce a
+  passing CVE receipt. The findings fall into three families and none has been assessed yet.
+  Evidence: `reproducible-release/publish/dependency-check-report.sarif` (maintainer-local).
+    - `androidx.sqlite:sqlite-android`, `sqlite-framework-android`, `sqlite-jvm` 2.5.1 ->
+      CVE-2015-5895, CVE-2017-10989, CVE-2019-19646, CVE-2020-11656. These are native SQLite
+      CVEs from 2015-2020 against a 2025 artifact; the likely cause is dependency-check mapping
+      the AndroidX coordinates onto `cpe:/a:sqlite:sqlite`. Establish that before suppressing.
+    - `io.netty:netty-*` 4.1.93.Final and 4.1.110.Final -> CVE-2026-42579, -42581, -42584,
+      -45674, -47691, -56817, -56820. Establish first whether netty reaches the shipped APK
+      runtime classpath at all or is build/test-only; the repo already has a precedent for
+      pinning an affected library off the release runtime classpath (see the Guava/protobuf
+      commit).
+    - `org.jetbrains.kotlin:kotlin-stdlib` and the Kotlin toolchain jars -> CVE-2026-53914,
+      matched across many versions including ones only the build uses.
+  Touches: `app/build.gradle`, `versions.gradle`, a dependency-check suppression file, and
   `docs/distribution/dependency-verification.md`.
-  Acceptance: the checksums are added from a verified source rather than by blanket
-  `--write-verification-metadata` (which would trust whatever was downloaded); the CVE gate runs
-  to completion and writes `dependency-cve-receipt.json`; a host test covers the failure mode so
-  a future configuration addition surfaces as a gate failure rather than a silent skip.
+  Acceptance: every one of the 12 is resolved by an upgrade or by a suppression whose `<notes>`
+  states why it does not apply, with the shipped-APK classpath checked rather than assumed; the
+  gate exits zero and writes a receipt with `passed: true`; a suppression that stops matching
+  is surfaced rather than silently ignored.
   Complexity: M
-
 ### P2
 
 ## Security Threat-Model Follow-ups (2026-07-30)
