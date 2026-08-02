@@ -194,19 +194,6 @@ a device.
   colon-free element, a missing argument, and an unexpected component.
   Complexity: S
 
-- [ ] P2 — Validate length and offset in `OpenFile.pread`/`pwrite`
-  Why: caller-supplied `len` and `offset` are passed through unchecked into a raw fd splice
-  and, on the pre-API-28 path, applied as a limit to a fixed-capacity direct `ByteBuffer`.
-  The threat model flags these as assuming a cooperating client.
-  Evidence: `libcore/io/src/main/java/io/github/muntashirakon/io/OpenFile.java:107,113,141,160`;
-  pass-through at `libcore/io/src/main/java/io/github/muntashirakon/io/FileSystemService.java:343,352`.
-  Touches: `libcore/io/src/main/java/io/github/muntashirakon/io/OpenFile.java`,
-  `libcore/io/src/main/java/io/github/muntashirakon/io/FileSystemService.java`.
-  Acceptance: negative, oversized and overflowing `len`/`offset` combinations are rejected at
-  the service boundary with an `IOResult` error; a host test covers each on both the
-  pre- and post-API-28 paths.
-  Complexity: S
-
 ### P3
 
 - [ ] P3 — Strengthen old-server identity before `killProcess`
