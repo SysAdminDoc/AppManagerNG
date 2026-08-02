@@ -152,29 +152,6 @@ repeat the work:
 
 ### P3
 
-- [ ] P3 — Two custom touch handlers never call `performClick()`, so assistive tech cannot activate them
-  Category: a11y
-  Where: `BarChartView#onTouchEvent` (`BarChartView.java:727`); `BottomSheetDialog.java:353,356`
-  (a `FrameLayout` with `setOnTouchListener`)
-  Problem: a view that consumes touches in `onTouchEvent` / `OnTouchListener` without calling
-  `performClick()` never fires the accessibility click action, so screen-reader and switch-access users
-  cannot trigger it. `BarChartView` is the usage/data chart; the `BottomSheetDialog` `FrameLayout` is
-  the tap-outside-to-dismiss target, so dismissing a sheet by tap is unreachable to those users.
-  Evidence: lint reports all three as `ClickableViewAccessibility` — "`BarChartView#onTouchEvent`
-  should call `BarChartView#performClick` when a click is detected" and "Custom view `FrameLayout` has
-  `setOnTouchListener` called on it but does not override `performClick`" — all suppressed in
-  `app/lint-baseline.xml`, and they are the only three such issues in the project.
-  Fix: in `BarChartView`, override `performClick()` (calling `super.performClick()`) and invoke it from
-  `onTouchEvent` on `ACTION_UP` when the gesture resolves to a click. For the bottom-sheet
-  `FrameLayout`, call `view.performClick()` in the `onTouch` handler on `ACTION_UP` before returning.
-  Confirm the sheet retains a non-touch dismissal route (back gesture or drag handle) before treating
-  it as done.
-  Acceptance: the three `ClickableViewAccessibility` baseline entries are removed and lint stays clean;
-  TalkBack can activate the chart and dismiss the bottom sheet.
-  Confidence: Verified — the lint findings and call sites are confirmed by reading; TalkBack behaviour
-  was not exercised on a device.
-  Effort: S
-
 - [ ] P3 — `CLAUDE.md` overstates the remaining upstream-branding copy debt
   Category: docs
   Where: `CLAUDE.md`, section "Hardcoded 'App Manager' string references"

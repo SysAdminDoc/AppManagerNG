@@ -29394,39 +29394,6 @@
     </issue>
 
     <issue
-        id="ClickableViewAccessibility"
-        message="`BarChartView#onTouchEvent` should call `BarChartView#performClick` when a click is detected"
-        errorLine1="    public boolean onTouchEvent(@NonNull MotionEvent event) {"
-        errorLine2="                   ~~~~~~~~~~~~">
-        <location
-            file="src/main/java/io/github/muntashirakon/AppManager/usage/BarChartView.java"
-            line="727"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="ClickableViewAccessibility"
-        message="Custom view ``FrameLayout`` has `setOnTouchListener` called on it but does not override `performClick`"
-        errorLine1="        bottomSheet.setOnTouchListener("
-        errorLine2="        ^">
-        <location
-            file="src/main/java/io/github/muntashirakon/dialog/BottomSheetDialog.java"
-            line="353"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="ClickableViewAccessibility"
-        message="`onTouch` should call `View#performClick` when a click is detected"
-        errorLine1="                    public boolean onTouch(View view, MotionEvent event) {"
-        errorLine2="                                   ~~~~~~~">
-        <location
-            file="src/main/java/io/github/muntashirakon/dialog/BottomSheetDialog.java"
-            line="356"
-            column="36"/>
-    </issue>
-
-    <issue
         id="ByteOrderMark"
         message="Found byte-order-mark in the middle of a file"
         errorLine1="    &lt;string name=&quot;source_code_links&quot;>&lt;a href=&quot;https://github.com/MuntashirAkon/AppManager&quot;>GitHub&lt;/a> • &lt;a href=&quot;https://gitlab.com/muntashir/AppManager&quot;>GitLab&lt;/a> • &lt;a href=&quot;https://0xacab.org/muntashir/AppManager&quot;>Riseup&lt;/a> • &lt;a href=&quot;https://codeberg.org/muntashir/AppManager&quot;>Codeberg&lt;/a>﻿&lt;/string>"

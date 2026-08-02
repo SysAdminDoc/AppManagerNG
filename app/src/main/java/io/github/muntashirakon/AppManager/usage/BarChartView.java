@@ -732,6 +732,12 @@ public class BarChartView extends View {
                 return true;
 
             case MotionEvent.ACTION_UP:
+                performClick();
+                mShowTouchLine = false;
+                mTouchedBarIndex = -1;
+                invalidate();
+                return true;
+
             case MotionEvent.ACTION_CANCEL:
                 mShowTouchLine = false;
                 mTouchedBarIndex = -1;

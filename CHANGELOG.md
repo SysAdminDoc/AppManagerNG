@@ -25,6 +25,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   their stale worker-to-UI lint findings.
 - Added matching start padding to the main filter strip and App Details primary row,
   removing the only two RTL symmetry lint findings.
+- Completed accessibility click handling for the usage chart and bottom-sheet surface;
+  the chart now completes clicks through `performClick()`, and the sheet uses native
+  clickable touch dispatch instead of a raw touch listener.
 - Updated filter-expression highlighting to use the themed primary and
   informational colors, and restricted boolean highlighting to whole words so
   package names such as `com.truecaller` remain unstyled.
