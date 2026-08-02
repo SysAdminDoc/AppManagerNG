@@ -21,6 +21,9 @@ import android.system.OsConstants;
 import android.system.StructStat;
 import android.util.LruCache;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -31,6 +34,40 @@ import aosp.android.content.pm.StringParceledListSlice;
 import io.github.muntashirakon.compat.system.OsCompat;
 import io.github.muntashirakon.compat.system.StructTimespec;
 
+/**
+ * Privileged filesystem service. Every method here runs with the privileges of the process
+ * hosting it — root, or the shell uid — and operates on a path chosen by the caller.
+ *
+ * <h3>Caller-gating contract</h3>
+ * <b>This service deliberately has no path root and performs no traversal checks.</b> Anchoring
+ * it would defeat its purpose: the file manager browses from {@code /}, backup and restore reach
+ * into {@code /data}, and debloating writes under {@code /system}. A caller-supplied {@code ../},
+ * an absolute path anywhere on the device, and a symlink pointing outside any particular
+ * directory are all <em>expected</em> inputs, not attacks to be filtered here.
+ * <p>
+ * The security boundary is therefore <em>who holds the binder</em>, not which path they name:
+ * <ul>
+ * <li>The root-mode binder is handed out by {@code RootServiceServer.bind}, which returns
+ * {@code null} unless the calling uid has already registered itself through {@code connect()},
+ * and which refuses to instantiate a component that is not a {@code RootService} subclass.
+ * <li>The Shizuku-mode binder is handed out by Shizuku's own per-package permission gate.
+ * </ul>
+ * Anything holding this binder already has the privileges these calls confer. A change that
+ * widens who can bind is a change to this contract and must be reviewed as one.
+ *
+ * <h3>What is checked here</h3>
+ * <ul>
+ * <li>Structurally unusable paths — null, empty, or carrying an embedded NUL — are refused. A
+ * NUL truncates the string in the native layer, so {@code "/data/local/tmp\0/../../system"}
+ * would reach the syscall as {@code "/data/local/tmp"}: the path acted on would not be the path
+ * that was reviewed.
+ * <li>Metadata writes do not follow symlinks where the platform allows it, matching the reads
+ * (which use {@code lstat}). {@code setUidGid} uses {@code lchown} and {@code setLastAccess}
+ * passes {@code AT_SYMLINK_NOFOLLOW}. Linux has no {@code lchmod} and no symlink-safe SELinux
+ * label write, so {@code setMode}, {@code setSelinuxContext} and {@code restoreSelinuxContext}
+ * still resolve the final component.
+ * </ul>
+ */
 // Copyright 2022 John "topjohnwu" Wu
 // Copyright 2022 Muntashir Al-Islam
 class FileSystemService extends IFileSystemService.Stub {
@@ -44,10 +81,35 @@ class FileSystemService extends IFileSystemService.Stub {
         }
     };
 
+    /**
+     * A path the service will not act on at all. See the class contract: this is not a traversal
+     * filter, it only rejects strings whose meaning would change between here and the syscall.
+     */
+    static boolean isUsablePath(@Nullable String path) {
+        return path != null && !path.isEmpty() && path.indexOf('\0') < 0;
+    }
+
+    /**
+     * @throws IOException when the path is structurally unusable, so the caller sees an
+     *                     {@link IOResult} error rather than a silently truncated path
+     */
+    @NonNull
+    static String checkPath(@Nullable String path) throws IOException {
+        if (!isUsablePath(path)) {
+            throw new IOException("Unusable path");
+        }
+        return path;
+    }
+
+    @NonNull
+    private File cached(@Nullable String path) throws IOException {
+        return mCache.get(checkPath(path));
+    }
+
     @Override
     public IOResult getCanonicalPath(String path) {
         try {
-            return new IOResult(mCache.get(path).getCanonicalPath());
+            return new IOResult(cached(path).getCanonicalPath());
         } catch (IOException e) {
             return new IOResult(e);
         }
@@ -55,29 +117,29 @@ class FileSystemService extends IFileSystemService.Stub {
 
     @Override
     public boolean isDirectory(String path) {
-        return mCache.get(path).isDirectory();
+        return isUsablePath(path) && mCache.get(path).isDirectory();
     }
 
     @Override
     public boolean isFile(String path) {
-        return mCache.get(path).isFile();
+        return isUsablePath(path) && mCache.get(path).isFile();
     }
 
     @Override
     public boolean isHidden(String path) {
-        return mCache.get(path).isHidden();
+        return isUsablePath(path) && mCache.get(path).isHidden();
     }
 
     @Override
     public long lastModified(String path) {
-        return mCache.get(path).lastModified();
+        return isUsablePath(path) ? mCache.get(path).lastModified() : 0L;
     }
 
     @Override
     public IOResult lastAccess(String path) {
         try {
-            return new IOResult(Os.lstat(path).st_atime * 1000);
-        } catch (ErrnoException e) {
+            return new IOResult(Os.lstat(checkPath(path)).st_atime * 1000);
+        } catch (ErrnoException | IOException e) {
             return new IOResult(e);
         }
     }
@@ -85,21 +147,21 @@ class FileSystemService extends IFileSystemService.Stub {
     @Override
     public IOResult creationTime(String path) {
         try {
-            return new IOResult(Os.lstat(path).st_ctime * 1000);
-        } catch (ErrnoException e) {
+            return new IOResult(Os.lstat(checkPath(path)).st_ctime * 1000);
+        } catch (ErrnoException | IOException e) {
             return new IOResult(e);
         }
     }
 
     @Override
     public long length(String path) {
-        return mCache.get(path).length();
+        return isUsablePath(path) ? mCache.get(path).length() : 0L;
     }
 
     @Override
     public IOResult createNewFile(String path) {
         try {
-            return new IOResult(mCache.get(path).createNewFile());
+            return new IOResult(cached(path).createNewFile());
         } catch (IOException e) {
             return new IOResult(e);
         }
@@ -107,33 +169,37 @@ class FileSystemService extends IFileSystemService.Stub {
 
     @Override
     public boolean delete(String path) {
-        return mCache.get(path).delete();
+        return isUsablePath(path) && mCache.get(path).delete();
     }
 
     @Override
     public StringParceledListSlice list(String path) {
+        if (!isUsablePath(path)) {
+            return null;
+        }
         String[] list = mCache.get(path).list();
         return list != null ? new StringParceledListSlice(Arrays.asList(list)) : null;
     }
 
     @Override
     public boolean mkdir(String path) {
-        return mCache.get(path).mkdir();
+        return isUsablePath(path) && mCache.get(path).mkdir();
     }
 
     @Override
     public boolean mkdirs(String path) {
-        return mCache.get(path).mkdirs();
+        return isUsablePath(path) && mCache.get(path).mkdirs();
     }
 
     @Override
     public boolean renameTo(String path, String dest) {
-        return mCache.get(path).renameTo(mCache.get(dest));
+        return isUsablePath(path) && isUsablePath(dest)
+                && mCache.get(path).renameTo(mCache.get(dest));
     }
 
     @Override
     public boolean setLastModified(String path, long time) {
-        return mCache.get(path).setLastModified(time);
+        return isUsablePath(path) && mCache.get(path).setLastModified(time);
     }
 
     @Override
@@ -143,35 +209,39 @@ class FileSystemService extends IFileSystemService.Stub {
         StructTimespec atime = new StructTimespec(seconds_part, nanoseconds_part);
         StructTimespec mtime = new StructTimespec(0, OsCompat.UTIME_OMIT);
         try {
-            OsCompat.utimensat(OsCompat.AT_FDCWD, path, atime, mtime, OsCompat.AT_SYMLINK_NOFOLLOW);
+            OsCompat.utimensat(OsCompat.AT_FDCWD, checkPath(path), atime, mtime,
+                    OsCompat.AT_SYMLINK_NOFOLLOW);
             return new IOResult(true);
-        } catch (ErrnoException e) {
+        } catch (ErrnoException | IOException e) {
             return new IOResult(e);
         }
     }
 
     @Override
     public boolean setReadOnly(String path) {
-        return mCache.get(path).setReadOnly();
+        return isUsablePath(path) && mCache.get(path).setReadOnly();
     }
 
     @Override
     public boolean setWritable(String path, boolean writable, boolean ownerOnly) {
-        return mCache.get(path).setWritable(writable, ownerOnly);
+        return isUsablePath(path) && mCache.get(path).setWritable(writable, ownerOnly);
     }
 
     @Override
     public boolean setReadable(String path, boolean readable, boolean ownerOnly) {
-        return mCache.get(path).setReadable(readable, ownerOnly);
+        return isUsablePath(path) && mCache.get(path).setReadable(readable, ownerOnly);
     }
 
     @Override
     public boolean setExecutable(String path, boolean executable, boolean ownerOnly) {
-        return mCache.get(path).setExecutable(executable, ownerOnly);
+        return isUsablePath(path) && mCache.get(path).setExecutable(executable, ownerOnly);
     }
 
     @Override
     public boolean checkAccess(String path, int access) {
+        if (!isUsablePath(path)) {
+            return false;
+        }
         try {
             return Os.access(path, access);
         } catch (ErrnoException e) {
@@ -181,25 +251,25 @@ class FileSystemService extends IFileSystemService.Stub {
 
     @Override
     public long getTotalSpace(String path) {
-        return mCache.get(path).getTotalSpace();
+        return isUsablePath(path) ? mCache.get(path).getTotalSpace() : 0L;
     }
 
     @Override
     public long getFreeSpace(String path) {
-        return mCache.get(path).getFreeSpace();
+        return isUsablePath(path) ? mCache.get(path).getFreeSpace() : 0L;
     }
 
     @SuppressLint("UsableSpace")
     @Override
     public long getUsableSpace(String path) {
-        return mCache.get(path).getUsableSpace();
+        return isUsablePath(path) ? mCache.get(path).getUsableSpace() : 0L;
     }
 
     @Override
     public IOResult getMode(String path) {
         try {
-            return new IOResult(Os.lstat(path).st_mode);
-        } catch (ErrnoException e) {
+            return new IOResult(Os.lstat(checkPath(path)).st_mode);
+        } catch (ErrnoException | IOException e) {
             return new IOResult(e);
         }
     }
@@ -207,9 +277,11 @@ class FileSystemService extends IFileSystemService.Stub {
     @Override
     public IOResult setMode(String path, int mode) {
         try {
-            Os.chmod(path, mode);
+            // Linux has no lchmod; the mode of a symlink is not meaningful anyway, so this
+            // necessarily resolves the final component.
+            Os.chmod(checkPath(path), mode);
             return new IOResult(true);
-        } catch (ErrnoException e) {
+        } catch (ErrnoException | IOException e) {
             return new IOResult(e);
         }
     }
@@ -217,9 +289,9 @@ class FileSystemService extends IFileSystemService.Stub {
     @Override
     public IOResult getUidGid(String path) {
         try {
-            StructStat s = Os.lstat(path);
+            StructStat s = Os.lstat(checkPath(path));
             return new IOResult(new UidGidPair(s.st_uid, s.st_gid));
-        } catch (ErrnoException e) {
+        } catch (ErrnoException | IOException e) {
             return new IOResult(e);
         }
     }
@@ -227,37 +299,43 @@ class FileSystemService extends IFileSystemService.Stub {
     @Override
     public IOResult setUidGid(String path, int uid, int gid) {
         try {
-            Os.chown(path, uid, gid);
+            // lchown, not chown: the ownership read above comes from lstat, and a chown that
+            // follows a symlink would hand ownership of an unrelated file to the caller.
+            Os.lchown(checkPath(path), uid, gid);
             return new IOResult(true);
-        } catch (ErrnoException e) {
+        } catch (ErrnoException | IOException e) {
             return new IOResult(e);
         }
     }
 
     @Override
     public String getSelinuxContext(String path) {
-        return SELinux.getFileContext(path);
+        return isUsablePath(path) ? SELinux.getFileContext(path) : null;
     }
 
     @Override
     public boolean restoreSelinuxContext(String path) {
-        return SELinux.restorecon(path);
+        return isUsablePath(path) && SELinux.restorecon(path);
     }
 
     @Override
     public boolean setSelinuxContext(String path, String context) {
-        return SELinux.setFileContext(path, context);
+        return isUsablePath(path) && SELinux.setFileContext(path, context);
     }
 
     @Override
     public IOResult createLink(String link, String target, boolean soft) {
         try {
+            checkPath(link);
+            checkPath(target);
             if (soft) {
                 Os.symlink(target, link);
             } else {
                 Os.link(target, link);
             }
             return new IOResult(true);
+        } catch (IOException e) {
+            return new IOResult(e);
         } catch (ErrnoException e) {
             if (e.errno == OsConstants.EEXIST) {
                 return new IOResult(false);
@@ -286,11 +364,13 @@ class FileSystemService extends IFileSystemService.Stub {
     public IOResult openChannel(String path, int mode, String fifo) {
         OpenFile f = new OpenFile();
         try {
+            checkPath(path);
+            checkPath(fifo);
             f.fd = Os.open(path, mode | O_NONBLOCK, 0666);
             f.read = Os.open(fifo, O_RDONLY | O_NONBLOCK, 0);
             f.write = Os.open(fifo, O_WRONLY | O_NONBLOCK, 0);
             return new IOResult(openFiles.put(f));
-        } catch (ErrnoException e) {
+        } catch (ErrnoException | IOException e) {
             f.close();
             return new IOResult(e);
         }
@@ -300,7 +380,7 @@ class FileSystemService extends IFileSystemService.Stub {
     public IOResult openReadStream(String path, ParcelFileDescriptor fd) {
         OpenFile f = new OpenFile();
         try {
-            f.fd = Os.open(path, O_RDONLY, 0);
+            f.fd = Os.open(checkPath(path), O_RDONLY, 0);
             streamPool.execute(() -> {
                 try (OpenFile of = f) {
                     of.write = FileUtils.createFileDescriptor(fd.detachFd());
@@ -308,7 +388,7 @@ class FileSystemService extends IFileSystemService.Stub {
                 } catch (ErrnoException | IOException ignored) {}
             });
             return new IOResult();
-        } catch (ErrnoException e) {
+        } catch (ErrnoException | IOException e) {
             f.close();
             return new IOResult(e);
         }
@@ -320,7 +400,7 @@ class FileSystemService extends IFileSystemService.Stub {
         OpenFile f = new OpenFile();
         try {
             int mode = O_CREAT | O_WRONLY | (append ? O_APPEND : O_TRUNC);
-            f.fd = Os.open(path, mode, 0666);
+            f.fd = Os.open(checkPath(path), mode, 0666);
             streamPool.execute(() -> {
                 try (OpenFile of = f) {
                     of.read = FileUtils.createFileDescriptor(fd.detachFd());
@@ -328,7 +408,7 @@ class FileSystemService extends IFileSystemService.Stub {
                 } catch (ErrnoException | IOException ignored) {}
             });
             return new IOResult();
-        } catch (ErrnoException e) {
+        } catch (ErrnoException | IOException e) {
             f.close();
             return new IOResult(e);
         }
