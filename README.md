@@ -252,10 +252,18 @@ CVSS 9.0+ findings), retaining the HTML/SARIF reports and their hash receipt
 alongside the SBOM and APK sidecars.
 
 > [!IMPORTANT]
-> As of v0.6.7 that CVE stage cannot run: `dependencyCheckAggregate` resolves a
-> configuration whose POMs are absent from `gradle/verification-metadata.xml`, so
-> Gradle aborts it before the scanner starts. **v0.6.7 therefore ships without CVE
-> evidence.** Every other stage above passed for that release. Tracked as a P1
+> In v0.6.7 that CVE stage could not run at all: `dependencyCheckAggregate`
+> resolves configurations whose POMs were absent from
+> `gradle/verification-metadata.xml`, so Gradle aborted it before the scanner
+> started, and **v0.6.7 shipped without CVE evidence**. That is fixed in v0.6.8 —
+> the scanner now runs to completion and writes its receipt.
+>
+> It currently **blocks**: the first complete run reports 12 findings above the
+> CVSS 9.0 threshold, in `androidx.sqlite`, `io.netty` and the Kotlin toolchain
+> jars. None has been assessed yet — several look like CPE mismatches and some may
+> be build-only rather than shipped — so no claim is made here about whether the
+> APK is affected. Until each is upgraded or suppressed with a written
+> justification, a release cannot produce a passing CVE receipt. Tracked as a P1
 > item in [ROADMAP.md](ROADMAP.md).
 
 Untrusted app-list, rule, snapshot-manifest, and archive inputs also have a
