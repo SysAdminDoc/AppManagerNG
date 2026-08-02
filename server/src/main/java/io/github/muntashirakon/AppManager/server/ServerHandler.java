@@ -2,12 +2,15 @@
 
 package io.github.muntashirakon.AppManager.server;
 
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
 import android.os.Parcelable;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -18,6 +21,8 @@ import io.github.muntashirakon.AppManager.server.common.ConfigParams;
 import io.github.muntashirakon.AppManager.server.common.DataTransmission;
 import io.github.muntashirakon.AppManager.server.common.FLog;
 import io.github.muntashirakon.AppManager.server.common.ParcelableUtil;
+import io.github.muntashirakon.AppManager.server.common.PeerAuthority;
+import io.github.muntashirakon.AppManager.server.common.ServerUtils;
 import io.github.muntashirakon.AppManager.server.common.Shell;
 import io.github.muntashirakon.AppManager.server.common.ShellCaller;
 
@@ -50,10 +55,11 @@ class ServerHandler implements DataTransmission.OnReceiveCallback, Closeable {
         if (token == null) throw new IOException("Token is not found.");
         mRunInBackground = mConfigParams.isRunInBackground();
         // Set server
+        int expectedAppId = resolveExpectedAppId(mConfigParams.getAppName());
         if (port == -1) {
-            mServer = new Server(path, token, mLifecycleAgent, this);
+            mServer = new Server(path, token, expectedAppId, mLifecycleAgent, this);
         } else {
-            mServer = new Server(port, token, mLifecycleAgent, this);
+            mServer = new Server(port, token, expectedAppId, mLifecycleAgent, this);
         }
         mServer.mRunInBackground = mRunInBackground;
         // If run in background not requested, stop server on timeout
@@ -75,6 +81,29 @@ class ServerHandler implements DataTransmission.OnReceiveCallback, Closeable {
 
     void start() throws IOException, RuntimeException {
         mServer.run();
+    }
+
+    /**
+     * App id the channel is being started for, so a connecting peer can be checked against
+     * something it does not choose itself.
+     *
+     * @return The app id, or {@link PeerAuthority#UID_UNKNOWN} when it cannot be resolved here
+     */
+    private static int resolveExpectedAppId(@Nullable String packageName) {
+        if (packageName == null) {
+            FLog.log("ServerHandler: no app name in the parameters; peer uid cannot be checked.");
+            return PeerAuthority.UID_UNKNOWN;
+        }
+        try {
+            Context context = ServerUtils.getSystemContext();
+            int uid = context.getPackageManager().getApplicationInfo(packageName, 0).uid;
+            return PeerAuthority.appIdOf(uid);
+        } catch (PackageManager.NameNotFoundException | RuntimeException e) {
+            FLog.log(e);
+            FLog.log("ServerHandler: could not resolve the uid of " + packageName
+                    + "; peer uid cannot be checked.");
+            return PeerAuthority.UID_UNKNOWN;
+        }
     }
 
     @Override

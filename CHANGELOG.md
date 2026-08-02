@@ -16,6 +16,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   truncated to a single character.
 - Hex attribute values are rejected up front when they have an odd length or a
   non-hex character, instead of failing part-way through decoding.
+- The privileged command channel now checks who connected, not just what they
+  present. The handshake token is a bearer credential, so a connecting peer's
+  owning uid is established first — from the socket's own credentials on the unix
+  path, and from the kernel's connection table on the loopback path — and a peer
+  belonging to a different app is refused before the token is even read. When the
+  peer cannot be identified at all, the connection still proceeds on the token
+  and says so explicitly in the log rather than looking like a check that passed.
+  The token itself is now compared in constant time. Which property is
+  authoritative, and what this does not cover, is written down in
+  `docs/policy/privileged-channel-peer-authority.md`.
 - Replies from the privileged server are no longer read as whatever type the
   bytes name. The shell output is read through its own concrete reader, and a
   remote failure now travels as a message and a rendered stack trace instead of
