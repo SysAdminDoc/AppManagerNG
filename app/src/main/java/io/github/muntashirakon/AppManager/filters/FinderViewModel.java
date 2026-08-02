@@ -25,7 +25,7 @@ public class FinderViewModel extends AndroidViewModel {
     @Nullable
     private List<FilterableAppInfo> mFilterableAppInfoList;
     @NotNull
-    private final FilterItem mFilterItem = new FilterItem();
+    private FilterItem mFilterItem = new FilterItem();
 
     public FinderViewModel(@NotNull Application application) {
         super(application);
@@ -46,6 +46,11 @@ public class FinderViewModel extends AndroidViewModel {
 
     public FilterItem getFilterItem() {
         return mFilterItem;
+    }
+
+    /** Replace the active chain with a detached copy of a saved filter. */
+    public void applyFilterItem(@NotNull FilterItem filterItem) {
+        mFilterItem = filterItem.copy();
     }
 
     public boolean hasActiveFilters() {

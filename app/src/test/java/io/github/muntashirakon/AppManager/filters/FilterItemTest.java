@@ -83,4 +83,17 @@ public class FilterItemTest {
         filterItem.removeFilterOptionAt(0);
         assertEquals("", filterItem.getExpr());
     }
+
+    @Test
+    public void copyDeepCopiesFilterOptions() {
+        FilterItem source = new FilterItem();
+        source.addFilterOption(FilterOptions.create("app_label"));
+        FilterItem copy = source.copy();
+
+        assertEquals(source.getExpr(), copy.getExpr());
+        assertEquals(source.getSize(), copy.getSize());
+        source.removeFilterOptionAt(0);
+        assertEquals(0, source.getSize());
+        assertEquals(1, copy.getSize());
+    }
 }

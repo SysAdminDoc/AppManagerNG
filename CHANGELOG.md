@@ -6,6 +6,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## v0.6.9 — 2026-08-02
 
 ### Fixed
+- Finder now exposes saved filter presets from the toolbar, including save/load, rename, and
+  confirmed deletion with the store's normalized-name and corruption-safe behavior.
 - APK bundle preflight now rejects embedded APKs whose package or version identity differs from
   the base, preserves DRM-free APKM provenance separately from encrypted APKM, and cleans up
   invalid bundle caches before installation selection.
