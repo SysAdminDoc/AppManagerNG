@@ -121,19 +121,3 @@ a device.
 
 ### P3
 
-- [ ] P3 — Re-examine privileged log redaction and log file permissions
-  Why: `FLog.sanitize` redacts by regex — an `auth|token|secret|password|passwd` assignment
-  pattern plus a UUID pattern — and anything not matching reaches a world-readable file. This
-  sits next to the existing repo rule that raw server-launch arguments must never be logged.
-  Evidence: `libserver/src/main/java/io/github/muntashirakon/AppManager/server/common/FLog.java:38-45`
-  (file creation) and `:128-132` (sanitizer); related assumption at
-  `server/.../LifecycleAgent.java:52`, where `setClassName(mConfigParams.getAppName(), ...)`
-  is relied on to make a token-carrying broadcast safe even though the app name arrives from
-  `ServerRunner` argv.
-  Touches: `libserver/src/main/java/io/github/muntashirakon/AppManager/server/common/FLog.java`,
-  `server/src/main/java/io/github/muntashirakon/AppManager/server/LifecycleAgent.java`.
-  Acceptance: the log file is not world-readable, or an allowlist replaces the denylist so
-  unrecognized values are redacted by default; a host test asserts a token in an unusual
-  shape (no `=`, non-UUID) does not survive `sanitize`.
-  Complexity: M
-

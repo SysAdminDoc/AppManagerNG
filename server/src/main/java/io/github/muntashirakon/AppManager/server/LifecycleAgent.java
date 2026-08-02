@@ -46,6 +46,14 @@ final class LifecycleAgent {
         BroadcastSender.sendBroadcast(makeIntent(ServerActions.ACTION_SERVER_STOPPED));
     }
 
+    /**
+     * The target package comes from the {@code app} launch parameter, i.e. from argv, and this
+     * intent carries the channel token. That is sound rather than a leak: whoever supplies the
+     * app name supplies the {@code token} parameter in the same argv, so directing the broadcast
+     * elsewhere discloses nothing the sender did not already choose. The receiver class is fixed,
+     * so the package is the only variable, and an explicit component keeps the token off any
+     * implicit-broadcast path.
+     */
     @NonNull
     private Intent makeIntent(String action) {
         return new Intent(action)
