@@ -3,6 +3,24 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## Unreleased
+
+### Security
+- Malformed Android Binary XML is now always reported as a parse error. Backup
+  metadata, copies of `/data/system/*.xml` and files opened from the file manager
+  all reach the ABX parser, and three paths in it used to fail with an unchecked
+  exception that callers could not contain: an interned-string reference taken
+  straight off the wire and used as an array index, adjacent text regions merged
+  without a size limit, and numeric entities resolved through a bare integer
+  parse. Numeric entities above the basic plane are also no longer silently
+  truncated to a single character.
+- Hex attribute values are rejected up front when they have an odd length or a
+  non-hex character, instead of failing part-way through decoding.
+- The shared binary-XML reader no longer carries an interned-string table from
+  one document into the next, and reading from a reader that has already been
+  recycled fails immediately rather than operating on a live buffer belonging to
+  someone else.
+
 ## v0.6.7 — 2026-07-29
 
 ### Added
