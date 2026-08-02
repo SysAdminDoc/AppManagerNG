@@ -32,6 +32,27 @@ AAPT2 and verifies that a real app compile/test path can write any missing lock
 state. The final two commands prove strict verification and locking can
 initialize and run a focused app test without refresh flags.
 
+## CVE suppression review
+
+The blocking OWASP Dependency-Check gate uses
+`config/owasp-suppressions.xml` for findings that are proven not to apply to
+the shipped application. Every rule must bind a CVE to the exact package
+family/version and include a note describing the reachability or false-positive
+evidence. Do not suppress a whole group, a score range, or a CPE without that
+package-level boundary.
+
+Run the gate at the release threshold and retain its local reports for review:
+
+```powershell
+py -3.12 scripts/run_dependency_cve_gate.py --out-dir reproducible-release/publish
+```
+
+The Gradle configuration fails when a suppression rule has zero matches. This
+means a fixed dependency or withdrawn advisory turns into a visible gate
+failure, so the rule can be removed or re-audited instead of becoming a silent
+permanent exception. Recheck the final `flossRelease` and `fullRelease` APK
+DEX contents whenever a suppression is justified by non-reachability.
+
 ## Configurations that only the CVE gate resolves
 
 `dependencyCheckAggregate` resolves configurations no ordinary build touches —

@@ -22,6 +22,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Declared WorkManager's `SystemForegroundService` as `dataSync` in the app
   manifest, preventing scheduled auto-backup foreground promotion from failing
   on Android 14 and newer.
+- Resolved the 12 CVSS 9.0+ dependency findings from the release gate with
+  package-scoped, evidence-backed dispositions: AndroidX SQLite CPE false
+  positives, UTP-host-only Netty artifacts, and Kotlin build/toolchain artifacts
+  that are absent from the shipped APK DEX files. The gate now fails if any of
+  these suppression rules becomes unused.
 
 ### Security
 - Malformed Android Binary XML is now always reported as a parse error. Backup

@@ -67,6 +67,8 @@ dependencyCheck {
     suppressionFile = file('config/owasp-suppressions.xml').exists()
             ? file('config/owasp-suppressions.xml').toString()
             : null
+    // A disposition that stops matching is a review signal, not a reason to keep ignoring it.
+    failBuildOnUnusedSuppressionRule = true
     skipTestGroups = true
     nvd {
         // Set NVD_API_KEY locally for higher rate limits; falls back to anonymous below.
