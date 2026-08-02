@@ -276,7 +276,16 @@ public final class ApkUtils {
                 if (TextUtils.isEmpty(attrName)) {
                     continue;
                 }
-                manifestAttrs.put(attrName, attr.getValueAsString());
+                String attrValue = attr.getValueAsString();
+                if (attrValue == null && ("versionCode".equals(attrName)
+                        || "versionCodeMajor".equals(attrName)
+                        || "android:versionCode".equals(attrName)
+                        || "android:versionCodeMajor".equals(attrName))) {
+                    // ARSC integer values do not have a string-pool representation. Preserve the
+                    // unsigned manifest value so ApkFile can compare split version identities.
+                    attrValue = String.valueOf(((long) attr.getData()) & 0xffffffffL);
+                }
+                manifestAttrs.put(attrName, attrValue);
             }
             // application
             ResXmlElement resApplicationElement = null;
