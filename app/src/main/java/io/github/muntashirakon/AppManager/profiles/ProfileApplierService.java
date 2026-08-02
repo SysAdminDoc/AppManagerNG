@@ -31,6 +31,7 @@ import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler.N
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
 import io.github.muntashirakon.AppManager.progress.QueuedProgressHandler;
 import io.github.muntashirakon.AppManager.profiles.struct.ProfileApplierResult;
+import io.github.muntashirakon.AppManager.profiles.trigger.RoutineScheduler;
 import io.github.muntashirakon.AppManager.self.SelfBatteryOptimization;
 import io.github.muntashirakon.AppManager.types.ForegroundService;
 import io.github.muntashirakon.AppManager.utils.CpuUtils;
@@ -107,6 +108,7 @@ public class ProfileApplierService extends ForegroundService {
             String failureMessage = success ? null : getProfileFailureMessage(result);
             OpHistoryManager.addHistoryItem(HISTORY_TYPE_PROFILE, item, success,
                     OperationJournalMetadata.forProfile(this, item, success, requiresRestart, result, failureMessage));
+            recordRoutineFilterResult(item, result, failureMessage);
             sendNotification(item.getProfileName(), success ? Activity.RESULT_OK : Activity.RESULT_CANCELED,
                     notify, requiresRestart, failureMessage);
         } catch (Exception e) {
@@ -117,6 +119,11 @@ public class ProfileApplierService extends ForegroundService {
             String failureMessage = e.getMessage();
             OpHistoryManager.addHistoryItem(HISTORY_TYPE_PROFILE, item, false,
                     OperationJournalMetadata.forProfile(this, item, false, false, null, failureMessage));
+            if (item.getRoutineFilter() != null && item.getRoutineTriggerId() != null) {
+                RoutineScheduler.recordRunResult(this, item.getRoutineTriggerId(),
+                        getString(R.string.profile_trigger_result_filter_failed,
+                                failureMessage != null ? failureMessage : getString(R.string.operation_result_review_history)));
+            }
             sendNotification(item.getProfileName(), Activity.RESULT_CANCELED, notify, false, failureMessage);
         } finally {
             if (profileManager != null) {
@@ -127,6 +134,24 @@ public class ProfileApplierService extends ForegroundService {
                 tempProfilePath.delete();
             }
         }
+    }
+
+    private void recordRoutineFilterResult(@NonNull ProfileQueueItem item,
+                                           @NonNull ProfileApplierResult result,
+                                           @Nullable String failureMessage) {
+        if (item.getRoutineFilter() == null || item.getRoutineTriggerId() == null) {
+            return;
+        }
+        String routineResult;
+        if (!result.isSuccessful()) {
+            routineResult = getString(R.string.profile_trigger_result_filter_failed,
+                    failureMessage != null ? failureMessage : getString(R.string.operation_result_review_history));
+        } else if (result.getTargetCount() == 0) {
+            routineResult = getString(R.string.profile_trigger_result_filter_empty);
+        } else {
+            routineResult = getString(R.string.profile_trigger_result_started, item.getProfileName());
+        }
+        RoutineScheduler.recordRunResult(this, item.getRoutineTriggerId(), routineResult);
     }
 
     @Override

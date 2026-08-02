@@ -17,6 +17,8 @@ import org.robolectric.RobolectricTestRunner;
 
 import java.util.List;
 
+import io.github.muntashirakon.AppManager.filters.FilterItem;
+
 @RunWith(RobolectricTestRunner.class)
 public class ProfileTriggerFilterTest {
     @Test
@@ -28,6 +30,32 @@ public class ProfileTriggerFilterTest {
         ProfileTrigger restored = ProfileTrigger.fromJson(trigger.toJson());
         assertEquals("com.vendor.*", restored.packagePattern);
         assertEquals(ProfileTrigger.TYPE_ON_APP_INSTALL, restored.type);
+    }
+
+    @Test
+    public void jsonRoundTripPreservesOptionalRoutineFilter() throws JSONException {
+        FilterItem filter = new FilterItem();
+        filter.setExpr("false");
+        ProfileTrigger trigger = new ProfileTrigger.Builder("profile-1", ProfileTrigger.TYPE_ON_BOOT)
+                .id("filtered")
+                .filter(filter)
+                .build();
+
+        ProfileTrigger restored = ProfileTrigger.fromJson(trigger.toJson());
+        assertTrue(restored.hasFilter());
+        assertEquals("false", restored.getFilterItem().getExpr());
+        // The trigger owns its copy; changing the source cannot alter persisted state.
+        filter.setExpr("true");
+        assertEquals("false", restored.getFilterItem().getExpr());
+    }
+
+    @Test
+    public void oldTriggerJsonHasNoRoutineFilter() throws JSONException {
+        ProfileTrigger restored = ProfileTrigger.fromJson(new org.json.JSONObject()
+                .put("id", "legacy")
+                .put("profile", "profile-1")
+                .put("type", "on_boot"));
+        assertFalse(restored.hasFilter());
     }
 
     @Test

@@ -16,6 +16,8 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
+import io.github.muntashirakon.AppManager.filters.FilterItem;
+
 /**
  * NF-09 — value object describing a profile-execution trigger.
  *
@@ -59,10 +61,12 @@ public final class ProfileTrigger {
      * non-package trigger types.
      */
     @NonNull public final String packagePattern;
+    /** Optional Finder filter restricting the profile targets for this routine. */
+    @Nullable private final FilterItem mFilterItem;
 
     private ProfileTrigger(@NonNull String id, @NonNull String profileId, @Type int type,
                            boolean enabled, int hourOfDay, int minuteOfHour, long createdAt,
-                           @NonNull String packagePattern) {
+                           @NonNull String packagePattern, @Nullable FilterItem filterItem) {
         this.id = id;
         this.profileId = profileId;
         this.type = type;
@@ -71,6 +75,7 @@ public final class ProfileTrigger {
         this.minuteOfHour = minuteOfHour;
         this.createdAt = createdAt;
         this.packagePattern = isPackageEventType(type) ? packagePattern : "";
+        mFilterItem = normalizeFilter(filterItem);
     }
 
     /** Whether {@code type} is one of the package-change trigger types. */
@@ -94,6 +99,27 @@ public final class ProfileTrigger {
             return false;
         }
         return globToPattern(packagePattern).matcher(changedPackage).matches();
+    }
+
+    /** Return a detached copy of the optional routine filter. */
+    @Nullable
+    public FilterItem getFilterItem() {
+        return mFilterItem != null ? mFilterItem.copy() : null;
+    }
+
+    public boolean hasFilter() {
+        return mFilterItem != null;
+    }
+
+    @Nullable
+    private static FilterItem normalizeFilter(@Nullable FilterItem filterItem) {
+        if (filterItem == null) {
+            return null;
+        }
+        if (filterItem.getSize() == 0 && filterItem.getExpr().trim().isEmpty()) {
+            return null;
+        }
+        return filterItem.copy();
     }
 
     @NonNull
@@ -125,6 +151,7 @@ public final class ProfileTrigger {
         private int minuteOfHour = 0;
         private long createdAt = System.currentTimeMillis();
         @NonNull private String packagePattern = "";
+        @Nullable private FilterItem filterItem;
 
         public Builder(@NonNull String profileId, @Type int type) {
             this.profileId = profileId;
@@ -138,6 +165,13 @@ public final class ProfileTrigger {
         /** Optional glob restricting a package-event trigger to matching packages. */
         public Builder packagePattern(@Nullable String packagePattern) {
             this.packagePattern = packagePattern != null ? packagePattern.trim() : "";
+            return this;
+        }
+
+        /** Optional Finder filter restricting the profile targets for this routine. */
+        @NonNull
+        public Builder filter(@Nullable FilterItem filterItem) {
+            this.filterItem = filterItem != null ? filterItem.copy() : null;
             return this;
         }
 
@@ -165,7 +199,7 @@ public final class ProfileTrigger {
             }
             String resolvedId = id != null ? id : UUID.randomUUID().toString();
             return new ProfileTrigger(resolvedId, profileId, type, enabled,
-                    hourOfDay, minuteOfHour, createdAt, packagePattern);
+                    hourOfDay, minuteOfHour, createdAt, packagePattern, filterItem);
         }
     }
 
@@ -185,7 +219,7 @@ public final class ProfileTrigger {
     public ProfileTrigger withEnabled(boolean enabled) {
         if (this.enabled == enabled) return this;
         return new ProfileTrigger(id, profileId, type, enabled, hourOfDay, minuteOfHour, createdAt,
-                packagePattern);
+                packagePattern, mFilterItem);
     }
 
     @NonNull
@@ -202,6 +236,9 @@ public final class ProfileTrigger {
         if (!packagePattern.isEmpty()) {
             json.put("packagePattern", packagePattern);
         }
+        if (mFilterItem != null) {
+            json.put("filter", mFilterItem.serializeToJson());
+        }
         json.put("createdAt", createdAt);
         return json;
     }
@@ -216,6 +253,24 @@ public final class ProfileTrigger {
         int minute = json.optInt("minute", 0);
         String packagePattern = json.optString("packagePattern", "");
         long createdAt = json.optLong("createdAt", System.currentTimeMillis());
+        FilterItem filterItem = null;
+        Object filterValue = json.opt("filter");
+        if (filterValue != null && filterValue != JSONObject.NULL && !(filterValue instanceof JSONObject)) {
+            throw new JSONException("trigger JSON has invalid filter");
+        }
+        JSONObject filterJson = filterValue instanceof JSONObject ? (JSONObject) filterValue : null;
+        if (filterJson != null) {
+            try {
+                filterItem = new FilterItem(filterJson);
+            } catch (JSONException | RuntimeException e) {
+                // A malformed optional filter must invalidate only this trigger entry. The
+                // store will drop it and surface the recovery count instead of applying the
+                // profile without the user's intended scope.
+                JSONException error = new JSONException("trigger JSON has invalid filter");
+                error.initCause(e);
+                throw error;
+            }
+        }
         if (id.isEmpty() || profileId.isEmpty()) {
             throw new JSONException("trigger JSON missing id or profile");
         }
@@ -230,7 +285,8 @@ public final class ProfileTrigger {
             hour = 0;
             minute = 0;
         }
-        return new ProfileTrigger(id, profileId, type, enabled, hour, minute, createdAt, packagePattern);
+        return new ProfileTrigger(id, profileId, type, enabled, hour, minute, createdAt,
+                packagePattern, filterItem);
     }
 
     @NonNull
