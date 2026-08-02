@@ -60,6 +60,21 @@ import io.github.muntashirakon.compat.io.FastDataInput;
  * </ul>
  */
 public final class BinaryXmlPullParser implements TypedXmlPullParser {
+    /**
+     * Upper bound on the combined length of adjacent text regions merged by {@link #next()}.
+     * The wire format caps a single region at 65,535 bytes but places no limit on how many
+     * regions may follow one another, so a malformed stream could otherwise drive an
+     * {@link OutOfMemoryError} — which callers catching {@link XmlPullParserException} and
+     * {@link IOException} will not contain. No real document approaches this.
+     */
+    private static final int MAX_COMBINED_TEXT_LENGTH = 8 * 1024 * 1024;
+
+    /**
+     * Upper bound on the number of attributes accumulated for a single tag. Attribute pool
+     * growth is otherwise driven purely by how many ATTRIBUTE tokens the stream contains.
+     */
+    private static final int MAX_ATTRIBUTES = 65_535;
+
     private FastDataInput mIn;
 
     private int mCurrentToken = START_DOCUMENT;
@@ -300,7 +315,10 @@ public final class BinaryXmlPullParser implements TypedXmlPullParser {
      * will still be {@link #TEXT}.
      */
     private void consumeAdditionalText() throws IOException, XmlPullParserException {
-        String combinedText = mCurrentText;
+        final StringBuilder combinedText = new StringBuilder();
+        if (mCurrentText != null) {
+            combinedText.append(mCurrentText);
+        }
         while (true) {
             final int token = peekNextExternalToken();
             switch (token) {
@@ -314,13 +332,19 @@ public final class BinaryXmlPullParser implements TypedXmlPullParser {
                 case ENTITY_REF:
                     // Additional text regions collected
                     consumeToken();
-                    combinedText += mCurrentText;
+                    if (mCurrentText != null) {
+                        if (combinedText.length() + mCurrentText.length() > MAX_COMBINED_TEXT_LENGTH) {
+                            throw new XmlPullParserException("Combined text region exceeds "
+                                    + MAX_COMBINED_TEXT_LENGTH + " characters");
+                        }
+                        combinedText.append(mCurrentText);
+                    }
                     break;
                 default:
                     // Next token is something non-text, so wrap things up
                     mCurrentToken = TEXT;
                     mCurrentName = null;
-                    mCurrentText = combinedText;
+                    mCurrentText = combinedText.toString();
                     return;
             }
         }
@@ -336,8 +360,18 @@ public final class BinaryXmlPullParser implements TypedXmlPullParser {
             case "quot": return "\"";
         }
         if (entity.length() > 1 && entity.charAt(0) == '#') {
-            final char c = (char) Integer.parseInt(entity.substring(1));
-            return new String(new char[] { c });
+            // The digits arrive from the stream, so neither a parse failure nor an
+            // out-of-range code point may escape as an unchecked throwable.
+            final int codePoint;
+            try {
+                codePoint = Integer.parseInt(entity.substring(1));
+            } catch (NumberFormatException e) {
+                throw new XmlPullParserException("Malformed numeric entity " + entity);
+            }
+            if (!Character.isValidCodePoint(codePoint)) {
+                throw new XmlPullParserException("Numeric entity out of range " + entity);
+            }
+            return new String(Character.toChars(codePoint));
         }
         throw new XmlPullParserException("Unknown entity " + entity);
     }
@@ -388,7 +422,11 @@ public final class BinaryXmlPullParser implements TypedXmlPullParser {
      * currently processed. This will automatically grow the internal pool as
      * needed.
      */
-    private @NonNull Attribute obtainAttribute() {
+    private @NonNull Attribute obtainAttribute() throws XmlPullParserException {
+        if (mAttributeCount == MAX_ATTRIBUTES) {
+            throw new XmlPullParserException("More than " + MAX_ATTRIBUTES
+                    + " attributes on a single tag");
+        }
         if (mAttributeCount == mAttributes.length) {
             final int before = mAttributes.length;
             final int after = before + (before >> 1);
