@@ -148,36 +148,6 @@ repeat the work:
 ### P1
 
 
-- [ ] P1 — Scanner shows a toast from a worker thread, crashing on the cache-failure path
-  Category: correctness
-  Where: `app/src/main/java/io/github/muntashirakon/AppManager/scanner/ScannerViewModel.java:437-451`
-  (`cacheFileIfRequired`, toast at line 448); submitted at `:127-134`
-  Problem: `cacheFileIfRequired()` is annotated `@WorkerThread` and is submitted to a
-  `MultithreadedExecutor`, whose threads come from `Executors.newFixedThreadPool` and therefore have
-  no Looper. Its `catch (IOException e)` block calls
-  `UIUtils.displayLongToast(R.string.failed_to_fetch_package_info)`, which is annotated `@UiThread`
-  and calls `Toast.makeText(...).show()`. Showing a toast from a thread that has not called
-  `Looper.prepare()` throws `RuntimeException: Can't toast on a thread that has not called
-  Looper.prepare()`. Because this is an error path — the APK could not be cached — it only fires when
-  something has already gone wrong, which is precisely when the user needs a message rather than a
-  crash. The comment above it ("surface the failure instead of silently showing a blank scan") shows
-  the intent was to improve error reporting.
-  Evidence: `ScannerViewModel.java:90` `MultithreadedExecutor.getNewInstance()`;
-  `MultithreadedExecutor.java:40` returns `Executors.newFixedThreadPool(getThreadCount())`;
-  `UIUtils.java:327-330` shows `displayLongToast(@StringRes int)` annotated `@UiThread` calling
-  `Toast.makeText(...).show()`. Lint reports `WrongThreadInterprocedural` "(WorkerThread to UiThread):
-  ScannerViewModel#cacheFileIfRequired -> UIUtils#displayLongToast" at line 428, suppressed in
-  `app/lint-baseline.xml`.
-  Fix: post the toast to the main thread instead of calling it inline — wrap the `displayLongToast`
-  call in the project's existing main-thread helper (`ThreadUtils`/`UiThreadHandler`, matching what
-  neighbouring view models already use). Better still, surface the failure through a LiveData the
-  fragment already observes so the message follows the screen lifecycle.
-  Acceptance: a Robolectric/JUnit test that forces `mFileCache.getCachedFile(...)` to throw
-  `IOException` and asserts `cacheFileIfRequired()` returns without throwing; the corresponding
-  `WrongThreadInterprocedural` baseline entry is removed and lint stays clean.
-  Confidence: Verified
-  Effort: S
-
 ### P2
 
 - [ ] P2 — The file-permission dialog is hardcoded in English and is never translated
