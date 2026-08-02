@@ -16,6 +16,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   truncated to a single character.
 - Hex attribute values are rejected up front when they have an odd length or a
   non-hex character, instead of failing part-way through decoding.
+- Replies from the privileged server are no longer read as whatever type the
+  bytes name. The shell output is read through its own concrete reader, and a
+  remote failure now travels as a message and a rendered stack trace instead of
+  a Java-serialized exception object. Parameter type names carried on the channel
+  resolve only against a fixed allowlist; anything else is refused instead of
+  being loaded.
 - The privileged server now refuses to start on a malformed parameter string
   instead of failing part-way through parsing it, and the failure it logs never
   echoes the argument — it carries the privileged-channel token. A parameter
