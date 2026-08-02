@@ -16,6 +16,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   receipt; the findings it reports are being triaged separately.
 
 ### Fixed
+- Updated filter-expression highlighting to use the themed primary and
+  informational colors, and restricted boolean highlighting to whole words so
+  package names such as `com.truecaller` remain unstyled.
 - Localized the file-mode permission labels and the audio player's default speed
   label through string resources, removing the remaining hardcoded-text lint debt.
 - Routed scanner cache-failure toast delivery through the main-thread helper,
