@@ -3,7 +3,7 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## Unreleased
+## v0.6.8 — 2026-08-02
 
 ### Security
 - Malformed Android Binary XML is now always reported as a parse error. Backup

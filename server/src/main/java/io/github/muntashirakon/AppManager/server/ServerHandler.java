@@ -98,7 +98,10 @@ class ServerHandler implements DataTransmission.OnReceiveCallback, Closeable {
             Context context = ServerUtils.getSystemContext();
             int uid = context.getPackageManager().getApplicationInfo(packageName, 0).uid;
             return PeerAuthority.appIdOf(uid);
-        } catch (PackageManager.NameNotFoundException | RuntimeException e) {
+        } catch (PackageManager.NameNotFoundException | RuntimeException | LinkageError e) {
+            // Deliberately broad: this is a defence-in-depth lookup layered on top of the
+            // handshake token, so no failure of it may stop the server from starting. The
+            // fallback is token-only and is logged as such.
             FLog.log(e);
             FLog.log("ServerHandler: could not resolve the uid of " + packageName
                     + "; peer uid cannot be checked.");
