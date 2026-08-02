@@ -117,27 +117,6 @@ a device.
 
 ### P1
 
-- [ ] P1 — Bounds-check the ABX interned-string table before indexing
-  Why: `readInternedUTF` takes a 16-bit reference straight off the wire and uses it as an
-  array index with no definedness or bounds check, while the backing array starts at length
-  32. A malformed ABX stream yields `ArrayIndexOutOfBoundsException` — an unchecked
-  exception that callers catching `XmlPullParserException`/`IOException` will not contain.
-  ABX bytes are attacker-influenceable: backup metadata, copies of `/data/system/*.xml`, and
-  user-opened files all reach it.
-  Evidence: `libcore/compat/src/main/java/io/github/muntashirakon/compat/io/FastDataInput.java:250,267`
-  (`return mStringRefs[ref];`); ingress at
-  `libcore/compat/src/main/java/io/github/muntashirakon/compat/xml/BinaryXmlPullParser.java:79,104`
-  where a 4-byte magic is the only structural gate; reached from
-  `app/src/main/java/io/github/muntashirakon/AppManager/ssaid/SettingsStateV26.java:865`,
-  `app/src/main/java/io/github/muntashirakon/AppManager/uri/UriManager.java:130`, and
-  `app/src/main/java/io/github/muntashirakon/AppManager/editor/CodeEditorViewModel.java:173`.
-  Touches: `libcore/compat/src/main/java/io/github/muntashirakon/compat/io/FastDataInput.java`.
-  Acceptance: an out-of-range or undefined reference raises `XmlPullParserException` (or
-  `IOException`), never an unchecked throwable; a JUnit case feeds a hand-built ABX blob with
-  a dangling string reference and asserts the checked exception; a Jazzer/fuzz harness over
-  `BinaryXmlPullParser.setInput` runs clean for a fixed corpus.
-  Complexity: S
-
 - [ ] P1 — Establish whether the privileged socket authenticates the peer or only the token
   Why: the threat model records that after `shakeHands` succeeds, neither `Server` nor
   `ServerHandler` checks the peer's uid or pid — no `SO_PEERCRED` on the `LocalSocket` path
@@ -181,26 +160,6 @@ a device.
   Complexity: L
 
 ### P2
-
-- [ ] P2 — Make the ABX parser reject malformed input without unchecked exceptions
-  Why: three separate paths turn malformed input into throwables that a
-  `catch (XmlPullParserException | IOException)` caller will not contain — unbounded string
-  accumulation across repeated TEXT tokens (`OutOfMemoryError`), numeric entity resolution
-  through a bare `Integer.parseInt` (`NumberFormatException`), and `HexDump` decoding with no
-  odd-length or non-hex guard, unlike the inlined copy in the parser itself. Attribute-pool
-  growth is likewise driven purely by how many ATTRIBUTE tokens the stream contains.
-  Evidence: `libcore/compat/.../xml/BinaryXmlPullParser.java:317` (`combinedText +=`), `:339`
-  (`Integer.parseInt(entity.substring(1))`), `:395` (attribute pool growth), `:919` vs
-  `libcore/compat/src/main/java/io/github/muntashirakon/compat/HexDump.java:39-44` (the guard
-  present in one and absent in the other); wrapper swallowing at
-  `libcore/compat/src/main/java/io/github/muntashirakon/compat/xml/XmlUtils.java:106-121`.
-  Touches: `libcore/compat/.../xml/BinaryXmlPullParser.java`,
-  `libcore/compat/.../HexDump.java`, `libcore/compat/.../xml/XmlUtils.java`.
-  Acceptance: `hexStringToByteArray` rejects odd-length and non-hex input with a checked
-  failure; text accumulation and attribute-pool growth are bounded with a documented limit;
-  every malformed-input case surfaces as `XmlPullParserException`; the broad
-  `catch (Exception)` in `XmlUtils` is narrowed once the callee contract is tight.
-  Complexity: M
 
 - [ ] P2 — Constrain deserialization and dynamic class loading on the peer path
   Why: peer-controlled bytes are unmarshalled as a `Parcel`, a `Throwable` is read back via
@@ -249,17 +208,6 @@ a device.
   Complexity: S
 
 ### P3
-
-- [ ] P3 — Remove the process-wide `FastDataInput` cache reuse hazard
-  Why: `sInCache` is a static, process-wide recycler and `release()` assumes no caller keeps
-  using an instance afterwards. A use-after-release hands a live buffer plus a stale interned
-  string table to an unrelated — and differently trusted — parse.
-  Evidence: `libcore/compat/src/main/java/io/github/muntashirakon/compat/io/FastDataInput.java:32,97,110`.
-  Touches: `libcore/compat/src/main/java/io/github/muntashirakon/compat/io/FastDataInput.java`.
-  Acceptance: the string table is cleared on release (or the instance is poisoned so reuse
-  fails loudly); a host test releases an instance, obtains a fresh one, and asserts no
-  string-table state carries over.
-  Complexity: S
 
 - [ ] P3 — Strengthen old-server identity before `killProcess`
   Why: `killOldServer` treats `/proc/<pid>/cmdline` name equality as a sufficient identity
