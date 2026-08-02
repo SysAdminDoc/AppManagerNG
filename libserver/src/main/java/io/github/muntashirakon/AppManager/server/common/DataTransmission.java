@@ -186,8 +186,9 @@ public final class DataTransmission implements Closeable {
                 throw new IOException("Malformed handshake");
             }
             String clientToken = split[1];
-            // Match tokens
-            if (token.equals(clientToken)) {
+            // Match tokens. Compared in constant time: String.equals returns as soon as it finds
+            // a differing character, and the peer controls this string and can time the reply.
+            if (constantTimeEquals(token, clientToken)) {
                 // Connection is authorised
                 FLog.log("DataTransmission#shakeHands: Authentication successful.");
             } else {
@@ -208,6 +209,23 @@ public final class DataTransmission implements Closeable {
             Log.e("DataTransmission", "shakeHands: Client protocol: " + PROTOCOL_VERSION);
             sendMessage(PROTOCOL_VERSION + "," + token);
         }
+    }
+
+    /**
+     * Compare two tokens without leaking where they first differ. The comparison time still
+     * depends on the expected token's length, which is fixed, not on the peer's input.
+     */
+    static boolean constantTimeEquals(@NonNull String expected, @Nullable String actual) {
+        if (actual == null || actual.isEmpty() || expected.isEmpty()) {
+            // An empty token never authenticates anything.
+            return false;
+        }
+        int diff = expected.length() ^ actual.length();
+        for (int i = 0; i < expected.length(); ++i) {
+            // Wrap rather than stop short, so a shorter input costs the same as a full-length one.
+            diff |= expected.charAt(i) ^ actual.charAt(i % actual.length());
+        }
+        return diff == 0;
     }
 
     /**

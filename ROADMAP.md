@@ -117,28 +117,6 @@ a device.
 
 ### P1
 
-- [ ] P1 — Establish whether the privileged socket authenticates the peer or only the token
-  Why: the threat model records that after `shakeHands` succeeds, neither `Server` nor
-  `ServerHandler` checks the peer's uid or pid — no `SO_PEERCRED` on the `LocalSocket` path
-  and no peer check on the TCP loopback path — so possession of the handshake token is
-  treated as proof of identity. Anything that can reach the abstract socket name or the
-  loopback port and replay/guess the token reaches `shell.exec` in the root/shell-uid
-  process. Confirm the real exposure first: the token is device-local and short-lived, which
-  may already close this.
-  Evidence: `server/src/main/java/io/github/muntashirakon/AppManager/server/Server.java:80`
-  (accept before any token check), `:162` (LocalSocket path), `:201` (TCP path);
-  `libserver/src/main/java/io/github/muntashirakon/AppManager/server/common/DataTransmission.java:176,190`;
-  sink at `server/src/main/java/io/github/muntashirakon/AppManager/server/ServerHandler.java:132`
-  (`shell.exec(shellCaller.getCommand())` with zero filtering).
-  Touches: `server/src/main/java/io/github/muntashirakon/AppManager/server/Server.java`,
-  `libserver/src/main/java/io/github/muntashirakon/AppManager/server/common/DataTransmission.java`.
-  Acceptance: a written note in `docs/` states which peer property is authoritative and why;
-  if the token alone is not sufficient, the LocalSocket path asserts peer credentials and the
-  TCP path is either bound with an equivalent check or documented as unreachable in shipped
-  configurations; a host test drives the handshake with a valid token from an unexpected peer
-  and asserts the connection is refused.
-  Complexity: M
-
 - [ ] P1 — Anchor and normalize paths in the privileged filesystem service
   Why: no method in `FileSystemService` normalizes, canonicalizes or anchors the
   caller-supplied path, and the threat model notes path traversal and symlink-following are
