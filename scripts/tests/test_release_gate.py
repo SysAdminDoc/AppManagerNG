@@ -177,6 +177,18 @@ class TranslationOutputTest(unittest.TestCase):
         problems = gate.validate_translation_output("Source strings: 100\n")
         self.assertTrue(any("no locale coverage rows" in p for p in problems))
 
+    def test_machine_readable_summary_is_parsed(self) -> None:
+        summary = gate.parse_translation_summary(
+            'TRANSLATION_SUMMARY={"localeCount":2,"newMissing":0,"sourceStrings":100,"staleStrings":0}'
+        )
+        self.assertEqual(100, summary["sourceStrings"])
+
+    def test_machine_readable_summary_rejects_new_gaps(self) -> None:
+        with self.assertRaises(gate.GateError):
+            gate.parse_translation_summary(
+                'TRANSLATION_SUMMARY={"localeCount":2,"newMissing":1,"sourceStrings":100,"staleStrings":0}'
+            )
+
 
 BADGING = (
     "package: name='io.github.sysadmindoc.AppManagerNG' versionCode='14' versionName='0.6.6' "
@@ -262,6 +274,17 @@ class ReceiptTest(unittest.TestCase):
         self.assertEqual(["source"], [stage["name"] for stage in receipt["stages"]])
         self.assertEqual([], receipt["artifacts"])
         self.assertIsNone(receipt["signingCertificateSha256"])
+
+    def test_the_receipt_keeps_stage_data_for_audit_counts(self) -> None:
+        results = [gate.StageResult("translation", True, "100 source strings", {
+            "sourceStrings": 100,
+            "localeCount": 2,
+            "newMissing": 0,
+            "staleStrings": 0,
+        })]
+        with tempfile.TemporaryDirectory() as tmp:
+            receipt = gate.build_receipt(Path(tmp), results, {}, None, None, "gradlew")
+        self.assertEqual(100, receipt["stages"][0]["data"]["sourceStrings"])
 
 
 class SourceStageTest(unittest.TestCase):

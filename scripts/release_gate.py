@@ -39,7 +39,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, Sequence
 
-RECEIPT_SCHEMA_VERSION = 2
+RECEIPT_SCHEMA_VERSION = 3
 DEFAULT_OUT_DIR = Path("build") / "release-gate"
 LINT_VARIANT = "flossRelease"
 
@@ -224,6 +224,7 @@ def prune_baseline_xml(xml_text: str, current: Sequence[LintIssue],
 
 _TRANSLATION_SOURCE_RE = re.compile(r"^Source strings:\s*(\d+)\s*$", re.MULTILINE)
 _TRANSLATION_COVERAGE_RE = re.compile(r"^\s+(\S+):\s*(\d+)\s*/\s*(\d+)\s*\((\d+)%\)\s*$", re.MULTILINE)
+_TRANSLATION_SUMMARY_RE = re.compile(r"^TRANSLATION_SUMMARY=(\{.*\})$", re.MULTILINE)
 
 
 def validate_translation_output(output: str) -> list[str]:
@@ -254,6 +255,25 @@ def validate_translation_output(output: str) -> list[str]:
         if not 0 <= percent_int <= 100:
             problems.append(f"{locale}: coverage percentage {percent_int} is out of range")
     return problems
+
+
+def parse_translation_summary(output: str) -> dict:
+    """Read the machine-readable coverage counts emitted by the translation checker."""
+    match = _TRANSLATION_SUMMARY_RE.search(output)
+    if match is None:
+        raise GateError("translation report did not emit a machine-readable summary")
+    try:
+        summary = json.loads(match.group(1))
+    except json.JSONDecodeError as exc:
+        raise GateError(f"translation summary is not valid JSON: {exc}") from exc
+    if not isinstance(summary, dict):
+        raise GateError("translation summary is not an object")
+    for key in ("sourceStrings", "localeCount", "newMissing", "staleStrings"):
+        if not isinstance(summary.get(key), int) or isinstance(summary[key], bool):
+            raise GateError(f"translation summary has no integer {key}")
+    if summary["newMissing"] or summary["staleStrings"]:
+        raise GateError("translation summary reports unhandled coverage or stale-string findings")
+    return summary
 
 
 _BADGING_PACKAGE_RE = re.compile(
@@ -491,7 +511,13 @@ def stage_translation(repo_root: Path) -> StageResult:
     problems = validate_translation_output(result.stdout)
     if problems:
         raise GateError("translation report is malformed:\n  " + "\n  ".join(problems))
-    return StageResult("translation", True, "counts are internally consistent")
+    summary = parse_translation_summary(result.stdout)
+    return StageResult(
+        "translation",
+        True,
+        f"{summary['sourceStrings']} source strings across {summary['localeCount']} locales; no new gaps",
+        summary,
+    )
 
 
 def stage_tests(repo_root: Path, gradle_cmd: str) -> StageResult:
@@ -693,7 +719,12 @@ def build_receipt(repo_root: Path, results: Sequence[StageResult], expected: dic
         },
         "identity": expected,
         "stages": [
-            {"name": result.name, "passed": result.passed, "detail": result.detail}
+            {
+                "name": result.name,
+                "passed": result.passed,
+                "detail": result.detail,
+                **({"data": result.data} if result.data else {}),
+            }
             for result in results
         ],
         "artifacts": reproducible.data.get("artifacts", []) if reproducible else [],
