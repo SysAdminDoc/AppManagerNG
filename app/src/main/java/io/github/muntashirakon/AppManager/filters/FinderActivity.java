@@ -3,23 +3,32 @@
 package io.github.muntashirakon.AppManager.filters;
 
 import android.os.Bundle;
+import android.text.InputType;
 import android.view.MenuItem;
+import android.view.Menu;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.LinearLayoutCompat;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.chip.Chip;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
+import java.util.List;
 import java.util.Optional;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.filters.preset.FilterPresetStore;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.util.UiUtils;
@@ -35,12 +44,14 @@ public class FinderActivity extends BaseActivity implements EditFiltersDialogFra
     private FloatingActionButton mFilterBtn;
     private Chip mActiveFiltersChip;
     private MultiSelectionView mMultiSelectionView;
+    private FilterPresetStore mPresetStore;
 
     @Override
     protected void onAuthenticated(@Nullable Bundle savedInstanceState) {
         setContentView(R.layout.activity_finder);
         setSupportActionBar(findViewById(R.id.toolbar));
         mViewModel = new ViewModelProvider(this).get(FinderViewModel.class);
+        mPresetStore = new FilterPresetStore(this);
         Optional.ofNullable(getSupportActionBar())
                 .ifPresent(actionBar -> actionBar.setDisplayHomeAsUpEnabled(true));
         mProgress = findViewById(R.id.progress_linear);
@@ -89,9 +100,19 @@ public class FinderActivity extends BaseActivity implements EditFiltersDialogFra
     }
 
     @Override
+    public boolean onCreateOptionsMenu(@NonNull Menu menu) {
+        getMenuInflater().inflate(R.menu.activity_finder_actions, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
             finish();
+            return true;
+        }
+        if (item.getItemId() == R.id.action_finder_presets) {
+            showPresetsDialog();
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -113,6 +134,109 @@ public class FinderActivity extends BaseActivity implements EditFiltersDialogFra
     public void onItemAltered(@NonNull FilterItem item) {
         mViewModel.loadFilteredAppList(false);
         updateActiveFiltersChip();
+    }
+
+    private void showPresetsDialog() {
+        List<FilterPresetStore.Preset> presets = mPresetStore.all();
+        String[] labels = new String[presets.size()];
+        for (int i = 0; i < presets.size(); ++i) {
+            labels[i] = presets.get(i).name;
+        }
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.finder_saved_filters)
+                .setPositiveButton(R.string.finder_save_filter, (dialog, which) -> showPresetNameDialog(null))
+                .setNegativeButton(R.string.cancel, null);
+        if (presets.isEmpty()) {
+            builder.setMessage(R.string.finder_no_saved_filters);
+        } else {
+            builder.setItems(labels, (dialog, which) -> loadPreset(presets.get(which)))
+                    .setNeutralButton(R.string.finder_manage_filters,
+                            (dialog, which) -> showPresetManagementDialog());
+        }
+        builder.show();
+    }
+
+    private void loadPreset(@NonNull FilterPresetStore.Preset preset) {
+        mViewModel.applyFilterItem(preset.filter);
+        mViewModel.loadFilteredAppList(false);
+        updateActiveFiltersChip();
+        UIUtils.displayShortToast(getString(R.string.finder_filter_loaded, preset.name));
+    }
+
+    private void showPresetManagementDialog() {
+        List<FilterPresetStore.Preset> presets = mPresetStore.all();
+        if (presets.isEmpty()) {
+            showPresetsDialog();
+            return;
+        }
+        String[] labels = new String[presets.size()];
+        for (int i = 0; i < presets.size(); ++i) {
+            labels[i] = presets.get(i).name;
+        }
+        final int[] selected = {-1};
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.finder_manage_filters)
+                .setSingleChoiceItems(labels, -1, (dialog, which) -> selected[0] = which)
+                .setPositiveButton(R.string.rename, (dialog, which) -> {
+                    if (selected[0] >= 0) showPresetNameDialog(presets.get(selected[0]));
+                    else UIUtils.displayShortToast(R.string.finder_select_filter_first);
+                })
+                .setNegativeButton(R.string.delete, (dialog, which) -> {
+                    if (selected[0] >= 0) confirmDeletePreset(presets.get(selected[0]));
+                    else UIUtils.displayShortToast(R.string.finder_select_filter_first);
+                })
+                .setNeutralButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void confirmDeletePreset(@NonNull FilterPresetStore.Preset preset) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.finder_delete_filter_title)
+                .setMessage(getString(R.string.finder_delete_filter_message, preset.name))
+                .setPositiveButton(R.string.delete, (dialog, which) -> {
+                    if (mPresetStore.remove(preset.id)) {
+                        UIUtils.displayShortToast(R.string.finder_filter_deleted);
+                    }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void showPresetNameDialog(@Nullable FilterPresetStore.Preset existing) {
+        TextInputLayout inputLayout = new TextInputLayout(this);
+        inputLayout.setHint(R.string.finder_filter_name_hint);
+        TextInputEditText input = new TextInputEditText(inputLayout.getContext());
+        input.setSingleLine(true);
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        if (existing != null) input.setText(existing.name);
+        inputLayout.addView(input, new LinearLayoutCompat.LayoutParams(
+                LinearLayoutCompat.LayoutParams.MATCH_PARENT, LinearLayoutCompat.LayoutParams.WRAP_CONTENT));
+        inputLayout.setPadding(getResources().getDimensionPixelSize(R.dimen.premium_space_16), 0,
+                getResources().getDimensionPixelSize(R.dimen.premium_space_16), 0);
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setTitle(existing == null ? R.string.finder_save_filter : R.string.finder_rename_filter)
+                .setView(inputLayout)
+                .setPositiveButton(R.string.save, null)
+                .setNegativeButton(R.string.cancel, null)
+                .create();
+        dialog.setOnShowListener(ignored -> {
+            input.selectAll();
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                FilterPresetStore.Preset result = existing == null
+                        ? mPresetStore.save(input.getText(), mViewModel.getFilterItem())
+                        : mPresetStore.rename(existing.id, input.getText());
+                if (result == null) {
+                    inputLayout.setError(getString(R.string.finder_filter_name_invalid));
+                    return;
+                }
+                dialog.dismiss();
+                UIUtils.displayShortToast(existing == null
+                        ? getString(R.string.finder_filter_saved, result.name)
+                        : getString(R.string.finder_filter_renamed, result.name));
+            });
+        });
+        dialog.show();
     }
 
     private void updateActiveFiltersChip() {
