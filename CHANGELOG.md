@@ -6,6 +6,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## v0.6.9 — 2026-08-02
 
 ### Fixed
+- Serialized rules read-modify-write transactions by package and user, refreshed long-lived
+  read-only component views before mutation, and switched local TSV persistence to atomic replace
+  writes so concurrent rule changes cannot truncate or silently overwrite each other.
 - Promoted `NewApi`, `WrongThreadInterprocedural`, and
   `SpecifyForegroundServiceType` to blocking lint checks. Added explicit API guards
   and thread-boundary annotations for the remaining compatibility paths, and removed

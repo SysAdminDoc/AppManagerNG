@@ -98,11 +98,10 @@ public final class ComponentsBlocker extends RulesStorageManager {
 
     /**
      * Get a new or existing MUTABLE instance of {@link ComponentsBlocker}. This DOES NOT read rules
-     * from the {@link #SYSTEM_RULES_PATH}. This is essentially the same as calling
-     * {@link #getInstance(String, int, boolean)} with the last argument set to {@code true} and
-     * calling {@link #setMutable()} after that. Closing this instance will commit the changes
-     * automatically. To prevent this, {@link #setReadOnly()} should be called before closing
-     * the instance.
+     * from the {@link #SYSTEM_RULES_PATH}. This creates the instance with the per-package/user
+     * transaction lock held before the local rules are loaded. Closing this instance will commit
+     * the changes automatically. To prevent this, {@link #setReadOnly()} should be called before
+     * closing the instance.
      *
      * @param packageName The package whose instance is to be returned
      * @param userHandle  The user to whom the rules belong
@@ -112,8 +111,8 @@ public final class ComponentsBlocker extends RulesStorageManager {
      */
     @NonNull
     public static ComponentsBlocker getMutableInstance(@NonNull String packageName, int userHandle) {
-        ComponentsBlocker componentsBlocker = getInstance(packageName, userHandle, false);
-        componentsBlocker.readOnly = false;
+        ComponentsBlocker componentsBlocker = new ComponentsBlocker(packageName, userHandle, true, false);
+        componentsBlocker.setMutable();
         return componentsBlocker;
     }
 
@@ -134,7 +133,7 @@ public final class ComponentsBlocker extends RulesStorageManager {
     @NonNull
     public static ComponentsBlocker getInstance(@NonNull String packageName, int userHandle, boolean reloadFromDisk) {
         Objects.requireNonNull(packageName);
-        ComponentsBlocker blocker = new ComponentsBlocker(packageName, userHandle);
+        ComponentsBlocker blocker = new ComponentsBlocker(packageName, userHandle, false, reloadFromDisk);
         if (reloadFromDisk && SelfPermissions.canBlockByIFW()) {
             blocker.retrieveDisabledComponents();
             blocker.invalidateComponents();
@@ -149,9 +148,12 @@ public final class ComponentsBlocker extends RulesStorageManager {
     private Set<String> mComponents;
     @Nullable
     private PackageInfo mPackageInfo;
+    private final boolean mRefreshSystemRulesOnMutable;
 
-    private ComponentsBlocker(@NonNull String packageName, int userHandle) {
-        super(packageName, userHandle);
+    private ComponentsBlocker(@NonNull String packageName, int userHandle, boolean lockBeforeLoad,
+                              boolean refreshSystemRulesOnMutable) {
+        super(packageName, userHandle, lockBeforeLoad);
+        mRefreshSystemRulesOnMutable = refreshSystemRulesOnMutable;
         mRulesFile = new AtomicExtendedFile(Objects.requireNonNull(Paths.get(SYSTEM_RULES_PATH).getFile())
                 .getChildFile(packageName + ".xml"));
         try {
@@ -163,6 +165,18 @@ public final class ComponentsBlocker extends RulesStorageManager {
             Log.e(TAG, e.getMessage(), e);
         }
         mComponents = mPackageInfo != null ? PackageUtils.collectComponentClassNames(mPackageInfo).keySet() : null;
+    }
+
+    @Override
+    public void setMutable() {
+        boolean refreshSystemRules = mRefreshSystemRulesOnMutable && !isTransactionLockHeld();
+        super.setMutable();
+        if (refreshSystemRules) {
+            // The read-only view may have been created before another writer committed. Reload the
+            // local snapshot under the transaction lock, then rebuild the system-state overlay.
+            retrieveDisabledComponents();
+            invalidateComponents();
+        }
     }
 
     /**
