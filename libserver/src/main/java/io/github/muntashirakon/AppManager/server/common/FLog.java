@@ -6,11 +6,14 @@ import android.system.ErrnoException;
 import android.system.Os;
 import android.util.Log;
 
+import androidx.annotation.Nullable;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
@@ -28,9 +31,44 @@ public class FLog {
     private static final Pattern UUID_PATTERN = Pattern.compile(
             "\\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\b",
             Pattern.CASE_INSENSITIVE);
+    /**
+     * Shortest string accepted as a secret. Redacting something shorter would blank out ordinary
+     * words all over the log without protecting anything worth protecting.
+     */
+    private static final int MIN_SECRET_LENGTH = 8;
+    /** Bound on how many secrets are held, so a loop cannot grow this without limit. */
+    private static final int MAX_SECRETS = 8;
+    /**
+     * Literal values known to be secret. The patterns above can only redact secrets that appear
+     * in a shape they recognise — an {@code auth=}/{@code token=} assignment or a UUID — and a
+     * value in any other shape reached the log intact. Anything registered here is removed
+     * wherever it appears, in whatever shape.
+     */
+    private static final CopyOnWriteArraySet<String> sSecrets = new CopyOnWriteArraySet<>();
     private static FileOutputStream fos;
     private static final AtomicInteger sBufferSize = new AtomicInteger();
     private static final AtomicInteger sErrorCount = new AtomicInteger();
+
+    /**
+     * Declare a value that must never reach the log, whatever surrounds it. Called wherever a
+     * secret first becomes known, so the redaction does not depend on guessing its shape.
+     *
+     * @param secret The literal value; ignored when null or too short to redact safely
+     */
+    public static void registerSecret(@Nullable String secret) {
+        if (secret == null || secret.length() < MIN_SECRET_LENGTH) {
+            return;
+        }
+        if (sSecrets.size() >= MAX_SECRETS) {
+            return;
+        }
+        sSecrets.add(secret);
+    }
+
+    /** Visible for testing: forget every registered secret. */
+    static void clearSecrets() {
+        sSecrets.clear();
+    }
 
     private static void openFile() {
         try {
@@ -42,7 +80,11 @@ public class FLog {
                 fos.write(new Date().toString().getBytes());
                 fos.write("\n\n".getBytes());
                 chown(file.getAbsolutePath(), 2000, 2000);
-                chmod(file.getAbsolutePath(), 0755);
+                // Owner only. This file records the privileged server's own diagnostics and
+                // lives in a world-traversable directory; 0755 made it readable by every app on
+                // the device. Nothing in the app reads it back — it is pulled over adb, as the
+                // shell uid it is chowned to.
+                chmod(file.getAbsolutePath(), 0600);
             }
         } catch (IOException | RuntimeException e) {
             handleInternalFailure("open", e);
@@ -125,8 +167,14 @@ public class FLog {
         return sanitized.substring(0, MAX_LOG_CHARS) + DIAGNOSTIC_TRUNCATED_MARKER;
     }
 
-    private static String sanitize(String value) {
-        String sanitized = SECRET_ASSIGNMENT_PATTERN.matcher(value)
+    static String sanitize(String value) {
+        // Known values first: a literal match does not depend on the secret appearing in a shape
+        // the patterns below happen to recognise.
+        String sanitized = value;
+        for (String secret : sSecrets) {
+            sanitized = sanitized.replace(secret, REDACTION_MARKER);
+        }
+        sanitized = SECRET_ASSIGNMENT_PATTERN.matcher(sanitized)
                 .replaceAll("$1" + REDACTION_MARKER);
         return UUID_PATTERN.matcher(sanitized).replaceAll(REDACTION_MARKER);
     }

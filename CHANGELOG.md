@@ -16,6 +16,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   truncated to a single character.
 - Hex attribute values are rejected up front when they have an odd length or a
   non-hex character, instead of failing part-way through decoding.
+- The privileged server's diagnostic log file is now readable only by its owner.
+  It was created world-readable in a world-traversable directory, so any app on
+  the device could read the privileged server's diagnostics.
+- The channel token is now removed from log output by matching the value itself,
+  not by recognising the shape it appears in. Redaction previously only caught an
+  `auth`/`token`/`secret`/`password` assignment or a UUID, so a token in any other
+  shape was written out in full.
 - The privileged filesystem service now refuses a path carrying an embedded NUL,
   which the native layer would have truncated — so the path acted on is always
   the path that was given. Changing a file's owner no longer follows a symlink,

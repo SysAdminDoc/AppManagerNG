@@ -77,6 +77,9 @@ public final class ConfigParams {
                 break;
             case PARAM_TOKEN:
                 mToken = value;
+                // Wherever this config came from, the token is now a known secret: teach the
+                // logger the literal value so it does not have to recognise its shape.
+                FLog.registerSecret(value);
                 break;
             case PARAM_UID:
                 mUid = value;
