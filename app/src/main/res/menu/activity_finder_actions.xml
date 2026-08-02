@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_finder_presets"
+        android:icon="@drawable/ic_filter_list"
+        android:title="@string/finder_saved_filters"
+        app:showAsAction="ifRoom" />
+</menu>

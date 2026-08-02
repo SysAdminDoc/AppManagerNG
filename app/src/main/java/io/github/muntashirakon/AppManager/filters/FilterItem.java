@@ -84,6 +84,23 @@ public class FilterItem implements IJsonSerializer, Parcelable {
         this("Untitled");
     }
 
+    /**
+     * Return a detached copy suitable for handing to another owner.
+     *
+     * <p>Filter options carry mutable ids and values, so copying the option
+     * list itself would let a dialog or a saved preset change the source
+     * filter accidentally. The JSON representation is already the stable
+     * persistence contract; use it here to deep-copy the options as well.</p>
+     */
+    @NonNull
+    public FilterItem copy() {
+        try {
+            return new FilterItem(serializeToJson());
+        } catch (JSONException e) {
+            throw new IllegalStateException("Could not copy filter item", e);
+        }
+    }
+
     private FilterItem(@NonNull String name) {
         mName = name;
         mFilterOptions = new ArrayMap<>();
