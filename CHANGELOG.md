@@ -16,6 +16,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   receipt; the findings it reports are being triaged separately.
 
 ### Fixed
+- Localized the file-mode permission labels and the audio player's default speed
+  label through string resources, removing the remaining hardcoded-text lint debt.
 - Routed scanner cache-failure toast delivery through the main-thread helper,
   preventing worker-thread `Toast` crashes while preserving the failure message.
 - Routed Activity Interceptor flag removal through the API-safe `IntentCompat`
