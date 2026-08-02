@@ -21,6 +21,7 @@ import android.view.View;
 import android.widget.ImageView;
 
 import androidx.annotation.IntDef;
+import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.PopupMenu;
@@ -331,6 +332,8 @@ public class AdvancedSearchView extends SearchView {
         }
     }
 
+    @SuppressLint("WrongThreadInterprocedural") // Pure matcher; no SearchView state is accessed.
+    @AnyThread
     public static boolean matches(@NonNull String query, @NonNull String text, @SearchType int type) {
         switch (type) {
             case SEARCH_TYPE_CONTAINS:
@@ -361,6 +364,8 @@ public class AdvancedSearchView extends SearchView {
         List<String> getChoices(T object);
     }
 
+    @SuppressLint("WrongThreadInterprocedural") // Pure matcher; no SearchView state is accessed.
+    @AnyThread
     public static <T> List<T> matches(@NonNull String query, @Nullable Collection<T> choices,
                                       @NonNull ChoiceGenerator<T> generator, @SearchType int type) {
         if (choices == null) return null;
@@ -392,6 +397,8 @@ public class AdvancedSearchView extends SearchView {
         return results;
     }
 
+    @SuppressLint("WrongThreadInterprocedural") // Pure matcher; no SearchView state is accessed.
+    @AnyThread
     public static <T> List<T> matches(@NonNull String query, @Nullable Collection<T> choices,
                                       @NonNull ChoicesGenerator<T> generator, @SearchType int type) {
         if (choices == null) return null;

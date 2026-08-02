@@ -48,6 +48,11 @@ public class FmProvider extends ContentProvider {
         return getContentUri(path.getUri());
     }
 
+    @NonNull
+    public static Uri getContentUri(@NonNull File file) {
+        return getContentUri(Uri.fromFile(file));
+    }
+
     @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
     @NonNull
     static Uri getContentUri(@NonNull Uri uri) {

@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.batchops;
 
+import android.annotation.SuppressLint;
 import android.Manifest;
 import android.annotation.UserIdInt;
 import android.app.AppOpsManager;
@@ -16,6 +17,7 @@ import android.os.UserHandleHidden;
 
 import androidx.annotation.CheckResult;
 import androidx.annotation.IntDef;
+import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
@@ -154,6 +156,8 @@ public class BatchOpsManager {
     public static final int OP_UNARCHIVE = 24;
     public static final int OP_INSTALL_EXISTING = 25;
 
+    @SuppressLint("WrongThreadInterprocedural") // Pure operation validation; no package-manager work occurs here.
+    @AnyThread
     public static boolean isValidQueueOp(int op) {
         switch (op) {
             case OP_ADVANCED_FREEZE:
@@ -448,7 +452,8 @@ public class BatchOpsManager {
 
     @NonNull
     private Result opArchiveUnarchive(@NonNull BatchOpsInfo info, boolean archive) {
-        if (!AppArchiveManager.isSupported(Build.VERSION.SDK_INT)) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM
+                || !AppArchiveManager.isSupported(Build.VERSION.SDK_INT)) {
             return new Result(info.getPairList(), false);
         }
         List<UserPackagePair> failedPackages = new ArrayList<>();

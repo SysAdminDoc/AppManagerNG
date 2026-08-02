@@ -800,7 +800,7 @@ public class AppOpsManagerCompat {
     @RequiresPermission("android.permission.MANAGE_APP_OPS_MODES")
     public void setMode(int op, int uid, String packageName, @AppOpsManagerCompat.Mode int mode)
             throws RemoteException {
-        if (!usesUidModeForSetMode(op)) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || !usesUidModeForSetMode(op)) {
             // Only package mode works in MIUI-only app ops and before Android M
             mAppOpsService.setMode(op, uid, packageName, mode);
         } else {

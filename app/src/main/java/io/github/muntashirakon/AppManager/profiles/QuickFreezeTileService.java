@@ -13,6 +13,7 @@ import android.service.quicksettings.Tile;
 import android.service.quicksettings.TileService;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.VisibleForTesting;
 import androidx.core.app.PendingIntentCompat;
 import androidx.core.content.ContextCompat;
@@ -26,6 +27,7 @@ import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 
+@RequiresApi(Build.VERSION_CODES.N)
 public class QuickFreezeTileService extends TileService {
     private static final String TAG = QuickFreezeTileService.class.getSimpleName();
 
@@ -41,7 +43,7 @@ public class QuickFreezeTileService extends TileService {
     }
 
     public static void requestAddTile(@NonNull Context context) {
-        if (!supportsRequestAddTile(Build.VERSION.SDK_INT)) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             requestTileStateUpdate(context);
             return;
         }

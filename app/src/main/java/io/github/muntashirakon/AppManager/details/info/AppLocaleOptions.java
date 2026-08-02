@@ -2,6 +2,8 @@
 
 package io.github.muntashirakon.AppManager.details.info;
 
+import android.os.Build;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -27,7 +29,8 @@ final class AppLocaleOptions {
             if (locale == null || locale.getLanguage().isEmpty()) {
                 continue;
             }
-            String languageTag = locale.stripExtensions().toLanguageTag();
+            String languageTag = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                    ? locale.stripExtensions() : locale).toLanguageTag();
             if (languageTag.isEmpty() || "und".equals(languageTag) || optionsByTag.containsKey(languageTag)) {
                 continue;
             }

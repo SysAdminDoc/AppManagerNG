@@ -9,6 +9,7 @@ import android.os.Build;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
@@ -109,6 +110,7 @@ public final class DebloatImpactPreview {
     }
 
     @NonNull
+    @RequiresApi(Build.VERSION_CODES.Q)
     @SuppressWarnings("unchecked")
     private static List<String> getRoleHolders(@NonNull RoleManager roleManager, @NonNull String role)
             throws ReflectiveOperationException {

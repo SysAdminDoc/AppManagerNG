@@ -1602,7 +1602,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     @NonNull
     private List<TagItem> getTagCloudItems(@NonNull AppInfoViewModel.TagCloud tagCloud) {
         Objects.requireNonNull(mMainModel);
-        Context context = mTagCloud.getContext();
+        Context context = ContextUtils.getContext();
         List<TagItem> tagItems = new LinkedList<>();
         // Add tracker chip
         if (!tagCloud.trackerComponents.isEmpty()) {
@@ -4211,7 +4211,9 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                                 R.string.shortcut_force_stop_app, R.drawable.ic_stop);
                     } else {
                         ForceStopTileController.setSelectedTarget(mPackageName, mUserId);
-                        ForceStopTileService.requestAddTile(mActivity);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                            ForceStopTileService.requestAddTile(mActivity);
+                        }
                         UIUtils.displayShortToast(R.string.force_stop_tile_app_set, mAppLabel);
                     }
                 })
@@ -4241,7 +4243,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             // navigating to App Details for the installer itself. Defends the
             // case where a malicious installer spoofs the label/name of a real
             // store but signs with its own key.
-            String certDigest = computeInitiatingCertSha256(installSource);
+            String certDigest = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                    ? computeInitiatingCertSha256(installSource) : null;
             if (certDigest != null) {
                 info.append("\n")
                         .append(getSmallerText(getString(R.string.install_source_initiator_cert_sha256,
@@ -4280,6 +4283,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
      * installer that wears a real store's label but signs with a different key.
      */
     @Nullable
+    @RequiresApi(Build.VERSION_CODES.P)
     private static String computeInitiatingCertSha256(@NonNull InstallSourceInfoCompat installSource) {
         android.content.pm.SigningInfo signingInfo = installSource.getInitiatingPackageSigningInfo();
         if (signingInfo == null) return null;

@@ -11,6 +11,7 @@ import android.os.PersistableBundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.VisibleForTesting;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
@@ -24,7 +25,6 @@ import java.util.concurrent.ExecutionException;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.self.SelfBatteryOptimization;
-import io.github.muntashirakon.AppManager.utils.AndroidUtils;
 
 final class RoutineDiagnostics {
     private static final String EXTRA_WORK_SPEC_ID = "EXTRA_WORK_SPEC_ID";
@@ -72,14 +72,15 @@ final class RoutineDiagnostics {
         StringBuilder detail = new StringBuilder(context.getString(R.string.profile_trigger_diagnostics_work,
                 workInfo.getState().name().toLowerCase(Locale.ROOT),
                 workInfo.getRunAttemptCount(),
-                describeWorkStopReason(workInfo.getStopReason())));
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                        ? describeWorkStopReason(workInfo.getStopReason()) : "unknown"));
         long nextSchedule = workInfo.getNextScheduleTimeMillis();
         if (nextSchedule > 0 && workInfo.getState() == WorkInfo.State.ENQUEUED) {
             detail.append(context.getString(R.string.profile_trigger_diagnostics_next,
                     DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
                             .format(new java.util.Date(nextSchedule))));
         }
-        if (AndroidUtils.sdkAtLeast(Build.VERSION_CODES.BAKLAVA, 0) && jobInfo != null) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA && jobInfo != null) {
             appendJobSchedulerDiagnostics(context, detail, jobInfo);
         }
         return detail.toString();
@@ -102,6 +103,7 @@ final class RoutineDiagnostics {
         return null;
     }
 
+    @RequiresApi(Build.VERSION_CODES.BAKLAVA)
     private static void appendJobSchedulerDiagnostics(@NonNull Context context,
                                                       @NonNull StringBuilder detail,
                                                       @NonNull JobInfo jobInfo) {

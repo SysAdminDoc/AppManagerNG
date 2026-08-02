@@ -507,7 +507,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
         mExecutor.submit(() -> filterAndSortItemsInternal(property));
     }
 
-    @SuppressLint({"SwitchIntDef", "NewApi"})
+    @SuppressLint({"SwitchIntDef", "NewApi", "WrongThreadInterprocedural"})
     @WorkerThread
     private void filterAndSortItemsInternal(@AppDetailsFragment.Property int property) {
         switch (property) {
@@ -624,6 +624,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
         }
     }
 
+    @SuppressLint("WrongThreadInterprocedural") // AdvancedSearchView's matcher is pure and does not touch the widget.
     @WorkerThread
     @Nullable
     private List<AppDetailsItem<ComponentInfo>> filterAndSortComponents(
@@ -652,6 +653,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
         return appDetailsItemsInt;
     }
 
+    @SuppressLint("WrongThreadInterprocedural") // AdvancedSearchView's matcher is pure and does not touch the widget.
     @WorkerThread
     @Nullable
     private List<AppDetailsItem<PermissionInfo>> filterAndSortPermissions(

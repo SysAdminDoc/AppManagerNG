@@ -603,6 +603,7 @@ public class ArrayUtils {
         return cur;
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.M)
     @Nullable
     public static <T> ArraySet<T> remove(@Nullable ArraySet<T> cur, T val) {
         if (cur == null) {

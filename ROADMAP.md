@@ -150,53 +150,7 @@ repeat the work:
 
 ### P2
 
-- [ ] P2 — The lint baseline hides 4060 issues, including every crash found in this audit
-  Category: testing
-  Where: `app/lint-baseline.xml` (2.2 MB, 4060 suppressed issues); `app/build.gradle:106-111`
-  Problem: all three crashes logged above were already detected by lint and silently absorbed by the
-  baseline. The baseline currently suppresses 78 `NewApi`, 79 `ThreadConstraint`, 12
-  `WrongThreadInterprocedural`, 10 `Fatal` and 261 `Error`-severity findings. Combined with the P0
-  above (lint cannot run at all today), nothing prevents the next unguarded API-26 call from reaching
-  a release — and with `min_sdk = 21` that is the widest possible exposure. The baseline has become a
-  place where real defects go quiet rather than a record of accepted debt.
-  Evidence: counting `id="…"` occurrences in `app/lint-baseline.xml` yields 4060 total, with the
-  distribution above. The `NewApi` entries include the seven `setTooltipText` lines and the
-  `Intent#removeFlags` line proven crashing above; the `WrongThreadInterprocedural` entries include the
-  `ScannerViewModel` toast proven crashing above.
-  Fix: do not try to empty the baseline. After fixing the three crash items, delete their entries, then
-  lift the high-signal checks out of the baseline entirely and promote them to build failures — add
-  `lint { error 'NewApi', 'WrongThreadInterprocedural', 'SpecifyForegroundServiceType' }` to
-  `app/build.gradle` — so any new occurrence fails the build. Leave the high-volume, low-signal
-  categories (`UnknownNullness` 1774, `DuplicateStrings` 1054) baselined, and record in `docs/policy/`
-  which categories are intentionally baselined and why.
-  Acceptance: `./gradlew :app:lint` runs (needs the P0 above first) and passes; a deliberately
-  introduced unguarded API-26 call fails the build instead of being absorbed; the baseline contains no
-  `NewApi`, `WrongThreadInterprocedural` or `SpecifyForegroundServiceType` entry.
-  Confidence: Verified
-  Effort: M
-
 ### P3
-
-- [ ] P3 — `AdvancedSearchView#matches` is annotated `@UiThread` but is a pure matcher called from workers
-  Category: maintainability
-  Where: the annotation on `AdvancedSearchView#matches`; callers at `main/MainViewModel.java:736,753`,
-  `details/AppDetailsViewModel.java:567,636,664`, `runningapps/RunningAppsViewModel.java:571`
-  Problem: eight of the twelve `WrongThreadInterprocedural` violations in the project come from this
-  one wrong annotation. Every list-filtering path correctly runs on a worker thread and calls
-  `matches`, which is annotated `@UiThread` despite being a pure string matcher that touches no UI. The
-  annotation is both false and actively harmful: it fills the baseline with noise that trains readers
-  to skim past thread warnings, which is how the genuine `ScannerViewModel` toast violation stayed
-  buried in the same list.
-  Evidence: the twelve `WrongThreadInterprocedural` entries in `app/lint-baseline.xml` are eight
-  `-> AdvancedSearchView#matches`, one `-> View#getContext`, one `-> UIUtils#displayLongToast` (the
-  real bug logged above), and two whose message did not resolve.
-  Fix: read `matches` to confirm it touches no view state, then change the annotation to `@AnyThread`
-  and delete the eight stale baseline entries. If it does touch view state, the correct fix is the
-  reverse — move that state out of the matcher — so read it before changing the annotation.
-  Acceptance: the eight `AdvancedSearchView#matches` entries are gone from `app/lint-baseline.xml` and
-  lint reports no new `WrongThreadInterprocedural`.
-  Confidence: Verified
-  Effort: S
 
 - [ ] P3 — Two layouts set `paddingEnd` without `paddingStart`, breaking RTL symmetry
   Category: a11y

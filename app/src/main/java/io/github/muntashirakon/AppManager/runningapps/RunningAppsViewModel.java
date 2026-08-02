@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.runningapps;
 
+import android.annotation.SuppressLint;
 import android.app.AppOpsManager;
 import android.app.Application;
 import android.content.pm.ApplicationInfo;
@@ -542,6 +543,7 @@ public class RunningAppsViewModel extends AndroidViewModel {
         return mFilter;
     }
 
+    @SuppressLint("WrongThreadInterprocedural") // AdvancedSearchView's matcher is pure and does not touch the widget.
     @WorkerThread
     public void filterAndSort() {
         List<ProcessItem> filteredProcessList = new ArrayList<>();

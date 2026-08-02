@@ -15,6 +15,7 @@ import android.text.format.Formatter;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.PendingIntentCompat;
@@ -41,7 +42,6 @@ import io.github.muntashirakon.AppManager.main.MainActivity;
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
-import io.github.muntashirakon.AppManager.utils.AndroidUtils;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 
 public class AutoBackupWorker extends Worker {
@@ -248,31 +248,9 @@ public class AutoBackupWorker extends Worker {
                                                      int progressMax,
                                                      int progress,
                                                      boolean progressIndeterminate) {
-        if (AndroidUtils.sdkAtLeast(Build.VERSION_CODES.BAKLAVA, 0)) {
-            NotificationUtils.getNewNotificationManager(context, CHANNEL_ID,
-                    context.getString(R.string.auto_backup_notification_channel),
-                    NotificationManagerCompat.IMPORTANCE_LOW);
-            Notification.ProgressStyle style = new Notification.ProgressStyle()
-                    .setStyledByProgress(true)
-                    .setProgressIndeterminate(progressIndeterminate);
-            if (!progressIndeterminate && progressMax > 0) {
-                style.addProgressSegment(new Notification.ProgressStyle.Segment(progressMax));
-                int safeProgress = Math.max(0, Math.min(progressMax, progress));
-                if (safeProgress > 0 && safeProgress < progressMax) {
-                    style.addProgressPoint(new Notification.ProgressStyle.Point(safeProgress));
-                }
-                style.setProgress(safeProgress);
-            }
-            return new Notification.Builder(context, CHANNEL_ID)
-                    .setLocalOnly(!Prefs.Misc.sendNotificationsToConnectedDevices())
-                    .setSmallIcon(R.drawable.ic_backup_restore)
-                    .setContentTitle(title)
-                    .setContentText(body)
-                    .setStyle(style)
-                    .setContentIntent(createContentIntent(context))
-                    .setOngoing(true)
-                    .setOnlyAlertOnce(true)
-                    .build();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+            return buildProgressStyleNotification(context, title, body, progressMax, progress,
+                    progressIndeterminate);
         }
         int max = progressIndeterminate ? 0 : Math.max(progressMax, 0);
         int current = progressIndeterminate ? 0 : Math.max(0, Math.min(progressMax, progress));
@@ -280,6 +258,40 @@ public class AutoBackupWorker extends Worker {
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setProgress(max, current, progressIndeterminate)
+                .build();
+    }
+
+    @RequiresApi(Build.VERSION_CODES.BAKLAVA)
+    @NonNull
+    private Notification buildProgressStyleNotification(@NonNull Context context,
+                                                         @NonNull String title,
+                                                         @NonNull String body,
+                                                         int progressMax,
+                                                         int progress,
+                                                         boolean progressIndeterminate) {
+        NotificationUtils.getNewNotificationManager(context, CHANNEL_ID,
+                context.getString(R.string.auto_backup_notification_channel),
+                NotificationManagerCompat.IMPORTANCE_LOW);
+        Notification.ProgressStyle style = new Notification.ProgressStyle()
+                .setStyledByProgress(true)
+                .setProgressIndeterminate(progressIndeterminate);
+        if (!progressIndeterminate && progressMax > 0) {
+            style.addProgressSegment(new Notification.ProgressStyle.Segment(progressMax));
+            int safeProgress = Math.max(0, Math.min(progressMax, progress));
+            if (safeProgress > 0 && safeProgress < progressMax) {
+                style.addProgressPoint(new Notification.ProgressStyle.Point(safeProgress));
+            }
+            style.setProgress(safeProgress);
+        }
+        return new Notification.Builder(context, CHANNEL_ID)
+                .setLocalOnly(!Prefs.Misc.sendNotificationsToConnectedDevices())
+                .setSmallIcon(R.drawable.ic_backup_restore)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(style)
+                .setContentIntent(createContentIntent(context))
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
                 .build();
     }
 
