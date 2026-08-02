@@ -23,10 +23,8 @@ import java.lang.reflect.Method;
 import java.util.concurrent.Callable;
 
 import io.github.muntashirakon.AppManager.server.common.IRootServiceManager;
+import io.github.muntashirakon.AppManager.server.common.ServerUtils;
 
-import static io.github.muntashirakon.AppManager.server.common.ServerUtils.CMDLINE_START_DAEMON;
-import static io.github.muntashirakon.AppManager.server.common.ServerUtils.CMDLINE_START_SERVICE;
-import static io.github.muntashirakon.AppManager.server.common.ServerUtils.CMDLINE_STOP_SERVICE;
 import static io.github.muntashirakon.AppManager.server.common.ServerUtils.getServiceName;
 
 /**
@@ -158,24 +156,11 @@ public class RootServiceMain extends ContextWrapper implements Callable<Object[]
             throw new IOException("Current su does not allow Binder communication.");
         }
 
-        ComponentName name = ComponentName.unflattenFromString(args[0]);
-        uid = Integer.parseInt(args[1]);
-        String action = args[2];
-        boolean stop = false;
-
-        switch (action) {
-            case CMDLINE_STOP_SERVICE:
-                stop = true;
-                // fallthrough
-            case CMDLINE_START_DAEMON:
-                isDaemon = true;
-                break;
-            case CMDLINE_START_SERVICE:
-                isDaemon = false;
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown action: " + action);
-        }
+        ServerUtils.LaunchArgs launchArgs = ServerUtils.parseLaunchArgs(args);
+        ComponentName name = launchArgs.component;
+        uid = launchArgs.uid;
+        isDaemon = launchArgs.isDaemon;
+        boolean stop = launchArgs.stop;
 
         if (isDaemon) daemon: try {
             // Get existing daemon process
@@ -215,6 +200,14 @@ public class RootServiceMain extends ContextWrapper implements Callable<Object[]
         int userId = uid / 100_000;
         int flags = Context.CONTEXT_INCLUDE_CODE | Context.CONTEXT_IGNORE_SECURITY;
         Context context = createPackageContextAsUser(name.getPackageName(), userId, flags);
+        // The component package and the client uid are two independent argv elements. Loading
+        // code from a package that does not belong to the declared uid would let a caller pick
+        // both the identity and the code that runs under it.
+        int packageUid = context.getApplicationInfo().uid;
+        if (packageUid != uid) {
+            throw new IOException("Package " + name.getPackageName() + " belongs to uid "
+                    + packageUid + ", not the requested " + uid);
+        }
         attachBaseContext(context);
 
         // Use classloader from the package context to run everything
