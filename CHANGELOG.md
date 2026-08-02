@@ -6,6 +6,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## v0.6.9 — 2026-08-02
 
 ### Fixed
+- Replaced translation coverage warnings with a host-only locale ratchet that excludes resource
+  qualifiers, blocks stale keys and new coverage regressions, and records coverage counts in
+  release-gate receipts.
 - Finder now exposes saved filter presets from the toolbar, including save/load, rename, and
   confirmed deletion with the store's normalized-name and corruption-safe behavior.
 - Profile routines can now carry an optional Finder filter through trigger storage and queued

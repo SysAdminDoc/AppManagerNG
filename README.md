@@ -248,6 +248,12 @@ written only after all of it passes. Details, including the two-build
 reproducibility check invoked by the gate, are in
 [docs/distribution/reproducible-builds.md](docs/distribution/reproducible-builds.md).
 
+The translation stage parses only language-qualified `values-*` resources, excludes
+night/API/size qualifiers, rejects stale source keys, and applies the reviewed
+per-locale floors in [`scripts/translation-coverage-baseline.json`](scripts/translation-coverage-baseline.json).
+When a deliberate translation baseline changes, regenerate it with
+`py -3.12 scripts/translation_quality.py --write-baseline` and review the resulting diff.
+
 The gate also runs OWASP Dependency-Check as a blocking stage (no unsuppressed
 CVSS 9.0+ findings), retaining the HTML/SARIF reports and their hash receipt
 alongside the SBOM and APK sidecars.
