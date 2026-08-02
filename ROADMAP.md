@@ -78,30 +78,6 @@ fixed, so these are net-new. Every item below is host-implementable and host-tes
 
 ### P1
 
-- [ ] P1 - Triage the 12 CVSS 9.0+ findings the CVE gate now reports
-  Why: with dependency verification fixed the gate runs to completion for the first time, and
-  it blocks: `dependencyCheckAggregate` reports 12 findings above the 9.0 threshold. Until each
-  is either upgraded or suppressed with a written justification, no release can produce a
-  passing CVE receipt. The findings fall into three families and none has been assessed yet.
-  Evidence: `reproducible-release/publish/dependency-check-report.sarif` (maintainer-local).
-    - `androidx.sqlite:sqlite-android`, `sqlite-framework-android`, `sqlite-jvm` 2.5.1 ->
-      CVE-2015-5895, CVE-2017-10989, CVE-2019-19646, CVE-2020-11656. These are native SQLite
-      CVEs from 2015-2020 against a 2025 artifact; the likely cause is dependency-check mapping
-      the AndroidX coordinates onto `cpe:/a:sqlite:sqlite`. Establish that before suppressing.
-    - `io.netty:netty-*` 4.1.93.Final and 4.1.110.Final -> CVE-2026-42579, -42581, -42584,
-      -45674, -47691, -56817, -56820. Establish first whether netty reaches the shipped APK
-      runtime classpath at all or is build/test-only; the repo already has a precedent for
-      pinning an affected library off the release runtime classpath (see the Guava/protobuf
-      commit).
-    - `org.jetbrains.kotlin:kotlin-stdlib` and the Kotlin toolchain jars -> CVE-2026-53914,
-      matched across many versions including ones only the build uses.
-  Touches: `app/build.gradle`, `versions.gradle`, a dependency-check suppression file, and
-  `docs/distribution/dependency-verification.md`.
-  Acceptance: every one of the 12 is resolved by an upgrade or by a suppression whose `<notes>`
-  states why it does not apply, with the shipped-APK classpath checked rather than assumed; the
-  gate exits zero and writes a receipt with `passed: true`; a suppression that stops matching
-  is surfaced rather than silently ignored.
-  Complexity: M
 ### P2
 
 ## Security Threat-Model Follow-ups (2026-07-30)
