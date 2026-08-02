@@ -152,26 +152,6 @@ repeat the work:
 
 ### P3
 
-- [ ] P3 — Two layouts set `paddingEnd` without `paddingStart`, breaking RTL symmetry
-  Category: a11y
-  Where: `app/src/main/res/layout/activity_main_v2.xml:67`;
-  `app/src/main/res/layout/item_app_details_primary.xml:39`
-  Problem: both define an end padding with no matching start padding, so spacing becomes asymmetric
-  when the layout direction flips. Neither is an obscure screen — the first is the main activity shell,
-  the second is the row used by every App Details component list. The app ships `values-ar`,
-  `values-ar-rSA` and `values-fa`, so RTL is a supported configuration.
-  Evidence: lint reports `RtlSymmetry` ("When you define `paddingEnd` you should probably also define
-  `paddingStart` for right-to-left symmetry") for exactly these two lines; both are suppressed in
-  `app/lint-baseline.xml`, and they are the only two `RtlSymmetry` issues in the project.
-  Fix: add the matching `android:paddingStart` using the same `@dimen` token as the end padding, or
-  collapse to a symmetric `paddingHorizontal` where both sides should match. Verify under
-  Settings → Developer options → Force RTL layout direction.
-  Acceptance: both `RtlSymmetry` baseline entries are removed and lint stays clean; the main list and
-  an App Details component row show even leading/trailing spacing in an RTL locale.
-  Confidence: Verified — the layout attributes are confirmed by reading; the visual asymmetry was not
-  observed on a device.
-  Effort: S
-
 - [ ] P3 — Two custom touch handlers never call `performClick()`, so assistive tech cannot activate them
   Category: a11y
   Where: `BarChartView#onTouchEvent` (`BarChartView.java:727`); `BottomSheetDialog.java:353,356`

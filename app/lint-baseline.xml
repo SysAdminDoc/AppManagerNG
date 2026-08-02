@@ -3201,11 +3201,11 @@
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/layout/item_app_details_primary.xml"
-            line="171"
+            line="172"
             column="17"/>
         <location
             file="src/main/res/layout/item_app_details_primary.xml"
-            line="169"
+            line="170"
             column="17"/>
     </issue>
 
@@ -29572,28 +29572,6 @@
             line="51"
             column="41"
             message="Incompatible direction here"/>
-    </issue>
-
-    <issue
-        id="RtlSymmetry"
-        message="When you define `paddingEnd` you should probably also define `paddingStart` for right-to-left symmetry"
-        errorLine1="                android:paddingEnd=&quot;@dimen/premium_space_16&quot;"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/activity_main_v2.xml"
-            line="67"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="RtlSymmetry"
-        message="When you define `paddingEnd` you should probably also define `paddingStart` for right-to-left symmetry"
-        errorLine1="                android:paddingEnd=&quot;@dimen/padding_small&quot;"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/layout/item_app_details_primary.xml"
-            line="39"
-            column="17"/>
     </issue>
 
     <issue
