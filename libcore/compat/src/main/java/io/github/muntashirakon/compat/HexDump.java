@@ -33,11 +33,25 @@ public class HexDump {
         if (c >= 'A' && c <= 'F') return (c - 'A' + 10);
         if (c >= 'a' && c <= 'f') return (c - 'a' + 10);
 
-        throw new RuntimeException("Invalid hex char '" + c + "'");
+        throw new IllegalArgumentException("Invalid hex char '" + c + "'");
     }
 
+    /**
+     * Decode a hex string into bytes.
+     *
+     * @throws IllegalArgumentException if the input is null, has an odd length, or contains a
+     *                                  character outside {@code [0-9A-Fa-f]}. Callers that
+     *                                  handle untrusted input are expected to translate this
+     *                                  into their own checked failure.
+     */
     public static byte[] hexStringToByteArray(String hexString) {
+        if (hexString == null) {
+            throw new IllegalArgumentException("Null hex string");
+        }
         int length = hexString.length();
+        if (length % 2 != 0) {
+            throw new IllegalArgumentException("Invalid hex length " + length);
+        }
         byte[] buffer = new byte[length / 2];
 
         for (int i = 0; i < length; i += 2) {

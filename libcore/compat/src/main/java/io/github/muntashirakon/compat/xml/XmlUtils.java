@@ -107,7 +107,7 @@ public class XmlUtils {
                 throws XmlPullParserException {
             try {
                 return HexDump.hexStringToByteArray(getAttributeValue(index));
-            } catch (Exception e) {
+            } catch (IllegalArgumentException e) {
                 throw new XmlPullParserException(
                         "Invalid attribute " + getAttributeName(index) + ": " + e);
             }
