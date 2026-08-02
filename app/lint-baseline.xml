@@ -1353,82 +1353,12 @@
             column="9"/>
     </issue>
 
-    <issue
-        id="NewApi"
-        message="Call requires API level 26 (current min is 21): `android.view.View#setTooltipText`"
-        errorLine1="            mComponentGuideButton.setTooltipText(getString(R.string.app_details_component_guide_tooltip));"
-        errorLine2="                                  ~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsComponentsFragment.java"
-            line="130"
-            column="35"/>
-    </issue>
 
-    <issue
-        id="NewApi"
-        message="Call requires API level 26 (current min is 21): `android.view.View#setTooltipText`"
-        errorLine1="            chip.setTooltipText(null);"
-        errorLine2="                 ~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsComponentsFragment.java"
-            line="487"
-            column="18"/>
-    </issue>
 
-    <issue
-        id="NewApi"
-        message="Call requires API level 26 (current min is 21): `android.view.View#setTooltipText`"
-        errorLine1="            chip.setTooltipText(getString(R.string.tracker_chip_safe_to_block_hint));"
-        errorLine2="                 ~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsComponentsFragment.java"
-            line="493"
-            column="18"/>
-    </issue>
 
-    <issue
-        id="NewApi"
-        message="Call requires API level 26 (current min is 21): `android.view.View#setTooltipText`"
-        errorLine1="            chip.setTooltipText(getString(R.string.tracker_chip_safe_to_block_hint_with_name, label));"
-        errorLine2="                 ~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsComponentsFragment.java"
-            line="502"
-            column="18"/>
-    </issue>
 
-    <issue
-        id="NewApi"
-        message="Call requires API level 26 (current min is 21): `android.view.View#setTooltipText`"
-        errorLine1="                holder.launchBtn.setTooltipText(getString(serviceItem.canLaunch"
-        errorLine2="                                 ~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsComponentsFragment.java"
-            line="934"
-            column="34"/>
-    </issue>
 
-    <issue
-        id="NewApi"
-        message="Call requires API level 26 (current min is 21): `android.view.View#setTooltipText`"
-        errorLine1="                holder.shortcutBtn.setTooltipText(getString(canStop"
-        errorLine2="                                   ~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsComponentsFragment.java"
-            line="952"
-            column="36"/>
-    </issue>
 
-    <issue
-        id="NewApi"
-        message="Call requires API level 26 (current min is 21): `android.view.View#setTooltipText`"
-        errorLine1="                holder.launchBtn.setTooltipText(getString(canQuery"
-        errorLine2="                                 ~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsComponentsFragment.java"
-            line="1200"
-            column="34"/>
-    </issue>
 
     <issue
         id="NewApi"
