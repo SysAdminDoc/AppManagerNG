@@ -64,17 +64,21 @@ public final class PeerAuthority {
      * {@code /proc/net/tcp6} table. TCP carries no peer credentials of its own, so this table is
      * the only way the loopback path can learn who connected.
      * <p>
-     * A row's addresses are {@code <hex-address>:<hex-port>} and, seen from the server, the local
-     * port is the listening port and the remote port is the peer's ephemeral port. The port pair
-     * is unique for a live connection.
+     * A row's addresses are {@code <hex-address>:<hex-port>} and each row is written from the
+     * point of view of the socket that owns it. A loopback connection therefore has <em>two</em>
+     * rows: ours, whose local port is the listening port and whose uid is our own, and the
+     * peer's, whose local port is the peer's ephemeral port and whose uid is the one we are
+     * after. Matching our own row would only ever report the uid we already run as — a check
+     * that always passes. The peer's row is the one to find, so the ports are given from the
+     * peer's point of view.
      *
-     * @param procNetLines Lines of the table, header included
-     * @param localPort    Port the server is listening on
-     * @param remotePort   Peer's port, as reported by the accepted socket
+     * @param procNetLines  Lines of the table, header included
+     * @param peerPort      Peer's ephemeral port — the {@code local_address} port of its row
+     * @param listeningPort Port we accepted on — the {@code rem_address} port of its row
      * @return The owning uid, or {@link #UID_UNKNOWN} when no row matches
      */
-    public static int findPeerUid(@Nullable Iterable<String> procNetLines, int localPort, int remotePort) {
-        if (procNetLines == null || localPort <= 0 || remotePort <= 0) {
+    public static int findPeerUid(@Nullable Iterable<String> procNetLines, int peerPort, int listeningPort) {
+        if (procNetLines == null || peerPort <= 0 || listeningPort <= 0) {
             return UID_UNKNOWN;
         }
         for (String line : procNetLines) {
@@ -86,7 +90,7 @@ public final class PeerAuthority {
                 // Header row, or a truncated read.
                 continue;
             }
-            if (portOf(columns[1]) != localPort || portOf(columns[2]) != remotePort) {
+            if (portOf(columns[1]) != peerPort || portOf(columns[2]) != listeningPort) {
                 continue;
             }
             try {
