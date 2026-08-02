@@ -27,8 +27,19 @@ public final class ServerUtils {
             }
 
             Class<?> atClazz = Class.forName("android.app.ActivityThread");
-            Method systemMain = atClazz.getMethod("systemMain");
-            Object activityThread = systemMain.invoke(null);
+            Object activityThread = null;
+            try {
+                // Reuse the ActivityThread this process already attached. ServerRunner calls
+                // systemMain() during startup, and systemMain() attaches a *new* ActivityThread
+                // every time -- calling it twice in one process is not something the platform
+                // expects.
+                activityThread = atClazz.getMethod("currentActivityThread").invoke(null);
+            } catch (ReflectiveOperationException | RuntimeException ignored) {
+                // Not reachable on this platform; fall through to attaching one.
+            }
+            if (activityThread == null) {
+                activityThread = atClazz.getMethod("systemMain").invoke(null);
+            }
             Method getSystemContext = atClazz.getMethod("getSystemContext");
             return (Context) getSystemContext.invoke(activityThread);
         } catch (ReflectiveOperationException | RuntimeException e) {
