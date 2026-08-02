@@ -107,6 +107,8 @@ class OpenFile implements Closeable {
     synchronized int pread(int len, long offset) throws ErrnoException, IOException {
         if (fd == null || write == null)
             throw new ClosedChannelException();
+        if (len < 0)
+            throw new IOException("Negative length " + len);
         final long result;
         if (!FORCE_NO_SPLICE && Build.VERSION.SDK_INT >= 28) {
             Int64Ref inOff = offset < 0 ? null : new Int64Ref(offset);
@@ -141,6 +143,11 @@ class OpenFile implements Closeable {
     synchronized int pwrite(int len, long offset, boolean exact) throws ErrnoException, IOException {
         if (fd == null || read == null)
             throw new ClosedChannelException();
+        if (len < 0 || len > FileSystemService.PIPE_CAPACITY) {
+            // The pre-API-28 path applies len as a limit on a fixed-capacity direct buffer,
+            // and the exact-write loop below would never terminate for a clamped length.
+            throw new IOException("Invalid write length " + len);
+        }
         if (!FORCE_NO_SPLICE && Build.VERSION.SDK_INT >= 28) {
             Int64Ref outOff = offset < 0 ? null : new Int64Ref(offset);
             if (exact) {

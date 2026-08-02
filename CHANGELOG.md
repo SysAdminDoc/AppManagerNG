@@ -16,6 +16,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   truncated to a single character.
 - Hex attribute values are rejected up front when they have an odd length or a
   non-hex character, instead of failing part-way through decoding.
+- The privileged filesystem service now refuses read and write requests whose
+  length or offset it cannot honour — negative lengths, a write larger than the
+  transport pipe, an offset below the "current position" sentinel, or an offset
+  and length that overflow together. They are reported as an I/O error instead of
+  reaching a raw descriptor splice or a fixed-capacity buffer inside the root
+  process.
 - The shared binary-XML reader no longer carries an interned-string table from
   one document into the next, and reading from a reader that has already been
   recycled fails immediately rather than operating on a live buffer belonging to
