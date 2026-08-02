@@ -150,29 +150,6 @@ repeat the work:
 
 ### P2
 
-- [ ] P2 — The file-permission dialog is hardcoded in English and is never translated
-  Category: ux
-  Where: `app/src/main/res/layout/dialog_change_file_mode.xml` lines 30, 37, 44, 60, 91, 122, 148, 155, 162
-  Problem: nine user-visible labels — "Owner", "Group", "Others", "Read", "Write", "Execute",
-  "set-user-ID bit", "set-group-ID bit", "sticky bit" — are literal `android:text` values rather than
-  `@string` references. The app ships roughly 40 locales, so every non-English user sees an
-  English-only permissions dialog. The inconsistency is visible within the same file: line 184
-  correctly uses `@string/apply_recursively`.
-  Evidence: `grep -n 'text=' app/src/main/res/layout/dialog_change_file_mode.xml` lists the nine
-  literals beside the one correct `@string` reference. Lint reports all nine as `HardcodedText`, and
-  they are 9 of the only 10 `HardcodedText` issues in the entire project (the tenth is the "1x"
-  playback-speed label in `dialog_audio_player.xml:133`, worth fixing in the same pass). All are
-  suppressed in `app/lint-baseline.xml`. Reachable from File Manager → file → change file mode via
-  `app/src/main/java/io/github/muntashirakon/AppManager/fm/dialogs/ChangeFileModeDialogFragment.java`.
-  Fix: extract the nine literals into `app/src/main/res/values/strings.xml` with descriptive names
-  (e.g. `file_mode_owner`, `file_mode_read`, `file_mode_setuid_bit`) and reference them from the
-  layout, reusing the Unix-permission vocabulary already present in the file-manager strings.
-  Acceptance: no `android:text` literal remains in that layout; the nine `HardcodedText` entries are
-  removed from `app/lint-baseline.xml` and lint stays clean; the dialog renders translated strings
-  under a non-English locale.
-  Confidence: Verified
-  Effort: S
-
 - [ ] P2 — Filter-expression highlighting uses pure red/blue and matches inside words
   Category: visual
   Where: `app/src/main/java/io/github/muntashirakon/AppManager/filters/EditFiltersDialogFragment.java:45-52`

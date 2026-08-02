@@ -130,7 +130,7 @@
                 android:minHeight="48dp"
                 android:gravity="center_vertical"
                 android:padding="4dp"
-                android:text="1x"
+                android:text="@string/audio_player_playback_speed_default"
                 android:textStyle="bold" />
 
             <Space
