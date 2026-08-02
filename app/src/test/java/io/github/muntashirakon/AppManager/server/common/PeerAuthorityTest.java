@@ -28,12 +28,18 @@ public class PeerAuthorityTest {
     private static final int APP_UID_USER_10 = 1010123;
     private static final int OTHER_APP_UID = 10456;
 
-    /** A real /proc/net/tcp table: a listener, our accepted connection, and an unrelated one. */
+    /**
+     * A real /proc/net/tcp table. Every loopback connection appears twice, once from each end,
+     * so this holds: the listener (ours), our own side of the accepted connection (uid 0, the
+     * uid we already run as), the client's side of it (uid 10123 — the row we want), and an
+     * unrelated connection belonging to another app.
+     */
     private static final List<String> PROC_NET_TCP = Arrays.asList(
             "  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode",
             "   0: 0100007F:1F90 00000000:0000 0A 00000000:00000000 00:00000000 00000000     0        0 41001 1 0000000000000000 100 0 0 10 0",
-            "   1: 0100007F:1F90 0100007F:C001 01 00000000:00000000 00:00000000 00000000 10123        0 41002 1 0000000000000000 20 4 30 10 -1",
-            "   2: 0100007F:2328 0100007F:C002 01 00000000:00000000 00:00000000 00000000 10456        0 41003 1 0000000000000000 20 4 30 10 -1");
+            "   1: 0100007F:1F90 0100007F:C001 01 00000000:00000000 00:00000000 00000000     0        0 41002 1 0000000000000000 20 4 30 10 -1",
+            "   2: 0100007F:C001 0100007F:1F90 01 00000000:00000000 00:00000000 00000000 10123        0 41003 1 0000000000000000 20 4 30 10 -1",
+            "   3: 0100007F:C002 0100007F:2328 01 00000000:00000000 00:00000000 00000000 10456        0 41004 1 0000000000000000 20 4 30 10 -1");
 
     private static final int LISTEN_PORT = 0x1F90; // 8080
     private static final int PEER_PORT = 0xC001;   // 49153
@@ -75,23 +81,39 @@ public class PeerAuthorityTest {
     }
 
     @Test
-    public void theConnectionIsFoundByItsPortPair() {
-        assertEquals(APP_UID_USER_0, PeerAuthority.findPeerUid(PROC_NET_TCP, LISTEN_PORT, PEER_PORT));
+    public void thePeersOwnRowIsTheOneFound() {
+        assertEquals(APP_UID_USER_0, PeerAuthority.findPeerUid(PROC_NET_TCP, PEER_PORT, LISTEN_PORT));
+    }
+
+    @Test
+    public void thePeersRowIsNotOurOwnRow() {
+        // A loopback connection has a row at each end. Ours carries the uid we already run as;
+        // only the peer's carries the uid worth checking.
+        int peer = PeerAuthority.findPeerUid(PROC_NET_TCP, PEER_PORT, LISTEN_PORT);
+        int ours = PeerAuthority.findPeerUid(PROC_NET_TCP, LISTEN_PORT, PEER_PORT);
+        assertEquals(APP_UID_USER_0, peer);
+        assertEquals(ROOT, ours);
+
+        // Why the argument order matters: our own uid takes isAuthorizedPeer's "server talking
+        // to itself" branch, so reading the wrong row would authorise every caller. A check that
+        // always passes is worse than no check, because it reads like one that ran.
+        assertTrue(PeerAuthority.isAuthorizedPeer(ours, APP_ID, ROOT));
+        assertFalse(PeerAuthority.isAuthorizedPeer(OTHER_APP_UID, APP_ID, ROOT));
     }
 
     @Test
     public void aDifferentConnectionIsNotMistakenForOurs() {
         // Same listener, different peer port.
-        assertEquals(PeerAuthority.UID_UNKNOWN, PeerAuthority.findPeerUid(PROC_NET_TCP, LISTEN_PORT, 0xC099));
+        assertEquals(PeerAuthority.UID_UNKNOWN, PeerAuthority.findPeerUid(PROC_NET_TCP, 0xC099, LISTEN_PORT));
         // Different listener, same peer port.
-        assertEquals(PeerAuthority.UID_UNKNOWN, PeerAuthority.findPeerUid(PROC_NET_TCP, 0x9999, PEER_PORT));
+        assertEquals(PeerAuthority.UID_UNKNOWN, PeerAuthority.findPeerUid(PROC_NET_TCP, PEER_PORT, 0x9999));
         // The other app's connection is only found by its own port pair.
-        assertEquals(OTHER_APP_UID, PeerAuthority.findPeerUid(PROC_NET_TCP, 0x2328, 0xC002));
+        assertEquals(OTHER_APP_UID, PeerAuthority.findPeerUid(PROC_NET_TCP, 0xC002, 0x2328));
     }
 
     @Test
     public void theListeningRowIsNeverMatched() {
-        // Row 0 has a rem_address port of 0, which no accepted socket reports.
+        // The listener's rem_address port is 0, which no accepted socket reports.
         assertEquals(PeerAuthority.UID_UNKNOWN, PeerAuthority.findPeerUid(PROC_NET_TCP, LISTEN_PORT, 0));
     }
 
@@ -99,24 +121,24 @@ public class PeerAuthorityTest {
     public void anIpv6TableIsParsedTheSameWay() {
         List<String> tcp6 = Arrays.asList(
                 "  sl  local_address                         remote_address                        st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode",
-                "   0: 00000000000000000000000001000000:1F90 00000000000000000000000001000000:C001 01 00000000:00000000 00:00000000 00000000 10123        0 51002 1 0000000000000000 20 4 30 10 -1");
-        assertEquals(APP_UID_USER_0, PeerAuthority.findPeerUid(tcp6, LISTEN_PORT, PEER_PORT));
+                "   0: 00000000000000000000000001000000:C001 00000000000000000000000001000000:1F90 01 00000000:00000000 00:00000000 00000000 10123        0 51002 1 0000000000000000 20 4 30 10 -1");
+        assertEquals(APP_UID_USER_0, PeerAuthority.findPeerUid(tcp6, PEER_PORT, LISTEN_PORT));
     }
 
     @Test
     public void unusableTablesYieldUnknownRatherThanThrowing() {
-        assertEquals(PeerAuthority.UID_UNKNOWN, PeerAuthority.findPeerUid(null, LISTEN_PORT, PEER_PORT));
-        assertEquals(PeerAuthority.UID_UNKNOWN, PeerAuthority.findPeerUid(Collections.emptyList(), LISTEN_PORT, PEER_PORT));
-        assertEquals(PeerAuthority.UID_UNKNOWN, PeerAuthority.findPeerUid(PROC_NET_TCP, 0, PEER_PORT));
-        assertEquals(PeerAuthority.UID_UNKNOWN, PeerAuthority.findPeerUid(PROC_NET_TCP, LISTEN_PORT, -1));
+        assertEquals(PeerAuthority.UID_UNKNOWN, PeerAuthority.findPeerUid(null, PEER_PORT, LISTEN_PORT));
+        assertEquals(PeerAuthority.UID_UNKNOWN, PeerAuthority.findPeerUid(Collections.emptyList(), PEER_PORT, LISTEN_PORT));
+        assertEquals(PeerAuthority.UID_UNKNOWN, PeerAuthority.findPeerUid(PROC_NET_TCP, 0, LISTEN_PORT));
+        assertEquals(PeerAuthority.UID_UNKNOWN, PeerAuthority.findPeerUid(PROC_NET_TCP, PEER_PORT, -1));
         // Truncated, header-only, blank and malformed rows are skipped, not indexed into.
         assertEquals(PeerAuthority.UID_UNKNOWN, PeerAuthority.findPeerUid(
-                Arrays.asList("", "   1: 0100007F:1F90 0100007F:C001", null, "garbage"),
-                LISTEN_PORT, PEER_PORT));
+                Arrays.asList("", "   1: 0100007F:C001 0100007F:1F90", null, "garbage"),
+                PEER_PORT, LISTEN_PORT));
         // A row whose uid column is not a number.
         assertEquals(PeerAuthority.UID_UNKNOWN, PeerAuthority.findPeerUid(Collections.singletonList(
-                        "   1: 0100007F:1F90 0100007F:C001 01 00000000:00000000 00:00000000 00000000 nobody 0 41002 1"),
-                LISTEN_PORT, PEER_PORT));
+                        "   1: 0100007F:C001 0100007F:1F90 01 00000000:00000000 00:00000000 00000000 nobody 0 41002 1"),
+                PEER_PORT, LISTEN_PORT));
     }
 
     @Test
