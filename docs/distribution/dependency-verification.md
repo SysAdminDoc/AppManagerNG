@@ -32,6 +32,41 @@ AAPT2 and verifies that a real app compile/test path can write any missing lock
 state. The final two commands prove strict verification and locking can
 initialize and run a focused app test without refresh flags.
 
+## Configurations that only the CVE gate resolves
+
+`dependencyCheckAggregate` resolves configurations no ordinary build touches —
+`:app:androidLintTool`, `:app:kotlinBuildToolsApiClasspath`, the UTP test-plugin
+host configurations, and others. Their POMs are not covered by the refresh
+commands above, because those drive `:<project>:dependencies`, which never
+resolves them. Strict verification then aborts the task before the scanner
+starts, and the gate correctly refuses to write a receipt for a build that was
+never scanned. That failure mode is pinned by
+`scripts/tests/test_run_dependency_cve_gate.py`, so a future configuration
+addition surfaces as a gate failure rather than a silent skip.
+
+Do **not** close such a gap with a blanket
+`--write-verification-metadata sha256`: that records whatever happens to be in
+the local Gradle cache, which is the thing verification exists to distrust. Add
+the entries from the repository's own published checksums instead:
+
+1. Run the gate and collect the reported artifacts:
+   `py -3.12 scripts/run_dependency_cve_gate.py --out-dir reproducible-release/publish`
+   Each line reads `<file> (<group>:<name>:<version>) from repository <Repo>`.
+2. For each one, download the artifact from that repository
+   (`https://repo1.maven.org/maven2` for `MavenRepo`,
+   `https://dl.google.com/dl/android/maven2` for `Google`) together with the
+   checksum file published beside it — `.sha256` where available, otherwise
+   `.sha1`. Maven Central publishes `.sha256` only for newer uploads.
+3. Compare the downloaded bytes against the published checksum. A mismatch is a
+   supply-chain event, not a refresh problem: stop and investigate.
+4. Only then record the sha256 of the verified download in
+   `gradle/verification-metadata.xml`, with `origin="Verified against the
+   upstream repository"` and a `reason` naming which published checksum was
+   compared. Those attributes are how a reviewer tells a verified entry from a
+   trust-on-first-use one.
+5. Re-run the gate. It reports the next configuration it reaches; repeat until
+   the scan starts.
+
 Review rules:
 
 - Keep checksum changes bundled with the dependency version change that caused
