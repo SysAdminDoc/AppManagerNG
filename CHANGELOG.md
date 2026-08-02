@@ -23,6 +23,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   categories as documented debt.
 - Marked `AdvancedSearchView`'s pure matchers as any-thread operations and removed
   their stale worker-to-UI lint findings.
+- Added matching start padding to the main filter strip and App Details primary row,
+  removing the only two RTL symmetry lint findings.
 - Updated filter-expression highlighting to use the themed primary and
   informational colors, and restricted boolean highlighting to whole words so
   package names such as `com.truecaller` remain unstyled.

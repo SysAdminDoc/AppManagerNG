@@ -64,6 +64,7 @@
                 android:clipToPadding="false"
                 android:fillViewport="false"
                 android:fadingEdgeLength="@dimen/premium_space_16"
+                android:paddingStart="@dimen/premium_space_16"
                 android:paddingEnd="@dimen/premium_space_16"
                 android:requiresFadingEdge="horizontal"
                 android:scrollbars="none">
