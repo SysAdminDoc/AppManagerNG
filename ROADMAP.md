@@ -147,32 +147,6 @@ repeat the work:
 
 ### P1
 
-- [ ] P1 — Seven unguarded API-26 `setTooltipText()` calls crash App Details on API 21-25
-  Category: correctness
-  Where: `app/src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsComponentsFragment.java`
-  lines 130, 487, 493, 502, 934, 952, 1200
-  Problem: `View.setTooltipText(CharSequence)` was added in API 26 and `min_sdk` is 21. None of these
-  seven call sites sits behind an `SDK_INT` check, so on an API 21-25 device each throws
-  `NoSuchMethodError`. Line 130 runs during the fragment's view-creation path, so opening App Details
-  → any component tab (Activities / Services / Receivers / Providers) crashes outright; the rest fire
-  during list binding. API 21-22 support is a deliberate, documented commitment
-  (`versions.gradle:5-8`, `docs/policy/minsdk-21-ceiling.md`), so this is not a theoretical range.
-  Evidence: `grep -n "SDK_INT\|RequiresApi\|TargetApi"` on that file returns one unrelated hit at line
-  1037. Lint independently flags exactly these seven lines as `NewApi` — "Call requires API level 26
-  (current min is 21): `android.view.View#setTooltipText`" — suppressed in `app/lint-baseline.xml`.
-  Cross-check: lint flags none of the repo's other tooltip call sites, because
-  `MultiSelectionActionsView.java:530`, `ModeOfOpsPreference.java:418` and
-  `AudioPlayerDialogFragment.java:417/450` are each already wrapped in an `SDK_INT >= O` check —
-  confirming lint is correctly separating guarded from unguarded here.
-  Fix: replace all seven with `androidx.appcompat.widget.TooltipCompat.setTooltipText(view, text)`,
-  which no-ops safely below API 26. This is already the established pattern in this codebase —
-  `AppDetailsPermissionsFragment.java:861` and `PermissionAppsAdapter.java:91` use it. Line 487 passes
-  `null` to clear the tooltip; `TooltipCompat` accepts `null` for the same purpose.
-  Acceptance: no direct `View#setTooltipText` call remains in that file; the seven `NewApi` entries are
-  deleted from `app/lint-baseline.xml` and lint stays clean; App Details component tabs open without
-  `NoSuchMethodError` on an API 21 or 22 emulator.
-  Confidence: Verified
-  Effort: S
 
 - [ ] P1 — Unguarded API-26 `Intent#removeFlags` crashes the Activity Interceptor on API 21-25
   Category: correctness

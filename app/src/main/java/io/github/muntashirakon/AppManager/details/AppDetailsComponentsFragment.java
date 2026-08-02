@@ -29,6 +29,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 import androidx.appcompat.widget.PopupMenu;
+import androidx.appcompat.widget.TooltipCompat;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
@@ -127,7 +128,8 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
         mComponentGuideButton = view.findViewById(R.id.component_guide);
         if (mComponentGuideButton != null) {
             mComponentGuideButton.setOnClickListener(v -> showComponentGuideDialog());
-            mComponentGuideButton.setTooltipText(getString(R.string.app_details_component_guide_tooltip));
+            TooltipCompat.setTooltipText(mComponentGuideButton,
+                    getString(R.string.app_details_component_guide_tooltip));
         }
         refreshComponentGuideButton();
         viewModel.get(mNeededProperty).observe(getViewLifecycleOwner(), appDetailsItems -> {
@@ -484,13 +486,14 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
     private void applyTrackerChip(@NonNull Chip chip, @NonNull AppDetailsComponentItem item) {
         if (!item.isTracker()) {
             chip.setVisibility(View.GONE);
-            chip.setTooltipText(null);
+            TooltipCompat.setTooltipText(chip, null);
             return;
         }
         String label = item.getTrackerLabel();
         if (label == null || label.isEmpty()) {
             chip.setText(R.string.tracker);
-            chip.setTooltipText(getString(R.string.tracker_chip_safe_to_block_hint));
+            TooltipCompat.setTooltipText(chip,
+                    getString(R.string.tracker_chip_safe_to_block_hint));
         } else {
             io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory category =
                     io.github.muntashirakon.AppManager.rules.compontents.TrackerCategory.categorize(label);
@@ -499,7 +502,8 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             } else {
                 chip.setText(getString(R.string.tracker_chip_with_category, label, getString(category.getLabelRes())));
             }
-            chip.setTooltipText(getString(R.string.tracker_chip_safe_to_block_hint_with_name, label));
+            TooltipCompat.setTooltipText(chip,
+                    getString(R.string.tracker_chip_safe_to_block_hint_with_name, label));
         }
         chip.setVisibility(View.VISIBLE);
     }
@@ -931,7 +935,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                         confirmServiceAction(context, serviceInfo, true);
                     }
                 });
-                holder.launchBtn.setTooltipText(getString(serviceItem.canLaunch
+                TooltipCompat.setTooltipText(holder.launchBtn, getString(serviceItem.canLaunch
                         ? R.string.start_service
                         : R.string.service_action_start_unavailable));
                 holder.launchBtn.setVisibility(View.VISIBLE);
@@ -949,7 +953,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                         confirmServiceAction(context, serviceInfo, false);
                     }
                 });
-                holder.shortcutBtn.setTooltipText(getString(canStop
+                TooltipCompat.setTooltipText(holder.shortcutBtn, getString(canStop
                         ? R.string.stop_service
                         : R.string.service_action_stop_unavailable));
                 holder.shortcutBtn.setVisibility(View.VISIBLE);
@@ -1197,7 +1201,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                                 providerInfo.authority, mUserId, providerInfo.readPermission);
                     }
                 });
-                holder.launchBtn.setTooltipText(getString(canQuery
+                TooltipCompat.setTooltipText(holder.launchBtn, getString(canQuery
                         ? R.string.query_provider
                         : R.string.provider_query_unavailable));
                 holder.launchBtn.setVisibility(View.VISIBLE);
