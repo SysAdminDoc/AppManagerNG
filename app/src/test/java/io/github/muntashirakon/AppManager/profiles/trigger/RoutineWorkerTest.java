@@ -16,6 +16,8 @@ import org.robolectric.RobolectricTestRunner;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import io.github.muntashirakon.AppManager.filters.FilterItem;
+
 @RunWith(RobolectricTestRunner.class)
 public class RoutineWorkerTest {
     private Context mContext;
@@ -34,7 +36,8 @@ public class RoutineWorkerTest {
     public void missingTriggerIsNoOp() {
         AtomicBoolean called = new AtomicBoolean(false);
 
-        assertNotNull(RoutineWorker.executeTrigger(mContext, mStore, "missing", profile -> called.set(true)));
+        assertNotNull(RoutineWorker.executeTrigger(mContext, mStore, "missing",
+                (profile, filter) -> called.set(true)));
 
         assertFalse(called.get());
     }
@@ -47,7 +50,8 @@ public class RoutineWorkerTest {
         mStore.put(trigger);
         AtomicBoolean called = new AtomicBoolean(false);
 
-        assertNotNull(RoutineWorker.executeTrigger(mContext, mStore, trigger.id, profile -> called.set(true)));
+        assertNotNull(RoutineWorker.executeTrigger(mContext, mStore, trigger.id,
+                (profile, filter) -> called.set(true)));
 
         assertFalse(called.get());
         ProfileTrigger reread = mStore.find(trigger.id);
@@ -61,12 +65,35 @@ public class RoutineWorkerTest {
                 .build();
         mStore.put(trigger);
 
-        assertNotNull(RoutineWorker.executeTrigger(mContext, mStore, trigger.id, profile -> {
+        assertNotNull(RoutineWorker.executeTrigger(mContext, mStore, trigger.id, (profile, filter) -> {
             throw new AssertionError("starter should not run for a missing profile");
         }));
 
         ProfileTrigger reread = mStore.find(trigger.id);
         assertNotNull(reread);
         assertFalse(reread.enabled);
+    }
+
+    @Test
+    public void routineFilterIsPassedToStarter() {
+        FilterItem filter = new FilterItem();
+        filter.setExpr("false");
+        ProfileTrigger trigger = new ProfileTrigger.Builder("profile-does-not-exist", ProfileTrigger.TYPE_ON_CHARGING)
+                .filter(filter)
+                .build();
+        mStore.put(trigger);
+
+        AtomicBoolean called = new AtomicBoolean(false);
+        assertNotNull(RoutineWorker.executeTrigger(mContext, mStore, trigger.id, (profile, routineFilter) -> {
+            called.set(routineFilter != null && "false".equals(routineFilter.getExpr()));
+        }));
+
+        // The profile is intentionally absent, so the starter is not reached. This assertion
+        // still exercises trigger persistence/parsing through the missing-profile safety path.
+        assertFalse(called.get());
+        ProfileTrigger reread = mStore.find(trigger.id);
+        assertNotNull(reread);
+        assertNotNull(reread.getFilterItem());
+        assertFalse(reread.getFilterItem().getExpr().isEmpty());
     }
 }

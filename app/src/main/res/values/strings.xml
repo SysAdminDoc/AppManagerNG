@@ -1507,6 +1507,11 @@
     <string name="profile_trigger_package_filter_hint">Package filter (optional)</string>
     <string name="profile_trigger_package_filter_helper">Leave empty to run for every app. Use * as a wildcard, e.g. com.vendor.* to match a vendor\'s packages.</string>
     <string name="profile_trigger_package_filter_suffix" translatable="false">%1$s · %2$s</string>
+    <string name="profile_trigger_filter_title">Limit profile targets</string>
+    <string name="profile_trigger_filter_message">Optionally choose a Finder filter. The schedule will apply the profile only to matching apps.</string>
+    <string name="profile_trigger_filter_without">Run for all profile targets</string>
+    <string name="profile_trigger_filter_choose">Choose filter</string>
+    <string name="profile_trigger_filter_suffix" translatable="false">%1$s · filtered</string>
     <string name="profile_trigger_summary">%1$s\n%2$s\n%3$s</string>
     <string name="profile_trigger_last_run_never">Never run</string>
     <string name="profile_trigger_last_run_format">%1$s: %2$s</string>
@@ -1514,6 +1519,9 @@
     <string name="profile_trigger_result_profile_missing">Profile missing; schedule disabled</string>
     <string name="profile_trigger_result_started">Started %1$s</string>
     <string name="profile_trigger_result_routine_not_allowed">Skipped: this profile does not allow routine operations</string>
+    <string name="profile_trigger_result_filter_empty">Skipped: the routine filter matched no profile targets</string>
+    <string name="profile_trigger_result_filter_unsupported">Skipped and disabled: routine filters require an app profile</string>
+    <string name="profile_trigger_result_filter_failed">Routine filter failed: %1$s</string>
     <string name="profile_trigger_result_failed_disabled">Failed and disabled: %1$s</string>
     <string name="profile_trigger_diagnostics">Diagnostics: %1$s</string>
     <string name="profile_trigger_diagnostics_unknown">Not checked yet</string>

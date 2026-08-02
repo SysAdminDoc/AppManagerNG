@@ -37,6 +37,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
 import io.github.muntashirakon.AppManager.backup.BackupPathExclusionPatterns;
+import io.github.muntashirakon.AppManager.filters.EditFiltersDialogFragment;
+import io.github.muntashirakon.AppManager.filters.FilterItem;
 import io.github.muntashirakon.AppManager.profiles.struct.AppsBaseProfile;
 import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
 import io.github.muntashirakon.AppManager.profiles.trigger.ProfileTrigger;
@@ -574,7 +576,7 @@ public class ConfPreferences extends PreferenceFragmentCompat {
                     } else if (ProfileTrigger.isPackageEventType(type)) {
                         showPackagePatternTriggerDialog(profileId, type);
                     } else {
-                        addRoutineTrigger(new ProfileTrigger.Builder(profileId, type).build());
+                        offerRoutineFilter(new ProfileTrigger.Builder(profileId, type));
                     }
                 })
                 .setNegativeButton(R.string.cancel, null)
@@ -587,9 +589,8 @@ public class ConfPreferences extends PreferenceFragmentCompat {
                 .setHelperText(getString(R.string.profile_trigger_package_filter_helper))
                 .setPositiveButton(R.string.ok, (dialog, which, inputText, isChecked) -> {
                     String pattern = inputText != null ? inputText.toString().trim() : "";
-                    addRoutineTrigger(new ProfileTrigger.Builder(profileId, type)
-                            .packagePattern(pattern)
-                            .build());
+                    offerRoutineFilter(new ProfileTrigger.Builder(profileId, type)
+                            .packagePattern(pattern));
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
@@ -597,14 +598,43 @@ public class ConfPreferences extends PreferenceFragmentCompat {
 
     private void showTimeOfDayTriggerDialog(@NonNull String profileId) {
         Calendar now = Calendar.getInstance();
-        new TimePickerDialog(mActivity, (view, hourOfDay, minute) -> addRoutineTrigger(
+        new TimePickerDialog(mActivity, (view, hourOfDay, minute) -> offerRoutineFilter(
                 new ProfileTrigger.Builder(profileId, ProfileTrigger.TYPE_TIME_OF_DAY)
-                        .timeOfDay(hourOfDay, minute)
-                        .build()),
+                        .timeOfDay(hourOfDay, minute)),
                 now.get(Calendar.HOUR_OF_DAY),
                 now.get(Calendar.MINUTE),
                 DateFormat.is24HourFormat(mActivity))
                 .show();
+    }
+
+    private void offerRoutineFilter(@NonNull ProfileTrigger.Builder builder) {
+        new MaterialAlertDialogBuilder(mActivity)
+                .setTitle(R.string.profile_trigger_filter_title)
+                .setMessage(R.string.profile_trigger_filter_message)
+                .setPositiveButton(R.string.profile_trigger_filter_without, (dialog, which) ->
+                        addRoutineTrigger(builder.build()))
+                .setNeutralButton(R.string.profile_trigger_filter_choose,
+                        (dialog, which) -> showRoutineFilterEditor(builder))
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void showRoutineFilterEditor(@NonNull ProfileTrigger.Builder builder) {
+        FilterItem filterItem = new FilterItem();
+        EditFiltersDialogFragment dialog = new EditFiltersDialogFragment();
+        dialog.setOnSaveDialogButtonInterface(new EditFiltersDialogFragment.OnSaveDialogButtonInterface() {
+            @NonNull
+            @Override
+            public FilterItem getFilterItem() {
+                return filterItem;
+            }
+
+            @Override
+            public void onItemAltered(@NonNull FilterItem item) {
+                addRoutineTrigger(builder.filter(item).build());
+            }
+        });
+        dialog.show(mActivity.getSupportFragmentManager(), EditFiltersDialogFragment.TAG);
     }
 
     private void addRoutineTrigger(@NonNull ProfileTrigger trigger) {

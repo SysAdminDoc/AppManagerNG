@@ -9,10 +9,15 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import aosp.libcore.util.EmptyArray;
 import io.github.muntashirakon.AppManager.history.JsonDeserializer;
+import io.github.muntashirakon.AppManager.filters.FilterItem;
+import io.github.muntashirakon.AppManager.filters.FilterableAppInfo;
+import io.github.muntashirakon.AppManager.filters.FilteringUtils;
 import io.github.muntashirakon.AppManager.profiles.ProfileLogger;
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
 import io.github.muntashirakon.AppManager.users.Users;
@@ -36,16 +41,47 @@ public class AppsProfile extends AppsBaseProfile {
 
     @Override
     public ProfileApplierResult apply(@NonNull String state, @Nullable ProfileLogger logger, @Nullable ProgressHandler progressHandler) {
+        return apply(state, logger, progressHandler, null);
+    }
+
+    @NonNull
+    public ProfileApplierResult apply(@NonNull String state, @Nullable ProfileLogger logger,
+                                      @Nullable ProgressHandler progressHandler,
+                                      @Nullable FilterItem routineFilter) {
         if (packages.length == 0) return ProfileApplierResult.EMPTY_RESULT;
         int[] users = this.users == null ? Users.getUsersIds() : this.users;
-        int size = packages.length * users.length;
-        List<String> packageList = new ArrayList<>(size);
-        List<Integer> assocUsers = new ArrayList<>(size);
-        for (String packageName : packages) {
-            for (int user : users) {
-                packageList.add(packageName);
-                assocUsers.add(user);
+        if (routineFilter == null) {
+            int size = packages.length * users.length;
+            List<String> packageList = new ArrayList<>(size);
+            List<Integer> assocUsers = new ArrayList<>(size);
+            for (String packageName : packages) {
+                for (int user : users) {
+                    packageList.add(packageName);
+                    assocUsers.add(user);
+                }
             }
+            return apply(packageList, assocUsers, state, logger, progressHandler);
+        }
+
+        Set<String> packageSet = new HashSet<>();
+        for (String packageName : packages) {
+            packageSet.add(packageName);
+        }
+        List<FilterableAppInfo> filterableAppInfoList = FilteringUtils.loadFilterableAppInfo(users, false,
+                routineFilter.hasFilterOptionType("domain_links"));
+        List<String> packageList = new ArrayList<>();
+        List<Integer> assocUsers = new ArrayList<>();
+        for (FilterableAppInfo info : filterableAppInfoList) {
+            if (packageSet.contains(info.getPackageName()) && routineFilter.matches(info)) {
+                packageList.add(info.getPackageName());
+                assocUsers.add(info.getUserId());
+            }
+        }
+        if (logger != null) {
+            logger.println("====> Routine filter matched packages: " + packageList.size());
+        }
+        if (packageList.isEmpty()) {
+            return ProfileApplierResult.EMPTY_RESULT;
         }
         return apply(packageList, assocUsers, state, logger, progressHandler);
     }

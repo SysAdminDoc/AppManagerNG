@@ -6,12 +6,14 @@ import android.content.Context;
 import android.content.Intent;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.core.content.ContextCompat;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.filters.FilterItem;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.profiles.ProfileApplierService;
 import io.github.muntashirakon.AppManager.profiles.ProfileManager;
@@ -33,9 +35,10 @@ public class RoutineWorker extends Worker {
     public Result doWork() {
         Context context = getApplicationContext();
         String triggerId = getInputData().getString(KEY_TRIGGER_ID);
-        return executeTrigger(context, new ProfileTriggerStore(context), triggerId, profile -> {
+        return executeTrigger(context, new ProfileTriggerStore(context), triggerId, (profile, routineFilter) -> {
             Intent intent = ProfileApplierService.getIntent(context,
-                    ProfileQueueItem.fromProfile(profile, BaseProfile.STATE_ON), true);
+                    ProfileQueueItem.fromProfile(profile, BaseProfile.STATE_ON,
+                            routineFilter, triggerId), true);
             ContextCompat.startForegroundService(context, intent);
         });
     }
@@ -80,9 +83,19 @@ public class RoutineWorker extends Worker {
                         context.getString(R.string.profile_trigger_result_routine_not_allowed));
                 return Result.success();
             }
-            starter.start(profile);
-            RoutineScheduler.recordRunResult(context, trigger.id,
-                    context.getString(R.string.profile_trigger_result_started, profile.name));
+            FilterItem routineFilter = trigger.getFilterItem();
+            if (routineFilter != null && !(profile instanceof AppsBaseProfile)) {
+                store.setEnabled(trigger.id, false);
+                cancelQuietly(context, trigger);
+                RoutineScheduler.recordRunResult(context, trigger.id,
+                        context.getString(R.string.profile_trigger_result_filter_unsupported));
+                return Result.success();
+            }
+            starter.start(profile, routineFilter);
+            if (routineFilter == null) {
+                RoutineScheduler.recordRunResult(context, trigger.id,
+                        context.getString(R.string.profile_trigger_result_started, profile.name));
+            }
             return Result.success();
         } catch (Exception th) {
             if (th instanceof InterruptedException) {
@@ -118,6 +131,6 @@ public class RoutineWorker extends Worker {
 
     @VisibleForTesting
     interface ProfileStarter {
-        void start(@NonNull BaseProfile profile) throws Exception;
+        void start(@NonNull BaseProfile profile, @Nullable FilterItem routineFilter) throws Exception;
     }
 }
