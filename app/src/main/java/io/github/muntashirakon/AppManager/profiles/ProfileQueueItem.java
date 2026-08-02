@@ -23,6 +23,7 @@ import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.history.IJsonSerializer;
 import io.github.muntashirakon.AppManager.history.JsonDeserializer;
+import io.github.muntashirakon.AppManager.filters.FilterItem;
 import io.github.muntashirakon.AppManager.profiles.ProfileApplierActivity.ProfileApplierInfo;
 import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
 import io.github.muntashirakon.AppManager.self.filecache.FileCache;
@@ -39,6 +40,13 @@ public class ProfileQueueItem implements Parcelable, IJsonSerializer {
     @NonNull
     public static ProfileQueueItem fromProfile(@NonNull BaseProfile profile, @Nullable String state) {
         return new ProfileQueueItem(profile, state);
+    }
+
+    @NonNull
+    public static ProfileQueueItem fromProfile(@NonNull BaseProfile profile, @Nullable String state,
+                                               @Nullable FilterItem routineFilter,
+                                               @Nullable String routineTriggerId) {
+        return new ProfileQueueItem(profile, state, null, routineFilter, routineTriggerId);
     }
 
     @NonNull
@@ -69,18 +77,31 @@ public class ProfileQueueItem implements Parcelable, IJsonSerializer {
     private final String mState;
     @Nullable
     private final Path mTempProfilePath;
+    @Nullable
+    private final FilterItem mRoutineFilter;
+    @Nullable
+    private final String mRoutineTriggerId;
 
     private ProfileQueueItem(@NonNull BaseProfile profile, @Nullable String state) {
-        this(profile, state, null);
+        this(profile, state, null, null, null);
     }
 
     private ProfileQueueItem(@NonNull BaseProfile profile, @Nullable String state,
                              @Nullable Path tempProfilePath) {
+        this(profile, state, tempProfilePath, null, null);
+    }
+
+    private ProfileQueueItem(@NonNull BaseProfile profile, @Nullable String state,
+                             @Nullable Path tempProfilePath, @Nullable FilterItem routineFilter,
+                             @Nullable String routineTriggerId) {
         mProfileId = profile.profileId;
         mProfileType = profile.type;
         mProfileName = profile.name;
         mState = state;
         mTempProfilePath = tempProfilePath;
+        mRoutineFilter = routineFilter != null ? routineFilter.copy() : null;
+        mRoutineTriggerId = routineTriggerId != null && !routineTriggerId.isEmpty()
+                ? routineTriggerId : null;
     }
 
     protected ProfileQueueItem(@NonNull Parcel in) {
@@ -90,6 +111,10 @@ public class ProfileQueueItem implements Parcelable, IJsonSerializer {
         mState = in.readString();
         Uri uri = ParcelCompat.readParcelable(in, Uri.class.getClassLoader(), Uri.class);
         mTempProfilePath = uri != null ? Paths.get(uri) : null;
+        mRoutineFilter = in.dataAvail() > 0
+                ? ParcelCompat.readParcelable(in, FilterItem.class.getClassLoader(), FilterItem.class)
+                : null;
+        mRoutineTriggerId = in.dataAvail() > 0 ? in.readString() : null;
     }
 
     @NonNull
@@ -117,6 +142,16 @@ public class ProfileQueueItem implements Parcelable, IJsonSerializer {
         return mTempProfilePath;
     }
 
+    @Nullable
+    public FilterItem getRoutineFilter() {
+        return mRoutineFilter != null ? mRoutineFilter.copy() : null;
+    }
+
+    @Nullable
+    public String getRoutineTriggerId() {
+        return mRoutineTriggerId;
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -129,6 +164,8 @@ public class ProfileQueueItem implements Parcelable, IJsonSerializer {
         dest.writeString(mProfileName);
         dest.writeString(mState);
         dest.writeParcelable(mTempProfilePath != null ? mTempProfilePath.getUri() : null, flags);
+        dest.writeParcelable(mRoutineFilter, flags);
+        dest.writeString(mRoutineTriggerId);
     }
 
     protected ProfileQueueItem(@NonNull JSONObject jsonObject) throws JSONException {
@@ -157,6 +194,27 @@ public class ProfileQueueItem implements Parcelable, IJsonSerializer {
             }
         }
         mTempProfilePath = profilePath != null ? Paths.get(profilePath) : null;
+        Object routineFilterValue = jsonObject.opt("routine_filter");
+        if (routineFilterValue != null && routineFilterValue != JSONObject.NULL
+                && !(routineFilterValue instanceof JSONObject)) {
+            throw new JSONException("Invalid routine filter.");
+        }
+        JSONObject routineFilter = routineFilterValue instanceof JSONObject
+                ? (JSONObject) routineFilterValue : null;
+        if (routineFilter != null) {
+            try {
+                mRoutineFilter = new FilterItem(routineFilter);
+            } catch (JSONException | RuntimeException e) {
+                JSONException error = new JSONException("Invalid routine filter.");
+                error.initCause(e);
+                throw error;
+            }
+        } else {
+            mRoutineFilter = null;
+        }
+        String routineTriggerId = JSONUtils.getString(jsonObject, "routine_trigger_id", null);
+        mRoutineTriggerId = routineTriggerId != null && !routineTriggerId.isEmpty()
+                ? routineTriggerId : null;
     }
 
     @BaseProfile.ProfileType
@@ -189,6 +247,12 @@ public class ProfileQueueItem implements Parcelable, IJsonSerializer {
         } catch (IOException e) {
             //noinspection UnnecessaryInitCause
             throw (JSONException) new JSONException(e.getMessage()).initCause(e);
+        }
+        if (mRoutineFilter != null) {
+            jsonObject.put("routine_filter", mRoutineFilter.serializeToJson());
+        }
+        if (mRoutineTriggerId != null) {
+            jsonObject.put("routine_trigger_id", mRoutineTriggerId);
         }
         return jsonObject;
     }

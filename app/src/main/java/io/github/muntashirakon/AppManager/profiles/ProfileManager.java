@@ -19,7 +19,10 @@ import java.util.Objects;
 import java.util.UUID;
 
 import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
+import io.github.muntashirakon.AppManager.profiles.struct.AppsFilterProfile;
+import io.github.muntashirakon.AppManager.profiles.struct.AppsProfile;
 import io.github.muntashirakon.AppManager.profiles.struct.ProfileApplierResult;
+import io.github.muntashirakon.AppManager.filters.FilterItem;
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
@@ -194,10 +197,27 @@ public class ProfileManager {
     @SuppressLint("SwitchIntDef")
     @NonNull
     public ProfileApplierResult applyProfile(@Nullable String state, @Nullable ProgressHandler progressHandler) {
+        return applyProfile(state, progressHandler, null);
+    }
+
+    @SuppressLint("SwitchIntDef")
+    @NonNull
+    public ProfileApplierResult applyProfile(@Nullable String state,
+                                             @Nullable ProgressHandler progressHandler,
+                                             @Nullable FilterItem routineFilter) {
         // Set state
         if (state == null) state = mProfile.state;
         log("====> Started execution with state " + state);
-        ProfileApplierResult result = mProfile.apply(state, mLogger, progressHandler);
+        ProfileApplierResult result;
+        if (routineFilter == null) {
+            result = mProfile.apply(state, mLogger, progressHandler);
+        } else if (mProfile instanceof AppsProfile) {
+            result = ((AppsProfile) mProfile).apply(state, mLogger, progressHandler, routineFilter);
+        } else if (mProfile instanceof AppsFilterProfile) {
+            result = ((AppsFilterProfile) mProfile).apply(state, mLogger, progressHandler, routineFilter);
+        } else {
+            throw new IllegalArgumentException("Routine filters require an app profile.");
+        }
         mRequiresRestart = result.requiresRestart();
         log("====> Execution completed.");
         return result;

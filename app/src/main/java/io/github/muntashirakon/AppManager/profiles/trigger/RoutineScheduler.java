@@ -277,7 +277,10 @@ public final class RoutineScheduler {
                 break;
         }
         if (ProfileTrigger.isPackageEventType(trigger.type) && !trigger.packagePattern.isEmpty()) {
-            return context.getString(R.string.profile_trigger_package_filter_suffix, base, trigger.packagePattern);
+            base = context.getString(R.string.profile_trigger_package_filter_suffix, base, trigger.packagePattern);
+        }
+        if (trigger.hasFilter()) {
+            base = context.getString(R.string.profile_trigger_filter_suffix, base);
         }
         return base;
     }

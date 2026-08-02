@@ -44,11 +44,28 @@ public class AppsFilterProfile extends AppsBaseProfile {
 
     @Override
     public ProfileApplierResult apply(@NonNull String state, @Nullable ProfileLogger logger, @Nullable ProgressHandler progressHandler) {
+        return apply(state, logger, progressHandler, null);
+    }
+
+    @NonNull
+    public ProfileApplierResult apply(@NonNull String state, @Nullable ProfileLogger logger,
+                                      @Nullable ProgressHandler progressHandler,
+                                      @Nullable FilterItem routineFilter) {
         // Filter results
         int[] users = this.users == null ? Users.getUsersIds() : this.users;
         List<FilterableAppInfo> filterableAppInfoList = FilteringUtils.loadFilterableAppInfo(users, false,
-                mFilterItem.hasFilterOptionType("domain_links"));
+                mFilterItem.hasFilterOptionType("domain_links")
+                        || (routineFilter != null && routineFilter.hasFilterOptionType("domain_links")));
         List<FilterItem.FilteredItemInfo<FilterableAppInfo>> filteredList = mFilterItem.getFilteredList(filterableAppInfoList);
+        if (routineFilter != null) {
+            List<FilterItem.FilteredItemInfo<FilterableAppInfo>> routineFilteredList = new ArrayList<>(filteredList.size());
+            for (FilterItem.FilteredItemInfo<FilterableAppInfo> info : filteredList) {
+                if (routineFilter.matches(info.info)) {
+                    routineFilteredList.add(info);
+                }
+            }
+            filteredList = routineFilteredList;
+        }
         if (filteredList.isEmpty()) {
             return ProfileApplierResult.EMPTY_RESULT;
         }
@@ -56,6 +73,9 @@ public class AppsFilterProfile extends AppsBaseProfile {
         List<Integer> assocUsers = new ArrayList<>(filteredList.size());
         if (logger != null) {
             logger.println("====> Filtered packages: " + filteredList.size());
+            if (routineFilter != null) {
+                logger.println("====> Applied routine filter");
+            }
         }
         StringBuilder sb = new StringBuilder();
         for (FilterItem.FilteredItemInfo<FilterableAppInfo> info : filteredList) {

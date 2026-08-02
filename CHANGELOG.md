@@ -8,6 +8,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 - Finder now exposes saved filter presets from the toolbar, including save/load, rename, and
   confirmed deletion with the store's normalized-name and corruption-safe behavior.
+- Profile routines can now carry an optional Finder filter through trigger storage and queued
+  execution, narrow both app-profile types to matching package/user targets, and record filtered
+  no-op and failure outcomes without changing legacy trigger JSON behavior.
 - APK bundle preflight now rejects embedded APKs whose package or version identity differs from
   the base, preserves DRM-free APKM provenance separately from encrypted APKM, and cleans up
   invalid bundle caches before installation selection.
