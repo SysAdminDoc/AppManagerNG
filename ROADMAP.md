@@ -152,27 +152,6 @@ repeat the work:
 
 ### P3
 
-- [ ] P3 — `CLAUDE.md` overstates the remaining upstream-branding copy debt
-  Category: docs
-  Where: `CLAUDE.md`, section "Hardcoded 'App Manager' string references"
-  Problem: the note claims `grep -n "App Manager"` across `app/src/main/res/` "returns hundreds of hits
-  … copy inside dialogs/help screens still says 'App Manager'" and that a sweep is pending. For the
-  English strings that is no longer true: exactly one user-visible occurrence remains, and it is
-  intentional. A stale note describing a large phantom task misdirects future work, and the repo's own
-  self-healing-memory rule asks for notes like this to be corrected in place once disproven.
-  Evidence: stripping `xliff:g example="…"` translator-hint attributes from
-  `app/src/main/res/values/strings.xml` and scanning only `<string>` bodies leaves a single visible hit
-  — `pref_export_upstream_compat` = "Export for upstream App Manager" — which correctly names the
-  upstream project. The other 21 raw matches all sit inside `example=` attributes, which are never
-  rendered to users.
-  Fix: rewrite that section to state the verified position (English copy is clean; the one remaining
-  reference is intentional) and, if non-English locales still carry stale product names, scope the note
-  to those locales with a real count instead of "hundreds".
-  Acceptance: the note matches what a fresh grep shows, with the `xliff` caveat stated so the next
-  reader does not have to re-derive it.
-  Confidence: Verified
-  Effort: S
-
 - [ ] P3 — Unaudited areas needing their own pass
   Category: docs
   Where: repository-wide
