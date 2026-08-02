@@ -45,16 +45,7 @@ public class ParcelableUtil {
         return parcel;
     }
 
-    @Nullable
-    public static Object readValue(byte[] bytes) {
-        if (bytes == null) {
-            return null;
-        }
-        Parcel unmarshall = unmarshall(bytes);
-        try {
-            return unmarshall.readValue(ParcelableUtil.class.getClassLoader());
-        } finally {
-            unmarshall.recycle();
-        }
-    }
+    // Deliberately no readValue(byte[]) helper: Parcel.readValue resolves the type from the
+    // bytes themselves, so peer-controlled input would choose which class is instantiated.
+    // Every reply on the privileged channel is read through the concrete type's own creator.
 }

@@ -11,17 +11,22 @@ import android.os.ParcelFileDescriptor;
 import android.os.ResultReceiver;
 import android.os.UserHandle;
 import android.os.WorkSource;
-import android.util.LruCache;
 
 import androidx.annotation.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Resolves the parameter-type names carried by a {@link Caller} back to classes.
+ * <p>
+ * The names travel over the privileged channel, so resolution is restricted to the explicit
+ * allowlist below. An unrecognised name is refused rather than handed to {@code Class.forName},
+ * which would let the wire decide which class gets loaded.
+ */
 // Copyright 2017 Zheng Li
 public class ClassUtils {
     private static final Map<String, Class<?>> sDefaultClassMap = new HashMap<>();
-    private static final LruCache<String, Class<?>> sClassCache = new LruCache<>(128);
 
     static {
         // Primitive types
@@ -67,22 +72,16 @@ public class ClassUtils {
         return null;
     }
 
+    /**
+     * @return The allowlisted class for {@code name}, or {@code null} when the name is not one
+     * the privileged channel is permitted to resolve.
+     */
     @Nullable
     public static Class<?> string2Class(String name) {
-        try {
-            Class<?> clazz = sDefaultClassMap.get(name);
-            if (clazz == null) {
-                clazz = sClassCache.get(name);
-            }
-            if (clazz == null) {
-                clazz = Class.forName(name, false, null);
-                sClassCache.put(name, clazz);
-            }
-            return clazz;
-        } catch (ClassNotFoundException e) {
-            FLog.log(e);
+        Class<?> clazz = sDefaultClassMap.get(name);
+        if (clazz == null) {
+            FLog.log("Refusing to resolve non-allowlisted class name: " + name);
         }
-        return null;
+        return clazz;
     }
-
 }

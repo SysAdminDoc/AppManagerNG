@@ -161,24 +161,6 @@ a device.
 
 ### P2
 
-- [ ] P2 — Constrain deserialization and dynamic class loading on the peer path
-  Why: peer-controlled bytes are unmarshalled as a `Parcel`, a `Throwable` is read back via
-  Java serialization, and type-name strings from the peer drive `Class.forName`. Each is a
-  known-hazardous primitive; whether it is exploitable here depends on what the classloader
-  can reach, which is exactly what needs establishing.
-  Evidence: `libserver/.../common/ParcelableUtil.java:43,55`;
-  `libserver/.../common/CallerResult.java:61` (`(Throwable) in.readSerializable()`);
-  `libserver/.../common/ClassUtils.java:78` (`Class.forName(name, false, null)`, LruCache-backed);
-  `server/.../RootServiceMain.java:223` (`cl.loadClass(name.getClassName())`);
-  field reads with no bounds or type checks at `libserver/.../common/BaseCaller.java:47-50`
-  and `libserver/.../common/ShellCaller.java:36-38`.
-  Touches: `libserver/src/main/java/io/github/muntashirakon/AppManager/server/common/`.
-  Acceptance: resolvable class names are restricted to an explicit allowlist; the
-  `readSerializable` reply path either carries a type-restricted read or is replaced with a
-  plain message/stack-trace pair; a host test asserts an unexpected class name is rejected
-  rather than loaded.
-  Complexity: M
-
 ### P3
 
 - [ ] P3 — Re-examine privileged log redaction and log file permissions
