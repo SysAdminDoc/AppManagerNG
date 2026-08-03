@@ -151,3 +151,9 @@ repeat the work:
 ### P2
 
 ### P3
+
+## Research-Driven Additions (2026-08-02)
+
+### P1
+
+### P2
