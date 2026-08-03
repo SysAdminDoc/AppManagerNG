@@ -490,3 +490,15 @@ ROADMAP.md once the blocker is resolved.
   Acceptance: with the toggle on, a scheduled check lists apps whose installed version trails the chosen indexes, with a signing-cert mismatch warning where the index cert differs; floss flavor compiles the feature out entirely.
   Blocker: requires network access to F-Droid/IzzyOnDroid index-v2 and GitHub release APIs for testing.
   Complexity: L
+
+## Maintainer-Policy-Gated
+
+### P1
+
+- [ ] P1 — Remove hard-coded local debug signing credentials
+  Why: `app/build.gradle` embeds literal `storePassword` and `keyPassword` values in a tracked debug signing branch even though `*.jks` is ignored and `CONTRIBUTING.md` prohibits secrets in source.
+  Evidence: `app/build.gradle`; `.gitignore`; `CONTRIBUTING.md`; `CLAUDE.md` explicitly documents the shared debug keystore/password as intentional and says not to purge it.
+  Touches: `app/build.gradle`, shared debug-signing policy, build/release consistency tests.
+  Acceptance: after maintainer policy changes, no tracked file contains an unintended signing password while shared debug builds retain their intended install-over-install behavior; release signing behavior and certificate metadata remain unchanged.
+  Blocker: explicit repository policy conflicts with the research recommendation; changing the shared debug-signing contract requires maintainer direction.
+  Complexity: S
