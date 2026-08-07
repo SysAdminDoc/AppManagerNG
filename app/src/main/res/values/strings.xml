@@ -1594,6 +1594,7 @@
     <string name="keystore_password_generated_title">Recovery password</string>
     <string name="keystore_password_input_title">Unlock recovery password</string>
     <string name="keystore_password_field_hint">Recovery password</string>
+    <string name="keystore_password_save_failed">Could not save the recovery password because this device\'s Android keystore failed to encrypt it. Encrypted features will not work until this succeeds. Restarting the device may help.</string>
     <string name="input_keystore_alias_pass">Password for alias <b>%1$s</b></string>
     <string name="input_keystore_alias_pass_description">Enter the password for the alias <b>%1$s</b>. You can leave this empty if the password matches the recovery password.</string>
     <string name="input_keystore_alias_pass_msg">Tap here to provide password for %1$s</string>

@@ -77,7 +77,8 @@ public class CompatUtil {
      */
     @SuppressWarnings({"deprecation", "InlinedApi"})
     @NonNull
-    private static synchronized SecretKeyAndVersion getAesGcmLocalProtectionKey(@NonNull Context context)
+    private static synchronized SecretKeyAndVersion getAesGcmLocalProtectionKey(@NonNull Context context,
+                                                                                boolean createIfMissing)
             throws KeyStoreException, CertificateException, NoSuchAlgorithmException, IOException,
             NoSuchProviderException, InvalidAlgorithmParameterException, NoSuchPaddingException,
             InvalidKeyException, IllegalBlockSizeException, UnrecoverableKeyException {
@@ -105,6 +106,15 @@ public class CompatUtil {
         SecretKey secretKey = readKeyApiL(sharedPreferences, keyStore);
         if (secretKey != null) {
             return new SecretKeyAndVersion(secretKey, androidVersionWhenTheKeyHasBeenGenerated);
+        }
+
+        if (!createIfMissing) {
+            // A decrypt caller reaching this point means data was encrypted under a key the
+            // device keystore no longer holds. Generating a fresh key here could only produce
+            // AEADBadTagException a microsecond later while destroying the evidence of what
+            // actually happened (issue #7) — fail with the real story instead.
+            throw new KeyStoreException("AES local protection key is missing from the Android keystore; "
+                    + "previously encrypted data cannot be decrypted on this device");
         }
 
         // Otherwise generate key
@@ -212,7 +222,7 @@ public class CompatUtil {
             throws InvalidAlgorithmParameterException, UnrecoverableKeyException, NoSuchPaddingException,
             IllegalBlockSizeException, CertificateException, KeyStoreException, NoSuchAlgorithmException,
             IOException, NoSuchProviderException, InvalidKeyException, BadPaddingException, DestroyFailedException {
-        SecretKeyAndVersion keyAndVersion = getAesGcmLocalProtectionKey(context);
+        SecretKeyAndVersion keyAndVersion = getAesGcmLocalProtectionKey(context, true);
 
         Cipher cipher = Cipher.getInstance(AES_GCM_CIPHER_TYPE);
         byte[] iv;
@@ -258,7 +268,7 @@ public class CompatUtil {
 
         Cipher cipher = Cipher.getInstance(AES_GCM_CIPHER_TYPE);
 
-        SecretKeyAndVersion keyAndVersion = getAesGcmLocalProtectionKey(context);
+        SecretKeyAndVersion keyAndVersion = getAesGcmLocalProtectionKey(context, false);
 
         AlgorithmParameterSpec spec;
 
