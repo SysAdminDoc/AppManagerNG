@@ -56,8 +56,12 @@ public class KeyStoreActivity extends AppCompatActivity {
         }
         if (intent.hasExtra(EXTRA_KS)) {
             AlertDialog ksDialog;
-            if (KeyStoreManager.hasKeyStore()) {
-                // We have a keystore but not a working password, input a password (probably due to system restore)
+            if (KeyStoreManager.hasKeyStore() || KeyStoreManager.hasSavedKeyStorePassword()) {
+                // We have a keystore or a stored password but not a working password — input one
+                // (system restore, or the device keystore lost the local protection key). Only
+                // checking for the keystore file used to make the second case regenerate a new
+                // password on every launch (issue #7); the input dialog's Delete button remains
+                // the deliberate way to start over.
                 ksDialog = KeyStoreManager.inputKeyStorePassword(this, this::finish);
             } else {
                 // We neither have a KeyStore nor a password. Create a password (not necessarily a keystore)
@@ -104,7 +108,9 @@ public class KeyStoreActivity extends AppCompatActivity {
                 password = new char[rawPassword.length()];
                 rawPassword.getChars(0, rawPassword.length(), password, 0);
             }
-            KeyStoreManager.savePass(this, prefKey, password);
+            if (!KeyStoreManager.savePass(this, prefKey, password)) {
+                Log.e(KeyStoreManager.TAG, "Could not save alias password for %s", prefKey);
+            }
             Utils.clearChars(password);
             ThreadUtils.postOnMainThread(() -> {
                 Intent broadcastIntent = new Intent(KeyStoreManager.ACTION_KS_INTERACTION_END);

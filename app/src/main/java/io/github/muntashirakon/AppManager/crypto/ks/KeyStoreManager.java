@@ -111,7 +111,23 @@ public class KeyStoreManager {
         char[] password = new char[30];
         RandomChar randomChar = new RandomChar();
         randomChar.nextChars(password);
-        savePass(activity, PREF_AM_KEYSTORE_PASS, password);
+        if (!savePass(activity, PREF_AM_KEYSTORE_PASS, password)) {
+            // Encryption via the device keystore failed. Showing the generated password anyway
+            // would present an unusable password as saved and re-trigger this dialog with a new
+            // password on every launch (issue #7). Surface the failure instead.
+            Utils.clearChars(password);
+            return new MaterialAlertDialogBuilder(activity)
+                    .setTitle(R.string.keystore_password_generated_title)
+                    .setMessage(R.string.keystore_password_save_failed)
+                    .setPositiveButton(R.string.ok, null)
+                    .setCancelable(false)
+                    .setOnDismissListener(dialog -> {
+                        if (dismissListener != null) {
+                            dismissListener.run();
+                        }
+                    })
+                    .create();
+        }
         return displayKeyStorePassword(activity, password, dismissListener);
     }
 
@@ -181,8 +197,12 @@ public class KeyStoreManager {
                 //noinspection ConstantConditions
                 char[] password = new char[editable.length()];
                 editable.getChars(0, editable.length(), password, 0);
-                savePass(activity, PREF_AM_KEYSTORE_PASS, password);
+                boolean saved = savePass(activity, PREF_AM_KEYSTORE_PASS, password);
                 Utils.clearChars(password);
+                if (!saved) {
+                    editText.setError(activity.getString(R.string.keystore_password_save_failed));
+                    return;
+                }
                 okButton.setEnabled(false);
                 ThreadUtils.postOnBackgroundThread(() -> {
                     try {
@@ -211,6 +231,16 @@ public class KeyStoreManager {
 
     public static boolean hasKeyStore() {
         return AM_KEYSTORE_FILE.exists();
+    }
+
+    /**
+     * Whether an encrypted recovery password has been stored, regardless of whether it can
+     * currently be decrypted. Used to distinguish a genuine first run from a device whose
+     * keystore lost the local protection key (issue #7) — the latter must never silently
+     * generate a fresh password over the one the user already saved.
+     */
+    public static boolean hasSavedKeyStorePassword() {
+        return sSharedPreferences.contains(PREF_AM_KEYSTORE_PASS);
     }
 
     public static boolean hasKeyStorePassword() {
@@ -415,9 +445,18 @@ public class KeyStoreManager {
      *
      * @param prefAlias The alias after running {@link #getPrefAlias(String)}
      * @param password  The password for the alias. {@link Utils#clearChars(char[])} must be called when done.
+     * @return {@code true} if the password was encrypted and stored, {@code false} otherwise.
+     * Passing a failed (null) encryption to {@code putString} would be equivalent to
+     * {@code remove(key)} — a silent data loss that manifested as issue #7.
      */
-    static void savePass(@NonNull Context context, String prefAlias, char[] password) {
-        sSharedPreferences.edit().putString(prefAlias, getEncryptedPassword(context, password)).apply();
+    @CheckResult
+    static boolean savePass(@NonNull Context context, String prefAlias, char[] password) {
+        String encryptedPass = getEncryptedPassword(context, password);
+        if (encryptedPass == null) {
+            return false;
+        }
+        sSharedPreferences.edit().putString(prefAlias, encryptedPass).apply();
+        return true;
     }
 
     /**
@@ -436,7 +475,8 @@ public class KeyStoreManager {
             decryptedBytes = CompatUtil.decryptData(context, encryptedBytes);
             return Utils.bytesToChars(decryptedBytes);
         } catch (Exception e) {
-            Log.e("KS", "Could not get decrypted password for %s", e, encryptedPass);
+            // Do not log encryptedPass: ciphertext of the keystore password does not belong in logcat
+            Log.e("KS", "Could not get decrypted password", e);
         } finally {
             if (encryptedBytes != null) {
                 Utils.clearBytes(encryptedBytes);
