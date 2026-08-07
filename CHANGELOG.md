@@ -3,6 +3,20 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## v0.6.11 — 2026-08-07
+
+### Fixed
+- Recovery password no longer regenerates on every launch when the device keystore misbehaves
+  (#7). Three stacked defects: a failed keystore encryption was silently written as
+  `putString(key, null)` — which *removes* the entry — while the dialog presented the password as
+  saved; the decrypt path minted a brand-new protection key whenever the alias was missing,
+  guaranteeing `AEADBadTagException` instead of a diagnosable error; and the startup branch
+  decided "first run" from the keystore file alone, so a stored-but-undecryptable password
+  produced a fresh password forever instead of the recovery-password prompt. Failed saves now
+  surface an error dialog, the decrypt path fails honestly, and a stored password always routes
+  to the input dialog (its Delete button remains the deliberate reset).
+- The keystore password's ciphertext is no longer logged to logcat on decrypt failure.
+
 ## v0.6.10 — 2026-08-02
 
 ### Fixed
