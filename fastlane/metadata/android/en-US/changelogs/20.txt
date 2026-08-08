@@ -1,0 +1,3 @@
+- Fixed the recovery password regenerating on every launch. Release builds could not load the app keystore at all, because the optimizer stripped the bundled BouncyCastle provider's reflectively-loaded classes.
+- Fixed the splash screen hanging on "Authenticating..." when the activity was recreated during startup.
+- The keystore password's ciphertext is no longer written to logcat on decrypt failures.
