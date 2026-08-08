@@ -3,6 +3,28 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## v0.6.12 — 2026-08-08
+
+### Fixed
+- The real, universal root cause of issue #7: release builds could not load the app's BKS
+  keystore at all. `AppManager` replaces Android's built-in BouncyCastle provider with the
+  bundled one, and JCA resolves every provider implementation reflectively by class name —
+  but `proguard-rules.pro` had no BouncyCastle keeps, so R8 stripped the keystore SPI classes
+  from every minified build and `KeyStore.getInstance("BKS")` threw `BKS not found` on every
+  device, every launch. That made `hasKeyStorePassword()` permanently false, which fed the
+  regenerate-forever loop v0.6.11 diagnosed (and, after v0.6.11, an unlock prompt that could
+  never accept the correct password). Verified end-to-end on API 36 and API 37 emulators:
+  generate → acknowledge → relaunch now proceeds silently with the stored password.
+  Debug builds never showed the bug because they are not minified.
+- The splash screen could hang on "Authenticating…" forever. `SplashActivity` posted the
+  keystore-password check result straight back to its own instance, so when the splash was
+  relaunched mid-check (a theme/locale configuration change during startup) the destroyed
+  instance dropped the continuation and the recreated instance skipped the work entirely —
+  its ViewModel already reported `isAuthenticating()`. The check now lives in the ViewModel
+  and republishes to whichever instance is alive, matching the pattern `BaseActivity` already
+  used. Previously masked: the broken keystore above failed in about 3 ms, which usually beat
+  the relaunch; a working keystore takes long enough to lose the race.
+
 ## v0.6.11 — 2026-08-07
 
 ### Fixed

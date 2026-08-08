@@ -47,7 +47,6 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.adb.AdbPairingService;
 import io.github.muntashirakon.AppManager.compat.BiometricAuthenticatorsCompat;
 import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreActivity;
-import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreManager;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.SupportInfoBundle;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
@@ -210,22 +209,28 @@ public class SplashActivity extends AppCompatActivity {
                     finish();
             }
         });
+        // The keystore check must survive activity recreation. Posting the result straight back to
+        // this instance loses it whenever the splash is relaunched mid-check (theme/locale config
+        // change during startup): the destroyed instance drops the continuation, and the recreated
+        // one skips the block because the ViewModel already reports isAuthenticating(). The app
+        // then sits on "Authenticating…" forever. The ViewModel owns the check and republishes the
+        // result to whichever instance is alive — the same pattern BaseActivity already uses.
+        mViewModel.keyStorePasswordStatus().observe(this, status -> {
+            if (status == null || isFinishing() || isDestroyed()) return;
+            Boolean hasPassword = mViewModel.claimKeyStorePasswordStatus();
+            if (hasPassword == null) return;
+            if (hasPassword) {
+                ensureSecurityAndModeOfOp();
+            } else {
+                Intent keyStoreIntent = new Intent(this, KeyStoreActivity.class)
+                        .putExtra(KeyStoreActivity.EXTRA_KS, true);
+                mKeyStoreActivity.launch(keyStoreIntent);
+            }
+        });
         if (!mViewModel.isAuthenticating()) {
             mViewModel.setAuthenticating(true);
-            ThreadUtils.postOnBackgroundThread(() -> {
-                boolean hasPassword = KeyStoreManager.hasKeyStorePassword();
-                ThreadUtils.postOnMainThread(() -> {
-                    if (isFinishing() || isDestroyed()) return;
-                    if (hasPassword) {
-                        ensureSecurityAndModeOfOp();
-                    } else {
-                        Intent keyStoreIntent = new Intent(this, KeyStoreActivity.class)
-                                .putExtra(KeyStoreActivity.EXTRA_KS, true);
-                        mKeyStoreActivity.launch(keyStoreIntent);
-                    }
-                });
-            });
         }
+        mViewModel.checkKeyStorePassword();
     }
 
     private void ensureSecurityAndModeOfOp() {
