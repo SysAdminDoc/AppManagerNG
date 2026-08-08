@@ -51,6 +51,21 @@
 # Don't minify OpenPGP API
 -keep public class org.openintents.openpgp.IOpenPgpService { *; }
 -keep public class org.openintents.openpgp.IOpenPgpService2 { *; }
+# Keep the bundled BouncyCastle provider's SPI implementations. AppManager
+# replaces Android's built-in BC provider with the bundled one (AppManager.java),
+# and JCA resolves every algorithm/keystore implementation from the provider's
+# service map REFLECTIVELY by class name. Without these keeps R8 strips the
+# unreferenced SPI classes and KeyStore.getInstance("BKS") fails with
+# "BKS not found" in every release build — which made the recovery password
+# regenerate on every launch (issue #7) because the keystore could never load.
+-keep class org.bouncycastle.jcajce.provider.** { *; }
+-keep class org.bouncycastle.jce.provider.** { *; }
+-keep class org.bouncycastle.pqc.jcajce.provider.** { *; }
+# The kept provider classes include X509LDAPCertStoreSpi, which references
+# javax.naming.* — a desktop-JVM API that does not exist on Android. The class
+# is only instantiated if an LDAP CertStore is requested, which this app never
+# does; suppress the missing-class error instead of losing the provider keeps.
+-dontwarn javax.naming.**
 # Don't minify Spake2 library
 -keep public class io.github.muntashirakon.crypto.spake2.** { *; }
 # Don't minify AOSP private APIs
