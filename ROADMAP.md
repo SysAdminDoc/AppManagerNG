@@ -6,13 +6,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ### P1
 
-- [ ] P1 — Port the upstream v4.1.0 bugfix run (audited cherry-pick)
-  Why: upstream shipped ~15 small correctness fixes between 2026-05-25 and 2026-06-29 that post-date the fork point and touch code the fork retains; none are recorded as ported.
-  Evidence: MuntashirAkon/AppManager commits 329b8dc1 (debloater: uninstalled system apps listing), 916eeb85 (inactive-app check for non-default users), daa54ac0 (filter-profile custom expression), 4a25c3f0 (intent resolution via `am start -d`), 706c36fb (APKS compile), ab2b17fe (main IME logic), 3bf97856 + 184df334 (NPEs in path parsing / AppDb#findUsage), 0d1be565 (editor symbols cropped at large font), 4d3da96b (Finder/Debloater nav buttons), ca038d66 (single/multi-choice dialogs), f8d31264 (force-create external cache dir in root mode), 936cb302 (log viewer scroll/filter — reconcile with the fork's own 2026-07-02 log-viewer fixes first). Skip the M3 preference restyle and locale commits (RESEARCH.md, Rejected Ideas).
-  Touches: per-commit — debloat/, main/, profiles/, apk/, editor/, logcat/, fm/, io path utils.
-  Acceptance: every listed commit is either ported with a regression test or recorded not-applicable with a one-line reason in the commit message; full host suite passes.
-  Complexity: M
-
 - [ ] P1 — Audit and port the upstream Android 16 hidden-API refresh
   Why: hidden-API mirrors drift against real OS internals; upstream refreshed them from Android 16 sources after the fork point and the fork's hiddenapi module has not taken the refresh — a latent-correctness risk on the OS most users now run.
   Evidence: upstream commits eff7f587 + 04ed88d0 (2026-05-25/27, "Update hidden API from Android 16"); no corresponding fork changes in hiddenapi/ (2026-08-10 scan).
