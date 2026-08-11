@@ -1435,7 +1435,6 @@
     <string name="pref_enable_auto_lock_msg">Blocca App Manager quando il dispositivo è bloccato.</string>
     <string name="path_does_not_exist">\"%1$s\" non esiste</string>
     <string name="path_not_a_folder">\"%1$s\" non è una cartella</string>
-    <string name="scan_report_from_pithus">Rapporto Pithus</string>
     <string name="action_checking">Controllo…</string>
     <string name="report_not_available">Non disponibile</string>
     <string name="profile_modified_are_you_sure">Il profilo è stato modificato. Annullare tutte le modifiche ed uscire\?</string>

@@ -1383,7 +1383,6 @@
     <string name="app_manager_is_unlocked">App Manager ist entsperrt</string>
     <string name="app_manager_is_running">App Manager läuft</string>
     <string name="launch_activity_dialog_title">Starte Aktivität: Aktion benötigt</string>
-    <string name="scan_report_from_pithus">Pithus Bericht</string>
     <string name="profile_modified_are_you_sure">Das Profil wurde verändert. Möchtest du wirklich deine Änderungen zu verwerfen und verlassen?</string>
     <string name="choose_a_profile_state">Wähle einen Profilzustand</string>
     <string name="profile_id">Profil ID</string>

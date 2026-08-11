@@ -1474,7 +1474,6 @@
     <string name="pref_enable_auto_lock_msg">Zablokuj App Manager, gdy urządzenie jest zablokowane.</string>
     <string name="path_does_not_exist">“%1$s” nie istnieje</string>
     <string name="path_not_a_folder">„%1$s” nie jest folderem</string>
-    <string name="scan_report_from_pithus">Raport Pithusa</string>
     <string name="action_checking">Sprawdzanie…</string>
     <string name="report_not_available">Niedostępne</string>
     <string name="profile_modified_are_you_sure">Profil został zmodyfikowany. Odrzucić wszystkie zmiany i wyjść\?</string>

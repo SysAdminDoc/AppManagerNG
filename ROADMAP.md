@@ -8,13 +8,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ### P2
 
-- [ ] P2 — Remove the defunct Pithus integration
-  Why: upstream deleted Pithus and its pinned certificates as a defunct service on 2026-05-26; the full flavor still offers uploads to the dead endpoint — a dead network trust surface.
-  Evidence: upstream commits 0e187e83 + 2c00f69f; app/src/main/java/.../scanner/Pithus.java, ScannerViewModel.java, ScannerFragment.java, settings/NetworkTransparencyLedger.java, NetworkRequestLedger.java, fragment_scanner.xml, locale strings (grep 2026-08-10).
-  Touches: scanner/, settings ledger classes, strings across locales, fragment_scanner.xml, docs mentioning Pithus (README flavor table).
-  Acceptance: no Pithus code, strings, or ledger rows remain; floss scanner UI unchanged; full-flavor scanner shows no Pithus action; probe result for beta.pithus.org recorded in the commit message; translation ratchet stays green after string removal.
-  Complexity: M
-
 - [ ] P2 — Disclose the KeyStore backup capability hole
   Why: backups silently skip Android KeyStore v2 entries, so users believe backups are complete when a class of credentials is absent — a truth gap in the app's core trust feature.
   Evidence: backup/BackupOp.java:531 and backup/RestoreOp.java:538 (TODO: "KeyStore v2 unsupported"); no disclosure in backup dialogs or metadata.
@@ -114,6 +107,13 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Touches: SBConverter, converter tests with parser-level fixtures.
   Acceptance: malformed or package-mismatched zip-comment JSON is rejected with a clear error before restore begins; valid imports unchanged; the disabled test is re-enabled or replaced at the parser level.
   Complexity: S
+
+- [ ] P3 — Drop Pithus from the bundled user manual
+  Why: the scanner integration was removed in code, but the manual shipped as a raw resource still describes fetching Pithus reports, in English and eleven translations.
+  Evidence: docs/raw/en/pages/scanner-page.tex, settings-page.tex, app-details-page.tex, docs/raw/en/strings.xml, and the generated docs/raw/<lang>/index.html for each locale.
+  Touches: docs/raw/**, docs/src/main/res/raw*/index.html (generated output must be regenerated, not hand-edited).
+  Acceptance: no locale of the shipped manual describes Pithus as a current feature; the historical changelog appendix entry stays as-is because it records what a past release did; the docs module builds.
+  Complexity: M
 
 - [ ] P3 — Map AID numbers to names in file properties
   Why: the file manager shows raw numeric AIDs where android_filesystem_config.h names exist — small readability/trust win for the audience this app serves.

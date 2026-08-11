@@ -12,7 +12,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   names. Submitting still applies immediately, and a queued pass is dropped when the screen goes
   away rather than running against a torn-down host.
 
+### Removed
+- The Pithus scanner integration. Upstream deleted it as a defunct service on 2026-05-26, and
+  beta.pithus.org no longer answers at all — every connection attempt times out while other
+  hosts respond normally, so the scanner card could only ever report "not available" after a
+  ten-second wait. Gone with it: the scanner card, the pinned certificates for that domain, its
+  row in the network transparency ledger, its key in the scan report JSON, and its strings in
+  every locale.
+
 ### Fixed
+- The network transparency ledger reported "Last success: never" for debloat-definition updates
+  no matter how many times they had run, because only VirusTotal ever recorded an outcome. The
+  definition fetch now records success and failure the same way, so the ledger's claim about
+  what the app has contacted is complete rather than partial.
 - In root mode, an external cache directory the framework refuses to create is now created
   directly, reproducing the owner, group, mode, and SELinux label the platform would have applied.
   Without this the app fell back to internal storage for the rest of the session whenever that

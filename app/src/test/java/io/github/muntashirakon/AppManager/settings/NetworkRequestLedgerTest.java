@@ -38,8 +38,8 @@ public class NetworkRequestLedgerTest {
     public void nothingIsRecordedUntilARequestHappens() {
         assertEquals(0L, NetworkRequestLedger.getLastSuccess(mContext, NetworkRequestLedger.CLIENT_VIRUS_TOTAL));
         assertEquals(0L, NetworkRequestLedger.getLastFailure(mContext, NetworkRequestLedger.CLIENT_VIRUS_TOTAL));
-        assertEquals(0L, NetworkRequestLedger.getLastSuccess(mContext, NetworkRequestLedger.CLIENT_PITHUS));
-        assertEquals(0L, NetworkRequestLedger.getLastFailure(mContext, NetworkRequestLedger.CLIENT_PITHUS));
+        assertEquals(0L, NetworkRequestLedger.getLastSuccess(mContext, NetworkRequestLedger.CLIENT_DEBLOAT_DEFINITIONS));
+        assertEquals(0L, NetworkRequestLedger.getLastFailure(mContext, NetworkRequestLedger.CLIENT_DEBLOAT_DEFINITIONS));
     }
 
     @Test
@@ -52,24 +52,24 @@ public class NetworkRequestLedgerTest {
 
     @Test
     public void clientsDoNotShareTheirRecords() {
-        NetworkRequestLedger.record(mContext, NetworkRequestLedger.CLIENT_PITHUS, true, T1);
-        assertEquals(T1, NetworkRequestLedger.getLastSuccess(mContext, NetworkRequestLedger.CLIENT_PITHUS));
+        NetworkRequestLedger.record(mContext, NetworkRequestLedger.CLIENT_DEBLOAT_DEFINITIONS, true, T1);
+        assertEquals(T1, NetworkRequestLedger.getLastSuccess(mContext, NetworkRequestLedger.CLIENT_DEBLOAT_DEFINITIONS));
         assertEquals(0L, NetworkRequestLedger.getLastSuccess(mContext, NetworkRequestLedger.CLIENT_VIRUS_TOTAL));
     }
 
     @Test
     public void aLaterOutcomeReplacesTheEarlierOne() {
-        NetworkRequestLedger.record(mContext, NetworkRequestLedger.CLIENT_PITHUS, true, T1);
-        NetworkRequestLedger.record(mContext, NetworkRequestLedger.CLIENT_PITHUS, true, T2);
-        assertEquals(T2, NetworkRequestLedger.getLastSuccess(mContext, NetworkRequestLedger.CLIENT_PITHUS));
+        NetworkRequestLedger.record(mContext, NetworkRequestLedger.CLIENT_DEBLOAT_DEFINITIONS, true, T1);
+        NetworkRequestLedger.record(mContext, NetworkRequestLedger.CLIENT_DEBLOAT_DEFINITIONS, true, T2);
+        assertEquals(T2, NetworkRequestLedger.getLastSuccess(mContext, NetworkRequestLedger.CLIENT_DEBLOAT_DEFINITIONS));
     }
 
     @Test
     public void clearForgetsEverything() {
-        NetworkRequestLedger.record(mContext, NetworkRequestLedger.CLIENT_PITHUS, true, T1);
+        NetworkRequestLedger.record(mContext, NetworkRequestLedger.CLIENT_DEBLOAT_DEFINITIONS, true, T1);
         NetworkRequestLedger.record(mContext, NetworkRequestLedger.CLIENT_VIRUS_TOTAL, false, T2);
         NetworkRequestLedger.clear(mContext);
-        assertEquals(0L, NetworkRequestLedger.getLastSuccess(mContext, NetworkRequestLedger.CLIENT_PITHUS));
+        assertEquals(0L, NetworkRequestLedger.getLastSuccess(mContext, NetworkRequestLedger.CLIENT_DEBLOAT_DEFINITIONS));
         assertEquals(0L, NetworkRequestLedger.getLastFailure(mContext, NetworkRequestLedger.CLIENT_VIRUS_TOTAL));
     }
 
@@ -81,7 +81,7 @@ public class NetworkRequestLedgerTest {
         assertTrue(before.contains("Last failure: never"));
 
         NetworkRequestLedger.record(mContext, NetworkRequestLedger.CLIENT_VIRUS_TOTAL, true, T1);
-        NetworkRequestLedger.record(mContext, NetworkRequestLedger.CLIENT_PITHUS, false, T2);
+        NetworkRequestLedger.record(mContext, NetworkRequestLedger.CLIENT_DEBLOAT_DEFINITIONS, false, T2);
         List<NetworkTransparencyLedger.Entry> entries = NetworkTransparencyLedger.buildEntries(mContext);
         String after = NetworkTransparencyLedger.formatForDisplay(mContext, entries);
         assertFalse("a recorded success must not still read as never",
@@ -93,9 +93,6 @@ public class NetworkRequestLedgerTest {
             if ("VirusTotal".equals(entry.name)) {
                 assertEquals(T1, entry.lastSuccessMillis);
                 assertEquals(0L, entry.lastFailureMillis);
-            } else if ("Pithus".equals(entry.name)) {
-                assertEquals(0L, entry.lastSuccessMillis);
-                assertEquals(T2, entry.lastFailureMillis);
             }
         }
     }

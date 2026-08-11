@@ -573,7 +573,7 @@
     <string name="scanner_export_success">Scan report exported.</string>
     <string name="scanner_export_filename" translatable="false">appmanagerng-scan-report-%1$s.json</string>
     <string name="scanner_offline_banner_title">Offline scan</string>
-    <string name="scanner_offline_banner_summary">Local APK checks are still available. VirusTotal and Pithus reports stay hidden until network features are enabled.</string>
+    <string name="scanner_offline_banner_summary">Local APK checks are still available. VirusTotal reports stay hidden until network features are enabled.</string>
     <string name="scanner_requires_network">Requires network access</string>
     <plurals name="scanner_tracker_database_summary">
         <item quantity="one">Database: %1$s (%2$d signature)</item>
@@ -2284,7 +2284,7 @@
     <string name="search_type_regular_expressions">Regex</string>
     <string name="toggle_internet">Use the Internet</string>
     <string name="pref_toggle_internet_msg">Enable optional Internet features in AppManagerNG.</string>
-    <string name="pref_toggle_internet_msg_floss_disabled">Optional Internet features are disabled in this FLOSS build. Install the full build from GitHub Releases to enable VirusTotal, Pithus, and debloat-definition auto-updates.</string>
+    <string name="pref_toggle_internet_msg_floss_disabled">Optional Internet features are disabled in this FLOSS build. Install the full build from GitHub Releases to enable VirusTotal and debloat-definition auto-updates.</string>
     <string name="pref_auto_update_debloat_definitions">Update debloat definitions on launch</string>
     <string name="pref_auto_update_debloat_definitions_msg">Opt in to fetching the latest debloat definitions from AppManagerNG\'s pinned GitHub raw manifest. Requires Internet access; cached files fall back to the bundled snapshot.</string>
     <string name="pref_auto_update_debloat_definitions_msg_current">Current cached debloat definitions: <xliff:g id="version" example="2026-05-17">%1$s</xliff:g>. Standard HTTPS GET requests only; no package list or device identifier is sent.</string>
@@ -3512,7 +3512,6 @@
     <string name="pref_enable_auto_lock_msg">Lock AppManagerNG when the device is locked.</string>
     <string name="path_does_not_exist">“%1$s” does not exist</string>
     <string name="path_not_a_folder">“%1$s” is not a folder</string>
-    <string name="scan_report_from_pithus">Pithus report</string>
     <string name="action_checking">Checking…</string>
     <string name="report_not_available">Not available</string>
     <string name="profile_modified_are_you_sure">The profile was modified. Discard all your changes and exit?</string>

@@ -100,7 +100,6 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
     private final MutableLiveData<String> mVtFileUploadLiveData = new MutableLiveData<>();
     // Null = Failed, NonNull = Result generated
     private final MutableLiveData<VtFileReport> mVtFileReportLiveData = new MutableLiveData<>();
-    private final MutableLiveData<String> mPithusReportLiveData = new MutableLiveData<>();
 
     public ScannerViewModel(@NonNull Application application) {
         this(application, new FileCache());
@@ -193,10 +192,6 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
         return mVtFileUploadLiveData;
     }
 
-    public LiveData<String> getPithusReportLiveData() {
-        return mPithusReportLiveData;
-    }
-
     public List<String> getTrackerClasses() {
         return mTrackerClasses;
     }
@@ -276,7 +271,6 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
         report.put("missing_signatures", stringCollectionToJson(mMissingClassesLiveData.getValue()));
         report.put("limitations", buildLimitationsJson());
         report.put("virus_total", buildVirusTotalJson());
-        report.put("pithus", buildPithusJson());
         return report.toString(2);
     }
 
@@ -340,12 +334,6 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
     }
 
     @VisibleForTesting
-    static boolean shouldFetchPithusReport(@Nullable Pair<String, String>[] digests, boolean internetEnabled) {
-        return internetEnabled && digests != null && digests.length > 2 && digests[2] != null
-                && digests[2].second != null;
-    }
-
-    @VisibleForTesting
     static boolean shouldFetchVirusTotalReport(@Nullable VirusTotal virusTotal,
                                                @Nullable Pair<String, String>[] digests,
                                                boolean internetEnabled,
@@ -391,14 +379,6 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
         String uploadPermalink = mVtFileUploadLiveData.getValue();
         putNullable(vt, "queued_upload_permalink", uploadPermalink);
         return vt;
-    }
-
-    @NonNull
-    private JSONObject buildPithusJson() throws JSONException {
-        JSONObject pithus = new JSONObject();
-        putNullable(pithus, "report_url", mPithusReportLiveData.getValue());
-        pithus.put("available", mPithusReportLiveData.getValue() != null);
-        return pithus;
     }
 
     @NonNull
@@ -464,20 +444,13 @@ public class ScannerViewModel extends AndroidViewModel implements VirusTotal.Ful
         waitForFile();
         if (mApkFile == null) {
             mApkChecksumsLiveData.postValue(null);
-            mPithusReportLiveData.postValue(null);
             mVtFileReportLiveData.postValue(null);
             return;
         }
         Path file = Paths.getUnprivileged(mApkFile);
-        String pithusReportUrl = null;
         Pair<String, String>[] digests = ExUtils.exceptionAsNull(() -> DigestUtils.getDigests(file));
         mApkChecksumsLiveData.postValue(digests);
         boolean internetEnabled = FeatureController.isInternetEnabled();
-        if (shouldFetchPithusReport(digests, internetEnabled)) {
-            String sha256 = digests[2].second;
-            pithusReportUrl = ExUtils.exceptionAsNull(() -> Pithus.resolveReport(sha256));
-        }
-        mPithusReportLiveData.postValue(pithusReportUrl);
         if (shouldFetchVirusTotalReport(mVt, digests, internetEnabled, FeatureController.isVirusTotalEnabled())) {
             String md5 = digests[0].second;
             try {

@@ -1375,7 +1375,6 @@
     <string name="pref_enable_persistent_session">Voer App Manager op de achtergrond uit</string>
     <string name="path_does_not_exist">“%1$s” bestaat niet</string>
     <string name="path_not_a_folder">“%1$s” is geen map</string>
-    <string name="scan_report_from_pithus">Pithus-rapport</string>
     <string name="action_checking">Controleren…</string>
     <string name="report_not_available">Niet beschikbaar</string>
     <string name="profile_modified_are_you_sure">Het profiel is gewijzigd. Al uw wijzigingen negeren en afsluiten?</string>

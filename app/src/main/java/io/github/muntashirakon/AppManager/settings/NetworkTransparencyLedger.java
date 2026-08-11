@@ -86,23 +86,14 @@ public final class NetworkTransparencyLedger {
         ));
 
         entries.add(new Entry(
-                "Pithus",
-                "beta.pithus.org/report",
-                "SHA256 hash lookup (read-only)",
-                networkAvailable,
-                internetEnabled,
-                0, // on-demand: the outcome timestamps below are the evidence
-                NetworkRequestLedger.getLastSuccess(context, NetworkRequestLedger.CLIENT_PITHUS),
-                NetworkRequestLedger.getLastFailure(context, NetworkRequestLedger.CLIENT_PITHUS)
-        ));
-
-        entries.add(new Entry(
                 "Debloat definitions",
                 "raw.githubusercontent.com (pinned repo)",
                 "JSON definition fetch (no user data sent)",
                 networkAvailable,
                 internetEnabled && Prefs.Privacy.autoUpdateDebloatDefinitions(),
-                Prefs.Privacy.getLastDebloatDefinitionsCheckTime()
+                Prefs.Privacy.getLastDebloatDefinitionsCheckTime(),
+                NetworkRequestLedger.getLastSuccess(context, NetworkRequestLedger.CLIENT_DEBLOAT_DEFINITIONS),
+                NetworkRequestLedger.getLastFailure(context, NetworkRequestLedger.CLIENT_DEBLOAT_DEFINITIONS)
         ));
 
         entries.add(new Entry(

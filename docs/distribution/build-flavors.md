@@ -19,7 +19,6 @@ When `BuildConfig.ALLOW_OPTIONAL_NETWORK_FEATURES` is `false`, the following
 features are **compiled out** — there is no runtime toggle to re-enable them:
 
 - VirusTotal APK upload and report lookup
-- Pithus hash lookup
 - Debloat-definition manifest auto-fetch / auto-update
 - Settings → Privacy → "Use the Internet" master switch (hidden)
 

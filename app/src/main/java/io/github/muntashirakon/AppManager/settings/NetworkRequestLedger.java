@@ -30,10 +30,10 @@ public final class NetworkRequestLedger {
     private static final String SUFFIX_FAILURE = "_failure";
 
     public static final String CLIENT_VIRUS_TOTAL = "virustotal";
-    public static final String CLIENT_PITHUS = "pithus";
+    public static final String CLIENT_DEBLOAT_DEFINITIONS = "debloat_definitions";
 
     @Retention(RetentionPolicy.SOURCE)
-    @StringDef({CLIENT_VIRUS_TOTAL, CLIENT_PITHUS})
+    @StringDef({CLIENT_VIRUS_TOTAL, CLIENT_DEBLOAT_DEFINITIONS})
     public @interface Client {
     }
 
