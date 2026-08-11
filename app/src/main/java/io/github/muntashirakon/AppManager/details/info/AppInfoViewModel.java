@@ -615,6 +615,10 @@ public class AppInfoViewModel extends AndroidViewModel {
                         installSourceInfo.setOriginatingPackageLabel(PackageUtils.getPackageLabel(pm,
                                 installSourceInfo.getOriginatingPackageName(), userId));
                     }
+                    if (installSourceInfo.getUpdateOwnerPackageName() != null) {
+                        installSourceInfo.setUpdateOwnerPackageLabel(PackageUtils.getPackageLabel(pm,
+                                installSourceInfo.getUpdateOwnerPackageName(), userId));
+                    }
                     appInfo.installSource = installSourceInfo;
                 }
                 // Set main activity

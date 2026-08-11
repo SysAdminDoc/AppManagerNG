@@ -4253,6 +4253,16 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             installerInfoList.add(info);
             packageNames.add(installSource.getInitiatingPackageName());
         }
+        if (installSource.getUpdateOwnerPackageLabel() != null) {
+            // Who may replace this app without asking again — not necessarily whoever installed it.
+            CharSequence info = new SpannableStringBuilder(getSmallerText(getString(R.string.update_owner)))
+                    .append("\n")
+                    .append(getTitleText(requireContext(), installSource.getUpdateOwnerPackageLabel()))
+                    .append("\n")
+                    .append(installSource.getUpdateOwnerPackageName());
+            installerInfoList.add(info);
+            packageNames.add(installSource.getUpdateOwnerPackageName());
+        }
         if (installSource.getOriginatingPackageLabel() != null) {
             CharSequence info = new SpannableStringBuilder(getSmallerText(getString(R.string.apk_source)))
                     .append("\n")
