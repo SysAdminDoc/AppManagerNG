@@ -46,6 +46,7 @@ import io.github.muntashirakon.AppManager.batchops.struct.BatchSafetyOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.IBatchOpOptions;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
+import io.github.muntashirakon.AppManager.misc.SearchViewDebouncer;
 import io.github.muntashirakon.AppManager.profiles.AddToProfileDialogFragment;
 import io.github.muntashirakon.AppManager.safety.CriticalPackageGuard;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
@@ -69,6 +70,8 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
     private MultiSelectionView mMultiSelectionView;
     private DebloaterRecyclerViewAdapter mAdapter;
     private AdvancedSearchView mSearchView;
+    @Nullable
+    private SearchViewDebouncer mSearchDebouncer;
     private MaterialTextView mListSummaryView;
     @Nullable
     private Menu mSelectionMenu;
@@ -121,6 +124,9 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
             actionBar.setDisplayHomeAsUpEnabled(true);
             actionBar.setDisplayShowCustomEnabled(true);
             mSearchView = UIUtils.setupAdvancedSearchView(actionBar, this);
+            if (mSearchView != null) {
+                mSearchDebouncer = new SearchViewDebouncer(this::applyQuery);
+            }
         }
         viewModel = new ViewModelProvider(this).get(DebloaterViewModel.class);
 
@@ -176,6 +182,15 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
     protected void onPause() {
         super.onPause();
         unregisterReceiver(mBatchOpsBroadCastReceiver);
+    }
+
+    @Override
+    protected void onDestroy() {
+        // Drop any pending debounced search so it cannot fire into a destroyed activity.
+        if (mSearchDebouncer != null) {
+            mSearchDebouncer.cancel();
+        }
+        super.onDestroy();
     }
 
     @Override
@@ -260,16 +275,22 @@ public class DebloaterActivity extends BaseActivity implements MultiSelectionVie
 
     @Override
     public boolean onQueryTextChange(String newText, int type) {
-        if (mProgressIndicator != null) {
-            mProgressIndicator.show();
-        }
-        viewModel.setQuery(newText, type);
+        if (mSearchDebouncer != null) {
+            mSearchDebouncer.onQueryTextChange(newText, type);
+        } else applyQuery(newText, type);
         return true;
     }
 
     @Override
     public boolean onQueryTextSubmit(String query, int type) {
         return false;
+    }
+
+    private void applyQuery(@Nullable String query, int type) {
+        if (mProgressIndicator != null) {
+            mProgressIndicator.show();
+        }
+        viewModel.setQuery(query, type);
     }
 
     private void updateDebloaterState(int displayedItemCount) {

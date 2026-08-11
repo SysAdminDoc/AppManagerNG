@@ -5,7 +5,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added
+- Search input on the Debloater, Running Apps, and class-listing screens is now debounced, so
+  typing filters the list once the query settles instead of re-filtering on every keystroke. The
+  class listing is the one that most needed it — a dex dump can hold tens of thousands of class
+  names. Submitting still applies immediately, and a queued pass is dropped when the screen goes
+  away rather than running against a torn-down host.
+
 ### Fixed
+- In root mode, an external cache directory the framework refuses to create is now created
+  directly, reproducing the owner, group, mode, and SELinux label the platform would have applied.
+  Without this the app fell back to internal storage for the rest of the session whenever that
+  directory was missing.
 - The release-verification section of the README claimed the CVE gate was blocking on twelve
   unassessed findings and pointed at a roadmap item for their triage. All twelve were assessed
   and dispositioned in v0.6.8; the README now describes what each disposition rests on and how

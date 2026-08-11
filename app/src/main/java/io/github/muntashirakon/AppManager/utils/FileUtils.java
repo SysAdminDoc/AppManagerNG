@@ -15,6 +15,7 @@ import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.system.ErrnoException;
 import android.system.Os;
+import android.system.StructStat;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
@@ -35,6 +36,8 @@ import java.util.zip.ZipEntry;
 
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
+import io.github.muntashirakon.AppManager.runner.Runner;
+import io.github.muntashirakon.AppManager.runner.RunnerUtils;
 import io.github.muntashirakon.AppManager.self.filecache.FileCache;
 import io.github.muntashirakon.io.FileSystemManager;
 import io.github.muntashirakon.io.IoUtils;
@@ -214,9 +217,16 @@ public final class FileUtils {
                 continue;
             }
             if (!(extDir.exists() || extDir.mkdirs())) {
-                lastReason = extDir + ": permission denied.";
-                Log.w(TAG, "Could not use %s.", extDir);
-                continue;
+                // The framework refuses to create the directory for us. In root mode we can still
+                // create it ourselves, provided we reproduce the ownership and label the media
+                // provider would have given it — see forceCreateExternalDataSubDir().
+                if (RunnerUtils.isRootGiven() && forceCreateExternalDataSubDir(extDir)) {
+                    Log.i(TAG, "Created %s with root.", extDir);
+                } else {
+                    lastReason = extDir + ": permission denied.";
+                    Log.w(TAG, "Could not use %s.", extDir);
+                    continue;
+                }
             }
             String storageState = Environment.getExternalStorageState(extDir);
             if (!Objects.equals(storageState, Environment.MEDIA_MOUNTED)) {
@@ -227,6 +237,55 @@ public final class FileUtils {
             return extDir;
         }
         throw new FileNotFoundException(lastReason != null ? lastReason : "No available shared storage found.");
+    }
+
+    /**
+     * Create an app-private subdirectory under external storage using root.
+     *
+     * <p>Only useful when the framework itself declines to create the directory. The new directory
+     * has to look exactly like one the platform would have created, or the app loses access to it
+     * again as soon as it drops back to unprivileged calls: it inherits the parent's owner and
+     * group, is restricted to that owner, and is relabelled so SELinux sees the same context the
+     * media provider would have applied.
+     *
+     * <p>Runs privileged shell commands and therefore blocks; call it from the same threads that
+     * already call {@link #getBestExternalPath(File[])}.
+     *
+     * @return whether the directory now exists with the correct ownership and label.
+     */
+    public static boolean forceCreateExternalDataSubDir(@NonNull File dir) {
+        File parentFile = dir.getParentFile();
+        if (parentFile == null) {
+            Log.w(TAG, "%s has no parent.", dir);
+            return false;
+        }
+        String parent = parentFile.getAbsolutePath();
+        if (!parentFile.exists()) {
+            // Nothing to inherit ownership from. The parent is created by the platform when
+            // external storage is prepared, so its absence means this is not a recoverable case.
+            Log.w(TAG, "%s does not exist.", parent);
+            return false;
+        }
+        String chownTarget;
+        try {
+            StructStat parentStat = Os.stat(parent);
+            chownTarget = parentStat.st_uid + ":" + parentStat.st_gid;
+        } catch (ErrnoException e) {
+            // stat() can fail for a path the app cannot traverse, which is the very situation this
+            // method exists for. Ask the privileged shell instead.
+            Runner.Result result = Runner.runCommand(new String[]{"stat", "-c", "%u:%g", parent});
+            String output = result.getOutput().trim();
+            if (!result.isSuccessful() || output.isEmpty()) {
+                Log.w(TAG, "Could not retrieve UID:GID from %s.", parent);
+                return false;
+            }
+            chownTarget = output;
+        }
+        String target = dir.getAbsolutePath();
+        return Runner.runCommand(new String[]{"mkdir", "-p", target}).isSuccessful()
+                && Runner.runCommand(new String[]{"chmod", "770", target}).isSuccessful()
+                && Runner.runCommand(new String[]{"chown", chownTarget, target}).isSuccessful()
+                && Runner.runCommand(new String[]{"restorecon", target}).isSuccessful();
     }
 
     @AnyThread
