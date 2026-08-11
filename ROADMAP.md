@@ -6,13 +6,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ### P1
 
-- [ ] P1 — Audit and port the upstream Android 16 hidden-API refresh
-  Why: hidden-API mirrors drift against real OS internals; upstream refreshed them from Android 16 sources after the fork point and the fork's hiddenapi module has not taken the refresh — a latent-correctness risk on the OS most users now run.
-  Evidence: upstream commits eff7f587 + 04ed88d0 (2026-05-25/27, "Update hidden API from Android 16"); no corresponding fork changes in hiddenapi/ (2026-08-10 scan).
-  Touches: hiddenapi/, app compat layer where signatures changed.
-  Acceptance: upstream diff reviewed; applicable signature/field changes merged; all modules compile; existing compat contract tests pass; divergences deliberately kept are listed in the commit message.
-  Complexity: M
-
 ### P2
 
 - [ ] P2 — Remove the defunct Pithus integration
