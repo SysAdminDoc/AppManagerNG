@@ -32,6 +32,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   every locale.
 
 ### Fixed
+- Archiving or unarchiving an app from the background no longer loses the confirmation prompt.
+  The result receiver started the system's confirmation activity directly, which the platform
+  blocks for a backgrounded app — and because that block is a dropped launch rather than an
+  exception, the surrounding error handling reported nothing. The prompt now arrives as a
+  notification in that case, matching how the installer already handles the same situation.
 - The Settings mode-of-operation summary no longer keeps claiming a privilege the app has lost.
   It was recomputed only when the screen started, so a privileged server that stopped, crashed, or
   dropped its connection while Settings was open left the summary describing the old state. The
