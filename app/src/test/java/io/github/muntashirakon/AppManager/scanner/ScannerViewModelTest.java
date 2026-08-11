@@ -137,9 +137,6 @@ public class ScannerViewModelTest {
                 new Pair<>("SHA-256", "sha256")
         };
 
-        assertFalse(ScannerViewModel.shouldFetchPithusReport(digests, false));
-        assertFalse(ScannerViewModel.shouldFetchPithusReport(null, true));
-        assertTrue(ScannerViewModel.shouldFetchPithusReport(digests, true));
         assertFalse(ScannerViewModel.shouldFetchVirusTotalReport(null, digests, true, true));
         assertFalse(ScannerViewModel.shouldFetchVirusTotalReport(null, digests, false, true));
     }

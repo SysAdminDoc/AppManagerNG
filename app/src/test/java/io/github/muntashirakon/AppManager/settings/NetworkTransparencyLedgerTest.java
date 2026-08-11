@@ -16,14 +16,13 @@ import java.util.List;
 public class NetworkTransparencyLedgerTest {
 
     @Test
-    public void buildEntriesReturnsAllFourFeatures() {
+    public void buildEntriesReturnsEveryNetworkFeature() {
         List<NetworkTransparencyLedger.Entry> entries = NetworkTransparencyLedger.buildEntries();
 
-        assertEquals(4, entries.size());
+        assertEquals(3, entries.size());
         assertEquals("VirusTotal", entries.get(0).name);
-        assertEquals("Pithus", entries.get(1).name);
-        assertEquals("Debloat definitions", entries.get(2).name);
-        assertEquals("Tracker database freshness", entries.get(3).name);
+        assertEquals("Debloat definitions", entries.get(1).name);
+        assertEquals("Tracker database freshness", entries.get(2).name);
     }
 
     @Test
@@ -58,7 +57,6 @@ public class NetworkTransparencyLedgerTest {
         String text = NetworkTransparencyLedger.formatForDisplay(context, entries);
 
         assertTrue(text.contains("VirusTotal"));
-        assertTrue(text.contains("Pithus"));
         assertTrue(text.contains("Debloat definitions"));
         assertTrue(text.contains("Tracker database freshness"));
     }

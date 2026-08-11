@@ -1340,7 +1340,6 @@
     <string name="action_checking">检查中…</string>
     <string name="installer_options">安装器选项</string>
     <string name="pref_enable_persistent_session">让 App Manager 在后台运行</string>
-    <string name="scan_report_from_pithus">Pithus 报告</string>
     <string name="pref_set_home">设置主目录</string>
     <string name="module_name">模块名</string>
     <string name="copy_profile_id">复制配置 ID</string>

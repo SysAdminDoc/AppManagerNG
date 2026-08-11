@@ -1347,7 +1347,6 @@
     <string name="path_does_not_exist">“%1$s” không tồn tại</string>
     <string name="pref_enable_auto_lock_msg">Khóa App Manager khi thiết bị đã khóa.</string>
     <string name="path_not_a_folder">“%1$s” không phải là một thư mục</string>
-    <string name="scan_report_from_pithus">Báo cáo Pithus</string>
     <string name="action_checking">Đang kiểm tra…</string>
     <string name="report_not_available">Không có sẵn</string>
     <string name="profile_modified_are_you_sure">Hồ sơ đã được sửa đổi. Hủy tất cả thay đổi của bạn và thoát\?</string>

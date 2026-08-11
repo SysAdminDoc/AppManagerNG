@@ -1476,7 +1476,6 @@
     <string name="pref_enable_auto_lock_msg">Блокировка App Manager\'а при заблокированном устройстве.</string>
     <string name="path_does_not_exist">“%1$s” не существует</string>
     <string name="path_not_a_folder">“%1$s” не является папкой</string>
-    <string name="scan_report_from_pithus">Отчет Pithus</string>
     <string name="action_checking">Проверка…</string>
     <string name="report_not_available">Не доступно</string>
     <string name="profile_modified_are_you_sure">Профиль был изменен. Отменить все изменения и выйти\?</string>

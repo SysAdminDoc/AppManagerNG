@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import io.github.muntashirakon.AppManager.StaticDataset;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
+import io.github.muntashirakon.AppManager.settings.NetworkRequestLedger;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 
@@ -206,6 +207,20 @@ public final class DebloatDefinitionsUpdater {
 
     @NonNull
     private static byte[] download(@NonNull String urlString, int maxBytes) throws IOException {
+        // Record only that a fetch happened and how it ended — never the URL or the body. Without
+        // this the transparency ledger reports "never" for a feature that does reach the network.
+        boolean succeeded = false;
+        try {
+            byte[] payload = downloadInternal(urlString, maxBytes);
+            succeeded = true;
+            return payload;
+        } finally {
+            NetworkRequestLedger.record(NetworkRequestLedger.CLIENT_DEBLOAT_DEFINITIONS, succeeded);
+        }
+    }
+
+    @NonNull
+    private static byte[] downloadInternal(@NonNull String urlString, int maxBytes) throws IOException {
         URL url = new URL(urlString);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         try {
