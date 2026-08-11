@@ -19,20 +19,19 @@ ROADMAP.md once the blocker is resolved.
 
 ### P1
 
-- [ ] P1 — Validate Android 17 app-list enumeration on-device
-  Why: the structural fix has landed (PackageManagerCompat now routes API 37+
-  through the paginated `PackageInfoList`/`IPackageManagerV37` path, ported from
-  upstream `836c7248ea`, host-verified by compile + contract test). Only runtime
-  validation of the real paginated binder call remains, plus a recheck of
-  Shizuku/Dhizuku binding on API 37.
-  Evidence: main/MainViewModel.java; compat/PackageManagerCompat.java
-  (`getInstalledPackagesInternal` API-37 branch); servermanager/ privileged-mode
-  binding.
-  Acceptance: on an API-37 emulator or device, the main list enumerates the
-  same package set as API 36; root/Shizuku/Dhizuku bind successfully or fail
-  with surfaced, actionable reasons; local smoke coverage asserts a non-empty
-  package list.
-  Blocker: requires Android 17/API-37 emulator or device runtime access.
+- [ ] P1 — Validate privileged-mode binding on Android 17
+  Why: the app-list enumeration half of this row is closed — the API-37 paginated
+  `PackageInfoList` path is verified on an API-37 emulator and pinned by
+  `PackageEnumerationInstrumentedTest`, which passes identically on API 36 and 37. What
+  remains is whether Shizuku, Dhizuku, and root bind on API 37, or fail with a surfaced,
+  actionable reason.
+  Evidence: servermanager/ privileged-mode binding; settings/Ops.java; verified 2026-08-11 that
+  enumeration itself is correct on API 37.
+  Acceptance: on API 37, each privileged mode either binds or reports why in the UI rather than
+  failing silently.
+  Blocker: needs an API-37 environment with Shizuku/Dhizuku installed and a real root provider;
+  the available API-37 emulator has only AOSP `su` and none of those packages, so the binding
+  paths cannot be exercised there.
   Complexity: S
 
 - [ ] P1 — Root-detection retune for 2026 root managers

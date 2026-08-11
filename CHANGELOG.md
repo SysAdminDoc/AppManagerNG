@@ -13,6 +13,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   away rather than running against a torn-down host.
 
 ### Added
+- Instrumented coverage for installed-package enumeration, run on Android 17 and Android 16.
+  Android 17 moved the enumeration binder call to a paginated `PackageInfoList`, and a wrong
+  branch there returns a short or empty list instead of throwing — which would reach users as
+  an app list quietly missing entries. The tests pin the compat layer against the platform's
+  own package set rather than against a fixed number, so they stay meaningful as the device
+  changes.
 - A test that asserts every declared feature bit is either reachable from the feature-toggle
   list or recorded as a deliberate exclusion with its reason, so a flag added later cannot
   silently fail to appear.
