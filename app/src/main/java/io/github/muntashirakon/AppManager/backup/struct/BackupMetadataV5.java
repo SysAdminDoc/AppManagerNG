@@ -309,7 +309,14 @@ public class BackupMetadataV5 implements LocalizedString {
         public String[] splitConfigs;  // split_configs
         public String apkName;  // apk_name
         public String instructionSet = VMRuntime.getInstructionSet(Build.SUPPORTED_ABIS[0]);  // instruction_set
-        public boolean keyStore;  // key_store
+        public boolean keyStore;  // key_store — true only when the backup actually carries KeyStore files
+        /**
+         * The app held Android KeyStore entries that this backup could not include, because the
+         * platform stopped exposing them to us. Distinct from {@link #keyStore}: that says what is
+         * in the archive, this says what is knowingly absent from it. Absent from pre-v8 metadata,
+         * where it reads {@code false}.
+         */
+        public boolean keyStoreSkipped;  // key_store_skipped
         @Nullable
         public String installer;  // installer
         @NonNull
@@ -347,6 +354,7 @@ public class BackupMetadataV5 implements LocalizedString {
             apkName = metadata.apkName;
             instructionSet = metadata.instructionSet;
             keyStore = metadata.keyStore;
+            keyStoreSkipped = metadata.keyStoreSkipped;
             installer = metadata.installer;
             defaultRoles = metadata.defaultRoles.clone();
             verificationStatus = metadata.verificationStatus;
@@ -372,6 +380,7 @@ public class BackupMetadataV5 implements LocalizedString {
             apkName = rootObject.getString("apk_name");
             instructionSet = rootObject.getString("instruction_set");
             keyStore = rootObject.getBoolean("key_store");
+            keyStoreSkipped = rootObject.optBoolean("key_store_skipped", false);
             installer = JSONUtils.optString(rootObject, "installer");
             JSONArray defaultRolesArray = rootObject.optJSONArray("default_roles");
             defaultRoles = defaultRolesArray != null
@@ -482,6 +491,7 @@ public class BackupMetadataV5 implements LocalizedString {
             rootObject.put("apk_name", apkName);
             rootObject.put("instruction_set", instructionSet);
             rootObject.put("key_store", keyStore);
+            rootObject.put("key_store_skipped", keyStoreSkipped);
             rootObject.put("installer", installer);
             rootObject.put("default_roles", JSONUtils.getJSONArray(defaultRoles));
             rootObject.put("verification_status", verificationStatus);
@@ -548,6 +558,11 @@ public class BackupMetadataV5 implements LocalizedString {
         }
         if (metadata.protectedFromPrune) {
             subtitleText.append(", ").append(context.getText(R.string.backup_protected_from_cleanup));
+        }
+        if (metadata.keyStoreSkipped) {
+            // Say it on the row itself: whoever is choosing a backup to restore is exactly the
+            // person who needs to know its KeyStore entries were never in it.
+            subtitleText.append(", ").append(context.getText(R.string.backup_keystore_not_included));
         }
         if (!TextUtils.isEmpty(metadata.note)) {
             subtitleText.append("\n").append(metadata.note);

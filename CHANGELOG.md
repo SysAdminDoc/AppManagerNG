@@ -32,6 +32,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   every locale.
 
 ### Fixed
+- Backups no longer claim to contain Android KeyStore data they could not collect. From Android
+  12 the platform stopped letting apps read KeyStore entries, but the metadata still recorded
+  `key_store: true`, so a restore went looking for a master key that was never written. The
+  metadata now separates what the archive carries from what is knowingly absent, the restore
+  picker labels such a backup "KeyStore not included", and the Settings switch that governs
+  backing up apps with KeyStore entries says plainly that this Android version will not include
+  them. Backups written before this distinction existed are read as "nothing recorded" rather
+  than retroactively marked incomplete.
 - The network transparency ledger reported "Last success: never" for debloat-definition updates
   no matter how many times they had run, because only VirusTotal ever recorded an outcome. The
   definition fetch now records success and failure the same way, so the ledger's claim about

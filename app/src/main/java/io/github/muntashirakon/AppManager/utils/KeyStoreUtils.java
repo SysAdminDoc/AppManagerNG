@@ -17,6 +17,19 @@ import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
 
 public final class KeyStoreUtils {
+    /**
+     * Whether a backup taken on this device can actually carry Android KeyStore entries.
+     *
+     * <p>KeyStore v2 (Android 12 and later) keeps its material in a database this app cannot read,
+     * so on those releases an app's KeyStore entries are detectable but not copyable. Callers must
+     * branch on this rather than assuming a detected KeyStore will end up in the archive — the
+     * difference between "the app has KeyStore items" and "the backup contains them" is exactly
+     * what a restore later depends on.
+     */
+    public static boolean isKeyStoreBackupSupported() {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.S;
+    }
+
     public static boolean hasKeyStore(int uid) {
         if (Utils.isRoboUnitTest()) {
             return false;
