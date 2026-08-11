@@ -3,6 +3,15 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## Unreleased
+
+### Fixed
+- The release-verification section of the README claimed the CVE gate was blocking on twelve
+  unassessed findings and pointed at a roadmap item for their triage. All twelve were assessed
+  and dispositioned in v0.6.8; the README now describes what each disposition rests on and how
+  an expired suppression makes itself visible, instead of describing a state that ended three
+  releases ago.
+
 ## v0.6.12 — 2026-08-08
 
 ### Fixed

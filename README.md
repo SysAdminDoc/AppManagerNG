@@ -261,20 +261,26 @@ The gate also runs OWASP Dependency-Check as a blocking stage (no unsuppressed
 CVSS 9.0+ findings), retaining the HTML/SARIF reports and their hash receipt
 alongside the SBOM and APK sidecars.
 
-> [!IMPORTANT]
+> [!NOTE]
 > In v0.6.7 that CVE stage could not run at all: `dependencyCheckAggregate`
 > resolves configurations whose POMs were absent from
 > `gradle/verification-metadata.xml`, so Gradle aborted it before the scanner
-> started, and **v0.6.7 shipped without CVE evidence**. That is fixed in v0.6.8 —
-> the scanner now runs to completion and writes its receipt.
+> started, and **v0.6.7 shipped without CVE evidence**. That was fixed in v0.6.8 —
+> the scanner runs to completion and writes its receipt.
 >
-> It currently **blocks**: the first complete run reports 12 findings above the
-> CVSS 9.0 threshold, in `androidx.sqlite`, `io.netty` and the Kotlin toolchain
-> jars. None has been assessed yet — several look like CPE mismatches and some may
-> be build-only rather than shipped — so no claim is made here about whether the
-> APK is affected. Until each is upgraded or suppressed with a written
-> justification, a release cannot produce a passing CVE receipt. Tracked as a P1
-> item in [ROADMAP.md](ROADMAP.md).
+> The first complete run reported 12 findings above the CVSS 9.0 threshold. All
+> twelve were assessed in v0.6.8 and dispositioned in
+> [`config/owasp-suppressions.xml`](config/owasp-suppressions.xml), each rule
+> naming its CVE, the exact artifact family and version, and the reason it does
+> not apply: `androidx.sqlite` matches the CPE of the upstream SQLite C library
+> rather than the Java wrapper these artifacts ship (and no `androidx/sqlite`
+> classes are present in the release DEX files); the `io.netty` artifacts come
+> from the Android Gradle plugin's unified test platform and are never packaged
+> into the APK; and the Kotlin findings are against build and toolchain jars that
+> are likewise absent from the shipped application. No suppression is a blanket
+> ignore — Dependency-Check reports a rule as unused once a scan stops seeing the
+> matching finding, and the gate fails on that, so a disposition that stops being
+> true becomes visible instead of silently persisting.
 
 Untrusted app-list, rule, snapshot-manifest, and archive inputs also have a
 bounded local Jazzer gate. Run `./gradlew :app:fuzzUntrustedImports` (or pass
