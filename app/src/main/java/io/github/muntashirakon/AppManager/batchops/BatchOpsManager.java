@@ -1366,16 +1366,25 @@ public class BatchOpsManager {
         }
     }
 
+    /**
+     * @return {@code false} only when the system actively reports a state incompatible with the
+     * operation having taken effect. A state that cannot be read leaves the result alone: not
+     * being able to check is not evidence of failure, and reporting it as one would mark working
+     * operations as broken.
+     */
     private boolean verifyPackageState(@OpType int op, @NonNull UserPackagePair pair) {
-        if (!PackageStateVerifier.shouldVerify(op)) {
-            return true;
-        }
-        boolean verified = PackageStateVerifier.matchesExpectedAndroidState(op, pair);
-        if (!verified) {
+        PackageStateVerifier.Outcome outcome = PackageStateVerifier.verifyAgainstAndroidState(op, pair);
+        if (outcome == PackageStateVerifier.Outcome.CONTRADICTED) {
             log("====> op=PACKAGE_STATE_VERIFY, pkg=" + pair
                     + ", expected=" + PackageStateVerifier.getExpectedStateLabel(op));
+            return false;
         }
-        return verified;
+        if (outcome == PackageStateVerifier.Outcome.UNVERIFIED
+                && PackageStateVerifier.shouldVerify(op)) {
+            log("====> op=PACKAGE_STATE_UNVERIFIED, pkg=" + pair
+                    + ", expected=" + PackageStateVerifier.getExpectedStateLabel(op));
+        }
+        return true;
     }
 
     private void recordTargetFinished(@NonNull UserPackagePair pair, boolean failed) {

@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.batchops;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -15,7 +16,7 @@ public class PackageStateVerifierTest {
     private static final UserPackagePair PAIR = new UserPackagePair("com.example.app", 0);
 
     @Test
-    public void uninstallRequiresPackageToReadBackUninstalled() {
+    public void uninstallRequiresPackageToReadBackUninstalled() throws Throwable {
         assertTrue(PackageStateVerifier.matchesExpectedState(
                 BatchOpsManager.OP_UNINSTALL, PAIR, new FakeStateReader(false, false, false)));
         assertFalse(PackageStateVerifier.matchesExpectedState(
@@ -23,7 +24,7 @@ public class PackageStateVerifierTest {
     }
 
     @Test
-    public void installExistingRequiresPackageToReadBackInstalled() {
+    public void installExistingRequiresPackageToReadBackInstalled() throws Throwable {
         assertTrue(PackageStateVerifier.matchesExpectedState(
                 BatchOpsManager.OP_INSTALL_EXISTING, PAIR, new FakeStateReader(true, false, false)));
         assertFalse(PackageStateVerifier.matchesExpectedState(
@@ -31,7 +32,7 @@ public class PackageStateVerifierTest {
     }
 
     @Test
-    public void freezeRequiresInstalledFrozenState() {
+    public void freezeRequiresInstalledFrozenState() throws Throwable {
         assertTrue(PackageStateVerifier.matchesExpectedState(
                 BatchOpsManager.OP_FREEZE, PAIR, new FakeStateReader(true, true, false)));
         assertTrue(PackageStateVerifier.matchesExpectedState(
@@ -43,7 +44,7 @@ public class PackageStateVerifierTest {
     }
 
     @Test
-    public void unfreezeRequiresInstalledNotFrozenState() {
+    public void unfreezeRequiresInstalledNotFrozenState() throws Throwable {
         assertTrue(PackageStateVerifier.matchesExpectedState(
                 BatchOpsManager.OP_UNFREEZE, PAIR, new FakeStateReader(true, false, false)));
         assertFalse(PackageStateVerifier.matchesExpectedState(
@@ -53,7 +54,7 @@ public class PackageStateVerifierTest {
     }
 
     @Test
-    public void archiveOperationsRequireExpectedArchiveState() {
+    public void archiveOperationsRequireExpectedArchiveState() throws Throwable {
         assertTrue(PackageStateVerifier.matchesExpectedState(
                 BatchOpsManager.OP_ARCHIVE, PAIR, new FakeStateReader(true, false, true)));
         assertFalse(PackageStateVerifier.matchesExpectedState(
@@ -65,7 +66,7 @@ public class PackageStateVerifierTest {
     }
 
     @Test
-    public void disableBackgroundRequiresBackgroundRunToReadBackDisabled() {
+    public void disableBackgroundRequiresBackgroundRunToReadBackDisabled() throws Throwable {
         assertTrue(PackageStateVerifier.matchesExpectedState(
                 BatchOpsManager.OP_DISABLE_BACKGROUND, PAIR,
                 new FakeStateReader(true, false, false, true)));
@@ -75,9 +76,36 @@ public class PackageStateVerifierTest {
     }
 
     @Test
-    public void queryFailureFailsVerification() {
-        assertFalse(PackageStateVerifier.matchesExpectedState(
-                BatchOpsManager.OP_INSTALL_EXISTING, PAIR, new ThrowingStateReader()));
+    public void anUnreadableStateIsNotTreatedAsFailure() {
+        // Being unable to check is not evidence the operation failed. Reporting it as failure
+        // would mark working operations as broken — the mirror image of the silent no-op this
+        // check exists to catch.
+        assertEquals(PackageStateVerifier.Outcome.UNVERIFIED,
+                PackageStateVerifier.verifyAgainstState(
+                        BatchOpsManager.OP_INSTALL_EXISTING, PAIR, new ThrowingStateReader()));
+    }
+
+    @Test
+    public void aStateMatchingTheOperationIsVerified() {
+        assertEquals(PackageStateVerifier.Outcome.VERIFIED,
+                PackageStateVerifier.verifyAgainstState(BatchOpsManager.OP_INSTALL_EXISTING, PAIR,
+                        new FakeStateReader(true, false, false, false)));
+    }
+
+    @Test
+    public void aStateContradictingTheOperationIsReported() {
+        assertEquals(PackageStateVerifier.Outcome.CONTRADICTED,
+                PackageStateVerifier.verifyAgainstState(BatchOpsManager.OP_INSTALL_EXISTING, PAIR,
+                        new FakeStateReader(false, false, false, false)));
+    }
+
+    @Test
+    public void anOperationWithNoObservableStateIsNotClaimedVerified() {
+        // Force-stop leaves nothing durable to read back, so it must not be reported as
+        // confirmed — only as unchecked.
+        assertEquals(PackageStateVerifier.Outcome.UNVERIFIED,
+                PackageStateVerifier.verifyAgainstState(BatchOpsManager.OP_FORCE_STOP, PAIR,
+                        new FakeStateReader(true, false, false, false)));
     }
 
     private static final class FakeStateReader implements PackageStateVerifier.StateReader {

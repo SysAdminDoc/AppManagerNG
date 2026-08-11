@@ -37,6 +37,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   by a store — and the owner is who may replace it without asking again.
 
 ### Fixed
+- A batch operation whose result could not be read back is no longer reported as having failed.
+  After freezing, archiving, uninstalling and similar operations the app re-reads the system state
+  to catch commands that report success without doing anything. That check treated an unreadable
+  state — a dropped privileged connection, a user whose packages we cannot query — as proof of
+  failure, so operations that had worked were listed as failures. Reading back now distinguishes
+  confirmed, unchecked, and contradicted, and only a state that actively contradicts the operation
+  marks it failed.
 - Archiving or unarchiving an app from the background no longer loses the confirmation prompt.
   The result receiver started the system's confirmation activity directly, which the platform
   blocks for a backgrounded app — and because that block is a dropped launch rather than an

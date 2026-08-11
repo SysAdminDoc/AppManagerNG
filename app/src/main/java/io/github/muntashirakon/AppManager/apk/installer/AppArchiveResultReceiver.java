@@ -117,7 +117,8 @@ public class AppArchiveResultReceiver extends BroadcastReceiver {
                     ? BatchOpsManager.OP_ARCHIVE
                     : BatchOpsManager.OP_UNARCHIVE;
             UserPackagePair pair = new UserPackagePair(packageName, UserHandleHidden.myUserId());
-            if (PackageStateVerifier.matchesExpectedAndroidState(op, pair)) {
+            if (PackageStateVerifier.verifyAgainstAndroidState(op, pair)
+                    != PackageStateVerifier.Outcome.CONTRADICTED) {
                 return true;
             }
             Log.e(TAG, "Archive result contradicted package state. package=" + pair
