@@ -29,6 +29,17 @@ public class InstallSourceInfoCompat implements Parcelable {
     @Nullable
     private final String mInstallingPackageName;
 
+    /**
+     * The package allowed to deliver updates without user confirmation, as recorded by the
+     * platform from Android 14. Distinct from the installer: the installer is who put the app
+     * there, the update owner is who may silently replace it later.
+     */
+    @Nullable
+    private final String mUpdateOwnerPackageName;
+
+    @Nullable
+    private CharSequence mUpdateOwnerPackageLabel;
+
     @Nullable
     private CharSequence mInitiatingPackageLabel;
     @Nullable
@@ -43,10 +54,13 @@ public class InstallSourceInfoCompat implements Parcelable {
             mInitiatingPackageSigningInfo = installSourceInfo.getInitiatingPackageSigningInfo();
             mOriginatingPackageName = installSourceInfo.getOriginatingPackageName();
             mInstallingPackageName = installSourceInfo.getInstallingPackageName();
+            mUpdateOwnerPackageName = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+                    ? installSourceInfo.getUpdateOwnerPackageName() : null;
         } else {
             mInitiatingPackageName = null;
             mOriginatingPackageName = null;
             mInstallingPackageName = null;
+            mUpdateOwnerPackageName = null;
         }
     }
 
@@ -54,6 +68,7 @@ public class InstallSourceInfoCompat implements Parcelable {
         mInitiatingPackageName = null;
         mOriginatingPackageName = null;
         mInstallingPackageName = installingPackageName;
+        mUpdateOwnerPackageName = null;
     }
 
     @Override
@@ -72,6 +87,25 @@ public class InstallSourceInfoCompat implements Parcelable {
         }
         dest.writeString(mOriginatingPackageName);
         dest.writeString(mInstallingPackageName);
+        dest.writeString(mUpdateOwnerPackageName);
+    }
+
+    /**
+     * The package that owns updates for this app, or {@code null} when none is recorded — which is
+     * always the case below Android 14, and also when no installer claimed ownership.
+     */
+    @Nullable
+    public String getUpdateOwnerPackageName() {
+        return mUpdateOwnerPackageName;
+    }
+
+    public void setUpdateOwnerPackageLabel(@Nullable CharSequence label) {
+        mUpdateOwnerPackageLabel = label;
+    }
+
+    @Nullable
+    public CharSequence getUpdateOwnerPackageLabel() {
+        return mUpdateOwnerPackageLabel;
     }
 
     private InstallSourceInfoCompat(Parcel source) {
@@ -81,6 +115,7 @@ public class InstallSourceInfoCompat implements Parcelable {
         }
         mOriginatingPackageName = source.readString();
         mInstallingPackageName = source.readString();
+        mUpdateOwnerPackageName = source.readString();
     }
 
     public void setInitiatingPackageLabel(@Nullable CharSequence label) {

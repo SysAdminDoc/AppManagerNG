@@ -32,10 +32,10 @@ Top opportunities, in priority order:
 5. [P2, Verified] Backups silently skip Android KeyStore v2 entries (`BackupOp.java:531`,
    `RestoreOp.java:538`) with no user-facing disclosure — a completeness-truth gap in the
    feature the app stakes its trust story on.
-6. [P2, Verified] Update-ownership (API 34+) is entirely unused: the app neither shows which
-   store owns an app's updates nor claims ownership when it installs — directly relevant as
-   Developer Verification (enforcement 2026-09-30 BR/ID/SG/TH; global 2027) reshapes install
-   trust, where AppManagerNG's ADB/Shizuku path is exempt and therefore a differentiator.
+6. ~~Update-ownership (API 34+) is entirely unused~~ → corrected 2026-08-11: claiming ownership
+   on install was already fully implemented (`InstallerOptions.requestUpdateOwnership`, a
+   preference, and `SessionParams.setRequestUpdateOwnership`); the original grep searched for the
+   wrong symbol. Only the read side was missing, and App Details now shows the update owner.
 7. [P2, Verified] Finder's AppOps predicate ships without mode filtering although the data
    layer exposes modes and the option class declares the constants (`AppOpsOption.java:26-29`).
 8. [P2, Likely] Privileged batch operations trust `pm`/`appops` exit codes; Thor's 2026 arc

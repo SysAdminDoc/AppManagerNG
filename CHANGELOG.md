@@ -31,6 +31,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   row in the network transparency ledger, its key in the scan report JSON, and its strings in
   every locale.
 
+### Added
+- App Details now shows which package owns an app's updates, alongside the installer it already
+  listed. The two are not the same thing — an app installed by a file manager can still be owned
+  by a store — and the owner is who may replace it without asking again.
+
 ### Fixed
 - Archiving or unarchiving an app from the background no longer loses the confirmation prompt.
   The result receiver started the system's confirmation activity directly, which the platform

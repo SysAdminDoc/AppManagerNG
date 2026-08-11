@@ -15,6 +15,13 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Acceptance: after each mutating batch op the executor re-reads the relevant state (component/enabled/appop/permission) and results distinguish verified / unverified (state unreadable) / failed (state contradicts); a unit test simulating a silent no-op sees it reported as failed, not success; readback degrades to "unverified", never blocks.
   Complexity: M
 
+- [ ] P2 — Readback verification for privileged batch operations
+  Why: `pm`/`appops` can return success without doing the work on OEM builds; batch results currently trust exit codes, so a silent no-op reads as success — the field's live failure mode, demonstrated and fixed by Thor's readback pattern.
+  Evidence: Thor v1.94.0 release notes (readback verification, 2026-08-05); NG batchops result layer reports command success only.
+  Touches: batchops executors (freeze, disable/enable, uninstall, force-stop, app-op set, permission grant/revoke), batch results model, BatchOpsResultsActivity strings.
+  Acceptance: after each mutating batch op the executor re-reads the relevant state (component/enabled/appop/permission) and results distinguish verified / unverified (state unreadable) / failed (state contradicts); a unit test simulating a silent no-op sees it reported as failed, not success; readback degrades to "unverified", never blocks.
+  Complexity: M
+
 - [ ] P2 — Show update ownership in App Details and offer claiming it on install
   Why: API 34+ update-ownership records which installer owns an app's updates and blocks silent takeover; NG neither surfaces nor claims it, though it is directly relevant as Developer Verification reshapes install trust (NG's ADB/Shizuku path stays exempt).
   Evidence: zero getUpdateOwnerPackageName / requestUserPreapproval references in app/src/main (grep 2026-08-10); InstallSourceInfo/PackageInstaller update-ownership APIs (Android 14+); RESEARCH.md platform section.
