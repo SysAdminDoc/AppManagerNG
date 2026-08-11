@@ -8,27 +8,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ### P2
 
-- [ ] P2 — Readback verification for privileged batch operations
-  Why: `pm`/`appops` can return success without doing the work on OEM builds; batch results currently trust exit codes, so a silent no-op reads as success — the field's live failure mode, demonstrated and fixed by Thor's readback pattern.
-  Evidence: Thor v1.94.0 release notes (readback verification, 2026-08-05); NG batchops result layer reports command success only.
-  Touches: batchops executors (freeze, disable/enable, uninstall, force-stop, app-op set, permission grant/revoke), batch results model, BatchOpsResultsActivity strings.
-  Acceptance: after each mutating batch op the executor re-reads the relevant state (component/enabled/appop/permission) and results distinguish verified / unverified (state unreadable) / failed (state contradicts); a unit test simulating a silent no-op sees it reported as failed, not success; readback degrades to "unverified", never blocks.
-  Complexity: M
-
-- [ ] P2 — Readback verification for privileged batch operations
-  Why: `pm`/`appops` can return success without doing the work on OEM builds; batch results currently trust exit codes, so a silent no-op reads as success — the field's live failure mode, demonstrated and fixed by Thor's readback pattern.
-  Evidence: Thor v1.94.0 release notes (readback verification, 2026-08-05); NG batchops result layer reports command success only.
-  Touches: batchops executors (freeze, disable/enable, uninstall, force-stop, app-op set, permission grant/revoke), batch results model, BatchOpsResultsActivity strings.
-  Acceptance: after each mutating batch op the executor re-reads the relevant state (component/enabled/appop/permission) and results distinguish verified / unverified (state unreadable) / failed (state contradicts); a unit test simulating a silent no-op sees it reported as failed, not success; readback degrades to "unverified", never blocks.
-  Complexity: M
-
-- [ ] P2 — Show update ownership in App Details and offer claiming it on install
-  Why: API 34+ update-ownership records which installer owns an app's updates and blocks silent takeover; NG neither surfaces nor claims it, though it is directly relevant as Developer Verification reshapes install trust (NG's ADB/Shizuku path stays exempt).
-  Evidence: zero getUpdateOwnerPackageName / requestUserPreapproval references in app/src/main (grep 2026-08-10); InstallSourceInfo/PackageInstaller update-ownership APIs (Android 14+); RESEARCH.md platform section.
-  Touches: details/info AppInfoFragment + ViewModel (owner row), installer options + PackageInstallerCompat (opt-in claim flag on session), strings.
-  Acceptance: App Details shows the update owner when set (API 34+, hidden below); install options expose an off-by-default "claim update ownership" toggle wired to the session param; Robolectric tests cover display and flag plumbing.
-  Complexity: M
-
 - [ ] P2 — Toolchain security pass: Kotlin 2.4.20, dependency-check 13.0.0, AGP 9.3.0
   Why: the Kotlin toolchain sits on a CVE'd line (CVE-2026-53914, build-cache deserialization — build-only today, supply-chain-relevant if a shared cache ever appears); bundling the three bumps pays the dependency-locking/verification churn once, and AGP 9.3's keepRules source sets structurally mitigate the v0.6.12 BC-keeps class of R8 bug.
   Evidence: GHSA-r937-wjx7-w2jp; dependency-check 13.0.0 (2026-08-03) release notes; AGP 9.3.0 release notes; docs/distribution/dependency-verification.md (22-run churn cost precedent).
