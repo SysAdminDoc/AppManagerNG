@@ -8,13 +8,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ### P2
 
-- [ ] P2 — Disclose the KeyStore backup capability hole
-  Why: backups silently skip Android KeyStore v2 entries, so users believe backups are complete when a class of credentials is absent — a truth gap in the app's core trust feature.
-  Evidence: backup/BackupOp.java:531 and backup/RestoreOp.java:538 (TODO: "KeyStore v2 unsupported"); no disclosure in backup dialogs or metadata.
-  Touches: backup/dialog/, BackupOp/RestoreOp, backup metadata/report, strings.
-  Acceptance: when a package has KeyStore entries the backup cannot carry, the backup dialog and the stored metadata/report both say so; restore of such a backup repeats the note; unit tests cover flagged and unflagged paths.
-  Complexity: S
-
 - [ ] P2 — Finder AppOps mode predicate
   Why: the data layer already exposes per-op modes and AppOpsOption declares mode-flag constants, but Finder ships v1 without allowed/ignored/foreground filtering — a finished data layer with no UI, the exact gap class the 2026-08-02 pass closed for presets.
   Evidence: filters/options/AppOpsOption.java:26-29 (declared, unused MODE_FLAG_* constants); IFilterableAppInfo#getAppOps() exposes getMode().

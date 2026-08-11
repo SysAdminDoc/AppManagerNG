@@ -206,8 +206,14 @@ class BackupOp implements Closeable {
     void runBackup(@Nullable ProgressHandler progressHandler) throws BackupException {
         try {
             // Fail backup if the app has items in Android KeyStore and backup isn't enabled
-            if (mBackupFlags.backupData() && mMetadata.metadata.keyStore && !Prefs.BackupRestore.backupAppsWithKeyStore()) {
+            if (mBackupFlags.backupData()
+                    && (mMetadata.metadata.keyStore || mMetadata.metadata.keyStoreSkipped)
+                    && !Prefs.BackupRestore.backupAppsWithKeyStore()) {
                 throw new BackupException("The app has keystore items and KeyStore backup isn't enabled.");
+            }
+            if (mMetadata.metadata.keyStoreSkipped) {
+                Log.w(TAG, "%s has Android KeyStore entries that this Android version does not"
+                        + " allow backing up; the backup will not contain them.", mPackageName);
             }
             incrementProgress(progressHandler);
             // Backup icon
@@ -327,7 +333,12 @@ class BackupOp implements Closeable {
         metadata.protectedFromPrune = mProtectFromPrune;
         metadata.note = mBackupNote;
         metadata.sourceApiLevel = Build.VERSION.SDK_INT;
-        metadata.keyStore = !systemDataBackup && KeyStoreUtils.hasKeyStore(mApplicationInfo.uid);
+        boolean appHasKeyStore = !systemDataBackup && KeyStoreUtils.hasKeyStore(mApplicationInfo.uid);
+        // keyStore records what the archive carries, not what the app owns. On Android 12+ the
+        // platform will not hand us the entries, so claiming otherwise would make restore look
+        // for a master key that was never written.
+        metadata.keyStore = appHasKeyStore && KeyStoreUtils.isKeyStoreBackupSupported();
+        metadata.keyStoreSkipped = appHasKeyStore && !KeyStoreUtils.isKeyStoreBackupSupported();
         metadata.label = mApplicationInfo.loadLabel(mPm).toString();
         metadata.packageName = mPackageName;
         metadata.versionName = mPackageInfo.versionName;
