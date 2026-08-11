@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.6.12-blue.svg" />
+  <img alt="Version" src="https://img.shields.io/badge/version-0.6.13-blue.svg" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0--or--later-green.svg" />
   <img alt="Platform" src="https://img.shields.io/badge/platform-Android%205.0%2B-brightgreen.svg" />
   <img alt="Min SDK" src="https://img.shields.io/badge/minSdk-21-orange.svg" />
@@ -176,6 +176,7 @@ Version targets:
 - **v0.5.x** — post-release consolidation plus the pass-2 feature backlog: background-run rule persistence, multi-volume cache trimming, activity-launch polish, structured log exports, scanner/file/editor reliability work.
 - **v0.6.0** ✅ 2026-06-14 — Rootless Power: Routine Operations / Scheduler executor and UI, plus Premium Polish Phase 2. Adds package-filtered app-event routine triggers, backup/archive restore hardening (weak-tag warning, decompression-bomb guard), IPC binder-cache reliability, and an audit pass of crash/leak/microcopy fixes. Multi-tag and saved-filter data layers already landed.
 - **v0.6.1 – v0.6.5** ✅ — Hardening and polish: resource-leak fixes and narrowed exception handling (v0.6.1), Settings-search and one-click-operation V2 layouts (v0.6.2 – v0.6.3), and the 2026-07-02 deep-audit pass across theming, terminal, log viewer, scanner, and widgets (v0.6.5).
+- **v0.6.13** ✅ 2026-08-11 — Truthfulness pass: removed the defunct Pithus scanner, stopped backups claiming KeyStore data they could not collect, stopped unreadable state counting as a failed batch operation, made the Finder app-ops mode filter selectable, kept the archive confirmation reachable from the background, and reconciled with upstream's v4.1.0 fix run. Installed-package enumeration is now verified on Android 17.
 - **v0.6.12** ✅ 2026-08-08 — The universal root cause of #7: R8 stripped the bundled BouncyCastle provider's reflectively-loaded keystore SPI from every release build, so `KeyStore.getInstance("BKS")` failed on every device and the recovery password could never persist. ProGuard keeps added; verified on-emulator across API 36/37.
 - **v0.6.11** ✅ 2026-08-07 — Recovery-password persistence fix (#7): failed keystore encryptions no longer masquerade as saved passwords, the decrypt path no longer mints a fresh protection key over unreadable data, and a stored password always routes to the recovery-password prompt instead of regenerating.
 - **v0.6.10** ✅ 2026-08-02 — Reliability and release-quality hardening: serialized rules transactions, APK bundle identity preflight, Finder presets, routine filter scoping, and translation coverage ratcheting.

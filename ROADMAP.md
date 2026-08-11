@@ -9,10 +9,11 @@ Actionable work only. Historical and completed roadmap material is archived in C
 ### P2
 
 - [ ] P2 — Toolchain security pass: Kotlin 2.4.20, dependency-check 13.0.0, AGP 9.3.0
-  Why: the Kotlin toolchain sits on a CVE'd line (CVE-2026-53914, build-cache deserialization — build-only today, supply-chain-relevant if a shared cache ever appears); bundling the three bumps pays the dependency-locking/verification churn once, and AGP 9.3's keepRules source sets structurally mitigate the v0.6.12 BC-keeps class of R8 bug.
-  Evidence: GHSA-r937-wjx7-w2jp; dependency-check 13.0.0 (2026-08-03) release notes; AGP 9.3.0 release notes; docs/distribution/dependency-verification.md (22-run churn cost precedent).
-  Touches: versions.gradle, buildscript-gradle.lockfile + module lockfiles, gradle/verification-metadata.xml, config/owasp-suppressions.xml (drop the CVE-2026-53914 rule post-upgrade — the gate flags unused rules), optionally migrate BC keeps into src/*/keepRules/; check for LSPosed HiddenApiBypass 6.2+ while touching pins (AppManager.java:121).
-  Acceptance: build + full host suite green; locking/verification refreshed per the documented procedure (publisher checksums, not local cache); release gate incl. CVE stage passes; the Kotlin suppression is removed and the gate stays green.
+  Why: the Kotlin toolchain sits on a CVE'd line (CVE-2026-53914, unsafe deserialization of build-cache metadata), and AGP 9.3's keepRules source sets structurally mitigate the v0.6.12 class of R8 bug. Bundling the three bumps pays the dependency-locking and verification-metadata churn once.
+  Evidence: GHSA-r937-wjx7-w2jp; dependency-check 13.0.0 (2026-08-03); AGP 9.3.0 release notes; docs/distribution/dependency-verification.md.
+  Urgency, measured 2026-08-11: low. `gradle.properties` enables only the local build cache and no remote or shared cache is configured anywhere, so exploiting CVE-2026-53914 would require local write access to the developer's own cache — matching JetBrains' own 6.7 vector rather than NVD's 9.8. Sequence it deliberately; do not rush it at the end of a session.
+  Touches: versions.gradle, buildscript-gradle.lockfile and module lockfiles, gradle/verification-metadata.xml, config/owasp-suppressions.xml (drop the CVE-2026-53914 rule after the upgrade — the gate fails on unused rules), optionally move the BouncyCastle keeps into src/*/keepRules/; check for LSPosed HiddenApiBypass 6.2+ while touching pins (AppManager.java:121).
+  Acceptance: build and full host suite green; locking and verification refreshed per the documented procedure using publisher-published checksums, never --write-verification-metadata; release gate including the CVE stage passes; the Kotlin suppression is removed and the gate stays green.
   Complexity: M
 
 ### P3

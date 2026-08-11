@@ -3,7 +3,7 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## Unreleased
+## v0.6.13 — 2026-08-11
 
 ### Added
 - Search input on the Debloater, Running Apps, and class-listing screens is now debounced, so
