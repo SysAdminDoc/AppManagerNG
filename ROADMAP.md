@@ -6,13 +6,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ### P1
 
-- [ ] P1 — Correct the stale CVE-gate claims in README
-  Why: README states the CVE gate "currently blocks" on 12 unassessed findings tracked in ROADMAP.md; v0.6.8 resolved all 12 with evidence-backed suppressions, so the project's own trust surface misstates its release integrity.
-  Evidence: README.md:264-277 vs CHANGELOG.md v0.6.8 and config/owasp-suppressions.xml (13 justified entries); re-validated independently 2026-08-10 (RESEARCH.md, Security section).
-  Touches: README.md (the `> [!IMPORTANT]` CVE block); scripts/verify-release-consistency.sh if it pins that text.
-  Acceptance: README describes the current gate behavior (suppressions with written justifications; gate fails if a suppression goes unused) and contains no claim of unassessed or blocking findings; no other doc repeats the stale claim (grep "None has been assessed").
-  Complexity: S
-
 - [ ] P1 — Port the upstream v4.1.0 bugfix run (audited cherry-pick)
   Why: upstream shipped ~15 small correctness fixes between 2026-05-25 and 2026-06-29 that post-date the fork point and touch code the fork retains; none are recorded as ported.
   Evidence: MuntashirAkon/AppManager commits 329b8dc1 (debloater: uninstalled system apps listing), 916eeb85 (inactive-app check for non-default users), daa54ac0 (filter-profile custom expression), 4a25c3f0 (intent resolution via `am start -d`), 706c36fb (APKS compile), ab2b17fe (main IME logic), 3bf97856 + 184df334 (NPEs in path parsing / AppDb#findUsage), 0d1be565 (editor symbols cropped at large font), 4d3da96b (Finder/Debloater nav buttons), ca038d66 (single/multi-choice dialogs), f8d31264 (force-create external cache dir in root mode), 936cb302 (log viewer scroll/filter — reconcile with the fork's own 2026-07-02 log-viewer fixes first). Skip the M3 preference restyle and locale commits (RESEARCH.md, Rejected Ideas).
