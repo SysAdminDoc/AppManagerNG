@@ -132,9 +132,13 @@ Top opportunities, in priority order:
   and the fix pattern).
 - [Verified] **Privileged-server status can go stale in UI** —
   `servermanager/ServerStatusChangeReceiver.java:72` drops status changes (in-code TODO).
-- [Verified] **`FEAT_INTERNET` is missing from `sFeatureFlagsMap`** in
-  `settings/FeatureController.java` — the master Internet gate can never appear in the
-  feature-toggle list even in `full`. (Echoes the repo's own gate-that-enumerates gotcha.)
+- ~~`FEAT_INTERNET` is missing from `sFeatureFlagsMap`, so the master Internet gate can never
+  appear in the feature-toggle list~~ → corrected 2026-08-11: the omission is deliberate and
+  correct. The bit has its own "Use the Internet" switch in Settings → Privacy
+  (`PrivacyPreferences`, `toggle_internet`); listing it again in the generic feature chooser
+  would give one bit two controls that could disagree. The real exposure was that nothing
+  asserted the map's completeness, so a genuinely forgotten flag would look identical — now
+  covered by `FeatureFlagCoverageTest`, which names the deliberate exclusion.
 - [Verified] **Developer Verification timeline** — enforcement 2026-09-30 (BR/ID/SG/TH,
   store-listed apps only) does not touch GitHub/Obtainium distribution; global certified-device
   rollout 2027 does. ADB installs are exempt (no wait, no verification), making NG's ADB/

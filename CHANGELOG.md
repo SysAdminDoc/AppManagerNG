@@ -12,6 +12,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   names. Submitting still applies immediately, and a queued pass is dropped when the screen goes
   away rather than running against a torn-down host.
 
+### Added
+- A test that asserts every declared feature bit is either reachable from the feature-toggle
+  list or recorded as a deliberate exclusion with its reason, so a flag added later cannot
+  silently fail to appear.
+
 ### Removed
 - The Pithus scanner integration. Upstream deleted it as a defunct service on 2026-05-26, and
   beta.pithus.org no longer answers at all — every connection attempt times out while other

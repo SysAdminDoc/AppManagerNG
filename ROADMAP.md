@@ -36,13 +36,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Acceptance: App Details shows the update owner when set (API 34+, hidden below); install options expose an off-by-default "claim update ownership" toggle wired to the session param; Robolectric tests cover display and flag plumbing.
   Complexity: M
 
-- [ ] P2 — Fix FEAT_INTERNET missing from the feature-toggle map
-  Why: bit 6 gates VirusTotal reachability but is absent from sFeatureFlagsMap, so the master Internet feature can never be listed or toggled from the features UI even in the full flavor — a gate enumerated by hand that drifted from its flag set.
-  Evidence: settings/FeatureController.java (sFeatureFlagsMap lacks FEAT_INTERNET; isInternetEnabled() consumes it); repo gotcha "gate that enumerates what it guards".
-  Touches: FeatureController, feature-toggle UI, tests.
-  Acceptance: full flavor lists the Internet toggle; floss behavior unchanged (compiled out); a unit test asserts the map covers every declared FEAT_* flag so the next added flag cannot silently vanish.
-  Complexity: S
-
 - [ ] P2 — Propagate privileged-server status changes to the UI
   Why: ServerStatusChangeReceiver drops status updates (in-code TODO), so the privileged-mode indicator can show a dead server as alive — trust-surface staleness in the mode users depend on before destructive ops.
   Evidence: servermanager/ServerStatusChangeReceiver.java:72.
