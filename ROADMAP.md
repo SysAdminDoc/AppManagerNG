@@ -8,13 +8,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ### P2
 
-- [ ] P2 — Finder AppOps mode predicate
-  Why: the data layer already exposes per-op modes and AppOpsOption declares mode-flag constants, but Finder ships v1 without allowed/ignored/foreground filtering — a finished data layer with no UI, the exact gap class the 2026-08-02 pass closed for presets.
-  Evidence: filters/options/AppOpsOption.java:26-29 (declared, unused MODE_FLAG_* constants); IFilterableAppInfo#getAppOps() exposes getMode().
-  Touches: AppOpsOption, Finder option UI, filter serialization, tests.
-  Acceptance: a query "apps with op X in mode Y" returns correct results under unit test; the option round-trips through saved presets; UI exposes mode selection only when an op is chosen.
-  Complexity: S
-
 - [ ] P2 — Readback verification for privileged batch operations
   Why: `pm`/`appops` can return success without doing the work on OEM builds; batch results currently trust exit codes, so a silent no-op reads as success — the field's live failure mode, demonstrated and fixed by Thor's readback pattern.
   Evidence: Thor v1.94.0 release notes (readback verification, 2026-08-05); NG batchops result layer reports command success only.
