@@ -38,6 +38,7 @@ import java.util.Objects;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.editor.CodeEditorActivity;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
+import io.github.muntashirakon.AppManager.misc.SearchViewDebouncer;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.AppManager.utils.appearance.ColorCodes;
 import io.github.muntashirakon.util.AdapterUtils;
@@ -51,6 +52,8 @@ public class ClassListingFragment extends Fragment implements AdvancedSearchView
     private TextView mEmptyView;
     private boolean mTrackerClassesOnly;
     private ClassListingAdapter mClassListingAdapter;
+    @Nullable
+    private SearchViewDebouncer mSearchDebouncer;
 
     private List<String> mAllClasses;
     private List<String> mTrackerClasses;
@@ -86,6 +89,13 @@ public class ClassListingFragment extends Fragment implements AdvancedSearchView
         mClassListingAdapter = new ClassListingAdapter(mActivity, mViewModel);
         listView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(mActivity));
         listView.setAdapter(mClassListingAdapter);
+        // A dex dump can hold tens of thousands of class names, so filtering on every keystroke is
+        // the difference between a live list and a stuttering one.
+        mSearchDebouncer = new SearchViewDebouncer((query, type) -> {
+            if (mClassListingAdapter != null) {
+                mClassListingAdapter.filter(query, type);
+            }
+        });
         mActivity.addMenuProvider(this, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
         showProgress(true);
         setAdapterList();
@@ -113,7 +123,9 @@ public class ClassListingFragment extends Fragment implements AdvancedSearchView
 
     @Override
     public boolean onQueryTextChange(String newText, @AdvancedSearchView.SearchType int type) {
-        if (mClassListingAdapter != null) {
+        if (mSearchDebouncer != null) {
+            mSearchDebouncer.onQueryTextChange(newText, type);
+        } else if (mClassListingAdapter != null) {
             mClassListingAdapter.filter(newText, type);
         }
         return true;
@@ -122,6 +134,16 @@ public class ClassListingFragment extends Fragment implements AdvancedSearchView
     @Override
     public boolean onQueryTextSubmit(String query, int type) {
         return false;
+    }
+
+    @Override
+    public void onDestroyView() {
+        // Drop any pending debounced search so it cannot fire against a detached view.
+        if (mSearchDebouncer != null) {
+            mSearchDebouncer.cancel();
+            mSearchDebouncer = null;
+        }
+        super.onDestroyView();
     }
 
     @Override

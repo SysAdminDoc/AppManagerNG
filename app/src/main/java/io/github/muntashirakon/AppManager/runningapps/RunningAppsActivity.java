@@ -42,6 +42,7 @@ import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.logcat.LogViewerActivity;
 import io.github.muntashirakon.AppManager.logcat.struct.SearchCriteria;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
+import io.github.muntashirakon.AppManager.misc.SearchViewDebouncer;
 import io.github.muntashirakon.AppManager.scanner.vt.VtFileReport;
 import io.github.muntashirakon.AppManager.safety.CriticalPackageGuard;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
@@ -123,6 +124,8 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
     @Nullable
     private AdvancedSearchView mSearchView;
     @Nullable
+    private SearchViewDebouncer mSearchDebouncer;
+    @Nullable
     private Menu mSelectionMenu;
     @Nullable
     private Timer mTimer;
@@ -147,6 +150,13 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
         if (actionBar != null) {
             actionBar.setDisplayShowCustomEnabled(true);
             mSearchView = UIUtils.setupAdvancedSearchView(actionBar, this);
+            if (mSearchView != null) {
+                mSearchDebouncer = new SearchViewDebouncer((query, type) -> {
+                    if (model != null) {
+                        model.setQuery(query, type);
+                    }
+                });
+            }
         }
         model = new ViewModelProvider(this).get(RunningAppsViewModel.class);
         mProgressIndicator = findViewById(R.id.progress_linear);
@@ -372,6 +382,15 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
         super.onPause();
     }
 
+    @Override
+    protected void onDestroy() {
+        // Drop any pending debounced search so it cannot fire into a destroyed activity.
+        if (mSearchDebouncer != null) {
+            mSearchDebouncer.cancel();
+        }
+        super.onDestroy();
+    }
+
     private void restartAutoRefresh() {
         stopAutoRefresh();
         int intervalSeconds = normalizeRefreshIntervalSeconds(Prefs.RunningApps.getRefreshIntervalSeconds());
@@ -408,11 +427,13 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
 
     @Override
     public boolean onQueryTextChange(String newText, int type) {
-        if (model != null) {
-            model.setQuery(newText, type);
-            return true;
+        if (model == null) {
+            return false;
         }
-        return false;
+        if (mSearchDebouncer != null) {
+            mSearchDebouncer.onQueryTextChange(newText, type);
+        } else model.setQuery(newText, type);
+        return true;
     }
 
     @Override
