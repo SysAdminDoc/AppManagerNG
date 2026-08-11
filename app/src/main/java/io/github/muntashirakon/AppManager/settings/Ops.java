@@ -23,6 +23,8 @@ import androidx.annotation.StringDef;
 import androidx.annotation.UiThread;
 import androidx.annotation.WorkerThread;
 import androidx.core.app.ActivityCompat;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.Observer;
@@ -119,6 +121,16 @@ public class Ops {
     public static int SYSTEM_UID = Process.SYSTEM_UID;
 
     private static volatile int sWorkingUid = Process.myUid();
+    /**
+     * Observable mirror of {@link #sWorkingUid}.
+     *
+     * <p>The privileged server can go away without the UI asking: it is stopped, it crashes, or
+     * the connection drops, and every one of those paths already reports through
+     * {@link #setWorkingUid(int)}. Publishing from there means a status surface observing this
+     * cannot show a dead server as alive, without anything having to poll for it.
+     */
+    private static final MutableLiveData<Integer> sWorkingUidLiveData =
+            new MutableLiveData<>(sWorkingUid);
     private static volatile boolean sDirectRoot = false; // AM has root AND that root is being used
     private static boolean sIsAdb = false; // UID = 2000
     private static boolean sIsSystem = false; // UID = 1000
@@ -140,7 +152,21 @@ public class Ops {
 
     @AnyThread
     public static void setWorkingUid(int newUid) {
+        boolean changed = sWorkingUid != newUid;
         sWorkingUid = newUid;
+        if (changed) {
+            sWorkingUidLiveData.postValue(newUid);
+        }
+    }
+
+    /**
+     * Emits the uid operations currently run as, whenever it changes — including when the
+     * privileged server stops or disconnects and it falls back to this app's own uid.
+     */
+    @AnyThread
+    @NonNull
+    public static LiveData<Integer> getWorkingUidLiveData() {
+        return sWorkingUidLiveData;
     }
 
     @AnyThread
