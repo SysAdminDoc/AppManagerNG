@@ -1,0 +1,9 @@
+- Removed the Pithus scanner. The service no longer answers at all, so the report card could only ever wait and then say nothing was available.
+- Fixed backups claiming to contain Android KeyStore data they could not collect. Android 12 and later do not let apps read those entries; restore now knows they are absent instead of looking for a key that was never written.
+- Fixed batch operations being reported as failed when their result simply could not be read back.
+- Fixed the Finder app-ops filter throwing when its "with mode" option was selected.
+- Fixed the archive confirmation being lost when the app was in the background; it now arrives as a notification.
+- Fixed the Settings mode-of-operation summary continuing to claim a privilege after the privileged server stopped.
+- App Details now shows which package owns an app's updates, which is not always the one that installed it.
+- Search on the Debloater, Running Apps, and class-listing screens no longer re-filters on every keystroke.
+- Corrected the README's account of the release CVE gate, which described a state that ended three releases ago.
