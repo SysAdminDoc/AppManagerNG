@@ -29,13 +29,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Acceptance: build + full host suite green; locking/verification refreshed per the documented procedure (publisher checksums, not local cache); release gate incl. CVE stage passes; the Kotlin suppression is removed and the gate stays green.
   Complexity: M
 
-- [ ] P2 — Pre-targetSdk-37 compliance audit: reflective static-final writes and IntentSender BAL
-  Why: Android 17 makes reflective writes to static-final fields throw and extends background-activity-launch hardening to IntentSenders; auditing now de-risks the parked target-SDK bump with purely host-verifiable work.
-  Evidence: developer.android.com/about/versions/17/behavior-changes-17; hiddenapi/Refine reflection helpers; installer confirmation IntentSender flows; Roadmap_Blocked.md "Android 17 target-SDK gate" (parked).
-  Touches: static scan across hiddenapi/ and compat/ for Field.set on static finals; installer/batch IntentSender launch sites; docs/audits/ (dated audit doc, same pattern as 2026-05-02 audits).
-  Acceptance: audit doc lists every reflective static-final write (fixed or justified) and every IntentSender launch site with its BAL opt-in status; any fixes carry tests; doc committed under docs/audits/2026-XX-XX-android17-target-prep.md.
-  Complexity: S
-
 ### P3
 
 - [ ] P3 — App-update change report

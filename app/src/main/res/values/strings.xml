@@ -1393,6 +1393,8 @@
     <string name="backup_note_helper">Optional. Saved into this backup metadata and shown in the backup list.</string>
     <string name="backup_protect_from_cleanup">Protect from cleanup</string>
     <string name="backup_protect_from_cleanup_summary">Keep this backup out of retention pruning and bulk delete cleanup.</string>
+    <string name="confirm_archival">Confirm archival</string>
+    <string name="confirm_unarchival">Confirm unarchival</string>
     <string name="backup_keystore_not_included">KeyStore not included</string>
     <string name="backup_keystore_unsupported_warning">Android %1$s does not let apps read KeyStore entries, so credentials stored there will not be included in the backup and cannot be restored from it.</string>
     <string name="backup_protected_from_cleanup">Protected</string>
