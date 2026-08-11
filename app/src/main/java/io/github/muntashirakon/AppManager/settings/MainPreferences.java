@@ -65,15 +65,28 @@ public class MainPreferences extends PreferenceFragment {
             Prefs.Experience.setGuidedModeEnabled((boolean) newValue);
             return true;
         });
+        // The privileged server can stop or drop its connection while this screen is open, and the
+        // summary is otherwise only recomputed in onStart() — leaving it claiming a privilege the
+        // app no longer has.
+        Ops.getWorkingUidLiveData().observe(this, uid -> updateModeSummary());
+    }
+
+    private void updateModeSummary() {
+        if (mModePref == null || !isAdded()) {
+            return;
+        }
+        int modeIndex = MODE_NAMES.indexOf(Ops.getMode());
+        if (modeIndex < 0) {
+            return;
+        }
+        mModePref.setSummary(getString(R.string.mode_of_op_with_inferred_mode_of_op,
+                mModes[modeIndex], Ops.getInferredMode(mActivity)));
     }
 
     @Override
     public void onStart() {
         super.onStart();
-        if (mModePref != null) {
-            mModePref.setSummary(getString(R.string.mode_of_op_with_inferred_mode_of_op,
-                    mModes[MODE_NAMES.indexOf(Ops.getMode())], Ops.getInferredMode(mActivity)));
-        }
+        updateModeSummary();
         if (mLocalePref != null) {
             mLocalePref.setSummary(getLanguageName());
         }
