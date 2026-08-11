@@ -32,6 +32,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   every locale.
 
 ### Fixed
+- Selecting the Finder app-ops filter's "with mode" key no longer throws. The key was declared as
+  flag-typed but never supplied the flag list the editor builds its checkboxes from, and the base
+  implementation of that call raises rather than returning an empty list — so choosing the option
+  failed instead of showing the allowed/ignored/errored/default/foreground choices it was meant to
+  offer.
 - Backups no longer claim to contain Android KeyStore data they could not collect. From Android
   12 the platform stopped letting apps read KeyStore entries, but the metadata still recorded
   `key_store: true`, so a restore went looking for a master key that was never written. The
