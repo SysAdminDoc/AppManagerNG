@@ -1,1 +1,8 @@
+# Text files are stored with LF in the repository regardless of the platform they were
+# authored on. Several sources here were committed with CRLF by editors and generators that
+# rewrote whole files, which makes those files diff as entirely rewritten and hides the real
+# change. Binary content is detected by inspection and left untouched.
+* text=auto eol=lf
+
+# Fuzzing corpora are opaque byte sequences; never translate them.
 app/src/test/resources/fuzz-corpus/** binary
