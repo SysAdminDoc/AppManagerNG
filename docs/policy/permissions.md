@@ -22,7 +22,7 @@ them at runtime on Android 6+ before use.
 
 | Permission | Why declared | Primary call site |
 |---|---|---|
-| `INTERNET` | VirusTotal upload, Pithus lookup, debloat-definition manifest fetch — all opt-in via Settings → Privacy → "Use the Internet" feature switch. **No telemetry; no third-party trackers.** | `apk/dexopt/network/*`, `debloat/DebloatDefinitionsUpdater` |
+| `INTERNET` | VirusTotal upload, debloat-definition manifest fetch — all opt-in via Settings → Privacy → "Use the Internet" feature switch. **No telemetry; no third-party trackers.** | `apk/dexopt/network/*`, `debloat/DebloatDefinitionsUpdater` |
 | `ACCESS_NETWORK_STATE` | Constraint for the Scheduled Auto-Backup `NetworkType.CONNECTED` requirement; checked before VirusTotal upload to avoid metered surprises. | `backup/schedule/AutoBackupWorker`, `virustotal/VirusTotal` |
 | `ACCESS_LOCAL_NETWORK` | Android 17+ Wireless ADB pairing (mDNS discovery uses the local-network sandbox). | `adb/WirelessAdbWiz` |
 | `POST_NOTIFICATIONS` | Foreground service progress notifications (batch ops, installer, scheduled backup). Asked contextually via the iter-22 prompt-sequencing helper. | `notifications/NotificationUtils`, `batchops/BatchOpsService` |

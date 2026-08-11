@@ -1357,7 +1357,6 @@
     <string name="tap_to_open_notification_settings">Gizlemek için dokun</string>
     <string name="action_lock_app">Kilitle</string>
     <string name="path_does_not_exist">“%1$s” mevcut değil</string>
-    <string name="scan_report_from_pithus">Pithus raporu</string>
     <string name="empty_folder">Boş</string>
     <string name="go_to_path">Git…</string>
     <string name="apply_profile">“%1$s” profilini uygula</string>

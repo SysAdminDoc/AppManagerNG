@@ -1453,7 +1453,6 @@
     <string name="pref_set_home">Definir início</string>
     <string name="title_description">Descrição</string>
     <string name="backup_cache">Cache</string>
-    <string name="scan_report_from_pithus">Relatório Pithus</string>
     <string name="path_does_not_exist">“%1$s” não existe</string>
     <string name="adb_pairing_stop_searching">Parar</string>
     <string name="choose_a_profile_state">Selecionar um estado de perfil</string>

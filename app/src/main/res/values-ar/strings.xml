@@ -1564,7 +1564,6 @@
     <string name="pref_enable_auto_lock_msg">قفل App Manager عندما يكون الجهاز مقفلا.</string>
     <string name="path_does_not_exist">\"%1$s\" غير موجود</string>
     <string name="path_not_a_folder">\"%1$s\" ليس مجلدا</string>
-    <string name="scan_report_from_pithus">تقرير بيثوس</string>
     <string name="action_checking">التحقق…</string>
     <string name="profile_modified_are_you_sure">تم تعديل الملف الشخصي. تجاهل كل التغييرات الخاصة بك والخروج؟</string>
     <string name="apply_profile">تطبيق الملف الشخصي \"%1$s\"</string>

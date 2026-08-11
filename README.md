@@ -189,12 +189,12 @@ Version targets:
 
 Every AppManagerNG release ships **two build flavors**. Both are the same app; the only difference is whether the optional online features are compiled in.
 
-| Flavor | For | Optional online features (VirusTotal, Pithus, debloat-definition auto-updates, Settings → Privacy → "Use the Internet") |
+| Flavor | For | Optional online features (VirusTotal, debloat-definition auto-updates, Settings → Privacy → "Use the Internet") |
 |---|---|---|
 | **`floss`** | F-Droid, IzzyOnDroid, reproducibility audits, anyone who wants a fully offline build | **Removed at compile time** — there is no setting to turn them on. Local networking (ADB-over-TCP, wireless pairing, the localhost privileged-server) still works. |
 | **`full`** | GitHub Releases / Obtainium power users who want online scan reports and the debloat-definition auto-updater | **Available, opt-in** — every online feature stays gated behind its existing user toggle and the master "Use the Internet" preference. Nothing reaches the network without you turning it on. |
 
-`floss` is the default flavor in source; `full` is the optional variant. If you don't need VirusTotal / Pithus / debloat-definition auto-updates, `floss` is the right choice. See [docs/distribution/build-flavors.md](docs/distribution/build-flavors.md) for the maintainer contract.
+`floss` is the default flavor in source; `full` is the optional variant. If you don't need VirusTotal or debloat-definition auto-updates, `floss` is the right choice. See [docs/distribution/build-flavors.md](docs/distribution/build-flavors.md) for the maintainer contract.
 
 ### Direct download
 Grab the APK from [GitHub Releases](https://github.com/SysAdminDoc/AppManagerNG/releases/latest) — pick `full` or `floss` per the table above. Each release ships one universal APK per flavor, carrying native libraries for `armeabi-v7a`, `arm64-v8a`, `x86`, and `x86_64`, so the same file installs on every supported device. Per-ABI split APKs are not currently published.
