@@ -1,274 +1,278 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later OR CC-BY-SA-4.0 -->
 # Research — AppManagerNG
-Date: 2026-08-02 — replaces all prior research.
+Date: 2026-08-10 — replaces all prior research.
 
 Confidence labels: [Verified] found in the repository or an authoritative source;
-[Likely] supported by reachable code and ecosystem evidence but not yet reproduced in a
+[Likely] supported by reachable code and ecosystem evidence but not reproduced in a
 release/device run; [Assumption] a design choice to validate during implementation;
 [Needs live validation] requires an OEM/device, release artifact, or external service.
 
 ## Executive Summary
 
-[Verified] AppManagerNG is a local-first, GPL-3.0-or-later Android package-management suite
-with Java/XML Material Views, native/JNI support, eleven Gradle modules, `minSdk 21`, and
-`floss`/`full` network boundaries. It already combines inspection, filtering, privileged
-operations, APK/split installation, backups, profiles, routines, file tools, diagnostics,
-and reproducible release checks. The highest-value direction is to close a few unverified
-state and trust seams around data mutation and to finish data layers that already have no
-UI, rather than add another broad subsystem.
+[Verified] AppManagerNG (v0.6.12, 2026-08-08) is a local-first, GPL-3.0-or-later Android
+package-management suite: inspection, Finder queries, privileged operations across five
+privilege modes, installer with preflight disclosure, encrypted backups, profiles/routines,
+debloater, and a fail-closed reproducible release gate. The active roadmap was drained on
+2026-08-10; ~50 items sit in `Roadmap_Blocked.md`, mostly device/external-gated. The
+highest-value direction now is **reconciling with upstream's v4.1.0 (2026-06-29) bugfix run**
+— the first upstream release since the fork point — plus a small set of truthfulness and
+data-completeness fixes the internal scan surfaced, rather than any new subsystem.
 
 Top opportunities, in priority order:
 
-1. [P1, Likely] Serialize rules/components read-modify-write operations across all callers;
-   the only current lock is caller-local in `MainPreferencesViewModel`, while
-   `RulesStorageManager` instances can independently load and commit the same TSV state.
-2. [P1, Verified] Add package/version/manifest-consistency preflight for APKM/APKS/XAPK
-   containers; `ApkFile` already bounds archives and rejects duplicate/missing base entries,
-   but its APKM classification still carries `FIXME(#227)` and does not compare every split
-   against the base identity.
-3. [P1, Verified] Remove the literal development-keystore credential from `app/build.gradle`;
-   the keystore is ignored, but the tracked build script still embeds a reusable password.
-4. [P1, Verified] Expose the existing `FilterPresetStore` through Finder so named filters can
-   be saved, loaded, renamed, and deleted instead of remaining an unreachable data layer.
-5. [P2, Verified] Bind an optional `FilterItem` to non-package-event profile routines; the
-   architecture document names this open decision and `RoutineWorker` currently applies the
-   selected profile without a target filter.
-6. [P2, Verified] Turn translation missingness into a documented host-side baseline/ratchet;
-   the current script warns on missing locale strings and the release gate checks regressions,
-   but neither prevents new NG-owned strings from silently losing coverage.
-
-Existing P0/device, hosted-service, dependency-gated, visual, and documentation-truth work is
-already represented in `Roadmap_Blocked.md`; it is intentionally not repeated in the active
-roadmap additions below.
+1. [P1, Verified] README still claims the CVE gate blocks on 12 unassessed findings; v0.6.8
+   resolved all 12 with evidence-backed suppressions. The project's own trust surface misstates
+   its release integrity.
+2. [P1, Verified] Upstream shipped ~15 portable correctness fixes between 2026-05-25 and
+   2026-06-29 (v4.1.0) that post-date the fork point; none are recorded as ported.
+3. [P1, Likely] Upstream refreshed its hidden-API mirrors from Android 16 sources
+   (`eff7f587`+`04ed88d0`); the fork's `hiddenapi/` module has not taken the refresh.
+4. [P2, Verified] The `full` flavor still integrates Pithus, a service upstream deleted as
+   defunct on 2026-05-26 — a dead network trust surface.
+5. [P2, Verified] Backups silently skip Android KeyStore v2 entries (`BackupOp.java:531`,
+   `RestoreOp.java:538`) with no user-facing disclosure — a completeness-truth gap in the
+   feature the app stakes its trust story on.
+6. [P2, Verified] Update-ownership (API 34+) is entirely unused: the app neither shows which
+   store owns an app's updates nor claims ownership when it installs — directly relevant as
+   Developer Verification (enforcement 2026-09-30 BR/ID/SG/TH; global 2027) reshapes install
+   trust, where AppManagerNG's ADB/Shizuku path is exempt and therefore a differentiator.
+7. [P2, Verified] Finder's AppOps predicate ships without mode filtering although the data
+   layer exposes modes and the option class declares the constants (`AppOpsOption.java:26-29`).
+8. [P2, Likely] Privileged batch operations trust `pm`/`appops` exit codes; Thor's 2026 arc
+   (readback verification) shows silent no-ops are the field's live failure mode.
+9. [P2, Verified] Kotlin toolchain sits on a CVE'd line (CVE-2026-53914, build-only today);
+   one deliberate toolchain pass (Kotlin 2.4.20 + dependency-check 13.0.0 + AGP 9.3.0)
+   shares the dependency-locking churn cost.
+10. [P3, Verified] Cheap API 36/37 diagnostics (pending-job reasons, MemoryLimiter exit
+    descriptions, Advanced Protection detection) extend panels that already exist.
 
 ## Product Map
 
-- **Core workflows:** inventory and search installed packages; build Finder predicates and
-  batch actions; inspect manifests, permissions, AppOps, signatures, trackers, native libraries,
-  and components; install/export APK, split, OBB, and archive inputs; create/restore backups and
-  profiles; freeze, debloat, schedule, and audit operations; browse files and collect diagnostics.
-- **Personas:** privacy/offline Android users; root, ADB, Shizuku, Dhizuku, or privileged-server
-  power users; ROM/OEM debloaters; app developers and mobile-security analysts; users managing
-  multiple profiles or devices.
-- **Platforms and distribution:** Android API 21+, compile SDK 37, target SDK 36, Java/XML
-  Material Components, four-ABI native packaging, and `floss`/`full` product flavors. The
-  repository documents GitHub/direct distribution and F-Droid/Izzy/other catalog paths; the
-  hosted submission row remains external-gated.
-- **Integrations and data flows:** Android `PackageManager`/`PackageInstaller`, AppOps and
-  hidden-API compatibility; root/ADB/Shizuku/Dhizuku/local privileged AIDL; WorkManager routine
-  execution; SAF and the app file-provider layer; Room, SharedPreferences, local files, OpenPGP,
-  APK signing/metadata libraries, JNI/native helpers, and optional `full`-flavor network lookups.
+- **Core workflows:** inventory/search installed packages; Finder predicates + saved presets +
+  batch actions; per-app inspection (components, permissions, app ops, signatures, trackers,
+  native libs, recent exits); install APK/APKS/APKM/XAPK with preflight disclosure; encrypted
+  backup/restore + snapshot bundles; profiles, routines, scheduled ops; debloat with OEM
+  provenance; freeze/QS tiles; file manager, log viewer, terminal, code editor.
+- **Personas:** privacy-focused offline users; root/ADB/Shizuku/Dhizuku/KernelSU power users;
+  ROM/OEM debloaters; developers and mobile-security analysts.
+- **Platforms and distribution:** Android API 21+ (policy ceiling, `docs/policy/minsdk-21-ceiling.md`),
+  compileSdk 37 / targetSdk 36; `floss` (offline) and `full` flavors; GitHub Releases +
+  Obtainium; IzzyOnDroid submission is operator-gated (`Roadmap_Blocked.md`); reproducible
+  two-build releases with hash receipts and SBOM.
+- **Integrations and data flows:** PackageManager/PackageInstaller + hidden APIs; AppOps; IFW
+  component rules; WorkManager routines; SAF; Room (schema 10 — migration ladder is the P0
+  blocked item); OpenPGP/BouncyCastle crypto; optional `full`-flavor VirusTotal/Pithus (see
+  finding 4)/debloat-definition updates behind `FeatureController` + master Internet toggle.
 
 ## Competitive Landscape
 
-- **[Upstream App Manager](https://github.com/MuntashirAkon/AppManager)** — does broad package
-  inspection, filtering, backup, and automation well. Learn: keep Finder and inspection
-  primitives composable. Avoid: importing upstream behavior without rechecking NG's local-first,
-  reversible-operation contracts.
-- **[Universal Installer](https://github.com/pass-with-high-score/universal-installer)** — makes
-  package format, split, SDK, ABI, permissions, OBB, storage, progress, and history visible.
-  Learn: put identity and consequence review before commit. Avoid: remote reputation checks or
-  advanced install flags becoming implicit trust decisions.
-- **[Hail](https://github.com/aistra0528/Hail)** — clearly separates root, device-owner,
-  Shizuku, and Dhizuku capabilities and exposes reversible freeze automation. Learn: show the
-  actual privilege mode and provide an explicit recovery path. Avoid: implying OEM-independent
-  behavior where the platform cannot guarantee it.
-- **[Canta](https://github.com/samolego/Canta) +
-  [Universal Android Debloater NG](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/wiki/FAQ)**
-  — make debloat recommendations approachable, warn about boot-critical removals, and support
-  state rechecks/recovery. Learn: versioned safety context and post-action verification. Avoid:
-  unmoderated crowdsourced votes without OEM/version context or poisoning resistance.
-- **[Neo Backup](https://github.com/NeoApplications/neo-backup) +
-  [SD Maid SE](https://github.com/d4rken-org/sdmaid-se)** — cover scheduled backup/restore,
-  cancellation, leftover cleanup, filters, and recovery-oriented operations. Learn: stage
-  destructive work and report partial outcomes. Avoid: treating a still-bootable app as the only
-  place where recovery instructions exist.
-- **[AppDash](https://appdash.app/) +
-  [Swift Backup](https://www.swiftbackup.app/faq)** — validate demand for tags, saved filters,
-  notes, history, widgets, and versioned local backup. Learn: make “what changed and what can I
-  recover?” actionable. Avoid cloud/account coupling and telemetry that conflict with NG's
-  offline/floss posture.
-- **[Blocker](https://github.com/lihenggui/blocker/releases) +
-  [LibChecker](https://github.com/LibChecker/LibChecker)** — provide detailed IFW/component
-  controls and static library/native inspection. Learn: show provenance and uncertainty beside
-  every analysis result. Avoid turning “no known match” into a claim that an app is clean.
+- **Upstream App Manager** (MuntashirAkon, 7.7k★) — v4.1.0 (2026-06-29) is the only release
+  since the fork point (3d11bcbc, 2026-04-16 — note: earlier docs said 2026-04-30; the commit
+  itself dates 2026-04-16). Its headline features (ADB `.ab` backup, filter profiles, native
+  scanner) predate the fork and are in NG's base; the real delta is the 2026-05-25→06-29 fix
+  run plus HMAC ADB auth (already a blocked P1 port item). Learn: their v4.1.1/v4.2.0
+  milestones (#1995 app-list export bug, #321 cross-app Finder, #138 APK editor) confirm NG is
+  ahead on Finder/routines. Avoid: blind-merging v4.1.0 — it carries open perf (#2000) and
+  reproducible-build (#1997) regressions.
+- **Thor** (506★ but fastest-moving, v1.94.1 2026-08-09) — readback verification of privileged
+  ops, UAD safety gating with hard-block of "Unsafe", extension catalog. Learn: verify state
+  after `pm` claims success; publish corrections. Avoid: silent privilege escalation between
+  op types (their #366 data-loss incident).
+- **Hail** (6.4k★) — multi-mode freeze, Dhizuku, auto-freeze triggers, URI automation. NG has
+  freeze + QS tiles + Tasker; the deltas (auto-freeze predicates, freeze surface/widget,
+  launch-through) are all already tracked in `Roadmap_Blocked.md`. Avoid duplicating them.
+- **LibChecker** (7.1k★, 2.5.4 2026-06-17) — per-app update snapshots + diffs, 16 KB
+  alignment checks (NG shipped the Finder filter in v0.6.7), lib rules DB. Learn: the update
+  snapshot/diff surface — NG records op history but cannot answer "what changed when this app
+  updated". Avoid: their WebUI export (scope creep for NG).
+- **Inure** (build107.2.0, 2026-07-24) — recent-exits panel (NG already ships this in App
+  Details), per-app notes + tags (NG has tags only), batch profiles. Learn: notes as the
+  missing companion to tags. Avoid: its everything-panel sprawl.
+- **SD Maid SE** (7.2k★) — explanatory failure UX ("why cleaning was skipped"), per-schedule
+  conditions, settings export. Learn: NG's failure surfaces should always name the privilege
+  reason (partially shipped in Mode Doctor). Avoid: cleaner scope beyond leftover scans NG has.
+- **UAD-NG** (8.8k★) + **Canta** (5.5k★) — debloat safety ratings (NG ingests the list with
+  provenance since 2026-06-04), package-list updates decoupled from releases (NG: `full`
+  auto-updater exists), cross-user detection. Learn: work-profile/Private Space is the field's
+  weakest axis and NG's blocked multi-user matrix item is the right bet when a device is
+  available. Avoid: crowdsourced vote databases (rejected 2026-08-02, still rejected).
+- **InstallerX-Revived** (6.1k★) — default-installer role, notification-only install UI.
+  NG covers bypass-low-target-SDK and EXTRA_RETURN_RESULT already [Verified by grep
+  2026-08-10]; the remaining delta (dialog-less install UX) conflicts with NG's
+  disclosure-first installer philosophy — intentionally avoid.
 
 ## Security, Privacy, and Reliability
 
-- [Verified] `app/build.gradle` reads an ignored `dev_keystore.jks` when present, but the
-  tracked debug signing block also contains a literal `storePassword`/`keyPassword`. This is
-  not a release-key leak, but it violates the repository's own no-secret guidance in
-  `CONTRIBUTING.md` and makes the credential reusable by anyone who reads the source. Android's
-  signing guidance keeps keystore properties outside source control and permits the normal debug
-  keystore path ([Android app signing](https://developer.android.com/studio/publish/app-signing)).
-- [Likely] `RulesStorageManager` synchronizes its in-memory `mEntries`, not the file-level
-  read-modify-write. `MainPreferencesViewModel.applyAllRules()` documents that synchronization
-  belongs in `ComponentsBlocker`, yet multiple operations construct separate mutable managers
-  before committing. Parallel component/AppOps/permission updates could therefore lose one
-  writer's change or expose a partially replaced TSV. This needs a failing concurrent test first,
-  then a keyed per-user/per-rules-file transaction and atomic replacement.
-- [Verified] `apk/ApkFile.java` rejects duplicate split names, duplicate bases, missing bases,
-  malformed bounded metadata, and overlarge entry counts, while the installer separately checks
-  split certificate mismatch. The remaining `APKM`/DRM-free `FIXME(#227)` path does not establish
-  package name, version, split identity, or container provenance for every embedded APK before
-  selection. Android's `PackageInstaller.Session` requires coherent split sets and a base when
-  the package is absent ([Session reference](https://developer.android.com/reference/android/content/pm/PackageInstaller.Session));
-  APKMirror and Universal Installer expose why a bundle cannot be installed. Add consistency
-  preflight without duplicating the existing certificate check.
-- [Verified] Existing trust controls are strong in several areas: no app `WebView`; explicit
-  `PendingIntent` mutability at factory call sites; backup exclusions for server secrets; release
-  dependency floors for Bouncy Castle, Guava, and protobuf; installer transcripts/history; and
-  optional network behavior isolated to `full`. Preserve these boundaries rather than adding
-  mandatory cloud reputation or analytics calls. Android's exported-component guidance supports
-  continuing to gate intent entry points in both manifest and code ([exported components](https://developer.android.com/privacy-and-security/risks/android-exported),
-  [access control](https://developer.android.com/privacy-and-security/risks/access-control-to-exported-components)).
-- [Verified] Current Android 17 behavior changes include target API 37 requirements for local
-  network access and stricter native dynamic-code loading. The project targets 36 and already has
-  Android 17/device work in `Roadmap_Blocked.md`; this is a release constraint, not a duplicate
-  feature row ([Android 17 behavior changes](https://developer.android.com/about/versions/17/behavior-changes-17),
-  [local network permission](https://developer.android.com/privacy-and-security/local-network-permission)).
-- **Recovery needs:** the new rules transaction must retain the last valid rules file on write
-  failure; bundle preflight must fail before the installer session is committed; the signing fix
-  must leave ordinary debug builds usable; preset corruption must remain an empty, recoverable
-  state; and routine filter failures must record a skipped/failed result rather than silently
-  applying the full profile.
+- [Verified] **README trust-surface drift** — `README.md:264-277` says the CVE gate "currently
+  blocks", findings are unassessed, and points at a P1 ROADMAP item; all three claims false
+  since v0.6.8 (`config/owasp-suppressions.xml`, 13 entries with justifications; CHANGELOG
+  v0.6.8). An external 2026-08-10 re-triage independently reached the same dispositions:
+  androidx.sqlite = CPE false positives (DependencyCheck #1727/#6292 lineage), io.netty =
+  AGP/UTP buildscript-only, Kotlin CVE-2026-53914 = real but build-tooling-only (JetBrains CNA
+  vector 6.7 vs NVD 9.8).
+- [Verified] **Kotlin 2.2.10 → 2.4.20** clears CVE-2026-53914 (build-cache deserialization →
+  code exec). Risk is currently confined to local build tooling; it becomes a real
+  supply-chain hole if a shared/remote Gradle cache is ever adopted. Bundle with
+  dependency-check 13.0.0 (2026-08-03) and AGP 9.3.0 (keepRules source sets — structural
+  mitigation for the v0.6.12 BC-keeps class of R8 bug) to pay the locking churn once.
+- [Verified] **Runtime dependencies are at their security ceiling**: BC 1.84 (fixes
+  CVE-2026-3505 PGP AEAD pre-auth DoS — relevant to OpenPGP restore), protobuf 3.25.5, guava
+  32.1.3-android, zstd-jni 1.5.7-11, libsu 6.0.0, Shizuku-API 13.1.5 (no newer artifact
+  exists). Vendored Commons Compress subset: no 2025-2026 CVEs; CVE-2023-42503 code path
+  verified absent (`TarArchiveEntry.java:1318` uses the pre-1.22 parse). Material/Room/Work/
+  Activity are policy-pinned — every newer line raises minSdk to 23; Material 1.15 does not
+  exist (1.14.0, 2026-05-13, is the minSdk-23 release).
+- [Verified] **Pithus is defunct** (upstream removal `0e187e83`+`2c00f69f`, 2026-05-26, deleted
+  code + pinned certs) yet `scanner/Pithus.java` and its `NetworkTransparencyLedger` rows
+  remain in `full` — offering users an upload to a dead endpoint.
+- [Verified] **KeyStore v2 backup hole** — `backup/BackupOp.java:531` / `RestoreOp.java:538`
+  skip KeyStore v2 entries with no disclosure anywhere in the backup UI or metadata.
+- [Likely] **Batch ops trust exit codes** — no readback layer; a `pm disable` that silently
+  no-ops on an OEM build is reported as success (Thor v1.94.0 demonstrates the failure mode
+  and the fix pattern).
+- [Verified] **Privileged-server status can go stale in UI** —
+  `servermanager/ServerStatusChangeReceiver.java:72` drops status changes (in-code TODO).
+- [Verified] **`FEAT_INTERNET` is missing from `sFeatureFlagsMap`** in
+  `settings/FeatureController.java` — the master Internet gate can never appear in the
+  feature-toggle list even in `full`. (Echoes the repo's own gate-that-enumerates gotcha.)
+- [Verified] **Developer Verification timeline** — enforcement 2026-09-30 (BR/ID/SG/TH,
+  store-listed apps only) does not touch GitHub/Obtainium distribution; global certified-device
+  rollout 2027 does. ADB installs are exempt (no wait, no verification), making NG's ADB/
+  Shizuku session path structurally verification-proof. Maintainer decision (register $25
+  console vs stay unverified) is needed before 2027, not now.
+- [Verified] **Android 17 (API 37) targeting is low-risk** — no package-visibility or
+  PackageInstaller behavior changes documented. The two audits worth doing ahead of the parked
+  target bump: reflective static-final writes (now throw) and IntentSender background-activity
+  -launch opt-ins. Native DCL read-only-`.so` rule and `ACCESS_LOCAL_NETWORK` need a check
+  when the bump lands.
+- **Recovery needs:** Pithus removal must leave the `floss` scanner UI unchanged; KeyStore
+  disclosure must not fail backups that previously succeeded; readback verification must
+  degrade to "unverified" (never block) where state cannot be re-read; the toolchain pass must
+  follow `docs/distribution/dependency-verification.md` and keep the release gate green.
 
 ## Architecture Assessment
 
-- **Boundaries to improve:** extract a pure bundle-identity/preflight layer from `ApkFile`; make
-  `RulesStorageManager` expose one transaction boundary around load, mutate, save, and apply;
-  give Finder a small preset-facing ViewModel/controller over `FilterPresetStore`; and add a
-  versioned filter reference to `ProfileTrigger` rather than embedding UI-only state in
-  `RoutineWorker`.
-- **Refactor candidates:** `RulesStorageManager.java` and `ComponentsBlocker.java` are the
-  correct place for a shared lock/atomic writer; `ApkFile.java` is a concentration point where
-  identity validation should be testable without starting an install; `FinderActivity.java` and
-  `FinderViewModel.java` need preset actions; `ProfileTrigger.java`/`RoutineWorker.java` need
-  schema-compatible selection semantics. Avoid broad rewrites of the existing Java/XML shell.
-- **Test gaps:** add malformed/mixed-package/mixed-version/split-name and DRM-free APKM
-  fixtures to `ApkFileTest`; add a parallel rules writer test that proves no lost updates or
-  truncated TSV; add store/UI-facing Finder tests for save/load/rename/delete and malformed
-  entries; add routine tests for no filter, matching filter, empty result, missing preset, and
-  old trigger JSON; add a static build test that no tracked file contains a literal signing
-  password. Android's Room guidance is a useful model for preserving schema history and testing
-  every migration ([Room migration testing](https://developer.android.com/training/data-storage/room/migrating-db-versions)).
-- **Release and upgrade constraints:** `minSdk 21` is intentional; current Activity, Room, and
-  WorkManager upgrade lines that require API 23 cannot be adopted blindly. Keep the existing
-  dependency-lock/CVE/SBOM/reproducibility gates and document any new preset/trigger schema
-  version. Do not make AndroidX upgrades a roadmap item without first resolving the min-SDK
-  policy ([Activity releases](https://developer.android.com/jetpack/androidx/releases/activity),
-  [Room releases](https://developer.android.com/jetpack/androidx/releases/room),
-  [Work releases](https://developer.android.com/jetpack/androidx/releases/work)).
-- **Coverage decisions:** security and data safety are addressed by the first three additions;
-  accessibility/device themes and form factors remain in `Roadmap_Blocked.md`; i18n is addressed
-  by the host-side ratchet while hosted translation intake stays blocked; observability already
-  has install transcripts, operation history, routine results, and release receipts; testing is
-  attached to every new item; documentation truth is already a blocked cross-document task;
-  distribution remains local/reproducible and `floss`-compatible; a plugin marketplace, iOS,
-  desktop, and remote fleet control do not fit the Android/local-first boundary; offline
-  operation, multi-user support, and privileged-mode matrices remain explicit constraints; and
-  migration/upgrade work must preserve existing SharedPreferences/Room schemas.
+- **Boundaries to improve:** batch-op executors need a readback/verification seam so results
+  carry observed state, not exit codes; `FeatureController`'s flag map should be pinned by a
+  completeness test against declared flags; privileged-server status needs one observable
+  path from receiver to UI.
+- **Refactor candidates (from in-code TODOs, in value order):**
+  `settings/Ops.java:1041` (three overlapping privileged-mode entry points — consolidation is
+  upstream's own TODO but touchy; do alongside readback work, not as a drive-by);
+  `profiles/struct/BaseProfile.java:49` (legacy non-UUID profile IDs — fold into any future
+  profile schema change, requires migration test);
+  `permission/PermUtils.java:336-379` (`FLAG_PERMISSION_POLICY_FIXED` deliberately commented
+  out twice — investigate and either honor or document before any permission-UI work);
+  `editor/CodeEditorViewModel.java:68,219` (language defs not shipped as assets; stale
+  serializer).
+- **Test gaps:** `:libcore:io` (remote FD/path transport) has zero tests and no proxy suite —
+  host-testable parts belong in `app/src/test` per the dependency-locking constraint recorded
+  2026-08-02 (do NOT add a new test source set); `SBConverterTest.java:158` is commented out
+  (Robolectric can't parse APKs) — the zip-comment JSON validation fix should revive it with a
+  parser-level fixture; readback verification needs a simulated silent-no-op fixture;
+  `FeatureController` map completeness test absent.
+- **Docs debt:** `RESEARCH_REPORT.md` (2026-06-03) is two months stale and cites a removed
+  workflow — treat as historical only. `COMPLETED.md` ledgers stop before the 2026-08-02 pass;
+  CHANGELOG is the accurate record. README CVE block is finding 1.
+- **Upgrade constraints:** minSdk 21 ceiling intact; AndroidX/Material upgrades remain
+  policy-blocked. Room schema changes (notes item) must land with explicit migrations while
+  the destructive-fallback P0 stays blocked — new tables only, no destructive path reliance.
+- **Coverage decisions (2026-08-10):** security/reliability/data-truth are the P1/P2 additions;
+  accessibility, visual polish, empty-state system, multi-user matrix, and device walkthroughs
+  are consciously excluded here because each already has a `Roadmap_Blocked.md` row awaiting
+  device access; i18n intake stays external-gated (fork-owned Weblate row) with the host-side
+  ratchet already shipped; distribution (IzzyOnDroid submission, screenshots) stays
+  operator/device-gated; plugin ecosystem, cloud/multi-device, and desktop remain rejected;
+  migration paths are constrained by the blocked P0 Room ladder as noted above.
 
 ## Rejected Ideas
 
-- **Cloud backup, remote fleet control, or mandatory online reputation checks** — AppDash and
-  Swift Backup show commercial demand, but NG's `floss`/local-first boundary and existing
-  optional-network separation make this a purpose and privacy expansion
-  ([AppDash](https://appdash.app/), [Swift Backup FAQ](https://www.swiftbackup.app/faq)).
-- **Public plugin/extension marketplace** — Thor demonstrates the mechanism, not enough evidence
-  of demand to justify a new signed-code trust boundary, compatibility policy, review process,
-  and incident-response owner ([Thor](https://github.com/trinadhthatakula/Thor)).
-- **Crowdsourced debloat safety scores** — Canta/UAD evidence supports warnings and curated
-  definitions, not an untrusted vote database; firmware context, moderation, and poisoning
-  resistance would be prerequisites ([Canta](https://github.com/samolego/Canta),
-  [UAD-NG FAQ](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/wiki/FAQ)).
-- **AI privacy scores, telemetry dashboards, Play watchlists, or VirusTotal-by-default** — the
-  repository already has optional network boundaries and an analytics row is blocked; adding
-  remote scoring would create an unverifiable classification and privacy dependency.
-- **Compose rewrite, iOS/desktop ports, or Android TV as an active feature bet** — the current
-  Java/XML/min-21 architecture and device/form-factor work already in `Roadmap_Blocked.md` make
-  these XL scope with no evidence that they solve a current trust or workflow gap.
-- **PQC/v3.2 signing display and Android 17 target migration as new rows** — both are already
-  dependency/device-gated in `Roadmap_Blocked.md`; the official Android 17 announcement and the
-  `PackageUtils.java` TODO are evidence for sequencing, not duplicate active work
-  ([Android 17 announcement](https://android-developers.googleblog.com/2026/06/Android-17.html)).
-- **VFS timestamps, receiver-flag display, and routine-history rotation now** — the TODOs in
-  `io/fs/VirtualFileSystem.java`, `ActivityInterceptor.java`, and the routine architecture notes
-  are real, but no comparable-product or user-signal evidence makes them more valuable than the
-  six bounded items above. Revisit after the trust and preset foundations land.
+- **Freeze layer as a "biggest gap"** — competitor-research suggestion; wrong: NG inherits
+  freeze/unfreeze, QS freeze tile, and FreezeUnfreezeActivity, and the real deltas
+  (auto-freeze predicates, freeze surface/widget, launch-through frozen apps, Dhizuku parity)
+  are each already in `Roadmap_Blocked.md`. (Hail/Thor comparison, 2026-08-10.)
+- **Recent-exits panel, EXTRA_RETURN_RESULT install results, low-target-SDK install bypass,
+  200 ms search debounce** — proposed by competitor/upstream research; all already shipped
+  [Verified by grep 2026-08-10: `AppInfoFragment.java:3768`, `PackageInstallerActivity.java:264`,
+  `PackageInstallerCompat.java:415`, `MainActivity.java:122`]. Future researchers: grep first.
+- **Default-installer role / notification-only installs** (InstallerX) — conflicts with NG's
+  disclosure-first installer contract; the prompt IS the product.
+- **Cloud backup targets (Drive/WebDAV/S3), SMS/call-log backup** (Swift Backup) — offline/
+  floss boundary; rejected 2026-08-02, unchanged.
+- **Crowdsourced debloat votes, AI privacy scores, telemetry** — rejected 2026-08-02, unchanged.
+- **Compose rewrite, desktop/iOS, Android TV bet** — rejected 2026-08-02; TV D-pad item stays
+  blocked. Material 1.14+ (minSdk 23, M3 Expressive) additionally hard-blocks any near-term
+  M3-Expressive restyle — also skip upstream's M3 preference restyle commits (`e24eb8d0` etc.)
+  since NG has its own V2 theme system.
+- **Upstream sora-editor/ARSCLib pin adoption** — fork is AHEAD of upstream on both (0.24.6 vs
+  0.22.2; V1.4.0 vs older fork commit). Nothing to take.
+- **xz-java CVE work** — `org.tukaani` is not in any lockfile; recent xz CVEs are Go-port/
+  native-only. No exposure.
+- **Netty/androidx.sqlite dependency upgrades to clear the CVE gate** — findings are FP/
+  build-only; suppressions (shipped v0.6.8) are the correct mechanism, independently
+  re-validated 2026-08-10.
+- **LibChecker WebUI export, Inure panel sprawl, PDF viewer (upstream #2011)** — scope creep
+  beyond package management.
 
 ## Sources
 
 ### Direct OSS
-https://github.com/MuntashirAkon/AppManager
-https://github.com/NeoApplications/neo-backup
-https://github.com/NeoApplications/neo-backup/blob/main/FAQ.md
-https://github.com/pass-with-high-score/universal-installer
-https://github.com/aistra0528/Hail
-https://github.com/aistra0528/Hail/blob/master/README_EN.md
-https://github.com/samolego/Canta
-https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/wiki/FAQ
-https://github.com/d4rken-org/sdmaid-se
-https://github.com/lihenggui/blocker/releases
-https://github.com/LibChecker/LibChecker
-https://github.com/trinadhthatakula/Thor
-https://github.com/wxxsfxyzm/InstallerX-Revived
-https://github.com/RikkaApps/Shizuku
-https://github.com/ImranR98/Obtainium
-https://github.com/soupslurpr/AppVerifier
-
-### Commercial and adjacent
-https://appdash.app/
-https://appdash.app/faq/
-https://www.swiftbackup.app/faq
-https://www.swiftbackup.app/roadmap
-https://adbappcontrol.com/en/docs/
-https://github.com/awesome-android-root/awesome-android-root
+https://github.com/MuntashirAkon/AppManager (v4.1.0 release, commits 2026-05-25→06-29, issues #1956/#1963/#1967/#1995/#2000/#1997/#2003, milestones v4.1.1/v4.2.0)
+https://github.com/trinadhthatakula/Thor (v1.94.0/v1.94.1)
+https://github.com/aistra0528/Hail (v1.10.0; issues #258/#88/#266/#352)
+https://github.com/LibChecker/LibChecker (2.5.4)
+https://github.com/Hamza417/Inure (build107.1.0/107.2.0)
+https://github.com/d4rken-org/sdmaid-se (v2.0.1-beta1/v2.0.2-rc0; issues #1364/#1496/#1649)
+https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation (v1.2.0; issues #1311/#583)
+https://github.com/samolego/Canta (v3.2.2; issue #350)
+https://github.com/lihenggui/blocker (v2.0.6339; issue #1565)
+https://github.com/wxxsfxyzm/InstallerX-Revived (26.08 preview)
+https://github.com/NeoApplications/Neo-Backup (8.3.17/8.3.18)
+https://github.com/thedjchi/Shizuku (Android 16/17-compatible fork)
 https://github.com/timschneeb/awesome-shizuku
 
-### Community signal
-https://www.reddit.com/r/androidapps/comments/1r0s7fl/your_top_shizuku_applications_and_why/
-https://www.reddit.com/r/androidapps/comments/1gzitpm/any_backup_app_which_back-ups_all_apps-files-using-shizuku/
-https://www.reddit.com/r/androidapps/comments/1stw3mp/best-way-to-backup-restore-apks-without-root/
-https://news.ycombinator.com/item?id=41616023
-https://news.ycombinator.com/item?id=39730962
-https://stackoverflow.com/questions/78830768/install-apk-with-packageinstaller-fails-on-android-api-35-device
-https://stackoverflow.com/questions/77782143/not-getting-status-updates-from-packageinstaller
-https://stackoverflow.com/questions/78865465/unable-back-up-and-restore-android-app-data-with-adb
+### Commercial and adjacent
+https://swiftbackup.app
+https://appdash.app
+https://adbappcontrol.com
 
 ### Platform and standards
-https://developer.android.com/studio/publish/app-signing
-https://developer.android.com/reference/android/content/pm/PackageInstaller
-https://developer.android.com/reference/android/content/pm/PackageInstaller.Session
-https://developer.android.com/google/play/publishing/multiple-apks
-https://developer.android.com/guide/app-bundle/app-bundle-format
 https://developer.android.com/about/versions/17/behavior-changes-17
-https://android-developers.googleblog.com/2026/06/Android-17.html
-https://developer.android.com/privacy-and-security/local-network-permission
-https://developer.android.com/privacy-and-security/risks/android-exported
-https://developer.android.com/privacy-and-security/risks/access-control-to-exported-components
-https://developer.android.com/guide/topics/ui/accessibility/testing
-https://developer.android.com/training/data-storage/shared/documents-files
-https://developer.android.com/training/data-storage/room/migrating-db-versions
+https://developer.android.com/about/versions/17/features
+https://developer.android.com/about/versions/16/features
+https://developer.android.com/developer-verification
 https://developer.android.com/developer-verification/guides/faq
-https://theupdateframework.io/specification/latest/
-https://developers.google.com/android/binary_transparency/google_apk/verification_details
-
-### Research, advisories, and dependency direction
-https://arxiv.org/abs/2605.27667
-https://arxiv.org/abs/2508.02008
-https://arxiv.org/abs/2504.13547
-https://conf.researchr.org/details/icse-2026/icse-2026-research-track/189/An-Empirical-Study-on-the-Robustness-of-Android-Third-Party-Library-Detection-Tools-A
-https://nvd.nist.gov/vuln/detail/CVE-2026-5588
-https://nvd.nist.gov/vuln/detail/CVE-2024-7254
-https://github.com/advisories/GHSA-4h8f-2wvx-gg5w
-https://advisories.gitlab.com/pkg/maven/com.google.guava/guava/CVE-2023-2976/
-https://developer.android.com/jetpack/androidx/releases/activity
+https://android-developers.googleblog.com/2026/06/android-developer-verification.html
+https://f-droid.org/2026/02/24/open-letter-opposing-developer-verification.html
+https://izzyondroid.org/docs/general/AppInclusionPolicy/
+https://izzyondroid.org/docs/reproducibleBuilds/
+https://reproducible-builds.org/reports/2026-06/
+https://developer.android.com/guide/practices/page-sizes
 https://developer.android.com/jetpack/androidx/releases/room
 https://developer.android.com/jetpack/androidx/releases/work
 
+### Dependencies, advisories, tooling
+https://github.com/material-components/material-components-android/releases (1.14.0 = minSdk 23)
+https://developer.android.com/build/releases/agp-9-3-0-release-notes
+https://github.com/advisories/GHSA-r937-wjx7-w2jp (CVE-2026-53914)
+https://www.tenable.com/cve/CVE-2026-53914
+https://blog.jetbrains.com/kotlin/2026/01/update-your-projects-for-agp9/
+https://www.bouncycastle.org/resources/new-releases-bouncy-castle-java-1-84-and-bouncy-castle-java-lts-2-73-11/
+https://github.com/dependency-check/DependencyCheck/releases (13.0.0)
+https://github.com/jeremylong/DependencyCheck/issues/1727 (androidx.sqlite CPE FP lineage)
+https://commons.apache.org/compress/security.html
+https://netty.io/news/2025/09/03/4-2-5.html
+https://github.com/topjohnwu/libsu/releases
+https://central.sonatype.com/artifact/dev.rikka.shizuku/api
+https://github.com/CodeIntelligenceTesting/jazzer/releases
+
 ## Open Questions
 
-None block implementation of the six host-verifiable additions. Device/OEM behavior, hosted
-translation intake, Android 17 rollout, privileged transport, and documentation ownership remain
-explicitly tracked in `Roadmap_Blocked.md`.
+- Whether `beta.pithus.org` is permanently dead or migrated (affects removal vs re-point;
+  upstream chose removal — default to removal, record the probe result in the commit).
+- Maintainer decision, needed before the 2027 global Developer Verification rollout: register
+  in the Android Developer Console ($25, government ID) vs remain unverified (advanced-flow/
+  ADB-only installs on certified devices). Not answerable by research; no 2026 deadline.
+- Whether LSPosed HiddenApiBypass has published a 6.2+ release lifting the deprecated
+  `addHiddenApiExemptions` path (`AppManager.java:121` pin note) — check during the toolchain
+  pass; not release-gating.
