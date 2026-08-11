@@ -32,6 +32,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   every locale.
 
 ### Fixed
+- The Settings mode-of-operation summary no longer keeps claiming a privilege the app has lost.
+  It was recomputed only when the screen started, so a privileged server that stopped, crashed, or
+  dropped its connection while Settings was open left the summary describing the old state. The
+  working uid is now observable and the summary follows it, without anything polling for changes.
 - Selecting the Finder app-ops filter's "with mode" key no longer throws. The key was declared as
   flag-typed but never supplied the flag list the editor builds its checkboxes from, and the base
   implementation of that call raises rather than returning an empty list — so choosing the option

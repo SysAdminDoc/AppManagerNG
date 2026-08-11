@@ -67,9 +67,10 @@ public class ServerStatusChangeReceiver extends BroadcastReceiver {
         switch (action) {
             case ServerActions.ACTION_SERVER_STARTED:
                 // Server was started for the first time
+                // setWorkingUid publishes to Ops.getWorkingUidLiveData(), which is what a status
+                // surface observes; no separate broadcast is needed for the UI to follow along.
                 Ops.setWorkingUid(uid);
                 startServerIfNotAlready(context);
-                // TODO: 8/4/24 Need to broadcast this message to update UI and/or trigger development
                 break;
             case ServerActions.ACTION_SERVER_STOPPED:
                 // Server was stopped

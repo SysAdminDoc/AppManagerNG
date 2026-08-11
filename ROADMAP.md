@@ -22,13 +22,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Acceptance: App Details shows the update owner when set (API 34+, hidden below); install options expose an off-by-default "claim update ownership" toggle wired to the session param; Robolectric tests cover display and flag plumbing.
   Complexity: M
 
-- [ ] P2 — Propagate privileged-server status changes to the UI
-  Why: ServerStatusChangeReceiver drops status updates (in-code TODO), so the privileged-mode indicator can show a dead server as alive — trust-surface staleness in the mode users depend on before destructive ops.
-  Evidence: servermanager/ServerStatusChangeReceiver.java:72.
-  Touches: servermanager/, the mode/status surface (Ops/Mode Doctor), a LiveData/observable path.
-  Acceptance: a server start/stop/crash updates an observable the status UI consumes; unit test drives the receiver and asserts propagation; no polling added.
-  Complexity: S
-
 - [ ] P2 — Toolchain security pass: Kotlin 2.4.20, dependency-check 13.0.0, AGP 9.3.0
   Why: the Kotlin toolchain sits on a CVE'd line (CVE-2026-53914, build-cache deserialization — build-only today, supply-chain-relevant if a shared cache ever appears); bundling the three bumps pays the dependency-locking/verification churn once, and AGP 9.3's keepRules source sets structurally mitigate the v0.6.12 BC-keeps class of R8 bug.
   Evidence: GHSA-r937-wjx7-w2jp; dependency-check 13.0.0 (2026-08-03) release notes; AGP 9.3.0 release notes; docs/distribution/dependency-verification.md (22-run churn cost precedent).
