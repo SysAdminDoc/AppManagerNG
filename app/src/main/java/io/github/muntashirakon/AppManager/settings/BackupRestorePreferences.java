@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.settings;
 import static io.github.muntashirakon.AppManager.utils.UIUtils.getSecondaryText;
 import static io.github.muntashirakon.AppManager.utils.UIUtils.getSmallerText;
 
+import android.os.Build;
 import android.app.Activity;
 import android.app.TimePickerDialog;
 import android.content.ActivityNotFoundException;
@@ -41,6 +42,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.utils.KeyStoreUtils;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
 import io.github.muntashirakon.AppManager.backup.BackupPathExclusionPatterns;
@@ -222,6 +224,14 @@ public class BackupRestorePreferences extends PreferenceFragment {
         // Keystore toggle
         SwitchPreferenceCompat backupKeyStore = Objects.requireNonNull(findPreference("backup_android_keystore"));
         backupKeyStore.setChecked(Prefs.BackupRestore.backupAppsWithKeyStore());
+        if (!KeyStoreUtils.isKeyStoreBackupSupported()) {
+            // The switch still governs whether apps holding KeyStore entries may be backed up at
+            // all, so it stays usable — but on these releases the entries themselves are never in
+            // the archive, and the summary has to say so where the expectation is formed.
+            backupKeyStore.setSummary(getString(R.string.pref_backup_android_keystore_msg)
+                    + "\n\n"
+                    + getString(R.string.backup_keystore_unsupported_warning, Build.VERSION.RELEASE));
+        }
         // Encryption
         ((Preference) Objects.requireNonNull(findPreference("encryption"))).setOnPreferenceClickListener(preference -> {
             CharSequence[] encryptionNamesText = new CharSequence[ENCRYPTION_NAMES.length];
