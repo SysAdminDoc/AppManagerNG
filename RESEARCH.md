@@ -38,8 +38,10 @@ Top opportunities, in priority order:
    wrong symbol. Only the read side was missing, and App Details now shows the update owner.
 7. [P2, Verified] Finder's AppOps predicate ships without mode filtering although the data
    layer exposes modes and the option class declares the constants (`AppOpsOption.java:26-29`).
-8. [P2, Likely] Privileged batch operations trust `pm`/`appops` exit codes; Thor's 2026 arc
-   (readback verification) shows silent no-ops are the field's live failure mode.
+8. ~~Privileged batch operations trust `pm`/`appops` exit codes~~ → corrected 2026-08-11:
+   readback already existed for eight operations via `PackageStateVerifier`. The real defect was
+   the opposite of the one described — a state that could not be *read* was counted as a failed
+   operation, so working operations were reported as broken. Now a three-way outcome.
 9. [P2, Verified] Kotlin toolchain sits on a CVE'd line (CVE-2026-53914, build-only today);
    one deliberate toolchain pass (Kotlin 2.4.20 + dependency-check 13.0.0 + AGP 9.3.0)
    shares the dependency-locking churn cost.

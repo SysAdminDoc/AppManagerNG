@@ -16,11 +16,31 @@ import io.github.muntashirakon.AppManager.apk.installer.AppArchiveManager;
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.ApplicationInfoCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.utils.FreezeUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
 
 public final class PackageStateVerifier {
+    /**
+     * What re-reading the system state after an operation established.
+     *
+     * <p>The distinction between {@link #UNVERIFIED} and {@link #CONTRADICTED} matters: a state we
+     * could not read is not evidence the operation failed. Treating it as failure would report
+     * working operations as broken, which is the mirror image of the silent no-op this check
+     * exists to catch.
+     */
+    public enum Outcome {
+        /** The system reports the state the operation was supposed to produce. */
+        VERIFIED,
+        /** The state could not be read, so the operation is neither confirmed nor contradicted. */
+        UNVERIFIED,
+        /** The system reports a state incompatible with the operation having taken effect. */
+        CONTRADICTED,
+    }
+
+    private static final String TAG = PackageStateVerifier.class.getSimpleName();
+
     private static final int QUERY_FLAGS = PackageManagerCompat.MATCH_UNINSTALLED_PACKAGES
             | PackageManagerCompat.MATCH_DISABLED_COMPONENTS
             | PackageManagerCompat.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES;
@@ -54,15 +74,33 @@ public final class PackageStateVerifier {
         }
     }
 
-    public static boolean matchesExpectedAndroidState(@BatchOpsManager.OpType int op,
-                                                      @NonNull UserPackagePair pair) {
-        return matchesExpectedState(op, pair, AndroidStateReader.INSTANCE);
+    @NonNull
+    public static Outcome verifyAgainstAndroidState(@BatchOpsManager.OpType int op,
+                                                    @NonNull UserPackagePair pair) {
+        return verifyAgainstState(op, pair, AndroidStateReader.INSTANCE);
+    }
+
+    @NonNull
+    static Outcome verifyAgainstState(@BatchOpsManager.OpType int op,
+                                      @NonNull UserPackagePair pair,
+                                      @NonNull StateReader reader) {
+        if (!shouldVerify(op)) {
+            return Outcome.UNVERIFIED;
+        }
+        try {
+            return matchesExpectedState(op, pair, reader) ? Outcome.VERIFIED : Outcome.CONTRADICTED;
+        } catch (Throwable th) {
+            // Reading the state can fail for reasons that say nothing about the operation — the
+            // privileged channel dropping, or the package being queried by a user we cannot see.
+            Log.w(TAG, "Could not read back state for %s after op %d.", th, pair, op);
+            return Outcome.UNVERIFIED;
+        }
     }
 
     static boolean matchesExpectedState(@BatchOpsManager.OpType int op,
                                         @NonNull UserPackagePair pair,
-                                        @NonNull StateReader reader) {
-        try {
+                                        @NonNull StateReader reader) throws Throwable {
+        {
             switch (op) {
                 case BatchOpsManager.OP_ADVANCED_FREEZE:
                 case BatchOpsManager.OP_FREEZE:
@@ -82,8 +120,6 @@ public final class PackageStateVerifier {
                 default:
                     return true;
             }
-        } catch (Throwable ignored) { // StateReader methods declare throws Throwable
-            return false;
         }
     }
 
