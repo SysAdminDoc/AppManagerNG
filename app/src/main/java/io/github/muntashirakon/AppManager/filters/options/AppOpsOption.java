@@ -7,7 +7,9 @@ import android.content.Context;
 import android.text.SpannableStringBuilder;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,10 +25,8 @@ import io.github.muntashirakon.AppManager.utils.LangUtils;
  * shape, applied to the {@code getName()} of each {@link AppOpsManagerCompat.OpEntry} the app
  * reports.
  *
- * <p>Mode-based filtering (only-allowed / only-ignored / only-foreground) is tracked as a
- * follow-up TODO so v1 can ship as a small, self-contained extension; the
- * {@link IFilterableAppInfo#getAppOps()} surface already exposes {@code getMode()} for the next
- * iteration.
+ * <p>The {@code with_mode} key additionally matches on the mode each op is in (allowed, ignored,
+ * errored, default, foreground), read from {@link AppOpsManagerCompat.OpEntry#getMode()}.
  *
  * <p>Shipped under the v0.x roadmap row "Finder: AppOps".
  */
@@ -38,6 +38,16 @@ public class AppOpsOption extends FilterOption {
     public static final int MODE_FLAG_ERRORED = 1 << AppOpsManager.MODE_ERRORED;
     public static final int MODE_FLAG_DEFAULT = 1 << AppOpsManager.MODE_DEFAULT;
     public static final int MODE_FLAG_FOREGROUND = 1 << AppOpsManager.MODE_FOREGROUND;
+
+    /** Selectable modes, in the order the editor shows them. */
+    private static final Map<Integer, CharSequence> MODE_FLAG_LABELS =
+            Collections.unmodifiableMap(new LinkedHashMap<Integer, CharSequence>() {{
+                put(MODE_FLAG_ALLOWED, "Allowed");
+                put(MODE_FLAG_IGNORED, "Ignored");
+                put(MODE_FLAG_ERRORED, "Errored");
+                put(MODE_FLAG_DEFAULT, "Default");
+                put(MODE_FLAG_FOREGROUND, "Foreground");
+            }});
 
     private final Map<String, Integer> mKeysWithType = new LinkedHashMap<String, Integer>() {{
         put(KEY_ALL, TYPE_NONE);
@@ -59,6 +69,21 @@ public class AppOpsOption extends FilterOption {
     @Override
     public Map<String, Integer> getKeysWithType() {
         return mKeysWithType;
+    }
+
+    /**
+     * The editor renders a checkbox per flag from this map. Returning nothing here is not a
+     * cosmetic omission: {@link FilterOption#getFlags(String)} throws by default, so a key
+     * declared as {@code TYPE_INT_FLAGS} without an entry here fails the moment the user selects
+     * it.
+     */
+    @NonNull
+    @Override
+    public Map<Integer, CharSequence> getFlags(@NonNull String key) {
+        if ("with_mode".equals(key)) {
+            return MODE_FLAG_LABELS;
+        }
+        return super.getFlags(key);
     }
 
     @NonNull
@@ -90,9 +115,7 @@ public class AppOpsOption extends FilterOption {
             }
             case "with_mode": {
                 for (AppOpsManagerCompat.OpEntry op : ops) {
-                    int mode = op.getMode();
-                    if (mode < 0) continue;
-                    if ((intValue & (1 << mode)) != 0) {
+                    if (matchesMode(op.getMode(), intValue)) {
                         return result.setMatched(true);
                     }
                 }
@@ -101,6 +124,21 @@ public class AppOpsOption extends FilterOption {
             default:
                 throw new UnsupportedOperationException("Invalid key " + key);
         }
+    }
+
+    /**
+     * Whether a single op's mode falls in the selected set.
+     *
+     * <p>A negative mode means the platform did not report one. That is not the same as any
+     * particular mode, so it never matches — otherwise the filter would assert something about
+     * an op it knows nothing about.
+     */
+    @VisibleForTesting
+    static boolean matchesMode(int mode, int selectedModeFlags) {
+        if (mode < 0) {
+            return false;
+        }
+        return (selectedModeFlags & (1 << mode)) != 0;
     }
 
     private static boolean matchesAny(@NonNull List<AppOpsManagerCompat.OpEntry> ops,
@@ -139,22 +177,16 @@ public class AppOpsOption extends FilterOption {
         }
     }
 
-    /** Build a comma-separated label for the selected mode flags, e.g. "allowed, foreground". */
+    /** Build a comma-separated label for the selected mode flags, e.g. "Allowed, Foreground". */
     @NonNull
     private static String describeModeFlags(int intValue) {
         StringBuilder sb = new StringBuilder();
-        appendIfSet(sb, intValue, MODE_FLAG_ALLOWED, "allowed");
-        appendIfSet(sb, intValue, MODE_FLAG_IGNORED, "ignored");
-        appendIfSet(sb, intValue, MODE_FLAG_ERRORED, "errored");
-        appendIfSet(sb, intValue, MODE_FLAG_DEFAULT, "default");
-        appendIfSet(sb, intValue, MODE_FLAG_FOREGROUND, "foreground");
+        for (Map.Entry<Integer, CharSequence> entry : MODE_FLAG_LABELS.entrySet()) {
+            if ((intValue & entry.getKey()) == 0) continue;
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(entry.getValue());
+        }
         return sb.length() == 0 ? "(none)" : sb.toString();
-    }
-
-    private static void appendIfSet(@NonNull StringBuilder sb, int value, int flag, @NonNull String label) {
-        if ((value & flag) == 0) return;
-        if (sb.length() > 0) sb.append(", ");
-        sb.append(label);
     }
 
     private interface NamePredicate {
