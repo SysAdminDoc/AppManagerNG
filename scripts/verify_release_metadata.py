@@ -24,6 +24,8 @@ PACKETS = {
     ),
 }
 
+VERSION_PATTERN = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
+
 
 def _identity(value: str) -> str:
     return value
@@ -104,6 +106,13 @@ class ReceiptError(ValueError):
     pass
 
 
+def _version_tuple(value: str, label: str) -> tuple[int, int, int]:
+    match = VERSION_PATTERN.fullmatch(value)
+    if match is None:
+        raise ReceiptError(f"{label} must be a semantic version like 1.2.3")
+    return tuple(int(part) for part in match.groups())
+
+
 def _require(data: dict[str, Any], key: str, expected_type: type) -> Any:
     value = data.get(key)
     if expected_type is int and isinstance(value, bool):
@@ -126,6 +135,7 @@ def load_receipt(path: Path) -> dict[str, Any]:
         raise ReceiptError("schemaVersion must be 1")
 
     version_name = _require(data, "versionName", str)
+    _version_tuple(version_name, "versionName")
     tag = _require(data, "tag", str)
     if tag != f"v{version_name}":
         raise ReceiptError(f"tag {tag!r} does not match versionName {version_name!r}")
@@ -201,7 +211,29 @@ def verify_packet(path: Path, fields: dict[str, str], extra_fields: tuple[str, .
     return errors
 
 
-def verify_build_gradle(path: Path, receipt: dict[str, Any]) -> list[str]:
+def _exact_release_tags(repo_root: Path | None) -> tuple[str, ...]:
+    if repo_root is None:
+        return ()
+    result = subprocess.run(
+        ["git", "-C", str(repo_root), "tag", "--points-at", "HEAD"],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return ()
+    return tuple(
+        sorted(
+            tag
+            for tag in result.stdout.splitlines()
+            if re.fullmatch(r"v\d+\.\d+\.\d+", tag)
+        )
+    )
+
+
+def verify_build_gradle(
+    path: Path, receipt: dict[str, Any], repo_root: Path | None = None
+) -> list[str]:
     try:
         text = path.read_text(encoding="utf-8")
     except OSError as exc:
@@ -210,12 +242,47 @@ def verify_build_gradle(path: Path, receipt: dict[str, Any]) -> list[str]:
     name_match = re.search(r'versionName\s*=\s*"([^"]+)"', text)
     code_match = re.search(r"versionCode\s*=\s*(\d+)", text)
     package_match = re.search(r"applicationId\s*=\s*['\"]([^'\"]+)['\"]", text)
-    if not name_match or name_match.group(1) != receipt["versionName"]:
-        actual = name_match.group(1) if name_match else "missing"
-        errors.append(f"{path}: versionName {actual} != receipt {receipt['versionName']}")
-    if not code_match or int(code_match.group(1)) != receipt["versionCode"]:
-        actual = code_match.group(1) if code_match else "missing"
-        errors.append(f"{path}: versionCode {actual} != receipt {receipt['versionCode']}")
+    tree_version_name = name_match.group(1) if name_match else None
+    tree_version = None
+    if tree_version_name is not None:
+        try:
+            tree_version = _version_tuple(tree_version_name, f"{path} versionName")
+        except ReceiptError as exc:
+            errors.append(str(exc))
+    receipt_version = _version_tuple(receipt["versionName"], "receipt versionName")
+    exact_tags = _exact_release_tags(repo_root)
+    if tree_version_name is None:
+        errors.append(f"{path}: versionName missing")
+    elif exact_tags:
+        expected_tag = f"v{tree_version_name}"
+        mismatched_tags = [tag for tag in exact_tags if tag != expected_tag]
+        if mismatched_tags:
+            errors.append(
+                f"{path}: exact Git tag(s) {', '.join(mismatched_tags)} "
+                f"do not match versionName {tree_version_name}"
+            )
+        elif tree_version_name != receipt["versionName"]:
+            errors.append(
+                f"{path}: tagged versionName {tree_version_name} != "
+                f"published receipt {receipt['versionName']}"
+            )
+    elif tree_version is not None and tree_version < receipt_version:
+        errors.append(
+            f"{path}: untagged versionName {tree_version_name} is behind "
+            f"published receipt {receipt['versionName']}"
+        )
+    if not code_match:
+        errors.append(f"{path}: versionCode missing")
+    elif exact_tags and int(code_match.group(1)) != receipt["versionCode"]:
+        errors.append(
+            f"{path}: tagged versionCode {code_match.group(1)} != "
+            f"published receipt {receipt['versionCode']}"
+        )
+    elif not exact_tags and int(code_match.group(1)) < receipt["versionCode"]:
+        errors.append(
+            f"{path}: untagged versionCode {code_match.group(1)} is behind "
+            f"published receipt {receipt['versionCode']}"
+        )
     if not package_match or package_match.group(1) != receipt["packageName"]:
         actual = package_match.group(1) if package_match else "missing"
         errors.append(f"{path}: applicationId {actual} != receipt {receipt['packageName']}")
@@ -279,7 +346,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     fields = expected_fields(receipt)
-    errors = verify_build_gradle(args.build_gradle, receipt)
+    errors = verify_build_gradle(args.build_gradle, receipt, args.repo_root)
     errors.extend(verify_versions_gradle(args.versions_gradle, receipt))
     if not args.skip_git:
         errors.extend(verify_git_tag(args.repo_root, receipt))
