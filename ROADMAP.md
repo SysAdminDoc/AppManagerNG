@@ -15,6 +15,7 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Touches: versions.gradle, buildscript-gradle.lockfile and module lockfiles, gradle/verification-metadata.xml, config/owasp-suppressions.xml (drop the CVE-2026-53914 rule after the upgrade — the gate fails on unused rules), optionally move the BouncyCastle keeps into src/*/keepRules/; check for LSPosed HiddenApiBypass 6.2+ while touching pins (AppManager.java:121).
   Acceptance: build and full host suite green; locking and verification refreshed per the documented procedure using publisher-published checksums, never --write-verification-metadata; release gate including the CVE stage passes; the Kotlin suppression is removed and the gate stays green.
   Complexity: M
+  Corrections, 2026-08-11 research pass: "Kotlin 2.4.20" is a **Beta** (`2.4.20-Beta2`); the latest stable is **2.4.10** (2026-07-14). Kotlin is not a declared dependency — it reaches the build only on the buildscript classpath via AGP (`buildscript-gradle.lockfile:127-132`, all `2.2.10`), so AGP is the lever and there is no Kotlin pin to bump. Current stable floors are **AGP 9.3.1** (2026-07-23) and **Gradle 9.7.0** (2026-08-06), not 9.3.0/9.6.1. Sequence this **after** the BouncyCastle 1.85.2 row below, which pays the same locking/verification churn on a higher-severity finding.
 
 ### P3
 
@@ -87,3 +88,125 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Touches: editor/, packaged assets, build script step.
   Acceptance: language defs load from packaged assets; the stale serializer path is gone; highlighting output unchanged against a fixture file.
   Complexity: M
+
+## Research-Driven Additions (2026-08-11)
+
+### P0
+
+- [ ] P0 — Break the release gate's circular dependency on the published-release receipt
+  Why: the consistency stage asserts that `docs/distribution/release-receipt.json` — a record of the *last published* release, carrying the published artifact's size, sha256 and download URL — equals the working tree's versionName/versionCode, which cannot be true until after that artifact exists. So the gate fails closed for every new version and blocks its own release. `consistency` is stage 2 of 8, so nothing downstream runs either: tests, lint, the two-build reproducibility check, and the dependency CVE scan (which lives inside `verify_reproducible_release`, stage 7) are all unreachable on the gate path while it fails. v0.6.8, v0.6.9, v0.6.10, v0.6.11 and v0.6.13 have CHANGELOG entries with dates but no git tag and no GitHub release; only v0.6.12 was ever published. If the intended workflow really is publish-then-sync-the-receipt, the gate must say so rather than failing on the ordinary path.
+  Evidence: live run of `scripts/verify-release-consistency.sh` at HEAD emits `versionName 0.6.13 != receipt 0.6.12`, `versionCode 21 != receipt 20`, `FAILED`; scripts/verify-release-consistency.sh:146-165; scripts/verify_release_metadata.py; scripts/release_gate.py:685 (`ALL_STAGES`); scripts/verify_reproducible_release.sh:117 (CVE gate invocation); `git tag` (v0.6.12, v0.6.7, v0.6.5, v0.6.1, v0.5.0, v0.4.2); `gh release list` (latest = v0.6.12); receipt git history (synced only on publish days 2026-07-29 and 2026-08-08).
+  Touches: scripts/verify_release_metadata.py (separate "the receipt describes a published release" from "the tree is ready to release" — assert the receipt is internally consistent and that the tree version is >= the receipt version, and require equality only when HEAD carries a matching tag), scripts/verify-release-consistency.sh, scripts/release_gate.py (consistency stage), docs/distribution/reproducible-builds.md and the three listing packets that describe the receipt contract.
+  Acceptance: the consistency script passes on an untagged working tree whose version is ahead of the receipt, and still fails when the tree version is behind the receipt, when a tag disagrees with versionName, or when a listing packet disagrees with the receipt; the release gate runs end to end on a version that has not yet been published; a regression test covers the ahead / equal / behind / tagged cases. Publishing the outstanding versions is a separate maintainer action, not part of this row.
+  Complexity: M
+
+### P1
+
+- [ ] P1 — BouncyCastle 1.84 to 1.85.2
+  Why: roughly thirty "Bouncy Castle for Java before 1.85" CVEs were published 2026-08-03, several on paths this app reaches — BKS/UBER keystore allocation from untrusted lengths (CVE-2026-12185), legacy BKS 16-bit integrity MAC key (CVE-2026-59651), PKCS#12 and PBES2 unbounded KDF cost (CVE-2026-13586, CVE-2026-15055), RSA PKCS#1 verification skipping the last two hash bytes (CVE-2026-12860), unbounded ASN.1 allocation and a reset nesting-depth guard (CVE-2026-14682, CVE-2026-13506), quadratic X.500 name stringification (CVE-2026-58059). The keystore ones land on the app's own BKS store and on user-supplied keystore import; the ASN.1/X.500 ones land on parsing signer certificates from arbitrary APKs. The prior research pass recorded 1.84 as the security ceiling; 1.85 shipped 2026-07-12 and 1.85.2 on 2026-08-07.
+  Evidence: NVD keywordSearch=bouncy+castle, 2026-08-03 batch; Maven Central directory timestamps for org/bouncycastle/bcprov-jdk18on/ (1.84 2026-04-14, 1.85 2026-07-12, 1.85.2 2026-08-07); reachable call sites crypto/ks/KeyStoreUtils.java, settings/crypto/ImportExportKeyStoreDialogFragment.java, settings/crypto/KeyPairImporterDialogFragment.java, snapshot/SnapshotCrypto.java, crypto/AESCrypto.java; app/build.gradle:210-211.
+  Touches: versions.gradle (`bouncycastle_version`, and correct its stale comment — GHSA records CVE-2026-5588 and CVE-2026-5598 as fixed *in* 1.84, and CVE-2026-3505 could not be confirmed at all), app/gradle.lockfile, gradle/verification-metadata.xml, app/proguard-rules.pro (re-verify the BouncyCastle keeps still cover the 1.85 provider SPI package layout — this is the v0.6.12 defect class).
+  Acceptance: full host suite green; a metadata-v5 and a metadata-v6 encrypted backup written before the bump still restore after it; a minified release build launches, generates and re-reads the app keystore across a relaunch on an emulator (the v0.6.12 rule); locking and verification refreshed per docs/distribution/dependency-verification.md using publisher-published checksums; CVE gate green.
+  Complexity: M
+
+- [ ] P1 — Sanity floor on package enumeration: refuse to present an implausibly short list as truth
+  Why: `getInstalledPackages` cross-checks two *privileged* enumeration calls against each other, so when the privileged path itself short-returns both agree and the method returns "everything's loaded correctly". That is the field's most-reported 2026 failure — upstream #1948/#2002/#2019 show one-app and empty lists on Pixel 7 Pro, Pixel 9a and OneUI 8.5, with users downgrading to escape it. NG already surfaces enumeration *failures* through MainViewModel.AppListLoadStatus; the gap is the success that is wrong.
+  Evidence: compat/PackageManagerCompat.java:132-172 (both reference and full lists come from IPackageManager); main/MainActivity.java:1268 showApplicationListLoadFailure; upstream MuntashirAkon/AppManager#2019 (2026-08-02, still open on v4.1.0).
+  Touches: compat/PackageManagerCompat.java (add an unprivileged `context.getPackageManager().getInstalledPackages()` reference count — NG holds QUERY_ALL_PACKAGES, so it is a reliable floor), main/MainViewModel.java (carry the discrepancy in the load status), main/MainActivity.java (list-status line naming the shortfall and offering the unprivileged view), strings.
+  Acceptance: with a fake IPackageManager returning materially fewer packages than the unprivileged PackageManager, the list renders with a visible warning naming the privileged mode and the counts rather than silently showing the short list; when the counts agree, nothing changes and no extra enumeration cost is paid on the common path; unit-tested at the compat seam for the agree / privileged-short / unprivileged-unavailable cases.
+  Complexity: M
+
+- [ ] P1 — Sanitise default export filenames (they currently contain `/` and `:`)
+  Why: default filenames are built from DateUtils.formatDateTime, which is android.text.format.DateFormat.getDateFormat(context) plus getTimeFormat(context) — the user's short date and time patterns, so an en-US device produces `8/11/26 3:04 PM`. Those go straight into ACTION_CREATE_DOCUMENT's EXTRA_TITLE; SAF providers reject or mangle them. Upstream hit exactly this (#1995, in its v4.1.1 milestone). The repo already has the correct sanitiser and a test for it, wired to one caller only.
+  Evidence: utils/DateUtils.java:22-27,190-204; unsanitised sites details/info/AppInfoFragment.java:547 and :666, main/MainActivity.java:627, settings/ImportExportRulesPreferences.java:127, apk/ApkUtils.java:141, usage/AppUsageViewModel.java:379; correct pattern at profiles/ProfilesActivity.java:346 with app/src/test/java/io/github/muntashirakon/AppManager/profiles/ProfilesActivityTest.java:26; upstream MuntashirAkon/AppManager#1995.
+  Touches: a shared filename helper (promote the ProfilesActivity logic), the six call sites above, existing profile test extended to the shared helper.
+  Acceptance: every generated default filename is free of `/ \ : * ? " < > |` and control characters, is non-empty after sanitisation, keeps its intended extension, and stays stable for a fixed timestamp; unit tests cover a locale whose date pattern uses `/`, one that uses `.`, a 24-hour time format, and an app label containing separators.
+  Complexity: S
+
+### P2
+
+- [ ] P2 — Stop the version-string parser from crashing the app at launch
+  Why: `getBuildType()` throws IllegalStateException("Invalid App Manager version") for any versionName suffix that is not alphaNN/betaNN/rcNN, and `lastPart.substring(0, lastPart.length() - 2)` throws StringIndexOutOfBoundsException first on a one-character suffix. `buildExpired()` is called unguarded from three entry points including SplashActivity.onCreate, so shipping a `-rc1` or `-pre` build bricks the app at launch. Nothing tests the parser and the release-consistency gate does not validate the versionName grammar.
+  Evidence: self/life/BuildExpiryChecker.java:113-133; callers main/SplashActivity.java:117, BaseActivity.java:86, crypto/ks/KeyStoreActivity.java:33, settings/MainPreferences.java:56; app/build.gradle:78 already sets a `-DEBUG` suffix for debug builds.
+  Touches: self/life/BuildExpiryChecker.java (fall back to the stable build type instead of throwing; parse the numeric tail defensively), scripts/verify-release-consistency.sh (assert versionName matches the accepted grammar), a new parser unit test in app/src/test.
+  Acceptance: every suffix form — none, -alpha01, -beta1, -rc1, -DEBUG, -pre, bare `-` — yields a build type without throwing; expiry behaviour for the existing recognised forms is unchanged; the consistency gate fails on a versionName the parser cannot classify.
+  Complexity: S
+
+- [ ] P2 — Give the eleven region-only languages a base-language strings.xml
+  Why: eleven languages have no base-language string resources — bn, in, it, nb, ru, tr and zh have no values-<lang> directory at all, and cs, es and uk have one containing only disclaimer.xml. Resource resolution before API 24 has no same-language/other-region fallback, so an API 21-23 device set to ru-UA, es-MX, cs-SK, it-CH or zh-HK falls back to English even though a complete translation ships. That is exactly the population the minSdk-21 policy exists to protect. Only ar and pt are wired correctly today (base translation plus a regional overlay: values-ar 1,277 strings with values-ar-rSA overlaying 42; values-pt 1,245 with values-pt-rBR 1,102).
+  Evidence: for each values-<lang>-r<REGION>, checked whether values-<lang>/strings.xml exists — MISSING for bn, in, it, nb, ru, tr, zh; present-but-no-strings.xml for cs, es, uk; correct for ar, pt. values-ru-rRU 1,245 strings, values-it-rIT 1,246, values-tr-rTR 1,245. docs/policy/minsdk-21-ceiling.md.
+  Touches: app/src/main/res/ — where a language has exactly one region variant (bn, in, it, nb, ru, tr, cs, es, uk), move its strings.xml to the base values-<lang> and drop the now-redundant region folder; where a language has two (zh), make values-zh the Simplified base and keep values-zh-rTW as the Traditional overlay rather than duplicating a second full file. Also scripts/translation_quality.py and scripts/translation-coverage-baseline.json (the locale keys change), and any locale list in the in-app language picker. The BCP-47 `b+` qualifier is not an option — it requires API 24.
+  Acceptance: a host check asserts every values-<lang>-r<REGION> folder is backed by a values-<lang>/strings.xml; no translated string is lost (per-locale string counts before and after are equal or higher); the translation ratchet passes with a regenerated baseline; `:app:lint` reports no new UnusedTranslation/MissingTranslation.
+  Complexity: M
+
+- [ ] P2 — Support the current Neo Backup on-disk format in the importer
+  Why: OABConverter parses `<packageName>.log` as JSON with `lastBackupMillis` — the legacy OAndBackupX layout. Current Neo Backup writes `backup.properties` inside a `YYYY-MM-DD-HH-MM-SS[-mmm]-user_N` directory per backup instance, so present-day Neo Backup archives do not import at all. Neo Backup has been unpushed since 2026-05-03 with 239 open issues and its users are actively looking for an exit.
+  Evidence: backup/convert/OABConverter.java:197-215; Neo-Backup Constants.kt (BACKUP_INSTANCE_PROPERTIES_INDIR = "backup.$PROP_NAME", BACKUP_INSTANCE_REGEX_PATTERN, LOG_INSTANCE = "%s.log.txt"); upstream MuntashirAkon/AppManager#2020 (2026-08-06, "add the option to import backup from Neo Backup").
+  Touches: backup/convert/OABConverter.java (detect and branch on layout rather than replacing the legacy path), backup/convert/ConvertUtils.java, backup/convert/ImportType.java and its strings if the picker should name the format, converter tests with fixtures for both layouts.
+  Acceptance: a fixture directory in each layout imports to the same NG backup metadata; a directory in neither layout is rejected with a message naming what was expected, not a generic failure; legacy imports are byte-for-byte unchanged; parser-level unit tests cover both plus the malformed case.
+  Complexity: M
+
+- [ ] P2 — Get the no-root accessibility path off its own main thread
+  Why: onAccessibilityEvent runs on the service main thread and sleeps in it — one second directly, and up to five seconds through waitUntilEnabled's ten 500 ms iterations. A blocked AccessibilityService stops delivering events and can be dropped by the system, and this is the no-root force-stop / clear-data automation path. Lint cannot see it: ThreadConstraint is suppressed 69 times in app/lint-baseline.xml.
+  Evidence: accessibility/NoRootAccessibilityService.java:36-38 (handler), :73 SystemClock.sleep(1000), :147; accessibility/BaseAccessibilityService.java:73,81,89 and :242-248.
+  Touches: accessibility/NoRootAccessibilityService.java, accessibility/BaseAccessibilityService.java (move the wait/retry sequence onto a background executor and drive the UI actions back through the service; keep a bounded overall timeout), the multiplexer that owns the operation state.
+  Acceptance: no sleep remains on any path reachable from onAccessibilityEvent; the force-stop and clear-data sequences still complete on a device within the same overall timeout budget; a unit test over the extracted sequencing logic covers the enabled-immediately, enabled-late, and never-enabled cases.
+  Complexity: M
+
+- [ ] P2 — Make BUILD_TIME_MILLIS deterministic or fail loudly
+  Why: `buildTime()` shells out to `git show --no-patch --format=%ct000` and, when that yields anything non-numeric, falls back to System.currentTimeMillis() with only a println. A build from a source tarball or a shallow/exported tree therefore bakes wall-clock time into BuildConfig and can never be byte-reproduced, while the two-build gate — which runs twice in the same git tree — sees nothing. Upstream's reproducibility was publicly written off by IzzySoft over a related non-determinism (#1997), so this is an axis NG can win rather than merely match.
+  Evidence: app/build.gradle:336-343; docs/distribution/reproducible-builds.md; upstream MuntashirAkon/AppManager#1997.
+  Touches: app/build.gradle (honour SOURCE_DATE_EPOCH first, then git commit time, and fail the build for release variants when neither is available unless an explicit opt-out property is set), docs/distribution/reproducible-builds.md, scripts/verify_reproducible_release.sh and .ps1.
+  Acceptance: a release build outside a git tree and without SOURCE_DATE_EPOCH fails with a message naming the reason instead of embedding wall-clock time; with either source present the emitted BUILD_TIME_MILLIS is identical across two builds; debug builds are unaffected.
+  Complexity: S
+
+- [ ] P2 — Prove am.jar and main.jar are reproducible across environments, not just across runs
+  Why: the release gate builds twice in the same tree, same paths, same locale and timezone, so it cannot detect the class of non-determinism that actually breaks third-party rebuilds — and that is precisely where upstream failed: its assets/am.jar and assets/main.jar differ in size and hash between maintainer and rebuilder (19730 vs 19114 bytes), unresolved as of 2026-07-02. NG builds the same two jars through its own d8 step, so it carries the same risk without evidence either way.
+  Evidence: upstream MuntashirAkon/AppManager#1997; server/build.gradle d8 invocation with a filename-prefix class split (ServerUtils, RootServiceMain, IRootServiceManager); docs/distribution/reproducible-builds.md.
+  Touches: server/build.gradle (sort d8 inputs deterministically, normalise entry timestamps and ordering in the produced jars), scripts/verify_reproducible_release.sh and .ps1 (second build from a different absolute path with a different TZ, LC_ALL and user, comparing the two jars explicitly and by name in the report).
+  Acceptance: two builds from different absolute paths, timezones and locales produce byte-identical am.jar and main.jar; the verifier reports those two hashes separately so a future drift names the jar; a deliberately reordered input set still produces the same jar.
+  Complexity: M
+
+- [ ] P2 — Developer-verification-aware install diagnostics
+  Why: enforcement begins 2026-09-30 in Brazil, Indonesia, Singapore and Thailand, and the installer-facing APIs already exist at API 36.1 — PackageInstaller.getDeveloperVerificationServiceProvider(), EXTRA_DEVELOPER_VERIFICATION_FAILURE_REASON, EXTRA_DEVELOPER_VERIFICATION_LITE_PERFORMED, DEVELOPER_VERIFICATION_FAILED_REASON_{UNKNOWN,NETWORK_UNAVAILABLE,DEVELOPER_BLOCKED}, SessionParams.setExtensionParams. Without this an install the platform refuses for verification reasons fails the same way as any other failure, and NG's whole installer proposition is disclosure. No competitor has shipped this. Distinct from the existing P3 Advanced Protection row, which covers a different gate.
+  Evidence: developer.android.com PackageInstaller reference (36.1 additions); Android 16 QPR2 release notes; developer.android.com/developer-verification/guides (2026-09-30 enforcement, ADB installs exempt); the shipped restricted-settings detector as precedent.
+  Touches: apk/installer/ preflight and status handling, a compat seam for the 36.1 extras, details/info/ sideload diagnostics, strings.
+  Acceptance: a session failure carrying a developer-verification reason renders that reason and what the user can do about it, distinct from a generic install failure; below API 36.1 behaviour is unchanged; each failure-reason constant is covered by a unit test through the compat seam. Whether to raise targetSdk past 36 is explicitly not part of this row.
+  Complexity: M
+
+### P3
+
+- [ ] P3 — Give SimpleArrayMapDiffCallback a real content comparison
+  Why: areContentsTheSame returns false unconditionally, so every DiffUtil pass reports every surviving row as changed and dispatches a payload rebind for the entire visible set. 82 call sites go through AdapterUtils. Related to but distinct from the blocked INIT-D1 main-list ListAdapter migration, which covers the main list only and is device-gated; this is the shared utility and is host-testable.
+  Evidence: libcore/ui/src/main/java/io/github/muntashirakon/util/AdapterUtils.java:107-116.
+  Touches: libcore/ui/.../util/AdapterUtils.java (compare values via Objects.equals, keeping the payload path for callers that rely on partial rebind), the :app callers that assume every notify is a change. :libcore:ui has no test source set and adding one breaks dependency locking — cover it from app/src/test.
+  Acceptance: a diff between two identical maps dispatches no updates; a diff with one changed value dispatches exactly one change; existing list screens still repaint correctly after a refresh with no visible regression.
+  Complexity: M
+
+- [ ] P3 — Make backup-scoped Finder predicates answer from backup metadata instead of hard-coded false
+  Why: BackupFilterableAppInfo returns false from isInstalled(), isFrozen() and backupAllowed(), 0 from getFreezeFlags(), and null from fetchSignerInfo(), so any Finder query run over backups that touches those axes silently matches nothing — indistinguishable from a genuinely empty result.
+  Evidence: filters/BackupFilterableAppInfo.java:78-126; constructed at filters/FilteringUtils.java:145.
+  Touches: filters/BackupFilterableAppInfo.java (answer isInstalled/isFrozen from the current package state for the backup's package where that is knowable, and derive the rest from Backup metadata), filters/FilteringUtils.java, or — where an axis genuinely cannot be answered for a backup — exclude that predicate from the backup filter surface so it cannot be selected.
+  Acceptance: every predicate offered in the backup filter context is either answered from real data or not offered; a fixture backup whose package is installed matches an "installed" query; unit tests cover each of the five predicates.
+  Complexity: M
+
+- [ ] P3 — Surface the static binary signals LibChecker reports and NG does not
+  Why: LibChecker 2.5.4 reports the exact ZIP alignment value for libraries that are 16 KB page-aligned but not 16 KB ZIP-aligned, and detects a stripped symbol table. Both are computable from the APK with the ELF and ZIP parsing NG already has, and both are exactly the "state what this is evidence of" signal the fork's scanner philosophy asks for. Distinct from the blocked LibChecker-parity row, which covers Modern Xposed API, live-update capability and themed-icon/alias.
+  Evidence: LibChecker 2.5.4 release notes; scanner/NativeLibraries.java (PT_LOAD.p_align parsing already present); scripts/verify-native-page-alignment.py (local-file-header offset check already present).
+  Touches: scanner/NativeLibraries.java, App Details libraries tab, strings; optionally extend scripts/verify-native-page-alignment.py to assert GNU_RELRO is present, which the official 16 KB requirement lists and the script does not currently check.
+  Acceptance: each .so row shows its ZIP alignment when it differs from the page alignment, and whether its symbol table is stripped; both are computed without extracting the APK to disk; unit tests use fixture ELF headers for stripped, unstripped, aligned and misaligned cases.
+  Complexity: M
+
+- [ ] P3 — Replace the swallowed failures on destructive and trust paths
+  Why: 179 empty catch blocks remain in main sources and the ones that matter sit where a silent failure is indistinguishable from success. self/SelfPermissions.java:52,61 is the worst shape — a swallowed exception there makes every permission self-check answer "no", which reads as a capability the app does not have. The 2026-06 catch(Throwable) narrowing pass did not reach these.
+  Evidence: apk/installer/PackageInstallerCompat.java:1516; batchops/BatchOpsService.java:240,250; backup/RestoreOp.java:176,422; backup/BackupOp.java:621; crypto/ks/KeyStoreManager.java:280; rules/compontents/ComponentsBlocker.java:613; settings/Ops.java:790,1057; self/SelfPermissions.java:52,61.
+  Touches: the ten sites above only — this is a scoped pass, not a repo-wide sweep. Each becomes either a logged failure carrying the operation identity, or a documented deliberate ignore with the reason in a comment (the pattern logs/FLog.java:226 and NetworkRequestLedger.java:53 already use correctly).
+  Acceptance: none of the ten sites discards a throwable without either logging it with enough context to identify the operation, or carrying a comment stating why discarding is correct; no behaviour change on the success paths; the destructive paths surface the failure through the mechanism their caller already has.
+  Complexity: M
+
+- [ ] P3 — Move the remaining hardcoded English UI strings into resources
+  Why: thirteen user-visible English strings are built in Java, so they never translate — seven "Error: " toasts plus two permission messages in App Details, and two file-manager default names. That is small enough to close completely, and the translation ratchet cannot see strings that never reach strings.xml.
+  Evidence: details/info/AppInfoFragment.java:536,610,658,1048,1215,2870,2939,3111,3363; fm/dialogs/NewFolderDialogFragment.java:51; fm/dialogs/NewSymbolicLinkDialogFragment.java:83.
+  Touches: those three files, app/src/main/res/values/strings.xml. The two format-only strings in intercept/ActivityInterceptor.java:331,1119 are punctuation templates and should stay.
+  Acceptance: no user-visible literal string is passed to a toast, dialog or setText in those three files; the new resources appear in the translation baseline; `:app:lint` reports no new HardcodedText.
+  Complexity: S
