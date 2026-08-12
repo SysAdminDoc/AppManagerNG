@@ -80,6 +80,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   an expired suppression makes itself visible, instead of describing a state that ended three
   releases ago.
 
+### Fixed
+- The release consistency gate no longer compares an unpublished candidate tree with the
+  last-published release receipt as if they were the same artifact. An untagged tree may advance
+  beyond the receipt; a checked-out release tag must match it exactly, while packet, tag, and
+  artifact checks remain fail-closed.
+
 ## v0.6.12 — 2026-08-08
 
 ### Fixed

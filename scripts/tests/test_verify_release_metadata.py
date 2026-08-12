@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import json
+import importlib.util
 import subprocess
 import sys
 import tempfile
@@ -9,6 +10,10 @@ from pathlib import Path
 
 
 VERIFIER = Path(__file__).resolve().parents[1] / "verify_release_metadata.py"
+SPEC = importlib.util.spec_from_file_location("verify_release_metadata", VERIFIER)
+assert SPEC is not None and SPEC.loader is not None
+metadata = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(metadata)
 
 
 class VerifyReleaseMetadataTest(unittest.TestCase):
@@ -92,6 +97,20 @@ CurrentVersionCode: 13
             encoding="utf-8",
         )
 
+    def _set_tree_version(self, version_name: str, version_code: int) -> None:
+        text = self.build_gradle.read_text(encoding="utf-8")
+        text = text.replace('versionName = "0.6.5"', f'versionName = "{version_name}"')
+        text = text.replace("versionCode = 13", f"versionCode = {version_code}")
+        self.build_gradle.write_text(text, encoding="utf-8")
+
+    def _tag_head(self, tag: str) -> None:
+        subprocess.run(["git", "init", "-q"], cwd=self.root, check=True)
+        subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=self.root, check=True)
+        subprocess.run(["git", "config", "user.name", "Test"], cwd=self.root, check=True)
+        subprocess.run(["git", "add", "-A"], cwd=self.root, check=True)
+        subprocess.run(["git", "commit", "-qm", "fixture"], cwd=self.root, check=True)
+        subprocess.run(["git", "tag", tag], cwd=self.root, check=True)
+
     def _run(self) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
             [
@@ -139,6 +158,36 @@ CurrentVersionCode: 13
         result = self._run()
         self.assertNotEqual(0, result.returncode)
         self.assertIn("stale artifact sha256", result.stderr)
+
+    def test_untagged_tree_one_release_ahead_passes(self) -> None:
+        self._set_tree_version("0.6.6", 14)
+        result = self._run()
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_untagged_tree_behind_receipt_fails(self) -> None:
+        self._set_tree_version("0.6.4", 12)
+        result = self._run()
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("behind published receipt", result.stderr)
+
+    def test_matching_version_on_exact_release_tag_passes(self) -> None:
+        self._tag_head("v0.6.5")
+        self.assertEqual(
+            [],
+            metadata.verify_build_gradle(self.build_gradle, self.receipt, self.root),
+        )
+
+    def test_exact_tag_must_match_tree_version(self) -> None:
+        self._tag_head("v0.6.6")
+        errors = metadata.verify_build_gradle(self.build_gradle, self.receipt, self.root)
+        self.assertTrue(any("do not match versionName" in error for error in errors))
+
+    def test_tagged_candidate_must_match_published_receipt(self) -> None:
+        self._set_tree_version("0.6.6", 14)
+        self._tag_head("v0.6.6")
+        errors = metadata.verify_build_gradle(self.build_gradle, self.receipt, self.root)
+        self.assertTrue(any("tagged versionName" in error for error in errors))
+        self.assertTrue(any("tagged versionCode" in error for error in errors))
 
 
 if __name__ == "__main__":
