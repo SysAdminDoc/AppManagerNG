@@ -98,7 +98,7 @@
                     android:id="@+id/metadata"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/premium_space_4"
+                    android:layout_marginTop="2dp"
                     android:ellipsize="end"
                     android:maxLines="1"
                     android:textAppearance="@style/TextAppearance.AppTheme.V2.BodySmall"
@@ -109,7 +109,7 @@
                     android:id="@+id/status_badge_row"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/premium_space_4"
+                    android:layout_marginTop="2dp"
                     android:gravity="start|center_vertical"
                     app:rowSpacing="@dimen/premium_space_4">
 
