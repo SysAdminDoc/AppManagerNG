@@ -6,13 +6,15 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:focusable="true"
-    android:paddingHorizontal="@dimen/padding_medium">
+    android:paddingHorizontal="@dimen/padding_medium"
+    android:paddingVertical="@dimen/premium_space_4">
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/item_subtitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textColor="?android:attr/textColorSecondary"
+        android:textAppearance="@style/TextAppearance.AppTheme.V2.BodyMedium"
         android:textIsSelectable="true"
         android:gravity="center_vertical"
         tools:text="@tools:sample/lorem[5]" />
