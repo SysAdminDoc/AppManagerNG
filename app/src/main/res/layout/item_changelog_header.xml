@@ -5,8 +5,8 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:paddingHorizontal="@dimen/padding_medium"
-    android:paddingTop="@dimen/padding_medium"
-    android:paddingBottom="@dimen/padding_small">
+    android:paddingTop="@dimen/premium_space_12"
+    android:paddingBottom="@dimen/premium_space_4">
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
@@ -25,13 +25,11 @@
                 android:layout_height="wrap_content"
                 android:gravity="end|center_vertical"
                 android:textAlignment="viewEnd"
-                android:textAppearance="@style/TextAppearance.AppTheme.LabelSmall"
-                android:textSize="9sp"
+                android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelSmall"
                 android:textStyle="normal"
                 android:textAllCaps="true"
-                android:letterSpacing="0.3"
-                tools:text="stable release"
-                tools:ignore="SmallSp" />
+                android:letterSpacing="0.08"
+                tools:text="stable release" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/item_title"
@@ -52,6 +50,7 @@
             android:textAlignment="viewEnd"
             android:layout_weight="1"
             android:textColor="?android:attr/textColorSecondary"
+            android:textAppearance="@style/TextAppearance.AppTheme.V2.BodySmall"
             android:textIsSelectable="true"
             tools:text="4 August 2022" />
 

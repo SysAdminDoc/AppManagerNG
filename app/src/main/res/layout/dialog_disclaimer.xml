@@ -62,20 +62,13 @@
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
-        <io.github.muntashirakon.widget.MaterialAlertView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/padding_small"
-            android:text="@string/disclaimer_privileged_operations"
-            app:alertType="warn" />
-
         <androidx.appcompat.widget.AppCompatTextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/padding_small"
-            android:text="@string/disclaimer_third_party"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:textColor="?attr/colorOnSurfaceVariant" />
+            android:text="@string/disclaimer_privileged_operations"
+            android:textAppearance="@style/TextAppearance.AppTheme.V2.BodyMedium"
+            android:textColor="?attr/premiumWarningContent" />
 
         <androidx.appcompat.widget.AppCompatTextView
             android:layout_width="match_parent"
@@ -83,14 +76,6 @@
             android:layout_marginTop="@dimen/padding_small"
             android:text="@string/disclaimer_acceptance"
             android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-        <androidx.appcompat.widget.AppCompatTextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/padding_small"
-            android:text="@string/disclaimer_footer"
-            android:textAppearance="?attr/textAppearanceBodySmall"
-            android:textColor="?attr/colorOnSurfaceVariant" />
 
         <com.google.android.material.checkbox.MaterialCheckBox
             android:id="@+id/agree_forever"
