@@ -189,6 +189,7 @@
         <item name="chipBackgroundColor">@color/premium_filter_chip_background</item>
         <item name="android:textColor">@color/premium_filter_chip_text</item>
         <item name="checkedIconTint">@color/premium_filter_chip_text</item>
+        <item name="checkedIconVisible">false</item>
         <item name="rippleColor">?attr/colorSecondaryContainer</item>
         <item name="android:textAppearance">@style/TextAppearance.AppTheme.V2.LabelMedium</item>
     </style>
@@ -207,8 +208,8 @@
 
     <style name="Widget.AppTheme.V2.SearchView" parent="Widget.AppTheme.SearchView">
         <item name="android:textAppearance">@style/TextAppearance.AppTheme.V2.BodyLarge</item>
-        <item name="frameMarginHorizontal">@dimen/premium_space_12</item>
-        <item name="android:backgroundTint">?attr/colorSurfaceContainerHigh</item>
+        <item name="frameMarginHorizontal">@dimen/premium_space_8</item>
+        <item name="android:backgroundTint">?attr/colorSurfaceContainerLow</item>
         <item name="shapeAppearanceOverlay">@style/ShapeAppearance.AppTheme.V2.Control</item>
     </style>
 
