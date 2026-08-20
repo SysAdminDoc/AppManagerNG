@@ -31,7 +31,7 @@
                     android:orientation="vertical"
                     android:minHeight="@dimen/premium_scanner_card_min_height"
                     android:paddingHorizontal="@dimen/premium_space_16"
-                    android:paddingVertical="@dimen/premium_space_12">
+                    android:paddingVertical="@dimen/premium_space_8">
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:layout_width="match_parent"
@@ -66,7 +66,7 @@
                     android:minHeight="@dimen/premium_scanner_card_min_height"
                     android:orientation="vertical"
                     android:paddingHorizontal="@dimen/premium_space_16"
-                    android:paddingVertical="@dimen/premium_space_12">
+                    android:paddingVertical="@dimen/premium_space_8">
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/classes_title"
@@ -104,7 +104,7 @@
                     android:minHeight="@dimen/premium_scanner_card_min_height"
                     android:orientation="vertical"
                     android:paddingHorizontal="@dimen/premium_space_16"
-                    android:paddingVertical="@dimen/premium_space_12">
+                    android:paddingVertical="@dimen/premium_space_8">
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/tracker_title"
@@ -142,7 +142,7 @@
                     android:minHeight="@dimen/premium_scanner_card_min_height"
                     android:orientation="vertical"
                     android:paddingHorizontal="@dimen/premium_space_16"
-                    android:paddingVertical="@dimen/premium_space_12">
+                    android:paddingVertical="@dimen/premium_space_8">
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/vt_title"
@@ -182,7 +182,7 @@
                     android:minHeight="@dimen/premium_scanner_card_min_height"
                     android:orientation="vertical"
                     android:paddingHorizontal="@dimen/premium_space_16"
-                    android:paddingVertical="@dimen/premium_space_12">
+                    android:paddingVertical="@dimen/premium_space_8">
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/libs_title"
@@ -220,7 +220,7 @@
                     android:minHeight="@dimen/premium_scanner_card_min_height"
                     android:orientation="vertical"
                     android:paddingHorizontal="@dimen/premium_space_16"
-                    android:paddingVertical="@dimen/premium_space_12">
+                    android:paddingVertical="@dimen/premium_space_8">
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/apk_title"
@@ -259,7 +259,7 @@
                     android:minHeight="@dimen/premium_scanner_card_min_height"
                     android:orientation="vertical"
                     android:paddingHorizontal="@dimen/premium_space_16"
-                    android:paddingVertical="@dimen/premium_space_12">
+                    android:paddingVertical="@dimen/premium_space_8">
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/checksum_title"
@@ -299,7 +299,7 @@
                     android:minHeight="@dimen/premium_scanner_card_min_height"
                     android:orientation="vertical"
                     android:paddingHorizontal="@dimen/premium_space_16"
-                    android:paddingVertical="@dimen/premium_space_12">
+                    android:paddingVertical="@dimen/premium_space_8">
 
                     <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/missing_libs_title"
@@ -328,12 +328,9 @@
                 android:id="@+id/vt_disclaimer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/premium_space_12"
-                android:layout_marginTop="@dimen/premium_space_4"
+                android:layout_marginHorizontal="@dimen/premium_space_16"
+                android:layout_marginTop="@dimen/premium_space_8"
                 android:layout_marginBottom="@dimen/premium_space_16"
-                android:background="@drawable/main_status_background"
-                android:paddingHorizontal="@dimen/premium_space_12"
-                android:paddingVertical="@dimen/premium_space_8"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:text="@string/vt_disclaimer"

@@ -65,5 +65,5 @@
     <dimen name="premium_chip_min_height">32dp</dimen>
     <dimen name="premium_chip_touch_target">44dp</dimen>
     <dimen name="premium_button_min_height">44dp</dimen>
-    <dimen name="premium_scanner_card_min_height">76dp</dimen>
+    <dimen name="premium_scanner_card_min_height">68dp</dimen>
 </resources>

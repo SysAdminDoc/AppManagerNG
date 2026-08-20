@@ -70,21 +70,22 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_weight="0"
-            android:orientation="vertical">
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
             <com.google.android.material.materialswitch.MaterialSwitch
                 android:id="@+id/perm_toggle_btn"
-                android:layout_width="56dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:clickable="false"
                 android:focusable="false"
-                android:paddingVertical="@dimen/padding_medium" />
+                android:paddingVertical="@dimen/premium_space_4" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/action_reference"
                 style="@style/Widget.AppTheme.Button.IconButton"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:layout_gravity="center"
                 android:contentDescription="@string/permission_reference_pin"
                 android:paddingVertical="@dimen/padding_small"
@@ -94,8 +95,8 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/action_settings"
                 style="@style/Widget.AppTheme.Button.IconButton"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:layout_gravity="center"
                 android:contentDescription="@string/view_in_settings"
                 android:paddingVertical="@dimen/padding_small"

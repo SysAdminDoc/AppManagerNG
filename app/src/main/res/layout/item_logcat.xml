@@ -6,7 +6,7 @@
     android:background="@drawable/item_transparent"
     android:clickable="true"
     android:focusable="true"
-    android:minHeight="56dp"
+    android:minHeight="48dp"
     android:orientation="vertical">
 
     <androidx.appcompat.widget.LinearLayoutCompat
@@ -16,14 +16,14 @@
 
         <androidx.appcompat.widget.AppCompatTextView
             android:id="@+id/log_level_text"
-            android:layout_width="32dp"
+            android:layout_width="28dp"
             android:layout_height="match_parent"
             android:layout_weight="0"
             android:gravity="center"
             android:importantForAccessibility="no"
             android:maxLines="1"
             android:paddingHorizontal="@dimen/padding_very_small"
-            android:paddingVertical="@dimen/padding_small"
+            android:paddingVertical="@dimen/premium_space_4"
             android:textAppearance="?attr/textAppearanceLabelMedium"
             android:typeface="monospace"
             tools:background="#FFFFCC99"
@@ -36,7 +36,7 @@
             android:layout_weight="1"
             android:orientation="vertical"
             android:paddingHorizontal="@dimen/padding_small"
-            android:paddingVertical="@dimen/padding_small">
+            android:paddingVertical="@dimen/premium_space_4">
 
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
@@ -48,10 +48,10 @@
                     android:layout_height="wrap_content"
                     android:ellipsize="end"
                     android:maxLines="1"
-                    android:textAppearance="@style/TextAppearance.AppTheme.LabelSmaller"
+                    android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelSmall"
                     android:textColor="?attr/colorOnSurfaceVariant"
                     android:typeface="monospace"
-                    tools:ignore="RtlSymmetry,SmallSp"
+                    tools:ignore="RtlSymmetry"
                     tools:text="01-18 14:49:23.054 • 781 • shell • com.android.shell" />
 
             </androidx.appcompat.widget.LinearLayoutCompat>
