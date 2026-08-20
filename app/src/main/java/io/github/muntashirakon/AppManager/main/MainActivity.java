@@ -916,6 +916,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         sortChip.setText(viewModel.isReverseSort()
                 ? getString(R.string.main_sort_chip_label_reversed, label)
                 : getString(R.string.main_sort_chip_label, label));
+        sortChip.setVisibility(View.VISIBLE);
     }
 
     private void bindQuickFilterChip(int chipId, @MainListOptions.Filter int flag) {
@@ -969,6 +970,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             Chip chip = findViewById(entry[0]);
             if (chip == null) continue;
             boolean active = viewModel.hasFilterFlag(entry[1]);
+            chip.setVisibility(active ? View.VISIBLE : View.GONE);
             if (chip.isChecked() != active) {
                 chip.setOnCheckedChangeListener(null);
                 chip.setChecked(active);
@@ -988,6 +990,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                     ? MainListOptions.getInstallDateRangeLabel(this, viewModel)
                     : getString(R.string.main_filter_install_date));
             installDateChip.setCloseIconVisible(hasInstallDateFilter);
+            installDateChip.setVisibility(hasInstallDateFilter ? View.VISIBLE : View.GONE);
         }
         Chip clearChip = findViewById(R.id.chip_clear_filters);
         if (clearChip != null) {
