@@ -217,16 +217,9 @@ public final class FileUtils {
                 continue;
             }
             if (!(extDir.exists() || extDir.mkdirs())) {
-                // The framework refuses to create the directory for us. In root mode we can still
-                // create it ourselves, provided we reproduce the ownership and label the media
-                // provider would have given it — see forceCreateExternalDataSubDir().
-                if (RunnerUtils.isRootGiven() && forceCreateExternalDataSubDir(extDir)) {
-                    Log.i(TAG, "Created %s with root.", extDir);
-                } else {
-                    lastReason = extDir + ": permission denied.";
-                    Log.w(TAG, "Could not use %s.", extDir);
-                    continue;
-                }
+                lastReason = extDir + ": permission denied.";
+                Log.w(TAG, "Could not use %s.", extDir);
+                continue;
             }
             String storageState = Environment.getExternalStorageState(extDir);
             if (!Objects.equals(storageState, Environment.MEDIA_MOUNTED)) {
@@ -239,6 +232,28 @@ public final class FileUtils {
         throw new FileNotFoundException(lastReason != null ? lastReason : "No available shared storage found.");
     }
 
+    @WorkerThread
+    @NonNull
+    public static File getBestExternalPathWithRoot(@Nullable File[] extDirs) throws FileNotFoundException {
+        try {
+            return getBestExternalPath(extDirs);
+        } catch (FileNotFoundException originalError) {
+            if (extDirs == null || !RunnerUtils.isRootGiven()) {
+                throw originalError;
+            }
+            for (File extDir : extDirs) {
+                if (extDir == null || !(extDir.exists() || forceCreateExternalDataSubDir(extDir))) {
+                    continue;
+                }
+                if (Objects.equals(Environment.getExternalStorageState(extDir), Environment.MEDIA_MOUNTED)) {
+                    Log.i(TAG, "Created %s with root.", extDir);
+                    return extDir;
+                }
+            }
+            throw originalError;
+        }
+    }
+
     /**
      * Create an app-private subdirectory under external storage using root.
      *
@@ -249,10 +264,11 @@ public final class FileUtils {
      * media provider would have applied.
      *
      * <p>Runs privileged shell commands and therefore blocks; call it from the same threads that
-     * already call {@link #getBestExternalPath(File[])}.
+     * already call {@link #getBestExternalPathWithRoot(File[])}.
      *
      * @return whether the directory now exists with the correct ownership and label.
      */
+    @WorkerThread
     public static boolean forceCreateExternalDataSubDir(@NonNull File dir) {
         File parentFile = dir.getParentFile();
         if (parentFile == null) {
