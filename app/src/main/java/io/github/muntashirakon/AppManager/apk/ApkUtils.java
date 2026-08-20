@@ -87,11 +87,13 @@ public final class ApkUtils {
             Path tmpPublicSource;
             if (isSplitApk(info) || hasObbFiles(info.packageName, UserHandleHidden.getUserId(info.uid))) {
                 // Split apk
-                tmpPublicSource = Paths.get(new File(FileUtils.getExternalCachePath(ContextUtils.getContext()), outputName + EXT_APKS));
+                tmpPublicSource = Paths.get(new File(FileUtils.getBestExternalPathWithRoot(
+                        ContextUtils.getContext().getExternalCacheDirs()), outputName + EXT_APKS));
                 SplitApkExporter.saveApks(packageInfo, tmpPublicSource);
             } else {
                 // Regular apk
-                tmpPublicSource = Paths.get(new File(FileUtils.getExternalCachePath(ContextUtils.getContext()), outputName + EXT_APK));
+                tmpPublicSource = Paths.get(new File(FileUtils.getBestExternalPathWithRoot(
+                        ContextUtils.getContext().getExternalCacheDirs()), outputName + EXT_APK));
                 IoUtils.copy(Paths.get(info.publicSourceDir), tmpPublicSource);
             }
             return tmpPublicSource;
