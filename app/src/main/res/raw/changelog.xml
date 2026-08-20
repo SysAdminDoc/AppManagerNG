@@ -8,6 +8,20 @@
 <changelog>
     <release
         type="stable release"
+        version="v0.6.14"
+        code="22"
+        date="20 August 2026">
+        <improve title="Visual system">Compact headers, readable type, graphite surfaces, a restrained lavender accent, and divider-led lists replace repeated outlined containers.</improve>
+        <improve title="App list">The summary row now shows the app count and active sort. Filters appear only when active, with the full filter sheet still available from the toolbar.</improve>
+        <improve title="Details">App info, components, permissions, scanner, usage, running apps, manifest, and logs now use tighter spacing and clearer control grouping.</improve>
+        <improve title="Setup">Mode selection and privileged-access guidance use shorter copy, flat status text, and quieter warning treatments.</improve>
+        <improve title="Components">Launch and shortcut actions stay collapsed until the component row is opened.</improve>
+        <fix title="Scanner loading">Tracker results can arrive before native-library data without crashing the scanner.</fix>
+        <fix title="Cache recovery">Privileged external-directory recovery now stays on worker threads.</fix>
+    </release>
+
+    <release
+        type="stable release"
         version="v0.5.0"
         code="7"
         date="25 May 2026">

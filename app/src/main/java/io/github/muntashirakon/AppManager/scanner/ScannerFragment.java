@@ -44,7 +44,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
@@ -137,8 +136,14 @@ public class ScannerFragment extends Fragment {
                         .append(getPrimaryText(mActivity, digest.first + LangUtils.getSeparatorString()))
                         .append(getMonospacedText(digest.second)));
             }
+            CharSequence checksumDetails = TextUtilsCompat.joinSpannable("\n", lines);
             ((TextView) view.findViewById(R.id.apk_title)).setText(R.string.apk_checksums);
-            ((TextView) view.findViewById(R.id.apk_description)).setText(TextUtilsCompat.joinSpannable("\n", lines));
+            ((TextView) view.findViewById(R.id.apk_description)).setText(R.string.tap_to_see_details);
+            apkInfoView.setOnClickListener(v -> new MaterialAlertDialogBuilder(mActivity)
+                    .setTitle(R.string.apk_checksums)
+                    .setMessage(checksumDetails)
+                    .setPositiveButton(R.string.ok, null)
+                    .show());
         });
         // Package info: Title & subtitle
         mViewModel.packageInfoLiveData().observe(getViewLifecycleOwner(), packageInfo -> {
@@ -158,13 +163,18 @@ public class ScannerFragment extends Fragment {
         // APK verifier result
         mViewModel.apkVerifierResultLiveData().observe(getViewLifecycleOwner(), result -> {
             TextView checksumDescription = view.findViewById(R.id.checksum_description);
-            SpannableStringBuilder builder = new SpannableStringBuilder();
-            builder.append(PackageUtils.getApkVerifierInfo(result, mActivity));
+            Spannable verifierInfo = PackageUtils.getApkVerifierInfo(result, mActivity);
+            SpannableStringBuilder details = new SpannableStringBuilder(verifierInfo);
             List<X509Certificate> certificates = result.getSignerCertificates();
             if (certificates != null && !certificates.isEmpty()) {
-                builder.append(getCertificateInfo(mActivity, certificates));
+                details.append(getCertificateInfo(mActivity, certificates));
             }
-            checksumDescription.setText(builder);
+            checksumDescription.setText(verifierInfo);
+            signaturesView.setOnClickListener(v -> new MaterialAlertDialogBuilder(mActivity)
+                    .setTitle(R.string.app_signing_signature)
+                    .setMessage(details)
+                    .setPositiveButton(R.string.ok, null)
+                    .show());
         });
         // List all classes
         mViewModel.allClassesLiveData().observe(getViewLifecycleOwner(), allClasses -> {
@@ -344,7 +354,7 @@ public class ScannerFragment extends Fragment {
     @NonNull
     private Map<String, SpannableStringBuilder> getNativeLibraryInfo(boolean trackerOnly) {
         Collection<String> nativeLibsInApk = mViewModel.getNativeLibraries();
-        if (nativeLibsInApk.isEmpty()) return new HashMap<>();
+        if (nativeLibsInApk == null || nativeLibsInApk.isEmpty()) return new HashMap<>();
         String[] libNames = getResources().getStringArray(R.array.lib_native_names);
         String[] libSignatures = getResources().getStringArray(R.array.lib_native_signatures);
         int[] isTracker = getResources().getIntArray(R.array.lib_native_is_tracker);
@@ -425,7 +435,8 @@ public class ScannerFragment extends Fragment {
         foundTrackerList.append("\n").append(getSmallerText(
                 getResultLimitation(requireContext(), totalTrackersFound)));
 
-        int totalTrackerClasses = mViewModel.getTrackerClasses().size();
+        List<String> trackerClasses = mViewModel.getTrackerClasses();
+        int totalTrackerClasses = trackerClasses != null ? trackerClasses.size() : 0;
         // Get summary
         CharSequence summary;
         if (totalTrackersFound == 0) {
@@ -634,7 +645,6 @@ public class ScannerFragment extends Fragment {
                     .append(getMonospacedText(libraryInfo.signature))
                     .append(getSmallerText(" (" + libraryInfo.getCount() + ")"));
         }
-        Set<String> foundLibNames = foundLibInfoMap.keySet();
         List<Spannable> foundLibInfoList = new ArrayList<>(foundLibInfoMap.values());
         int totalLibsFound = foundLibInfoList.size();
         Collections.sort(foundLibInfoList, (o1, o2) -> o1.toString().compareToIgnoreCase(o2.toString()));
@@ -650,7 +660,9 @@ public class ScannerFragment extends Fragment {
         }
 
         ((TextView) view.findViewById(R.id.libs_title)).setText(summary);
-        ((TextView) view.findViewById(R.id.libs_description)).setText(TextUtils.join(", ", foundLibNames));
+        ((TextView) view.findViewById(R.id.libs_description)).setText(totalLibsFound == 0
+                ? R.string.no_libs
+                : R.string.tap_to_see_details);
         if (totalLibsFound == 0) return;
         MaterialCardView libsView = view.findViewById(R.id.libs);
         libsView.setOnClickListener(v -> {

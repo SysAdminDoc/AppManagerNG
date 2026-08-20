@@ -1,0 +1,7 @@
+- Reworked typography, spacing, borders, and surfaces around a quieter graphite and lavender visual system.
+- Replaced the permanent quick-filter rail with an app count and current sort. Active filters still appear when needed.
+- Tightened App Info, components, permissions, scanner, usage, running apps, manifest, and log screens without shrinking primary text.
+- Removed outlined setup cards, status-pill backgrounds, and changelog badges.
+- Shortened onboarding and privileged-access guidance, and kept component actions collapsed until a row is opened.
+- Fixed a scanner crash when tracker results load before native-library data.
+- Kept privileged external-directory recovery off the main thread.

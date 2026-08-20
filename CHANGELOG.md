@@ -3,6 +3,19 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## v0.6.14, 2026-08-20
+
+### Changed
+- Reworked the visual system around a clearer type scale, graphite surfaces, a restrained lavender accent, compact headers, and divider-led lists.
+- Replaced the permanent quick-filter strip with an app count and current sort. Active filters still appear in context, and the full filter sheet remains one tap away.
+- Reduced main-list, scanner, usage, running-process, permission, component, manifest, and log-viewer density without shrinking primary text.
+- Removed outlined setup cards, status-pill backgrounds, and changelog badges. Onboarding and the privileged-access notice now use shorter copy and flatter hierarchy.
+- Kept component actions collapsed until a row is opened, which makes scanning long activity, service, receiver, and provider lists faster.
+
+### Fixed
+- Prevented the scanner from crashing when tracker results arrive before native-library data.
+- Kept privileged external-directory recovery on worker threads so cache-path lookup stays safe from UI code.
+
 ## v0.6.13 — 2026-08-11
 
 ### Added
