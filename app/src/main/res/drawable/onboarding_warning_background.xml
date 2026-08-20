@@ -2,8 +2,5 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
     <solid android:color="?attr/premiumWarningBg" />
-    <stroke
-        android:width="@dimen/premium_stroke_hairline"
-        android:color="?attr/colorOutlineVariant" />
     <corners android:radius="@dimen/premium_radius_card" />
 </shape>

@@ -17,14 +17,14 @@
         <androidx.appcompat.widget.AppCompatTextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/padding_very_small"
+            android:layout_marginBottom="@dimen/premium_space_4"
             android:text="@string/onboarding_title"
-            android:textAppearance="?attr/textAppearanceHeadlineSmall" />
+            android:textAppearance="@style/TextAppearance.AppTheme.V2.TitleLarge" />
 
         <androidx.appcompat.widget.AppCompatTextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/padding_medium"
+            android:layout_marginBottom="@dimen/premium_space_12"
             android:text="@string/onboarding_subtitle"
             android:textAppearance="?attr/textAppearanceBodyMedium"
             android:textColor="?attr/colorOnSurfaceVariant" />
