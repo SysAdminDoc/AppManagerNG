@@ -5,9 +5,9 @@
     <color name="premium_color_on_primary">@color/premium_brand_950</color>
     <color name="premium_color_primary_container">@color/premium_brand_900</color>
     <color name="premium_color_on_primary_container">@color/premium_brand_100</color>
-    <color name="premium_color_secondary">#A8BEC7</color>
-    <color name="premium_color_on_secondary">#153137</color>
-    <color name="premium_color_secondary_container">#243238</color>
+    <color name="premium_color_secondary">#C8B8DD</color>
+    <color name="premium_color_on_secondary">#2A2035</color>
+    <color name="premium_color_secondary_container">#2B2534</color>
     <color name="premium_color_on_secondary_container">@color/premium_text_high_dark</color>
     <color name="premium_surface_0">@color/premium_surface_0_dark</color>
     <color name="premium_surface_1">@color/premium_surface_1_dark</color>

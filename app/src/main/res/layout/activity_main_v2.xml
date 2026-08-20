@@ -74,7 +74,7 @@
                 style="@style/Widget.AppTheme.V2.ChipGroup.Filter"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:chipSpacingHorizontal="@dimen/premium_space_8"
+                app:chipSpacingHorizontal="@dimen/premium_space_4"
                 app:singleLine="true">
 
                 <com.google.android.material.chip.Chip
