@@ -25,8 +25,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical|start"
-                android:layout_marginHorizontal="@dimen/padding_large"
-                android:layout_marginVertical="@dimen/padding_small"
+                android:layout_marginHorizontal="@dimen/padding_medium"
+                android:layout_marginVertical="@dimen/premium_space_4"
                 android:fitsSystemWindows="true"
                 android:nextFocusDown="@id/recycler_view"
                 tools:hint="Interval" />
