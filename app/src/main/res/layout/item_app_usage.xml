@@ -100,7 +100,6 @@
                 android:layout_height="wrap_content"
                 android:singleLine="true"
                 android:textColor="?attr/colorOnSurfaceVariant"
-                android:textStyle="italic"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 tools:text="io.github.muntashirakon.AppManager.debug" />
 

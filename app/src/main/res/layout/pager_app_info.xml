@@ -33,12 +33,12 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingHorizontal="@dimen/padding_medium"
-                android:paddingVertical="@dimen/premium_space_12">
+                android:paddingVertical="@dimen/premium_space_8">
 
                 <androidx.appcompat.widget.AppCompatImageView
                     android:id="@+id/icon"
-                    android:layout_width="52dp"
-                    android:layout_height="52dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_marginEnd="@dimen/premium_space_12"
                     android:background="@drawable/item_transparent"
                     android:contentDescription="@string/app_details_app_icon"
@@ -109,7 +109,7 @@
                 style="@style/Widget.AppTheme.CardView.TrustCta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/premium_space_4"
+                android:layout_marginTop="0dp"
                 android:visibility="gone"
                 tools:visibility="visible">
 
@@ -117,7 +117,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
-                    android:minHeight="72dp"
+                    android:minHeight="64dp"
                     android:orientation="horizontal"
                     android:paddingHorizontal="@dimen/padding_medium"
                     android:paddingVertical="@dimen/premium_space_8">
@@ -156,7 +156,8 @@
                                 android:id="@+id/tracker_cta_subtitle"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="@dimen/premium_space_4"
+                                android:layout_marginTop="2dp"
+                                android:maxLines="1"
                                 android:textAppearance="?attr/textAppearanceBodySmall"
                                 android:textColor="?attr/colorOnSurfaceVariant"
                                 tools:text="Block ad, analytics and crash reporting SDKs" />
@@ -184,7 +185,7 @@
                 style="@style/Widget.AppTheme.CardView.TrustCta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/premium_space_4"
+                android:layout_marginTop="0dp"
                 android:visibility="gone"
                 tools:visibility="visible">
 
@@ -192,7 +193,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
-                    android:minHeight="72dp"
+                    android:minHeight="64dp"
                     android:orientation="horizontal"
                     android:paddingHorizontal="@dimen/padding_medium"
                     android:paddingVertical="@dimen/premium_space_8">
@@ -231,7 +232,8 @@
                                 android:id="@+id/perms_cta_subtitle"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="@dimen/premium_space_4"
+                                android:layout_marginTop="2dp"
+                                android:maxLines="1"
                                 android:textAppearance="?attr/textAppearanceBodySmall"
                                 android:textColor="?attr/colorOnSurfaceVariant"
                                 tools:text="Tap to revoke all granted dangerous permissions." />
@@ -259,7 +261,7 @@
                 style="@style/Widget.AppTheme.CardView.TrustCta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/premium_space_4"
+                android:layout_marginTop="0dp"
                 android:visibility="gone"
                 tools:visibility="visible">
 
@@ -267,7 +269,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
-                    android:minHeight="72dp"
+                    android:minHeight="64dp"
                     android:orientation="horizontal"
                     android:paddingHorizontal="@dimen/padding_medium"
                     android:paddingVertical="@dimen/premium_space_8">
@@ -306,7 +308,7 @@
                                 android:id="@+id/app_note_body"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="@dimen/premium_space_4"
+                                android:layout_marginTop="2dp"
                                 android:ellipsize="end"
                                 android:maxLines="2"
                                 android:textAppearance="?attr/textAppearanceBodySmall"
