@@ -671,6 +671,8 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             holder.taskAffinityView.setVisibility(expanded && supportsActivityMetadata ? View.VISIBLE : View.GONE);
             if (!expanded) {
                 holder.processNameView.setVisibility(View.GONE);
+                holder.launchBtn.setVisibility(View.GONE);
+                holder.shortcutBtn.setVisibility(View.GONE);
             }
             holder.detailsToggle.setIconResource(expanded ? R.drawable.ic_expand_less : R.drawable.ic_expand_more);
             holder.detailsToggle.setContentDescription(getString(expanded
