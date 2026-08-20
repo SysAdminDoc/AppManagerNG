@@ -1,0 +1,3 @@
+- Replaced the old launcher mark with a modular open-package logo.
+- Added matching adaptive, round, legacy, and Material You themed icons.
+- Updated the splash screen, store listing, documentation header, and Android TV banner.

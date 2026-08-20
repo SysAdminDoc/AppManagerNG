@@ -3,6 +3,12 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## v0.6.15, 2026-08-20
+
+### Changed
+- Replaced the calligraphic launcher mark with a modular open-package logo in the app's graphite and lavender palette.
+- Added matching adaptive, round, legacy, and Material You themed icons. The splash screen, store listing, documentation header, and Android TV banner now use the same identity.
+
 ## v0.6.14, 2026-08-20
 
 ### Changed

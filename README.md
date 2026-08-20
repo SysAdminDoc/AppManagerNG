@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.6.14-blue.svg" />
+  <img alt="Version" src="https://img.shields.io/badge/version-0.6.15-blue.svg" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0--or--later-green.svg" />
   <img alt="Platform" src="https://img.shields.io/badge/platform-Android%205.0%2B-brightgreen.svg" />
   <img alt="Min SDK" src="https://img.shields.io/badge/minSdk-21-orange.svg" />
@@ -169,6 +169,7 @@ items. Maintainer-local historical archives are intentionally excluded from
 published checkouts; shipped work remains traceable through this changelog and Git history.
 Version targets:
 
+- **v0.6.15** ✅ 2026-08-20. Introduced a modular open-package logo across the launcher, themed icon, splash screen, store listing, documentation, and TV banner.
 - **v0.6.14** ✅ 2026-08-20. Quieter typography, compact headers, flat status text, divider-led lists, and denser diagnostic screens.
 - **v0.6.13** ✅ 2026-08-11. Removed the defunct Pithus scanner and corrected several misleading backup, privilege, and batch-operation states. Android 17 package enumeration gained device coverage.
 - **v0.6.12** ✅ 2026-08-08. Kept the bundled BouncyCastle keystore implementation in release builds so recovery passwords persist correctly.
