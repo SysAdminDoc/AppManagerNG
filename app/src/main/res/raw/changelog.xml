@@ -8,6 +8,15 @@
 <changelog>
     <release
         type="stable release"
+        version="v0.6.15"
+        code="23"
+        date="20 August 2026">
+        <improve title="App identity">A modular open-package logo replaces the calligraphic launcher mark across adaptive, round, legacy, and Material You themed icons.</improve>
+        <improve title="Brand consistency">The splash screen, store listing, documentation header, and Android TV banner now use the same graphite and lavender identity.</improve>
+    </release>
+
+    <release
+        type="stable release"
         version="v0.6.14"
         code="22"
         date="20 August 2026">
