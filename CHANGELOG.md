@@ -5,6 +5,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Fixed
+- Detected truncated package lists from privileged mode. The main list now falls back to Android's normal app view and shows both counts instead of silently omitting apps.
+
 ### Security
 - Updated the Bouncy Castle provider to 1.85.2, with the matching PKIX and utility artifacts pinned to their latest compatible releases.
 - Added fixed metadata-v5 and metadata-v6 backup fixtures from Bouncy Castle 1.84 to guard encrypted-backup compatibility across provider upgrades.

@@ -47,6 +47,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.RequiresPermission;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import java.lang.annotation.Retention;
@@ -130,16 +131,77 @@ public final class PackageManagerCompat {
     @WorkerThread
     @NonNull
     public static List<PackageInfo> getInstalledPackages(int flags, @UserIdInt int userId) {
-        IPackageManager pm = getPackageManager();
-        // Here we've compromised performance to fix issues in some devices where Binder transaction limit is too small.
-        List<PackageInfo> refPackages = getInstalledPackagesInternal(pm, flags & NEEDED_FLAGS, userId);
-        List<PackageInfo> packageInfoList = getInstalledPackagesInternal(pm, flags, userId);
+        return getInstalledPackagesWithStatus(flags, userId).packages;
+    }
+
+    @WorkerThread
+    @NonNull
+    public static InstalledPackagesResult getInstalledPackagesWithStatus(int flags, @UserIdInt int userId) {
+        IPackageManager privilegedPackageManager = getPackageManager();
+        PackageManager unprivilegedPackageManager = ContextUtils.getContext().getPackageManager();
+        return getInstalledPackagesWithStatus(new PackageEnumerationSource() {
+            @Nullable
+            @Override
+            @SuppressWarnings("deprecation")
+            public List<PackageInfo> getUnprivilegedPackages(int requestedFlags) {
+                return unprivilegedPackageManager.getInstalledPackages(requestedFlags);
+            }
+
+            @NonNull
+            @Override
+            public List<PackageInfo> getPrivilegedPackages(int requestedFlags, int requestedUserId) {
+                return getInstalledPackagesInternal(privilegedPackageManager, requestedFlags, requestedUserId);
+            }
+
+            @NonNull
+            @Override
+            public PackageInfo getPrivilegedPackageInfo(@NonNull String packageName, int requestedFlags,
+                                                         int requestedUserId) throws Exception {
+                return getPackageInfo(privilegedPackageManager, packageName, requestedFlags, requestedUserId);
+            }
+        }, flags, userId, UserHandleHidden.myUserId());
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static InstalledPackagesResult getInstalledPackagesWithStatus(@NonNull PackageEnumerationSource source,
+                                                                   int flags, @UserIdInt int userId,
+                                                                   @UserIdInt int currentUserId) {
+        List<PackageInfo> refPackages = null;
+        boolean hasUnprivilegedReference = userId == currentUserId;
+        if (hasUnprivilegedReference) {
+            try {
+                refPackages = source.getUnprivilegedPackages(flags & NEEDED_FLAGS);
+            } catch (RuntimeException e) {
+                Log.w(TAG, "Could not retrieve the unprivileged package reference for user " + userId, e);
+            }
+            hasUnprivilegedReference = refPackages != null;
+        }
+        if (refPackages == null) {
+            // Cross-user scans cannot use the app process PackageManager. This also preserves the
+            // existing privileged fallback when an OEM blocks the unprivileged reference call.
+            refPackages = source.getPrivilegedPackages(flags & NEEDED_FLAGS, userId);
+        }
+
+        List<PackageInfo> packageInfoList = source.getPrivilegedPackages(flags, userId);
+        if (hasUnprivilegedReference) {
+            int privilegedCount = packageInfoList.size();
+            int unprivilegedCount = refPackages.size();
+            if (privilegedCount >= unprivilegedCount) {
+                return new InstalledPackagesResult(packageInfoList, null);
+            }
+            Log.w(TAG, "Privileged package enumeration returned %d of %d packages for user %d; "
+                            + "using the unprivileged reference",
+                    privilegedCount, unprivilegedCount, userId);
+            packageInfoList = recoverPackageDetails(source, refPackages, flags, userId, true);
+            return new InstalledPackagesResult(packageInfoList,
+                    new PackageEnumerationWarning(privilegedCount, unprivilegedCount));
+        }
+
         if (packageInfoList.size() == refPackages.size()) {
-            // Everything's loaded correctly
-            return packageInfoList;
+            return new InstalledPackagesResult(packageInfoList, null);
         }
         if (packageInfoList.size() > refPackages.size()) {
-            // Should never happen
             Set<String> pkgsFromPkgInfo = new HashSet<>(packageInfoList.size());
             Set<String> pkgsFromAppInfo = new HashSet<>(refPackages.size());
             for (PackageInfo info : packageInfoList) pkgsFromPkgInfo.add(info.packageName);
@@ -151,17 +213,28 @@ public final class PackageManagerCompat {
         }
         Log.w(TAG, "Could not fetch installed packages for user %d using getInstalledPackages(), using workaround",
                 userId);
-        packageInfoList = new ArrayList<>(refPackages.size());
+        return new InstalledPackagesResult(recoverPackageDetails(source, refPackages, flags, userId, false), null);
+    }
+
+    @NonNull
+    private static List<PackageInfo> recoverPackageDetails(@NonNull PackageEnumerationSource source,
+                                                            @NonNull List<PackageInfo> refPackages,
+                                                            int flags, @UserIdInt int userId,
+                                                            boolean preserveUnprivilegedEntryOnFailure) {
+        List<PackageInfo> packageInfoList = new ArrayList<>(refPackages.size());
         for (int i = 0; i < refPackages.size(); ++i) {
             if (ThreadUtils.isInterrupted()) {
                 break;
             }
-            String packageName = refPackages.get(i).packageName;
+            PackageInfo refPackage = refPackages.get(i);
+            String packageName = refPackage.packageName;
             try {
-                packageInfoList.add(getPackageInfo(pm, packageName, flags, userId));
+                packageInfoList.add(source.getPrivilegedPackageInfo(packageName, flags, userId));
             } catch (Exception ex) {
                 Log.e(TAG, "Could not retrieve package info for " + packageName + " and user " + userId);
-                continue;
+                if (preserveUnprivilegedEntryOnFailure) {
+                    packageInfoList.add(refPackage);
+                }
             }
             if (i % 100 == 0) {
                 // Prevent DeadObjectException
@@ -169,6 +242,42 @@ public final class PackageManagerCompat {
             }
         }
         return packageInfoList;
+    }
+
+    @VisibleForTesting
+    interface PackageEnumerationSource {
+        @Nullable
+        List<PackageInfo> getUnprivilegedPackages(int flags);
+
+        @NonNull
+        List<PackageInfo> getPrivilegedPackages(int flags, @UserIdInt int userId);
+
+        @NonNull
+        PackageInfo getPrivilegedPackageInfo(@NonNull String packageName, int flags,
+                                             @UserIdInt int userId) throws Exception;
+    }
+
+    public static final class InstalledPackagesResult {
+        @NonNull
+        public final List<PackageInfo> packages;
+        @Nullable
+        public final PackageEnumerationWarning warning;
+
+        private InstalledPackagesResult(@NonNull List<PackageInfo> packages,
+                                        @Nullable PackageEnumerationWarning warning) {
+            this.packages = packages;
+            this.warning = warning;
+        }
+    }
+
+    public static final class PackageEnumerationWarning {
+        public final int privilegedCount;
+        public final int unprivilegedCount;
+
+        public PackageEnumerationWarning(int privilegedCount, int unprivilegedCount) {
+            this.privilegedCount = Math.max(0, privilegedCount);
+            this.unprivilegedCount = Math.max(0, unprivilegedCount);
+        }
     }
 
     @SuppressWarnings("deprecation")
