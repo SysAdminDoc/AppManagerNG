@@ -46,6 +46,16 @@ def locale_files(res_dir: Path) -> list[tuple[str, Path]]:
     return files
 
 
+def locale_directories(res_dir: Path) -> list[str]:
+    """Find every language-qualified values directory, regardless of its XML files."""
+    return sorted(
+        directory.name.removeprefix("values-")
+        for directory in res_dir.glob("values-*")
+        if directory.is_dir()
+        and LOCALE_RE.fullmatch(directory.name.removeprefix("values-"))
+    )
+
+
 def snapshot(repo_root: Path) -> dict[str, Any]:
     source_file = repo_root / "app" / "src" / "main" / "res" / "values" / "strings.xml"
     res_dir = source_file.parent.parent
@@ -61,7 +71,7 @@ def snapshot(repo_root: Path) -> dict[str, Any]:
             "stale": sorted(translated_names - source_all),
         }
     region_locales_without_base = []
-    for locale in locales:
+    for locale in locale_directories(res_dir):
         match = re.fullmatch(r"([a-z]{2,3})-r[A-Z]{2}", locale)
         if match and not (res_dir / f"values-{match.group(1)}" / "strings.xml").is_file():
             region_locales_without_base.append(locale)
