@@ -55,20 +55,4 @@
         <packageUrl regex="true">^pkg:maven/io\.netty/[^@]+@4\.1\.(93|110)\.Final$</packageUrl>
         <cve>CVE-2026-47691</cve>
     </suppress>
-    <suppress>
-        <notes>Netty 4.1.93.Final and 4.1.110.Final occur only in Android Gradle Plugin unified-test-platform host configurations. They are absent from both release runtime dependency graphs and both release APK DEX files. Re-evaluate before any UTP or Netty dependency is promoted into the application runtime.</notes>
-        <packageUrl regex="true">^pkg:maven/io\.netty/[^@]+@4\.1\.(93|110)\.Final$</packageUrl>
-        <cve>CVE-2026-56817</cve>
-    </suppress>
-    <suppress>
-        <notes>Netty 4.1.93.Final and 4.1.110.Final occur only in Android Gradle Plugin unified-test-platform host configurations. They are absent from both release runtime dependency graphs and both release APK DEX files. Re-evaluate before any UTP or Netty dependency is promoted into the application runtime.</notes>
-        <packageUrl regex="true">^pkg:maven/io\.netty/[^@]+@4\.1\.(93|110)\.Final$</packageUrl>
-        <cve>CVE-2026-56820</cve>
-    </suppress>
-
-    <suppress>
-        <notes>CVE-2026-53914 is reported against Kotlin build/test artifacts and Kotlin stdlib coordinates resolved while compiling dependencies. The release APK DEX files contain no kotlin/jvm or kotlin/reflect descriptors; the finding is not reachable from shipped application code. Re-evaluate if Kotlin build tooling is upgraded or Kotlin runtime classes become reachable in a release APK.</notes>
-        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/[^@]+@[^?]+$</packageUrl>
-        <cve>CVE-2026-53914</cve>
-    </suppress>
 </suppressions>
