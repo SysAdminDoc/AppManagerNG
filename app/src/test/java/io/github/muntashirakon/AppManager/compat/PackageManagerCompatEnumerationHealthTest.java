@@ -56,9 +56,26 @@ public class PackageManagerCompatEnumerationHealthTest {
         assertEquals(1, result.warning.privilegedCount);
         assertEquals(3, result.warning.unprivilegedCount);
         assertEquals(Arrays.asList("one", "two", "three"), packageNames(result.packages));
-        assertEquals(1, source.unprivilegedListCalls);
+        assertEquals(2, source.unprivilegedListCalls);
         assertEquals(1, source.privilegedListCalls);
         assertEquals(3, source.packageInfoCalls);
+    }
+
+    @Test
+    public void packageRemovedBetweenSnapshotsDoesNotTriggerFallbackOrReturnStaleEntry() {
+        FakeEnumerationSource source = new FakeEnumerationSource();
+        source.unprivilegedResults.add(packages("one", "two", "removed"));
+        source.unprivilegedResults.add(packages("one", "two"));
+        source.privilegedResults.add(packages("one", "two"));
+
+        PackageManagerCompat.InstalledPackagesResult result
+                = PackageManagerCompat.getInstalledPackagesWithStatus(source, 0x20, 0, 0);
+
+        assertNull(result.warning);
+        assertEquals(Arrays.asList("one", "two"), packageNames(result.packages));
+        assertEquals(2, source.unprivilegedListCalls);
+        assertEquals(1, source.privilegedListCalls);
+        assertEquals(0, source.packageInfoCalls);
     }
 
     @Test
@@ -108,6 +125,8 @@ public class PackageManagerCompatEnumerationHealthTest {
         @Nullable
         private List<PackageInfo> unprivilegedPackages = Collections.emptyList();
         @NonNull
+        private final Queue<List<PackageInfo>> unprivilegedResults = new ArrayDeque<>();
+        @NonNull
         private final Queue<List<PackageInfo>> privilegedResults = new ArrayDeque<>();
         @NonNull
         private final Map<String, PackageInfo> packageDetails = new HashMap<>();
@@ -125,6 +144,9 @@ public class PackageManagerCompatEnumerationHealthTest {
         @Override
         public List<PackageInfo> getUnprivilegedPackages(int flags) {
             ++unprivilegedListCalls;
+            if (!unprivilegedResults.isEmpty()) {
+                return unprivilegedResults.remove();
+            }
             return unprivilegedPackages;
         }
 
