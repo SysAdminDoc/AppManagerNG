@@ -3,7 +3,7 @@
     <locale android:name="ar"/>
     <locale android:name="de"/>
     <locale android:name="en"/>
-    <locale android:name="es-ES"/>
+    <locale android:name="es"/>
     <locale android:name="fa"/>
     <locale android:name="fr"/>
     <locale android:name="hi"/>
@@ -11,15 +11,15 @@
     <locale android:name="it"/>
     <locale android:name="ja"/>
     <locale android:name="ko"/>
-    <locale android:name="nb-NO"/>
+    <locale android:name="nb"/>
     <locale android:name="pl"/>
     <locale android:name="pt"/>
     <locale android:name="pt-BR"/>
     <locale android:name="ro"/>
-    <locale android:name="ru-RU"/>
-    <locale android:name="tr-TR"/>
-    <locale android:name="uk-UA"/>
+    <locale android:name="ru"/>
+    <locale android:name="tr"/>
+    <locale android:name="uk"/>
     <locale android:name="vi"/>
-    <locale android:name="zh-CN"/>
+    <locale android:name="zh"/>
     <locale android:name="zh-TW"/>
 </locale-config>

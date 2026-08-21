@@ -163,14 +163,16 @@ public final class Prefs {
     public static final class Appearance {
         @NonNull
         public static String getLanguage() {
-            return AppPref.getString(AppPref.PrefKey.PREF_CUSTOM_LOCALE_STR);
+            return LangUtils.canonicalizeLanguageTag(
+                    AppPref.getString(AppPref.PrefKey.PREF_CUSTOM_LOCALE_STR));
         }
 
         @NonNull
         public static String getLanguage(@NonNull Context context) {
             // Required when application isn't initialised properly
             AppPref appPref = AppPref.getNewInstance(context);
-            return (String) appPref.getValue(AppPref.PrefKey.PREF_CUSTOM_LOCALE_STR);
+            return LangUtils.canonicalizeLanguageTag(
+                    (String) appPref.getValue(AppPref.PrefKey.PREF_CUSTOM_LOCALE_STR));
         }
 
         public static void setLanguage(@NonNull String language) {

@@ -143,17 +143,20 @@ public final class AppearanceUtils {
             String prefLang = Prefs.Appearance.getLanguage();
             if (!osLocales.isEmpty()) {
                 String osTag = osLocales.toLanguageTags();
-                if (!osTag.equalsIgnoreCase(prefLang) && !LangUtils.LANG_AUTO.equals(prefLang)) {
+                String canonicalOsTag = LangUtils.canonicalizeLanguageTag(osTag);
+                if (!canonicalOsTag.equalsIgnoreCase(prefLang) && !LangUtils.LANG_AUTO.equals(prefLang)) {
                     // OS-side authoritative: persist into Prefs without triggering the
                     // setLanguage()→setApplicationLocales() round-trip that would overwrite
                     // the OS value.
                     io.github.muntashirakon.AppManager.utils.AppPref.set(
-                            io.github.muntashirakon.AppManager.utils.AppPref.PrefKey.PREF_CUSTOM_LOCALE_STR, osTag);
+                            io.github.muntashirakon.AppManager.utils.AppPref.PrefKey.PREF_CUSTOM_LOCALE_STR,
+                            canonicalOsTag);
                 } else if (LangUtils.LANG_AUTO.equals(prefLang)) {
                     // OS picked a locale but our Prefs is "auto" — sync forward so subsequent
                     // in-app reads agree with the active locale.
                     io.github.muntashirakon.AppManager.utils.AppPref.set(
-                            io.github.muntashirakon.AppManager.utils.AppPref.PrefKey.PREF_CUSTOM_LOCALE_STR, osTag);
+                            io.github.muntashirakon.AppManager.utils.AppPref.PrefKey.PREF_CUSTOM_LOCALE_STR,
+                            canonicalOsTag);
                 }
             } else if (!LangUtils.LANG_AUTO.equals(prefLang)) {
                 // Prefs has a non-AUTO value, OS-side is empty (e.g. first launch after the

@@ -60,10 +60,16 @@ def snapshot(repo_root: Path) -> dict[str, Any]:
             "missing": len(source_names - translated_names),
             "stale": sorted(translated_names - source_all),
         }
+    region_locales_without_base = []
+    for locale in locales:
+        match = re.fullmatch(r"([a-z]{2,3})-r[A-Z]{2}", locale)
+        if match and not (res_dir / f"values-{match.group(1)}" / "strings.xml").is_file():
+            region_locales_without_base.append(locale)
     return {
         "sourceCount": len(source_names),
         "sourceAllCount": len(source_all),
         "locales": locales,
+        "regionLocalesWithoutBase": region_locales_without_base,
     }
 
 
@@ -129,12 +135,18 @@ def evaluate(data: dict[str, Any], baseline: dict[str, Any]) -> tuple[list[str],
     absent_locales = sorted(set(baseline_locales) - set(data["locales"]))
     if absent_locales:
         problems.append("baseline locale directories are missing: " + ", ".join(absent_locales))
+    for locale in data.get("regionLocalesWithoutBase", []):
+        language = locale.split("-r", maxsplit=1)[0]
+        problems.append(
+            f"values-{locale}: region-specific strings have no values-{language}/strings.xml fallback"
+        )
     summary = {
         "schemaVersion": SCHEMA_VERSION,
         "sourceStrings": data["sourceCount"],
         "localeCount": len(data["locales"]),
         "newMissing": new_missing_total,
         "staleStrings": stale_total,
+        "regionLocalesWithoutBase": len(data.get("regionLocalesWithoutBase", [])),
         "coverage": coverage,
     }
     return problems, summary

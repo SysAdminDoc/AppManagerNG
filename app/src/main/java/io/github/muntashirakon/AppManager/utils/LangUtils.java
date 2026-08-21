@@ -51,6 +51,26 @@ public final class LangUtils {
     }
 
     @NonNull
+    public static String canonicalizeLanguageTag(@NonNull String languageTag) {
+        switch (languageTag.toLowerCase(Locale.ROOT)) {
+            case "es-es":
+                return "es";
+            case "nb-no":
+                return "nb";
+            case "ru-ru":
+                return "ru";
+            case "tr-tr":
+                return "tr";
+            case "uk-ua":
+                return "uk";
+            case "zh-cn":
+                return "zh";
+            default:
+                return languageTag;
+        }
+    }
+
+    @NonNull
     public static Locale getFromPreference(@NonNull Context context) {
         String language = Prefs.Appearance.getLanguage(context);
         Locale locale = getAppLanguages(context).get(language);
