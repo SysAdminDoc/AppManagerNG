@@ -67,6 +67,7 @@ import io.github.muntashirakon.AppManager.profiles.ProfileManager;
 import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
+import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.shortcut.AppActionShortcutPublisher;
 import io.github.muntashirakon.AppManager.tags.AppNoteStore;
@@ -141,6 +142,8 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
     @NonNull
     private AppListLoadStatus mApplicationListLoadStatus = AppListLoadStatus.loaded(0);
     private long mApplicationListLoadGeneration;
+    @Nullable
+    private PackageManagerCompat.PackageEnumerationWarning mPackageEnumerationWarning;
     private final List<ApplicationItem> mApplicationItems = new ArrayList<>();
 
     public int getApplicationItemCount() {
@@ -612,7 +615,8 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         long loadGeneration = beginApplicationListLoad();
         mFilterResult = executor.submit(() -> {
             try {
-                List<ApplicationItem> updatedApplicationItems = loadInstalledOrBackedUpApplications();
+                List<ApplicationItem> updatedApplicationItems
+                        = loadInstalledOrBackedUpApplications(loadGeneration);
                 attachUserTags(updatedApplicationItems);
                 attachUserNotes(updatedApplicationItems);
                 synchronized (mApplicationItems) {
@@ -627,8 +631,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                     sortApplicationList(mSortBy, mReverseSort);
                     filterItemsByFlags();
                 }
-                if (updateApplicationListLoadStatus(loadGeneration,
-                        AppListLoadStatus.loaded(updatedApplicationItems.size()))) {
+                if (completeApplicationListLoad(loadGeneration, updatedApplicationItems.size())) {
                     publishDynamicShortcuts(updatedApplicationItems);
                 }
             } catch (Exception e) {
@@ -645,8 +648,9 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
 
     @NonNull
     @WorkerThread
-    protected List<ApplicationItem> loadInstalledOrBackedUpApplications() {
-        return PackageUtils.getInstalledOrBackedUpApplicationsFromDb(getApplication(), true, true);
+    protected List<ApplicationItem> loadInstalledOrBackedUpApplications(long loadGeneration) {
+        return PackageUtils.getInstalledOrBackedUpApplicationsFromDb(getApplication(), true, true,
+                warning -> onPackageEnumerationComplete(loadGeneration, warning));
     }
 
     @WorkerThread
@@ -663,6 +667,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         long loadGeneration;
         synchronized (mApplicationListLoadStatusLock) {
             loadGeneration = ++mApplicationListLoadGeneration;
+            mPackageEnumerationWarning = null;
             mApplicationListLoadStatus = status;
         }
         dispatchApplicationListLoadStatus(status);
@@ -670,6 +675,48 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         ThreadUtils.postOnMainThreadDelayed(() -> markApplicationListLoadTimedOut(expectedGeneration),
                 APPLICATION_LIST_LOAD_TIMEOUT_MS);
         return loadGeneration;
+    }
+
+    private boolean completeApplicationListLoad(long loadGeneration, int itemCount) {
+        AppListLoadStatus status;
+        synchronized (mApplicationListLoadStatusLock) {
+            if (loadGeneration != mApplicationListLoadGeneration) {
+                return false;
+            }
+            status = createLoadedStatus(itemCount, mPackageEnumerationWarning);
+            mApplicationListLoadStatus = status;
+        }
+        dispatchApplicationListLoadStatus(status);
+        return true;
+    }
+
+    @VisibleForTesting
+    void onPackageEnumerationComplete(long loadGeneration,
+                                      @Nullable PackageManagerCompat.PackageEnumerationWarning warning) {
+        AppListLoadStatus status;
+        synchronized (mApplicationListLoadStatusLock) {
+            if (loadGeneration != mApplicationListLoadGeneration) {
+                return;
+            }
+            mPackageEnumerationWarning = warning;
+            if (mApplicationListLoadStatus.state != AppListLoadState.LOADED) {
+                return;
+            }
+            status = createLoadedStatus(mApplicationListLoadStatus.staleItemCount, warning);
+            mApplicationListLoadStatus = status;
+        }
+        dispatchApplicationListLoadStatus(status);
+    }
+
+    @NonNull
+    private AppListLoadStatus createLoadedStatus(int itemCount,
+                                                 @Nullable PackageManagerCompat.PackageEnumerationWarning warning) {
+        if (warning == null) {
+            return AppListLoadStatus.loaded(itemCount);
+        }
+        return AppListLoadStatus.loadedWithEnumerationWarning(itemCount,
+                Ops.getInferredMode(getApplication()).toString(),
+                warning.privilegedCount, warning.unprivilegedCount);
     }
 
     private void markApplicationListLoadTimedOut(long loadGeneration) {
@@ -1272,23 +1319,44 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         public final String errorClass;
         @Nullable
         public final String errorMessage;
+        @Nullable
+        public final String privilegedMode;
+        public final int privilegedPackageCount;
+        public final int unprivilegedPackageCount;
 
         private AppListLoadStatus(@NonNull AppListLoadState state, int staleItemCount,
-                                  @Nullable String errorClass, @Nullable String errorMessage) {
+                                  @Nullable String errorClass, @Nullable String errorMessage,
+                                  @Nullable String privilegedMode, int privilegedPackageCount,
+                                  int unprivilegedPackageCount) {
             this.state = state;
             this.staleItemCount = Math.max(0, staleItemCount);
             this.errorClass = errorClass;
             this.errorMessage = errorMessage;
+            this.privilegedMode = privilegedMode;
+            this.privilegedPackageCount = privilegedPackageCount;
+            this.unprivilegedPackageCount = unprivilegedPackageCount;
         }
 
         @NonNull
         public static AppListLoadStatus loading(int staleItemCount) {
-            return new AppListLoadStatus(AppListLoadState.LOADING, staleItemCount, null, null);
+            return new AppListLoadStatus(AppListLoadState.LOADING, staleItemCount,
+                    null, null, null, -1, -1);
         }
 
         @NonNull
         public static AppListLoadStatus loaded(int itemCount) {
-            return new AppListLoadStatus(AppListLoadState.LOADED, itemCount, null, null);
+            return new AppListLoadStatus(AppListLoadState.LOADED, itemCount,
+                    null, null, null, -1, -1);
+        }
+
+        @NonNull
+        public static AppListLoadStatus loadedWithEnumerationWarning(int itemCount,
+                                                                     @NonNull String privilegedMode,
+                                                                     int privilegedPackageCount,
+                                                                     int unprivilegedPackageCount) {
+            return new AppListLoadStatus(AppListLoadState.LOADED, itemCount, null, null,
+                    privilegedMode, Math.max(0, privilegedPackageCount),
+                    Math.max(0, unprivilegedPackageCount));
         }
 
         @NonNull
@@ -1298,7 +1366,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                 errorClass = throwable.getClass().getName();
             }
             return new AppListLoadStatus(AppListLoadState.FAILED, staleItemCount,
-                    errorClass, throwable.getMessage());
+                    errorClass, throwable.getMessage(), null, -1, -1);
         }
 
         public boolean isFailed() {
@@ -1307,6 +1375,13 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
 
         public boolean hasStaleItems() {
             return staleItemCount > 0;
+        }
+
+        public boolean hasEnumerationWarning() {
+            return state == AppListLoadState.LOADED
+                    && !TextUtils.isEmpty(privilegedMode)
+                    && privilegedPackageCount >= 0
+                    && unprivilegedPackageCount >= 0;
         }
 
         /**

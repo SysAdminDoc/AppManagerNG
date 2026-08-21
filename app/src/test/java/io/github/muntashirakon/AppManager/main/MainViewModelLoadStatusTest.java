@@ -4,11 +4,13 @@ package io.github.muntashirakon.AppManager.main;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.lifecycle.Observer;
 import androidx.test.core.app.ApplicationProvider;
 
@@ -20,11 +22,13 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.shadows.ShadowLooper;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 
 @RunWith(RobolectricTestRunner.class)
@@ -85,6 +89,43 @@ public class MainViewModelLoadStatusTest {
                 MainViewModel.AppListLoadStatus.loading(12).blocksBatchOperations());
         assertFalse(MainViewModel.AppListLoadStatus.loaded(12).blocksBatchOperations());
         assertFalse(MainViewModel.AppListLoadStatus.loaded(0).blocksBatchOperations());
+    }
+
+    @Test
+    public void privilegedEnumerationShortfallIsPublishedAndClearedByTheNextHealthyScan()
+            throws Exception {
+        TestMainViewModel viewModel = newViewModel();
+        List<MainViewModel.AppListLoadStatus> statuses = new ArrayList<>();
+        Observer<MainViewModel.AppListLoadStatus> statusObserver = statuses::add;
+        Observer<List<ApplicationItem>> listObserver = items -> {
+        };
+        viewModel.setNextItems(Arrays.asList(
+                app("com.example.one"), app("com.example.two"), app("com.example.three")));
+        viewModel.setNextEnumerationWarning(
+                new PackageManagerCompat.PackageEnumerationWarning(1, 3));
+
+        try {
+            viewModel.getApplicationListLoadStatus().observeForever(statusObserver);
+            viewModel.getApplicationItems().observeForever(listObserver);
+            waitForCurrentTask(viewModel);
+
+            MainViewModel.AppListLoadStatus warningStatus = last(statuses);
+            assertTrue(warningStatus.hasEnumerationWarning());
+            assertNotNull(warningStatus.privilegedMode);
+            assertEquals(1, warningStatus.privilegedPackageCount);
+            assertEquals(3, warningStatus.unprivilegedPackageCount);
+
+            viewModel.setNextEnumerationWarning(null);
+            viewModel.loadApplicationItems();
+            waitForCurrentTask(viewModel);
+
+            assertFalse(last(statuses).hasEnumerationWarning());
+            assertEquals(MainViewModel.AppListLoadState.LOADED, last(statuses).state);
+        } finally {
+            viewModel.getApplicationListLoadStatus().removeObserver(statusObserver);
+            viewModel.getApplicationItems().removeObserver(listObserver);
+            viewModel.close();
+        }
     }
 
     @Test
@@ -162,6 +203,8 @@ public class MainViewModelLoadStatusTest {
     private static final class TestMainViewModel extends MainViewModel {
         @NonNull
         private List<ApplicationItem> nextItems = Collections.emptyList();
+        @Nullable
+        private PackageManagerCompat.PackageEnumerationWarning nextEnumerationWarning;
         private RuntimeException nextFailure;
 
         private TestMainViewModel(@NonNull Application application) {
@@ -177,14 +220,21 @@ public class MainViewModelLoadStatusTest {
             nextFailure = failure;
         }
 
+        private void setNextEnumerationWarning(
+                @Nullable PackageManagerCompat.PackageEnumerationWarning warning) {
+            nextEnumerationWarning = warning;
+        }
+
         @NonNull
         @Override
-        protected List<ApplicationItem> loadInstalledOrBackedUpApplications() {
+        protected List<ApplicationItem> loadInstalledOrBackedUpApplications(
+                long loadGeneration) {
             if (nextFailure != null) {
                 RuntimeException failure = nextFailure;
                 nextFailure = null;
                 throw failure;
             }
+            onPackageEnumerationComplete(loadGeneration, nextEnumerationWarning);
             return new ArrayList<>(nextItems);
         }
 
