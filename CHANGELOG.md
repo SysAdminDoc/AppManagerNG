@@ -7,6 +7,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - Made privileged-server asset staging copy the asset stream itself instead of bytes from the containing APK.
+- Made default export filenames portable across locales and storage providers. Rules, app lists, usage data, APKs, profiles, and extracted icons now keep safe extensions and stay within provider filename limits.
 - Detected truncated package lists from privileged mode. The main list now falls back to Android's normal app view and shows both counts instead of silently omitting apps.
 
 ### Security

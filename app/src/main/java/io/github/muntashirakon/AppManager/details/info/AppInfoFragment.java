@@ -204,6 +204,7 @@ import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
+import io.github.muntashirakon.AppManager.utils.ExportFilenameUtils;
 import io.github.muntashirakon.AppManager.utils.FreezeUtils;
 import io.github.muntashirakon.AppManager.utils.IntentUtils;
 import io.github.muntashirakon.AppManager.utils.KeyStoreUtils;
@@ -544,7 +545,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         } else if (itemId == R.id.action_record_cpu_profile) {
             showCpuProfileCapture();
         } else if (itemId == R.id.action_export_blocking_rules) {
-            final String fileName = "app_manager_rules_export-" + DateUtils.formatDateTime(mActivity, System.currentTimeMillis()) + ".am.tsv";
+            final String fileName = ExportFilenameUtils.buildTimestampedFileName(mActivity,
+                    "app_manager_rules_export-", ".am.tsv", System.currentTimeMillis());
             mExport.launch(fileName, uri -> {
                 if (uri == null || mMainModel == null) {
                     // Back button pressed.
@@ -662,7 +664,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             }
             loadAndShowNetPolicyDialog(mApplicationInfo.uid);
         } else if (itemId == R.id.action_extract_icon) {
-            String iconName = mAppLabel + "_icon.png";
+            String iconName = ExportFilenameUtils.buildFileName(mAppLabel + "_icon", ".png", "app_icon");
             mExport.launch(iconName, uri -> {
                 if (uri == null) {
                     // Back button pressed.

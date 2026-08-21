@@ -32,6 +32,8 @@ public class ProfilesActivityTest {
         assertFalse(filename.contains("\n"));
         assertFalse(filename.contains("/"));
         assertFalse(filename.contains("null"));
+        assertTrue(filename.matches("[A-Za-z0-9._-]+"));
+        assertTrue(filename.getBytes(StandardCharsets.UTF_8).length <= 240);
     }
 
     @Test
