@@ -104,13 +104,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ### P2
 
-- [ ] P2 — Stop the version-string parser from crashing the app at launch
-  Why: `getBuildType()` throws IllegalStateException("Invalid App Manager version") for any versionName suffix that is not alphaNN/betaNN/rcNN, and `lastPart.substring(0, lastPart.length() - 2)` throws StringIndexOutOfBoundsException first on a one-character suffix. `buildExpired()` is called unguarded from three entry points including SplashActivity.onCreate, so shipping a `-rc1` or `-pre` build bricks the app at launch. Nothing tests the parser and the release-consistency gate does not validate the versionName grammar.
-  Evidence: self/life/BuildExpiryChecker.java:113-133; callers main/SplashActivity.java:117, BaseActivity.java:86, crypto/ks/KeyStoreActivity.java:33, settings/MainPreferences.java:56; app/build.gradle:78 already sets a `-DEBUG` suffix for debug builds.
-  Touches: self/life/BuildExpiryChecker.java (fall back to the stable build type instead of throwing; parse the numeric tail defensively), scripts/verify-release-consistency.sh (assert versionName matches the accepted grammar), a new parser unit test in app/src/test.
-  Acceptance: every suffix form — none, -alpha01, -beta1, -rc1, -DEBUG, -pre, bare `-` — yields a build type without throwing; expiry behaviour for the existing recognised forms is unchanged; the consistency gate fails on a versionName the parser cannot classify.
-  Complexity: S
-
 - [ ] P2 — Give the eleven region-only languages a base-language strings.xml
   Why: eleven languages have no base-language string resources — bn, in, it, nb, ru, tr and zh have no values-<lang> directory at all, and cs, es and uk have one containing only disclaimer.xml. Resource resolution before API 24 has no same-language/other-region fallback, so an API 21-23 device set to ru-UA, es-MX, cs-SK, it-CH or zh-HK falls back to English even though a complete translation ships. That is exactly the population the minSdk-21 policy exists to protect. Only ar and pt are wired correctly today (base translation plus a regional overlay: values-ar 1,277 strings with values-ar-rSA overlaying 42; values-pt 1,245 with values-pt-rBR 1,102).
   Evidence: for each values-<lang>-r<REGION>, checked whether values-<lang>/strings.xml exists — MISSING for bn, in, it, nb, ru, tr, zh; present-but-no-strings.xml for cs, es, uk; correct for ar, pt. values-ru-rRU 1,245 strings, values-it-rIT 1,246, values-tr-rTR 1,245. docs/policy/minsdk-21-ceiling.md.

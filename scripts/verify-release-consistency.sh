@@ -30,6 +30,14 @@ fi
 echo "Source of truth: versionName=$VERSION_NAME versionCode=$VERSION_CODE compileSdk=$COMPILE_SDK minSdk=$MIN_SDK targetSdk=$TARGET_SDK Gradle=$GRADLE_VERSION AGP=$AGP_VERSION NDK=$NDK_VERSION"
 FAIL=0
 
+VERSION_NAME_PATTERN='^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)[0-9]+)?$'
+if [[ "$VERSION_NAME" =~ $VERSION_NAME_PATTERN ]]; then
+  echo "OK: versionName uses the supported stable/prerelease grammar"
+else
+  echo "ERROR: versionName '$VERSION_NAME' must be X.Y.Z or X.Y.Z-{alpha,beta,rc}N" >&2
+  FAIL=1
+fi
+
 check_contains() {
   local file="$1"
   local label="$2"
