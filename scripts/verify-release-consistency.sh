@@ -6,6 +6,32 @@
 
 set -euo pipefail
 
+VERSION_NAME_PATTERN='^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)[0-9]+)?$'
+VERSION_NAME_CORE_PATTERN='[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)[0-9]+)?'
+
+is_supported_version_name() {
+  [[ "$1" =~ $VERSION_NAME_PATTERN ]]
+}
+
+extract_readme_badge_version() {
+  local badge_version
+  badge_version=$(grep -oP 'version-\K[0-9]+\.[0-9]+\.[0-9]+(?:--(?:alpha|beta|rc)[0-9]+)?' "$1" | head -1 || true)
+  printf '%s\n' "${badge_version/--/-}"
+}
+
+extract_release_tag_version() {
+  if [[ "$1" =~ ^v($VERSION_NAME_CORE_PATTERN)$ ]]; then
+    printf '%s\n' "${BASH_REMATCH[1]}"
+    return 0
+  fi
+  return 1
+}
+
+# Keep the parsing seam sourceable for host regression tests.
+if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
+  return 0
+fi
+
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BUILD_GRADLE="$REPO_ROOT/app/build.gradle"
 VERSIONS_GRADLE="$REPO_ROOT/versions.gradle"
@@ -30,8 +56,7 @@ fi
 echo "Source of truth: versionName=$VERSION_NAME versionCode=$VERSION_CODE compileSdk=$COMPILE_SDK minSdk=$MIN_SDK targetSdk=$TARGET_SDK Gradle=$GRADLE_VERSION AGP=$AGP_VERSION NDK=$NDK_VERSION"
 FAIL=0
 
-VERSION_NAME_PATTERN='^[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)[0-9]+)?$'
-if [[ "$VERSION_NAME" =~ $VERSION_NAME_PATTERN ]]; then
+if is_supported_version_name "$VERSION_NAME"; then
   echo "OK: versionName uses the supported stable/prerelease grammar"
 else
   echo "ERROR: versionName '$VERSION_NAME' must be X.Y.Z or X.Y.Z-{alpha,beta,rc}N" >&2
@@ -69,7 +94,7 @@ check_regex() {
 # --- README badge ---
 README="$REPO_ROOT/README.md"
 if [[ -f "$README" ]]; then
-  BADGE_VERSION=$(grep -oP 'version-\K[0-9]+\.[0-9]+\.[0-9]+' "$README" | head -1 || true)
+  BADGE_VERSION=$(extract_readme_badge_version "$README")
   BADGE_MIN_SDK=$(grep -oP 'minSdk-\K[0-9]+' "$README" | head -1 || true)
   BADGE_TARGET_SDK=$(grep -oP 'targetSdk-\K[0-9]+' "$README" | head -1 || true)
   if [[ "$BADGE_VERSION" != "$VERSION_NAME" ]]; then
@@ -135,8 +160,7 @@ RELEASE_TAG="${RELEASE_TAG_NAME:-}"
 if [[ -z "$RELEASE_TAG" ]] && git -C "$REPO_ROOT" describe --tags --exact-match HEAD >/dev/null 2>&1; then
   RELEASE_TAG="$(git -C "$REPO_ROOT" describe --tags --exact-match HEAD)"
 fi
-if [[ -n "$RELEASE_TAG" && "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  TAG_VERSION="${RELEASE_TAG#v}"
+if [[ -n "$RELEASE_TAG" ]] && TAG_VERSION=$(extract_release_tag_version "$RELEASE_TAG"); then
   if [[ "$TAG_VERSION" != "$VERSION_NAME" ]]; then
     echo "ERROR: Git tag ($RELEASE_TAG) version ($TAG_VERSION) != versionName ($VERSION_NAME)" >&2
     FAIL=1
@@ -154,9 +178,9 @@ fi
 # --- Distribution listing packets must match the published-release receipt ---
 DIST_DIR="$REPO_ROOT/docs/distribution"
 RELEASE_METADATA_VERIFIER="$REPO_ROOT/scripts/verify_release_metadata.py"
-if command -v python3 >/dev/null 2>&1; then
+if command -v python3 >/dev/null 2>&1 && python3 --version >/dev/null 2>&1; then
   PYTHON_BIN=python3
-elif command -v python >/dev/null 2>&1; then
+elif command -v python >/dev/null 2>&1 && python --version >/dev/null 2>&1; then
   PYTHON_BIN=python
 else
   echo "ERROR: Python 3 is required to verify the release receipt" >&2
