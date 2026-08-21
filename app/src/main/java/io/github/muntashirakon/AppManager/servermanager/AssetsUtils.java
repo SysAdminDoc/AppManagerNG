@@ -33,26 +33,28 @@ class AssetsUtils {
     @WorkerThread
     public static void copyFile(@NonNull Context context, String fileName, File destFile, boolean force)
             throws IOException {
+        long assetLength;
         try (AssetFileDescriptor openFd = context.getAssets().openFd(fileName)) {
-            if (force) {
-                destFile.delete();
-            } else if (destFile.exists()) {
-                if (hasSameAssetContent(context, fileName, destFile, openFd.getLength())) {
-                    return;
-                }
-                destFile.delete();
+            assetLength = openFd.getLength();
+        }
+        if (force) {
+            destFile.delete();
+        } else if (destFile.exists()) {
+            if (hasSameAssetContent(context, fileName, destFile, assetLength)) {
+                return;
             }
+            destFile.delete();
+        }
 
-            try (FileInputStream open = openFd.createInputStream();
-                 FileOutputStream fos = new FileOutputStream(destFile)) {
-                byte[] buff = new byte[IoUtils.DEFAULT_BUFFER_SIZE];
-                int len;
-                while ((len = open.read(buff)) != -1) {
-                    fos.write(buff, 0, len);
-                }
-                fos.flush();
-                fos.getFD().sync();
+        try (InputStream open = context.getAssets().open(fileName);
+             FileOutputStream fos = new FileOutputStream(destFile)) {
+            byte[] buff = new byte[IoUtils.DEFAULT_BUFFER_SIZE];
+            int len;
+            while ((len = open.read(buff)) != -1) {
+                fos.write(buff, 0, len);
             }
+            fos.flush();
+            fos.getFD().sync();
         }
     }
 
@@ -62,8 +64,7 @@ class AssetsUtils {
         if (assetLength >= 0 && destFile.length() != assetLength) {
             return false;
         }
-        try (AssetFileDescriptor openFd = context.getAssets().openFd(fileName);
-             FileInputStream assetStream = openFd.createInputStream();
+        try (InputStream assetStream = context.getAssets().open(fileName);
              FileInputStream destStream = new FileInputStream(destFile)) {
             return MessageDigest.isEqual(getSha256(assetStream), getSha256(destStream));
         }
