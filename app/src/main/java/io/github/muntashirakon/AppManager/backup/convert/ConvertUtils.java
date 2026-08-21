@@ -123,8 +123,8 @@ public final class ConvertUtils {
     public static Path[] getRelevantImportFiles(@NonNull Path baseLocation, @ImportType int backupType) {
         switch (backupType) {
             case ImportType.OAndBackup:
-                // Package directories
-                return baseLocation.listFiles(Path::isDirectory);
+                // Legacy package directories and each current Neo Backup instance.
+                return OABConverter.getRelevantImportLocations(baseLocation);
             case ImportType.TitaniumBackup:
                 // Properties files
                 return baseLocation.listFiles((dir, name) -> name.endsWith(".properties"));
@@ -152,6 +152,30 @@ public final class ConvertUtils {
         return dataDirs.toArray(new String[0]);
     }
 
+    @SuppressLint("SdCardPath")
+    @NonNull
+    static String[] getNeoDataDirs(String packageName, int userHandle, boolean hasInternal,
+                                   boolean hasDeviceProtected, boolean hasExternal, boolean hasObb,
+                                   boolean hasMedia) {
+        List<String> dataDirs = new ArrayList<>(5);
+        if (hasInternal) {
+            dataDirs.add("/data/user/" + userHandle + "/" + packageName);
+        }
+        if (hasDeviceProtected) {
+            dataDirs.add("/data/user_de/" + userHandle + "/" + packageName);
+        }
+        if (hasExternal) {
+            dataDirs.add("/storage/emulated/" + userHandle + "/Android/data/" + packageName);
+        }
+        if (hasObb) {
+            dataDirs.add("/storage/emulated/" + userHandle + "/Android/obb/" + packageName);
+        }
+        if (hasMedia) {
+            dataDirs.add("/storage/emulated/" + userHandle + "/Android/media/" + packageName);
+        }
+        return dataDirs.toArray(new String[0]);
+    }
+
     @NonNull
     static String getRelativeBackupEntryName(@NonNull String entryName, @NonNull String expectedPrefix)
             throws IOException {
@@ -168,7 +192,7 @@ public final class ConvertUtils {
         return relativeName;
     }
 
-    private static void validateRelativeBackupEntryName(@NonNull String relativeName, @NonNull String originalName)
+    static void validateRelativeBackupEntryName(@NonNull String relativeName, @NonNull String originalName)
             throws IOException {
         if (relativeName.isEmpty()) {
             return;

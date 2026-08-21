@@ -2,8 +2,11 @@
 
 package io.github.muntashirakon.AppManager.backup.convert;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.After;
 import org.junit.Before;
@@ -15,8 +18,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.TimeZone;
 
 import io.github.muntashirakon.AppManager.backup.BackupException;
+import io.github.muntashirakon.AppManager.backup.BackupFlags;
 import io.github.muntashirakon.AppManager.backup.BackupItems;
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
 import io.github.muntashirakon.AppManager.backup.MetadataManager;
@@ -29,15 +34,20 @@ import io.github.muntashirakon.io.Paths;
 
 @RunWith(RobolectricTestRunner.class)
 public class OABConverterTest {
+    private static final String NEO_PATH_SUFFIX = "neo_backups";
+    private static final String NEO_INSTANCE = "2021-05-29-18-27-13-717-user_0";
     private static final String PACKAGE_NAME_FULL = "dnsfilter.android";
     private static final String PACKAGE_NAME_APK_INT = "org.billthefarmer.editor";
     private static final String PACKAGE_NAME_INT = "ca.cmetcalfe.locationshare";
     private static final String PACKAGE_NAME_APK = "ademar.textlauncher";
     private final ClassLoader classLoader = getClass().getClassLoader();
     private Path tmpBackupPath;
+    private TimeZone originalTimeZone;
 
     @Before
     public void setUp() throws IOException {
+        originalTimeZone = TimeZone.getDefault();
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
         tmpBackupPath = Paths.get(RoboUtils.getTestBaseDir()).createNewDirectory("backup-dir");
         Prefs.Storage.setVolumePath(tmpBackupPath.toString());
     }
@@ -45,6 +55,61 @@ public class OABConverterTest {
     @After
     public void tearDown() {
         tmpBackupPath.delete();
+        TimeZone.setDefault(originalTimeZone);
+    }
+
+    @Test
+    public void detectsLegacyLayoutTest() throws BackupException, IOException {
+        assert classLoader != null;
+        Path backupLocation = Paths.get(classLoader.getResource(OABConverter.PATH_SUFFIX).getFile())
+                .findFile(PACKAGE_NAME_INT);
+        OABConverter.SourceLayout sourceLayout = OABConverter.detectSourceLayout(backupLocation);
+        assertEquals(OABConverter.Layout.LEGACY, sourceLayout.layout);
+        assertEquals(PACKAGE_NAME_INT, sourceLayout.packageName);
+        assertEquals(backupLocation, sourceLayout.location);
+    }
+
+    @Test
+    public void detectsNeoLayoutTest() throws BackupException, IOException {
+        assert classLoader != null;
+        Path packageDirectory = Paths.get(classLoader.getResource(NEO_PATH_SUFFIX).getFile())
+                .findFile(PACKAGE_NAME_INT);
+        Path instanceDirectory = packageDirectory.findFile(NEO_INSTANCE);
+        OABConverter.SourceLayout directLayout = OABConverter.detectSourceLayout(instanceDirectory);
+        assertEquals(OABConverter.Layout.NEO, directLayout.layout);
+        assertEquals(PACKAGE_NAME_INT, directLayout.packageName);
+        assertEquals(instanceDirectory, directLayout.location);
+
+        OABConverter.SourceLayout nestedLayout = OABConverter.detectSourceLayout(packageDirectory);
+        assertEquals(OABConverter.Layout.NEO, nestedLayout.layout);
+        assertEquals(instanceDirectory, nestedLayout.location);
+
+        Path[] importLocations = ConvertUtils.getRelevantImportFiles(
+                packageDirectory.requireParent(), ImportType.OAndBackup);
+        assertArrayEquals(new Path[]{instanceDirectory}, importLocations);
+    }
+
+    @Test
+    public void rejectsUnknownLayoutTest() throws IOException {
+        Path unknownLayout = tmpBackupPath.createNewDirectory("not-a-backup");
+        BackupException exception = assertThrows(BackupException.class,
+                () -> OABConverter.detectSourceLayout(unknownLayout));
+        assertTrue(exception.getMessage().contains("<packageName>.log"));
+        assertTrue(exception.getMessage().contains("backup.properties"));
+        assertTrue(exception.getMessage().contains("YYYY-MM-DD-HH-MM-SS[-mmm]-user_N"));
+    }
+
+    @Test
+    public void normalizesNeoArchiveEntriesTest() throws IOException {
+        assertEquals("shared_prefs/settings.xml", OABConverter.getNeoRelativeBackupEntryName(
+                "./shared_prefs/settings.xml", PACKAGE_NAME_INT));
+        assertEquals("shared_prefs/settings.xml", OABConverter.getNeoRelativeBackupEntryName(
+                PACKAGE_NAME_INT + "/shared_prefs/settings.xml", PACKAGE_NAME_INT));
+        assertEquals("", OABConverter.getNeoRelativeBackupEntryName(PACKAGE_NAME_INT, PACKAGE_NAME_INT));
+        assertThrows(IOException.class, () -> OABConverter.getNeoRelativeBackupEntryName(
+                "../escape", PACKAGE_NAME_INT));
+        assertThrows(IOException.class, () -> OABConverter.getNeoRelativeBackupEntryName(
+                PACKAGE_NAME_INT + "/../escape", PACKAGE_NAME_INT));
     }
 
     @Test
@@ -136,9 +201,36 @@ public class OABConverterTest {
         BackupItems.BackupItem backupItem = BackupItems.findBackupItem(BackupUtils.getV5RelativeDir(newBackupLocation.getName()));
         // Verify source
         BackupMetadataV5 metadataV5 = backupItem.getMetadata();
-        assertEquals(MetadataManager.getCurrentBackupMetaVersion(), metadataV5.info.version);
-        assertEquals("OAndBackup", metadataV5.metadata.backupName);
+        assertLocationShareMetadata(metadataV5);
         List<String> files = TarUtilsTest.getFileNamesGZip(Arrays.asList(backupItem.getDataFiles(0)));
+        assertEquals(internalStorage, files);
+        assertFalse(newBackupLocation.hasFile("source.tar.gz.0"));
+        assertFalse(newBackupLocation.hasFile("data1.tar.gz.0"));
+    }
+
+    @Test
+    public void convertCurrentNeoBackupTest() throws BackupException, IOException {
+        final List<String> internalStorage = Arrays.asList(
+                "shared_prefs/",
+                "shared_prefs/ca.cmetcalfe.locationshare_preferences.xml",
+                "shared_prefs/_has_set_default_values.xml");
+        assert classLoader != null;
+        Path backupLocation = Paths.get(classLoader.getResource(NEO_PATH_SUFFIX).getFile())
+                .findFile(PACKAGE_NAME_INT)
+                .findFile(NEO_INSTANCE);
+        OABConverter oabConvert = new OABConverter(backupLocation);
+        assertEquals(PACKAGE_NAME_INT, oabConvert.getPackageName());
+        oabConvert.convert();
+        Path newBackupLocation = Prefs.Storage.getAppManagerDirectory()
+                .findFile(BackupItems.BACKUP_DIRECTORY)
+                .listFiles()[0];
+        BackupItems.BackupItem backupItem = BackupItems.findBackupItem(
+                BackupUtils.getV5RelativeDir(newBackupLocation.getName()));
+        BackupMetadataV5 metadataV5 = backupItem.getMetadata();
+        assertLocationShareMetadata(metadataV5);
+        List<String> files = TarUtilsTest.getFileNamesGZip(Arrays.asList(backupItem.getDataFiles(0)));
+        Collections.sort(files);
+        Collections.sort(internalStorage);
         assertEquals(internalStorage, files);
         assertFalse(newBackupLocation.hasFile("source.tar.gz.0"));
         assertFalse(newBackupLocation.hasFile("data1.tar.gz.0"));
@@ -163,5 +255,22 @@ public class OABConverterTest {
                 Arrays.asList(backupItem.getSourceFiles())));
         assertFalse(newBackupLocation.hasFile("data0.tar.gz.0"));
         assertFalse(newBackupLocation.hasFile("data1.tar.gz.0"));
+    }
+
+    private static void assertLocationShareMetadata(BackupMetadataV5 metadataV5) {
+        assertEquals(MetadataManager.getCurrentBackupMetaVersion(), metadataV5.info.version);
+        assertEquals(1622312833717L, metadataV5.info.backupTime);
+        assertEquals(BackupFlags.BACKUP_MULTIPLE | BackupFlags.BACKUP_INT_DATA | BackupFlags.BACKUP_CACHE,
+                metadataV5.info.flags.getFlags());
+        assertEquals("OAndBackup", metadataV5.metadata.backupName);
+        assertEquals("Location Share", metadataV5.metadata.label);
+        assertEquals(PACKAGE_NAME_INT, metadataV5.metadata.packageName);
+        assertEquals("1.4.1", metadataV5.metadata.versionName);
+        assertEquals(8, metadataV5.metadata.versionCode);
+        assertArrayEquals(new String[]{"/data/user/0/" + PACKAGE_NAME_INT}, metadataV5.metadata.dataDirs);
+        assertFalse(metadataV5.metadata.isSystem);
+        assertFalse(metadataV5.metadata.isSplitApk);
+        assertArrayEquals(new String[0], metadataV5.metadata.splitConfigs);
+        assertEquals("base.apk", metadataV5.metadata.apkName);
     }
 }

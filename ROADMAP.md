@@ -104,13 +104,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ### P2
 
-- [ ] P2 — Support the current Neo Backup on-disk format in the importer
-  Why: OABConverter parses `<packageName>.log` as JSON with `lastBackupMillis` — the legacy OAndBackupX layout. Current Neo Backup writes `backup.properties` inside a `YYYY-MM-DD-HH-MM-SS[-mmm]-user_N` directory per backup instance, so present-day Neo Backup archives do not import at all. Neo Backup has been unpushed since 2026-05-03 with 239 open issues and its users are actively looking for an exit.
-  Evidence: backup/convert/OABConverter.java:197-215; Neo-Backup Constants.kt (BACKUP_INSTANCE_PROPERTIES_INDIR = "backup.$PROP_NAME", BACKUP_INSTANCE_REGEX_PATTERN, LOG_INSTANCE = "%s.log.txt"); upstream MuntashirAkon/AppManager#2020 (2026-08-06, "add the option to import backup from Neo Backup").
-  Touches: backup/convert/OABConverter.java (detect and branch on layout rather than replacing the legacy path), backup/convert/ConvertUtils.java, backup/convert/ImportType.java and its strings if the picker should name the format, converter tests with fixtures for both layouts.
-  Acceptance: a fixture directory in each layout imports to the same NG backup metadata; a directory in neither layout is rejected with a message naming what was expected, not a generic failure; legacy imports are byte-for-byte unchanged; parser-level unit tests cover both plus the malformed case.
-  Complexity: M
-
 - [ ] P2 — Get the no-root accessibility path off its own main thread
   Why: onAccessibilityEvent runs on the service main thread and sleeps in it — one second directly, and up to five seconds through waitUntilEnabled's ten 500 ms iterations. A blocked AccessibilityService stops delivering events and can be dropped by the system, and this is the no-root force-stop / clear-data automation path. Lint cannot see it: ThreadConstraint is suppressed 69 times in app/lint-baseline.xml.
   Evidence: accessibility/NoRootAccessibilityService.java:36-38 (handler), :73 SystemClock.sleep(1000), :147; accessibility/BaseAccessibilityService.java:73,81,89 and :242-248.
