@@ -190,6 +190,20 @@ public final class PackageManagerCompat {
             if (privilegedCount >= unprivilegedCount) {
                 return new InstalledPackagesResult(packageInfoList, null);
             }
+            // An app can be removed between the reference and privileged snapshots. Confirm the
+            // shortfall before warning or restoring entries from the older snapshot.
+            try {
+                List<PackageInfo> refreshedPackages = source.getUnprivilegedPackages(flags & NEEDED_FLAGS);
+                if (refreshedPackages != null) {
+                    refPackages = refreshedPackages;
+                    unprivilegedCount = refPackages.size();
+                    if (containsAllPackageNames(packageInfoList, refPackages)) {
+                        return new InstalledPackagesResult(packageInfoList, null);
+                    }
+                }
+            } catch (RuntimeException e) {
+                Log.w(TAG, "Could not refresh the unprivileged package reference for user " + userId, e);
+            }
             Log.w(TAG, "Privileged package enumeration returned %d of %d packages for user %d; "
                             + "using the unprivileged reference",
                     privilegedCount, unprivilegedCount, userId);
@@ -214,6 +228,23 @@ public final class PackageManagerCompat {
         Log.w(TAG, "Could not fetch installed packages for user %d using getInstalledPackages(), using workaround",
                 userId);
         return new InstalledPackagesResult(recoverPackageDetails(source, refPackages, flags, userId, false), null);
+    }
+
+    private static boolean containsAllPackageNames(@NonNull List<PackageInfo> packages,
+                                                    @NonNull List<PackageInfo> referencePackages) {
+        if (packages.size() < referencePackages.size()) {
+            return false;
+        }
+        Set<String> packageNames = new HashSet<>(packages.size());
+        for (PackageInfo packageInfo : packages) {
+            packageNames.add(packageInfo.packageName);
+        }
+        for (PackageInfo packageInfo : referencePackages) {
+            if (!packageNames.contains(packageInfo.packageName)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @NonNull
