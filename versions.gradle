@@ -23,7 +23,9 @@ ext {
     arsclib_version = "V1.4.0" // https://github.com/REAndroid/ARSCLib/releases/tag/V1.4.0
     baksmali_version = "3.0.9" // https://github.com/google/smali/tags
     biometric_version = "1.4.0-alpha04" // API 21-22 support dropped in 1.4.0-alpha05
-    bouncycastle_version = "1.84" // https://www.bouncycastle.org/download/bouncy-castle-java — CVE-2026-3505 (PGP AEAD chunk-size DoS), CVE-2026-5588, CVE-2026-5598 (FrodoKEM non-constant-time compare)
+    bouncycastle_version = "1.85.2" // https://www.bouncycastle.org/download/bouncy-castle-java — provider patch release; the 1.85.2 Maven Central publication is bcprov-only.
+    bouncycastle_pkix_version = "1.85" // bcpkix-jdk15to18 does not publish 1.85.2.
+    bouncycastle_util_version = "1.85.1" // The 1.85.1 util patch removes the class duplicated by bcprov 1.85.2.
     desugar_jdk_version = "2.1.5" // https://github.com/google/desugar_jdk_libs
     documentfile_version = "1.1.0" // AppCompat still includes the buggy implementation of documentfile library (1.0.0)
     duration_picker = "c3c89adf3d" // https://github.com/MuntashirAkon/time-duration-picker
