@@ -9,6 +9,7 @@ import android.net.Uri;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.FragmentActivity;
 
@@ -17,6 +18,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
@@ -26,11 +29,19 @@ public final class BuildExpiryChecker {
     @Retention(RetentionPolicy.SOURCE)
     private @interface BuildType {}
 
-    private static final int BUILD_TYPE_DEBUG = 0;
-    private static final int BUILD_TYPE_ALPHA = 1;
-    private static final int BUILD_TYPE_BETA = 2;
-    private static final int BUILD_TYPE_RC = 3;
-    private static final int BUILD_TYPE_STABLE = 4;
+    @VisibleForTesting
+    static final int BUILD_TYPE_DEBUG = 0;
+    @VisibleForTesting
+    static final int BUILD_TYPE_ALPHA = 1;
+    @VisibleForTesting
+    static final int BUILD_TYPE_BETA = 2;
+    @VisibleForTesting
+    static final int BUILD_TYPE_RC = 3;
+    @VisibleForTesting
+    static final int BUILD_TYPE_STABLE = 4;
+
+    private static final Pattern PRERELEASE_SUFFIX = Pattern.compile(
+            "^(alpha|beta|rc)[0-9]+$", Pattern.CASE_INSENSITIVE);
 
     private static final long[] TIME_SPAN_MILLIS = new long[]{
             2L * 30 * 24 * 60 * 60_000, // 2 months
@@ -113,15 +124,24 @@ public final class BuildExpiryChecker {
 
     @BuildType
     private static int getBuildType() {
-        if (BuildConfig.DEBUG) {
+        return getBuildType(BuildConfig.VERSION_NAME, BuildConfig.DEBUG);
+    }
+
+    @BuildType
+    @VisibleForTesting
+    static int getBuildType(@NonNull String versionName, boolean debug) {
+        if (debug) {
             return BUILD_TYPE_DEBUG;
         }
-        String[] versionParts = BuildConfig.VERSION_NAME.split("-");
-        if (versionParts.length == 1) {
+        int suffixSeparator = versionName.lastIndexOf('-');
+        if (suffixSeparator < 0 || suffixSeparator == versionName.length() - 1) {
             return BUILD_TYPE_STABLE;
         }
-        String lastPart = versionParts[versionParts.length - 1];
-        switch (lastPart.substring(0, lastPart.length() - 2).toLowerCase(Locale.ROOT)) {
+        Matcher matcher = PRERELEASE_SUFFIX.matcher(versionName.substring(suffixSeparator + 1));
+        if (!matcher.matches()) {
+            return BUILD_TYPE_STABLE;
+        }
+        switch (matcher.group(1).toLowerCase(Locale.ROOT)) {
             case "alpha":
                 return BUILD_TYPE_ALPHA;
             case "beta":
@@ -129,7 +149,7 @@ public final class BuildExpiryChecker {
             case "rc":
                 return BUILD_TYPE_RC;
             default:
-                throw new IllegalStateException("Invalid App Manager version");
+                return BUILD_TYPE_STABLE;
         }
     }
 }
