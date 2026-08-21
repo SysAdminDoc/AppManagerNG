@@ -11,6 +11,7 @@ import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -18,6 +19,18 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 public class AESCryptoTest {
+    private static final String LEGACY_V5_PLAINTEXT =
+            "AppManagerNG metadata-v5 encrypted backup fixture\n";
+    private static final String LEGACY_V6_PLAINTEXT =
+            "AppManagerNG metadata-v6 encrypted backup fixture\n";
+    // Generated with bcprov-jdk15to18 1.84 before the dependency upgrade.
+    private static final String LEGACY_V5_CIPHERTEXT =
+            "e2c028d30a01af593148a3bd2d77773bf9168bc11259d5756e64040abdb57fa0"
+                    + "03568e5055c4a090dd9dcb4e5fb53a892d8cc1b91b62af650307f5ae16c588731ce0";
+    private static final String LEGACY_V6_CIPHERTEXT =
+            "9666d5a0189176c9b0763543a388fecc079a1b5f1a0896e368fe9416785ef6d9"
+                    + "046900fb1ff3d1e986928e7cd5df1991279783ee5b3e1ac51bc4a225f893e45cd87e";
+
     private static SecretKey testKey() {
         byte[] keyBytes = new byte[32];
         for (int i = 0; i < keyBytes.length; ++i) {
@@ -74,6 +87,27 @@ public class AESCryptoTest {
 
         assertArrayEquals(first, pt1.toByteArray());
         assertArrayEquals(second, pt2.toByteArray());
+    }
+
+    @Test
+    public void metadataV5FixtureFromBouncyCastle184StillDecrypts() throws Exception {
+        ByteArrayOutputStream plaintext = new ByteArrayOutputStream();
+
+        new AESCrypto(testIv(), testKey()).decrypt(
+                new ByteArrayInputStream(fromHex(LEGACY_V5_CIPHERTEXT)), plaintext);
+
+        assertArrayEquals(LEGACY_V5_PLAINTEXT.getBytes(StandardCharsets.UTF_8), plaintext.toByteArray());
+    }
+
+    @Test
+    public void metadataV6FixtureFromBouncyCastle184StillDecrypts() throws Exception {
+        byte[] fileIv = AESCrypto.deriveIvForFile(testIv(), "data0.tar.gz.0");
+        ByteArrayOutputStream plaintext = new ByteArrayOutputStream();
+
+        new AESCrypto(fileIv, testKey()).decrypt(
+                new ByteArrayInputStream(fromHex(LEGACY_V6_CIPHERTEXT)), plaintext);
+
+        assertArrayEquals(LEGACY_V6_PLAINTEXT.getBytes(StandardCharsets.UTF_8), plaintext.toByteArray());
     }
 
     @Test
@@ -155,5 +189,14 @@ public class AESCryptoTest {
                 "meta_v5.am.json", "meta_v5.am.json.rsa", ".rsa"));
         assertEquals("meta_v5.am.json", AESCrypto.getCanonicalFileNameForIv(false,
                 "meta_v5.am.json.rsa", "meta_v5.am.json", ".rsa"));
+    }
+
+    private static byte[] fromHex(String value) {
+        byte[] bytes = new byte[value.length() / 2];
+        for (int i = 0; i < bytes.length; ++i) {
+            int offset = i * 2;
+            bytes[i] = (byte) Integer.parseInt(value.substring(offset, offset + 2), 16);
+        }
+        return bytes;
     }
 }

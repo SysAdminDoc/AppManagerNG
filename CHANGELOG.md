@@ -3,6 +3,14 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## Unreleased
+
+### Security
+- Updated the Bouncy Castle provider to 1.85.2, with the matching PKIX and utility artifacts pinned to their latest compatible releases.
+- Added fixed metadata-v5 and metadata-v6 backup fixtures from Bouncy Castle 1.84 to guard encrypted-backup compatibility across provider upgrades.
+- Verified the minified signed release can create and reopen its BKS keystore after a cold relaunch.
+- Removed three obsolete Netty and Kotlin CVE suppressions that no longer match the resolved dependency graph.
+
 ## v0.6.15, 2026-08-20
 
 ### Changed
