@@ -81,6 +81,20 @@ class TranslationQualityTest(unittest.TestCase):
         self.assertTrue(any("no values-fr/strings.xml fallback" in problem for problem in problems))
         self.assertEqual(1, summary["regionLocalesWithoutBase"])
 
+    def test_region_locale_without_strings_still_requires_base_language_strings(self) -> None:
+        repo = self.make_repo()
+        write_resources(
+            repo / "app/src/main/res/values-fr-rCA/plurals.xml",
+            '<plurals name="files"><item quantity="other">%d fichiers</item></plurals>',
+        )
+        data = quality.snapshot(repo)
+        baseline = quality.build_baseline(data)
+
+        problems, summary = quality.evaluate(data, baseline)
+
+        self.assertTrue(any("no values-fr/strings.xml fallback" in problem for problem in problems))
+        self.assertEqual(1, summary["regionLocalesWithoutBase"])
+
 
 if __name__ == "__main__":
     unittest.main()
