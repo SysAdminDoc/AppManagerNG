@@ -43,6 +43,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -101,8 +102,10 @@ public class OABConverter extends Converter {
     private static final String NEO_EXTERNAL_FILES = "external_files";
     private static final String NEO_OBB_FILES = "obb_files";
     private static final String NEO_MEDIA_FILES = "media_files";
-    private static final Pattern NEO_INSTANCE_PATTERN = Pattern.compile(
-            "\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}-\\d{2}(?:-\\d{3})?-user_\\d+");
+    private static final String NEO_INSTANCE_REGEX =
+            "\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}-\\d{2}(?:-\\d{3})?-user_\\d+";
+    private static final Pattern NEO_INSTANCE_PATTERN = Pattern.compile(NEO_INSTANCE_REGEX);
+    private static final Pattern NEO_FLAT_INSTANCE_PATTERN = Pattern.compile("(.+)@(" + NEO_INSTANCE_REGEX + ")");
 
     private final Path mBackupLocation;
     private final String mPackageName;
@@ -135,11 +138,15 @@ public class OABConverter extends Converter {
         final Path location;
         @NonNull
         final String packageName;
+        @Nullable
+        final Path propertiesFile;
 
-        SourceLayout(@NonNull Layout layout, @NonNull Path location, @NonNull String packageName) {
+        SourceLayout(@NonNull Layout layout, @NonNull Path location, @NonNull String packageName,
+                     @Nullable Path propertiesFile) {
             this.layout = layout;
             this.location = location;
             this.packageName = packageName;
+            this.propertiesFile = propertiesFile;
         }
     }
 
@@ -260,6 +267,9 @@ public class OABConverter extends Converter {
     @Override
     public void cleanup() {
         if (mSourceLayout != null && mSourceLayout.layout == Layout.NEO) {
+            if (mSourceLayout.propertiesFile != null) {
+                mSourceLayout.propertiesFile.delete();
+            }
             mSourceLayout.location.delete();
         } else {
             mBackupLocation.delete();
@@ -273,6 +283,10 @@ public class OABConverter extends Converter {
 
     @NonNull
     private static String inferPackageName(@NonNull Path backupLocation) {
+        Matcher flatMatcher = NEO_FLAT_INSTANCE_PATTERN.matcher(backupLocation.getName());
+        if (flatMatcher.matches()) {
+            return flatMatcher.group(1);
+        }
         if (NEO_INSTANCE_PATTERN.matcher(backupLocation.getName()).matches()) {
             Path parent = backupLocation.getParent();
             if (parent != null) {
@@ -286,6 +300,11 @@ public class OABConverter extends Converter {
     static Path[] getRelevantImportLocations(@NonNull Path baseLocation) {
         List<Path> importLocations = new ArrayList<>();
         for (Path packageDirectory : baseLocation.listFiles(Path::isDirectory)) {
+            if (NEO_FLAT_INSTANCE_PATTERN.matcher(packageDirectory.getName()).matches()
+                    && findNeoPropertiesFile(packageDirectory) != null) {
+                importLocations.add(packageDirectory);
+                continue;
+            }
             Path[] neoInstances = getNeoBackupInstances(packageDirectory);
             if (neoInstances.length > 0) {
                 // A Neo Backup package can retain its legacy log after migration. Prefer its
@@ -305,29 +324,51 @@ public class OABConverter extends Converter {
     private static Path[] getNeoBackupInstances(@NonNull Path packageDirectory) {
         Path[] instances = packageDirectory.listFiles(path -> path.isDirectory()
                 && NEO_INSTANCE_PATTERN.matcher(path.getName()).matches()
-                && path.hasFile(NEO_BACKUP_PROPERTIES));
+                && findNeoPropertiesFile(path) != null);
         Arrays.sort(instances, Comparator.comparing(Path::getName));
         return instances;
+    }
+
+    @Nullable
+    private static Path findNeoPropertiesFile(@NonNull Path instanceDirectory) {
+        try {
+            if (instanceDirectory.hasFile(NEO_BACKUP_PROPERTIES)) {
+                return instanceDirectory.findFile(NEO_BACKUP_PROPERTIES);
+            }
+            Path parent = instanceDirectory.getParent();
+            String siblingName = instanceDirectory.getName() + ".properties";
+            if (parent != null && parent.hasFile(siblingName)) {
+                return parent.findFile(siblingName);
+            }
+        } catch (IOException ignore) {
+        }
+        return null;
     }
 
     @VisibleForTesting
     @NonNull
     static SourceLayout detectSourceLayout(@NonNull Path importLocation) throws BackupException {
-        if (NEO_INSTANCE_PATTERN.matcher(importLocation.getName()).matches()
-                && importLocation.hasFile(NEO_BACKUP_PROPERTIES)) {
+        Path propertiesFile = findNeoPropertiesFile(importLocation);
+        if (NEO_INSTANCE_PATTERN.matcher(importLocation.getName()).matches() && propertiesFile != null) {
             Path parent = importLocation.getParent();
             if (parent == null) {
                 throw unrecognizedLayout(importLocation);
             }
-            return new SourceLayout(Layout.NEO, importLocation, parent.getName());
+            return new SourceLayout(Layout.NEO, importLocation, parent.getName(), propertiesFile);
+        }
+        Matcher flatMatcher = NEO_FLAT_INSTANCE_PATTERN.matcher(importLocation.getName());
+        if (flatMatcher.matches() && propertiesFile != null) {
+            return new SourceLayout(Layout.NEO, importLocation, flatMatcher.group(1), propertiesFile);
         }
         String packageName = importLocation.getName();
         if (importLocation.hasFile(packageName + ".log")) {
-            return new SourceLayout(Layout.LEGACY, importLocation, packageName);
+            return new SourceLayout(Layout.LEGACY, importLocation, packageName, null);
         }
         Path[] neoInstances = getNeoBackupInstances(importLocation);
         if (neoInstances.length > 0) {
-            return new SourceLayout(Layout.NEO, neoInstances[neoInstances.length - 1], packageName);
+            Path latestInstance = neoInstances[neoInstances.length - 1];
+            return new SourceLayout(Layout.NEO, latestInstance, packageName,
+                    findNeoPropertiesFile(latestInstance));
         }
         throw unrecognizedLayout(importLocation);
     }
@@ -335,8 +376,8 @@ public class OABConverter extends Converter {
     @NonNull
     private static BackupException unrecognizedLayout(@NonNull Path importLocation) {
         return new BackupException("Unrecognized OAndBackup/Neo Backup layout at " + importLocation
-                + ". Expected <packageName>.log or backup.properties inside "
-                + "YYYY-MM-DD-HH-MM-SS[-mmm]-user_N.");
+                + ". Expected <packageName>.log, <revision>.properties beside a Neo Backup "
+                + "revision directory, or backup.properties inside YYYY-MM-DD-HH-MM-SS[-mmm]-user_N.");
     }
 
     private BackupMetadataV2 readLogFile() throws BackupException {
@@ -407,7 +448,10 @@ public class OABConverter extends Converter {
         try {
             mNeoApkFiles.clear();
             mNeoDataArchives.clear();
-            Path propertiesFile = mSourceLocation.findFile(NEO_BACKUP_PROPERTIES);
+            Path propertiesFile = mSourceLayout.propertiesFile;
+            if (propertiesFile == null) {
+                throw new BackupException("Neo Backup properties file is missing.");
+            }
             String jsonString = propertiesFile.getContentAsString();
             if (TextUtils.isEmpty(jsonString)) {
                 throw new JSONException("Empty JSON string.");
@@ -416,7 +460,7 @@ public class OABConverter extends Converter {
             String packageName = jsonObject.getString("packageName");
             if (!mPackageName.equals(packageName)) {
                 throw new BackupException("Neo Backup package mismatch: directory is " + mPackageName
-                        + " but backup.properties describes " + packageName + ".");
+                        + " but the properties file describes " + packageName + ".");
             }
 
             String cipherType = getNullableString(jsonObject, "cipherType");
@@ -484,7 +528,7 @@ public class OABConverter extends Converter {
             addNeoDataArchive(NEO_OBB_FILES, hasObbData, declaredCompression);
             addNeoDataArchive(NEO_MEDIA_FILES, hasMediaData, declaredCompression);
             if (!hasApk && mNeoDataArchives.isEmpty()) {
-                throw new BackupException("Neo Backup backup.properties does not describe any APK or data files.");
+                throw new BackupException("Neo Backup properties do not describe any APK or data files.");
             }
 
             metadataV2.userId = mUserId;
@@ -499,8 +543,8 @@ public class OABConverter extends Converter {
             return metadataV2;
         } catch (BackupException e) {
             throw e;
-        } catch (JSONException | IOException | DateTimeParseException e) {
-            return ExUtils.rethrowAsBackupException("Could not parse Neo Backup backup.properties.", e);
+        } catch (JSONException | DateTimeParseException e) {
+            return ExUtils.rethrowAsBackupException("Could not parse Neo Backup properties.", e);
         }
     }
 

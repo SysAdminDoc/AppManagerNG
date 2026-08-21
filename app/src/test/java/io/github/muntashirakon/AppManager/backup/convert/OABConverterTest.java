@@ -8,6 +8,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import androidx.annotation.NonNull;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -79,6 +81,7 @@ public class OABConverterTest {
         assertEquals(OABConverter.Layout.NEO, directLayout.layout);
         assertEquals(PACKAGE_NAME_INT, directLayout.packageName);
         assertEquals(instanceDirectory, directLayout.location);
+        assertEquals(instanceDirectory.findFile("backup.properties"), directLayout.propertiesFile);
 
         OABConverter.SourceLayout nestedLayout = OABConverter.detectSourceLayout(packageDirectory);
         assertEquals(OABConverter.Layout.NEO, nestedLayout.layout);
@@ -90,11 +93,31 @@ public class OABConverterTest {
     }
 
     @Test
+    public void detectsDefaultAndFlatNeoLayoutsTest() throws BackupException, IOException {
+        Path defaultInstance = createNeoFixture("neo-default", false);
+        OABConverter.SourceLayout defaultLayout = OABConverter.detectSourceLayout(defaultInstance);
+        assertEquals(OABConverter.Layout.NEO, defaultLayout.layout);
+        assertEquals(PACKAGE_NAME_INT, defaultLayout.packageName);
+        assertEquals(NEO_INSTANCE + ".properties", defaultLayout.propertiesFile.getName());
+        assertArrayEquals(new Path[]{defaultInstance}, ConvertUtils.getRelevantImportFiles(
+                defaultInstance.requireParent().requireParent(), ImportType.OAndBackup));
+
+        Path flatInstance = createNeoFixture("neo-flat", true);
+        OABConverter.SourceLayout flatLayout = OABConverter.detectSourceLayout(flatInstance);
+        assertEquals(OABConverter.Layout.NEO, flatLayout.layout);
+        assertEquals(PACKAGE_NAME_INT, flatLayout.packageName);
+        assertEquals(flatInstance.getName() + ".properties", flatLayout.propertiesFile.getName());
+        assertArrayEquals(new Path[]{flatInstance}, ConvertUtils.getRelevantImportFiles(
+                flatInstance.requireParent(), ImportType.OAndBackup));
+    }
+
+    @Test
     public void rejectsUnknownLayoutTest() throws IOException {
         Path unknownLayout = tmpBackupPath.createNewDirectory("not-a-backup");
         BackupException exception = assertThrows(BackupException.class,
                 () -> OABConverter.detectSourceLayout(unknownLayout));
         assertTrue(exception.getMessage().contains("<packageName>.log"));
+        assertTrue(exception.getMessage().contains("<revision>.properties"));
         assertTrue(exception.getMessage().contains("backup.properties"));
         assertTrue(exception.getMessage().contains("YYYY-MM-DD-HH-MM-SS[-mmm]-user_N"));
     }
@@ -210,17 +233,31 @@ public class OABConverterTest {
 
     @Test
     public void convertCurrentNeoBackupTest() throws BackupException, IOException {
-        final List<String> internalStorage = Arrays.asList(
-                "shared_prefs/",
-                "shared_prefs/ca.cmetcalfe.locationshare_preferences.xml",
-                "shared_prefs/_has_set_default_values.xml");
         assert classLoader != null;
         Path backupLocation = Paths.get(classLoader.getResource(NEO_PATH_SUFFIX).getFile())
                 .findFile(PACKAGE_NAME_INT)
                 .findFile(NEO_INSTANCE);
-        OABConverter oabConvert = new OABConverter(backupLocation);
-        assertEquals(PACKAGE_NAME_INT, oabConvert.getPackageName());
-        oabConvert.convert();
+        assertCurrentNeoConversion(backupLocation);
+    }
+
+    @Test
+    public void convertDefaultNeoBackupTest() throws BackupException, IOException {
+        assertCurrentNeoConversion(createNeoFixture("neo-default-convert", false));
+    }
+
+    @Test
+    public void convertFlatNeoBackupTest() throws BackupException, IOException {
+        assertCurrentNeoConversion(createNeoFixture("neo-flat-convert", true));
+    }
+
+    private void assertCurrentNeoConversion(@NonNull Path backupLocation) throws BackupException, IOException {
+        final List<String> internalStorage = Arrays.asList(
+                "shared_prefs/",
+                "shared_prefs/ca.cmetcalfe.locationshare_preferences.xml",
+                "shared_prefs/_has_set_default_values.xml");
+        OABConverter converter = new OABConverter(backupLocation);
+        assertEquals(PACKAGE_NAME_INT, converter.getPackageName());
+        converter.convert();
         Path newBackupLocation = Prefs.Storage.getAppManagerDirectory()
                 .findFile(BackupItems.BACKUP_DIRECTORY)
                 .listFiles()[0];
@@ -234,6 +271,23 @@ public class OABConverterTest {
         assertEquals(internalStorage, files);
         assertFalse(newBackupLocation.hasFile("source.tar.gz.0"));
         assertFalse(newBackupLocation.hasFile("data1.tar.gz.0"));
+    }
+
+    @NonNull
+    private Path createNeoFixture(@NonNull String rootName, boolean flat) throws IOException {
+        assert classLoader != null;
+        Path sourceInstance = Paths.get(classLoader.getResource(NEO_PATH_SUFFIX).getFile())
+                .findFile(PACKAGE_NAME_INT)
+                .findFile(NEO_INSTANCE);
+        Path root = tmpBackupPath.createNewDirectory(rootName);
+        Path parent = flat ? root : root.createNewDirectory(PACKAGE_NAME_INT);
+        String instanceName = flat ? PACKAGE_NAME_INT + "@" + NEO_INSTANCE : NEO_INSTANCE;
+        Path instance = parent.createNewDirectory(instanceName);
+        assertTrue(sourceInstance.findFile("data.tar").copyTo(instance) != null);
+        Path propertiesFile = sourceInstance.findFile("backup.properties").copyTo(parent);
+        assertTrue(propertiesFile != null);
+        assertTrue(propertiesFile.renameTo(instanceName + ".properties"));
+        return instance;
     }
 
     @Test

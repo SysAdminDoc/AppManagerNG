@@ -6,6 +6,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## Unreleased
 
 ### Fixed
+- Accepted Neo Backup's default sibling properties files and its optional flat backup layout.
 - Added current Neo Backup imports alongside the existing OAndBackup importer. Each revision directory is discovered separately, plain, gzip, and Zstandard tar archives are accepted, and malformed layouts now explain which files are expected.
 - Added base-language resource fallbacks for Bengali, Czech, Spanish, Indonesian, Italian, Norwegian, Russian, Turkish, Ukrainian, and Simplified Chinese on Android 5 and 6.
 - Prevented malformed or custom version suffixes from crashing the app during its startup expiry check. Release validation now rejects unsupported version names before packaging.
