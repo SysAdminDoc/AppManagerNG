@@ -6,6 +6,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## Unreleased
 
 ### Fixed
+- Closed a translation-quality loophole where regional resource folders without `strings.xml` skipped base-language fallback checks.
 - Kept prerelease version badges and Git tags on the same validation grammar as app version names.
 - Accepted Neo Backup's default sibling properties files and its optional flat backup layout.
 - Added current Neo Backup imports alongside the existing OAndBackup importer. Each revision directory is discovered separately, plain, gzip, and Zstandard tar archives are accepted, and malformed layouts now explain which files are expected.
