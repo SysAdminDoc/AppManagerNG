@@ -57,6 +57,7 @@ import io.github.muntashirakon.AppManager.misc.OsEnvironment;
 import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
+import io.github.muntashirakon.AppManager.utils.ExportFilenameUtils;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
 import io.github.muntashirakon.io.IoUtils;
 import io.github.muntashirakon.io.Path;
@@ -81,9 +82,7 @@ public final class ApkUtils {
         synchronized (sLock) {
             PackageManager pm = ctx.getPackageManager();
             ApplicationInfo info = packageInfo.applicationInfo;
-            String outputName = Paths.sanitizeFilename(getFormattedApkFilename(ctx, packageInfo, pm), "_",
-                    Paths.SANITIZE_FLAG_FAT_ILLEGAL_CHARS | Paths.SANITIZE_FLAG_UNIX_RESERVED);
-            if (outputName == null) outputName = info.packageName;
+            String outputName = getFormattedApkFilename(ctx, packageInfo, pm);
             Path tmpPublicSource;
             if (isSplitApk(info) || hasObbFiles(info.packageName, UserHandleHidden.getUserId(info.uid))) {
                 // Split apk
@@ -114,9 +113,7 @@ public final class ApkUtils {
                 MATCH_UNINSTALLED_PACKAGES | PackageManager.GET_SHARED_LIBRARY_FILES
                         | PackageManagerCompat.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES, userId);
         ApplicationInfo info = packageInfo.applicationInfo;
-        String outputName = Paths.sanitizeFilename(getFormattedApkFilename(ctx, packageInfo, pm), "_",
-                Paths.SANITIZE_FLAG_FAT_ILLEGAL_CHARS | Paths.SANITIZE_FLAG_UNIX_RESERVED);
-        if (outputName == null) outputName = packageName;
+        String outputName = getFormattedApkFilename(ctx, packageInfo, pm);
         Path apkFile;
         if (isSplitApk(info) || hasObbFiles(packageName, userId)) {
             // Split apk
@@ -133,7 +130,7 @@ public final class ApkUtils {
     private static String getFormattedApkFilename(@NonNull Context context, @NonNull PackageInfo packageInfo,
                                                   @NonNull PackageManager pm) {
         Integer minSdk = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ? packageInfo.applicationInfo.minSdkVersion : null;
-        return formatApkFilename(AppPref.getString(AppPref.PrefKey.PREF_SAVED_APK_FORMAT_STR),
+        String formattedName = formatApkFilename(AppPref.getString(AppPref.PrefKey.PREF_SAVED_APK_FORMAT_STR),
                 packageInfo.applicationInfo.loadLabel(pm).toString(),
                 packageInfo.packageName,
                 packageInfo.versionName,
@@ -141,6 +138,7 @@ public final class ApkUtils {
                 packageInfo.applicationInfo.targetSdkVersion,
                 minSdk,
                 DateUtils.formatDateTime(context, System.currentTimeMillis()));
+        return ExportFilenameUtils.sanitizeBaseName(formattedName, EXT_APKS, packageInfo.packageName);
     }
 
     @NonNull

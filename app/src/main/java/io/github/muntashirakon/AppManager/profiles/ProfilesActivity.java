@@ -55,6 +55,7 @@ import io.github.muntashirakon.AppManager.profiles.importers.UpstreamCompatProfi
 import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
 import io.github.muntashirakon.AppManager.shortcut.CreateShortcutDialogFragment;
 import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
+import io.github.muntashirakon.AppManager.utils.ExportFilenameUtils;
 import io.github.muntashirakon.AppManager.utils.JSONUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -344,7 +345,7 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
     @VisibleForTesting
     @NonNull
     static String buildProfileShareFilename(@Nullable String profileName, @NonNull String suffix) {
-        return ProfileManager.getProfileIdCompat(formatProfileMetadataLabel(profileName)) + suffix;
+        return ExportFilenameUtils.buildFileName(formatProfileMetadataLabel(profileName), suffix, "profile");
     }
 
     @VisibleForTesting

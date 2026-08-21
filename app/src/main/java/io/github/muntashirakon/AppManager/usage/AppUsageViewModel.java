@@ -27,7 +27,7 @@ import java.util.Set;
 import java.util.concurrent.Future;
 
 import io.github.muntashirakon.AppManager.logs.Log;
-import io.github.muntashirakon.AppManager.utils.DateUtils;
+import io.github.muntashirakon.AppManager.utils.ExportFilenameUtils;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.csv.CsvWriter;
@@ -376,9 +376,8 @@ public class AppUsageViewModel extends AndroidViewModel {
 
     @NonNull
     public String getDefaultCsvFileName() {
-        String timestamp = DateUtils.formatDateTime(getApplication(), System.currentTimeMillis())
-                .replaceAll("[^A-Za-z0-9._-]+", "-");
-        return "appmanagerng-usage-" + timestamp + ".csv";
+        return ExportFilenameUtils.buildTimestampedFileName(getApplication(),
+                "appmanagerng-usage-", ".csv", System.currentTimeMillis());
     }
 
     @NonNull

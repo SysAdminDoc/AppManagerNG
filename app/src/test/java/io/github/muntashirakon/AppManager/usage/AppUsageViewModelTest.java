@@ -21,6 +21,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.shadows.ShadowLooper;
 
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -32,6 +33,17 @@ import java.util.concurrent.TimeoutException;
 
 @RunWith(RobolectricTestRunner.class)
 public class AppUsageViewModelTest {
+    @Test
+    public void getDefaultCsvFileNameIsPortable() {
+        AppUsageViewModel viewModel = new AppUsageViewModel(ApplicationProvider.getApplicationContext());
+
+        String filename = viewModel.getDefaultCsvFileName();
+
+        assertTrue(filename.matches("[A-Za-z0-9._-]+"));
+        assertTrue(filename.endsWith(".csv"));
+        assertTrue(filename.getBytes(StandardCharsets.UTF_8).length <= 240);
+    }
+
     @Test
     public void getPackageUsageEntriesReturnsStableSnapshot() {
         AppUsageViewModel viewModel = new AppUsageViewModel(ApplicationProvider.getApplicationContext());
