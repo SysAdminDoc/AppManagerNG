@@ -141,6 +141,7 @@ for tools like AppVerifier.
 - Aurora Store / F-Droid client launch integration
 - APK signing with custom signatures
 - Backup encryption: OpenPGP (OpenKeychain), RSA, ECC (hybrid + AES), AES
+- Backup imports from OAndBackup, current Neo Backup, Swift Backup 3.0 to 3.2, and Titanium Backup
 - Ordered per-tag backup policies with shared manual/scheduled resolution, per-rule parts, encryption, retention, local/SAF destinations, and winner previews
 - Foreground UI component tracking
 
