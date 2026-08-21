@@ -27,7 +27,7 @@ import io.github.muntashirakon.AppManager.rules.RulesTypeSelectionDialogFragment
 import io.github.muntashirakon.AppManager.rules.compontents.ExternalComponentsImporter;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.users.Users;
-import io.github.muntashirakon.AppManager.utils.DateUtils;
+import io.github.muntashirakon.AppManager.utils.ExportFilenameUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -124,7 +124,8 @@ public class ImportExportRulesPreferences extends PreferenceFragment {
         mActivity = (SettingsActivity) requireActivity();
         ((Preference) Objects.requireNonNull(findPreference("export")))
                 .setOnPreferenceClickListener(preference -> {
-                    final String fileName = "app_manager_rules_export-" + DateUtils.formatDateTime(mActivity, System.currentTimeMillis()) + ".am.tsv";
+                    final String fileName = ExportFilenameUtils.buildTimestampedFileName(mActivity,
+                            "app_manager_rules_export-", ".am.tsv", System.currentTimeMillis());
                     mExportRules.launch(fileName);
                     return true;
                 });

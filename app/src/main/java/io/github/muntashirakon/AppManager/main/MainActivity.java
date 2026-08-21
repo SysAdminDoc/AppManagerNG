@@ -91,6 +91,7 @@ import io.github.muntashirakon.AppManager.usage.AppUsageActivity;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
+import io.github.muntashirakon.AppManager.utils.ExportFilenameUtils;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 import io.github.muntashirakon.AppManager.utils.StoragePermission;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -633,7 +634,8 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             DexOptDialog dialog = DexOptDialog.getInstance(viewModel.getSelectedPackages().keySet().toArray(new String[0]));
             dialog.show(getSupportFragmentManager(), DexOptDialog.TAG);
         } else if (id == R.id.action_export_blocking_rules) {
-            final String fileName = "app_manager_rules_export-" + DateUtils.formatDateTime(this, System.currentTimeMillis()) + ".am.tsv";
+            final String fileName = ExportFilenameUtils.buildTimestampedFileName(this,
+                    "app_manager_rules_export-", ".am.tsv", System.currentTimeMillis());
             mBatchExportRules.launch(fileName);
         } else if (id == R.id.action_export_app_list) {
             showAppListExportDialog(false);
@@ -684,20 +686,23 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                                      boolean includeExtendedMetadata) {
         mExportVisibleAppList = visibleList;
         mExportAppListExtended = includeExtendedMetadata;
-        String filename = "app_manager_app_list-"
-                + DateUtils.formatLongDateTime(this, System.currentTimeMillis()) + ".am";
+        long timestamp = System.currentTimeMillis();
         switch (exportType) {
             case ListExporter.EXPORT_TYPE_CSV:
-                mExportAppListCsv.launch(filename + ".csv");
+                mExportAppListCsv.launch(ExportFilenameUtils.buildTimestampedFileName(this,
+                        "app_manager_app_list-", ".am.csv", timestamp));
                 break;
             case ListExporter.EXPORT_TYPE_JSON:
-                mExportAppListJson.launch(filename + ".json");
+                mExportAppListJson.launch(ExportFilenameUtils.buildTimestampedFileName(this,
+                        "app_manager_app_list-", ".am.json", timestamp));
                 break;
             case ListExporter.EXPORT_TYPE_XML:
-                mExportAppListXml.launch(filename + ".xml");
+                mExportAppListXml.launch(ExportFilenameUtils.buildTimestampedFileName(this,
+                        "app_manager_app_list-", ".am.xml", timestamp));
                 break;
             case ListExporter.EXPORT_TYPE_MARKDOWN:
-                mExportAppListMarkdown.launch(filename + ".md");
+                mExportAppListMarkdown.launch(ExportFilenameUtils.buildTimestampedFileName(this,
+                        "app_manager_app_list-", ".am.md", timestamp));
                 break;
         }
     }

@@ -102,13 +102,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ### P1
 
-- [ ] P1 — Sanitise default export filenames (they currently contain `/` and `:`)
-  Why: default filenames are built from DateUtils.formatDateTime, which is android.text.format.DateFormat.getDateFormat(context) plus getTimeFormat(context) — the user's short date and time patterns, so an en-US device produces `8/11/26 3:04 PM`. Those go straight into ACTION_CREATE_DOCUMENT's EXTRA_TITLE; SAF providers reject or mangle them. Upstream hit exactly this (#1995, in its v4.1.1 milestone). The repo already has the correct sanitiser and a test for it, wired to one caller only.
-  Evidence: utils/DateUtils.java:22-27,190-204; unsanitised sites details/info/AppInfoFragment.java:547 and :666, main/MainActivity.java:627, settings/ImportExportRulesPreferences.java:127, apk/ApkUtils.java:141, usage/AppUsageViewModel.java:379; correct pattern at profiles/ProfilesActivity.java:346 with app/src/test/java/io/github/muntashirakon/AppManager/profiles/ProfilesActivityTest.java:26; upstream MuntashirAkon/AppManager#1995.
-  Touches: a shared filename helper (promote the ProfilesActivity logic), the six call sites above, existing profile test extended to the shared helper.
-  Acceptance: every generated default filename is free of `/ \ : * ? " < > |` and control characters, is non-empty after sanitisation, keeps its intended extension, and stays stable for a fixed timestamp; unit tests cover a locale whose date pattern uses `/`, one that uses `.`, a 24-hour time format, and an app label containing separators.
-  Complexity: S
-
 ### P2
 
 - [ ] P2 — Stop the version-string parser from crashing the app at launch
