@@ -154,9 +154,10 @@ public class AppDb {
     }
 
     @WorkerThread
-    public void loadInstalledOrBackedUpApplications(@NonNull Context context) {
+    @Nullable
+    public PackageManagerCompat.PackageEnumerationWarning loadInstalledOrBackedUpApplications(@NonNull Context context) {
         getBackups(true);
-        updateApplications(context);
+        return updateApplications(context);
     }
 
     @WorkerThread
@@ -248,35 +249,42 @@ public class AppDb {
     }
 
     @WorkerThread
-    public void updateApplications(@NonNull Context context) {
+    @Nullable
+    public PackageManagerCompat.PackageEnumerationWarning updateApplications(@NonNull Context context) {
         synchronized (sLock) {
             Map<String, Backup> backups = getBackups(false);
             List<App> oldApps = new ArrayList<>(mAppDao.getAll());
             List<App> modifiedApps = new ArrayList<>();
             Set<String> newApps = new HashSet<>();
             Set<String> updatedApps = new HashSet<>();
+            PackageManagerCompat.PackageEnumerationWarning enumerationWarning = null;
 
             // Interrupt thread on request
-            if (ThreadUtils.isInterrupted()) return;
+            if (ThreadUtils.isInterrupted()) return null;
 
             for (int userId : Users.getUsersIds()) {
                 // Interrupt thread on request
-                if (ThreadUtils.isInterrupted()) return;
+                if (ThreadUtils.isInterrupted()) return enumerationWarning;
 
                 if (!SelfPermissions.checkCrossUserPermission(userId, false)) {
                     // No support for cross user
                     continue;
                 }
 
-                List<PackageInfo> packageInfoList = PackageManagerCompat.getInstalledPackages(
+                PackageManagerCompat.InstalledPackagesResult packagesResult
+                        = PackageManagerCompat.getInstalledPackagesWithStatus(
                         GET_SIGNING_CERTIFICATES | PackageManager.GET_ACTIVITIES
                                 | PackageManager.GET_RECEIVERS | PackageManager.GET_PROVIDERS
                                 | PackageManager.GET_SERVICES | MATCH_DISABLED_COMPONENTS
                                 | MATCH_UNINSTALLED_PACKAGES | MATCH_STATIC_SHARED_AND_SDK_LIBRARIES, userId);
+                List<PackageInfo> packageInfoList = packagesResult.packages;
+                if (packagesResult.warning != null) {
+                    enumerationWarning = packagesResult.warning;
+                }
 
                 for (PackageInfo packageInfo : packageInfoList) {
                     // Interrupt thread on request
-                    if (ThreadUtils.isInterrupted()) return;
+                    if (ThreadUtils.isInterrupted()) return enumerationWarning;
 
                     int oldAppIndex = findIndexOfApp(oldApps, packageInfo.packageName, UserHandleHidden.getUserId(packageInfo.applicationInfo.uid));
                     if (oldAppIndex >= 0) {
@@ -306,7 +314,7 @@ public class AppDb {
             for (Backup backup : backups.values()) {
                 if (backup == null) continue;
                 // Interrupt thread on request
-                if (ThreadUtils.isInterrupted()) return;
+                if (ThreadUtils.isInterrupted()) return enumerationWarning;
 
                 int oldAppIndex = findIndexOfApp(oldApps, backup.packageName, backup.userId);
                 if (oldAppIndex >= 0) {
@@ -339,8 +347,8 @@ public class AppDb {
                 // Altered apps
                 BroadcastUtils.sendDbPackageAltered(context, updatedApps.toArray(new String[0]));
             }
+            return enumerationWarning;
         }
-
     }
 
     @WorkerThread

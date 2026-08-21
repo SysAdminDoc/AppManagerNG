@@ -355,8 +355,12 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                 });
             }
             updateMainListState(applicationItems.size());
-            if (mLastApplicationListLoadStatus != null && mLastApplicationListLoadStatus.isFailed()) {
-                showApplicationListLoadFailure(mLastApplicationListLoadStatus);
+            if (mLastApplicationListLoadStatus != null) {
+                if (mLastApplicationListLoadStatus.isFailed()) {
+                    showApplicationListLoadFailure(mLastApplicationListLoadStatus);
+                } else if (mLastApplicationListLoadStatus.hasEnumerationWarning()) {
+                    showPackageEnumerationWarning(mLastApplicationListLoadStatus);
+                }
             }
             refreshSortChipLabel();
             refreshQuickFilterChips();
@@ -370,6 +374,11 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                 showProgressIndicator(true);
             } else if (status.isFailed()) {
                 showApplicationListLoadFailure(status);
+            } else if (status.hasEnumerationWarning()) {
+                showPackageEnumerationWarning(status);
+            } else {
+                showProgressIndicator(false);
+                updateMainListState(mAdapter != null ? mAdapter.getItemCount() : 0);
             }
         });
         viewModel.getOperationStatus().observe(this, status -> {
@@ -1299,6 +1308,28 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         } else if (hasStaleItems && mEmptyState != null) {
             mEmptyState.setVisibility(View.GONE);
         }
+    }
+
+    private void showPackageEnumerationWarning(@NonNull MainViewModel.AppListLoadStatus status) {
+        showProgressIndicator(false);
+        if (mSwipeRefresh != null) {
+            mSwipeRefresh.setRefreshing(false);
+        }
+        if (mListStatusView == null || status.privilegedMode == null) {
+            return;
+        }
+        String statusText = getResources().getQuantityString(
+                R.plurals.main_status_package_enumeration_shortfall,
+                status.unprivilegedPackageCount, status.privilegedMode,
+                status.privilegedPackageCount, status.unprivilegedPackageCount);
+        mListStatusView.setVisibility(View.VISIBLE);
+        mListStatusView.setText(statusText);
+        mListStatusView.setOnClickListener(null);
+        mListStatusView.setClickable(false);
+        mListStatusView.setFocusable(false);
+        mListStatusActionHint = null;
+        setListStatusActionable(false);
+        setListStatusContentDescription(statusText);
     }
 
     private boolean isApplicationListLoadFailed() {

@@ -133,6 +133,14 @@ public final class PackageUtils {
     public static List<ApplicationItem> getInstalledOrBackedUpApplicationsFromDb(@NonNull Context context,
                                                                                  boolean loadInBackground,
                                                                                  boolean loadBackups) {
+        return getInstalledOrBackedUpApplicationsFromDb(context, loadInBackground, loadBackups, null);
+    }
+
+    @WorkerThread
+    @NonNull
+    public static List<ApplicationItem> getInstalledOrBackedUpApplicationsFromDb(
+            @NonNull Context context, boolean loadInBackground, boolean loadBackups,
+            @Nullable PackageEnumerationCallback enumerationCallback) {
         HashMap<String, ApplicationItem> applicationItems = new HashMap<>();
         AppDb appDb = new AppDb();
         List<App> apps = appDb.getAllApplications();
@@ -146,7 +154,11 @@ public final class PackageUtils {
                 wakeLock.acquire();
                 // Load app list for the first time
                 Log.d(TAG, "Loading apps for the first time.");
-                appDb.loadInstalledOrBackedUpApplications(context);
+                PackageManagerCompat.PackageEnumerationWarning warning
+                        = appDb.loadInstalledOrBackedUpApplications(context);
+                if (enumerationCallback != null) {
+                    enumerationCallback.onPackageEnumerationComplete(warning);
+                }
                 apps = appDb.getAllApplications();
             } finally {
                 CpuUtils.releaseWakeLock(wakeLock);
@@ -252,15 +264,26 @@ public final class PackageUtils {
                 PowerManager.WakeLock wakeLock = CpuUtils.getPartialWakeLock("appDbUpdater");
                 try {
                     wakeLock.acquire();
+                    PackageManagerCompat.PackageEnumerationWarning warning;
                     if (loadBackups) {
-                        appDb.loadInstalledOrBackedUpApplications(context);
-                    } else appDb.updateApplications(context);
+                        warning = appDb.loadInstalledOrBackedUpApplications(context);
+                    } else {
+                        warning = appDb.updateApplications(context);
+                    }
+                    if (enumerationCallback != null) {
+                        enumerationCallback.onPackageEnumerationComplete(warning);
+                    }
                 } finally {
                     CpuUtils.releaseWakeLock(wakeLock);
                 }
             });
         }
         return new ArrayList<>(applicationItems.values());
+    }
+
+    public interface PackageEnumerationCallback {
+        void onPackageEnumerationComplete(
+                @Nullable PackageManagerCompat.PackageEnumerationWarning warning);
     }
 
     @NonNull

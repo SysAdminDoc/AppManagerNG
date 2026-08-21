@@ -69,6 +69,10 @@
         <item quantity="one">Showing last known list (%d app). Refresh failed.</item>
         <item quantity="other">Showing last known list (%d apps). Refresh failed.</item>
     </plurals>
+    <plurals name="main_status_package_enumeration_shortfall">
+        <item quantity="one"><xliff:g id="mode" example="Root">%1$s</xliff:g> returned <xliff:g id="privileged_count" example="0">%2$d</xliff:g> of <xliff:g id="unprivileged_count" example="1">%3$d</xliff:g> package. Showing Android\'s unprivileged list.</item>
+        <item quantity="other"><xliff:g id="mode" example="Root">%1$s</xliff:g> returned <xliff:g id="privileged_count" example="1">%2$d</xliff:g> of <xliff:g id="unprivileged_count" example="220">%3$d</xliff:g> packages. Showing Android\'s unprivileged list.</item>
+    </plurals>
     <string name="main_status_with_guided_hint" translatable="false"><xliff:g id="status" example="Showing 120 apps">%1$s</xliff:g>\n<xliff:g id="hint" example="Tap any app for details.">%2$s</xliff:g></string>
     <string name="main_status_guided_trackers_hint">Tap this panel to focus apps with trackers.</string>
     <string name="main_status_guided_permissions_hint">Tap this panel to focus apps with granted dangerous permissions.</string>
