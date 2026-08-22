@@ -3826,6 +3826,16 @@
     </plurals>
     <string name="pref_app_change_auditor">Component and tracker change auditor</string>
     <string name="pref_app_change_auditor_msg">Notify when an updated app adds or removes manifest components or known tracker components. Opt-in; runs locally with no network use.</string>
+    <string name="pref_app_update_change_report">Record app update reports</string>
+    <string name="pref_app_update_change_report_msg">Keep a local, version-aware report of permission, tracker, and component changes.</string>
+    <string name="app_update_change_report_title">%1$s update report</string>
+    <string name="app_update_change_report_body">Version %1$d to %2$d
+Permissions added: %3$s
+Permissions removed: %4$s
+Trackers added: %5$s
+Trackers removed: %6$s
+Components added: %7$s
+Components removed: %8$s</string>
     <string name="app_change_auditor_title">%1$s changed components</string>
     <string name="app_change_auditor_body">Components: +%1$d/-%2$d. Trackers: +%3$d/-%4$d. %5$s</string>
     <string name="app_change_auditor_permission_title"><xliff:g id="app_label" example="Example">%1$s</xliff:g> changed custom permissions</string>

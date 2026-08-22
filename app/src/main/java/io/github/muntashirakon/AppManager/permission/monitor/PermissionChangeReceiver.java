@@ -35,7 +35,8 @@ public class PermissionChangeReceiver extends BroadcastReceiver {
         boolean permMonitorOn = Prefs.Privacy.isPermissionChangeMonitorEnabled();
         boolean certMonitorOn = Prefs.Privacy.isSigningCertChangeMonitorEnabled();
         boolean componentMonitorOn = Prefs.Privacy.isAppChangeAuditorEnabled();
-        if (!permMonitorOn && !certMonitorOn && !componentMonitorOn) return;
+        boolean updateReportOn = Prefs.Privacy.isAppUpdateChangeReportEnabled();
+        if (!permMonitorOn && !certMonitorOn && !componentMonitorOn && !updateReportOn) return;
         final Context appContext = context.getApplicationContext();
         final String pkg = packageName;
         // Use goAsync() so the broadcast result stays alive across the
@@ -43,9 +44,12 @@ public class PermissionChangeReceiver extends BroadcastReceiver {
         final PendingResult pending = goAsync();
         ThreadUtils.postOnBackgroundThread(() -> {
             try {
-                if (permMonitorOn) {
+                PermissionChangeDiff.Result permissionDiff = null;
+                ComponentChangeDiff.Result componentDiff = null;
+                if (permMonitorOn || updateReportOn) {
                     try {
-                        PermissionChangeMonitor.onPackageReplaced(appContext, pkg);
+                        permissionDiff = PermissionChangeMonitor.onPackageReplaced(
+                                appContext, pkg, permMonitorOn);
                     } catch (Exception t) {
                         Log.w(TAG, "Permission change monitor failed for " + pkg, t);
                     }
@@ -57,11 +61,19 @@ public class PermissionChangeReceiver extends BroadcastReceiver {
                         Log.w(TAG, "Signing-cert change monitor failed for " + pkg, t);
                     }
                 }
-                if (componentMonitorOn) {
+                if (componentMonitorOn || updateReportOn) {
                     try {
-                        ComponentChangeMonitor.onPackageReplaced(appContext, pkg);
+                        componentDiff = ComponentChangeMonitor.onPackageReplaced(
+                                appContext, pkg, componentMonitorOn);
                     } catch (Exception t) {
                         Log.w(TAG, "Component change monitor failed for " + pkg, t);
+                    }
+                }
+                if (updateReportOn) {
+                    try {
+                        AppUpdateChangeReportRecorder.record(permissionDiff, componentDiff);
+                    } catch (Exception t) {
+                        Log.w(TAG, "App update report failed for " + pkg, t);
                     }
                 }
             } finally {

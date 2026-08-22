@@ -26,6 +26,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Added native-library ZIP data offsets and static-symbol status to App Details, alongside existing ELF page-alignment details.
 - Logged permission, service, package-state, component-state, app-op, and keystore failures on destructive and trust-sensitive fallbacks instead of silently discarding them.
 - Moved the remaining App Details permission and error messages and file-manager starter names into translated resources.
+- Added an opt-in Room-backed app-update report. It records before and after version codes plus
+  added and removed permissions, trackers, and components, and the existing local change-feed
+  view renders the newest reports.
 
 ### Security
 - Raised the Android build toolchain to AGP 9.3.1, Gradle 9.7.0, and Dependency-Check 13.0.0. Refreshed every dependency lock and recorded new artifacts only after checking publisher checksums.

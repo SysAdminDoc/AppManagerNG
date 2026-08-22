@@ -74,6 +74,19 @@ public final class PermissionChangeMonitor {
     @Nullable
     public static PermissionChangeDiff.Result onPackageReplaced(@NonNull Context appContext,
                                                                 @NonNull String packageName) {
+        return onPackageReplaced(appContext, packageName, true);
+    }
+
+    /**
+     * Variant used by the combined update report. It refreshes the same snapshot and computes the
+     * same diff, but can suppress the high-priority notification when the user only opted into
+     * local reports.
+     */
+    @WorkerThread
+    @Nullable
+    static PermissionChangeDiff.Result onPackageReplaced(@NonNull Context appContext,
+                                                         @NonNull String packageName,
+                                                         boolean notify) {
         if (appContext.getPackageName().equals(packageName)) {
             // Self-update — don't alarm the user about NG's own perms.
             return null;
@@ -109,10 +122,12 @@ public final class PermissionChangeMonitor {
             String body = appContext.getResources().getQuantityString(R.plurals.permission_change_monitor_body,
                     diff.added.size(), diff.added.size(), shortJoin(diff.added));
             new AppChangeFeedStore(appContext).append(AppChangeFeedEntry.now("permissions", packageName, title, body));
-            try {
-                postNotification(appContext, packageName, title, body);
-            } catch (Exception t) {
-                Log.w(TAG, "Could not post permission-change notification for " + packageName, t);
+            if (notify) {
+                try {
+                    postNotification(appContext, packageName, title, body);
+                } catch (Exception t) {
+                    Log.w(TAG, "Could not post permission-change notification for " + packageName, t);
+                }
             }
         }
         return diff;

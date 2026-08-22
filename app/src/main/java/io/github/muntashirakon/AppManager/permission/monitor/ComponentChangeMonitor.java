@@ -58,6 +58,15 @@ public final class ComponentChangeMonitor {
     @Nullable
     public static ComponentChangeDiff.Result onPackageReplaced(@NonNull Context appContext,
                                                                @NonNull String packageName) {
+        return onPackageReplaced(appContext, packageName, true);
+    }
+
+    /** Refreshes the component snapshot while optionally suppressing the notification. */
+    @WorkerThread
+    @Nullable
+    static ComponentChangeDiff.Result onPackageReplaced(@NonNull Context appContext,
+                                                        @NonNull String packageName,
+                                                        boolean notify) {
         if (appContext.getPackageName().equals(packageName)) return null;
         ComponentSnapshotStore store = new ComponentSnapshotStore(appContext);
         ComponentSnapshot before = store.get(packageName);
@@ -81,10 +90,12 @@ public final class ComponentChangeMonitor {
                     diff.addedComponents.size(), diff.removedComponents.size(),
                     diff.addedTrackers.size(), diff.removedTrackers.size(), summarize(diff));
             new AppChangeFeedStore(appContext).append(AppChangeFeedEntry.now("components", packageName, title, body));
-            try {
-                postNotification(appContext, packageName, title, body);
-            } catch (Exception t) {
-                Log.w(TAG, "Could not post component-change notification for " + packageName, t);
+            if (notify) {
+                try {
+                    postNotification(appContext, packageName, title, body);
+                } catch (Exception t) {
+                    Log.w(TAG, "Could not post component-change notification for " + packageName, t);
+                }
             }
         }
         return diff;
