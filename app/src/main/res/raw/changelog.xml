@@ -11,7 +11,7 @@
         version="v0.6.17"
         code="25"
         date="22 August 2026">
-        <improve title="Visual system">Compact headers, quieter type, flat search fields, hairline dividers, and tighter sections make dense screens easier to scan.</improve>
+        <improve title="Visual system">Compact headers, quieter type, flat search fields, hairline dividers, 10dp dialogs, and tighter sections make dense screens easier to scan.</improve>
         <improve title="Core workflows">Labs, history, profiles, running processes, logs, App Details, and scanner results now share cleaner grouping and restrained state accents.</improve>
         <fix title="Settings and selection">Privacy controls use the correct keys, Doze diagnostics fail safely, and multi-selection controls stay above bottom navigation.</fix>
         <fix title="Process names">Running-process labels no longer expose trailing NUL bytes.</fix>
