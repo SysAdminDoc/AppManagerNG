@@ -47,6 +47,7 @@ import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerService;
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
 import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
+import io.github.muntashirakon.AppManager.compat.JobSchedulerCompat;
 import io.github.muntashirakon.AppManager.compat.ApplicationInfoCompat;
 import io.github.muntashirakon.AppManager.compat.AppLocaleManagerCompat;
 import io.github.muntashirakon.AppManager.compat.DeveloperVerificationCompat;
@@ -651,6 +652,11 @@ public class AppInfoViewModel extends AndroidViewModel {
                                     packageName, 0, 10, userId),
                             Collections.emptyList());
                 }
+                // pending job reasons (API 36)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+                    appInfo.pendingJobs = JobSchedulerCompat.getPendingJobs(
+                            getApplication(), packageName, userId);
+                }
             }
             appInfo.sdkSandboxInfo = SdkSandboxInfo.from(applicationInfo);
             populateSigningCertInfo(appInfo, packageInfo, isExternalApk);
@@ -852,6 +858,8 @@ public class AppInfoViewModel extends AndroidViewModel {
         public int standbyBucket = -1;
         @NonNull
         public List<ApplicationExitInfo> recentExits = Collections.emptyList();
+        @NonNull
+        public List<JobSchedulerCompat.PendingJob> pendingJobs = Collections.emptyList();
         @NonNull
         public SdkSandboxInfo sdkSandboxInfo = SdkSandboxInfo.unsupported(Build.VERSION.SDK_INT);
         @Nullable

@@ -2377,6 +2377,11 @@
     <string name="standby_bucket_restricted">Restricted</string>
     <string name="standby_bucket_unknown">Unknown (%d)</string>
     <string name="exit_history">Recent exits</string>
+    <string name="exit_reason_memory_limiter">Memory limit</string>
+    <string name="pending_jobs">Pending jobs</string>
+    <string name="pending_job">Job %1$d</string>
+    <string name="pending_job_reasons">Blocked by %1$s</string>
+    <string name="pending_job_details">%1$s\nBlocked by %2$s</string>
     <string name="exit_reason_exit_self">Exited normally</string>
     <string name="exit_reason_signaled">Killed by signal</string>
     <string name="exit_reason_low_memory">Low memory</string>

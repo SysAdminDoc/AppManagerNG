@@ -135,6 +135,7 @@ import io.github.muntashirakon.AppManager.compat.DeveloperVerificationCompat;
 import io.github.muntashirakon.AppManager.compat.DeviceIdleManagerCompat;
 import io.github.muntashirakon.AppManager.compat.DomainVerificationManagerCompat;
 import io.github.muntashirakon.AppManager.compat.InstallSourceInfoCompat;
+import io.github.muntashirakon.AppManager.compat.JobSchedulerCompat;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.compat.NetworkPolicyManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PackageInfoCompat2;
@@ -3774,7 +3775,9 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         synchronized (mListItems) {
             mListItems.add(ListItem.newGroupStart(appContext.getString(R.string.exit_history)));
             for (ApplicationExitInfo info : exits) {
-                String reasonLabel = getExitReasonLabel(appContext, info.getReason());
+                String reasonLabel = ExitHistoryDiagnostics.isMemoryLimiterDescription(info.getDescription())
+                        ? appContext.getString(R.string.exit_reason_memory_limiter)
+                        : getExitReasonLabel(appContext, info.getReason());
                 String timestamp = getTime(appContext, info.getTimestamp());
                 String description = info.getDescription();
                 String subtitle;
@@ -3784,6 +3787,26 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     subtitle = timestamp;
                 }
                 mListItems.add(ListItem.newSelectableRegularItem(reasonLabel, subtitle));
+            }
+        }
+    }
+
+    @GuardedBy("mListItems")
+    private void addPendingJobInfo(@NonNull Context appContext, @NonNull AppInfoViewModel.AppInfo appInfo) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.BAKLAVA || mIsExternalApk
+                || appInfo.pendingJobs.isEmpty()) {
+            return;
+        }
+        synchronized (mListItems) {
+            mListItems.add(ListItem.newGroupStart(appContext.getString(R.string.pending_jobs)));
+            for (JobSchedulerCompat.PendingJob job : appInfo.pendingJobs) {
+                String service = job.getService();
+                String title = appContext.getString(R.string.pending_job, job.getJobId());
+                String reasons = TextUtils.join(", ", job.getReasons());
+                String detail = service.isEmpty()
+                        ? appContext.getString(R.string.pending_job_reasons, reasons)
+                        : appContext.getString(R.string.pending_job_details, service, reasons);
+                mListItems.add(ListItem.newSelectableRegularItem(title, detail));
             }
         }
     }
@@ -3969,6 +3992,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     }
                 }
                 setMoreInfo(appContext, appInfo);
+                addPendingJobInfo(appContext, appInfo);
                 addExitHistoryInfo(appContext, appInfo);
                 ThreadUtils.postOnMainThread(() -> {
                     if (!isAdded()) return;
