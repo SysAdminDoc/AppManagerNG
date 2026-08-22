@@ -106,7 +106,8 @@ public final class AdapterUtils {
 
         @Override
         public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-            return false;
+            return mNewList != null
+                    && Objects.equals(mOldList.valueAt(oldItemPosition), mNewList.valueAt(newItemPosition));
         }
 
         @Nullable
