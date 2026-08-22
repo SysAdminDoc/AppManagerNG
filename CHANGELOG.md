@@ -16,6 +16,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Made default export filenames portable across locales and storage providers. Rules, app lists, usage data, APKs, profiles, and extracted icons now keep safe extensions and stay within provider filename limits.
 - Detected truncated package lists from privileged mode. The main list now falls back to Android's normal app view and shows both counts instead of silently omitting apps.
 - Kept no-root force-stop and data/cache automation responsive with bounded scheduled retries, including modern Android Settings screens.
+- Made release build timestamps deterministic by honoring `SOURCE_DATE_EPOCH` first, then the Git commit time, and failing closed when neither is available.
 
 ### Security
 - Updated the Bouncy Castle provider to 1.85.2, with the matching PKIX and utility artifacts pinned to their latest compatible releases.
