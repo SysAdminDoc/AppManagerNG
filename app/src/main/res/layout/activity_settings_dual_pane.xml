@@ -70,7 +70,7 @@
     <com.google.android.material.divider.MaterialDivider
         android:layout_width="@dimen/settings_pane_divider_width"
         android:layout_height="match_parent"
-        app:dividerColor="?attr/colorOutlineVariant" />
+        app:dividerColor="?attr/premiumDividerColor" />
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"

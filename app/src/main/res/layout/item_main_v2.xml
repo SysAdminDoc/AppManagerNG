@@ -206,7 +206,7 @@
             android:layout_width="match_parent"
             android:layout_height="@dimen/premium_stroke_hairline"
             android:layout_marginStart="@dimen/premium_main_divider_inset"
-            android:background="?attr/colorOutlineVariant" />
+            android:background="?attr/premiumDividerColor" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 

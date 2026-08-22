@@ -445,10 +445,12 @@ public class AdvancedSearchView extends SearchView {
     private void updateQueryHint() {
         // mQueryHint is null when no queryHint attribute or setQueryHint() was supplied; concatenating
         // it directly would render a literal "null (...)" hint.
-        CharSequence typeHint = "(" + getQueryHint(mType) + ")";
-        CharSequence hintText = mQueryHint != null && mQueryHint.length() > 0
-                ? mQueryHint + " " + typeHint
-                : typeHint;
+        CharSequence baseHint = mQueryHint != null && mQueryHint.length() > 0
+                ? mQueryHint
+                : getContext().getString(android.R.string.search_go);
+        CharSequence hintText = mType == SEARCH_TYPE_CONTAINS
+                ? baseHint
+                : baseHint + " (" + getQueryHint(mType) + ")";
         if (!isIconfiedByDefault() && mSearchHintIcon != null) {
             // Search icon isn't displayed when it is iconified by default.
             final int textSize = (int) (mSearchSrcTextView.getTextSize() * 1.25);

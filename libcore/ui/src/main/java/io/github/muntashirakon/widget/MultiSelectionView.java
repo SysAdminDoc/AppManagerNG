@@ -116,8 +116,10 @@ public class MultiSelectionView extends MaterialCardView implements OnApplyWindo
         mDivider = findViewById(R.id.divider);
 
         // Set heights
-        mMaxHeight = UiUtils.dpToPx(context, 48 + 1 + 72); // This is a pessimistic approximation, not a real height
-        mTitleHeight = UiUtils.dpToPx(context, 48);
+        mTitleHeight = getResources().getDimensionPixelSize(R.dimen.selection_title_height);
+        mMaxHeight = mTitleHeight
+                + UiUtils.dpToPx(context, 1)
+                + getResources().getDimensionPixelSize(R.dimen.selection_actions_height);
         mCurrentHeight = mMaxHeight;
 
         // Clicking on counter maximizes/minimizes the selection actions
@@ -144,8 +146,8 @@ public class MultiSelectionView extends MaterialCardView implements OnApplyWindo
         @Px
         int smallSize = getResources().getDimensionPixelSize(R.dimen.padding_small);
         setPreventCornerOverlap(false);
-        setCardElevation(UiUtils.dpToPx(context, 3));
-        setRadius(UiUtils.dpToPx(context, 8));
+        setCardElevation(getResources().getDimension(R.dimen.selection_elevation));
+        setRadius(getResources().getDimension(R.dimen.selection_corner_radius));
 
         mHorizontalMargin = smallSize;
         mBottomMargin = getResources().getDimensionPixelSize(R.dimen.padding_very_small);

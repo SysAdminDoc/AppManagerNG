@@ -30,6 +30,7 @@
         <item name="colorSurfaceContainerHighest">@color/premium_surface_3</item>
         <item name="colorOutline">@color/premium_outline_muted</item>
         <item name="colorOutlineVariant">@color/premium_outline_hairline</item>
+        <item name="premiumDividerColor">@color/premium_outline_hairline</item>
 
         <item name="toolbarStyle">@style/Widget.AppTheme.V2.Toolbar</item>
         <item name="materialCardViewStyle">@style/Widget.AppTheme.V2.Card</item>
@@ -40,7 +41,7 @@
 
         <item name="textAppearanceTitleMedium">@style/TextAppearance.AppTheme.V2.TitleMedium</item>
         <item name="android:textAppearanceListItem">@style/TextAppearance.AppTheme.V2.TitleMedium</item>
-        <item name="android:textAppearanceListItemSecondary">@style/TextAppearance.AppTheme.V2.BodyMedium.Secondary</item>
+        <item name="android:textAppearanceListItemSecondary">@style/TextAppearance.AppTheme.V2.BodySmall.Secondary</item>
         <item name="listItemMarginVertical">@dimen/premium_zero</item>
         <item name="listItemMarginHorizontal">@dimen/premium_zero</item>
         <item name="listItemPaddingVertical">@dimen/premium_main_list_padding_vertical</item>
@@ -85,6 +86,7 @@
         <item name="colorSurfaceContainerHighest">@color/premium_surface_3_dark</item>
         <item name="colorOutline">@color/premium_outline_muted_dark</item>
         <item name="colorOutlineVariant">@color/premium_outline_hairline_dark</item>
+        <item name="premiumDividerColor">@color/premium_outline_hairline_dark</item>
     </style>
 
     <style name="AppTheme.V2.Amoled" parent="AppTheme.V2.Dark">
@@ -98,6 +100,7 @@
         <item name="colorSurfaceContainerHighest">@color/premium_surface_3_amoled</item>
         <item name="colorOutline">@color/premium_outline_muted_amoled</item>
         <item name="colorOutlineVariant">@color/premium_outline_hairline_amoled</item>
+        <item name="premiumDividerColor">@color/premium_outline_hairline_amoled</item>
     </style>
 
     <!-- Applied ON TOP of the Material You dynamic-color overlay when the pure-black
@@ -207,9 +210,9 @@
     </style>
 
     <style name="Widget.AppTheme.V2.SearchView" parent="Widget.AppTheme.SearchView">
-        <item name="android:textAppearance">@style/TextAppearance.AppTheme.V2.BodyLarge</item>
-        <item name="frameMarginHorizontal">@dimen/premium_space_8</item>
-        <item name="android:backgroundTint">?attr/colorSurfaceContainerLow</item>
+        <item name="android:textAppearance">@style/TextAppearance.AppTheme.V2.BodyMedium</item>
+        <item name="frameMarginHorizontal">@dimen/premium_zero</item>
+        <item name="android:backgroundTint">@android:color/transparent</item>
         <item name="shapeAppearanceOverlay">@style/ShapeAppearance.AppTheme.V2.Control</item>
     </style>
 
@@ -251,6 +254,10 @@
     <style name="TextAppearance.AppTheme.V2.BodySmall" parent="TextAppearance.Material3.BodySmall">
         <item name="android:textSize">@dimen/premium_type_body_small</item>
         <item name="android:letterSpacing">0</item>
+    </style>
+
+    <style name="TextAppearance.AppTheme.V2.BodySmall.Secondary" parent="TextAppearance.AppTheme.V2.BodySmall">
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
     </style>
 
     <style name="TextAppearance.AppTheme.V2.LabelMedium" parent="TextAppearance.Material3.LabelMedium">

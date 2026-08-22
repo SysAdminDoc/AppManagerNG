@@ -1,31 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-<selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:state_pressed="true">
-        <shape>
-            <solid android:color="?attr/colorSecondaryContainer" />
-            <stroke
-                android:width="@dimen/premium_stroke_hairline"
-                android:color="?attr/colorSecondary" />
-            <corners android:radius="@dimen/premium_radius_card" />
-        </shape>
-    </item>
-    <item android:state_focused="true">
-        <shape>
-            <solid android:color="?attr/colorPrimaryContainer" />
-            <stroke
-                android:width="@dimen/premium_stroke_focus"
-                android:color="?attr/colorPrimary" />
-            <corners android:radius="@dimen/premium_radius_card" />
-        </shape>
-    </item>
-    <item>
-        <shape>
-            <solid android:color="?attr/colorSurfaceContainerHigh" />
-            <stroke
-                android:width="@dimen/premium_stroke_hairline"
-                android:color="?attr/colorOutlineVariant" />
-            <corners android:radius="@dimen/premium_radius_card" />
-        </shape>
-    </item>
-</selector>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@android:color/transparent" />
+</shape>
