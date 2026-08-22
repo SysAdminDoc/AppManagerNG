@@ -25,14 +25,15 @@ public class FmListOptions extends ListOptions {
     public static final int SORT_BY_SIZE = 2;
     public static final int SORT_BY_TYPE = 3;
 
-    @IntDef(flag = true, value = {OPTIONS_DISPLAY_DOT_FILES, OPTIONS_FOLDERS_FIRST})
+    @IntDef(flag = true, value = {OPTIONS_DISPLAY_DOT_FILES, OPTIONS_FOLDERS_FIRST,
+            OPTIONS_ONLY_FOR_THIS_FOLDER})
     @Retention(RetentionPolicy.SOURCE)
     public @interface Options {
     }
 
     public static final int OPTIONS_DISPLAY_DOT_FILES = 1 << 0;
     public static final int OPTIONS_FOLDERS_FIRST = 1 << 1;
-    public static final int OPTIONS_ONLY_FOR_THIS_FOLDER = 1 << 2; // TODO: 11/12/22
+    public static final int OPTIONS_ONLY_FOR_THIS_FOLDER = 1 << 2;
 
     private static final LinkedHashMap<Integer, Integer> SORT_ITEMS_MAP = new LinkedHashMap<Integer, Integer>() {{
         put(SORT_BY_NAME, R.string.sort_by_filename);
@@ -44,6 +45,7 @@ public class FmListOptions extends ListOptions {
     private static final LinkedHashMap<Integer, Integer> OPTIONS_MAP = new LinkedHashMap<Integer, Integer>() {{
         put(OPTIONS_DISPLAY_DOT_FILES, R.string.option_display_dot_files);
         put(OPTIONS_FOLDERS_FIRST, R.string.option_display_folders_on_top);
+        put(OPTIONS_ONLY_FOR_THIS_FOLDER, R.string.option_only_for_this_folder);
     }};
 
     @Nullable

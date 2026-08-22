@@ -132,6 +132,7 @@ public class AppPref {
         PREF_FREEZE_TYPE_INT,
         PREF_EDITOR_WORD_WRAP_BOOL,
         PREF_FM_DISPLAY_IN_LAUNCHER_BOOL,
+        PREF_FM_FOLDER_OPTIONS_STR,
         PREF_FM_HOME_STR,
         PREF_FM_LAST_PATH_STR,
         PREF_FM_OPTIONS_INT,
@@ -694,6 +695,7 @@ public class AppPref {
             case PREF_BACKUP_SCHEDULE_LAST_RESULT_STR:
             case PREF_BACKUP_SCHEDULE_LAST_DIAGNOSTICS_STR:
             case PREF_BACKUP_SCHEDULE_LAST_SKIPPED_STR:
+            case PREF_FM_FOLDER_OPTIONS_STR:
                 return "";
             case PREF_FM_SMALI_COMMENT_LEVEL_STR:
                 return SmaliDecodeOptions.DEFAULT_COMMENT_LEVEL;

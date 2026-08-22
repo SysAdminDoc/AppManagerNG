@@ -41,6 +41,7 @@ import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.details.AppDetailsFragment;
 import io.github.muntashirakon.AppManager.details.info.AppInfoActionOrderResolver;
 import io.github.muntashirakon.AppManager.fm.FmActivity;
+import io.github.muntashirakon.AppManager.fm.FmFolderViewPreferences;
 import io.github.muntashirakon.AppManager.fm.FmListOptions;
 import io.github.muntashirakon.AppManager.logcat.helper.LogcatHelper;
 import io.github.muntashirakon.AppManager.main.MainListOptions;
@@ -601,6 +602,28 @@ public final class Prefs {
 
         public static void setOptions(@FmListOptions.Options int options) {
             AppPref.set(AppPref.PrefKey.PREF_FM_OPTIONS_INT, options);
+        }
+
+        @Nullable
+        public static FmFolderViewPreferences.Value getFolderViewPreferences(@NonNull Uri uri) {
+            return FmFolderViewPreferences.get(
+                    AppPref.getString(AppPref.PrefKey.PREF_FM_FOLDER_OPTIONS_STR), uri);
+        }
+
+        public static void setFolderViewPreferences(@NonNull Uri uri,
+                                                     @FmListOptions.SortOrder int sortBy,
+                                                     boolean reverseSort,
+                                                     @FmListOptions.Options int options) {
+            String serialized = FmFolderViewPreferences.put(
+                    AppPref.getString(AppPref.PrefKey.PREF_FM_FOLDER_OPTIONS_STR), uri,
+                    sortBy, reverseSort, options);
+            AppPref.set(AppPref.PrefKey.PREF_FM_FOLDER_OPTIONS_STR, serialized);
+        }
+
+        public static void clearFolderViewPreferences(@NonNull Uri uri) {
+            String serialized = FmFolderViewPreferences.remove(
+                    AppPref.getString(AppPref.PrefKey.PREF_FM_FOLDER_OPTIONS_STR), uri);
+            AppPref.set(AppPref.PrefKey.PREF_FM_FOLDER_OPTIONS_STR, serialized);
         }
 
         @FmListOptions.SortOrder
