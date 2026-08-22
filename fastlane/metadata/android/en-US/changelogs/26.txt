@@ -1,0 +1,2 @@
+- Flattened access-mode onboarding into compact filled rows.
+- Removed capability pills, shortened first-run guidance, and fixed AMOLED readiness contrast.

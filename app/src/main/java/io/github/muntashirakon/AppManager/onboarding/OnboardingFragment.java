@@ -6,7 +6,6 @@ import android.Manifest;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -21,7 +20,6 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.VisibleForTesting;
 import androidx.core.content.ContextCompat;
-import androidx.core.graphics.ColorUtils;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.fragment.app.FragmentActivity;
 
@@ -60,8 +58,6 @@ import io.github.muntashirakon.AppManager.utils.UIUtils;
 public class OnboardingFragment extends BottomSheetDialogFragment {
     public static final String TAG = "OnboardingFragment";
     private static final String MIN_RECOMMENDED_ADB_SECURITY_PATCH = "2026-05-01";
-    private static final int STATUS_BADGE_BACKGROUND_ALPHA = 0x22;
-    private static final int STATUS_BADGE_STROKE_ALPHA = 0x66;
 
     /** True when this fragment has not yet been dismissed for this user. */
     public static boolean shouldShow() {
@@ -445,19 +441,16 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         return sb.toString();
     }
 
-    /**
-     * Ring the currently-active mode card with the M3 primary stroke so the
-     * picker doubles as a "current state" view when replayed. Other cards keep
-     * the default outlined style from {@code Widget.AppTheme.CardView.OnboardingMode}.
-     */
+    /** Marks the active mode with a filled surface while keeping the list borderless. */
     private void highlightActiveMode(@NonNull View root, @NonNull String activeMode) {
         int activeCardId = cardIdFor(activeMode);
         int[] allCards = {R.id.card_mode_auto, R.id.card_mode_root, R.id.card_mode_shizuku, R.id.card_mode_adb_wifi,
                 R.id.card_mode_adb_tcp, R.id.card_mode_no_root};
-        int active = MaterialColors.getColor(root, androidx.appcompat.R.attr.colorPrimary);
-        int inactive = MaterialColors.getColor(root, com.google.android.material.R.attr.colorOutlineVariant);
-        int strokeWidthActive = getResources().getDimensionPixelSize(R.dimen.premium_stroke_focus);
-        int strokeWidthInactive = getResources().getDimensionPixelSize(R.dimen.premium_stroke_hairline);
+        int activeBackground = MaterialColors.getColor(root,
+                com.google.android.material.R.attr.colorSurfaceContainerHighest);
+        int inactiveBackground = MaterialColors.getColor(root,
+                com.google.android.material.R.attr.colorSurfaceContainerLow);
+        int strokeWidth = getResources().getDimensionPixelSize(R.dimen.premium_stroke_none);
         for (int id : allCards) {
             View v = root.findViewById(id);
             if (!(v instanceof com.google.android.material.card.MaterialCardView)) continue;
@@ -467,14 +460,13 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
             CharSequence baseDescription = tag instanceof CharSequence
                     ? (CharSequence) tag
                     : card.getContentDescription();
+            card.setStrokeWidth(strokeWidth);
             if (id == activeCardId) {
-                card.setStrokeColor(active);
-                card.setStrokeWidth(strokeWidthActive);
+                card.setCardBackgroundColor(activeBackground);
                 card.setContentDescription(getString(R.string.onboarding_mode_card_active_a11y,
                         baseDescription != null ? baseDescription : ""));
             } else {
-                card.setStrokeColor(inactive);
-                card.setStrokeWidth(strokeWidthInactive);
+                card.setCardBackgroundColor(inactiveBackground);
                 card.setContentDescription(baseDescription);
             }
         }
@@ -502,12 +494,12 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
                                       @Nullable Object[] formatArgs) {
         if (statusView == null) return;
         int color = MaterialColors.getColor(statusView, available
-                ? com.google.android.material.R.attr.colorOnPrimaryContainer
+                ? androidx.appcompat.R.attr.colorPrimary
                 : com.google.android.material.R.attr.colorOnSurfaceVariant);
         int textRes = available ? availableTextRes : unavailableTextRes;
         statusView.setText(formatArgs != null ? getString(textRes, formatArgs) : getString(textRes));
         statusView.setTextColor(color);
-        applyStatusBadgeStyle(statusView, color);
+        statusView.setBackground(null);
         statusView.setCompoundDrawablePadding(getResources()
                 .getDimensionPixelSize(io.github.muntashirakon.ui.R.dimen.padding_very_small));
         Drawable icon = ContextCompat.getDrawable(requireContext(), available
@@ -518,17 +510,6 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
             DrawableCompat.setTint(icon, color);
         }
         statusView.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, null, null, null);
-    }
-
-    private void applyStatusBadgeStyle(@NonNull TextView statusView, int contentColor) {
-        GradientDrawable background = new GradientDrawable();
-        background.setShape(GradientDrawable.RECTANGLE);
-        background.setColor(ColorUtils.setAlphaComponent(contentColor, STATUS_BADGE_BACKGROUND_ALPHA));
-        background.setStroke(
-                getResources().getDimensionPixelSize(R.dimen.premium_stroke_hairline),
-                ColorUtils.setAlphaComponent(contentColor, STATUS_BADGE_STROKE_ALPHA));
-        background.setCornerRadius(getResources().getDimensionPixelSize(R.dimen.premium_radius_control));
-        statusView.setBackground(background);
     }
 
     private void bindShizukuStatus(@Nullable TextView statusView, @Nullable TextView autoStartHint,
@@ -584,7 +565,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
             available = false;
         }
         int color = MaterialColors.getColor(statusView, available
-                ? com.google.android.material.R.attr.colorOnPrimaryContainer
+                ? androidx.appcompat.R.attr.colorPrimary
                 : com.google.android.material.R.attr.colorOnSurfaceVariant);
         statusView.setText(statusRes);
         statusView.setTextColor(color);
