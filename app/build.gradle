@@ -175,6 +175,41 @@ tasks.withType(Test).configureEach {
     }
 }
 
+def editorLanguages = ['java', 'json', 'kotlin', 'properties', 'sh', 'smali', 'xml']
+def editorLanguageAssetFiles = editorLanguages.collectMany { language ->
+    [
+            file("src/main/assets/languages/${language}/tmLanguage.json"),
+            file("src/main/assets/languages/${language}/language-configuration.json")
+    ]
+}
+
+tasks.register('verifyEditorLanguageAssets') {
+    group = 'verification'
+    description = 'Checks that every supported editor language ships valid grammar assets.'
+    inputs.files(editorLanguageAssetFiles)
+    doLast {
+        def missing = editorLanguageAssetFiles.findAll { !it.isFile() || it.length() == 0 }
+        if (!missing.isEmpty()) {
+            throw new GradleException('Missing editor language assets: '
+                    + missing.collect { it.path }.join(', '))
+        }
+        def invalid = []
+        editorLanguageAssetFiles.each { asset ->
+            try {
+                new groovy.json.JsonSlurper().parse(asset)
+            } catch (Exception e) {
+                invalid << "${asset.path}: ${e.message}"
+            }
+        }
+        if (!invalid.isEmpty()) {
+            throw new GradleException('Invalid editor language assets:\n' + invalid.join('\n'))
+        }
+    }
+}
+
+tasks.named('preBuild').configure { dependsOn('verifyEditorLanguageAssets') }
+tasks.named('check').configure { dependsOn('verifyEditorLanguageAssets') }
+
 dependencies {
     compileOnly project(path: ':hiddenapi')
     coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:${desugar_jdk_version}"
