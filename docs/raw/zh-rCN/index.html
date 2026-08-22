@@ -398,7 +398,7 @@ Access Framework，即SAF）
 点击该按钮以在单独的页面中显示该应用程序的清单文件。
 若该应用程序存在一个或多个拆分，则会显示拆分的 APK 文件列表。
 点击其中任意一项以打开相应的清单文件。<li><p><strong>扫描器</strong>: 扫描该应用程序以列出潜在的跟踪器和库。
-若已配置并处于可用状态，它还会使用VirusTotal扫描文件，并从Pithus中获得结果，<br><div class=seealso-inline><p><em>另见: <span><a href=#sec:scanner-page>扫描器页面</a></span></em></div><p>。<li><p><strong>共享首选项</strong>:
+若已配置并处于可用状态，它还会使用VirusTotal扫描文件。<br><div class=seealso-inline><p><em>另见: <span><a href=#sec:scanner-page>扫描器页面</a></span></em></div><p>。<li><p><strong>共享首选项</strong>:
 显示该应用程序使用的共享首选项(Shared-Preferences)列表。
 点击列表中的首选项将打开<a href=#sec:shared-preferences-editor-page>共享首选项编辑器</a>。该按钮仅在用户拥有足够的权限时才会显示。<li><p><strong>数据库</strong>: 显示该应用程序使用的数据库列表。
 点击其中任意一项将打开可用于打开数据库的活动列表。
@@ -717,8 +717,7 @@ Ops)会被允许。 该选项可通过单击输入对话框中的 <em>禁用</em
 “应用信息”选项<li><p><strong>代码编辑器</strong><li><p><strong>VirusTotal</strong></ul></section></section><section id=subsec:privacy class=level3 data-number=2.6.3><h3 data-number=2.6.3><span class=header-section-number>2.6.3</span>
 <a href=#toc:subsec:privacy>隐私</a><a href=#subsec:privacy class=anchor aria-hidden=true></a></h3><section id=subsubsec:screen-lock class=level4 data-number=2.6.3.1><h4 data-number=2.6.3.1><span class=header-section-number>2.6.3.1</span> 屏幕锁定<a href=#subsubsec:screen-lock class=anchor aria-hidden=true></a></h4><p>当设置了屏幕锁定时，使用 Android 屏幕锁定的设置锁定 App Manager。<div class="amalert warning"><p><strong><em>警告.</em></strong><p>若启用该设置后，屏幕锁定在 Android
 中被禁用/移除，则直到再度启用屏幕锁定前 App Manager 将无法被打开。</div></section><section id=subsubsec:run-am-in-background class=level4 data-number=2.6.3.2><h4 data-number=2.6.3.2><span class=header-section-number>2.6.3.2</span> 在后台运行 App Manager<a href=#subsubsec:run-am-in-background class=anchor aria-hidden=true></a></h4><p>App Manager 在后台运行时会减少初始化延迟。 对缓解某些设备频繁断开
-ADB连接的问题而言，这也很有用。</section><section id=subsubsec:use-the-internet class=level4 data-number=2.6.3.3><h4 data-number=2.6.3.3><span class=header-section-number>2.6.3.3</span> 使用网络<a href=#subsubsec:use-the-internet class=anchor aria-hidden=true></a></h4><p>在 App Manager 中激活网络功能。 目前包括在 <a href=#sec:scanner-page>扫描器页面</a>中进行扫描的 VirusTotal 和
-Pithus。</section><section id=subsubsec:auth-manager class=level4 data-number=2.6.3.4><h4 data-number=2.6.3.4><span class=header-section-number>2.6.3.4</span> 授权管理器<a href=#subsubsec:auth-manager class=anchor aria-hidden=true></a></h4><p>该设置允许第三方应用程序获得某些功能的访问权限，比如说配置文件。</section></section><section id=subsec:mode-of-operation class=level3 data-number=2.6.4><h3 data-number=2.6.4><span class=header-section-number>2.6.4</span>
+ADB连接的问题而言，这也很有用。</section><section id=subsubsec:use-the-internet class=level4 data-number=2.6.3.3><h4 data-number=2.6.3.3><span class=header-section-number>2.6.3.3</span> 使用网络<a href=#subsubsec:use-the-internet class=anchor aria-hidden=true></a></h4><p>在 App Manager 中激活网络功能。 目前包括在 <a href=#sec:scanner-page>扫描器页面</a>中进行扫描的 VirusTotal。</section><section id=subsubsec:auth-manager class=level4 data-number=2.6.3.4><h4 data-number=2.6.3.4><span class=header-section-number>2.6.3.4</span> 授权管理器<a href=#subsubsec:auth-manager class=anchor aria-hidden=true></a></h4><p>该设置允许第三方应用程序获得某些功能的访问权限，比如说配置文件。</section></section><section id=subsec:mode-of-operation class=level3 data-number=2.6.4><h3 data-number=2.6.4><span class=header-section-number>2.6.4</span>
 <a href=#toc:subsec:mode-of-operation>操作模式</a><a href=#subsec:mode-of-operation class=anchor aria-hidden=true></a></h3><p>操作模式定义了 App Manager 整体的工作模式，其有以下选项：<ul class=incremental><li><p><strong>自动</strong> 让 App Manager 决定最佳选项。
 尽管这是默认选项，对于无 Root 用户而言应该使用 <em>无 Root</em>
 模式。<li><p><strong>Root</strong> 以 Root 模式运行 App Manager。若未检测到
@@ -813,7 +812,7 @@ KeyStore (JKS) 或 PKCS #12 的密钥库。
 文件。<p>扫描器会扫描跟踪器和库，显示跟踪器和库的总数。 它也会显示 APK
 文件的检验和并进行签名验证。 若设置里配置了 VirusTotal ，则也可尝试从
 VirusTotal 中检索报告， 若该 APK 文件不在数据库时，则可以选择上传该 APK
-文件。 当启用网络功能时，还会显示前往 <a href=https://beta.pithus.org>Pithus</a>的链接，并提供报告功能。<div class="amalert danger"><p><strong><em>免责声明.</em></strong><p>App Manager
+文件。 <div class="amalert danger"><p><strong><em>免责声明.</em></strong><p>App Manager
 仅静态扫描应用程序，并不带任何偏见。应用程序可能会提供退出跟踪的选项。
 在某些情况下，某些跟踪器的功能并不会被应用程序使用 (比如 F-Droid)。
 某些应用程序可能只是单纯将它们当作占位符使用， 以防止某些功能被破坏
