@@ -1471,7 +1471,8 @@ public final class PackageInstallerCompat {
             PackageInfo info = PackageManagerCompat.getPackageInfo(packageName, MATCH_UNINSTALLED_PACKAGES
                     | PackageManagerCompat.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES, userId);
             return (info.applicationInfo.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0;
-        } catch (Throwable ignore) {
+        } catch (Throwable e) {
+            Log.w(TAG, "Could not determine whether %s is an updated system app.", e, packageName);
             return false;
         }
     }
@@ -1513,7 +1514,9 @@ public final class PackageInstallerCompat {
                     PackageManagerCompat.getPackageInfo(packageName, MATCH_UNINSTALLED_PACKAGES
                             | PackageManagerCompat.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES, user);
                     return user;
-                } catch (Throwable ignore) {
+                } catch (Throwable e) {
+                    Log.w(TAG, "Could not find package %s for user %d while selecting an uninstall target.",
+                            e, packageName, user);
                 }
             }
         }

@@ -277,7 +277,8 @@ public class KeyStoreManager {
                     ksm.addKeyPair(alias, keyPair, false);
                     keyPair.destroy();
                 } else throw new NoSuchAlgorithmException();
-            } catch (Exception ignore) {
+            } catch (Exception e) {
+                Log.w(TAG, "Could not migrate keystore alias %s.", e, alias);
             }
         }
     }

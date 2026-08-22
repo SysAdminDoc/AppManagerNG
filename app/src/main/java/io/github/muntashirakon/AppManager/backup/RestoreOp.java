@@ -173,7 +173,9 @@ class RestoreOp implements Closeable {
             mPackageInfo = PackageManagerCompat.getPackageInfo(packageName, GET_SIGNING_CERTIFICATES
                     | PackageManagerCompat.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES, userId);
             mUid = Objects.requireNonNull(mPackageInfo.applicationInfo).uid;
-        } catch (Exception ignore) {
+        } catch (Exception e) {
+            Log.w(TAG, "Could not query installed package %s; treating the restore as not installed.",
+                    e, packageName);
         }
         mIsInstalled = mPackageInfo != null;
         try {
@@ -419,7 +421,8 @@ class RestoreOp implements Closeable {
             synchronized (sLock) {
                 PackageUtils.ensurePackageStagingDirectoryPrivileged();
             }
-        } catch (Exception ignore) {
+        } catch (Exception e) {
+            Log.w(TAG, "Could not prepare the privileged package staging directory; trying the backup directory.", e);
         }
         try {
             if (!packageStagingDirectory.canWrite()) {
