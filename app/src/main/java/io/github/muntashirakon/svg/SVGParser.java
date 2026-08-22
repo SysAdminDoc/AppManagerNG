@@ -427,6 +427,9 @@ public class SVGParser {
                     } else if (prevCmd == 'l' || prevCmd == 'L') {
                         cmd = prevCmd;
                         break;
+                    } else if (prevCmd == 'a' || prevCmd == 'A') {
+                        cmd = prevCmd;
+                        break;
                     }
                 default: {
                     ph.advance();
@@ -560,6 +563,10 @@ public class SVGParser {
                     int sweepArc = (int) ph.nextFloat();
                     float x = ph.nextFloat();
                     float y = ph.nextFloat();
+                    if (cmd == 'a') {
+                        x += lastX;
+                        y += lastY;
+                    }
                     drawArc(p, lastX, lastY, x, y, rx, ry, theta, largeArc, sweepArc);
                     lastX = x;
                     lastY = y;
@@ -576,7 +583,115 @@ public class SVGParser {
     }
 
     private static void drawArc(Path p, float lastX, float lastY, float x, float y, float rx, float ry, float theta, int largeArc, int sweepArc) {
-        // todo - not implemented yet, may be very hard to do using Android drawing facilities.
+        if (lastX == x && lastY == y) {
+            // SVG treats an arc whose endpoints are identical as an empty command.
+            return;
+        }
+        rx = Math.abs(rx);
+        ry = Math.abs(ry);
+        if (rx == 0 || ry == 0) {
+            p.lineTo(x, y);
+            return;
+        }
+
+        double phi = Math.toRadians(theta % 360.0);
+        double cosPhi = Math.cos(phi);
+        double sinPhi = Math.sin(phi);
+        double dx = (lastX - x) / 2.0;
+        double dy = (lastY - y) / 2.0;
+        double xPrime = cosPhi * dx + sinPhi * dy;
+        double yPrime = -sinPhi * dx + cosPhi * dy;
+
+        // Normalize undersized radii so the requested ellipse can reach both endpoints.
+        double lambda = xPrime * xPrime / (rx * rx) + yPrime * yPrime / (ry * ry);
+        if (lambda > 1.0) {
+            double scale = Math.sqrt(lambda);
+            rx *= scale;
+            ry *= scale;
+        }
+
+        double rxSquared = rx * rx;
+        double rySquared = ry * ry;
+        double denominator = rxSquared * yPrime * yPrime + rySquared * xPrime * xPrime;
+        if (denominator == 0) {
+            p.lineTo(x, y);
+            return;
+        }
+        double numerator = rxSquared * rySquared - denominator;
+        double coefficient = Math.sqrt(Math.max(0, numerator / denominator));
+        if ((largeArc != 0) == (sweepArc != 0)) {
+            coefficient = -coefficient;
+        }
+        double centerXPrime = coefficient * rx * yPrime / ry;
+        double centerYPrime = -coefficient * ry * xPrime / rx;
+        double centerX = cosPhi * centerXPrime - sinPhi * centerYPrime + (lastX + x) / 2.0;
+        double centerY = sinPhi * centerXPrime + cosPhi * centerYPrime + (lastY + y) / 2.0;
+
+        double startUnitX = (xPrime - centerXPrime) / rx;
+        double startUnitY = (yPrime - centerYPrime) / ry;
+        double endUnitX = (-xPrime - centerXPrime) / rx;
+        double endUnitY = (-yPrime - centerYPrime) / ry;
+        double startAngle = vectorAngle(1, 0, startUnitX, startUnitY);
+        double sweepAngle = vectorAngle(startUnitX, startUnitY, endUnitX, endUnitY);
+        if (sweepArc == 0 && sweepAngle > 0) {
+            sweepAngle -= 2 * Math.PI;
+        } else if (sweepArc != 0 && sweepAngle < 0) {
+            sweepAngle += 2 * Math.PI;
+        }
+
+        int segmentCount = Math.max(1, (int) Math.ceil(Math.abs(sweepAngle) / (Math.PI / 2)));
+        double segmentAngle = sweepAngle / segmentCount;
+        double currentAngle = startAngle;
+        for (int i = 0; i < segmentCount; ++i) {
+            double nextAngle = currentAngle + segmentAngle;
+            double startPointX = ellipsePointX(centerX, rx, ry, cosPhi, sinPhi, currentAngle);
+            double startPointY = ellipsePointY(centerY, rx, ry, cosPhi, sinPhi, currentAngle);
+            double endPointX = ellipsePointX(centerX, rx, ry, cosPhi, sinPhi, nextAngle);
+            double endPointY = ellipsePointY(centerY, rx, ry, cosPhi, sinPhi, nextAngle);
+            if (i == 0) {
+                startPointX = lastX;
+                startPointY = lastY;
+            }
+            if (i == segmentCount - 1) {
+                endPointX = x;
+                endPointY = y;
+            }
+            double alpha = 4.0 / 3.0 * Math.tan(segmentAngle / 4.0);
+            double startDerivativeX = ellipseDerivativeX(rx, ry, cosPhi, sinPhi, currentAngle);
+            double startDerivativeY = ellipseDerivativeY(rx, ry, cosPhi, sinPhi, currentAngle);
+            double endDerivativeX = ellipseDerivativeX(rx, ry, cosPhi, sinPhi, nextAngle);
+            double endDerivativeY = ellipseDerivativeY(rx, ry, cosPhi, sinPhi, nextAngle);
+            p.cubicTo((float) (startPointX + alpha * startDerivativeX),
+                    (float) (startPointY + alpha * startDerivativeY),
+                    (float) (endPointX - alpha * endDerivativeX),
+                    (float) (endPointY - alpha * endDerivativeY),
+                    (float) endPointX, (float) endPointY);
+            currentAngle = nextAngle;
+        }
+    }
+
+    private static double vectorAngle(double ux, double uy, double vx, double vy) {
+        return Math.atan2(ux * vy - uy * vx, ux * vx + uy * vy);
+    }
+
+    private static double ellipsePointX(double centerX, double rx, double ry, double cosPhi,
+                                        double sinPhi, double angle) {
+        return centerX + cosPhi * rx * Math.cos(angle) - sinPhi * ry * Math.sin(angle);
+    }
+
+    private static double ellipsePointY(double centerY, double rx, double ry, double cosPhi,
+                                        double sinPhi, double angle) {
+        return centerY + sinPhi * rx * Math.cos(angle) + cosPhi * ry * Math.sin(angle);
+    }
+
+    private static double ellipseDerivativeX(double rx, double ry, double cosPhi, double sinPhi,
+                                              double angle) {
+        return -cosPhi * rx * Math.sin(angle) - sinPhi * ry * Math.cos(angle);
+    }
+
+    private static double ellipseDerivativeY(double rx, double ry, double cosPhi, double sinPhi,
+                                              double angle) {
+        return -sinPhi * rx * Math.sin(angle) + cosPhi * ry * Math.cos(angle);
     }
 
     @Nullable
