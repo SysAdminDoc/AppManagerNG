@@ -63,6 +63,11 @@ dependencyCheck {
     // Ad-hoc local runs default to report-only (11.0). The maintainer release scripts
     // always pass -PdependencyCheckFailBuildOnCvss=9.0 and preserve both reports.
     failBuildOnCVSS = dependencyCheckFailBuildOnCvss
+    // Dependency-Check 13 requires an NVD API key for online updates. Keep keyed
+    // environments current, while keyless local gates use the checked local database.
+    autoUpdate = Boolean.parseBoolean(
+            (findProperty('dependencyCheckAutoUpdate')
+                    ?: (System.getenv('NVD_API_KEY') ? 'true' : 'false')).toString())
     // Suppress vendored-AAR false positives via XML at this path; create on first audit pass.
     suppressionFile = file('config/owasp-suppressions.xml').exists()
             ? file('config/owasp-suppressions.xml').toString()

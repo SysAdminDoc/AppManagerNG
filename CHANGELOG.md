@@ -28,6 +28,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Moved the remaining App Details permission and error messages and file-manager starter names into translated resources.
 
 ### Security
+- Raised the Android build toolchain to AGP 9.3.1, Gradle 9.7.0, and Dependency-Check 13.0.0. Refreshed every dependency lock and recorded new artifacts only after checking publisher checksums.
+- Kept the CVE release gate usable without an NVD token by running keyless local checks against the existing vulnerability database, while keyed environments continue to refresh online. The gate now also collects Dependency-Check 13 reports from its nested output directory.
 - Updated the Bouncy Castle provider to 1.85.2, with the matching PKIX and utility artifacts pinned to their latest compatible releases.
 - Added fixed metadata-v5 and metadata-v6 backup fixtures from Bouncy Castle 1.84 to guard encrypted-backup compatibility across provider upgrades.
 - Verified the minified signed release can create and reopen its BKS keystore after a cold relaunch.
