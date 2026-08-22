@@ -3,35 +3,56 @@
 package io.github.muntashirakon.AppManager.filters;
 
 import static io.github.muntashirakon.AppManager.backup.BackupFlags.BACKUP_APK_FILES;
+import static io.github.muntashirakon.AppManager.backup.BackupFlags.BACKUP_CONTENT_FLAGS;
+import static io.github.muntashirakon.AppManager.compat.PackageManagerCompat.GET_SIGNING_CERTIFICATES;
+import static io.github.muntashirakon.AppManager.compat.PackageManagerCompat.MATCH_DISABLED_COMPONENTS;
+import static io.github.muntashirakon.AppManager.compat.PackageManagerCompat.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES;
+import static io.github.muntashirakon.AppManager.compat.PackageManagerCompat.MATCH_UNINSTALLED_PACKAGES;
 
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.os.UserHandleHidden;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import aosp.libcore.util.EmptyArray;
 import io.github.muntashirakon.AppManager.apk.signing.SignerInfo;
+import io.github.muntashirakon.AppManager.backup.BackupItems;
+import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
+import io.github.muntashirakon.AppManager.filters.options.FreezeOption;
+import io.github.muntashirakon.AppManager.utils.ExUtils;
 
 public class BackupFilterableAppInfo extends FilterableAppInfo {
     private static final int SYNTHETIC_APP_ID = 10_000;
+    private static final int PACKAGE_INFO_FLAGS = PackageManager.GET_META_DATA | GET_SIGNING_CERTIFICATES
+            | PackageManager.GET_ACTIVITIES | PackageManager.GET_RECEIVERS | PackageManager.GET_PROVIDERS
+            | PackageManager.GET_SERVICES | PackageManager.GET_PERMISSIONS | MATCH_DISABLED_COMPONENTS
+            | MATCH_UNINSTALLED_PACKAGES | MATCH_STATIC_SHARED_AND_SDK_LIBRARIES;
 
     @NonNull
     private final Backup mBackup;
     @NonNull
     private final String mAppLabel;
+    private final boolean mHasCurrentPackageInfo;
+    @Nullable
+    private Boolean mBackupFrozen;
 
     public BackupFilterableAppInfo(@NonNull Backup backup) {
-        super(createPackageInfo(backup), null);
+        this(backup, findCurrentPackageInfo(backup));
+    }
+
+    private BackupFilterableAppInfo(@NonNull Backup backup, @Nullable PackageInfo currentPackageInfo) {
+        super(currentPackageInfo != null ? currentPackageInfo : createSyntheticPackageInfo(backup), null);
         mBackup = backup;
         mAppLabel = getBackupLabel(backup);
+        mHasCurrentPackageInfo = currentPackageInfo != null;
     }
 
     @NonNull
-    private static PackageInfo createPackageInfo(@NonNull Backup backup) {
+    private static PackageInfo createSyntheticPackageInfo(@NonNull Backup backup) {
         PackageInfo packageInfo = new PackageInfo();
         packageInfo.packageName = backup.packageName;
         packageInfo.versionName = backup.versionName;
@@ -50,6 +71,12 @@ public class BackupFilterableAppInfo extends FilterableAppInfo {
         applicationInfo.nonLocalizedLabel = getBackupLabel(backup);
         packageInfo.applicationInfo = applicationInfo;
         return packageInfo;
+    }
+
+    @Nullable
+    private static PackageInfo findCurrentPackageInfo(@NonNull Backup backup) {
+        return ExUtils.exceptionAsNull(() -> PackageManagerCompat.getPackageInfo(
+                backup.packageName, PACKAGE_INFO_FLAGS, backup.userId));
     }
 
     private static int clampVersionCode(long versionCode) {
@@ -76,18 +103,23 @@ public class BackupFilterableAppInfo extends FilterableAppInfo {
     }
 
     @Override
-    public boolean isInstalled() {
-        return false;
+    @Nullable
+    public String getVersionName() {
+        return mBackup.versionName;
     }
 
     @Override
     public boolean isFrozen() {
-        return false;
+        return getFreezeFlags() != 0;
     }
 
     @Override
     public int getFreezeFlags() {
-        return 0;
+        int freezeFlags = super.getFreezeFlags();
+        if (!mHasCurrentPackageInfo && freezeFlags == 0 && isBackupFrozen()) {
+            freezeFlags |= FreezeOption.FREEZE_TYPE_DISABLED;
+        }
+        return freezeFlags;
     }
 
     @Override
@@ -102,7 +134,13 @@ public class BackupFilterableAppInfo extends FilterableAppInfo {
 
     @Override
     public boolean backupAllowed() {
-        return false;
+        if (mHasCurrentPackageInfo) {
+            return super.backupAllowed();
+        }
+        // A backup with payload flags records that this package was eligible for
+        // the requested historical backup operation, even when its package record
+        // is no longer available to expose the current manifest flag.
+        return (mBackup.flags & BACKUP_CONTENT_FLAGS) != 0;
     }
 
     @Override
@@ -116,26 +154,26 @@ public class BackupFilterableAppInfo extends FilterableAppInfo {
     }
 
     @Override
+    @Nullable
+    public SignerInfo fetchSignerInfo() {
+        return mHasCurrentPackageInfo ? super.fetchSignerInfo() : null;
+    }
+
+    @Override
     @NonNull
     public String getSsaid() {
         return "";
     }
 
-    @Override
-    @Nullable
-    public SignerInfo fetchSignerInfo() {
-        return null;
-    }
-
-    @Override
-    @NonNull
-    public String[] getSignatureSubjectLines() {
-        return EmptyArray.STRING;
-    }
-
-    @Override
-    @NonNull
-    public String[] getSignatureSha256Checksums() {
-        return EmptyArray.STRING;
+    private boolean isBackupFrozen() {
+        if (mBackupFrozen == null) {
+            Boolean frozen = ExUtils.exceptionAsNull(() -> {
+                try (BackupItems.BackupItem backupItem = mBackup.getItem()) {
+                    return backupItem.isFrozen();
+                }
+            });
+            mBackupFrozen = frozen != null && frozen;
+        }
+        return mBackupFrozen;
     }
 }
