@@ -2400,6 +2400,13 @@
     <string name="native_lib_16kb_aligned">16 KB aligned</string>
     <string name="native_lib_16kb_not_aligned">Not 16 KB aligned</string>
     <string name="native_lib_16kb_alignment_unknown">16 KB alignment unknown</string>
+    <string name="native_lib_symbols_present">Static symbols present</string>
+    <string name="native_lib_symbols_stripped">Static symbols stripped</string>
+    <string name="native_lib_symbols_unknown">Static symbols unknown</string>
+    <string name="native_lib_zip_aligned">ZIP data offset: %1$d bytes (16 KB aligned)</string>
+    <string name="native_lib_zip_not_aligned">ZIP data offset: %1$d bytes (not 16 KB aligned)</string>
+    <string name="native_lib_zip_alignment_unknown">ZIP alignment unknown</string>
+    <string name="native_lib_zip_alignment_compressed">ZIP alignment not applicable (compressed)</string>
     <string name="native_lib_readiness_ready">Native libraries: 16 KB-ready</string>
     <string name="native_lib_readiness_not_ready">Native libraries: not 16 KB-ready</string>
     <string name="native_lib_readiness_unknown">Native libraries: readiness unknown</string>
