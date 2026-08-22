@@ -5,11 +5,12 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:layout_gravity="center_horizontal"
-    android:minWidth="80dp"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp"
-    android:paddingStart="6dp"
-    android:paddingEnd="6dp"
+    android:minWidth="64dp"
+    android:minHeight="@dimen/selection_actions_height"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp"
+    android:paddingStart="4dp"
+    android:paddingEnd="4dp"
     android:background="?attr/selectableItemBackgroundBorderless"
     android:gravity="center_horizontal">
 
@@ -17,14 +18,14 @@
         android:id="@+id/icon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="4dp"
+        android:layout_marginBottom="2dp"
         tools:src="@drawable/ic_information" />
 
     <TextView
         android:id="@+id/label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textAppearance="?attr/textAppearanceBodyMedium"
+        android:textAppearance="?attr/textAppearanceLabelMedium"
         android:gravity="center_horizontal"
         android:maxLines="1"
         android:ellipsize="end"

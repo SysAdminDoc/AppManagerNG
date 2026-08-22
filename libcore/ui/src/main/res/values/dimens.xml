@@ -19,6 +19,17 @@
     <dimen name="preference_category_indicator_height">22dp</dimen>
     <dimen name="preference_category_indicator_margin_end">10dp</dimen>
 
+    <dimen name="preference_row_min_height">56dp</dimen>
+    <dimen name="preference_icon_frame_width">48dp</dimen>
+    <dimen name="preference_icon_size">24dp</dimen>
+    <dimen name="preference_divider_inset">64dp</dimen>
+
+    <dimen name="selection_title_height">44dp</dimen>
+    <dimen name="selection_actions_height">56dp</dimen>
+    <dimen name="selection_icon_size">20dp</dimen>
+    <dimen name="selection_corner_radius">8dp</dimen>
+    <dimen name="selection_elevation">1dp</dimen>
+
     <!--
      Dropdown menus in AutoCompleteTextView when coupled with TextInputLayout uses unacceptable hard-coded values for
       background radius and vertical padding. They are overriden here to have a consistent UI design.

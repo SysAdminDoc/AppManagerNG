@@ -612,7 +612,7 @@
     <string name="night">Night</string>
     <string name="select_theme">Theme</string>
     <string name="apply">Apply</string>
-    <string name="pref_about_msg">Version, changelog, licenses, contributors, and release trust details.</string>
+    <string name="pref_about_msg">Version, changelog, licenses, and release details.</string>
     <string name="version">Version</string>
     <string name="sort_by_wifi_data">Wi-Fi data</string>
     <string name="block_trackers">Block trackers</string>
@@ -1586,7 +1586,7 @@
     <string name="app_signing_signature_schemes">Signature schemes</string>
     <string name="app_signing_v1_scheme_only_weak">Weak signature: signed only with the legacy v1 (JAR) scheme, which offers no whole-file integrity protection. Prefer apps also signed with v2 or newer.</string>
     <string name="apk_signing">APK signing</string>
-    <string name="pref_apk_signing_msg">Signature schemes, signing key, zip alignment, and APK verification controls.</string>
+    <string name="pref_apk_signing_msg">Signature schemes, signing key, and zip alignment.</string>
     <string name="v1_scheme">v1 scheme (since Android 1.0)</string>
     <string name="v2_scheme">v2 scheme (since Android 7.0)</string>
     <string name="v3_scheme">v3 scheme (since Android 9)</string>
@@ -1686,7 +1686,7 @@
     <string name="interceptor">Interceptor</string>
     <string name="set_custom_app_op">Set custom app op</string>
     <string name="about_device">About the device</string>
-    <string name="pref_about_device_msg">Android, CPU, GPU, RAM, battery, and security-provider details.</string>
+    <string name="pref_about_device_msg">Android, hardware, battery, and security details.</string>
     <string name="brand_name">Brand</string>
     <string name="model">Model</string>
     <string name="board_name">Board</string>
@@ -1764,7 +1764,7 @@
     <string name="failed_to_disable_magisk_hide">Could not disable MagiskHide</string>
     <string name="failed_to_enable_magisk_hide">Could not enable MagiskHide</string>
     <string name="disable_background_run_description">Sets <i>Ignore</i> mode for the following app ops: <tt>RUN_IN_BACKGROUND</tt> (from Android 7.0) and <tt>RUN_ANY_IN_BACKGROUND</tt> (from Android 9).</string>
-    <string name="pref_backup_restore_msg">Backup location, encryption, import, restore options, and retention.</string>
+    <string name="pref_backup_restore_msg">Backup location, encryption, restore, and retention.</string>
     <string name="backup_volume">Backup volume</string>
     <string name="pref_backup_volume_msg">Select the volume or disk where the backups will be stored.</string>
     <string name="pref_backup_network_destination">Network backup destination</string>
@@ -1950,7 +1950,7 @@
     <string name="failed_to_read_keystore">Could not read the KeyStore.</string>
     <string name="signing_key">Signing key</string>
     <string name="expiry_date_cannot_be_empty">Expiry date cannot be empty.</string>
-    <string name="pref_installer_msg">Install behavior, package origin, verification, and post-install optimization.</string>
+    <string name="pref_installer_msg">Install behavior, verification, and post-install options.</string>
     <string name="pref_import_backups">Import backups</string>
     <string name="pref_import_backups_msg">Import backups from OAndBackup, Neo Backup, Swift Backup (3.0 to 3.2), or Titanium Backup.</string>
     <string name="import_from_oab">Import from OAndBackup or Neo Backup</string>
@@ -1974,7 +1974,7 @@
     <string name="log_export_diagnostic_bundle">Diagnostic bundle</string>
     <string name="log_export_json">JSON</string>
     <string name="log_export_csv">CSV</string>
-    <string name="pref_log_viewer_msg">Display density, buffers, filters, and saved log behavior.</string>
+    <string name="pref_log_viewer_msg">Display, buffers, filters, and saved logs.</string>
     <string name="restart_log_viewer_to_see_changes">Restart log viewer window to see changes.</string>
     <string name="filename">Filename</string>
     <string name="log_level_debug">Debug</string>
@@ -2101,7 +2101,7 @@
         <item quantity="other">Imported <xliff:g id="success" example="2">%1$d</xliff:g> keys; <xliff:g id="failed" example="1">%2$d</xliff:g> failed.</item>
     </plurals>
     <string name="failed">Failed</string>
-    <string name="pref_rules_msg">Component blocking, import/export, and rule reset controls.</string>
+    <string name="pref_rules_msg">Component blocking, import, export, and reset.</string>
     <string name="saf">SAF</string>
     <string name="pref_layout_direction">Layout direction</string>
     <string name="orientation_follow_locale">Follow locale</string>
@@ -2579,7 +2579,7 @@
     <string name="mode_of_op_capability_status_enabled">enabled</string>
     <string name="mode_of_op_capability_status_disabled">disabled</string>
     <string name="privilege_health_title">Privileges</string>
-    <string name="privilege_health_summary">Root, Shizuku, ADB, remote service, and battery health checks.</string>
+    <string name="privilege_health_summary">Root, Shizuku, ADB, and remote service health.</string>
     <string name="privilege_health_status_category">Current status</string>
     <string name="privilege_health_providers_category">Privilege providers</string>
     <string name="privilege_health_reliability_category">Reliability</string>
@@ -2954,14 +2954,14 @@
     <string name="hide_app_description">This method is only recommended for day to day use. A hidden app appears as if it is uninstalled. But the app could reappear if it is reinstalled or updated.</string>
     <string name="sort_by_frozen_app">Frozen first</string>
     <string name="filter_frozen_apps">Frozen apps</string>
-    <string name="pref_appearance_description">Theme, typography, layout direction, and feature visibility.</string>
+    <string name="pref_appearance_description">Theme, typography, and layout direction.</string>
     <string name="pref_privacy">Privacy</string>
-    <string name="pref_privacy_description">Screen lock, authorization, Internet access, and session behavior.</string>
+    <string name="pref_privacy_description">Screen lock, authorization, and Internet access.</string>
     <string name="pref_guided_mode">Guided experience</string>
-    <string name="pref_guided_mode_msg">Show plain-language guides, contextual help, and recovery hints. Advanced tools stay available.</string>
+    <string name="pref_guided_mode_msg">Show guides, contextual help, and recovery hints.</string>
     <string name="user_manual">User manual</string>
     <string name="get_help">Get help</string>
-    <string name="pref_advanced_pref">Users, APK naming, concurrency, freezing, and expert defaults.</string>
+    <string name="pref_advanced_pref">Users, APK naming, concurrency, and expert defaults.</string>
     <string name="pref_cat_settings_foundation">Foundation</string>
     <string name="pref_cat_settings_foundation_summary">Language, theme, access mode, and app safety defaults.</string>
     <string name="pref_cat_settings_package_workflows">Package workflows</string>
@@ -3514,7 +3514,7 @@
     <string name="debloat_removal_replace_short_description">Replace with alternative</string>
     <string name="title_alternatives_to_bloatware">Alternatives</string>
     <string name="browse_files">Browse</string>
-    <string name="pref_files_msg">Launcher visibility, home folder, and file manager session behavior.</string>
+    <string name="pref_files_msg">Launcher visibility, home folder, and session behavior.</string>
     <string name="pref_files_display_in_launcher">Display “Files” in app drawer</string>
     <string name="pref_files_remember_last_path">Remember last opened path and its position</string>
     <string name="pref_files_remember_last_path_msg">When this option is enabled, opening a new window opens the last opened folder instead of the home folder.</string>
