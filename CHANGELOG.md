@@ -16,6 +16,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Made default export filenames portable across locales and storage providers. Rules, app lists, usage data, APKs, profiles, and extracted icons now keep safe extensions and stay within provider filename limits.
 - Detected truncated package lists from privileged mode. The main list now falls back to Android's normal app view and shows both counts instead of silently omitting apps.
 - Kept no-root force-stop and data/cache automation responsive with bounded scheduled retries, including modern Android Settings screens.
+- Stopped no-root automation cleanly on service interruption, backed out when Settings omits force-stop, and kept retries under nine seconds before giving up.
 - Made release build timestamps deterministic by honoring `SOURCE_DATE_EPOCH` first, then the Git commit time, and failing closed when neither is available.
 - Proved `am.jar` and `main.jar` across a detached checkout with a different path, locale, timezone, and builder identity. The verifier now reports both hash pairs.
 - Routed release D8 inputs through response files and the Java launcher on Windows, so long detached checkout paths do not exceed the command-line limit.
