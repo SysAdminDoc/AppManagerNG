@@ -274,11 +274,13 @@
         <item>installer</item>
         <item>last_update</item>
         <item>min_sdk</item>
+        <item>notes</item>
         <item>permissions</item>
         <item>pkg_name</item>
         <item>running_apps</item>
         <item>screen_time</item>
         <item>signature</item>
+        <item>tags</item>
         <item>target_sdk</item>
         <item>times_opened</item>
         <item>total_size</item>

@@ -29,6 +29,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Added an opt-in Room-backed app-update report. It records before and after version codes plus
   added and removed permissions, trackers, and components, and the existing local change-feed
   view renders the newest reports.
+- Added durable per-app notes. App Details keeps the existing editor and snapshot support, while
+  Room v12 mirrors the notes and Finder can match apps with notes or note text.
 
 ### Security
 - Raised the Android build toolchain to AGP 9.3.1, Gradle 9.7.0, and Dependency-Check 13.0.0. Refreshed every dependency lock and recorded new artifacts only after checking publisher checksums.

@@ -75,6 +75,7 @@ import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.FreezeUtils;
 import io.github.muntashirakon.AppManager.db.entity.LogFilter;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
+import io.github.muntashirakon.AppManager.tags.AppNoteStore;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.profiles.ProfileManager;
@@ -644,6 +645,9 @@ public final class SnapshotBundle {
             for (PendingFile pf : pendingPrefs) {
                 if (restorePrefFile(appContext, pf, options.mergePrefs)) {
                     ++prefsRestored;
+                    if ("app_notes.xml".equals(pf.leaf)) {
+                        AppNoteStore.reconcileRoom(appContext);
+                    }
                 }
             }
         }
