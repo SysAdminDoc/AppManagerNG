@@ -104,13 +104,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ### P2
 
-- [ ] P2 — Get the no-root accessibility path off its own main thread
-  Why: onAccessibilityEvent runs on the service main thread and sleeps in it — one second directly, and up to five seconds through waitUntilEnabled's ten 500 ms iterations. A blocked AccessibilityService stops delivering events and can be dropped by the system, and this is the no-root force-stop / clear-data automation path. Lint cannot see it: ThreadConstraint is suppressed 69 times in app/lint-baseline.xml.
-  Evidence: accessibility/NoRootAccessibilityService.java:36-38 (handler), :73 SystemClock.sleep(1000), :147; accessibility/BaseAccessibilityService.java:73,81,89 and :242-248.
-  Touches: accessibility/NoRootAccessibilityService.java, accessibility/BaseAccessibilityService.java (move the wait/retry sequence onto a background executor and drive the UI actions back through the service; keep a bounded overall timeout), the multiplexer that owns the operation state.
-  Acceptance: no sleep remains on any path reachable from onAccessibilityEvent; the force-stop and clear-data sequences still complete on a device within the same overall timeout budget; a unit test over the extracted sequencing logic covers the enabled-immediately, enabled-late, and never-enabled cases.
-  Complexity: M
-
 - [ ] P2 — Make BUILD_TIME_MILLIS deterministic or fail loudly
   Why: `buildTime()` shells out to `git show --no-patch --format=%ct000` and, when that yields anything non-numeric, falls back to System.currentTimeMillis() with only a println. A build from a source tarball or a shallow/exported tree therefore bakes wall-clock time into BuildConfig and can never be byte-reproduced, while the two-build gate — which runs twice in the same git tree — sees nothing. Upstream's reproducibility was publicly written off by IzzySoft over a related non-determinism (#1997), so this is an axis NG can win rather than merely match.
   Evidence: app/build.gradle:336-343; docs/distribution/reproducible-builds.md; upstream MuntashirAkon/AppManager#1997.

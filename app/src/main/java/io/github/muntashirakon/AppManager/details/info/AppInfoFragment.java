@@ -110,6 +110,7 @@ import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.permission.RestrictedSettingsDetector;
 import io.github.muntashirakon.AppManager.accessibility.AccessibilityMultiplexer;
+import io.github.muntashirakon.AppManager.accessibility.BaseAccessibilityService;
 import io.github.muntashirakon.AppManager.accessibility.NoRootAccessibilityService;
 import io.github.muntashirakon.AppManager.apk.ApkFile;
 import io.github.muntashirakon.AppManager.apk.ApkSource;
@@ -156,7 +157,6 @@ import io.github.muntashirakon.AppManager.details.struct.AppDetailsItem;
 import io.github.muntashirakon.AppManager.fm.FmProvider;
 import io.github.muntashirakon.AppManager.fm.dialogs.OpenWithDialogFragment;
 import io.github.muntashirakon.AppManager.logcat.LogViewerActivity;
-import io.github.muntashirakon.AppManager.logcat.helper.ServiceHelper;
 import io.github.muntashirakon.AppManager.logcat.struct.SearchCriteria;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.history.ops.DestructiveActionConfirmation;
@@ -2993,8 +2993,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                             return true;
                         });
             }
-            boolean accessibilityServiceRunning = UserHandleHidden.myUserId() == mUserId && ServiceHelper
-                    .checkIfServiceIsRunning(mActivity, NoRootAccessibilityService.class);
+            boolean accessibilityServiceRunning = UserHandleHidden.myUserId() == mUserId
+                    && BaseAccessibilityService.isAccessibilityEnabled(mActivity);
             if (!isStaticSharedLib && (SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.FORCE_STOP_PACKAGES)
                     || accessibilityServiceRunning)) {
                 // Force stop
