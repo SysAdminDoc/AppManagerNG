@@ -65,6 +65,12 @@ public class AccessibilityMultiplexer {
     public boolean isNavigateToStorageAndCache() {
         return (mFlags & M_NAVIGATE_TO_STORAGE_AND_CACHE) != 0;
     }
+
+    public boolean hasPendingSettingsOperation() {
+        return (mFlags & (M_CLEAR_CACHE | M_CLEAR_DATA | M_FORCE_STOP
+                | M_NAVIGATE_TO_STORAGE_AND_CACHE)) != 0;
+    }
+
     public boolean isLeadingActivityTracker() {
         return (mFlags & M_LEADING_ACTIVITY_TRACKER) != 0;
     }
