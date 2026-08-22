@@ -4,24 +4,34 @@ package io.github.muntashirakon.AppManager.terminal;
 
 import static org.junit.Assert.*;
 
+import android.content.Context;
+
+import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 
+import java.io.File;
+
 @RunWith(RobolectricTestRunner.class)
 public class CommandHistoryTest {
-    @Rule
-    public TemporaryFolder tempFolder = new TemporaryFolder();
-
     private CommandHistory mHistory;
 
     @Before
     public void setUp() {
-        mHistory = new CommandHistory(RuntimeEnvironment.getApplication());
+        Context context = RuntimeEnvironment.getApplication();
+        File historyFile = new File(context.getFilesDir(), "terminal_history");
+        assertTrue(!historyFile.exists() || historyFile.delete());
+        mHistory = new CommandHistory(context);
+        mHistory.awaitPendingOperations();
+    }
+
+    @After
+    public void tearDown() {
+        mHistory.awaitPendingOperations();
+        mHistory.shutdown();
     }
 
     @Test
