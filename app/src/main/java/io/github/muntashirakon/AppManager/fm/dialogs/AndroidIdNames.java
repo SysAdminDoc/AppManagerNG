@@ -40,8 +40,10 @@ final class AndroidIdNames {
         add(names, 1019, "drm");
         add(names, 1020, "mdnsr");
         add(names, 1021, "gps");
+        add(names, 1022, "unused1");
         add(names, 1023, "media_rw");
         add(names, 1024, "mtp");
+        add(names, 1025, "unused2");
         add(names, 1026, "drm_rpc");
         add(names, 1027, "nfc");
         add(names, 1028, "sdcard_r");

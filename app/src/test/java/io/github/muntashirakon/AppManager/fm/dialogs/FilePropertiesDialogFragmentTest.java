@@ -51,6 +51,8 @@ public class FilePropertiesDialogFragmentTest {
     public void androidIdNames_mapsKnownIdsAndFallsBackToNumbers() {
         assertEquals("system", AndroidIdNames.displayName(1000));
         assertEquals("shell", AndroidIdNames.displayName(2000));
+        assertEquals("unused1", AndroidIdNames.displayName(1022));
+        assertEquals("unused2", AndroidIdNames.displayName(1025));
         assertEquals("1234", AndroidIdNames.displayName(1234));
     }
 
