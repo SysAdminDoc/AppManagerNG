@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -132,80 +131,147 @@ public final class ComponentUtils {
         if (intensity == TrackerBlockingIntensity.DETECT_ONLY) {
             return;
         }
-        Map<String, RuleType> components = ComponentUtils.getTrackerComponentsForPackage(pair.getPackageName(), pair.getUserId());
-        try (ComponentsBlocker cb = ComponentsBlocker.getMutableInstance(pair.getPackageName(), pair.getUserId())) {
-            for (Map.Entry<String, RuleType> entry : components.entrySet()) {
-                String componentName = entry.getKey();
-                if (intensity != TrackerBlockingIntensity.STRICT) {
-                    TrackerCategory category = TrackerCategory.categorize(getTrackerLabel(componentName));
-                    if (!intensity.shouldBlock(category)) {
-                        continue;
-                    }
-                }
-                cb.addComponent(componentName, Objects.requireNonNull(entry.getValue()));
-            }
-            cb.applyRules(true);
+        ComponentBlockingBatch.Result result = blockTrackingComponents(
+                Collections.singletonList(pair), intensity);
+        if (!result.isSuccessful()) {
+            throw new IllegalStateException("Could not block tracker components for " + pair,
+                    result.getFailures().get(0).getError());
         }
     }
 
     @WorkerThread
     @NonNull
     public static List<UserPackagePair> blockTrackingComponents(@NonNull Collection<UserPackagePair> userPackagePairs) {
-        List<UserPackagePair> failedPkgList = new ArrayList<>();
-        for (UserPackagePair pair : userPackagePairs) {
-            try {
-                blockTrackingComponents(pair);
-            } catch (Exception e) {
-                Log.w(TAG, e);
-                failedPkgList.add(pair);
-            }
+        return toFailedPairs(blockTrackingComponents(userPackagePairs, TrackerBlockingIntensity.STRICT));
+    }
+
+    @WorkerThread
+    @NonNull
+    public static ComponentBlockingBatch.Result blockTrackingComponents(
+            @NonNull Collection<UserPackagePair> userPackagePairs,
+            @NonNull TrackerBlockingIntensity intensity) {
+        if (intensity == TrackerBlockingIntensity.DETECT_ONLY) {
+            return ComponentBlockingBatch.execute(Collections.emptyList(), pair ->
+                    Collections.emptyMap(), (pair, components) -> { });
         }
-        return failedPkgList;
+        return ComponentBlockingBatch.execute(userPackagePairs,
+                pair -> {
+                    Map<String, RuleType> detected = getTrackerComponentsForPackage(
+                            pair.getPackageName(), pair.getUserId());
+                    if (intensity == TrackerBlockingIntensity.STRICT) {
+                        return detected;
+                    }
+                    Map<String, RuleType> filtered = new HashMap<>();
+                    for (Map.Entry<String, RuleType> entry : detected.entrySet()) {
+                        TrackerCategory category = TrackerCategory.categorize(getTrackerLabel(entry.getKey()));
+                        if (intensity.shouldBlock(category)) {
+                            filtered.put(entry.getKey(), entry.getValue());
+                        }
+                    }
+                    return filtered;
+                },
+                (pair, components) -> {
+                    try (ComponentsBlocker cb = ComponentsBlocker.getMutableInstance(
+                            pair.getPackageName(), pair.getUserId())) {
+                        for (Map.Entry<String, RuleType> entry : components.entrySet()) {
+                            cb.addComponent(entry.getKey(), entry.getValue());
+                        }
+                        cb.applyRules(true);
+                    }
+                });
     }
 
     public static void unblockTrackingComponents(@NonNull UserPackagePair pair) {
-        Map<String, RuleType> components = getTrackerComponentsForPackage(pair.getPackageName(), pair.getUserId());
-        try (ComponentsBlocker cb = ComponentsBlocker.getMutableInstance(pair.getPackageName(), pair.getUserId())) {
-            for (String componentName : components.keySet()) {
-                cb.removeComponent(componentName);
-            }
-            cb.applyRules(true);
+        ComponentBlockingBatch.Result result = unblockTrackingComponentsBatch(
+                Collections.singletonList(pair));
+        if (!result.isSuccessful()) {
+            throw new IllegalStateException("Could not unblock tracker components for " + pair,
+                    result.getFailures().get(0).getError());
         }
     }
 
     @WorkerThread
     @NonNull
     public static List<UserPackagePair> unblockTrackingComponents(@NonNull Collection<UserPackagePair> userPackagePairs) {
-        List<UserPackagePair> failedPkgList = new ArrayList<>();
-        for (UserPackagePair pair : userPackagePairs) {
-            try {
-                unblockTrackingComponents(pair);
-            } catch (Exception e) {
-                Log.w(TAG, e);
-                failedPkgList.add(pair);
-            }
-        }
-        return failedPkgList;
+        return toFailedPairs(unblockTrackingComponentsBatch(userPackagePairs));
+    }
+
+    @WorkerThread
+    @NonNull
+    public static ComponentBlockingBatch.Result unblockTrackingComponentsBatch(
+            @NonNull Collection<UserPackagePair> userPackagePairs) {
+        return ComponentBlockingBatch.execute(userPackagePairs,
+                pair -> getTrackerComponentsForPackage(pair.getPackageName(), pair.getUserId()),
+                (pair, components) -> {
+                    try (ComponentsBlocker cb = ComponentsBlocker.getMutableInstance(
+                            pair.getPackageName(), pair.getUserId())) {
+                        for (String componentName : components.keySet()) {
+                            cb.removeComponent(componentName);
+                        }
+                        cb.applyRules(true);
+                    }
+                });
     }
 
     public static void blockFilteredComponents(@NonNull UserPackagePair pair, String[] signatures) {
-        HashMap<String, RuleType> components = PackageUtils.getFilteredComponents(pair.getPackageName(), pair.getUserId(), signatures);
-        try (ComponentsBlocker cb = ComponentsBlocker.getMutableInstance(pair.getPackageName(), pair.getUserId())) {
-            for (String componentName : components.keySet()) {
-                cb.addComponent(componentName, Objects.requireNonNull(components.get(componentName)));
-            }
-            cb.applyRules(true);
+        ComponentBlockingBatch.Result result = blockFilteredComponents(Collections.singletonList(pair), signatures);
+        if (!result.isSuccessful()) {
+            throw new IllegalStateException("Could not block components for " + pair,
+                    result.getFailures().get(0).getError());
         }
     }
 
+    @WorkerThread
+    @NonNull
+    public static ComponentBlockingBatch.Result blockFilteredComponents(
+            @NonNull Collection<UserPackagePair> userPackagePairs, String[] signatures) {
+        return ComponentBlockingBatch.execute(userPackagePairs,
+                pair -> PackageUtils.getFilteredComponents(pair.getPackageName(), pair.getUserId(), signatures),
+                (pair, components) -> {
+                    try (ComponentsBlocker cb = ComponentsBlocker.getMutableInstance(
+                            pair.getPackageName(), pair.getUserId())) {
+                        for (Map.Entry<String, RuleType> entry : components.entrySet()) {
+                            cb.addComponent(entry.getKey(), entry.getValue());
+                        }
+                        cb.applyRules(true);
+                    }
+                });
+    }
+
     public static void unblockFilteredComponents(@NonNull UserPackagePair pair, String[] signatures) {
-        HashMap<String, RuleType> components = PackageUtils.getFilteredComponents(pair.getPackageName(), pair.getUserId(), signatures);
-        try (ComponentsBlocker cb = ComponentsBlocker.getMutableInstance(pair.getPackageName(), pair.getUserId())) {
-            for (String componentName : components.keySet()) {
-                cb.removeComponent(componentName);
-            }
-            cb.applyRules(true);
+        ComponentBlockingBatch.Result result = unblockFilteredComponents(
+                Collections.singletonList(pair), signatures);
+        if (!result.isSuccessful()) {
+            throw new IllegalStateException("Could not unblock components for " + pair,
+                    result.getFailures().get(0).getError());
         }
+    }
+
+    @WorkerThread
+    @NonNull
+    public static ComponentBlockingBatch.Result unblockFilteredComponents(
+            @NonNull Collection<UserPackagePair> userPackagePairs, String[] signatures) {
+        return ComponentBlockingBatch.execute(userPackagePairs,
+                pair -> PackageUtils.getFilteredComponents(pair.getPackageName(), pair.getUserId(), signatures),
+                (pair, components) -> {
+                    try (ComponentsBlocker cb = ComponentsBlocker.getMutableInstance(
+                            pair.getPackageName(), pair.getUserId())) {
+                        for (String componentName : components.keySet()) {
+                            cb.removeComponent(componentName);
+                        }
+                        cb.applyRules(true);
+                    }
+                });
+    }
+
+    @NonNull
+    private static List<UserPackagePair> toFailedPairs(@NonNull ComponentBlockingBatch.Result result) {
+        List<UserPackagePair> failedPairs = new ArrayList<>();
+        for (ComponentBlockingBatch.Failure failure : result.getFailures()) {
+            Log.w(TAG, "Component batch failed for " + failure.getPair(), failure.getError());
+            failedPairs.add(failure.getPair());
+        }
+        return failedPairs;
     }
 
     public static void storeRules(@NonNull OutputStream os, @NonNull List<RuleEntry> rules, boolean isExternal)

@@ -73,6 +73,7 @@ import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler;
 import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler.NotificationInfo;
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
+import io.github.muntashirakon.AppManager.rules.compontents.ComponentBlockingBatch;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
 import io.github.muntashirakon.AppManager.rules.compontents.ExternalComponentsImporter;
 import io.github.muntashirakon.AppManager.safety.CriticalPackageGuard;
@@ -737,19 +738,17 @@ public class BatchOpsManager {
         List<UserPackagePair> failedPackages = new ArrayList<>();
         float lastProgress = mProgressHandler != null ? mProgressHandler.getLastProgress() : 0;
         int max = info.size();
-        UserPackagePair pair;
+        ComponentBlockingBatch.Result batch = ComponentUtils.blockFilteredComponents(
+                info.getPairList(), options.getSignatures());
         for (int i = 0; i < max; ++i) {
             updateProgress(lastProgress, i + 1);
-            pair = info.getPair(i);
-            boolean failed = false;
-            try {
-                ComponentUtils.blockFilteredComponents(pair, options.getSignatures());
-            } catch (Exception e) {
-                failed = true;
-                log("====> op=BLOCK_COMPONENTS, pkg=" + pair, e);
+            UserPackagePair pair = info.getPair(i);
+            ComponentBlockingBatch.Failure failure = findFailure(batch, pair);
+            if (failure != null) {
+                log("====> op=BLOCK_COMPONENTS, pkg=" + pair, failure.getError());
                 failedPackages.add(pair);
             }
-            recordTargetFinished(pair, failed);
+            recordTargetFinished(pair, failure != null);
         }
         return new Result(failedPackages);
     }
@@ -761,19 +760,17 @@ public class BatchOpsManager {
         int max = info.size();
         io.github.muntashirakon.AppManager.rules.compontents.TrackerBlockingIntensity intensity =
                 io.github.muntashirakon.AppManager.settings.Prefs.Privacy.getTrackerBlockingIntensity();
-        UserPackagePair pair;
+        ComponentBlockingBatch.Result batch = ComponentUtils.blockTrackingComponents(
+                info.getPairList(), intensity);
         for (int i = 0; i < max; ++i) {
             updateProgress(lastProgress, i + 1);
-            pair = info.getPair(i);
-            boolean failed = false;
-            try {
-                ComponentUtils.blockTrackingComponents(pair, intensity);
-            } catch (Exception e) {
-                failed = true;
-                log("====> op=BLOCK_TRACKERS, pkg=" + pair, e);
+            UserPackagePair pair = info.getPair(i);
+            ComponentBlockingBatch.Failure failure = findFailure(batch, pair);
+            if (failure != null) {
+                log("====> op=BLOCK_TRACKERS, pkg=" + pair, failure.getError());
                 failedPackages.add(pair);
             }
-            recordTargetFinished(pair, failed);
+            recordTargetFinished(pair, failure != null);
         }
         return new Result(failedPackages);
     }
@@ -1127,19 +1124,17 @@ public class BatchOpsManager {
         float lastProgress = mProgressHandler != null ? mProgressHandler.getLastProgress() : 0;
         BatchComponentOptions options = (BatchComponentOptions) Objects.requireNonNull(info.options);
         int max = info.size();
-        UserPackagePair pair;
+        ComponentBlockingBatch.Result batch = ComponentUtils.unblockFilteredComponents(
+                info.getPairList(), options.getSignatures());
         for (int i = 0; i < max; ++i) {
             updateProgress(lastProgress, i + 1);
-            pair = info.getPair(i);
-            boolean failed = false;
-            try {
-                ComponentUtils.unblockFilteredComponents(pair, options.getSignatures());
-            } catch (Exception th) {
-                failed = true;
-                log("====> op=UNBLOCK_COMPONENTS, pkg=" + pair, th);
+            UserPackagePair pair = info.getPair(i);
+            ComponentBlockingBatch.Failure failure = findFailure(batch, pair);
+            if (failure != null) {
+                log("====> op=UNBLOCK_COMPONENTS, pkg=" + pair, failure.getError());
                 failedPackages.add(pair);
             }
-            recordTargetFinished(pair, failed);
+            recordTargetFinished(pair, failure != null);
         }
         return new Result(failedPackages);
     }
@@ -1149,21 +1144,31 @@ public class BatchOpsManager {
         List<UserPackagePair> failedPackages = new ArrayList<>();
         float lastProgress = mProgressHandler != null ? mProgressHandler.getLastProgress() : 0;
         int max = info.size();
-        UserPackagePair pair;
+        ComponentBlockingBatch.Result batch = ComponentUtils.unblockTrackingComponentsBatch(
+                info.getPairList());
         for (int i = 0; i < max; ++i) {
             updateProgress(lastProgress, i + 1);
-            pair = info.getPair(i);
-            boolean failed = false;
-            try {
-                ComponentUtils.unblockTrackingComponents(pair);
-            } catch (Exception th) {
-                failed = true;
-                log("====> op=UNBLOCK_TRACKERS, pkg=" + pair, th);
+            UserPackagePair pair = info.getPair(i);
+            ComponentBlockingBatch.Failure failure = findFailure(batch, pair);
+            if (failure != null) {
+                log("====> op=UNBLOCK_TRACKERS, pkg=" + pair, failure.getError());
                 failedPackages.add(pair);
             }
-            recordTargetFinished(pair, failed);
+            recordTargetFinished(pair, failure != null);
         }
         return new Result(failedPackages);
+    }
+
+    @Nullable
+    private static ComponentBlockingBatch.Failure findFailure(
+            @NonNull ComponentBlockingBatch.Result batch,
+            @NonNull UserPackagePair pair) {
+        for (ComponentBlockingBatch.Failure failure : batch.getFailures()) {
+            if (failure.getPair().equals(pair)) {
+                return failure;
+            }
+        }
+        return null;
     }
 
     @NonNull
