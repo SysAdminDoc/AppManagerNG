@@ -4,6 +4,8 @@ package io.github.sysadmindoc.appmanagerng.benchmark;
 
 final class BenchmarkConfig {
     static final String TARGET_PACKAGE = "io.github.sysadmindoc.AppManagerNG.debug";
+    static final int COMPONENT_BLOCKING_PACKAGE_COUNT = 5;
+    static final int COMPONENTS_PER_PACKAGE = 24;
 
     private BenchmarkConfig() {
     }

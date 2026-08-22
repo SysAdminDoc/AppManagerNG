@@ -33,6 +33,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Room v12 mirrors the notes and Finder can match apps with notes or note text.
 - Guarded the Room note mirror against stale background reconciliation after a newer edit or
   clear, and allow the initial reconcile to retry after a failed database open.
+- Coalesced component block and unblock operations by package and user, so each distinct target
+  opens one rules transaction. Added a host regression test and an instrumentation benchmark
+  covering five packages with 120 synthetic components.
 
 ### Security
 - Raised the Android build toolchain to AGP 9.3.1, Gradle 9.7.0, and Dependency-Check 13.0.0. Refreshed every dependency lock and recorded new artifacts only after checking publisher checksums.
