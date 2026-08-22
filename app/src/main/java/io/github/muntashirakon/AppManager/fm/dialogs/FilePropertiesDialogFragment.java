@@ -580,7 +580,7 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
             for (int uid : uidOwnerMap.keySet()) {
                 AndroidId id = new AndroidId();
                 id.id = uid;
-                id.name = Objects.requireNonNull(uidOwnerMap.get(uid));
+                id.name = AndroidIdNames.displayName(uid);
                 // TODO: 30/6/23 Add a more readable description from android_filesystem_config.h
                 id.description = "System";
                 mOwnerList.add(id);
@@ -590,7 +590,7 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
             for (int gid : gidGroupMap.keySet()) {
                 AndroidId id = new AndroidId();
                 id.id = gid;
-                id.name = Objects.requireNonNull(gidGroupMap.get(gid));
+                id.name = AndroidIdNames.displayName(gid);
                 id.description = "System";
                 mGroupList.add(id);
             }
