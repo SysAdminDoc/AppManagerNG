@@ -1,0 +1,21 @@
+{
+  "benchmark": "ComponentBlockingBenchmark#blockComponentsAcrossPackages",
+  "packages": 5,
+  "components_per_package": 24,
+  "total_components": 120,
+  "expected_commit_attempts": 5,
+  "commit_granularity": "one transaction per distinct package/user pair",
+  "fixture": "synthetic component maps; no root or fixture APK required",
+  "command": ":benchmark:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=io.github.sysadmindoc.appmanagerng.benchmark.ComponentBlockingBenchmark",
+  "results_directory": "benchmark/build/outputs/androidTest-results/",
+  "observed": {
+    "device_model": "SM-S908U1",
+    "android_api": 36,
+    "median_time_ns": 1120.0767733230532,
+    "minimum_time_ns": 1047.8929452582884,
+    "maximum_time_ns": 2861.469159599075,
+    "median_allocation_count": 20.00011565150347,
+    "captured_at": "2026-08-22",
+    "note": "Debug benchmark run with ACTIVITY-MISSING and DEBUGGABLE suppressed; use for regression comparison, not release-device performance claims."
+  }
+}

@@ -9,10 +9,30 @@ android {
     compileSdk = compile_sdk
     targetProjectPath = ':app'
 
+    signingConfigs {
+        debug {
+            def appDevKeystore = file('../app/dev_keystore.jks')
+            if (appDevKeystore.exists()) {
+                storeFile appDevKeystore
+                storePassword 'kJCp!Bda#PBdN2RLK%yMK@hatq&69E'
+                keyPassword 'kJCp!Bda#PBdN2RLK%yMK@hatq&69E'
+                keyAlias 'key0'
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig = signingConfigs.debug
+        }
+    }
+
     defaultConfig {
         minSdk = 23
         targetSdk = target_sdk
         testInstrumentationRunner = 'androidx.test.runner.AndroidJUnitRunner'
+        testInstrumentationRunnerArguments['androidx.benchmark.suppressErrors'] =
+                'ACTIVITY-MISSING,DEBUGGABLE,EMULATOR'
         missingDimensionStrategy 'distribution', 'floss'
     }
 
@@ -24,6 +44,9 @@ android {
 }
 
 dependencies {
+    implementation project(':libcore:compat')
+    implementation "androidx.collection:collection:1.5.0"
+    implementation "androidx.benchmark:benchmark-junit4:${benchmark_version}"
     implementation "androidx.benchmark:benchmark-macro-junit4:${benchmark_version}"
     implementation "androidx.test:runner:1.6.2"
     implementation "androidx.test.ext:junit:1.2.1"
