@@ -6,6 +6,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## Unreleased
 
 ### Fixed
+- Removed stale Pithus feature claims from the bundled manual while preserving the historical changelog entry.
 - Validated Swift Backup ZIP comment manifests before conversion, rejecting malformed or package-mismatched imports while preserving legacy archives without comments.
 - Added API 36 pending-job diagnostics to App Details when the scheduler API or a privileged jobscheduler dump is available, and labeled Android 17 MemoryLimiter exits separately from other process exits.
 - Closed a translation-quality loophole where regional resource folders without `strings.xml` skipped base-language fallback checks.

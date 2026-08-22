@@ -595,7 +595,7 @@ in a separate page. If the application has more than one split, it will
 display the list of split APK files, and clicking on an item will open
 the corresponding manifest file instead.<li><p><strong>Scanner.</strong> Scan the application in order to list
 potential trackers and libraries. It also scans the file using
-VirusTotal and fetch results from Pithus if configured.<br><div class=seealso-inline><p><em>See also: <span><a href=#sec:scanner-page>Scanner
+VirusTotal if configured.<br><div class=seealso-inline><p><em>See also: <span><a href=#sec:scanner-page>Scanner
 page</a></span></em></div><li><p><strong>Shared Prefs.</strong> Displays a list of shared
 preferences used by the application. Clicking on a preference item in
 the list opens the <a href=#sec:shared-preferences-editor-page>Shared
@@ -1051,8 +1051,7 @@ configured.<div class="amalert warning"><p><strong><em>Warning.</em></strong><p>
 App Manager will not open until it is enabled again.</div></section><section id=subsubsec:run-am-in-background class=level4 data-number=2.6.3.2><h4 data-number=2.6.3.2><span class=header-section-number>2.6.3.2</span> Run App Manager in the
 Background<a href=#subsubsec:run-am-in-background class=anchor aria-hidden=true></a></h4><p>Whether to run App Manager in the background to reduce the
 initialisation delay. On certain devices, this can also help if you’re
-frequently disconnected from ADB.</section><section id=subsubsec:use-the-internet class=level4 data-number=2.6.3.3><h4 data-number=2.6.3.3><span class=header-section-number>2.6.3.3</span> Use the Internet<a href=#subsubsec:use-the-internet class=anchor aria-hidden=true></a></h4><p>Whether to activate the Internet features in App Manager. This
-currently include VirusTotal and Pithus scanning in the <a href=#sec:scanner-page>Scanner page</a>.</section><section id=subsubsec:auth-manager class=level4 data-number=2.6.3.4><h4 data-number=2.6.3.4><span class=header-section-number>2.6.3.4</span> Authorization Manager<a href=#subsubsec:auth-manager class=anchor aria-hidden=true></a></h4><p>This setting allows a third-party application to get access to
+frequently disconnected from ADB.</section><section id=subsubsec:use-the-internet class=level4 data-number=2.6.3.3><h4 data-number=2.6.3.3><span class=header-section-number>2.6.3.3</span> Use the Internet<a href=#subsubsec:use-the-internet class=anchor aria-hidden=true></a></h4><p>Whether to activate the Internet features in App Manager. This currently includes VirusTotal scanning in the <a href=#sec:scanner-page>Scanner page</a>.</section><section id=subsubsec:auth-manager class=level4 data-number=2.6.3.4><h4 data-number=2.6.3.4><span class=header-section-number>2.6.3.4</span> Authorization Manager<a href=#subsubsec:auth-manager class=anchor aria-hidden=true></a></h4><p>This setting allows a third-party application to get access to
 certain features, such as profiles.</section></section><section id=subsec:mode-of-operation class=level3 data-number=2.6.4><h3 data-number=2.6.4><span class=header-section-number>2.6.4</span>
 <a href=#toc:subsec:mode-of-operation>Mode of Operation</a><a href=#subsec:mode-of-operation class=anchor aria-hidden=true></a></h3><p>Mode of operation defines how App Manager works as a whole. It has
 the following options:<ul class=incremental><li><p><strong>Auto.</strong> Let App Manager decide the suitable
@@ -1201,9 +1200,7 @@ managers, web browsers, etc.<p>It scans for trackers and libraries, and displays
 trackers and libraries as a summary. It also displays checksums of the
 APK file as well as the signing certificates. If VirusTotal is
 configured in the settings, it also attempts to retrieve reports from
-VirusTotal, or uploads the APK file if it is not in the database. It
-also display a link to the <a href=https://beta.pithus.org>Pithus</a>
-report provided the Internet features are enabled.<div class="amalert danger"><p><strong><em>Disclaimer.</em></strong><p>App Manager only scans an application statically without prejudice.
+VirusTotal, or uploads the APK file if it is not in the database.<div class="amalert danger"><p><strong><em>Disclaimer.</em></strong><p>App Manager only scans an application statically without prejudice.
 The application may provide the options for opting out, or in some
 cases, certain features of the tracker may not be used at all by the
 application (e.g. F-Droid), or some applications may simply use them as
