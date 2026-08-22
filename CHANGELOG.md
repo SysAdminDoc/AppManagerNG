@@ -6,6 +6,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## Unreleased
 
 ### Fixed
+- Made File Manager's sort and display options persist per folder when "Only for this folder" is enabled, without changing the global defaults.
 - Replaced raw system owner and group IDs in file properties with Android's stable AID names, while keeping unknown IDs numeric.
 - Removed stale Pithus feature claims from the bundled manual while preserving the historical changelog entry.
 - Validated Swift Backup ZIP comment manifests before conversion, rejecting malformed or package-mismatched imports while preserving legacy archives without comments.

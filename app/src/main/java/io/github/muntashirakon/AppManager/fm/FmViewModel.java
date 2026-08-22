@@ -58,6 +58,8 @@ import io.github.muntashirakon.lifecycle.SingleLiveEvent;
 
 public class FmViewModel extends AndroidViewModel implements ListOptions.ListOptionActions {
     public static final String TAG = FmViewModel.class.getSimpleName();
+    private static final int PERSISTED_OPTIONS = FmListOptions.OPTIONS_DISPLAY_DOT_FILES
+            | FmListOptions.OPTIONS_FOLDERS_FIRST;
 
     private final Object mSizeLock = new Object();
     private final MutableLiveData<List<FmItem>> mFmItemsLiveData = new MutableLiveData<>();
@@ -93,9 +95,7 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
 
     public FmViewModel(@NonNull Application application) {
         super(application);
-        mSortBy = Prefs.FileManager.getSortOrder();
-        mReverseSort = Prefs.FileManager.isReverseSort();
-        mSelectedOptions = Prefs.FileManager.getOptions();
+        loadGlobalViewPreferences();
     }
 
     @Override
@@ -121,7 +121,11 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
     @Override
     public void setSortBy(@FmListOptions.SortOrder int sortBy) {
         mSortBy = sortBy;
-        Prefs.FileManager.setSortOrder(sortBy);
+        if (hasFolderViewPreferences()) {
+            saveCurrentFolderViewPreferences();
+        } else {
+            Prefs.FileManager.setSortOrder(sortBy);
+        }
         filterAndSortAsync();
     }
 
@@ -134,7 +138,11 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
     @Override
     public void setReverseSort(boolean reverseSort) {
         mReverseSort = reverseSort;
-        Prefs.FileManager.setReverseSort(reverseSort);
+        if (hasFolderViewPreferences()) {
+            saveCurrentFolderViewPreferences();
+        } else {
+            Prefs.FileManager.setReverseSort(reverseSort);
+        }
         filterAndSortAsync();
     }
 
@@ -150,9 +158,27 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
 
     @Override
     public void onOptionSelected(@FmListOptions.Options int option, boolean selected) {
+        if (option == FmListOptions.OPTIONS_ONLY_FOR_THIS_FOLDER) {
+            if (selected && mCurrentUri != null) {
+                mSelectedOptions |= option;
+                saveCurrentFolderViewPreferences();
+            } else {
+                mSelectedOptions &= ~option;
+                if (mCurrentUri != null) {
+                    Prefs.FileManager.clearFolderViewPreferences(mCurrentUri);
+                }
+                loadGlobalViewPreferences();
+            }
+            filterAndSortAsync();
+            return;
+        }
         if (selected) mSelectedOptions |= option;
         else mSelectedOptions &= ~option;
-        Prefs.FileManager.setOptions(mSelectedOptions);
+        if (hasFolderViewPreferences()) {
+            saveCurrentFolderViewPreferences();
+        } else {
+            Prefs.FileManager.setOptions(mSelectedOptions & PERSISTED_OPTIONS);
+        }
         filterAndSortAsync();
     }
 
@@ -217,6 +243,36 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
 
     public FmActivity.Options getOptions() {
         return mOptions;
+    }
+
+    private void loadGlobalViewPreferences() {
+        mSortBy = Prefs.FileManager.getSortOrder();
+        mReverseSort = Prefs.FileManager.isReverseSort();
+        mSelectedOptions = Prefs.FileManager.getOptions() & PERSISTED_OPTIONS;
+    }
+
+    private void applyViewPreferences(@NonNull Uri uri) {
+        loadGlobalViewPreferences();
+        FmFolderViewPreferences.Value folderPreferences =
+                Prefs.FileManager.getFolderViewPreferences(uri);
+        if (folderPreferences != null) {
+            mSortBy = folderPreferences.sortBy;
+            mReverseSort = folderPreferences.reverseSort;
+            mSelectedOptions = folderPreferences.options | FmListOptions.OPTIONS_ONLY_FOR_THIS_FOLDER;
+        }
+    }
+
+    private boolean hasFolderViewPreferences() {
+        return mCurrentUri != null
+                && (mSelectedOptions & FmListOptions.OPTIONS_ONLY_FOR_THIS_FOLDER) != 0;
+    }
+
+    private void saveCurrentFolderViewPreferences() {
+        if (mCurrentUri == null) {
+            return;
+        }
+        Prefs.FileManager.setFolderViewPreferences(mCurrentUri, mSortBy, mReverseSort,
+                mSelectedOptions & PERSISTED_OPTIONS);
     }
 
     public Uri getCurrentUri() {
@@ -336,6 +392,7 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
                 // Since we couldn't resolve the path, try currentPath instead
             }
         }
+        applyViewPreferences(mCurrentUri);
         Path path = currentPath;
         mFmFileLoaderResult = ThreadUtils.postOnBackgroundThread(() -> {
             if (!path.isDirectory()) {
