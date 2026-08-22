@@ -79,6 +79,32 @@ androidComponents {
                 if (!d8Executable.exists()) {
                     d8Executable = file("${sdkPath}/build-tools/${build_tools}/d8.bat")
                 }
+                File javaExecutable = file("${System.getProperty('java.home')}/bin/java")
+                if (!javaExecutable.exists()) {
+                    javaExecutable = file("${System.getProperty('java.home')}/bin/java.exe")
+                }
+                File d8Jar = file("${d8Executable.parentFile}/lib/d8.jar")
+
+                def runD8 = { String name, List<String> arguments ->
+                    File argumentFile = new File(project.buildDir, "tmp/d8/${name}.args")
+                    argumentFile.parentFile.mkdirs()
+                    argumentFile.setText(arguments.join(System.lineSeparator()) + System.lineSeparator(), "UTF-8")
+                    try {
+                        injected.execOps.exec {
+                            workingDir = projectRoot
+                            if (d8Executable.name.toLowerCase().endsWith('.bat') && d8Jar.exists()) {
+                                executable = javaExecutable
+                                args = ['-Xmx1024M', '-Xss1m', '-cp', d8Jar.absolutePath,
+                                        'com.android.tools.r8.D8', "@${argumentFile.absolutePath}"]
+                            } else {
+                                executable = d8Executable
+                                args = ["@${argumentFile.absolutePath}"]
+                            }
+                        }
+                    } finally {
+                        argumentFile.delete()
+                    }
+                }
 
                 println("Creating am.jar...")
                 def buildArgs = ['--release', '--output', amJar, '--classpath', androidJar]
@@ -88,11 +114,7 @@ androidComponents {
                 buildArgs.addAll(sortedClassFiles(new File(serverClassDir)) {
                     !it.fileName.toString().startsWith("RootServiceMain")
                 })
-                injected.execOps.exec {
-                    workingDir = projectRoot
-                    executable = d8Executable
-                    args = buildArgs
-                }
+                runD8("am", buildArgs)
                 println("Created ${amJar}")
 
                 println("Creating main.jar...")
@@ -103,11 +125,7 @@ androidComponents {
                 buildArgs.addAll(sortedClassFiles(new File(serverClassDir)) {
                     it.fileName.toString().startsWith("RootServiceMain")
                 })
-                injected.execOps.exec {
-                    workingDir = projectRoot
-                    executable = d8Executable
-                    args = buildArgs
-                }
+                runD8("main", buildArgs)
                 println("Created ${mainJar}")
             }
         }

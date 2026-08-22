@@ -18,6 +18,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Kept no-root force-stop and data/cache automation responsive with bounded scheduled retries, including modern Android Settings screens.
 - Made release build timestamps deterministic by honoring `SOURCE_DATE_EPOCH` first, then the Git commit time, and failing closed when neither is available.
 - Proved `am.jar` and `main.jar` across a detached checkout with a different path, locale, timezone, and builder identity. The verifier now reports both hash pairs.
+- Routed release D8 inputs through response files and the Java launcher on Windows, so long detached checkout paths do not exceed the command-line limit.
 - Kept Android Developer Verification failure reasons in install details and offered a one-tap ADB retry when the device can reach ADB and the APK source can be replayed.
 - Compared map values before dispatching RecyclerView payloads, so unchanged rows no longer rebind during refreshes.
 

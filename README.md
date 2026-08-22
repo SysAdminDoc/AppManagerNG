@@ -120,7 +120,9 @@ for tools like AppVerifier. Release `BUILD_TIME_MILLIS` values come from
 `SOURCE_DATE_EPOCH` or the Git commit timestamp, and release builds fail when
 neither deterministic source is available. The release verifier also rebuilds
 the privileged server JARs from a second checkout path with different locale
-and timezone settings, then records both hash pairs.
+and timezone settings, then records both hash pairs. D8 receives those class
+inputs through response files, with the Windows launcher using Java directly so
+long checkout paths do not exceed the command-line limit.
 Shared map-backed list refreshes also compare values before dispatching payloads, so unchanged rows keep their existing binding state.
 
 ## Features (inherited from upstream baseline)
