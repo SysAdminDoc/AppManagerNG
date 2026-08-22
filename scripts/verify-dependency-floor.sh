@@ -1,83 +1,26 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Dependency floor drift gate: verifies that minSdk-21-pinned dependencies
-# in versions.gradle have not been bumped past their documented ceiling.
-# Also checks that the OWASP dependency-check plugin is within one minor
-# version of the documented pin.
+# Dependency floor drift gate: keep this shell entry point for release tooling,
+# while the Python checker owns the machine-readable policy and AAR inspection.
 #
 # Exit 0 = no drift, exit 1 = drift detected.
 
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSIONS="$REPO_ROOT/versions.gradle"
-
-extract() {
-  local key="$1"
-  grep -oP "${key}\s*=\s*[\"']?\K[^\"'[:space:]]+" "$VERSIONS" | head -1
-}
-
-FAIL=0
-
-echo "=== Dependency Floor Drift Gate ==="
-echo ""
-
-# --- Pinned cluster: these must NOT exceed their ceiling ---
-# Format: variable_name max_allowed_version label
-declare -A PINS=(
-  ["material_version"]="1.13.0|Material Components"
-  ["activity_version"]="1.11.0|Activity"
-  ["biometric_version"]="1.4.0-alpha04|Biometric"
-  ["room_version"]="2.7.2|Room"
-  ["webkit_version"]="1.14.0|WebKit"
-  ["sora_editor_version"]="0.24.6|Sora Editor"
-  ["work_version"]="2.10.5|WorkManager"
-)
-
-for key in "${!PINS[@]}"; do
-  IFS='|' read -r max_version label <<< "${PINS[$key]}"
-  actual=$(extract "$key" || true)
-  if [[ -z "$actual" ]]; then
-    echo "WARNING: Could not read $key from versions.gradle" >&2
-    continue
-  fi
-  if [[ "$actual" != "$max_version" ]]; then
-    echo "ERROR: $label ($key) is $actual but ceiling is $max_version — minSdk-21 floor breached" >&2
-    FAIL=1
-  else
-    echo "OK: $label pinned at $actual (ceiling $max_version)"
-  fi
-done
-
-# --- minSdk sanity ---
-MIN_SDK=$(extract "min_sdk" || true)
-if [[ -n "$MIN_SDK" && "$MIN_SDK" -ne 21 ]]; then
-  echo "ERROR: min_sdk is $MIN_SDK, expected 21 per docs/policy/minsdk-21-ceiling.md" >&2
-  FAIL=1
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+if command -v python3 >/dev/null 2>&1 && python3 --version >/dev/null 2>&1; then
+  PYTHON_BIN=python3
+elif command -v python >/dev/null 2>&1 && python --version >/dev/null 2>&1; then
+  PYTHON_BIN=python
+elif command -v py >/dev/null 2>&1 && py -3 --version >/dev/null 2>&1; then
+  PYTHON_BIN="py -3"
 else
-  echo "OK: min_sdk = $MIN_SDK"
+  echo "ERROR: Python 3 is required for the dependency floor gate" >&2
+  exit 1
 fi
 
-# --- OWASP dependency-check version drift ---
-DC_VERSION=$(extract "dependency_check_version" || true)
-if [[ -n "$DC_VERSION" ]]; then
-  DC_MAJOR=$(echo "$DC_VERSION" | cut -d. -f1)
-  DC_MINOR=$(echo "$DC_VERSION" | cut -d. -f2)
-  # The tool should not lag more than 2 minor versions behind
-  # Current expectation: 12.x line
-  if (( DC_MAJOR < 12 )); then
-    echo "WARNING: dependency-check $DC_VERSION is behind the 12.x line" >&2
-  else
-    echo "OK: dependency-check at $DC_VERSION"
-  fi
+if [[ "$PYTHON_BIN" == "py -3" ]]; then
+  exec py -3 "$SCRIPT_DIR/verify_dependency_floor.py" "$@"
 fi
-
-echo ""
-if (( FAIL )); then
-  echo "FAILED: dependency floor drift detected. See docs/policy/minsdk-21-ceiling.md."
-else
-  echo "PASSED: all pinned dependencies within ceiling."
-fi
-
-exit $FAIL
+exec "$PYTHON_BIN" "$SCRIPT_DIR/verify_dependency_floor.py" "$@"

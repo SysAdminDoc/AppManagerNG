@@ -2,13 +2,40 @@
 
 # minSdk 21 Dependency Ceiling Ledger
 
-Last updated: 2026-06-20.
+Last updated: 2026-08-22.
 
 This ledger tracks every dependency pinned to its last API-21-compatible
 release. If any of these pins become untenable (security advisory, blocking
 feature), the forced-decision triggers in
 [`2026-05-26-minsdk-23-decision.md`](2026-05-26-minsdk-23-decision.md) fire
 and the floor lift proceeds.
+
+## Machine-checked policy
+
+The source of truth for the pinned cluster is
+[`minsdk-21-ceiling.json`](minsdk-21-ceiling.json). It records the project
+floor, each version variable, the last allowed version, and the first known
+incompatible release. The release gate reads this file and `versions.gradle`
+locally, so it does not need network credentials.
+
+Run the normal check with:
+
+```text
+scripts/verify-dependency-floor.sh
+```
+
+Before changing a dependency, inspect each resolved AAR manifest by passing a
+candidate. The candidate name is included in a failure message when its
+manifest requires a newer API level:
+
+```text
+scripts/verify-dependency-floor.sh --candidate "Material Components=build/aar/material.aar"
+```
+
+The checker reads both text and compiled Android binary manifests. A candidate
+that declares `minSdkVersion` 23 or higher fails before the dependency can be
+bumped. Tests cover the allowlist, malformed archives, text manifests, and
+compiled manifest attributes.
 
 ## Pinned cluster (minSdk 23 unlocks all simultaneously)
 
@@ -18,7 +45,7 @@ release.
 
 | Dependency | Pinned version | First minSdk-23 version | What unlocks |
 |---|---|---|---|
-| **Material Components** | 1.13.0 | 1.14.0 | SplitButton, FocusRingDrawable, expressive typography, motion-token refresh. Ceiling dep — unblocking this lets the rest move in lockstep. |
+| **Material Components** | 1.13.0 | 1.14.0 | SplitButton, FocusRingDrawable, expressive typography, motion-token refresh. This is the ceiling dependency. Unblocking it lets the rest move in lockstep. |
 | **Activity** | 1.11.0 | 1.12.x | Compose-focused APIs (limited non-Compose benefit for NG). |
 | **Biometric** | 1.4.0-alpha04 | 1.4.0-alpha05+ | Stable BiometricPrompt API surface, key-attestation improvements. |
 | **Room** | 2.7.2 | 2.8.x | KMP support, performance improvements. No security-relevant changes at time of writing. |
@@ -62,7 +89,7 @@ scheduled review: **2026-09-01** (see decision memo).
 ## How to use this ledger
 
 1. **Before bumping a pinned dep**: check this table. If the bump crosses the
-   minSdk-23 boundary, do not land it — instead evaluate whether a
+   minSdk-23 boundary, do not land it. Evaluate whether a
    forced-decision trigger has fired per the decision memo.
 2. **When a new dep is added**: check its minSdk requirement. If it requires
    23+, add it to the pinned cluster table and note the minimum version that
