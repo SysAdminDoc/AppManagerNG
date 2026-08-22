@@ -1011,6 +1011,14 @@ public final class Prefs {
             AppPref.set(AppPref.PrefKey.PREF_ENABLE_APP_CHANGE_AUDITOR_BOOL, enabled);
         }
 
+        public static boolean isAppUpdateChangeReportEnabled() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_ENABLE_APP_UPDATE_CHANGE_REPORT_BOOL);
+        }
+
+        public static void setAppUpdateChangeReportEnabled(boolean enabled) {
+            AppPref.set(AppPref.PrefKey.PREF_ENABLE_APP_UPDATE_CHANGE_REPORT_BOOL, enabled);
+        }
+
         public static boolean isLocalCrashSinkEnabled() {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_LOCAL_CRASH_SINK_ENABLED_BOOL);
         }

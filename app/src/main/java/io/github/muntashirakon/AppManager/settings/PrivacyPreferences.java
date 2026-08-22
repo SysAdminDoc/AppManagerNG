@@ -34,8 +34,11 @@ import java.util.Locale;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.StaticDataset;
+import io.github.muntashirakon.AppManager.db.AppsDb;
+import io.github.muntashirakon.AppManager.db.entity.AppUpdateChangeReport;
 import io.github.muntashirakon.AppManager.permission.monitor.AppChangeFeedEntry;
 import io.github.muntashirakon.AppManager.permission.monitor.AppChangeFeedStore;
+import io.github.muntashirakon.AppManager.permission.monitor.AppUpdateChangeReportFormatter;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
 import io.github.muntashirakon.AppManager.crypto.auth.AuthManagerActivity;
@@ -254,6 +257,22 @@ public class PrivacyPreferences extends PreferenceFragment {
             }
             return true;
         });
+        SwitchPreferenceCompat appUpdateReport = requirePreference("app_update_change_report");
+        appUpdateReport.setChecked(Prefs.Privacy.isAppUpdateChangeReportEnabled());
+        appUpdateReport.setOnPreferenceChangeListener((preference, newValue) -> {
+            boolean enabled = (boolean) newValue;
+            Prefs.Privacy.setAppUpdateChangeReportEnabled(enabled);
+            if (enabled) {
+                Context appContext = requireContext().getApplicationContext();
+                ThreadUtils.postOnBackgroundThread(() -> {
+                    io.github.muntashirakon.AppManager.permission.monitor.PermissionChangeMonitor
+                            .primeSnapshotsForAllPackages(appContext);
+                    io.github.muntashirakon.AppManager.permission.monitor.ComponentChangeMonitor
+                            .primeSnapshotsForAllPackages(appContext);
+                });
+            }
+            return true;
+        });
         // Local crash sink
         SwitchPreferenceCompat localCrashSink = requirePreference("local_crash_sink_enabled");
         localCrashSink.setChecked(Prefs.Privacy.isLocalCrashSinkEnabled());
@@ -277,7 +296,15 @@ public class PrivacyPreferences extends PreferenceFragment {
         Context appContext = requireContext().getApplicationContext();
         ThreadUtils.postOnBackgroundThread(() -> {
             List<AppChangeFeedEntry> entries = new AppChangeFeedStore(appContext).readAll();
-            String message = formatAppChangeFeed(entries);
+            List<AppUpdateChangeReport> reports;
+            try {
+                reports = AppsDb.getInstance().appUpdateChangeReportDao().getRecent(200);
+            } catch (Exception e) {
+                reports = java.util.Collections.emptyList();
+                io.github.muntashirakon.AppManager.logs.Log.w(
+                        "PrivacyPreferences", "Could not read app update reports", e);
+            }
+            String message = formatAppChangeFeed(appContext, entries, reports);
             ThreadUtils.postOnMainThread(() -> {
                 if (!isAdded()) return;
                 new MaterialAlertDialogBuilder(requireContext())
@@ -290,14 +317,28 @@ public class PrivacyPreferences extends PreferenceFragment {
     }
 
     @NonNull
-    private String formatAppChangeFeed(@NonNull List<AppChangeFeedEntry> entries) {
-        if (entries.isEmpty()) {
-            return getString(R.string.app_change_feed_empty);
+    private String formatAppChangeFeed(@NonNull Context context,
+                                       @NonNull List<AppChangeFeedEntry> entries,
+                                       @NonNull List<AppUpdateChangeReport> reports) {
+        if (entries.isEmpty() && reports.isEmpty()) {
+            return context.getString(R.string.app_change_feed_empty);
         }
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
         StringBuilder builder = new StringBuilder();
-        int count = Math.min(entries.size(), 20);
-        for (int i = 0; i < count; ++i) {
+        int reportCount = Math.min(reports.size(), 20);
+        for (int i = 0; i < reportCount; ++i) {
+            AppUpdateChangeReport report = reports.get(i);
+            if (builder.length() > 0) builder.append("\n\n");
+            builder.append(context.getString(R.string.app_update_change_report_title, report.packageName))
+                    .append("\n")
+                    .append(report.packageName)
+                    .append(" - ")
+                    .append(format.format(new Date(report.timestampMillis)))
+                    .append("\n")
+                    .append(AppUpdateChangeReportFormatter.formatBody(context, report));
+        }
+        int entryCount = Math.min(entries.size(), 20);
+        for (int i = 0; i < entryCount; ++i) {
             AppChangeFeedEntry entry = entries.get(i);
             if (builder.length() > 0) builder.append("\n\n");
             builder.append(entry.title)
@@ -308,9 +349,9 @@ public class PrivacyPreferences extends PreferenceFragment {
                     .append("\n")
                     .append(entry.body);
         }
-        int hidden = entries.size() - count;
+        int hidden = reports.size() - reportCount + entries.size() - entryCount;
         if (hidden > 0) {
-            builder.append("\n\n").append(getResources().getQuantityString(
+            builder.append("\n\n").append(context.getResources().getQuantityString(
                     R.plurals.app_change_feed_more, hidden, hidden));
         }
         return builder.toString();

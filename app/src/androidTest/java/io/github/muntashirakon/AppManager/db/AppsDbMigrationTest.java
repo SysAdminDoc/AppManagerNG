@@ -131,7 +131,8 @@ public class AppsDbMigrationTest {
                         AppsDb.class,
                         TEST_DB)
                 .addMigrations(AppsDb.M_2_3, AppsDb.M_3_4, AppsDb.M_4_5,
-                        AppsDb.M_5_6, AppsDb.M_6_7, AppsDb.M_7_8, AppsDb.M_8_9)
+                        AppsDb.M_5_6, AppsDb.M_6_7, AppsDb.M_7_8, AppsDb.M_8_9,
+                        AppsDb.M_9_10, AppsDb.M_10_11)
                 .build();
         // Force Room to materialize and validate the schema.
         assertNotNull(db.appDao());
@@ -221,9 +222,61 @@ public class AppsDbMigrationTest {
                         AppsDb.class,
                         TEST_DB)
                 .addMigrations(AppsDb.M_2_3, AppsDb.M_3_4, AppsDb.M_4_5,
-                        AppsDb.M_5_6, AppsDb.M_6_7, AppsDb.M_7_8, AppsDb.M_8_9)
+                        AppsDb.M_5_6, AppsDb.M_6_7, AppsDb.M_7_8, AppsDb.M_8_9,
+                        AppsDb.M_9_10, AppsDb.M_10_11)
                 .build();
         assertNotNull(db.appDao());
         db.close();
+    }
+
+    /**
+     * v11 adds the atomic app-update report table. The migration must create every
+     * non-null JSON column so a report can be inserted immediately after an app
+     * update without relying on a destructive fallback.
+     */
+    @Test
+    public void migrate10To11_addsAppUpdateReportTable() throws IOException {
+        helper.createDatabase(TEST_DB, 10).close();
+
+        SupportSQLiteDatabase migrated = helper.runMigrationsAndValidate(TEST_DB, 11, true,
+                AppsDb.M_10_11);
+        try (android.database.Cursor c = migrated.query(
+                "PRAGMA table_info(`app_update_change_report`)")) {
+            int columns = 0;
+            boolean packageNameNotNull = false;
+            boolean addedPermissionsNotNull = false;
+            while (c.moveToNext()) {
+                ++columns;
+                String name = c.getString(c.getColumnIndexOrThrow("name"));
+                int notNull = c.getInt(c.getColumnIndexOrThrow("notnull"));
+                if ("package_name".equals(name)) packageNameNotNull = notNull == 1;
+                if ("added_permissions".equals(name)) addedPermissionsNotNull = notNull == 1;
+            }
+            assertEquals("v11 report table must have eleven columns", 11, columns);
+            assertTrue("package name must be NOT NULL", packageNameNotNull);
+            assertTrue("JSON columns must be NOT NULL", addedPermissionsNotNull);
+        }
+        migrated.close();
+    }
+
+    @Test
+    public void migrate10To11_reportRowCanBeInserted() throws IOException {
+        helper.createDatabase(TEST_DB, 10).close();
+        SupportSQLiteDatabase migrated = helper.runMigrationsAndValidate(TEST_DB, 11, true,
+                AppsDb.M_10_11);
+        migrated.execSQL("INSERT INTO `app_update_change_report` ("
+                + "`package_name`, `timestamp_millis`, `before_version_code`, `after_version_code`, "
+                + "`added_permissions`, `removed_permissions`, `added_trackers`, `removed_trackers`, "
+                + "`added_components`, `removed_components`) VALUES "
+                + "('com.example.test', 100, 1, 2, '[\"CAMERA\"]', '[]', '[]', '[]', '[]', '[]')");
+        try (android.database.Cursor c = migrated.query(
+                "SELECT package_name, before_version_code, after_version_code "
+                        + "FROM app_update_change_report")) {
+            assertTrue("report row must survive insertion", c.moveToFirst());
+            assertEquals("com.example.test", c.getString(0));
+            assertEquals(1, c.getInt(1));
+            assertEquals(2, c.getInt(2));
+        }
+        migrated.close();
     }
 }
