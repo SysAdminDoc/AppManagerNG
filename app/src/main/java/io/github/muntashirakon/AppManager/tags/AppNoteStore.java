@@ -14,6 +14,8 @@ import androidx.annotation.WorkerThread;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import io.github.muntashirakon.AppManager.db.AppsDb;
 import io.github.muntashirakon.AppManager.db.entity.AppNote;
@@ -23,6 +25,8 @@ import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 public final class AppNoteStore {
     private static final String TAG = AppNoteStore.class.getSimpleName();
     private static final AtomicBoolean ROOM_RECONCILE_SCHEDULED = new AtomicBoolean();
+    private static final ConcurrentHashMap<String, AtomicLong> NOTE_GENERATIONS =
+            new ConcurrentHashMap<>();
     @VisibleForTesting
     public static final String PREFS_NAME = "app_notes";
     private static final String KEY_VERSION = "_schema";
@@ -38,9 +42,7 @@ public final class AppNoteStore {
         }
         // Keep the Room table populated for database-backed consumers while the
         // preference file remains the immediate, UI-safe compatibility cache.
-        if (ROOM_RECONCILE_SCHEDULED.compareAndSet(false, true)) {
-            ThreadUtils.postOnBackgroundThread(() -> reconcileRoom(mPrefs));
-        }
+        scheduleRoomReconcile(mPrefs);
     }
 
     @AnyThread
@@ -60,21 +62,17 @@ public final class AppNoteStore {
         if (normalized == null) {
             clear(packageName);
         } else {
+            long generation = markMutation(packageName);
             mPrefs.edit().putString(packageName, normalized).apply();
-            syncRoomAsync(packageName);
+            syncRoomAsync(packageName, generation);
         }
     }
 
     @AnyThread
     public void clear(@NonNull String packageName) {
+        long generation = markMutation(packageName);
         mPrefs.edit().remove(packageName).apply();
-        ThreadUtils.postOnBackgroundThread(() -> {
-            try {
-                AppsDb.getInstance().appNoteDao().delete(packageName);
-            } catch (Exception e) {
-                Log.w(TAG, "Could not clear the Room note row for " + packageName, e);
-            }
-        });
+        syncRoomAsync(packageName, generation);
     }
 
     @AnyThread
@@ -109,6 +107,7 @@ public final class AppNoteStore {
     private static void reconcileRoom(@NonNull SharedPreferences prefs) {
         try {
             Map<String, String> notes = new LinkedHashMap<>();
+            Map<String, Long> generations = new LinkedHashMap<>();
             for (Map.Entry<String, ?> entry : prefs.getAll().entrySet()) {
                 if (KEY_VERSION.equals(entry.getKey()) || !(entry.getValue() instanceof String)) {
                     continue;
@@ -116,10 +115,15 @@ public final class AppNoteStore {
                 String note = normalizeNote((String) entry.getValue());
                 if (note != null) {
                     notes.put(entry.getKey(), note);
+                    generations.put(entry.getKey(), currentGeneration(entry.getKey()));
                 }
             }
             AppsDb db = AppsDb.getInstance();
             for (Map.Entry<String, String> entry : notes.entrySet()) {
+                if (!isCurrent(entry.getKey(), generations.get(entry.getKey()),
+                        entry.getValue(), prefs)) {
+                    continue;
+                }
                 AppNote row = new AppNote();
                 row.packageName = entry.getKey();
                 row.note = entry.getValue();
@@ -127,7 +131,8 @@ public final class AppNoteStore {
                 db.appNoteDao().insert(row);
             }
             for (AppNote row : db.appNoteDao().getAll()) {
-                if (!notes.containsKey(row.packageName)) {
+                if (!notes.containsKey(row.packageName)
+                        && isCurrent(row.packageName, currentGeneration(row.packageName), null, prefs)) {
                     db.appNoteDao().delete(row.packageName);
                 }
             }
@@ -136,23 +141,77 @@ public final class AppNoteStore {
         }
     }
 
-    private void syncRoomAsync(@NonNull String packageName) {
+    private void syncRoomAsync(@NonNull String packageName, long expectedGeneration) {
         ThreadUtils.postOnBackgroundThread(() -> {
             try {
+                if (currentGeneration(packageName) != expectedGeneration) {
+                    syncRoomAsync(packageName, currentGeneration(packageName));
+                    return;
+                }
                 String note = normalizeNote(mPrefs.getString(packageName, null));
                 if (note == null) {
                     AppsDb.getInstance().appNoteDao().delete(packageName);
-                    return;
+                } else {
+                    AppNote row = new AppNote();
+                    row.packageName = packageName;
+                    row.note = note;
+                    row.updatedAt = System.currentTimeMillis();
+                    AppsDb.getInstance().appNoteDao().insert(row);
                 }
-                AppNote row = new AppNote();
-                row.packageName = packageName;
-                row.note = note;
-                row.updatedAt = System.currentTimeMillis();
-                AppsDb.getInstance().appNoteDao().insert(row);
+                if (currentGeneration(packageName) != expectedGeneration) {
+                    syncRoomAsync(packageName, currentGeneration(packageName));
+                }
             } catch (Exception e) {
                 Log.w(TAG, "Could not write the Room note row for " + packageName, e);
             }
         });
+    }
+
+    private static void scheduleRoomReconcile(@NonNull SharedPreferences prefs) {
+        if (ROOM_RECONCILE_SCHEDULED.compareAndSet(false, true)) {
+            ThreadUtils.postOnBackgroundThread(() -> {
+                try {
+                    reconcileRoom(prefs);
+                } finally {
+                    // A failed Room open or migration must not permanently disable future
+                    // reconciliation attempts. The next store construction will retry.
+                    ROOM_RECONCILE_SCHEDULED.set(false);
+                }
+            });
+        }
+    }
+
+    private static long markMutation(@NonNull String packageName) {
+        return NOTE_GENERATIONS.computeIfAbsent(packageName, key -> new AtomicLong())
+                .incrementAndGet();
+    }
+
+    private static long currentGeneration(@NonNull String packageName) {
+        AtomicLong generation = NOTE_GENERATIONS.get(packageName);
+        return generation == null ? 0L : generation.get();
+    }
+
+    private static boolean isCurrent(@NonNull String packageName, @Nullable Long generation,
+                                     @Nullable String expectedNote,
+                                     @NonNull SharedPreferences prefs) {
+        if (generation != null && currentGeneration(packageName) != generation) {
+            return false;
+        }
+        String currentNote = normalizeNote(prefs.getString(packageName, null));
+        return expectedNote == null ? currentNote == null : expectedNote.equals(currentNote);
+    }
+
+    @VisibleForTesting
+    static long generationForTesting(@NonNull String packageName) {
+        return currentGeneration(packageName);
+    }
+
+    @VisibleForTesting
+    static boolean isSnapshotCurrentForTesting(@NonNull SharedPreferences prefs,
+                                               @NonNull String packageName,
+                                               long generation,
+                                               @Nullable String expectedNote) {
+        return isCurrent(packageName, generation, expectedNote, prefs);
     }
 
     @AnyThread
