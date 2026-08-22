@@ -2452,13 +2452,20 @@ public class AppDetailsViewModel extends AndroidViewModel {
                     || entry.type == ApkFile.APK_SPLIT_UNKNOWN) {
                 // Scan for .so files
                 NativeLibraries nativeLibraries;
-                try (InputStream is = entry.getInputStream(false)) {
-                    try {
+                try {
+                    // The file-backed parser also reports the exact ZIP data offset for
+                    // uncompressed native entries. Fall back to the stream parser when a
+                    // temporary file cannot be materialized.
+                    nativeLibraries = new NativeLibraries(entry.getFile(false));
+                } catch (IOException e) {
+                    try (InputStream is = entry.getInputStream(false)) {
                         nativeLibraries = new NativeLibraries(is);
-                    } catch (IOException e) {
-                        // Maybe zip error, Try without InputStream
-                        nativeLibraries = new NativeLibraries(entry.getFile(false));
+                    } catch (IOException streamException) {
+                        Log.e(TAG, streamException);
+                        continue;
                     }
+                }
+                try {
                     for (NativeLibraries.NativeLib nativeLib : nativeLibraries.getLibs()) {
                         AppDetailsLibraryItem<?> appDetailsItem = new AppDetailsLibraryItem<>(nativeLib);
                         appDetailsItem.name = nativeLib.getName();

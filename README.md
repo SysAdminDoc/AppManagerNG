@@ -72,6 +72,8 @@ bloatware classification, intent actions, and domain links. Save the filter and 
 Native-library readiness is a predicate too: sweep for apps that are not 16 KB page-aligned (so
 they will not run on Android 15+ devices using 16 KB pages), ship only 32-bit code, or store
 their libraries compressed.
+App Details also reports each native library's ZIP data offset and whether its static symbols
+were stripped, so page alignment and packaging evidence stay visible together.
 
 ### Snapshot bundles
 

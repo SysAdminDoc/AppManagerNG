@@ -8,21 +8,27 @@ import android.text.format.Formatter;
 import androidx.annotation.AnyThread;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.RandomAccessFile;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -40,8 +46,17 @@ public class NativeLibraries {
     private static final int ELF_MAGIC = 0x7f454c46; // 0x7f ELF
     private static final int ELF_HEADER_MAX_BYTES = 64;
     private static final int ELF_PROGRAM_HEADER_MAX_BYTES = 1024 * 1024;
+    private static final int ELF_SECTION_HEADER_MAX_BYTES = 1024 * 1024;
     private static final int PT_LOAD = 1;
+    private static final int SHT_SYMTAB = 2;
     private static final long PAGE_SIZE_16_KB = 16L * 1024L;
+    private static final int ZIP_LOCAL_FILE_HEADER_SIGNATURE = 0x04034b50;
+    private static final int ZIP_CENTRAL_DIRECTORY_SIGNATURE = 0x02014b50;
+    private static final int ZIP_END_OF_CENTRAL_DIRECTORY_SIGNATURE = 0x06054b50;
+    private static final int ZIP_LOCAL_FILE_HEADER_SIZE = 30;
+    private static final int ZIP_CENTRAL_DIRECTORY_HEADER_SIZE = 46;
+    private static final int ZIP_END_OF_CENTRAL_DIRECTORY_SIZE = 22;
+    private static final int ZIP_MAX_COMMENT_LENGTH = 65_535;
     @VisibleForTesting
     static final int MAX_APK_SCAN_ENTRIES = 50_000;
 
@@ -52,6 +67,9 @@ public class NativeLibraries {
         private final String mName;
         private final long mSize;
         private final byte[] mMagic;
+        private long mZipDataOffset = -1;
+        private boolean mZipCompressionKnown;
+        private boolean mZipStored;
 
         protected NativeLib(@NonNull String path, long size, byte[] magic) {
             mPath = path;
@@ -76,6 +94,32 @@ public class NativeLibraries {
 
         public byte[] getMagic() {
             return mMagic;
+        }
+
+        public long getZipDataOffset() {
+            return mZipDataOffset;
+        }
+
+        public boolean hasKnownZipAlignment() {
+            return mZipDataOffset >= 0;
+        }
+
+        public boolean has16KbZipAlignment() {
+            return hasKnownZipAlignment() && mZipDataOffset % PAGE_SIZE_16_KB == 0;
+        }
+
+        public boolean isZipCompressionKnown() {
+            return mZipCompressionKnown;
+        }
+
+        public boolean isZipStored() {
+            return mZipStored;
+        }
+
+        private void setZipMetadata(boolean stored, long dataOffset) {
+            mZipCompressionKnown = true;
+            mZipStored = stored;
+            mZipDataOffset = stored && dataOffset >= 0 ? dataOffset : -1;
         }
 
         @NonNull
@@ -106,6 +150,7 @@ public class NativeLibraries {
             elfLib.mType = buffer.getChar(); // e_type
             elfLib.mIsa = buffer.getChar(); // e_machine
             elfLib.readLoadSegmentAlignment(header, is);
+            elfLib.readStaticSymbolTable(header, is);
             return elfLib;
         }
 
@@ -221,9 +266,12 @@ public class NativeLibraries {
         private int mType;
         private int mIsa;
         private long mMinLoadSegmentAlignment = -1;
+        private Boolean mHasStaticSymbolTable;
+        private long mStreamPosition;
 
         private ElfLib(@NonNull String path, long size) {
             super(path, size, new byte[]{0x7f, 0x45, 0x4c, 0x46});
+            mStreamPosition = ELF_HEADER_MAX_BYTES;
         }
 
         @Arch
@@ -255,6 +303,26 @@ public class NativeLibraries {
 
         public boolean has16KbLoadSegmentAlignment() {
             return hasKnownLoadSegmentAlignment() && mMinLoadSegmentAlignment >= PAGE_SIZE_16_KB;
+        }
+
+        public boolean hasKnownStaticSymbolTable() {
+            return mHasStaticSymbolTable != null;
+        }
+
+        public boolean hasKnownSymbolTable() {
+            return hasKnownStaticSymbolTable();
+        }
+
+        public boolean hasStaticSymbolTable() {
+            return Boolean.TRUE.equals(mHasStaticSymbolTable);
+        }
+
+        public boolean hasSymbolTable() {
+            return hasStaticSymbolTable();
+        }
+
+        public boolean isStripped() {
+            return hasKnownStaticSymbolTable() && !hasStaticSymbolTable();
         }
 
         public String getIsaString() {
@@ -342,8 +410,129 @@ public class NativeLibraries {
             } else {
                 sb.append(context.getString(R.string.native_lib_16kb_alignment_unknown)).append(", ");
             }
+            if (hasKnownStaticSymbolTable()) {
+                sb.append(context.getString(isStripped()
+                        ? R.string.native_lib_symbols_stripped
+                        : R.string.native_lib_symbols_present)).append(", ");
+            } else {
+                sb.append(context.getString(R.string.native_lib_symbols_unknown)).append(", ");
+            }
+            if (hasKnownZipAlignment()) {
+                sb.append(context.getString(has16KbZipAlignment()
+                        ? R.string.native_lib_zip_aligned
+                        : R.string.native_lib_zip_not_aligned, getZipDataOffset())).append(", ");
+            } else if (isZipCompressionKnown() && !isZipStored()) {
+                sb.append(context.getString(R.string.native_lib_zip_alignment_compressed)).append(", ");
+            } else {
+                sb.append(context.getString(R.string.native_lib_zip_alignment_unknown)).append(", ");
+            }
             sb.append(getIsaString()).append("\n").append(getPath());
             return sb;
+        }
+
+        private void readStaticSymbolTable(@NonNull byte[] header, @NonNull InputStream is) throws IOException {
+            if (mArch != ARCH_32BIT && mArch != ARCH_64BIT) {
+                return;
+            }
+            ByteBuffer buffer = ByteBuffer.wrap(header);
+            if (mEndianness == ENDIANNESS_LITTLE_ENDIAN) {
+                buffer.order(ByteOrder.LITTLE_ENDIAN);
+            }
+            long sectionHeaderOffset;
+            int sectionHeaderEntrySize;
+            int sectionHeaderCount;
+            if (mArch == ARCH_32BIT) {
+                if (header.length < 52) {
+                    return;
+                }
+                sectionHeaderOffset = Integer.toUnsignedLong(buffer.getInt(32));
+                sectionHeaderEntrySize = Short.toUnsignedInt(buffer.getShort(46));
+                sectionHeaderCount = Short.toUnsignedInt(buffer.getShort(48));
+            } else {
+                if (header.length < 64) {
+                    return;
+                }
+                sectionHeaderOffset = buffer.getLong(40);
+                sectionHeaderEntrySize = Short.toUnsignedInt(buffer.getShort(58));
+                sectionHeaderCount = Short.toUnsignedInt(buffer.getShort(60));
+            }
+            if (sectionHeaderOffset == 0 && sectionHeaderCount == 0) {
+                mHasStaticSymbolTable = false;
+                return;
+            }
+            if (sectionHeaderOffset < 0 || sectionHeaderEntrySize <= 0 || sectionHeaderCount <= 0) {
+                return;
+            }
+            int minimumEntrySize = mArch == ARCH_32BIT ? 40 : 64;
+            if (sectionHeaderEntrySize < minimumEntrySize) {
+                return;
+            }
+            long bytesNeeded = sectionHeaderOffset + (long) sectionHeaderEntrySize * sectionHeaderCount;
+            if (bytesNeeded <= 0 || bytesNeeded > ELF_SECTION_HEADER_MAX_BYTES
+                    || bytesNeeded > Integer.MAX_VALUE) {
+                return;
+            }
+            byte[] sectionHeaders = readSectionHeaders(header, is, sectionHeaderOffset,
+                    (int) (bytesNeeded - sectionHeaderOffset));
+            if (sectionHeaders == null || sectionHeaders.length < bytesNeeded - sectionHeaderOffset) {
+                return;
+            }
+            ByteBuffer sectionBuffer = ByteBuffer.wrap(sectionHeaders);
+            if (mEndianness == ENDIANNESS_LITTLE_ENDIAN) {
+                sectionBuffer.order(ByteOrder.LITTLE_ENDIAN);
+            }
+            boolean hasStaticSymbolTable = false;
+            for (int i = 0; i < sectionHeaderCount; ++i) {
+                int offset = i * sectionHeaderEntrySize;
+                if (offset < 0 || offset + sectionHeaderEntrySize > sectionHeaders.length) {
+                    return;
+                }
+                if (sectionBuffer.getInt(offset + 4) == SHT_SYMTAB) {
+                    hasStaticSymbolTable = true;
+                    break;
+                }
+            }
+            mHasStaticSymbolTable = hasStaticSymbolTable;
+        }
+
+        @Nullable
+        private byte[] readSectionHeaders(@NonNull byte[] header, @NonNull InputStream is,
+                                           long offset, int length) throws IOException {
+            if (offset < 0 || length <= 0 || offset > Integer.MAX_VALUE - length) {
+                return null;
+            }
+            if (offset + length <= header.length) {
+                return Arrays.copyOfRange(header, (int) offset, (int) offset + length);
+            }
+            if (offset < mStreamPosition) {
+                return null;
+            }
+            if (offset > mStreamPosition) {
+                long remaining = offset - mStreamPosition;
+                while (remaining > 0) {
+                    long skipped = is.skip(remaining);
+                    if (skipped > 0) {
+                        remaining -= skipped;
+                        continue;
+                    }
+                    if (is.read() == -1) {
+                        return null;
+                    }
+                    --remaining;
+                }
+                mStreamPosition = offset;
+            }
+            byte[] sectionHeaders = new byte[length];
+            int position = 0;
+            while (position < length) {
+                int read = is.read(sectionHeaders, position, length - position);
+                if (read == -1) {
+                    return Arrays.copyOf(sectionHeaders, position);
+                }
+                position += read;
+            }
+            mStreamPosition += length;
+            return sectionHeaders;
         }
 
         private void readLoadSegmentAlignment(@NonNull byte[] header, @NonNull InputStream is) throws IOException {
@@ -383,6 +572,9 @@ public class NativeLibraries {
             if (programHeaders.length < bytesNeeded) {
                 return;
             }
+            if (bytesNeeded > mStreamPosition) {
+                mStreamPosition = bytesNeeded;
+            }
             ByteBuffer phBuffer = ByteBuffer.wrap(programHeaders);
             if (mEndianness == ENDIANNESS_LITTLE_ENDIAN) {
                 phBuffer.order(ByteOrder.LITTLE_ENDIAN);
@@ -419,6 +611,7 @@ public class NativeLibraries {
 
     @WorkerThread
     public NativeLibraries(@NonNull File apkFile) throws IOException {
+        Map<String, Long> zipDataOffsets = readZipDataOffsets(apkFile);
         try (ZipFile zipFile = new ZipFile(apkFile)) {
             Enumeration<? extends ZipEntry> zipEntries = zipFile.entries();
             int entryCount = 0;
@@ -428,6 +621,8 @@ public class NativeLibraries {
                 if (zipEntry.getName().endsWith(".so")) {
                     try (InputStream is = zipFile.getInputStream(zipEntry)) {
                         NativeLib nativeLib = NativeLib.parse(zipEntry.getName(), zipEntry.getSize(), is);
+                        nativeLib.setZipMetadata(zipEntry.getMethod() == ZipEntry.STORED,
+                                zipDataOffsets.getOrDefault(zipEntry.getName(), -1L));
                         mLibs.add(nativeLib);
                         mUniqueLibs.add(nativeLib.getName());
                     } catch (IOException e) {
@@ -460,6 +655,10 @@ public class NativeLibraries {
 
     @AnyThread
     public NativeLibraries(@NonNull ZipFile zipFile) throws IOException {
+        String zipPath = zipFile.getName();
+        Map<String, Long> zipDataOffsets = zipPath == null
+                ? new HashMap<>()
+                : readZipDataOffsets(new File(zipPath));
         Enumeration<? extends ZipEntry> zipEntries = zipFile.entries();
         int entryCount = 0;
         while (zipEntries.hasMoreElements()) {
@@ -468,6 +667,8 @@ public class NativeLibraries {
             if (!zipEntry.isDirectory() && zipEntry.getName().endsWith(".so")) {
                 try (InputStream is = zipFile.getInputStream(zipEntry)) {
                     NativeLib nativeLib = NativeLib.parse(zipEntry.getName(), zipEntry.getSize(), is);
+                    nativeLib.setZipMetadata(zipEntry.getMethod() == ZipEntry.STORED,
+                            zipDataOffsets.getOrDefault(zipEntry.getName(), -1L));
                     mLibs.add(nativeLib);
                     mUniqueLibs.add(nativeLib.getName());
                 } catch (IOException e) {
@@ -485,6 +686,95 @@ public class NativeLibraries {
     @NonNull
     public Collection<String> getUniqueLibs() {
         return mUniqueLibs;
+    }
+
+    @NonNull
+    private static Map<String, Long> readZipDataOffsets(@NonNull File apkFile) {
+        Map<String, Long> offsets = new HashMap<>();
+        try (RandomAccessFile zip = new RandomAccessFile(apkFile, "r")) {
+            long fileLength = zip.length();
+            int tailLength = (int) Math.min(fileLength,
+                    ZIP_END_OF_CENTRAL_DIRECTORY_SIZE + ZIP_MAX_COMMENT_LENGTH);
+            if (tailLength < ZIP_END_OF_CENTRAL_DIRECTORY_SIZE) {
+                return offsets;
+            }
+            byte[] tail = new byte[tailLength];
+            zip.seek(fileLength - tailLength);
+            zip.readFully(tail);
+            int endOfCentralDirectory = findLastSignature(tail, ZIP_END_OF_CENTRAL_DIRECTORY_SIGNATURE);
+            if (endOfCentralDirectory < 0 || endOfCentralDirectory + ZIP_END_OF_CENTRAL_DIRECTORY_SIZE > tail.length) {
+                return offsets;
+            }
+            int entries = readUnsignedShort(tail, endOfCentralDirectory + 10);
+            long centralDirectorySize = readUnsignedInt(tail, endOfCentralDirectory + 12);
+            long centralDirectoryOffset = readUnsignedInt(tail, endOfCentralDirectory + 16);
+            if (entries == 0xffff || centralDirectorySize == 0xffff_ffffL
+                    || centralDirectoryOffset == 0xffff_ffffL
+                    || centralDirectoryOffset < 0
+                    || centralDirectorySize > fileLength - centralDirectoryOffset) {
+                return offsets;
+            }
+            zip.seek(centralDirectoryOffset);
+            for (int i = 0; i < entries; ++i) {
+                byte[] centralHeader = new byte[ZIP_CENTRAL_DIRECTORY_HEADER_SIZE];
+                zip.readFully(centralHeader);
+                if (readInt(centralHeader, 0) != ZIP_CENTRAL_DIRECTORY_SIGNATURE) {
+                    return offsets;
+                }
+                int nameLength = readUnsignedShort(centralHeader, 28);
+                int extraLength = readUnsignedShort(centralHeader, 30);
+                int commentLength = readUnsignedShort(centralHeader, 32);
+                byte[] nameBytes = new byte[nameLength];
+                zip.readFully(nameBytes);
+                String name = new String(nameBytes, StandardCharsets.UTF_8);
+                zip.seek(zip.getFilePointer() + extraLength + commentLength);
+                long localHeaderOffset = readUnsignedInt(centralHeader, 42);
+                if (localHeaderOffset < 0 || localHeaderOffset > fileLength - ZIP_LOCAL_FILE_HEADER_SIZE) {
+                    continue;
+                }
+                long savedPosition = zip.getFilePointer();
+                zip.seek(localHeaderOffset);
+                byte[] localHeader = new byte[ZIP_LOCAL_FILE_HEADER_SIZE];
+                zip.readFully(localHeader);
+                if (readInt(localHeader, 0) == ZIP_LOCAL_FILE_HEADER_SIGNATURE) {
+                    int localNameLength = readUnsignedShort(localHeader, 26);
+                    int localExtraLength = readUnsignedShort(localHeader, 28);
+                    long dataOffset = localHeaderOffset + ZIP_LOCAL_FILE_HEADER_SIZE
+                            + localNameLength + localExtraLength;
+                    if (dataOffset >= 0 && dataOffset <= fileLength) {
+                        offsets.put(name, dataOffset);
+                    }
+                }
+                zip.seek(savedPosition);
+            }
+        } catch (IOException | RuntimeException e) {
+            Log.w(TAG, "Could not read ZIP native-library offsets.", e);
+        }
+        return offsets;
+    }
+
+    private static int findLastSignature(@NonNull byte[] bytes, int signature) {
+        for (int i = bytes.length - 4; i >= 0; --i) {
+            if (readInt(bytes, i) == signature) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static int readInt(@NonNull byte[] bytes, int offset) {
+        return (bytes[offset] & 0xff)
+                | ((bytes[offset + 1] & 0xff) << 8)
+                | ((bytes[offset + 2] & 0xff) << 16)
+                | ((bytes[offset + 3] & 0xff) << 24);
+    }
+
+    private static int readUnsignedShort(@NonNull byte[] bytes, int offset) {
+        return (bytes[offset] & 0xff) | ((bytes[offset + 1] & 0xff) << 8);
+    }
+
+    private static long readUnsignedInt(@NonNull byte[] bytes, int offset) {
+        return Integer.toUnsignedLong(readInt(bytes, offset));
     }
 
     private static void enforceEntryLimit(int entryCount) throws IOException {
