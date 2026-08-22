@@ -19,6 +19,7 @@ $secondDir = Join-Path $OutDir "second"
 $publishDir = Join-Path $OutDir "publish"
 $assetList = Join-Path $OutDir "release-assets.txt"
 $combinedSha = Join-Path $OutDir "sha256.txt"
+$serverJarReport = Join-Path $OutDir "server-jars.txt"
 
 if (Test-Path $OutDir) {
     Remove-Item -LiteralPath $OutDir -Recurse -Force
@@ -46,6 +47,22 @@ function Set-BuildTimeSource {
 }
 
 Set-BuildTimeSource
+
+function Copy-ServerJars {
+    param(
+        [string] $SourceRoot,
+        [string] $DestinationDir
+    )
+
+    New-Item -ItemType Directory -Force -Path $DestinationDir | Out-Null
+    foreach ($name in @("am.jar", "main.jar")) {
+        $source = Join-Path $SourceRoot "app\src\main\assets\$name"
+        if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
+            throw "Missing generated server jar $source"
+        }
+        Copy-Item -LiteralPath $source -Destination (Join-Path $DestinationDir $name) -Force
+    }
+}
 
 function Get-ReleaseApks {
     $apks = @(Get-ChildItem -LiteralPath $apkRoot -Recurse -Filter "*.apk" -File |
@@ -99,6 +116,7 @@ function Invoke-ReproducibleBuild {
     foreach ($apk in $apks) {
         Copy-Item -LiteralPath $apk.FullName -Destination (Join-Path $DestinationDir $apk.Name) -Force
     }
+    Copy-ServerJars -SourceRoot (Get-Location) -DestinationDir (Join-Path $DestinationDir "server-jars")
 
     $hashLines = @()
     foreach ($apk in @(Get-ChildItem -LiteralPath $DestinationDir -Filter "*.apk" -File | Sort-Object Name)) {
@@ -138,8 +156,80 @@ function Invoke-ReleaseSbomGeneration {
     }
 }
 
+function Invoke-CrossEnvironmentServerJarCheck {
+    $status = @(git status --porcelain --untracked-files=no)
+    if ($status.Count -ne 0) {
+        throw "Cross-environment server-jar verification requires a clean Git checkout."
+    }
+
+    $worktreeParent = Join-Path ([IO.Path]::GetTempPath()) ("AppManagerNG-jar-repro-" + [Guid]::NewGuid().ToString("N"))
+    $worktreeDir = Join-Path $worktreeParent "source"
+    $crossDir = Join-Path $OutDir "server-jars\different-environment"
+    New-Item -ItemType Directory -Force -Path $worktreeParent, $crossDir | Out-Null
+    $worktreeAdded = $false
+    $environmentNames = @("TZ", "LC_ALL", "LANG", "USER", "USERNAME", "LOGNAME")
+    $oldEnvironment = @{}
+
+    try {
+        & git worktree add --detach $worktreeDir HEAD | ForEach-Object { Write-Host $_ }
+        if ($LASTEXITCODE -ne 0) {
+            throw "Could not create the cross-environment Git worktree."
+        }
+        $worktreeAdded = $true
+        if (Test-Path -LiteralPath "local.properties" -PathType Leaf) {
+            Copy-Item -LiteralPath "local.properties" -Destination (Join-Path $worktreeDir "local.properties") -Force
+        }
+
+        foreach ($name in $environmentNames) {
+            $oldEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, "Process")
+            [Environment]::SetEnvironmentVariable($name, "jar-repro-builder", "Process")
+        }
+        [Environment]::SetEnvironmentVariable("TZ", "Pacific/Auckland", "Process")
+        [Environment]::SetEnvironmentVariable("LC_ALL", "C", "Process")
+        [Environment]::SetEnvironmentVariable("LANG", "C", "Process")
+
+        Write-Host "=== Cross-environment server-jar build ==="
+        Push-Location $worktreeDir
+        try {
+            & ".\gradlew.bat" --no-daemon --no-build-cache --stacktrace clean `
+                ":server:compileReleaseJavaWithJavac" ":server:createReleaseServerJars" `
+                "-Duser.timezone=Pacific/Auckland" "-Duser.language=en" "-Duser.country=NZ"
+            if ($LASTEXITCODE -ne 0) {
+                throw "Cross-environment server-jar Gradle build failed."
+            }
+        } finally {
+            Pop-Location
+        }
+        Copy-ServerJars -SourceRoot $worktreeDir -DestinationDir $crossDir
+    } finally {
+        foreach ($name in $environmentNames) {
+            [Environment]::SetEnvironmentVariable($name, $oldEnvironment[$name], "Process")
+        }
+        if ($worktreeAdded) {
+            & git worktree remove --force $worktreeDir 2>$null | Out-Null
+        }
+        if (Test-Path -LiteralPath $worktreeParent) {
+            Remove-Item -LiteralPath $worktreeParent -Recurse -Force
+        }
+    }
+
+    $report = @()
+    foreach ($name in @("am.jar", "main.jar")) {
+        $firstHash = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $FIRST_DIR "server-jars\$name")).Hash.ToLowerInvariant()
+        $crossHash = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $crossDir $name)).Hash.ToLowerInvariant()
+        $line = "$name first=$firstHash different-environment=$crossHash"
+        Write-Host $line
+        $report += $line
+        if ($firstHash -ne $crossHash) {
+            throw "Server jar $name is not reproducible across environments."
+        }
+    }
+    Set-Content -Path $serverJarReport -Value $report -Encoding ascii
+}
+
 Invoke-ReproducibleBuild -Label "first" -DestinationDir $firstDir
 Invoke-ReproducibleBuild -Label "second" -DestinationDir $secondDir
+Invoke-CrossEnvironmentServerJarCheck
 
 $firstNames = @(Get-ChildItem -LiteralPath $firstDir -Filter "*.apk" -File | Sort-Object Name | Select-Object -ExpandProperty Name)
 $secondNames = @(Get-ChildItem -LiteralPath $secondDir -Filter "*.apk" -File | Sort-Object Name | Select-Object -ExpandProperty Name)
@@ -151,6 +241,7 @@ if ($apkSetDiff.Count -ne 0) {
 
 $assetLines = @()
 $shaLines = @()
+$assetLines += $serverJarReport
 foreach ($name in $firstNames) {
     $firstApk = Join-Path $firstDir $name
     $secondApk = Join-Path $secondDir $name

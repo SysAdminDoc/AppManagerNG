@@ -3,7 +3,6 @@
 
 import javax.inject.Inject
 import java.nio.file.Files
-import java.nio.file.Paths
 import java.util.stream.Collectors
 
 plugins {
@@ -41,6 +40,18 @@ interface InjectedExecOps {
     ExecOperations getExecOps()
 }
 
+def sortedClassFiles(File directory, Closure include) {
+    def names
+    try (def entries = Files.list(directory.toPath())) {
+        names = entries
+                .filter { path -> include.call(path) }
+                .map { path -> path.fileName.toString() }
+                .sorted()
+                .collect(Collectors.toList())
+    }
+    return names.collect { name -> directory.toPath().resolve(name).toString() }
+}
+
 androidComponents {
     def sdkDirectory = sdkComponents.sdkDirectory
     onVariants(selector().all()) { variant ->
@@ -71,12 +82,12 @@ androidComponents {
 
                 println("Creating am.jar...")
                 def buildArgs = ['--release', '--output', amJar, '--classpath', androidJar]
-                buildArgs.addAll(Files.list(Paths.get(libserverClassDir)).filter {
+                buildArgs.addAll(sortedClassFiles(new File(libserverClassDir)) {
                     !it.fileName.toString().startsWith("IRootServiceManager")
-                }.sorted().map { it.toString() }.collect(Collectors.toList()))
-                buildArgs.addAll(Files.list(Paths.get(serverClassDir)).filter {
+                })
+                buildArgs.addAll(sortedClassFiles(new File(serverClassDir)) {
                     !it.fileName.toString().startsWith("RootServiceMain")
-                }.sorted().map { it.toString() }.collect(Collectors.toList()))
+                })
                 injected.execOps.exec {
                     workingDir = projectRoot
                     executable = d8Executable
@@ -86,12 +97,12 @@ androidComponents {
 
                 println("Creating main.jar...")
                 buildArgs = ['--release', '--output', mainJar, '--classpath', androidJar]
-                buildArgs.addAll(Files.list(Paths.get(libserverClassDir)).filter {
+                buildArgs.addAll(sortedClassFiles(new File(libserverClassDir)) {
                     it.fileName.toString().startsWith("IRootServiceManager") || it.fileName.toString().startsWith("ServerUtils")
-                }.sorted().map { it.toString() }.collect(Collectors.toList()))
-                buildArgs.addAll(Files.list(Paths.get(serverClassDir)).filter {
+                })
+                buildArgs.addAll(sortedClassFiles(new File(serverClassDir)) {
                     it.fileName.toString().startsWith("RootServiceMain")
-                }.sorted().map { it.toString() }.collect(Collectors.toList()))
+                })
                 injected.execOps.exec {
                     workingDir = projectRoot
                     executable = d8Executable

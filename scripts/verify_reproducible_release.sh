@@ -17,6 +17,7 @@ FIRST_DIR="$OUT_DIR/first"
 SECOND_DIR="$OUT_DIR/second"
 PUBLISH_DIR="$OUT_DIR/publish"
 ASSET_LIST="$OUT_DIR/release-assets.txt"
+SERVER_JAR_REPORT="$OUT_DIR/server-jars.txt"
 
 rm -rf "$OUT_DIR"
 mkdir -p "$FIRST_DIR" "$SECOND_DIR" "$PUBLISH_DIR"
@@ -41,6 +42,20 @@ set_build_time_source() {
 }
 
 set_build_time_source
+
+copy_server_jars() {
+    local source_root="$1"
+    local destination_dir="$2"
+    mkdir -p "$destination_dir"
+    local name
+    for name in am.jar main.jar; do
+        if [[ ! -f "$source_root/app/src/main/assets/$name" ]]; then
+            echo "ERROR: Missing generated server jar $source_root/app/src/main/assets/$name" >&2
+            exit 1
+        fi
+        cp "$source_root/app/src/main/assets/$name" "$destination_dir/$name"
+    done
+}
 
 list_apk_names() {
     local dir="$1"
@@ -84,6 +99,7 @@ build_once() {
         seen[$name]="$apk"
         cp "$apk" "$destination_dir/$name"
     done
+    copy_server_jars "." "$destination_dir/server-jars"
     (
         cd "$destination_dir"
         list_apk_names "." | while IFS= read -r name; do
@@ -92,8 +108,60 @@ build_once() {
     ) | tee "$OUT_DIR/${label}.sha256"
 }
 
+verify_cross_environment_server_jars() {
+    if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
+        echo "ERROR: Cross-environment server-jar verification requires a clean Git checkout." >&2
+        exit 1
+    fi
+
+    local worktree_parent
+    local worktree_dir
+    worktree_parent="$(mktemp -d "${TMPDIR:-/tmp}/appmanagerng-jar-repro.XXXXXX")"
+    worktree_dir="$worktree_parent/source"
+    local cross_dir="$OUT_DIR/server-jars/different-environment"
+    mkdir -p "$cross_dir"
+
+    (
+        set -euo pipefail
+        trap 'git worktree remove --force "$worktree_dir" >/dev/null 2>&1 || true; rm -rf "$worktree_parent"' EXIT
+        git worktree add --detach "$worktree_dir" HEAD >/dev/null
+        if [[ -f local.properties ]]; then
+            cp local.properties "$worktree_dir/local.properties"
+        fi
+
+        echo "=== Cross-environment server-jar build ==="
+        (
+            cd "$worktree_dir"
+            TZ="Pacific/Auckland" \
+            LC_ALL="C" \
+            LANG="C" \
+            USER="jar-repro-builder" \
+            LOGNAME="jar-repro-builder" \
+            "$worktree_dir/gradlew" --no-daemon --no-build-cache --stacktrace clean \
+                :server:compileReleaseJavaWithJavac :server:createReleaseServerJars \
+                -Duser.timezone=Pacific/Auckland -Duser.language=en -Duser.country=NZ
+        )
+        copy_server_jars "$worktree_dir" "$cross_dir"
+    )
+
+    : > "$SERVER_JAR_REPORT"
+    local name
+    local first_hash
+    local cross_hash
+    for name in am.jar main.jar; do
+        first_hash="$(sha256sum "$FIRST_DIR/server-jars/$name" | awk '{print $1}')"
+        cross_hash="$(sha256sum "$cross_dir/$name" | awk '{print $1}')"
+        printf '%s first=%s different-environment=%s\n' "$name" "$first_hash" "$cross_hash" | tee -a "$SERVER_JAR_REPORT"
+        if [[ "$first_hash" != "$cross_hash" ]]; then
+            echo "ERROR: Server jar $name is not reproducible across environments." >&2
+            exit 1
+        fi
+    done
+}
+
 build_once "first" "$FIRST_DIR"
 build_once "second" "$SECOND_DIR"
+verify_cross_environment_server_jars
 
 FIRST_APKS="$(list_apk_names "$FIRST_DIR")"
 SECOND_APKS="$(list_apk_names "$SECOND_DIR")"
@@ -106,6 +174,7 @@ fi
 
 : > "$ASSET_LIST"
 : > "$OUT_DIR/sha256.txt"
+printf '%s\n' "$SERVER_JAR_REPORT" >> "$ASSET_LIST"
 
 while IFS= read -r name; do
     [[ -n "$name" ]] || continue
