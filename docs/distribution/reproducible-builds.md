@@ -24,6 +24,16 @@ The shell and PowerShell verification scripts report the timestamp source
 before starting their two clean release builds. A source archive should set
 `SOURCE_DATE_EPOCH` before invoking either script.
 
+## Server JAR verification
+
+The release scripts also verify the privileged server payloads. After the first
+release build they copy `am.jar` and `main.jar`, then create a detached Git
+worktree at a different absolute path and rebuild only those server JARs with a
+different timezone, locale, and builder identity. The two SHA-256 pairs are
+printed and saved in `reproducible-release/server-jars.txt`. The server build
+sorts class inputs by filename and closes each directory stream before invoking
+D8, so input enumeration order does not depend on the filesystem.
+
 ## The one command
 
 Reproducibility is one gate among several, and a release must clear all of
@@ -134,9 +144,9 @@ python -m unittest scripts.tests.test_verify_release_metadata
 ## Known Constraints
 
 - Reproducibility is verified within a single local run (same JDK, SDK, OS).
-  The build timestamp is stable across machines when `SOURCE_DATE_EPOCH` or
-  the same Git revision is available, but JAR and toolchain differences still
-  need separate cross-environment verification.
+  The verifier covers the server JARs from a second absolute path and runtime
+  environment. Other toolchain differences, including JDK and Android SDK
+  versions, still need matching toolchain inputs for a byte-identical APK.
 - The debug keystore (`dev_keystore.jks`) is checked into the repo so debug
   builds are also reproducible across developers. Release signing uses the
   maintainer's local release keystore referenced by `app/keystore.properties`.

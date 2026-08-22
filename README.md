@@ -118,7 +118,9 @@ the signing fingerprint, and the tool versions. A CycloneDX SBOM ships with each
 the signing fingerprint is published at a [stable URL](https://raw.githubusercontent.com/SysAdminDoc/AppManagerNG/main/docs/fingerprints.txt)
 for tools like AppVerifier. Release `BUILD_TIME_MILLIS` values come from
 `SOURCE_DATE_EPOCH` or the Git commit timestamp, and release builds fail when
-neither deterministic source is available.
+neither deterministic source is available. The release verifier also rebuilds
+the privileged server JARs from a second checkout path with different locale
+and timezone settings, then records both hash pairs.
 
 ## Features (inherited from upstream baseline)
 
