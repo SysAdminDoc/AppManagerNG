@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class AppChangeFeedStoreTest {
@@ -58,5 +59,25 @@ public class AppChangeFeedStoreTest {
 
         assertEquals(AppChangeFeedStore.MAX_ENTRIES, out.size());
         assertEquals("pkg0", out.get(0).packageName);
+    }
+
+    @Test
+    public void importDeduplicatesAndKeepsNewestEntries() throws Exception {
+        File file = File.createTempFile("app-change-feed-import", ".json");
+        assertTrue(file.delete());
+        AppChangeFeedStore store = new AppChangeFeedStore(file);
+        AppChangeFeedEntry existing = new AppChangeFeedEntry("update", "com.foo", 100L,
+                "Foo", "body", 1L, 2L);
+        assertTrue(store.append(existing));
+
+        int imported = store.importEntries(Arrays.asList(existing,
+                new AppChangeFeedEntry("update", "com.bar", 200L, "Bar", "body", 2L, 3L)));
+
+        assertEquals(1, imported);
+        List<AppChangeFeedEntry> entries = store.readAll();
+        assertEquals(2, entries.size());
+        assertEquals("com.bar", entries.get(0).packageName);
+        assertEquals(2L, entries.get(0).beforeVersionCode);
+        assertTrue(file.delete());
     }
 }

@@ -3826,9 +3826,28 @@
     <string name="app_change_feed_title">App change feed</string>
     <string name="app_change_feed_summary">Review local app update audit events from permission, signing-key, component, and tracker monitors.</string>
     <string name="app_change_feed_empty">No app change events recorded yet.</string>
-    <plurals name="app_change_feed_more">
-        <item quantity="one">%1$d more event hidden.</item>
-        <item quantity="other">%1$d more events hidden.</item>
+    <string name="app_change_feed_filter_package">Package contains</string>
+    <string name="app_change_feed_filter_kind">Event type</string>
+    <string name="app_change_feed_filter_from">From date (YYYY-MM-DD)</string>
+    <string name="app_change_feed_filter_until">Until date (YYYY-MM-DD)</string>
+    <string name="app_change_feed_invalid_date">Use YYYY-MM-DD.</string>
+    <string name="app_change_feed_no_matches">No matching events.</string>
+    <plurals name="app_change_feed_count">
+        <item quantity="one">%1$d event</item>
+        <item quantity="other">%1$d events</item>
+    </plurals>
+    <string name="app_change_feed_entry_meta">%1$s · %2$s · %3$s</string>
+    <string name="app_change_feed_entry_version">Version %1$d → %2$d</string>
+    <string name="app_change_feed_export">Export JSON</string>
+    <string name="app_change_feed_import">Import JSON</string>
+    <string name="app_change_feed_default_filename" translatable="false">app-change-feed-%1$s.json</string>
+    <string name="app_change_feed_export_done">App change feed exported.</string>
+    <string name="app_change_feed_export_failed">Could not export the app change feed.</string>
+    <string name="app_change_feed_import_failed">Could not import the app change feed: %1$s</string>
+    <string name="app_change_feed_import_none">No new app change events were found.</string>
+    <plurals name="app_change_feed_import_done">
+        <item quantity="one">Imported %1$d app change event.</item>
+        <item quantity="other">Imported %1$d app change events.</item>
     </plurals>
     <string name="pref_app_change_auditor">Component and tracker change auditor</string>
     <string name="pref_app_change_auditor_msg">Notify when an updated app adds or removes manifest components or known tracker components. Opt-in; runs locally with no network use.</string>

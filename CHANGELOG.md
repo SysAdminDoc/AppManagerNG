@@ -9,6 +9,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Implemented SVG elliptical arcs in the bundled parser, including relative commands,
   radii normalization, rotation, large-arc and sweep flags, repeated segments, and
   degenerate endpoint and radius handling. Added parser geometry and rendering coverage.
+- Made the app-change feed a bounded, filterable history with version-aware JSON import and export.
 - Added a build-time grammar check for the code editor's seven asset-backed languages and a host test that opens every grammar and configuration file.
 - Made File Manager's sort and display options persist per folder when "Only for this folder" is enabled, without changing the global defaults.
 - Replaced raw system owner and group IDs in file properties with Android's stable AID names, while keeping unknown IDs numeric.
