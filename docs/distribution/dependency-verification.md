@@ -47,6 +47,12 @@ Run the gate at the release threshold and retain its local reports for review:
 py -3.12 scripts/run_dependency_cve_gate.py --out-dir reproducible-release/publish
 ```
 
+Dependency-Check 13 requires an NVD API key when it refreshes online. The
+Gradle configuration refreshes when `NVD_API_KEY` is present and otherwise
+uses the local vulnerability database, so a keyless run still produces a
+blocking report instead of failing before analysis. Set
+`-PdependencyCheckAutoUpdate=true` only when the machine has a valid NVD key.
+
 The Gradle configuration fails when a suppression rule has zero matches. This
 means a fixed dependency or withdrawn advisory turns into a visible gate
 failure, so the rule can be removed or re-audited instead of becoming a silent
