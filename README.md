@@ -152,6 +152,7 @@ Shared map-backed list refreshes also compare values before dispatching payloads
 - Ordered per-tag backup policies with shared manual/scheduled resolution, per-rule parts, encryption, retention, local/SAF destinations, and winner previews
 - Foreground UI component tracking
 - No-root force-stop and app data/cache controls through responsive accessibility settings automation with bounded retries and clean interruption handling
+- Finder backup entries retain searchable install, freeze, backup, and signature state when the package record is available
 
 ### Root/ADB
 - Revoke runtime + development permissions

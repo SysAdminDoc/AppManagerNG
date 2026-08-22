@@ -22,6 +22,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Routed release D8 inputs through response files and the Java launcher on Windows, so long detached checkout paths do not exceed the command-line limit.
 - Kept Android Developer Verification failure reasons in install details and offered a one-tap ADB retry when the device can reach ADB and the APK source can be replayed.
 - Compared map values before dispatching RecyclerView payloads, so unchanged rows no longer rebind during refreshes.
+- Made Finder backup entries use the current package record when available, preserve backup version metadata, and expose frozen and historical backup state instead of hard-coded empty predicates.
 
 ### Security
 - Updated the Bouncy Castle provider to 1.85.2, with the matching PKIX and utility artifacts pinned to their latest compatible releases.

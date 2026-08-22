@@ -106,12 +106,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ### P3
 
-- [ ] P3 — Make backup-scoped Finder predicates answer from backup metadata instead of hard-coded false
-  Why: BackupFilterableAppInfo returns false from isInstalled(), isFrozen() and backupAllowed(), 0 from getFreezeFlags(), and null from fetchSignerInfo(), so any Finder query run over backups that touches those axes silently matches nothing — indistinguishable from a genuinely empty result.
-  Evidence: filters/BackupFilterableAppInfo.java:78-126; constructed at filters/FilteringUtils.java:145.
-  Touches: filters/BackupFilterableAppInfo.java (answer isInstalled/isFrozen from the current package state for the backup's package where that is knowable, and derive the rest from Backup metadata), filters/FilteringUtils.java, or — where an axis genuinely cannot be answered for a backup — exclude that predicate from the backup filter surface so it cannot be selected.
-  Acceptance: every predicate offered in the backup filter context is either answered from real data or not offered; a fixture backup whose package is installed matches an "installed" query; unit tests cover each of the five predicates.
-  Complexity: M
 
 - [ ] P3 — Surface the static binary signals LibChecker reports and NG does not
   Why: LibChecker 2.5.4 reports the exact ZIP alignment value for libraries that are 16 KB page-aligned but not 16 KB ZIP-aligned, and detects a stripped symbol table. Both are computable from the APK with the ELF and ZIP parsing NG already has, and both are exactly the "state what this is evidence of" signal the fork's scanner philosophy asks for. Distinct from the blocked LibChecker-parity row, which covers Modern Xposed API, live-update capability and themed-icon/alias.
