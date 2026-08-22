@@ -17,7 +17,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.DurableFile;
@@ -32,10 +35,8 @@ public final class AppChangeFeedStore {
     static final String FILE_NAME = "app_change_feed.json";
     @VisibleForTesting
     static final int SCHEMA_VERSION = 1;
-    @VisibleForTesting
-    static final int MAX_ENTRIES = 200;
-    @VisibleForTesting
-    static final long MAX_STORE_BYTES = 4L * 1024L * 1024L;
+    public static final int MAX_ENTRIES = 200;
+    public static final long MAX_STORE_BYTES = 4L * 1024L * 1024L;
 
     @NonNull
     private final DurableFile mFile;
@@ -57,6 +58,28 @@ public final class AppChangeFeedStore {
             entries = new ArrayList<>(entries.subList(0, MAX_ENTRIES));
         }
         return writeAll(entries);
+    }
+
+    /** Imports records without duplicating rows already present in the local feed. */
+    @WorkerThread
+    public synchronized int importEntries(@NonNull List<AppChangeFeedEntry> importedEntries) {
+        if (importedEntries.isEmpty()) return 0;
+        List<AppChangeFeedEntry> entries = new ArrayList<>(readAll());
+        Set<String> keys = new HashSet<>();
+        for (AppChangeFeedEntry entry : entries) keys.add(key(entry));
+        int imported = 0;
+        for (AppChangeFeedEntry entry : importedEntries) {
+            if (entry == null || !keys.add(key(entry))) continue;
+            entries.add(entry);
+            imported++;
+        }
+        if (imported == 0) return 0;
+        entries.sort(Comparator.comparingLong((AppChangeFeedEntry entry) -> entry.timestampMillis)
+                .reversed());
+        if (entries.size() > MAX_ENTRIES) {
+            entries = new ArrayList<>(entries.subList(0, MAX_ENTRIES));
+        }
+        return writeAll(entries) ? imported : 0;
     }
 
     @WorkerThread
@@ -84,7 +107,9 @@ public final class AppChangeFeedStore {
                 String body = obj.optString("body", "");
                 if (kind.isEmpty() || packageName.isEmpty() || title.isEmpty()) continue;
                 out.add(new AppChangeFeedEntry(kind, packageName,
-                        obj.optLong("timestamp_millis", 0L), title, body));
+                        obj.optLong("timestamp_millis", 0L), title, body,
+                        obj.optLong("before_version_code", AppChangeFeedEntry.UNKNOWN_VERSION_CODE),
+                        obj.optLong("after_version_code", AppChangeFeedEntry.UNKNOWN_VERSION_CODE)));
             }
         } catch (JSONException ignore) {
             return Collections.emptyList();
@@ -108,6 +133,10 @@ public final class AppChangeFeedStore {
                 obj.put("timestamp_millis", entry.timestampMillis);
                 obj.put("title", entry.title);
                 obj.put("body", entry.body);
+                if (entry.hasVersionContext()) {
+                    obj.put("before_version_code", entry.beforeVersionCode);
+                    obj.put("after_version_code", entry.afterVersionCode);
+                }
                 array.put(obj);
             }
             root.put("entries", array);
@@ -127,5 +156,12 @@ public final class AppChangeFeedStore {
             Log.w(TAG, "Could not write the app-change feed; the previous one was kept.", e);
             return false;
         }
+    }
+
+    @NonNull
+    private static String key(@NonNull AppChangeFeedEntry entry) {
+        return entry.kind + '\u0000' + entry.packageName + '\u0000' + entry.timestampMillis
+                + '\u0000' + entry.title + '\u0000' + entry.body + '\u0000'
+                + entry.beforeVersionCode + '\u0000' + entry.afterVersionCode;
     }
 }
