@@ -12,6 +12,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Added a build-time grammar check for the code editor's seven asset-backed languages and a host test that opens every grammar and configuration file.
 - Made File Manager's sort and display options persist per folder when "Only for this folder" is enabled, without changing the global defaults.
 - Replaced raw system owner and group IDs in file properties with Android's stable AID names, while keeping unknown IDs numeric.
+- Added coverage for reserved Android AID slots, per-folder view restoration, malformed nested preference data, and actual TextMate grammar loading.
 - Removed stale Pithus feature claims from the bundled manual while preserving the historical changelog entry.
 - Validated Swift Backup ZIP comment manifests before conversion, rejecting malformed or package-mismatched imports while preserving legacy archives without comments.
 - Added API 36 pending-job diagnostics to App Details when the scheduler API or a privileged jobscheduler dump is available, and labeled Android 17 MemoryLimiter exits separately from other process exits.
