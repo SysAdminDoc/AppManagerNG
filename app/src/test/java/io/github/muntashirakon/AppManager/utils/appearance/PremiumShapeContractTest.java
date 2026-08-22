@@ -36,6 +36,11 @@ public class PremiumShapeContractTest {
         assertFalse(resources.contains("premium_radius_pill"));
         assertFalse(resources.contains("ShapeAppearance.AppTheme.V2.Pill"));
         assertFalse(resources.contains("pill-shaped"));
+        assertTrue(resources.contains(
+                "<item name=\"materialAlertDialogTheme\">@style/ThemeOverlay.AppTheme.V2.MaterialAlertDialog</item>"));
+        assertTrue(resources.contains("<style name=\"MaterialAlertDialog.AppTheme.V2\""));
+        assertTrue(resources.contains(
+                "<item name=\"cornerSize\">@dimen/premium_radius_modal</item>"));
     }
 
     @Test
