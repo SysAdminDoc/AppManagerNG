@@ -96,6 +96,12 @@
         app:iconSpaceReserved="false" />
 
     <SwitchPreferenceCompat
+        app:key="app_update_change_report"
+        app:title="@string/pref_app_update_change_report"
+        app:summary="@string/pref_app_update_change_report_msg"
+        app:iconSpaceReserved="false" />
+
+    <SwitchPreferenceCompat
         app:key="local_crash_sink_enabled"
         app:title="@string/pref_local_crash_sink"
         app:summary="@string/pref_local_crash_sink_msg"
