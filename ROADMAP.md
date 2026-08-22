@@ -106,13 +106,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ### P3
 
-- [ ] P3 — Give SimpleArrayMapDiffCallback a real content comparison
-  Why: areContentsTheSame returns false unconditionally, so every DiffUtil pass reports every surviving row as changed and dispatches a payload rebind for the entire visible set. 82 call sites go through AdapterUtils. Related to but distinct from the blocked INIT-D1 main-list ListAdapter migration, which covers the main list only and is device-gated; this is the shared utility and is host-testable.
-  Evidence: libcore/ui/src/main/java/io/github/muntashirakon/util/AdapterUtils.java:107-116.
-  Touches: libcore/ui/.../util/AdapterUtils.java (compare values via Objects.equals, keeping the payload path for callers that rely on partial rebind), the :app callers that assume every notify is a change. :libcore:ui has no test source set and adding one breaks dependency locking — cover it from app/src/test.
-  Acceptance: a diff between two identical maps dispatches no updates; a diff with one changed value dispatches exactly one change; existing list screens still repaint correctly after a refresh with no visible regression.
-  Complexity: M
-
 - [ ] P3 — Make backup-scoped Finder predicates answer from backup metadata instead of hard-coded false
   Why: BackupFilterableAppInfo returns false from isInstalled(), isFrozen() and backupAllowed(), 0 from getFreezeFlags(), and null from fetchSignerInfo(), so any Finder query run over backups that touches those axes silently matches nothing — indistinguishable from a genuinely empty result.
   Evidence: filters/BackupFilterableAppInfo.java:78-126; constructed at filters/FilteringUtils.java:145.
@@ -140,3 +133,4 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Touches: those three files, app/src/main/res/values/strings.xml. The two format-only strings in intercept/ActivityInterceptor.java:331,1119 are punctuation templates and should stay.
   Acceptance: no user-visible literal string is passed to a toast, dialog or setText in those three files; the new resources appear in the translation baseline; `:app:lint` reports no new HardcodedText.
   Complexity: S
+
