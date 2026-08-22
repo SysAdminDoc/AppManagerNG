@@ -2147,6 +2147,9 @@
     <string name="permission_flags">Permission flags</string>
     <string name="saved_filters">Saved filters</string>
     <string name="error_with_details">Error: %s</string>
+    <string name="no_device_power_permission">No DEVICE_POWER permission.</string>
+    <string name="no_sensor_permission">No sensor permission.</string>
+    <string name="no_manage_network_policy_permission">No MANAGE_NETWORK_POLICY permission.</string>
     <string name="notice">Notice</string>
     <string name="notice_saf">Unlike the volumes, the selected directory will be used to store all the files related to AppManagerNG, including saved APKs and backups. Storage Access Framework (SAF) is very slow, therefore, you should only use this option when others cannot be used.</string>
     <string name="backup_volume_dialog_description">Volumes with <tt>/tree</tt> prefix are folders selected using Storage Access Framework (SAF). Except these folders, the default directory for AppManagerNG is a subfolder named <tt>AppManager</tt>.</string>
@@ -3430,8 +3433,10 @@
     <string name="folder">Folder</string>
     <string name="symbolic_link">Symbolic link</string>
     <string name="create_new_symbolic_link">New symbolic link</string>
+    <string name="new_link_name">New link</string>
     <string name="symbolic_link_not_supported">This folder does not support creating a symbolic link.</string>
     <string name="create_new_folder">New folder</string>
+    <string name="new_folder_name">New folder</string>
     <string name="create_new_file">New file</string>
     <string name="create_zip_archive">Create ZIP archive</string>
     <string name="extract_archive">Extract archive</string>

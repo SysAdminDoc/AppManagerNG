@@ -80,7 +80,7 @@ public class NewSymbolicLinkDialogFragment extends DialogFragment {
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
         mDialogView = View.inflate(requireActivity(), R.layout.dialog_new_symlink, null);
         mNameField = mDialogView.findViewById(R.id.name);
-        mNameField.setText("New link");
+        mNameField.setText(R.string.new_link_name);
         mNameField.selectAll();
         mTargetPathField = mDialogView.findViewById(R.id.target_file);
         mTargetPathLayout = mDialogView.findViewById(R.id.target_file_layout);
