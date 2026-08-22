@@ -48,6 +48,13 @@ public class FilePropertiesDialogFragmentTest {
     }
 
     @Test
+    public void androidIdNames_mapsKnownIdsAndFallsBackToNumbers() {
+        assertEquals("system", AndroidIdNames.displayName(1000));
+        assertEquals("shell", AndroidIdNames.displayName(2000));
+        assertEquals("1234", AndroidIdNames.displayName(1234));
+    }
+
+    @Test
     public void formatPropertyDisplayNameFlattensControlsDefusesFormulaAndFallsBack() {
         assertEquals("' =payload name.txt",
                 FilePropertiesDialogFragment.formatPropertyDisplayName("\t=payload\nname.txt", "/sdcard/fallback"));
