@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingHorizontal="@dimen/padding_medium"
-        android:paddingVertical="@dimen/padding_medium">
+        android:paddingVertical="@dimen/premium_space_12">
 
         <androidx.appcompat.widget.AppCompatTextView
             android:layout_width="match_parent"
@@ -51,7 +51,7 @@
             style="@style/Widget.AppTheme.CardView.OnboardingMode"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/padding_small"
+            android:layout_marginBottom="@dimen/premium_space_4"
             android:clickable="true"
             android:focusable="true">
 
@@ -60,12 +60,12 @@
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="@dimen/padding_medium">
+                android:padding="@dimen/premium_space_12">
 
                 <androidx.appcompat.widget.AppCompatImageView
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginEnd="@dimen/padding_medium"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="@dimen/premium_space_12"
                     android:background="@drawable/onboarding_mode_icon_background"
                     android:contentDescription="@null"
                     android:padding="@dimen/padding_small"
@@ -114,7 +114,7 @@
             style="@style/Widget.AppTheme.CardView.OnboardingMode"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/padding_small"
+            android:layout_marginBottom="@dimen/premium_space_4"
             android:clickable="true"
             android:focusable="true">
 
@@ -123,12 +123,12 @@
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="@dimen/padding_medium">
+                android:padding="@dimen/premium_space_12">
 
                 <androidx.appcompat.widget.AppCompatImageView
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginEnd="@dimen/padding_medium"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="@dimen/premium_space_12"
                     android:background="@drawable/onboarding_mode_icon_background"
                     android:contentDescription="@null"
                     android:padding="@dimen/padding_small"
@@ -161,11 +161,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/padding_very_small"
-                        android:background="@drawable/onboarding_status_background"
                         android:includeFontPadding="false"
-                        android:minHeight="@dimen/premium_chip_min_height"
-                        android:paddingHorizontal="@dimen/padding_small"
-                        android:paddingVertical="@dimen/premium_space_4"
                         android:textAppearance="?attr/textAppearanceLabelSmall"
                         tools:text="Root detected" />
 
@@ -190,7 +186,7 @@
             style="@style/Widget.AppTheme.CardView.OnboardingMode"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/padding_small"
+            android:layout_marginBottom="@dimen/premium_space_4"
             android:clickable="true"
             android:focusable="true">
 
@@ -199,12 +195,12 @@
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="@dimen/padding_medium">
+                android:padding="@dimen/premium_space_12">
 
                 <androidx.appcompat.widget.AppCompatImageView
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginEnd="@dimen/padding_medium"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="@dimen/premium_space_12"
                     android:background="@drawable/onboarding_mode_icon_background"
                     android:contentDescription="@null"
                     android:padding="@dimen/padding_small"
@@ -237,11 +233,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/padding_very_small"
-                        android:background="@drawable/onboarding_status_background"
                         android:includeFontPadding="false"
-                        android:minHeight="@dimen/premium_chip_min_height"
-                        android:paddingHorizontal="@dimen/padding_small"
-                        android:paddingVertical="@dimen/premium_space_4"
                         android:textAppearance="?attr/textAppearanceLabelSmall"
                         tools:text="Shizuku is running and authorized" />
 
@@ -316,7 +308,7 @@
             style="@style/Widget.AppTheme.CardView.OnboardingMode"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/padding_small"
+            android:layout_marginBottom="@dimen/premium_space_4"
             android:clickable="true"
             android:focusable="true">
 
@@ -325,12 +317,12 @@
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="@dimen/padding_medium">
+                android:padding="@dimen/premium_space_12">
 
                 <androidx.appcompat.widget.AppCompatImageView
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginEnd="@dimen/padding_medium"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="@dimen/premium_space_12"
                     android:background="@drawable/onboarding_mode_icon_background"
                     android:contentDescription="@null"
                     android:padding="@dimen/padding_small"
@@ -363,11 +355,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/padding_very_small"
-                        android:background="@drawable/onboarding_status_background"
                         android:includeFontPadding="false"
-                        android:minHeight="@dimen/premium_chip_min_height"
-                        android:paddingHorizontal="@dimen/padding_small"
-                        android:paddingVertical="@dimen/premium_space_4"
                         android:textAppearance="?attr/textAppearanceLabelSmall"
                         tools:text="Wireless debugging active" />
 
@@ -402,7 +390,7 @@
             style="@style/Widget.AppTheme.CardView.OnboardingMode"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/padding_small"
+            android:layout_marginBottom="@dimen/premium_space_4"
             android:clickable="true"
             android:focusable="true">
 
@@ -411,12 +399,12 @@
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="@dimen/padding_medium">
+                android:padding="@dimen/premium_space_12">
 
                 <androidx.appcompat.widget.AppCompatImageView
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginEnd="@dimen/padding_medium"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="@dimen/premium_space_12"
                     android:background="@drawable/onboarding_mode_icon_background"
                     android:contentDescription="@null"
                     android:padding="@dimen/padding_small"
@@ -449,11 +437,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/padding_very_small"
-                        android:background="@drawable/onboarding_status_background"
                         android:includeFontPadding="false"
-                        android:minHeight="@dimen/premium_chip_min_height"
-                        android:paddingHorizontal="@dimen/padding_small"
-                        android:paddingVertical="@dimen/premium_space_4"
                         android:textAppearance="?attr/textAppearanceLabelSmall"
                         tools:text="USB debugging enabled" />
 
@@ -499,12 +483,12 @@
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="@dimen/padding_medium">
+                android:padding="@dimen/premium_space_12">
 
                 <androidx.appcompat.widget.AppCompatImageView
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_marginEnd="@dimen/padding_medium"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="@dimen/premium_space_12"
                     android:background="@drawable/onboarding_mode_icon_background"
                     android:contentDescription="@null"
                     android:padding="@dimen/padding_small"
@@ -590,40 +574,44 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/onboarding_next_step_notifications"
-            style="@style/Widget.Material3.Button.OutlinedButton"
+            style="@style/Widget.AppTheme.Button.TextButton.Icon"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/padding_very_small"
+            android:gravity="start|center_vertical"
             android:text="@string/onboarding_next_step_notifications"
             app:icon="@drawable/ic_default_notification"
             app:iconGravity="textStart" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/onboarding_next_step_privileges"
-            style="@style/Widget.Material3.Button.OutlinedButton"
+            style="@style/Widget.AppTheme.Button.TextButton.Icon"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/padding_very_small"
+            android:gravity="start|center_vertical"
             android:text="@string/onboarding_next_step_privileges"
             app:icon="@drawable/ic_security_network"
             app:iconGravity="textStart" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/onboarding_next_step_permission_inspector"
-            style="@style/Widget.Material3.Button.OutlinedButton"
+            style="@style/Widget.AppTheme.Button.TextButton.Icon"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/padding_very_small"
+            android:gravity="start|center_vertical"
             android:text="@string/onboarding_next_step_permission_inspector"
             app:icon="@drawable/ic_security"
             app:iconGravity="textStart" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/onboarding_next_step_backup"
-            style="@style/Widget.Material3.Button.OutlinedButton"
+            style="@style/Widget.AppTheme.Button.TextButton.Icon"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/padding_small"
+            android:gravity="start|center_vertical"
             android:text="@string/onboarding_next_step_backup"
             app:icon="@drawable/ic_backup_restore"
             app:iconGravity="textStart" />
