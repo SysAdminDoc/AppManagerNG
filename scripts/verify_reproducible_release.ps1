@@ -25,6 +25,28 @@ if (Test-Path $OutDir) {
 }
 New-Item -ItemType Directory -Force -Path $firstDir, $secondDir, $publishDir | Out-Null
 
+function Set-BuildTimeSource {
+    $sourceDateEpoch = [Environment]::GetEnvironmentVariable("SOURCE_DATE_EPOCH", "Process")
+    if ($sourceDateEpoch -match '^\d+$') {
+        Write-Host "Build timestamp source: SOURCE_DATE_EPOCH=$sourceDateEpoch"
+        return
+    }
+
+    $git = Get-Command git -ErrorAction SilentlyContinue
+    if ($null -ne $git) {
+        $commitSeconds = (& $git.Source show --no-patch --format=%ct HEAD 2>$null).Trim()
+        if ($LASTEXITCODE -eq 0 -and $commitSeconds -match '^\d+$') {
+            [Environment]::SetEnvironmentVariable("SOURCE_DATE_EPOCH", $commitSeconds, "Process")
+            Write-Host "Build timestamp source: Git HEAD commit time ($commitSeconds)"
+            return
+        }
+    }
+
+    Write-Warning "Build timestamp source: none; release Gradle tasks will fail closed."
+}
+
+Set-BuildTimeSource
+
 function Get-ReleaseApks {
     $apks = @(Get-ChildItem -LiteralPath $apkRoot -Recurse -Filter "*.apk" -File |
         Where-Object { $_.DirectoryName -match '[\\/]release$' } |
