@@ -1,0 +1,2 @@
+- Added a filterable app-change history with version-aware JSON import and export.
+- Enforced the API-21 dependency ceiling with a local AAR manifest check.
