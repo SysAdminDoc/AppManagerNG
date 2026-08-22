@@ -144,6 +144,7 @@ for tools like AppVerifier.
 - Backup imports from OAndBackup, current Neo Backup, Swift Backup 3.0 to 3.2, and Titanium Backup
 - Ordered per-tag backup policies with shared manual/scheduled resolution, per-rule parts, encryption, retention, local/SAF destinations, and winner previews
 - Foreground UI component tracking
+- No-root force-stop and app data/cache controls through responsive accessibility settings automation
 
 ### Root/ADB
 - Revoke runtime + development permissions

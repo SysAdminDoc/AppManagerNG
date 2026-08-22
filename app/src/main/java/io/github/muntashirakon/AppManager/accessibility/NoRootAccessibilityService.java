@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.os.Build;
-import android.os.SystemClock;
 import android.text.TextUtils;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -21,10 +20,15 @@ import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 public class NoRootAccessibilityService extends BaseAccessibilityService {
     private static final CharSequence SETTING_PACKAGE = "com.android.settings";
     private static final CharSequence INSTALLER_PACKAGE = "com.android.packageinstaller";
+    private static final int MAX_SETTINGS_CHECKS = 20;
+    private static final long SETTINGS_CHECK_DELAY_MILLIS = 500;
 
     private final AccessibilityMultiplexer mMultiplexer = AccessibilityMultiplexer.getInstance();
     private PackageManager mPm;
     private int mTries = 1;
+    private boolean mSettingsNavigationPending;
+    private boolean mSettingsButtonPending;
+    private boolean mForceStopBackPending;
     @Nullable
     private TrackerWindow mTrackerWindow;
 
@@ -45,65 +49,20 @@ public class NoRootAccessibilityService extends BaseAccessibilityService {
             mTrackerWindow.dismiss();
             mTrackerWindow = null;
         }
-        if (event.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+        CharSequence packageName = event.getPackageName();
+        boolean isWindowStateChanged = event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED;
+        boolean isSettingsContentChanged = SETTING_PACKAGE.equals(packageName)
+                && mMultiplexer.hasPendingSettingsOperation()
+                && event.getEventType() == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED;
+        if (!isWindowStateChanged && !isSettingsContentChanged) {
             return;
         }
-        CharSequence packageName = event.getPackageName();
         if (INSTALLER_PACKAGE.equals(packageName)) {
             automateInstallationUninstallation(event);
             return;
         }
         if (SETTING_PACKAGE.equals(packageName)) {
-            // Clear data/cache, force-stop
-            if (event.getClassName().equals("com.android.settings.applications.InstalledAppDetailsTop")) {
-                AccessibilityNodeInfo node = findViewByText(getString(event, "force_stop"), true);
-                if (mMultiplexer.isForceStopEnabled()) {
-                    if (node != null) {
-                        if (node.isEnabled()) {
-                            mTries = 0;
-                            performViewClick(node);
-                        } else if (mTries > 0 && navigateToStorageAndCache(event)) {
-                            // Hack to enable force-stop when it is disabled due to Android bug
-                            performBackClick();
-                            --mTries;
-                        } else performBackClick();
-                        node.recycle();
-                    } else performBackClick();
-                } else if (mMultiplexer.isNavigateToStorageAndCache()) {
-                    SystemClock.sleep(1000);
-                    navigateToStorageAndCache(event);
-                }
-            } else if (event.getClassName().equals("com.android.settings.SubSettings")
-                    || getString(event, "storage_settings").equals(event.getText().toString())) {
-                if (mMultiplexer.isClearDataEnabled()) {
-                    performViewClick(findViewByText(getString(event, "clear_user_data_text"), true));
-                }
-                if (mMultiplexer.isClearCacheEnabled()) {
-                    mMultiplexer.enableClearCache(false);
-                    AccessibilityNodeInfo node = findViewByText(getString(event, "clear_cache_btn_text"), true);
-                    if (node != null) {
-                        if (node.isEnabled()) {
-                            performViewClick(node);
-                        }
-                        performBackClick();
-                        performBackClick();
-                        node.recycle();
-                    }
-                }
-            } else if (event.getClassName().equals("androidx.appcompat.app.AlertDialog")) {
-                if (mMultiplexer.isForceStopEnabled() && findViewByText(getString(event, "force_stop_dlg_title")) != null) {
-                    mMultiplexer.enableForceStop(false);
-                    mTries = 1; // Restore tries
-                    performViewClick(findViewByText(getString(event, "dlg_ok"), true));
-                    performBackClick();
-                }
-                if (mMultiplexer.isClearDataEnabled() && findViewByText(getString(event, "clear_data_dlg_title")) != null) {
-                    mMultiplexer.enableClearData(false);
-                    performViewClick(findViewByText(getString(event, "dlg_ok"), true));
-                    performBackClick();
-                    performBackClick();
-                }
-            }
+            automateSettings(event);
         }
     }
 
@@ -113,6 +72,10 @@ public class NoRootAccessibilityService extends BaseAccessibilityService {
 
     @Override
     public boolean onUnbind(Intent intent) {
+        cancelPendingAccessibilityActions();
+        mSettingsNavigationPending = false;
+        mSettingsButtonPending = false;
+        mForceStopBackPending = false;
         if (mTrackerWindow != null) {
             mTrackerWindow.dismiss();
             mTrackerWindow = null;
@@ -134,27 +97,230 @@ public class NoRootAccessibilityService extends BaseAccessibilityService {
         }
     }
 
-    private boolean navigateToStorageAndCache(AccessibilityEvent event) {
-        String storageSettings;
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                storageSettings = getString(event, "storage_settings_for_app");
-            } else storageSettings = getString(event, "storage_label");
-        } catch (Resources.NotFoundException e) {
-            // Failed: non-AOSP device
+    private void automateSettings(@NonNull AccessibilityEvent event) {
+        if (mMultiplexer.isForceStopEnabled()
+                && clickConfirmationIfPresent(event, "force_stop_dlg_title", () -> {
+            mForceStopBackPending = false;
+            mMultiplexer.enableForceStop(false);
+            mTries = 1;
+            performBackClick();
+        })) {
+            return;
+        }
+        if (mMultiplexer.isClearDataEnabled()
+                && clickConfirmationIfPresent(event, "clear_data_dlg_title", () -> {
+            mMultiplexer.enableClearData(false);
+            performBackClicks(2);
+        })) {
+            return;
+        }
+        if (mMultiplexer.isNavigateToStorageAndCache()) {
+            navigateToStorageAndCache(event, null);
+            return;
+        }
+        if (mMultiplexer.isForceStopEnabled()) {
+            clickForceStopWhenReady(event);
+            return;
+        }
+        if (mMultiplexer.isClearDataEnabled()) {
+            clickSettingsButtonWhenReady(getString(event, "clear_user_data_text"),
+                    () -> mSettingsButtonPending = true,
+                    () -> {
+                        mMultiplexer.enableClearData(false);
+                        performBackClick();
+                    });
+            return;
+        }
+        if (mMultiplexer.isClearCacheEnabled()) {
+            mMultiplexer.enableClearCache(false);
+            clickSettingsButtonWhenReady(getString(event, "clear_cache_btn_text"),
+                    () -> performBackClicks(2), this::performBackClick);
+        }
+    }
+
+    private boolean clickConfirmationIfPresent(@NonNull AccessibilityEvent event,
+                                               @NonNull String titleResource,
+                                               @NonNull Runnable onConfirmed) {
+        String titleText = getString(event, titleResource);
+        String confirmText = getString(event, "dlg_ok");
+        AccessibilityNodeInfo titleNode = findViewByTextRecursive(getRootInActiveWindow(), titleText);
+        if (titleNode == null) {
             return false;
         }
-        SystemClock.sleep(500); // It may take a few moments to initialise the Recycler/List views
-        AccessibilityNodeInfo storageNode = findViewByTextRecursive(getRootInActiveWindow(), storageSettings);
-        if (storageNode != null) {
+        titleNode.recycle();
+        AccessibilityNodeInfo rootNode = getRootInActiveWindow();
+        AccessibilityNodeInfo confirmNode = findViewByTextRecursive(rootNode, confirmText);
+        if (confirmNode == null) {
+            confirmNode = findViewByViewIdRecursive(rootNode, "android:id/button1");
+        }
+        if (confirmNode == null) {
+            return false;
+        }
+        mSettingsButtonPending = false;
+        performViewClick(confirmNode);
+        confirmNode.recycle();
+        onConfirmed.run();
+        return true;
+    }
+
+    private void clickForceStopWhenReady(@NonNull AccessibilityEvent event) {
+        if (mSettingsButtonPending) {
+            return;
+        }
+        String forceStopText = getString(event, "force_stop");
+        String clearDataText = getString(event, "clear_user_data_text");
+        String storageSettings;
+        try {
+            storageSettings = getStorageSettingsText(event);
+        } catch (Resources.NotFoundException e) {
+            storageSettings = null;
+        }
+        String finalStorageSettings = storageSettings;
+        String forceStopDialogTitle = getString(event, "force_stop_dlg_title");
+        mSettingsButtonPending = true;
+        runAccessibilityActionWhenReady(() -> {
+            AccessibilityNodeInfo rootNode = getRootInActiveWindow();
+            AccessibilityNodeInfo forceStopNode = findViewByTextRecursive(rootNode, forceStopText);
+            if (forceStopNode == null) {
+                AccessibilityNodeInfo clearDataNode = findViewByTextRecursive(getRootInActiveWindow(), clearDataText);
+                if (clearDataNode != null) {
+                    clearDataNode.recycle();
+                    mSettingsButtonPending = false;
+                    return true;
+                }
+                return false;
+            }
+            boolean isEnabled = forceStopNode.isEnabled();
+            if (isEnabled) {
+                mTries = 0;
+                performViewClick(forceStopNode);
+                mForceStopBackPending = true;
+                runAfterAccessibilityDelay(SETTINGS_CHECK_DELAY_MILLIS,
+                        () -> finishForceStopIfNoConfirmation(forceStopDialogTitle));
+            }
+            forceStopNode.recycle();
+            mSettingsButtonPending = false;
+            if (!isEnabled) {
+                if (mTries > 0) {
+                    // Work around Android occasionally disabling force-stop until storage is opened.
+                    if (finalStorageSettings != null) {
+                        navigateToStorageAndCache(finalStorageSettings, () -> {
+                            --mTries;
+                            performBackClick();
+                        });
+                    } else {
+                        mMultiplexer.enableForceStop(false);
+                        performBackClick();
+                    }
+                } else {
+                    performBackClick();
+                }
+            }
+            return true;
+        }, MAX_SETTINGS_CHECKS, SETTINGS_CHECK_DELAY_MILLIS, () -> {
+            mSettingsButtonPending = false;
+            mForceStopBackPending = false;
+            mMultiplexer.enableForceStop(false);
+            performBackClick();
+        });
+    }
+
+    private void finishForceStopIfNoConfirmation(@NonNull String dialogTitle) {
+        if (!mForceStopBackPending) {
+            return;
+        }
+        AccessibilityNodeInfo rootNode = getRootInActiveWindow();
+        if (rootNode == null || !SETTING_PACKAGE.equals(rootNode.getPackageName())) {
+            return;
+        }
+        AccessibilityNodeInfo titleNode = findViewByTextRecursive(rootNode, dialogTitle);
+        if (titleNode != null) {
+            titleNode.recycle();
+            return;
+        }
+        mForceStopBackPending = false;
+        mMultiplexer.enableForceStop(false);
+        performBackClick();
+    }
+
+    private void navigateToStorageAndCache(@NonNull AccessibilityEvent event, @Nullable Runnable onOpened) {
+        if (mSettingsNavigationPending) {
+            return;
+        }
+        String storageSettings;
+        try {
+            storageSettings = getStorageSettingsText(event);
+        } catch (Resources.NotFoundException e) {
+            // Failed: non-AOSP device
+            mMultiplexer.enableNavigateToStorageAndCache(false);
+            performBackClick();
+            return;
+        }
+        navigateToStorageAndCache(storageSettings, onOpened);
+    }
+
+    private void navigateToStorageAndCache(@NonNull String storageSettings, @Nullable Runnable onOpened) {
+        if (mSettingsNavigationPending) {
+            return;
+        }
+        mSettingsNavigationPending = true;
+        runAfterAccessibilityDelay(SETTINGS_CHECK_DELAY_MILLIS, () -> runAccessibilityActionWhenReady(() -> {
+            AccessibilityNodeInfo rootNode = getRootInActiveWindow();
+            AccessibilityNodeInfo storageNode = findViewByTextRecursive(rootNode, storageSettings);
+            if (storageNode == null) {
+                return false;
+            }
+            mSettingsNavigationPending = false;
             mMultiplexer.enableNavigateToStorageAndCache(false);  // prevent infinite loop
             performViewClick(storageNode);
             storageNode.recycle();
+            if (onOpened != null) {
+                onOpened.run();
+            }
             return true;
+        }, MAX_SETTINGS_CHECKS, SETTINGS_CHECK_DELAY_MILLIS, () -> {
+            mSettingsNavigationPending = false;
+            mMultiplexer.enableNavigateToStorageAndCache(false);
+            performBackClick();
+        }));
+    }
+
+    @NonNull
+    private String getStorageSettingsText(@NonNull AccessibilityEvent event) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            return getString(event, "storage_settings_for_app");
         }
-        // Failed
-        performBackClick();
-        return false;
+        return getString(event, "storage_label");
+    }
+
+    private void clickSettingsButtonWhenReady(@NonNull String buttonText, @Nullable Runnable onClicked,
+                                              @NonNull Runnable onTimeout) {
+        if (mSettingsButtonPending) {
+            return;
+        }
+        mSettingsButtonPending = true;
+        runAccessibilityActionWhenReady(() -> {
+            AccessibilityNodeInfo node = findViewByTextRecursive(getRootInActiveWindow(), buttonText);
+            if (node == null) {
+                return false;
+            }
+            boolean isEnabled = node.isEnabled();
+            if (isEnabled) {
+                performViewClick(node);
+            }
+            node.recycle();
+            if (!isEnabled) {
+                return false;
+            }
+            mSettingsButtonPending = false;
+            if (onClicked != null) {
+                onClicked.run();
+            }
+            return true;
+        }, MAX_SETTINGS_CHECKS, SETTINGS_CHECK_DELAY_MILLIS, () -> {
+            mSettingsButtonPending = false;
+            onTimeout.run();
+        });
     }
 
     /**
