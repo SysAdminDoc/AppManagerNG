@@ -42,7 +42,7 @@
             app:tabSelectedTextColor="?attr/colorOnSurface"
             app:tabTextColor="?attr/colorOnSurfaceVariant"
             app:tabTextAppearance="@style/TextAppearance.AppTheme.V2.LabelMedium"
-            app:tabMinWidth="80dp"
+            app:tabMinWidth="72dp"
             android:minHeight="44dp"
             app:tabMode="scrollable" />
 

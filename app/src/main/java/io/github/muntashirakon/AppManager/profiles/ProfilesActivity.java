@@ -76,6 +76,7 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
     private ProfilesViewModel mModel;
     private LinearProgressIndicator mProgressIndicator;
     private TextView mProfilesSummaryView;
+    private FloatingActionButton mCreateFab;
     @Nullable
     private String mProfileId;
 
@@ -169,9 +170,10 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
         mAdapter = new ProfilesAdapter(this);
         mAdapter.setHasStableIds(true);
         listView.setAdapter(mAdapter);
-        FloatingActionButton fab = findViewById(R.id.floatingActionButton);
-        UiUtils.applyWindowInsetsAsMargin(fab);
-        fab.setOnClickListener(v -> showNewProfileDialog());
+        mCreateFab = findViewById(R.id.floatingActionButton);
+        mCreateFab.hide();
+        UiUtils.applyWindowInsetsAsMargin(mCreateFab);
+        mCreateFab.setOnClickListener(v -> showNewProfileDialog());
         mModel.getProfilesLiveData().observe(this, profiles -> {
             mProgressIndicator.hide();
             mAdapter.setDefaultList(profiles);
@@ -188,8 +190,10 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
     private void updateProfilesSummary(int shownCount, int totalCount) {
         if (totalCount == 0) {
             mProfilesSummaryView.setVisibility(View.GONE);
+            mCreateFab.hide();
             return;
         }
+        mCreateFab.show();
         mProfilesSummaryView.setVisibility(View.VISIBLE);
         if (shownCount == totalCount) {
             mProfilesSummaryView.setText(getResources().getQuantityString(

@@ -53,6 +53,16 @@
 
             </com.google.android.material.card.MaterialCardView>
 
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/premium_space_16"
+                android:paddingHorizontal="@dimen/premium_space_16"
+                android:paddingBottom="@dimen/premium_space_4"
+                android:text="@string/scanner_section_code"
+                android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelMedium"
+                android:textColor="?attr/colorPrimary" />
+
             <com.google.android.material.card.MaterialCardView
                 style="@style/Widget.AppTheme.V2.Card.ListRow.Padded"
                 android:id="@+id/classes"
@@ -73,6 +83,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:drawablePadding="@dimen/premium_space_8"
+                        android:text="@string/scanner_loading_classes"
                         android:textAppearance="?attr/textAppearanceTitleMedium"
                         app:drawableStartCompat="@drawable/ic_code"
                         app:drawableTint="?attr/colorPrimary"
@@ -85,7 +96,7 @@
                         android:layout_marginTop="@dimen/premium_space_4"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant"
-                        android:text="@string/tap_to_see_details" />
+                        android:text="@string/scanner_loading_classes_summary" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
 
@@ -111,6 +122,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:drawablePadding="@dimen/premium_space_8"
+                        android:text="@string/scanner_loading_trackers"
                         android:textAppearance="?attr/textAppearanceTitleMedium"
                         app:drawableStartCompat="@drawable/ic_security_network"
                         app:drawableTint="?attr/colorPrimary"
@@ -121,6 +133,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/premium_space_4"
+                        android:text="@string/scanner_loading_trackers_summary"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         tools:text="Moat, Facebook login, Adjust, Facebook Analytics, Crashlytics" />
@@ -189,6 +202,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:drawablePadding="@dimen/premium_space_8"
+                        android:text="@string/scanner_loading_libraries"
                         android:textAppearance="?attr/textAppearanceTitleMedium"
                         app:drawableStartCompat="@drawable/ic_database"
                         app:drawableTint="?attr/colorPrimary"
@@ -199,6 +213,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/premium_space_4"
+                        android:text="@string/scanner_loading_libraries_summary"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         tools:text="AppCompat, Room, Moat, Facebook login, Adjust, Facebook Analytics, Crashlytics" />
@@ -206,6 +221,16 @@
                 </androidx.appcompat.widget.LinearLayoutCompat>
 
             </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/premium_space_16"
+                android:paddingHorizontal="@dimen/premium_space_16"
+                android:paddingBottom="@dimen/premium_space_4"
+                android:text="@string/scanner_section_integrity"
+                android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelMedium"
+                android:textColor="?attr/colorPrimary" />
 
             <com.google.android.material.card.MaterialCardView
                 style="@style/Widget.AppTheme.V2.Card.ListRow.Padded"
@@ -227,6 +252,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:drawablePadding="@dimen/premium_space_8"
+                        android:text="@string/scanner_loading_apk"
                         android:textAppearance="?attr/textAppearanceTitleMedium"
                         app:drawableStartCompat="@drawable/ic_file_document"
                         app:drawableTint="?attr/colorPrimary"
@@ -237,6 +263,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/premium_space_4"
+                        android:text="@string/scanner_loading_apk_summary"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:textIsSelectable="true"
@@ -276,6 +303,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/premium_space_4"
+                        android:text="@string/scanner_loading_signature_summary"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:textIsSelectable="true"

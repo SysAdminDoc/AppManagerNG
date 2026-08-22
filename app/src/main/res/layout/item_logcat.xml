@@ -14,9 +14,16 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
+        <View
+            android:id="@+id/log_level_indicator"
+            android:layout_width="3dp"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            tools:background="#FFB4AB" />
+
         <androidx.appcompat.widget.AppCompatTextView
             android:id="@+id/log_level_text"
-            android:layout_width="28dp"
+            android:layout_width="32dp"
             android:layout_height="match_parent"
             android:layout_weight="0"
             android:gravity="center"
@@ -26,7 +33,6 @@
             android:paddingVertical="@dimen/premium_space_4"
             android:textAppearance="?attr/textAppearanceLabelMedium"
             android:typeface="monospace"
-            tools:background="#FFFFCC99"
             tools:text="D" />
 
         <androidx.appcompat.widget.LinearLayoutCompat
@@ -80,5 +86,11 @@
         </androidx.appcompat.widget.LinearLayoutCompat>
 
     </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginStart="35dp"
+        android:background="?attr/premiumDividerColor" />
 
 </androidx.appcompat.widget.LinearLayoutCompat>

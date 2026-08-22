@@ -29,8 +29,10 @@
             android:id="@+id/progress_linear"
             style="@style/Widget.AppTheme.LinearProgressIndicator"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:indeterminate="true" />
+            android:layout_height="2dp"
+            android:indeterminate="true"
+            app:trackCornerRadius="0dp"
+            app:trackThickness="2dp" />
 
     </io.github.muntashirakon.widget.AppBarLayout>
 

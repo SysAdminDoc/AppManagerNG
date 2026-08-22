@@ -1,0 +1,13 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<com.google.android.material.textview.MaterialTextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="@dimen/premium_space_16"
+    android:paddingStart="@dimen/premium_space_16"
+    android:paddingEnd="@dimen/premium_space_16"
+    android:paddingTop="@dimen/premium_space_4"
+    android:paddingBottom="@dimen/premium_space_4"
+    android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelMedium"
+    android:textColor="?attr/colorPrimary"
+    tools:text="System insight" />

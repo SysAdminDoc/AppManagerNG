@@ -14,21 +14,19 @@
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/empty_state_icon"
-        android:layout_width="@dimen/main_empty_icon_container_size"
-        android:layout_height="@dimen/main_empty_icon_container_size"
-        android:alpha="0.86"
-        android:background="@drawable/main_empty_icon_background"
+        android:layout_width="@dimen/premium_icon_48"
+        android:layout_height="@dimen/premium_icon_48"
         android:contentDescription="@null"
         android:importantForAccessibility="no"
-        android:padding="@dimen/main_empty_icon_padding"
+        android:padding="@dimen/premium_space_4"
         android:src="@drawable/ic_information_circle"
-        app:tint="?attr/colorOnSecondaryContainer" />
+        app:tint="?attr/colorPrimary" />
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/empty_state_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/premium_space_20"
+        android:layout_marginTop="@dimen/premium_space_12"
         android:gravity="center"
         android:textAppearance="?attr/textAppearanceTitleMedium"
         android:textColor="?attr/colorOnSurface"

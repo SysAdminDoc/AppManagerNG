@@ -61,6 +61,7 @@
                     android:minHeight="@dimen/premium_badge_min_height"
                     android:textAppearance="?attr/textAppearanceLabelMedium"
                     android:textColor="?attr/colorOnSurfaceVariant"
+                    android:visibility="gone"
                     tools:text="@string/running_apps_app_process" />
 
             </androidx.appcompat.widget.LinearLayoutCompat>
@@ -96,6 +97,7 @@
                 android:maxLines="1"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:textColor="?attr/colorOnSurfaceVariant"
+                android:visibility="gone"
                 tools:text="Memory: 162 MB, Virtual memory: 14.72 GB" />
 
             <androidx.appcompat.widget.AppCompatTextView
@@ -119,6 +121,7 @@
                 android:maxLines="1"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:textColor="?attr/colorOnSurfaceVariant"
+                android:visibility="gone"
                 tools:text="SELinux: u:r:untrusted_app:s0:c110,c257" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>

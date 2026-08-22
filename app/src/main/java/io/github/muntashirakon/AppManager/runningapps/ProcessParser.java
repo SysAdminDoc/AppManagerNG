@@ -185,11 +185,12 @@ public final class ProcessParser {
     }
 
     @NonNull
-    private static String getProcessNameFilteringPackageName(@NonNull String processName, @NonNull String packageName) {
+    @VisibleForTesting
+    static String getProcessNameFilteringPackageName(@NonNull String processName, @NonNull String packageName) {
+        processName = getProcessName(processName);
         if (processName.equals(packageName)) {
             return "";
         }
-        processName = getProcessName(processName);
         int colonIdx = processName.indexOf(':');
         return colonIdx < 0 ? (":" + processName) : processName.substring(colonIdx);
     }
