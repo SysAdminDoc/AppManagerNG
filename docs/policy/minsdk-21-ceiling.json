@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "min_sdk": 21,
+  "pins": [
+    {
+      "variable": "material_version",
+      "dependency": "Material Components",
+      "max_version": "1.13.0",
+      "first_incompatible_version": "1.14.0"
+    },
+    {
+      "variable": "activity_version",
+      "dependency": "AndroidX Activity",
+      "max_version": "1.11.0",
+      "first_incompatible_version": "1.12.0"
+    },
+    {
+      "variable": "biometric_version",
+      "dependency": "AndroidX Biometric",
+      "max_version": "1.4.0-alpha04",
+      "first_incompatible_version": "1.4.0-alpha05"
+    },
+    {
+      "variable": "room_version",
+      "dependency": "AndroidX Room",
+      "max_version": "2.7.2",
+      "first_incompatible_version": "2.8.0"
+    },
+    {
+      "variable": "webkit_version",
+      "dependency": "AndroidX WebKit",
+      "max_version": "1.14.0",
+      "first_incompatible_version": "1.15.0"
+    },
+    {
+      "variable": "sora_editor_version",
+      "dependency": "Sora Editor",
+      "max_version": "0.24.6",
+      "first_incompatible_version": "0.25.0"
+    },
+    {
+      "variable": "work_version",
+      "dependency": "AndroidX WorkManager",
+      "max_version": "2.10.5",
+      "first_incompatible_version": "2.11.0"
+    },
+    {
+      "variable": "androidx_core_version",
+      "dependency": "AndroidX Core",
+      "max_version": "1.17.0",
+      "first_incompatible_version": "1.19.0"
+    }
+  ]
+}
