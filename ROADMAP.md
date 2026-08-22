@@ -107,12 +107,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 ### P3
 
 
-- [ ] P3 — Surface the static binary signals LibChecker reports and NG does not
-  Why: LibChecker 2.5.4 reports the exact ZIP alignment value for libraries that are 16 KB page-aligned but not 16 KB ZIP-aligned, and detects a stripped symbol table. Both are computable from the APK with the ELF and ZIP parsing NG already has, and both are exactly the "state what this is evidence of" signal the fork's scanner philosophy asks for. Distinct from the blocked LibChecker-parity row, which covers Modern Xposed API, live-update capability and themed-icon/alias.
-  Evidence: LibChecker 2.5.4 release notes; scanner/NativeLibraries.java (PT_LOAD.p_align parsing already present); scripts/verify-native-page-alignment.py (local-file-header offset check already present).
-  Touches: scanner/NativeLibraries.java, App Details libraries tab, strings; optionally extend scripts/verify-native-page-alignment.py to assert GNU_RELRO is present, which the official 16 KB requirement lists and the script does not currently check.
-  Acceptance: each .so row shows its ZIP alignment when it differs from the page alignment, and whether its symbol table is stripped; both are computed without extracting the APK to disk; unit tests use fixture ELF headers for stripped, unstripped, aligned and misaligned cases.
-  Complexity: M
 
 - [ ] P3 — Replace the swallowed failures on destructive and trust paths
   Why: 179 empty catch blocks remain in main sources and the ones that matter sit where a silent failure is indistinguishable from success. self/SelfPermissions.java:52,61 is the worst shape — a swallowed exception there makes every permission self-check answer "no", which reads as a capability the app does not have. The 2026-06 catch(Throwable) narrowing pass did not reach these.
