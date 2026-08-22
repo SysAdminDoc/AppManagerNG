@@ -104,13 +104,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ### P2
 
-- [ ] P2 — Developer-verification-aware install diagnostics
-  Why: enforcement begins 2026-09-30 in Brazil, Indonesia, Singapore and Thailand, and the installer-facing APIs already exist at API 36.1 — PackageInstaller.getDeveloperVerificationServiceProvider(), EXTRA_DEVELOPER_VERIFICATION_FAILURE_REASON, EXTRA_DEVELOPER_VERIFICATION_LITE_PERFORMED, DEVELOPER_VERIFICATION_FAILED_REASON_{UNKNOWN,NETWORK_UNAVAILABLE,DEVELOPER_BLOCKED}, SessionParams.setExtensionParams. Without this an install the platform refuses for verification reasons fails the same way as any other failure, and NG's whole installer proposition is disclosure. No competitor has shipped this. Distinct from the existing P3 Advanced Protection row, which covers a different gate.
-  Evidence: developer.android.com PackageInstaller reference (36.1 additions); Android 16 QPR2 release notes; developer.android.com/developer-verification/guides (2026-09-30 enforcement, ADB installs exempt); the shipped restricted-settings detector as precedent.
-  Touches: apk/installer/ preflight and status handling, a compat seam for the 36.1 extras, details/info/ sideload diagnostics, strings.
-  Acceptance: a session failure carrying a developer-verification reason renders that reason and what the user can do about it, distinct from a generic install failure; below API 36.1 behaviour is unchanged; each failure-reason constant is covered by a unit test through the compat seam. Whether to raise targetSdk past 36 is explicitly not part of this row.
-  Complexity: M
-
 ### P3
 
 - [ ] P3 — Give SimpleArrayMapDiffCallback a real content comparison
