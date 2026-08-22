@@ -48,7 +48,7 @@ public class NewFolderDialogFragment extends DialogFragment {
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
         mDialogView = View.inflate(requireActivity(), R.layout.dialog_rename, null);
         mEditText = mDialogView.findViewById(R.id.rename);
-        mEditText.setText("New folder");
+        mEditText.setText(R.string.new_folder_name);
         mEditText.selectAll();
         return new MaterialAlertDialogBuilder(requireActivity())
                 .setTitle(R.string.create_new_folder)

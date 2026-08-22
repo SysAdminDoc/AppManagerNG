@@ -106,6 +106,8 @@ an installer privilege cascade that falls back gracefully, and a biometric gate 
 and on backup deletion.
 When a privileged or destructive step cannot complete, the fallback stays conservative and the
 operation is recorded with enough context to diagnose the missing permission or service.
+App Details permission and error messages and file-manager starter names also come from resources,
+so those small interactions follow the selected locale.
 
 ### Discovery and polish
 
