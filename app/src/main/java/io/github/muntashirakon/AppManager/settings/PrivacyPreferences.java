@@ -10,8 +10,16 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.text.Editable;
 import android.text.InputType;
+import android.text.TextWatcher;
+import android.view.View;
+import android.view.ViewGroup;
+import android.graphics.Typeface;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -24,10 +32,17 @@ import androidx.preference.Preference;
 import androidx.preference.SwitchPreferenceCompat;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -38,6 +53,7 @@ import io.github.muntashirakon.AppManager.db.AppsDb;
 import io.github.muntashirakon.AppManager.db.entity.AppUpdateChangeReport;
 import io.github.muntashirakon.AppManager.permission.monitor.AppChangeFeedEntry;
 import io.github.muntashirakon.AppManager.permission.monitor.AppChangeFeedStore;
+import io.github.muntashirakon.AppManager.permission.monitor.AppChangeFeedTransfer;
 import io.github.muntashirakon.AppManager.permission.monitor.AppUpdateChangeReportFormatter;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
@@ -54,6 +70,10 @@ import io.github.muntashirakon.AppManager.utils.UIUtils;
 
 public class PrivacyPreferences extends PreferenceFragment {
     private static final String MIME_ZIP = "application/zip";
+    private static final String MIME_JSON = "application/json";
+
+    @NonNull
+    private List<AppChangeFeedEntry> mPendingAppChangeFeedExport = Collections.emptyList();
 
     private final ActivityResultLauncher<String> mExportSnapshot = registerForActivityResult(
             new ActivityResultContracts.CreateDocument(MIME_ZIP),
@@ -67,6 +87,20 @@ public class PrivacyPreferences extends PreferenceFragment {
             uri -> {
                 if (uri == null) return;
                 beginImportPreview(uri, null);
+            });
+
+    private final ActivityResultLauncher<String> mExportAppChangeFeed = registerForActivityResult(
+            new ActivityResultContracts.CreateDocument(MIME_JSON),
+            uri -> {
+                if (uri == null) return;
+                beginExportAppChangeFeed(uri, mPendingAppChangeFeedExport);
+            });
+
+    private final ActivityResultLauncher<String[]> mImportAppChangeFeed = registerForActivityResult(
+            new ActivityResultContracts.OpenDocument(),
+            uri -> {
+                if (uri == null) return;
+                beginImportAppChangeFeed(uri);
             });
 
     @Override
@@ -295,7 +329,8 @@ public class PrivacyPreferences extends PreferenceFragment {
     private void showAppChangeFeed() {
         Context appContext = requireContext().getApplicationContext();
         ThreadUtils.postOnBackgroundThread(() -> {
-            List<AppChangeFeedEntry> entries = new AppChangeFeedStore(appContext).readAll();
+            List<AppChangeFeedEntry> entries = new ArrayList<>(
+                    new AppChangeFeedStore(appContext).readAll());
             List<AppUpdateChangeReport> reports;
             try {
                 reports = AppsDb.getInstance().appUpdateChangeReportDao().getRecent(200);
@@ -304,57 +339,303 @@ public class PrivacyPreferences extends PreferenceFragment {
                 io.github.muntashirakon.AppManager.logs.Log.w(
                         "PrivacyPreferences", "Could not read app update reports", e);
             }
-            String message = formatAppChangeFeed(appContext, entries, reports);
+            entries = mergeAppChangeFeed(appContext, entries, reports);
+            List<AppChangeFeedEntry> finalEntries = Collections.unmodifiableList(entries);
             ThreadUtils.postOnMainThread(() -> {
                 if (!isAdded()) return;
-                new MaterialAlertDialogBuilder(requireContext())
-                        .setTitle(R.string.app_change_feed_title)
-                        .setMessage(message)
-                        .setPositiveButton(R.string.ok, null)
-                        .show();
+                showAppChangeFeedDialog(appContext, finalEntries);
             });
         });
     }
 
     @NonNull
-    private String formatAppChangeFeed(@NonNull Context context,
-                                       @NonNull List<AppChangeFeedEntry> entries,
-                                       @NonNull List<AppUpdateChangeReport> reports) {
-        if (entries.isEmpty() && reports.isEmpty()) {
-            return context.getString(R.string.app_change_feed_empty);
+    private List<AppChangeFeedEntry> mergeAppChangeFeed(@NonNull Context context,
+                                                         @NonNull List<AppChangeFeedEntry> entries,
+                                                         @NonNull List<AppUpdateChangeReport> reports) {
+        for (AppUpdateChangeReport report : reports) {
+            if (TextUtils.isEmpty(report.packageName)) continue;
+            entries.add(new AppChangeFeedEntry(
+                    "update",
+                    report.packageName,
+                    report.timestampMillis,
+                    context.getString(R.string.app_update_change_report_title, report.packageName),
+                    AppUpdateChangeReportFormatter.formatBody(context, report),
+                    report.beforeVersionCode,
+                    report.afterVersionCode));
         }
+        entries.sort(Comparator.comparingLong((AppChangeFeedEntry entry) -> entry.timestampMillis)
+                .reversed());
+        if (entries.size() > AppChangeFeedTransfer.MAX_ENTRIES) {
+            return new ArrayList<>(entries.subList(0, AppChangeFeedTransfer.MAX_ENTRIES));
+        }
+        return entries;
+    }
+
+    private void showAppChangeFeedDialog(@NonNull Context context,
+                                         @NonNull List<AppChangeFeedEntry> entries) {
+        LinearLayout root = new LinearLayout(context);
+        root.setOrientation(LinearLayout.VERTICAL);
+        int padding = dp(context, 20);
+        root.setPadding(padding, dp(context, 4), padding, 0);
+
+        TextInputLayout packageLayout = buildAppChangeFeedInput(context,
+                R.string.app_change_feed_filter_package);
+        TextInputLayout kindLayout = buildAppChangeFeedInput(context,
+                R.string.app_change_feed_filter_kind);
+        TextInputEditText packageEdit = (TextInputEditText) packageLayout.getEditText();
+        TextInputEditText kindEdit = (TextInputEditText) kindLayout.getEditText();
+
+        LinearLayout dateRow = new LinearLayout(context);
+        dateRow.setOrientation(LinearLayout.HORIZONTAL);
+        TextInputLayout fromLayout = buildAppChangeFeedInput(context,
+                R.string.app_change_feed_filter_from);
+        TextInputLayout untilLayout = buildAppChangeFeedInput(context,
+                R.string.app_change_feed_filter_until);
+        TextInputEditText fromEdit = (TextInputEditText) fromLayout.getEditText();
+        TextInputEditText untilEdit = (TextInputEditText) untilLayout.getEditText();
+        fromEdit.setInputType(InputType.TYPE_CLASS_DATETIME | InputType.TYPE_DATETIME_VARIATION_DATE);
+        untilEdit.setInputType(InputType.TYPE_CLASS_DATETIME | InputType.TYPE_DATETIME_VARIATION_DATE);
+        LinearLayout.LayoutParams dateParams = new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        dateParams.setMarginEnd(dp(context, 6));
+        dateRow.addView(fromLayout, dateParams);
+        LinearLayout.LayoutParams untilParams = new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        dateRow.addView(untilLayout, untilParams);
+
+        TextView countView = new TextView(context);
+        countView.setTextSize(12);
+        countView.setPadding(0, dp(context, 4), 0, dp(context, 4));
+
+        TextView resultView = new TextView(context);
+        resultView.setTextIsSelectable(true);
+        resultView.setTextSize(14);
+        resultView.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.NORMAL));
+        resultView.setPadding(0, dp(context, 4), 0, dp(context, 12));
+        ScrollView resultScroll = new ScrollView(context);
+        resultScroll.setFillViewport(true);
+        resultScroll.setMinimumHeight(dp(context, 220));
+        resultScroll.addView(resultView, new ScrollView.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        LinearLayout actions = new LinearLayout(context);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        MaterialButton export = new MaterialButton(context);
+        export.setText(R.string.app_change_feed_export);
+        MaterialButton importButton = new MaterialButton(context);
+        importButton.setText(R.string.app_change_feed_import);
+        LinearLayout.LayoutParams actionParams = new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        actionParams.setMarginEnd(dp(context, 6));
+        actions.addView(export, actionParams);
+        LinearLayout.LayoutParams importParams = new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        actions.addView(importButton, importParams);
+
+        root.addView(packageLayout);
+        root.addView(kindLayout);
+        root.addView(dateRow);
+        root.addView(countView);
+        root.addView(resultScroll, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        root.addView(actions);
+
+        TextWatcher watcher = new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                refreshAppChangeFeed(context, entries, packageEdit, kindEdit, fromEdit, untilEdit,
+                        fromLayout, untilLayout, countView, resultView);
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        };
+        packageEdit.addTextChangedListener(watcher);
+        kindEdit.addTextChangedListener(watcher);
+        fromEdit.addTextChangedListener(watcher);
+        untilEdit.addTextChangedListener(watcher);
+        export.setOnClickListener(v -> {
+            mPendingAppChangeFeedExport = new ArrayList<>(entries);
+            String stamp = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(new Date());
+            mExportAppChangeFeed.launch(getString(R.string.app_change_feed_default_filename, stamp));
+        });
+        importButton.setOnClickListener(v ->
+                mImportAppChangeFeed.launch(new String[]{MIME_JSON, "text/json", "*/*"}));
+
+        refreshAppChangeFeed(context, entries, packageEdit, kindEdit, fromEdit, untilEdit,
+                fromLayout, untilLayout, countView, resultView);
+        new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.app_change_feed_title)
+                .setView(root)
+                .setPositiveButton(R.string.ok, null)
+                .show();
+    }
+
+    private void refreshAppChangeFeed(@NonNull Context context,
+                                      @NonNull List<AppChangeFeedEntry> entries,
+                                      @NonNull TextInputEditText packageEdit,
+                                      @NonNull TextInputEditText kindEdit,
+                                      @NonNull TextInputEditText fromEdit,
+                                      @NonNull TextInputEditText untilEdit,
+                                      @NonNull TextInputLayout fromLayout,
+                                      @NonNull TextInputLayout untilLayout,
+                                      @NonNull TextView countView,
+                                      @NonNull TextView resultView) {
+        fromLayout.setError(null);
+        untilLayout.setError(null);
+        long fromMillis = Long.MIN_VALUE;
+        long untilMillis = Long.MAX_VALUE;
+        try {
+            String value = fromEdit.getText() != null ? fromEdit.getText().toString().trim() : "";
+            if (!value.isEmpty()) fromMillis = parseFeedDate(value, false);
+        } catch (ParseException e) {
+            fromLayout.setError(context.getString(R.string.app_change_feed_invalid_date));
+        }
+        try {
+            String value = untilEdit.getText() != null ? untilEdit.getText().toString().trim() : "";
+            if (!value.isEmpty()) untilMillis = parseFeedDate(value, true);
+        } catch (ParseException e) {
+            untilLayout.setError(context.getString(R.string.app_change_feed_invalid_date));
+        }
+        if (fromLayout.getError() != null || untilLayout.getError() != null) {
+            countView.setText(R.string.app_change_feed_no_matches);
+            resultView.setText(R.string.app_change_feed_no_matches);
+            return;
+        }
+        List<AppChangeFeedEntry> filtered = AppChangeFeedTransfer.filter(entries,
+                packageEdit.getText() != null ? packageEdit.getText().toString() : null,
+                kindEdit.getText() != null ? kindEdit.getText().toString() : null,
+                fromMillis, untilMillis);
+        countView.setText(context.getResources().getQuantityString(
+                R.plurals.app_change_feed_count, filtered.size(), filtered.size()));
+        resultView.setText(filtered.isEmpty()
+                ? context.getString(R.string.app_change_feed_no_matches)
+                : formatAppChangeFeed(context, filtered));
+    }
+
+    @NonNull
+    private String formatAppChangeFeed(@NonNull Context context,
+                                       @NonNull List<AppChangeFeedEntry> entries) {
+        if (entries.isEmpty()) return context.getString(R.string.app_change_feed_empty);
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
         StringBuilder builder = new StringBuilder();
-        int reportCount = Math.min(reports.size(), 20);
-        for (int i = 0; i < reportCount; ++i) {
-            AppUpdateChangeReport report = reports.get(i);
+        for (AppChangeFeedEntry entry : entries) {
             if (builder.length() > 0) builder.append("\n\n");
-            builder.append(context.getString(R.string.app_update_change_report_title, report.packageName))
-                    .append("\n")
-                    .append(report.packageName)
-                    .append(" - ")
-                    .append(format.format(new Date(report.timestampMillis)))
-                    .append("\n")
-                    .append(AppUpdateChangeReportFormatter.formatBody(context, report));
-        }
-        int entryCount = Math.min(entries.size(), 20);
-        for (int i = 0; i < entryCount; ++i) {
-            AppChangeFeedEntry entry = entries.get(i);
-            if (builder.length() > 0) builder.append("\n\n");
-            builder.append(entry.title)
-                    .append("\n")
-                    .append(entry.packageName)
-                    .append(" - ")
-                    .append(format.format(new Date(entry.timestampMillis)))
-                    .append("\n")
-                    .append(entry.body);
-        }
-        int hidden = reports.size() - reportCount + entries.size() - entryCount;
-        if (hidden > 0) {
-            builder.append("\n\n").append(context.getResources().getQuantityString(
-                    R.plurals.app_change_feed_more, hidden, hidden));
+            builder.append(entry.title).append("\n")
+                    .append(context.getString(R.string.app_change_feed_entry_meta,
+                            entry.packageName, entry.kind, format.format(new Date(entry.timestampMillis))));
+            if (entry.hasVersionContext()) {
+                builder.append("\n").append(context.getString(R.string.app_change_feed_entry_version,
+                        entry.beforeVersionCode, entry.afterVersionCode));
+            }
+            if (!entry.body.isEmpty()) builder.append("\n").append(entry.body);
         }
         return builder.toString();
+    }
+
+    @NonNull
+    private TextInputLayout buildAppChangeFeedInput(@NonNull Context context, int hintRes) {
+        TextInputLayout layout = new TextInputLayout(context);
+        layout.setHint(hintRes);
+        TextInputEditText edit = new TextInputEditText(layout.getContext());
+        edit.setSingleLine(true);
+        layout.addView(edit);
+        return layout;
+    }
+
+    private static int dp(@NonNull Context context, int value) {
+        return Math.round(value * context.getResources().getDisplayMetrics().density);
+    }
+
+    private static long parseFeedDate(@NonNull String value, boolean endOfDay)
+            throws ParseException {
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+        format.setLenient(false);
+        Date date = format.parse(value);
+        if (date == null || !value.equals(format.format(date))) throw new ParseException(value, 0);
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        if (endOfDay) {
+            calendar.set(Calendar.HOUR_OF_DAY, 23);
+            calendar.set(Calendar.MINUTE, 59);
+            calendar.set(Calendar.SECOND, 59);
+            calendar.set(Calendar.MILLISECOND, 999);
+        } else {
+            calendar.set(Calendar.HOUR_OF_DAY, 0);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MILLISECOND, 0);
+        }
+        return calendar.getTimeInMillis();
+    }
+
+    private void beginExportAppChangeFeed(@NonNull Uri target,
+                                           @NonNull List<AppChangeFeedEntry> entries) {
+        Context appContext = requireContext().getApplicationContext();
+        List<AppChangeFeedEntry> copy = new ArrayList<>(entries);
+        ThreadUtils.postOnBackgroundThread(() -> {
+            Throwable failure = null;
+            try (OutputStream out = appContext.getContentResolver().openOutputStream(target)) {
+                if (out == null) throw new IOException("Cannot open output stream");
+                out.write(AppChangeFeedTransfer.serialize(copy).getBytes(StandardCharsets.UTF_8));
+            } catch (Throwable t) {
+                failure = t;
+            }
+            final boolean success = failure == null;
+            ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(success
+                    ? R.string.app_change_feed_export_done
+                    : R.string.app_change_feed_export_failed));
+        });
+    }
+
+    private void beginImportAppChangeFeed(@NonNull Uri source) {
+        Context appContext = requireContext().getApplicationContext();
+        ThreadUtils.postOnBackgroundThread(() -> {
+            try (InputStream in = appContext.getContentResolver().openInputStream(source)) {
+                if (in == null) throw new IOException("Cannot open input stream");
+                AppChangeFeedTransfer.ParseResult result = AppChangeFeedTransfer.parse(
+                        readBoundedUtf8(in, AppChangeFeedTransfer.MAX_IMPORT_BYTES));
+                if (!result.isValid()) {
+                    String error = result.error != null ? result.error : "Invalid file";
+                    ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(
+                            R.string.app_change_feed_import_failed, error));
+                    return;
+                }
+                int imported = new AppChangeFeedStore(appContext).importEntries(result.entries);
+                ThreadUtils.postOnMainThread(() -> {
+                    if (imported == 0) {
+                        UIUtils.displayLongToast(R.string.app_change_feed_import_none);
+                    } else {
+                        UIUtils.displayLongToastPl(R.plurals.app_change_feed_import_done,
+                                imported, imported);
+                    }
+                });
+            } catch (Exception e) {
+                String error = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(
+                        R.string.app_change_feed_import_failed, error));
+            }
+        });
+    }
+
+    @NonNull
+    private static String readBoundedUtf8(@NonNull InputStream input, long maxBytes)
+            throws IOException {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        byte[] buffer = new byte[8192];
+        long total = 0;
+        int read;
+        while ((read = input.read(buffer)) != -1) {
+            total += read;
+            if (total > maxBytes) throw new IOException("The file is too large");
+            output.write(buffer, 0, read);
+        }
+        return output.toString(StandardCharsets.UTF_8.name());
     }
 
     private void exportSnapshot(@NonNull Context appContext, @NonNull Uri target,
