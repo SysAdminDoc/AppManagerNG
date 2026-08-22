@@ -708,7 +708,7 @@
     <string name="scanner_loading_apk">Calculating APK checksums</string>
     <string name="scanner_loading_apk_summary">Hashing installed package files.</string>
     <string name="scanner_loading_signature_summary">Verifying the signing certificate.</string>
-    <string name="scanner_absence_limitation">Class-name matching can miss renamed or runtime-loaded trackers.</string>
+    <string name="scanner_absence_limitation">A clean match list is not proof of absence. Class-name matching can miss renamed or runtime-loaded trackers.</string>
     <string name="scanner_match_limitation">A match means matching code is present in the package. It does not establish that the code runs or that data leaves the device.</string>
     <plurals name="scanner_match_confidence_row">
         <item quantity="one"><xliff:g id="confidence" example="Confirmed signature">%1$s</xliff:g> · <xliff:g id="count" example="1">%2$d</xliff:g> class match</item>
