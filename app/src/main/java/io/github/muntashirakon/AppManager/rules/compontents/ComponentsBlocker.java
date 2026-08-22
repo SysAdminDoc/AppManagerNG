@@ -610,7 +610,8 @@ public final class ComponentsBlocker extends RulesStorageManager {
                         }
                         break;
                 }
-            } catch (Throwable ignore) {
+            } catch (Throwable e) {
+                Log.w(TAG, "Could not verify component state for %s/%s.", e, packageName, entry.name);
             }
         }
         return invalidated;

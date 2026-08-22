@@ -787,7 +787,8 @@ public class Ops {
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     try {
                         activity.startActivity(intent);
-                    } catch (Exception ignore) {
+                    } catch (Exception e) {
+                        Log.w(TAG, "Could not open the developer settings.", e);
                     }
                 })
                 .show();
@@ -1054,7 +1055,9 @@ public class Ops {
                                 .setData(Uri.parse("package:" + activity.getPackageName()));
                         try {
                             activity.startActivity(intent);
-                        } catch (Exception ignore) {
+                        } catch (Exception settingsError) {
+                            Log.w(TAG, "Could not open App Manager settings for %s.", settingsError,
+                                    activity.getPackageName());
                         }
                     }
                     callback.onStatusReceived(STATUS_FAILURE);

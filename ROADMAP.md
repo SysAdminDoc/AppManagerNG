@@ -108,12 +108,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 
 
-- [ ] P3 — Replace the swallowed failures on destructive and trust paths
-  Why: 179 empty catch blocks remain in main sources and the ones that matter sit where a silent failure is indistinguishable from success. self/SelfPermissions.java:52,61 is the worst shape — a swallowed exception there makes every permission self-check answer "no", which reads as a capability the app does not have. The 2026-06 catch(Throwable) narrowing pass did not reach these.
-  Evidence: apk/installer/PackageInstallerCompat.java:1516; batchops/BatchOpsService.java:240,250; backup/RestoreOp.java:176,422; backup/BackupOp.java:621; crypto/ks/KeyStoreManager.java:280; rules/compontents/ComponentsBlocker.java:613; settings/Ops.java:790,1057; self/SelfPermissions.java:52,61.
-  Touches: the ten sites above only — this is a scoped pass, not a repo-wide sweep. Each becomes either a logged failure carrying the operation identity, or a documented deliberate ignore with the reason in a comment (the pattern logs/FLog.java:226 and NetworkRequestLedger.java:53 already use correctly).
-  Acceptance: none of the ten sites discards a throwable without either logging it with enough context to identify the operation, or carrying a comment stating why discarding is correct; no behaviour change on the success paths; the destructive paths surface the failure through the mechanism their caller already has.
-  Complexity: M
 
 - [ ] P3 — Move the remaining hardcoded English UI strings into resources
   Why: thirteen user-visible English strings are built in Java, so they never translate — seven "Error: " toasts plus two permission messages in App Details, and two file-manager default names. That is small enough to close completely, and the translation ratchet cannot see strings that never reach strings.xml.
