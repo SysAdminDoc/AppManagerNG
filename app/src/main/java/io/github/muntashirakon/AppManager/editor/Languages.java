@@ -25,7 +25,15 @@ import io.github.rosemoe.sora.langs.textmate.registry.model.DefaultGrammarDefini
 import io.github.rosemoe.sora.langs.textmate.registry.model.GrammarDefinition;
 
 public final class Languages {
+    private static final String[] SUPPORTED_LANGUAGES = {
+            "java", "json", "kotlin", "properties", "sh", "smali", "xml"
+    };
     private static boolean sAssetFileProviderRegistered;
+
+    @NonNull
+    public static String[] getSupportedLanguages() {
+        return SUPPORTED_LANGUAGES.clone();
+    }
 
     @NonNull
     public static Language getLanguage(@NonNull Context context, @NonNull String language, @Nullable IThemeSource themeSource) {

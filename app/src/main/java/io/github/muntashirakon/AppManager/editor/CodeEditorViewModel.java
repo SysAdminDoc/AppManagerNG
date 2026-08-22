@@ -65,7 +65,6 @@ import io.github.rosemoe.sora.text.ContentIO;
 public class CodeEditorViewModel extends AndroidViewModel {
     public static final String TAG = CodeEditorViewModel.class.getSimpleName();
 
-    // TODO: 12/9/22 Another option is to store them as assets/resources
     private static final Map<String, String> EXT_TO_LANGUAGE_MAP = new HashMap<String, String>() {{
         // We skip the default ones
         put("bash", "sh");

@@ -802,9 +802,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
      * Languages backed by tmLanguage grammar JSON in {@code assets/languages/}.
      * Listed in alphabetical order; the picker mirrors this order.
      */
-    private static final String[] SUPPORTED_LANGUAGES = {
-            "java", "json", "kotlin", "properties", "sh", "smali", "xml"
-    };
+    private static final String[] SUPPORTED_LANGUAGES = Languages.getSupportedLanguages();
 
     /** Indent widths exposed in the tab-size picker plus the "use real tabs" toggle. */
     private static final int[] TAB_SIZE_OPTIONS = {2, 4, 8};
