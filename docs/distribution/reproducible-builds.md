@@ -5,6 +5,25 @@
 AppManagerNG's maintainer release process verifies that two clean builds from
 the same source tree produce byte-identical APKs before publishing artifacts.
 
+## Build timestamp source
+
+Each APK records `BUILD_TIME_MILLIS`. Release builds resolve that value in a
+fixed order: a numeric `SOURCE_DATE_EPOCH` value first, then the Git `HEAD`
+commit timestamp. `SOURCE_DATE_EPOCH` uses Unix seconds and is converted to
+milliseconds for `BuildConfig`. Both sources therefore produce the same value
+when the source revision is the same, even when the builds run on different
+machines.
+
+If neither source is available, a release build stops with an explanation
+instead of embedding the wall clock. A maintainer doing an intentional local
+release can pass `-PallowNonDeterministicBuildTime=true`; the build prints a
+warning so that opt-out cannot be mistaken for a reproducible release. Debug
+builds retain their wall-clock fallback for local development.
+
+The shell and PowerShell verification scripts report the timestamp source
+before starting their two clean release builds. A source archive should set
+`SOURCE_DATE_EPOCH` before invoking either script.
+
 ## The one command
 
 Reproducibility is one gate among several, and a release must clear all of
@@ -53,7 +72,7 @@ itself.
 
 ## How reproducibility is checked
 
-1. **Two clean builds** - the maintainer runs
+1. **Two clean builds**. The maintainer runs
    `scripts/verify_reproducible_release.ps1` or
    `scripts/verify_reproducible_release.sh`, which runs
    `./gradlew clean :app:assembleRelease` twice from the local checkout.
@@ -115,8 +134,9 @@ python -m unittest scripts.tests.test_verify_release_metadata
 ## Known Constraints
 
 - Reproducibility is verified within a single local run (same JDK, SDK, OS).
-  Cross-environment reproducibility (different JDK vendors, OS versions) is
-  not currently gated but is a goal.
+  The build timestamp is stable across machines when `SOURCE_DATE_EPOCH` or
+  the same Git revision is available, but JAR and toolchain differences still
+  need separate cross-environment verification.
 - The debug keystore (`dev_keystore.jks`) is checked into the repo so debug
   builds are also reproducible across developers. Release signing uses the
   maintainer's local release keystore referenced by `app/keystore.properties`.

@@ -21,6 +21,27 @@ ASSET_LIST="$OUT_DIR/release-assets.txt"
 rm -rf "$OUT_DIR"
 mkdir -p "$FIRST_DIR" "$SECOND_DIR" "$PUBLISH_DIR"
 
+set_build_time_source() {
+    if [[ "${SOURCE_DATE_EPOCH:-}" =~ ^[0-9]+$ ]]; then
+        echo "Build timestamp source: SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH}"
+        return
+    fi
+
+    local commit_seconds=""
+    if command -v git >/dev/null 2>&1; then
+        commit_seconds="$(git show --no-patch --format=%ct HEAD 2>/dev/null || true)"
+    fi
+    if [[ "$commit_seconds" =~ ^[0-9]+$ ]]; then
+        export SOURCE_DATE_EPOCH="$commit_seconds"
+        echo "Build timestamp source: Git HEAD commit time (${SOURCE_DATE_EPOCH})"
+        return
+    fi
+
+    echo "Build timestamp source: none; release Gradle tasks will fail closed." >&2
+}
+
+set_build_time_source
+
 list_apk_names() {
     local dir="$1"
     find "$dir" -maxdepth 1 -type f -name '*.apk' -exec basename {} \; | sort

@@ -38,7 +38,8 @@ android {
                 arguments "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
             }
         }
-        // Add build time to BuildConfig
+        // Add build time to BuildConfig. Debug builds keep the historical wall-clock fallback
+        // when a source timestamp is unavailable; release task graphs fail closed below.
         buildConfigField "long", "BUILD_TIME_MILLIS", "${buildTime()}"
     }
 
@@ -334,13 +335,74 @@ tasks.register("fuzzUntrustedImports") {
 
 preBuild.dependsOn ":server:build"
 
-def buildTime() {
-    var commitTime = "git show --no-patch --format=%ct000".execute([], project.rootDir).text.trim()
-    if (isDigitsOnly(commitTime)) {
-        return Long.parseLong(commitTime)
+gradle.taskGraph.whenReady { taskGraph ->
+    boolean includesReleaseAppTask = taskGraph.allTasks.any { task ->
+        task.path.startsWith(":app:") && task.name.contains("Release")
     }
-    println("Using system time as the build time.")
+    if (includesReleaseAppTask) {
+        buildTime(true)
+    }
+}
+
+def buildTime(boolean failWhenUnavailable = false) {
+    Long deterministicTime = sourceDateEpochMillis()
+    if (deterministicTime == null) {
+        deterministicTime = gitCommitTimeMillis()
+    }
+    if (deterministicTime != null) {
+        return deterministicTime
+    }
+
+    boolean allowNonDeterministic = "true".equalsIgnoreCase(
+            project.findProperty("allowNonDeterministicBuildTime")?.toString())
+    if (failWhenUnavailable && !allowNonDeterministic) {
+        throw new GradleException(
+                "BUILD_TIME_MILLIS cannot be made deterministic for this release build. "
+                        + "Set SOURCE_DATE_EPOCH or build from a Git checkout. "
+                        + "To opt out explicitly, pass -PallowNonDeterministicBuildTime=true.")
+    }
+    if (allowNonDeterministic) {
+        if (failWhenUnavailable) {
+            println("WARNING: using system time for BUILD_TIME_MILLIS by explicit opt-out.")
+        }
+    } else {
+        println("Using system time as the debug build time.")
+    }
     return System.currentTimeMillis()
+}
+
+static Long sourceDateEpochMillis() {
+    String rawEpoch = System.getenv("SOURCE_DATE_EPOCH")?.trim()
+    if (!isDigitsOnly(rawEpoch)) {
+        return null
+    }
+    try {
+        long epochSeconds = Long.parseLong(rawEpoch)
+        if (epochSeconds > Long.MAX_VALUE / 1000L) {
+            return null
+        }
+        return epochSeconds * 1000L
+    } catch (NumberFormatException ignored) {
+        return null
+    }
+}
+
+Long gitCommitTimeMillis() {
+    try {
+        Process git = ["git", "show", "--no-patch", "--format=%ct", "HEAD"].execute(null, project.rootDir)
+        String commitSeconds = git.text.trim()
+        git.waitFor()
+        if (git.exitValue() != 0 || !isDigitsOnly(commitSeconds)) {
+            return null
+        }
+        long epochSeconds = Long.parseLong(commitSeconds)
+        if (epochSeconds > Long.MAX_VALUE / 1000L) {
+            return null
+        }
+        return epochSeconds * 1000L
+    } catch (Exception ignored) {
+        return null
+    }
 }
 
 static def isDigitsOnly(CharSequence str) {

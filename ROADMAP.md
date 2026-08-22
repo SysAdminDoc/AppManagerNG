@@ -104,13 +104,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ### P2
 
-- [ ] P2 — Make BUILD_TIME_MILLIS deterministic or fail loudly
-  Why: `buildTime()` shells out to `git show --no-patch --format=%ct000` and, when that yields anything non-numeric, falls back to System.currentTimeMillis() with only a println. A build from a source tarball or a shallow/exported tree therefore bakes wall-clock time into BuildConfig and can never be byte-reproduced, while the two-build gate — which runs twice in the same git tree — sees nothing. Upstream's reproducibility was publicly written off by IzzySoft over a related non-determinism (#1997), so this is an axis NG can win rather than merely match.
-  Evidence: app/build.gradle:336-343; docs/distribution/reproducible-builds.md; upstream MuntashirAkon/AppManager#1997.
-  Touches: app/build.gradle (honour SOURCE_DATE_EPOCH first, then git commit time, and fail the build for release variants when neither is available unless an explicit opt-out property is set), docs/distribution/reproducible-builds.md, scripts/verify_reproducible_release.sh and .ps1.
-  Acceptance: a release build outside a git tree and without SOURCE_DATE_EPOCH fails with a message naming the reason instead of embedding wall-clock time; with either source present the emitted BUILD_TIME_MILLIS is identical across two builds; debug builds are unaffected.
-  Complexity: S
-
 - [ ] P2 — Prove am.jar and main.jar are reproducible across environments, not just across runs
   Why: the release gate builds twice in the same tree, same paths, same locale and timezone, so it cannot detect the class of non-determinism that actually breaks third-party rebuilds — and that is precisely where upstream failed: its assets/am.jar and assets/main.jar differ in size and hash between maintainer and rebuilder (19730 vs 19114 bytes), unresolved as of 2026-07-02. NG builds the same two jars through its own d8 step, so it carries the same risk without evidence either way.
   Evidence: upstream MuntashirAkon/AppManager#1997; server/build.gradle d8 invocation with a filename-prefix class split (ServerUtils, RootServiceMain, IRootServiceManager); docs/distribution/reproducible-builds.md.

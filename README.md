@@ -116,7 +116,9 @@ byte-identical. A single fail-closed gate runs the tests, lint, version-consiste
 artifact-identity checks and emits a receipt binding the commit and tag to every artifact hash,
 the signing fingerprint, and the tool versions. A CycloneDX SBOM ships with each release, and
 the signing fingerprint is published at a [stable URL](https://raw.githubusercontent.com/SysAdminDoc/AppManagerNG/main/docs/fingerprints.txt)
-for tools like AppVerifier.
+for tools like AppVerifier. Release `BUILD_TIME_MILLIS` values come from
+`SOURCE_DATE_EPOCH` or the Git commit timestamp, and release builds fail when
+neither deterministic source is available.
 
 ## Features (inherited from upstream baseline)
 
