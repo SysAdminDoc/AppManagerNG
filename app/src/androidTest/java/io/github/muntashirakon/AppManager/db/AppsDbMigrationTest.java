@@ -132,7 +132,7 @@ public class AppsDbMigrationTest {
                         TEST_DB)
                 .addMigrations(AppsDb.M_2_3, AppsDb.M_3_4, AppsDb.M_4_5,
                         AppsDb.M_5_6, AppsDb.M_6_7, AppsDb.M_7_8, AppsDb.M_8_9,
-                        AppsDb.M_9_10, AppsDb.M_10_11)
+                        AppsDb.M_9_10, AppsDb.M_10_11, AppsDb.M_11_12)
                 .build();
         // Force Room to materialize and validate the schema.
         assertNotNull(db.appDao());
@@ -223,7 +223,7 @@ public class AppsDbMigrationTest {
                         TEST_DB)
                 .addMigrations(AppsDb.M_2_3, AppsDb.M_3_4, AppsDb.M_4_5,
                         AppsDb.M_5_6, AppsDb.M_6_7, AppsDb.M_7_8, AppsDb.M_8_9,
-                        AppsDb.M_9_10, AppsDb.M_10_11)
+                        AppsDb.M_9_10, AppsDb.M_10_11, AppsDb.M_11_12)
                 .build();
         assertNotNull(db.appDao());
         db.close();
@@ -278,5 +278,41 @@ public class AppsDbMigrationTest {
             assertEquals(2, c.getInt(2));
         }
         migrated.close();
+    }
+
+    @Test
+    public void migrate11To12_addsAppNoteTable_andPreservesNote() throws IOException {
+        SupportSQLiteDatabase db = helper.createDatabase(TEST_DB, 11);
+        db.close();
+
+        SupportSQLiteDatabase migrated = helper.runMigrationsAndValidate(TEST_DB, 12, true,
+                AppsDb.M_11_12);
+        migrated.execSQL("INSERT INTO `app_note` (`package_name`, `note`, `updated_at`) "
+                + "VALUES ('com.example.test', 'Keep before freezing', 100)");
+        try (android.database.Cursor c = migrated.query(
+                "SELECT package_name, note, updated_at FROM app_note")) {
+            assertTrue("note row must survive migration", c.moveToFirst());
+            assertEquals("com.example.test", c.getString(0));
+            assertEquals("Keep before freezing", c.getString(1));
+            assertEquals(100, c.getLong(2));
+        }
+        migrated.close();
+    }
+
+    @Test
+    public void migrate11To12_runtimeRoomOpenSucceeds() throws IOException {
+        helper.createDatabase(TEST_DB, 11).close();
+        helper.runMigrationsAndValidate(TEST_DB, 12, true, AppsDb.M_11_12).close();
+
+        AppsDb db = Room.databaseBuilder(
+                        ApplicationProvider.getApplicationContext(),
+                        AppsDb.class,
+                        TEST_DB)
+                .addMigrations(AppsDb.M_2_3, AppsDb.M_3_4, AppsDb.M_4_5,
+                        AppsDb.M_5_6, AppsDb.M_6_7, AppsDb.M_7_8, AppsDb.M_8_9,
+                        AppsDb.M_9_10, AppsDb.M_10_11, AppsDb.M_11_12)
+                .build();
+        assertNotNull(db.appNoteDao());
+        db.close();
     }
 }

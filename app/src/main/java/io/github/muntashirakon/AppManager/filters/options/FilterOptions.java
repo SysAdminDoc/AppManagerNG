@@ -28,6 +28,7 @@ public final class FilterOptions {
             case "last_update": return new LastUpdateOption();
             case "min_sdk": return new MinSdkOption();
             case "native_lib": return new NativeLibOption();
+            case "notes": return new NotesOption();
             case "permissions": return new PermissionsOption();
             case "pkg_name": return new PackageNameOption();
             case "running_apps": return new RunningAppsOption();
