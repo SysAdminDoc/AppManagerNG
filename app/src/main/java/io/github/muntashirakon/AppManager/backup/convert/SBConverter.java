@@ -102,6 +102,7 @@ public class SBConverter extends Converter {
                 sourceFiles.add(file);
             }
         }
+        SwiftBackupManifest.validateArchives(sourceFiles, mPackageName);
         mExtractionGuard = createExtractionGuard(sourceFiles);
         // Source metadata
         BackupMetadataV2 sourceMetadata;
@@ -240,7 +241,6 @@ public class SBConverter extends Converter {
                  SplitOutputStream sos = new SplitOutputStream(mBackupItem.getUnencryptedBackupPath(), dataBackupFilePrefix, DEFAULT_SPLIT_SIZE);
                  BufferedOutputStream bos = new BufferedOutputStream(sos);
                  OutputStream os = TarUtils.createCompressedStream(bos, tarType)) {
-                // TODO: 31/5/21 Check backup format (each zip file has a comment section which can be parsed as JSON)
                 try (TarArchiveOutputStream tos = new TarArchiveOutputStream(os)) {
                     tos.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX);
                     tos.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_POSIX);
