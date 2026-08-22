@@ -24,7 +24,6 @@
             android:layout_height="@dimen/main_list_icon_column_width"
             android:layout_gravity="top"
             android:layout_marginEnd="@dimen/main_list_icon_margin_end"
-            android:background="@drawable/main_icon_frame_background"
             android:importantForAccessibility="no">
 
             <androidx.appcompat.widget.AppCompatImageView
@@ -70,21 +69,16 @@
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/premium_space_8"
+                android:layout_marginTop="@dimen/premium_space_4"
                 android:orientation="horizontal">
 
                 <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/profile_type"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/badge_background"
                     android:ellipsize="end"
-                    android:gravity="center"
+                    android:gravity="center_vertical"
                     android:maxLines="1"
-                    android:minHeight="@dimen/premium_badge_min_height"
-                    android:minWidth="@dimen/premium_badge_min_width"
-                    android:paddingHorizontal="@dimen/premium_badge_padding_horizontal"
-                    android:paddingVertical="@dimen/premium_badge_padding_vertical"
                     android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelSmall"
                     android:textColor="?attr/colorOnSurfaceVariant"
                     tools:ignore="SmallSp"
@@ -94,15 +88,10 @@
                     android:id="@+id/profile_state"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/premium_space_4"
-                    android:background="@drawable/badge_background"
+                    android:layout_marginStart="@dimen/premium_space_8"
                     android:ellipsize="end"
-                    android:gravity="center"
+                    android:gravity="center_vertical"
                     android:maxLines="1"
-                    android:minHeight="@dimen/premium_badge_min_height"
-                    android:minWidth="@dimen/premium_badge_min_width"
-                    android:paddingHorizontal="@dimen/premium_badge_padding_horizontal"
-                    android:paddingVertical="@dimen/premium_badge_padding_vertical"
                     android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelSmall"
                     android:textColor="?attr/colorOnSurfaceVariant"
                     tools:ignore="SmallSp"
@@ -123,16 +112,16 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/profile_apply"
                 style="@style/Widget.AppTheme.Button.IconButton"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 app:icon="@drawable/ic_play_arrow"
                 app:iconSize="20dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/profile_more"
                 style="@style/Widget.AppTheme.Button.IconButton"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:layout_marginStart="@dimen/premium_space_4"
                 app:icon="@drawable/ic_menu"
                 app:iconSize="20dp" />

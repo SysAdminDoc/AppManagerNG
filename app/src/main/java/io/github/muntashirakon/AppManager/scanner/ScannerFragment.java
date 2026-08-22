@@ -660,9 +660,9 @@ public class ScannerFragment extends Fragment {
         }
 
         ((TextView) view.findViewById(R.id.libs_title)).setText(summary);
-        ((TextView) view.findViewById(R.id.libs_description)).setText(totalLibsFound == 0
-                ? R.string.no_libs
-                : R.string.tap_to_see_details);
+        TextView libraryDescription = view.findViewById(R.id.libs_description);
+        libraryDescription.setVisibility(totalLibsFound == 0 ? View.GONE : View.VISIBLE);
+        libraryDescription.setText(R.string.tap_to_see_details);
         if (totalLibsFound == 0) return;
         MaterialCardView libsView = view.findViewById(R.id.libs);
         libsView.setOnClickListener(v -> {

@@ -490,7 +490,7 @@
     <string name="running_apps_status_empty_no_processes">No running processes are available yet. AppManagerNG will keep refreshing.</string>
     <string name="running_apps_status_empty_filtered">No processes match the current search or filters. Clear filters or search text to recover the full list.</string>
     <string name="running_apps_memory_overview_title">Device memory</string>
-    <string name="running_apps_memory_overview_summary">Live RAM and swap pressure from the current process snapshot.</string>
+    <string name="running_apps_memory_overview_summary">Current RAM and swap use.</string>
     <string name="running_apps_empty_title">No running processes found</string>
     <string name="running_apps_empty_filtered_title">No matching processes</string>
     <string name="running_apps_empty_no_processes_summary">AppManagerNG will keep checking. Use refresh to request a new snapshot.</string>
@@ -506,6 +506,9 @@
     <string name="running_apps_refresh_rate_manual_selected">Automatic running-apps refresh paused. Use Refresh for a new snapshot.</string>
     <string name="running_apps_system_process">System process</string>
     <string name="running_apps_app_process">App process</string>
+    <string name="running_apps_process_metrics">PID %1$d · %2$s RAM · %3$s VM</string>
+    <string name="running_apps_state_with_extra_compact">%1$s (%2$s)</string>
+    <string name="running_apps_user_state_compact">%1$s (%2$d) · %3$s</string>
     <string name="running_apps_system_process_summary">System or native process</string>
     <string name="running_apps_process_content_description"><xliff:g id="process_name" example="App Manager">%1$s</xliff:g>, <xliff:g id="package_name" example="io.github.muntashirakon.AppManager">%2$s</xliff:g>. <xliff:g id="process_ids" example="Process ID: 10000, Parent process ID: 1000">%3$s</xliff:g>. <xliff:g id="memory_usage" example="Memory: 162 MB, Virtual memory: 14.72 GB">%4$s</xliff:g>. <xliff:g id="user_state" example="User: u0_a167 (10167), State: Sleeping">%5$s</xliff:g>.</string>
     <string name="running_apps_select_process">Select <xliff:g id="process_name" example="App Manager">%1$s</xliff:g></string>
@@ -694,7 +697,18 @@
     <string name="scanner_confidence_confirmed">Confirmed signature</string>
     <string name="scanner_confidence_tentative">Tentative signature</string>
     <string name="scanner_detection_method">Detected by matching class names against the bundled signature list.</string>
-    <string name="scanner_absence_limitation">No match is not proof of absence: renamed identifiers, reflection, and code loaded at runtime all evade class-name matching, and signatures added upstream after this build are not in the bundled list.</string>
+    <string name="scanner_section_code">Code and trackers</string>
+    <string name="scanner_section_integrity">Integrity</string>
+    <string name="scanner_loading_classes">Reading classes</string>
+    <string name="scanner_loading_classes_summary">Indexing code for inspection.</string>
+    <string name="scanner_loading_trackers">Checking trackers</string>
+    <string name="scanner_loading_trackers_summary">Comparing classes with known signatures.</string>
+    <string name="scanner_loading_libraries">Reading libraries</string>
+    <string name="scanner_loading_libraries_summary">Identifying bundled and native libraries.</string>
+    <string name="scanner_loading_apk">Calculating APK checksums</string>
+    <string name="scanner_loading_apk_summary">Hashing installed package files.</string>
+    <string name="scanner_loading_signature_summary">Verifying the signing certificate.</string>
+    <string name="scanner_absence_limitation">Class-name matching can miss renamed or runtime-loaded trackers.</string>
     <string name="scanner_match_limitation">A match means matching code is present in the package. It does not establish that the code runs or that data leaves the device.</string>
     <plurals name="scanner_match_confidence_row">
         <item quantity="one"><xliff:g id="confidence" example="Confirmed signature">%1$s</xliff:g> · <xliff:g id="count" example="1">%2$d</xliff:g> class match</item>
@@ -2337,7 +2351,7 @@
     <string name="state">Process state</string>
     <string name="commandline_args">Commandline arguments</string>
     <string name="swap">Swap</string>
-    <string name="memory_chart_info">● %1$s Applications ● %2$s Cached ● %3$s Buffers ● %4$s Free</string>
+    <string name="memory_chart_info">● %1$s Apps ● %2$s Cached ● %3$s Buffers ● %4$s Free</string>
     <string name="swap_chart_info">● %1$s Used ● %2$s Free</string>
     <string name="failed_to_change_app_op_mode">Could not change the app op mode.</string>
     <string name="failed_to_use_the_current_mode_of_operation">Unable to use the current mode of operation. Falling back to no-root mode for this session.</string>
@@ -3154,6 +3168,8 @@
     <string name="terminal_process_ended">Terminal process ended via <xliff:g id="route" example="ADB">%1$s</xliff:g> (exit <xliff:g id="exit_code" example="0">%2$d</xliff:g>).</string>
     <string name="terminal_process_not_running">Terminal process is not running.</string>
     <string name="title_labs_activity">Labs</string>
+    <string name="labs_section_system_insight">System insight</string>
+    <string name="labs_section_workbench">Workbench</string>
     <string name="select_a_dex2oat_compiler_filter"><tt>dex2oat</tt> compiler filter</string>
     <string name="optimize_option_compile_layouts">Compile layout resources</string>
     <string name="optimize_option_clear_profile_data">Clear previous profile data</string>
@@ -3612,6 +3628,7 @@
     <string name="op_history_empty_filtered_message">Clear filters or search text to show saved operations.</string>
     <string name="op_history_status_loading">Loading operation history…</string>
     <string name="op_history_filter_hint">Filter package, operation, mode, or target</string>
+    <string name="op_history_filters_active">Filters · %1$d active</string>
     <string name="op_history_filter_last_24h">24 hours</string>
     <string name="op_history_filter_last_7d">7 days</string>
     <string name="op_history_settings_summary">Review, filter, export, rerun, and clean up saved operation history.</string>

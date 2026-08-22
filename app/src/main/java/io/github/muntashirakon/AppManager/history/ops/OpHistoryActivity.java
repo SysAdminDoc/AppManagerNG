@@ -86,6 +86,7 @@ public class OpHistoryActivity extends BaseActivity {
     private TextView mEmptyStateTitle;
     private TextView mEmptyStateSummary;
     private MaterialButton mEmptyStateAction;
+    private MaterialButton mFiltersButton;
     private final List<Chip> mFilterChips = new ArrayList<>();
     private List<OpHistoryItem> mCurrentOpHistories = Collections.emptyList();
     private Chip mChipSucceeded;
@@ -209,6 +210,8 @@ public class OpHistoryActivity extends BaseActivity {
 
     private void setupHistoryFilters() {
         mFilterText = findViewById(R.id.history_filter_text);
+        mFiltersButton = findViewById(R.id.history_filters_button);
+        mFiltersButton.setOnClickListener(v -> showHistoryFiltersDialog());
         mFilterText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -255,6 +258,41 @@ public class OpHistoryActivity extends BaseActivity {
         });
         mChipClearFilters = findViewById(R.id.chip_history_clear_filters);
         mChipClearFilters.setOnClickListener(v -> clearFilters());
+    }
+
+    private void showHistoryFiltersDialog() {
+        CharSequence[] labels = new CharSequence[mFilterChips.size()];
+        boolean[] selections = new boolean[mFilterChips.size()];
+        for (int i = 0; i < mFilterChips.size(); ++i) {
+            Chip chip = mFilterChips.get(i);
+            labels[i] = chip.getText();
+            selections[i] = chip.isChecked();
+        }
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.filters)
+                .setMultiChoiceItems(labels, selections, (dialog, which, isChecked) -> {
+                    Chip changedChip = mFilterChips.get(which);
+                    changedChip.setChecked(isChecked);
+                    if (isChecked && (changedChip == mChipLastDay || changedChip == mChipLastWeek)) {
+                        Chip otherChip = changedChip == mChipLastDay ? mChipLastWeek : mChipLastDay;
+                        int otherIndex = mFilterChips.indexOf(otherChip);
+                        otherChip.setChecked(false);
+                        ((AlertDialog) dialog).getListView().setItemChecked(otherIndex, false);
+                    }
+                })
+                .setNeutralButton(R.string.clear_filters, (dialog, which) -> clearFilters())
+                .setPositiveButton(R.string.done, null)
+                .show();
+    }
+
+    private int getActiveChipFilterCount() {
+        int count = 0;
+        for (Chip chip : mFilterChips) {
+            if (chip.isChecked()) {
+                ++count;
+            }
+        }
+        return count;
     }
 
     private void applyIntentFilters(@Nullable Intent intent) {
@@ -323,6 +361,10 @@ public class OpHistoryActivity extends BaseActivity {
                 && hasActiveFilters
                 && filteredList.isEmpty();
         updateHistorySummary(filteredList);
+        int activeChipFilterCount = getActiveChipFilterCount();
+        mFiltersButton.setText(activeChipFilterCount == 0
+                ? getString(R.string.filters)
+                : getString(R.string.op_history_filters_active, activeChipFilterCount));
         mChipClearFilters.setVisibility(hasActiveFilters ? View.VISIBLE : View.GONE);
         invalidateOptionsMenu();
         if (hasFilteredOutAllHistory) {

@@ -368,13 +368,15 @@ public class LogViewerRecyclerAdapter extends MultiSelectionView.Adapter<LogView
         if (hasLogLevel) {
             int levelColor = getBackgroundColorForLogLevel(context, logLine.getLogLevel());
             t.setText(logLine.getProcessIdText());
-            t.setBackgroundColor(levelColor);
+            t.setBackgroundResource(0);
+            holder.logLevelIndicator.setBackgroundColor(levelColor);
             t.setTextColor(getForegroundColorForLogLevel(context, logLine.getLogLevel()));
         }
         t.setVisibility(hasLogLevel ? View.VISIBLE : View.GONE);
+        holder.logLevelIndicator.setVisibility(hasLogLevel ? View.VISIBLE : View.INVISIBLE);
 
         holder.itemView.setBackgroundResource(0);
-        holder.contentView.setBackgroundResource(position % 2 == 0 ? io.github.muntashirakon.ui.R.drawable.item_semi_transparent : io.github.muntashirakon.ui.R.drawable.item_transparent);
+        holder.contentView.setBackgroundResource(0);
 
         // Display message
         TextView output = holder.output;
@@ -616,6 +618,7 @@ public class LogViewerRecyclerAdapter extends MultiSelectionView.Adapter<LogView
     public static class ViewHolder extends MultiSelectionView.ViewHolder {
         LogLine logLine;
         View contentView;
+        View logLevelIndicator;
         TextView logLevel;
         TextView tag;
         TextView output;
@@ -624,6 +627,7 @@ public class LogViewerRecyclerAdapter extends MultiSelectionView.Adapter<LogView
         public ViewHolder(View itemView) {
             super(itemView);
             contentView = itemView.findViewById(R.id.log_content);
+            logLevelIndicator = itemView.findViewById(R.id.log_level_indicator);
             logLevel = itemView.findViewById(R.id.log_level_text);
             tag = itemView.findViewById(R.id.tag_text);
             output = itemView.findViewById(R.id.log_output_text);
