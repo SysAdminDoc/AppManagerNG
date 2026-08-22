@@ -8,6 +8,15 @@
 <changelog>
     <release
         type="stable release"
+        version="v0.6.16"
+        code="24"
+        date="22 August 2026">
+        <improve title="Change history">The app-change feed now supports package, kind, and date filters, version context, and bounded JSON import and export.</improve>
+        <improve title="Dependency safety">The API-21 dependency ceiling is backed by a local allowlist and AAR manifest check before a release can proceed.</improve>
+    </release>
+
+    <release
+        type="stable release"
         version="v0.6.15"
         code="23"
         date="20 August 2026">
