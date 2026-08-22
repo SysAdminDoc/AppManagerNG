@@ -31,6 +31,12 @@ class DependencyCveGateTest(unittest.TestCase):
         for name in gate.REPORT_NAMES.values():
             (self.report_dir / name).write_text(f"fixture:{name}\n", encoding="utf-8")
 
+    def _write_nested_reports(self) -> None:
+        nested_dir = self.report_dir / "dependency-check"
+        nested_dir.mkdir(parents=True, exist_ok=True)
+        for name in gate.REPORT_NAMES.values():
+            (nested_dir / name).write_text(f"fixture:{name}\n", encoding="utf-8")
+
     def test_gate_passes_blocking_threshold_and_receipts_both_reports(self) -> None:
         def scanner(command, **kwargs):
             self._write_reports()
@@ -61,6 +67,18 @@ class DependencyCveGateTest(unittest.TestCase):
         receipt = json.loads((self.out_dir / gate.RECEIPT_NAME).read_text(encoding="utf-8"))
         self.assertFalse(receipt["passed"])
         self.assertEqual(1, receipt["scannerExitCode"])
+        self.assertTrue((self.out_dir / gate.REPORT_NAMES["HTML"]).is_file())
+        self.assertTrue((self.out_dir / gate.REPORT_NAMES["SARIF"]).is_file())
+
+    def test_dependency_check_13_nested_reports_are_published(self) -> None:
+        def scanner(command, **kwargs):
+            self._write_nested_reports()
+            return subprocess.CompletedProcess(command, 0)
+
+        with mock.patch.object(gate.subprocess, "run", side_effect=scanner):
+            paths = gate.run_gate(["gradlew"], self.root, self.out_dir)
+
+        self.assertEqual(3, len(paths))
         self.assertTrue((self.out_dir / gate.REPORT_NAMES["HTML"]).is_file())
         self.assertTrue((self.out_dir / gate.REPORT_NAMES["SARIF"]).is_file())
 

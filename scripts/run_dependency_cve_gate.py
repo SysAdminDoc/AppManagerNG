@@ -46,8 +46,8 @@ def resolve_gradle_command(gradle_command: Sequence[str], repo_root: Path) -> li
     if not gradle_command:
         raise GateError("Gradle command must not be empty")
     resolved = list(gradle_command)
-    launcher = Path(resolved[0])
-    if os.name == "nt" and launcher.name in ("gradlew", "gradlew.sh"):
+    launcher_name = str(resolved[0]).replace("\\", "/").rsplit("/", 1)[-1]
+    if os.name == "nt" and launcher_name in ("gradlew", "gradlew.sh"):
         batch = repo_root / "gradlew.bat"
         if batch.is_file():
             resolved[0] = str(batch)
@@ -63,7 +63,8 @@ def run_gate(
     gradle_command = resolve_gradle_command(gradle_command, repo_root)
     report_dir = report_dir or repo_root / "build" / "reports"
     report_paths = [report_dir / name for name in REPORT_NAMES.values()]
-    for report in report_paths:
+    nested_report_paths = [report_dir / "dependency-check" / name for name in REPORT_NAMES.values()]
+    for report in (*report_paths, *nested_report_paths):
         report.unlink(missing_ok=True)
     for name in (*REPORT_NAMES.values(), RECEIPT_NAME):
         (out_dir / name).unlink(missing_ok=True)
@@ -79,9 +80,13 @@ def run_gate(
         result = subprocess.run(command, cwd=repo_root, check=False)
     except OSError as exc:
         raise GateError(f"could not start dependency CVE scanner: {exc}") from exc
-    missing = [str(path) for path in report_paths if not path.is_file()]
+    missing = [path for path in report_paths if not path.is_file()]
+    if missing and all(path.is_file() for path in nested_report_paths):
+        report_dir = report_dir / "dependency-check"
+        report_paths = nested_report_paths
+        missing = []
     if missing:
-        detail = "dependency CVE gate produced no report: " + ", ".join(missing)
+        detail = "dependency CVE gate produced no report: " + ", ".join(str(path) for path in missing)
         if result.returncode != 0:
             detail += f" (scanner exit code {result.returncode})"
         raise GateError(detail)
