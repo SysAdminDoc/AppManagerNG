@@ -58,12 +58,31 @@ public class AccessibilityActionSequencerTest {
         sequencer.runWhenReady(() -> {
             checks.incrementAndGet();
             return false;
-        }, 10, 500, () -> timedOut.set(true));
+        }, 18, 500, () -> timedOut.set(true));
         scheduler.runAll();
 
-        assertEquals(10, checks.get());
-        assertEquals(4_500, scheduler.elapsedMillis());
+        assertEquals(18, checks.get());
+        assertEquals(8_500, scheduler.elapsedMillis());
         assertTrue(timedOut.get());
+        assertTrue(scheduler.isEmpty());
+    }
+
+    @Test
+    public void cancellationDropsQueuedRetries() {
+        FakeScheduler scheduler = new FakeScheduler();
+        AccessibilityActionSequencer sequencer = new AccessibilityActionSequencer(Runnable::run, scheduler);
+        AtomicInteger checks = new AtomicInteger();
+        AtomicBoolean timedOut = new AtomicBoolean();
+
+        sequencer.runWhenReady(() -> {
+            checks.incrementAndGet();
+            return false;
+        }, 18, 500, () -> timedOut.set(true));
+        sequencer.cancelPending();
+        scheduler.runAll();
+
+        assertEquals(1, checks.get());
+        assertFalse(timedOut.get());
         assertTrue(scheduler.isEmpty());
     }
 
