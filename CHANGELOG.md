@@ -3,6 +3,18 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## v0.6.17, 2026-08-22
+
+### Changed
+- Rebuilt the shared visual system around a calmer type scale, compact headers, hairline dividers, flatter search fields, and tighter section rhythm.
+- Reworked Labs, history, profiles, running processes, the log viewer, App Details, and the scanner around section-led rows with restrained state accents.
+- Shortened Settings and scanner copy, kept one primary action in empty states, and made filters and actions easier to scan on narrow screens.
+- Verified the revised hierarchy and contrast in Light, Dark, and AMOLED themes.
+
+### Fixed
+- Bound the Privacy switches to their actual preference keys and kept Doze diagnostics safe when Android denies battery-optimization access.
+- Anchored multi-selection toolbars above bottom navigation and prevented trailing NUL bytes from appearing in process names.
+
 ## v0.6.16, 2026-08-22
 
 ### Fixed

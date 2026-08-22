@@ -1,0 +1,2 @@
+- Simplified dense screens with compact headers, flat sections, and restrained state accents.
+- Fixed Privacy controls, Doze diagnostics, selection toolbar placement, and process labels.
