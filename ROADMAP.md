@@ -109,10 +109,4 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 
 
-- [ ] P3 — Move the remaining hardcoded English UI strings into resources
-  Why: thirteen user-visible English strings are built in Java, so they never translate — seven "Error: " toasts plus two permission messages in App Details, and two file-manager default names. That is small enough to close completely, and the translation ratchet cannot see strings that never reach strings.xml.
-  Evidence: details/info/AppInfoFragment.java:536,610,658,1048,1215,2870,2939,3111,3363; fm/dialogs/NewFolderDialogFragment.java:51; fm/dialogs/NewSymbolicLinkDialogFragment.java:83.
-  Touches: those three files, app/src/main/res/values/strings.xml. The two format-only strings in intercept/ActivityInterceptor.java:331,1119 are punctuation templates and should stay.
-  Acceptance: no user-visible literal string is passed to a toast, dialog or setText in those three files; the new resources appear in the translation baseline; `:app:lint` reports no new HardcodedText.
-  Complexity: S
 

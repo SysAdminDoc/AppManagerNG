@@ -534,7 +534,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             try {
                 ActivityManagerCompat.startActivity(IntentUtils.getAppDetailsSettings(mPackageName), mUserId);
             } catch (Exception th) {
-                UIUtils.displayLongToast("Error: " + th.getLocalizedMessage());
+                UIUtils.displayLongToast(getString(R.string.error_with_details, th.getLocalizedMessage()));
             }
         } else if (itemId == R.id.action_edit_tags) {
             showEditTagsDialog();
@@ -609,7 +609,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 try {
                     startActivity(IntentUtils.getBatteryOptSettings(mPackageName));
                 } catch (Exception th) {
-                    UIUtils.displayShortToast("No DEVICE_POWER permission.");
+                    UIUtils.displayShortToast(R.string.no_device_power_permission);
                 }
             }
         } else if (itemId == R.id.action_sensor) {
@@ -645,7 +645,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                         }))
                         .show();
             } else {
-                Log.e(TAG, "No sensor permission.");
+                Log.e(TAG, getString(R.string.no_sensor_permission));
             }
         } else if (itemId == R.id.action_net_policy) {
             if (!UserHandleHidden.isApp(mApplicationInfo.uid)) {
@@ -657,7 +657,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     try {
                         startActivity(IntentUtils.getNetPolicySettings(mPackageName));
                     } catch (Exception th) {
-                        UIUtils.displayShortToast("No MANAGE_NETWORK_POLICY permission.");
+                        UIUtils.displayShortToast(R.string.no_manage_network_policy_permission);
                     }
                 }
                 return true;
@@ -1047,7 +1047,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                             startActivity(new Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
                                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                         } catch (Exception th) {
-                            UIUtils.displayShortToast("Error: " + th.getLocalizedMessage());
+                            UIUtils.displayShortToast(getString(R.string.error_with_details, th.getLocalizedMessage()));
                         }
                     })
                     .show();
@@ -1214,7 +1214,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         } catch (Exception th) {
-            UIUtils.displayShortToast("Error: " + th.getLocalizedMessage());
+            UIUtils.displayShortToast(getString(R.string.error_with_details, th.getLocalizedMessage()));
         }
     }
 
@@ -2869,7 +2869,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     try {
                         ActivityManagerCompat.startActivity(launchIntent, mUserId);
                     } catch (Exception th) {
-                        UIUtils.displayLongToast("Error: " + th.getLocalizedMessage());
+                        UIUtils.displayLongToast(getString(R.string.error_with_details, th.getLocalizedMessage()));
                     }
                 });
             }
@@ -2938,7 +2938,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                             ActivityManagerCompat.startActivity(uninstallIntent, mUserId);
                             // TODO: 19/8/24 Watch for uninstallation
                         } catch (Exception th) {
-                            UIUtils.displayLongToast("Error: " + th.getLocalizedMessage());
+                            UIUtils.displayLongToast(getString(R.string.error_with_details, th.getLocalizedMessage()));
                         }
                     });
                     return;
@@ -3110,7 +3110,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     try {
                         ActivityManagerCompat.startActivity(IntentUtils.getAppDetailsSettings(mPackageName), mUserId);
                     } catch (Exception th) {
-                        UIUtils.displayLongToast("Error: " + th.getLocalizedMessage());
+                        UIUtils.displayLongToast(getString(R.string.error_with_details, th.getLocalizedMessage()));
                     }
                 });
             }
@@ -3362,7 +3362,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                                 startActivity(intent);
                             });
                         } catch (IOException e) {
-                            UIUtils.displayLongToast("Error: " + e.getMessage());
+                            UIUtils.displayLongToast(getString(R.string.error_with_details, e.getMessage()));
                         }
                     }))
                     .setNegativeButton(R.string.cancel, null)
