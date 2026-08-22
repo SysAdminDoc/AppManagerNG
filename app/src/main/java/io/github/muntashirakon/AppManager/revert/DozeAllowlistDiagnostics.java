@@ -25,8 +25,10 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.logs.Log;
 
 final class DozeAllowlistDiagnostics {
+    private static final String TAG = DozeAllowlistDiagnostics.class.getSimpleName();
     private static final String SETTINGS_DEVICE_IDLE_CONSTANTS = "device_idle_constants";
     private static final String DEVICE_CONFIG_DEVICE_IDLE_NAMESPACE = "device_idle";
 
@@ -47,10 +49,20 @@ final class DozeAllowlistDiagnostics {
     static Snapshot snapshot(@NonNull Context context, @NonNull String packageName) {
         Context appContext = context.getApplicationContext();
         return new Snapshot(
-                Settings.Global.getString(appContext.getContentResolver(), SETTINGS_DEVICE_IDLE_CONSTANTS),
+                readDeviceIdleConstants(appContext),
                 readDeviceIdleDeviceConfig(),
                 getPackageKind(appContext, packageName),
                 Build.MANUFACTURER);
+    }
+
+    @Nullable
+    private static String readDeviceIdleConstants(@NonNull Context context) {
+        try {
+            return Settings.Global.getString(context.getContentResolver(), SETTINGS_DEVICE_IDLE_CONSTANTS);
+        } catch (SecurityException e) {
+            Log.w(TAG, e);
+            return null;
+        }
     }
 
     @NonNull
