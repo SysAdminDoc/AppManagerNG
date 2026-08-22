@@ -20,7 +20,7 @@ import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 public class NoRootAccessibilityService extends BaseAccessibilityService {
     private static final CharSequence SETTING_PACKAGE = "com.android.settings";
     private static final CharSequence INSTALLER_PACKAGE = "com.android.packageinstaller";
-    private static final int MAX_SETTINGS_CHECKS = 20;
+    private static final int MAX_SETTINGS_CHECKS = 18;
     private static final long SETTINGS_CHECK_DELAY_MILLIS = 500;
 
     private final AccessibilityMultiplexer mMultiplexer = AccessibilityMultiplexer.getInstance();
@@ -68,6 +68,10 @@ public class NoRootAccessibilityService extends BaseAccessibilityService {
 
     @Override
     public void onInterrupt() {
+        cancelPendingAccessibilityActions();
+        mSettingsNavigationPending = false;
+        mSettingsButtonPending = false;
+        mForceStopBackPending = false;
     }
 
     @Override
@@ -186,6 +190,8 @@ public class NoRootAccessibilityService extends BaseAccessibilityService {
                 if (clearDataNode != null) {
                     clearDataNode.recycle();
                     mSettingsButtonPending = false;
+                    mMultiplexer.enableForceStop(false);
+                    performBackClick();
                     return true;
                 }
                 return false;
