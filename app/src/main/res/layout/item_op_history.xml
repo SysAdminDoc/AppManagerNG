@@ -34,14 +34,9 @@
                     android:id="@+id/status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/badge_background"
                     android:ellipsize="end"
-                    android:gravity="center"
+                    android:gravity="center_vertical"
                     android:maxLines="1"
-                    android:minHeight="@dimen/premium_badge_min_height"
-                    android:minWidth="@dimen/premium_badge_min_width"
-                    android:paddingHorizontal="@dimen/premium_badge_padding_horizontal"
-                    android:paddingVertical="@dimen/premium_badge_padding_vertical"
                     android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelSmall"
                     tools:ignore="SmallSp"
                     tools:text="@string/op_history_status_success" />
@@ -106,16 +101,16 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/item_action"
                 style="@style/Widget.AppTheme.Button.IconButton"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 app:icon="@drawable/ic_replay"
                 app:iconSize="20dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/item_more"
                 style="@style/Widget.AppTheme.Button.IconButton"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:layout_marginStart="@dimen/premium_space_4"
                 app:icon="@drawable/ic_menu"
                 app:iconSize="20dp" />

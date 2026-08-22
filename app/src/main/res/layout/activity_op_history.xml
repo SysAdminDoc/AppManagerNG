@@ -50,14 +50,14 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/history_filter_container"
-            style="@style/Widget.AppTheme.TextInputLayout.Small"
+            style="@style/Widget.AppTheme.TextInputLayout.SearchFlat"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="@dimen/padding_medium"
             android:layout_marginTop="@dimen/premium_space_8"
             android:hint="@string/op_history_filter_hint"
             app:endIconMode="clear_text"
-            app:startIconDrawable="@drawable/ic_filter_list">
+            app:startIconDrawable="@drawable/ic_search">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/history_filter_text"
@@ -69,6 +69,18 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/history_filters_button"
+            style="@style/Widget.AppTheme.Button.AppInfoAction"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/premium_button_min_height"
+            android:layout_marginStart="@dimen/premium_space_8"
+            android:layout_marginTop="@dimen/premium_space_4"
+            android:gravity="start|center_vertical"
+            android:text="@string/filters"
+            app:backgroundTint="@android:color/transparent"
+            app:icon="@drawable/ic_filter_list" />
+
         <HorizontalScrollView
             android:id="@+id/history_filter_scroll"
             android:layout_width="match_parent"
@@ -77,7 +89,8 @@
             android:paddingHorizontal="@dimen/padding_small"
             android:paddingTop="@dimen/padding_very_small"
             android:paddingBottom="@dimen/padding_small"
-            android:scrollbars="none">
+            android:scrollbars="none"
+            android:visibility="gone">
 
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/history_filter_group"

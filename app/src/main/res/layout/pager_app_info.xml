@@ -333,30 +333,18 @@
 
             </com.google.android.material.card.MaterialCardView>
 
-            <io.github.muntashirakon.widget.NestedScrollableHost
+            <io.github.muntashirakon.widget.RoundedFirstAndLastChildViewGroup
+                android:id="@+id/horizontal_layout"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <HorizontalScrollView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:scrollbars="none"
-                    android:overScrollMode="never"
-                    android:layoutDirection="ltr">
-
-                    <io.github.muntashirakon.widget.RoundedFirstAndLastChildViewGroup
-                        android:id="@+id/horizontal_layout"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:nextFocusUp="@id/version"
-                        android:nextFocusDown="@id/tag_cloud"
-                        android:paddingHorizontal="@dimen/premium_space_8"
-                        android:paddingVertical="@dimen/premium_space_4"
-                        tools:listItem="@layout/item_app_info_action" />
-
-                </HorizontalScrollView>
-
-            </io.github.muntashirakon.widget.NestedScrollableHost>
+                android:layout_height="wrap_content"
+                android:gravity="start"
+                android:nextFocusUp="@id/version"
+                android:nextFocusDown="@id/tag_cloud"
+                android:paddingHorizontal="@dimen/premium_space_8"
+                android:paddingVertical="@dimen/premium_space_4"
+                app:childSpacing="0dp"
+                app:rowSpacing="0dp"
+                tools:listItem="@layout/item_app_info_action" />
 
             <io.github.muntashirakon.widget.FlowLayout
                 android:id="@+id/tag_cloud"

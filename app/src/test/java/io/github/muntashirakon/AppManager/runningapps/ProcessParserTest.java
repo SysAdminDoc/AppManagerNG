@@ -42,4 +42,12 @@ public class ProcessParserTest {
             assertEquals(processStrings.get(pid), Objects.requireNonNull(processItemHashMap.get(pid)).toString());
         }
     }
+
+    @Test
+    public void processSuffixIgnoresProcNullTerminator() {
+        assertEquals("", ProcessParser.getProcessNameFilteringPackageName(
+                "io.github.example.app\u0000ignored", "io.github.example.app"));
+        assertEquals(":worker", ProcessParser.getProcessNameFilteringPackageName(
+                "io.github.example.app:worker\u0000ignored", "io.github.example.app"));
+    }
 }

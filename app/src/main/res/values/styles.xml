@@ -137,4 +137,12 @@
         <item name="hintTextAppearance">@style/TextAppearance.AppTheme.V2.LabelSmall</item>
         <item name="hintTextColor">?attr/colorOnSurfaceVariant</item>
     </style>
+
+    <style name="Widget.AppTheme.TextInputLayout.SearchFlat" parent="Widget.Material3.TextInputLayout.FilledBox.Dense">
+        <item name="boxBackgroundColor">?attr/colorSurfaceContainerLow</item>
+        <item name="boxStrokeWidth">0dp</item>
+        <item name="boxStrokeWidthFocused">0dp</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.AppTheme.V2.Control</item>
+        <item name="hintTextAppearance">@style/TextAppearance.AppTheme.V2.BodySmall</item>
+    </style>
 </resources>

@@ -253,7 +253,9 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
         }
         // Set process IDs
         String processIds = mActivity.getString(R.string.pid_and_ppid, processItem.pid, processItem.ppid);
-        holder.processIds.setText(processIds);
+        holder.processIds.setText(mActivity.getString(R.string.running_apps_process_metrics,
+                processItem.pid, Formatter.formatFileSize(mActivity, processItem.getMemory()),
+                Formatter.formatFileSize(mActivity, processItem.getVirtualMemory())));
         // Set memory usage
         String memoryUsage = mActivity.getString(R.string.memory_virtual_memory,
                 Formatter.formatFileSize(mActivity, processItem.getMemory()),
@@ -267,7 +269,12 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
         } else {
             stateInfo = mActivity.getString(R.string.process_state_with_extra, processItem.state, processItem.state_extra);
         }
-        holder.userAndStateInfo.setText(String.format("%s, %s", userInfo, stateInfo));
+        String compactState = TextUtils.isEmpty(processItem.state_extra)
+                ? processItem.state
+                : mActivity.getString(R.string.running_apps_state_with_extra_compact,
+                        processItem.state, processItem.state_extra);
+        holder.userAndStateInfo.setText(mActivity.getString(R.string.running_apps_user_state_compact,
+                processItem.user, processItem.uid, compactState));
         holder.selinuxContext.setText(String.format("SELinux%s %s", LangUtils.getSeparatorString(),
                 processItem.context));
         holder.more.setContentDescription(mActivity.getString(R.string.running_apps_more_actions_for_process, processName));

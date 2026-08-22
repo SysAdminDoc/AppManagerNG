@@ -18,9 +18,9 @@
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:paddingHorizontal="16dp"
-            android:paddingVertical="6dp"
+            android:paddingVertical="@dimen/premium_space_4"
             android:singleLine="true"
-            android:textAppearance="?attr/textAppearanceCaption"
+            android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelMedium"
             android:textColor="?android:attr/textColorSecondary"
             tools:text="12 of 148 entries" />
 
