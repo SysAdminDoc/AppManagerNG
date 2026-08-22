@@ -4,7 +4,7 @@
     style="@style/Widget.AppTheme.CardView.Preference"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:minHeight="?android:attr/listPreferredItemHeightSmall"
+    android:minHeight="@dimen/preference_row_min_height"
     android:focusable="true"
     android:layout_marginVertical="?attr/listItemMarginVertical"
     android:layout_marginHorizontal="?attr/listItemMarginHorizontal">
@@ -58,7 +58,7 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:gravity="end|center_vertical"
-            android:paddingStart="16dp"
+            android:paddingStart="12dp"
             android:paddingEnd="0dp"
             android:orientation="vertical" />
 
@@ -68,7 +68,7 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_gravity="bottom"
-        android:layout_marginStart="72dp"
+        android:layout_marginStart="@dimen/preference_divider_inset"
         android:layout_marginEnd="16dp"
-        android:background="?attr/colorOutlineVariant" />
+        android:background="?attr/premiumDividerColor" />
 </com.google.android.material.card.MaterialCardView>

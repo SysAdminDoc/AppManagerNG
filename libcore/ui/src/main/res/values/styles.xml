@@ -31,6 +31,7 @@
         <item name="materialSpinnerStyle">@style/Widget.AppTheme.MaterialSpinner</item>
         <item name="toolbarStyle">@style/Widget.AppTheme.MaterialToolbar</item>
         <item name="multiSelectionActionsView">@style/Widget.AppTheme.MultiSelectionActionsView</item>
+        <item name="premiumDividerColor">?attr/colorOutlineVariant</item>
 
         <!-- Preferences -->
         <item name="preferenceStyle">@style/Preference.M3</item>
@@ -342,7 +343,7 @@
         <item name="elevation">0dp</item>
         <item name="itemTextAppearanceInactive">?attr/textAppearanceLabelMedium</item>
         <item name="itemTextAppearanceActive">?attr/textAppearanceLabelMedium</item>
-        <item name="itemIconSize">24dp</item>
+        <item name="itemIconSize">@dimen/selection_icon_size</item>
         <item name="itemIconTint">@color/m3_textfield_indicator_text_color</item>
         <item name="itemTextColor">@color/m3_textfield_indicator_text_color</item>
         <item name="enforceTextAppearance">true</item>

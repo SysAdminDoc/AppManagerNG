@@ -15,7 +15,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:paddingTop="@dimen/padding_very_small"
+        android:paddingTop="0dp"
         android:paddingBottom="@dimen/padding_very_small">
 
         <com.google.android.material.textview.MaterialTextView

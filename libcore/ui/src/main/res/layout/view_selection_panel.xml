@@ -11,7 +11,7 @@
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
-        android:layout_height="48dp"
+        android:layout_height="@dimen/selection_title_height"
         android:orientation="horizontal"
         android:focusable="false">
 
@@ -45,8 +45,8 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/action_cancel"
             style="@style/Widget.AppTheme.Button.IconButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="@dimen/selection_title_height"
+            android:layout_height="@dimen/selection_title_height"
             android:layout_weight="0"
             android:layout_gravity="center_vertical"
             android:focusable="true"
@@ -56,7 +56,7 @@
             android:contentDescription="@android:string/cancel"
             app:icon="@drawable/mtrl_ic_cancel"
             app:iconTint="@color/m3_textfield_indicator_text_color"
-            app:iconSize="24dp" />
+            app:iconSize="@dimen/selection_icon_size" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>
 

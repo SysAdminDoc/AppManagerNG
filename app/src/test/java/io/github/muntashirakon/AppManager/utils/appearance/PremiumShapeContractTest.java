@@ -59,6 +59,27 @@ public class PremiumShapeContractTest {
         assertFalse(strings.contains("<font fgcolor"));
     }
 
+    @Test
+    public void denseListSurfacesUseSharedSpacingAndHairlineTokens() throws IOException {
+        Path appDir = findAppProjectDir();
+        Path projectDir = appDir.getParent();
+        String preferenceLayout = read(projectDir.resolve(
+                "libcore/ui/src/main/res/layout/m3_preference.xml"));
+        String selectionLayout = read(projectDir.resolve(
+                "libcore/ui/src/main/res/layout/view_selection_panel.xml"));
+        String mainPreferences = read(appDir.resolve("src/main/res/xml/preferences_main.xml"));
+
+        assertTrue(preferenceLayout.contains("@dimen/preference_row_min_height"));
+        assertTrue(preferenceLayout.contains("@dimen/preference_divider_inset"));
+        assertTrue(preferenceLayout.contains("?attr/premiumDividerColor"));
+        assertTrue(selectionLayout.contains("@dimen/selection_title_height"));
+        assertTrue(selectionLayout.contains("@dimen/selection_icon_size"));
+        assertFalse(mainPreferences.contains("pref_cat_settings_foundation_summary"));
+        assertFalse(mainPreferences.contains("pref_cat_settings_package_workflows_summary"));
+        assertFalse(mainPreferences.contains("pref_cat_settings_tools_summary"));
+        assertFalse(mainPreferences.contains("pref_cat_settings_support_summary"));
+    }
+
     private static void assertThemeContrast(Map<String, String> colors) {
         assertContrast(colors, "premium_text_high", "premium_surface_0");
         assertContrast(colors, "premium_text_high", "premium_surface_1");
