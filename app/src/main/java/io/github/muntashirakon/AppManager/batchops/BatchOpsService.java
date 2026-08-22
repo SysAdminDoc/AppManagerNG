@@ -28,6 +28,7 @@ import io.github.muntashirakon.AppManager.batchops.BatchOpsManager.BatchOpsInfo;
 import io.github.muntashirakon.AppManager.history.ops.OperationJournalMetadata;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.intercept.IntentCompat;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.main.MainActivity;
 import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler;
 import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler.NotificationManagerInfo;
@@ -237,7 +238,8 @@ public class BatchOpsService extends ForegroundService {
         try {
             Shizuku.addBinderDeadListener(mShizukuBinderDeadListener);
             mShizukuBinderDeadListenerRegistered = true;
-        } catch (Throwable ignore) {
+        } catch (Throwable e) {
+            Log.w("BatchOpsService", "Could not register the privileged binder death listener.", e);
         }
     }
 
@@ -247,7 +249,8 @@ public class BatchOpsService extends ForegroundService {
         }
         try {
             Shizuku.removeBinderDeadListener(mShizukuBinderDeadListener);
-        } catch (Throwable ignore) {
+        } catch (Throwable e) {
+            Log.w("BatchOpsService", "Could not unregister the privileged binder death listener.", e);
         }
         mShizukuBinderDeadListenerRegistered = false;
     }

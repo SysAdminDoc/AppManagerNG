@@ -24,6 +24,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Compared map values before dispatching RecyclerView payloads, so unchanged rows no longer rebind during refreshes.
 - Made Finder backup entries use the current package record when available, preserve backup version metadata, and expose frozen and historical backup state instead of hard-coded empty predicates.
 - Added native-library ZIP data offsets and static-symbol status to App Details, alongside existing ELF page-alignment details.
+- Logged permission, service, package-state, component-state, app-op, and keystore failures on destructive and trust-sensitive fallbacks instead of silently discarding them.
 
 ### Security
 - Updated the Bouncy Castle provider to 1.85.2, with the matching PKIX and utility artifacts pinned to their latest compatible releases.

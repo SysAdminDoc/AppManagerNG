@@ -618,7 +618,8 @@ class BackupOp implements Closeable {
             List<AppOpsManagerCompat.PackageOps> packageOpsList = new AppOpsManagerCompat()
                     .getOpsForPackage(mApplicationInfo.uid, mPackageName, null);
             if (packageOpsList.size() == 1) opEntries.addAll(packageOpsList.get(0).getOps());
-        } catch (Exception ignore) {
+        } catch (Exception e) {
+            Log.w(TAG, "Could not read app-op state for %s; continuing without app-op entries.", e, mPackageName);
         }
         PermissionInfo info;
         int basePermissionType;

@@ -104,6 +104,8 @@ notification-listener, and health toggles for apps installed outside a store. It
 it. Alongside it: privileged-mode capability detection (root, Shizuku, ADB, Dhizuku, KernelSU),
 an installer privilege cascade that falls back gracefully, and a biometric gate on the terminal
 and on backup deletion.
+When a privileged or destructive step cannot complete, the fallback stays conservative and the
+operation is recorded with enough context to diagnose the missing permission or service.
 
 ### Discovery and polish
 

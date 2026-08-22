@@ -22,6 +22,7 @@ import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PermissionCompat;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.settings.Ops;
@@ -49,7 +50,8 @@ public class SelfPermissions {
             if (!checkSelfPermission(permission)) {
                 try {
                     PermissionCompat.grantPermission(BuildConfig.APPLICATION_ID, permission, userId);
-                } catch (Exception ignore) {
+                } catch (Exception e) {
+                    Log.w("SelfPermissions", "Could not grant self permission %s.", e, permission);
                 }
             }
         }
@@ -58,13 +60,15 @@ public class SelfPermissions {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !checkSelfPermission(Manifest.permission.PACKAGE_USAGE_STATS)) {
                 try {
                     PermissionCompat.grantPermission(BuildConfig.APPLICATION_ID, Manifest.permission.PACKAGE_USAGE_STATS, userId);
-                } catch (Exception ignore) {
+                } catch (Exception e) {
+                    Log.w("SelfPermissions", "Could not grant the usage stats permission.", e);
                 }
             }
             try {
                 AppOpsManagerCompat appOps = new AppOpsManagerCompat();
                 appOps.setMode(AppOpsManagerHidden.OP_GET_USAGE_STATS, Process.myUid(), BuildConfig.APPLICATION_ID, AppOpsManager.MODE_ALLOWED);
-            } catch (RemoteException ignore) {
+            } catch (RemoteException e) {
+                Log.w("SelfPermissions", "Could not allow the usage stats app-op.", e);
             }
         }
     }
@@ -275,7 +279,8 @@ public class SelfPermissions {
             try {
                 return PackageManagerCompat.getPackageManager().checkUidPermission(permissionName, uid)
                         == PackageManager.PERMISSION_GRANTED;
-            } catch (RemoteException ignore) {
+            } catch (RemoteException e) {
+                Log.w("SelfPermissions", "Could not check permission %s for uid %d.", e, permissionName, uid);
             }
         }
         return checkSelfPermission(permissionName);
