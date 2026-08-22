@@ -215,7 +215,7 @@ public class CodeEditorViewModel extends AndroidViewModel {
             try (OutputStream os = savingPath.openOutputStream()) {
                 switch (mXmlType) {
                     case XML_TYPE_AXML: {
-                        // TODO: Use serializer from the latest update
+                        // ABX attributes retain types that a generic serializer would lose.
                         byte[] realContent = AndroidBinXmlEncoder.encodeString(content.toString());
                         os.write(realContent);
                         break;

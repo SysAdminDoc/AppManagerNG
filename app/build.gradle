@@ -175,7 +175,8 @@ tasks.withType(Test).configureEach {
     }
 }
 
-def editorLanguages = ['java', 'json', 'kotlin', 'properties', 'sh', 'smali', 'xml']
+def editorLanguageRoot = file("src/main/assets/languages")
+def editorLanguages = editorLanguageRoot.listFiles()?.findAll { it.isDirectory() }?.collect { it.name }?.sort() ?: []
 def editorLanguageAssetFiles = editorLanguages.collectMany { language ->
     [
             file("src/main/assets/languages/${language}/tmLanguage.json"),
