@@ -7,6 +7,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import android.content.SharedPreferences;
+
 import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.Before;
@@ -68,6 +70,21 @@ public class AppNoteStoreTest {
         assertEquals(2, mStore.snapshot().size());
         assertEquals("Primary", mStore.snapshot().get(PKG));
         assertEquals("Other", mStore.snapshot().get("com.example.other"));
+    }
+
+    @Test
+    public void staleReconcileSnapshotIsRejectedAfterNewerMutation() {
+        SharedPreferences prefs = ApplicationProvider.getApplicationContext()
+                .getSharedPreferences(AppNoteStore.PREFS_NAME, 0);
+        mStore.setNote(PKG, "old note");
+        long staleGeneration = AppNoteStore.generationForTesting(PKG);
+
+        mStore.setNote(PKG, "new note");
+
+        assertFalse(AppNoteStore.isSnapshotCurrentForTesting(prefs, PKG, staleGeneration,
+                "old note"));
+        assertTrue(AppNoteStore.isSnapshotCurrentForTesting(prefs, PKG,
+                AppNoteStore.generationForTesting(PKG), "new note"));
     }
 
 }

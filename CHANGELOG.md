@@ -31,6 +31,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   view renders the newest reports.
 - Added durable per-app notes. App Details keeps the existing editor and snapshot support, while
   Room v12 mirrors the notes and Finder can match apps with notes or note text.
+- Guarded the Room note mirror against stale background reconciliation after a newer edit or
+  clear, and allow the initial reconcile to retry after a failed database open.
 
 ### Security
 - Raised the Android build toolchain to AGP 9.3.1, Gradle 9.7.0, and Dependency-Check 13.0.0. Refreshed every dependency lock and recorded new artifacts only after checking publisher checksums.
