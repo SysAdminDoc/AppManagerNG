@@ -104,13 +104,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ### P2
 
-- [ ] P2 — Prove am.jar and main.jar are reproducible across environments, not just across runs
-  Why: the release gate builds twice in the same tree, same paths, same locale and timezone, so it cannot detect the class of non-determinism that actually breaks third-party rebuilds — and that is precisely where upstream failed: its assets/am.jar and assets/main.jar differ in size and hash between maintainer and rebuilder (19730 vs 19114 bytes), unresolved as of 2026-07-02. NG builds the same two jars through its own d8 step, so it carries the same risk without evidence either way.
-  Evidence: upstream MuntashirAkon/AppManager#1997; server/build.gradle d8 invocation with a filename-prefix class split (ServerUtils, RootServiceMain, IRootServiceManager); docs/distribution/reproducible-builds.md.
-  Touches: server/build.gradle (sort d8 inputs deterministically, normalise entry timestamps and ordering in the produced jars), scripts/verify_reproducible_release.sh and .ps1 (second build from a different absolute path with a different TZ, LC_ALL and user, comparing the two jars explicitly and by name in the report).
-  Acceptance: two builds from different absolute paths, timezones and locales produce byte-identical am.jar and main.jar; the verifier reports those two hashes separately so a future drift names the jar; a deliberately reordered input set still produces the same jar.
-  Complexity: M
-
 - [ ] P2 — Developer-verification-aware install diagnostics
   Why: enforcement begins 2026-09-30 in Brazil, Indonesia, Singapore and Thailand, and the installer-facing APIs already exist at API 36.1 — PackageInstaller.getDeveloperVerificationServiceProvider(), EXTRA_DEVELOPER_VERIFICATION_FAILURE_REASON, EXTRA_DEVELOPER_VERIFICATION_LITE_PERFORMED, DEVELOPER_VERIFICATION_FAILED_REASON_{UNKNOWN,NETWORK_UNAVAILABLE,DEVELOPER_BLOCKED}, SessionParams.setExtensionParams. Without this an install the platform refuses for verification reasons fails the same way as any other failure, and NG's whole installer proposition is disclosure. No competitor has shipped this. Distinct from the existing P3 Advanced Protection row, which covers a different gate.
   Evidence: developer.android.com PackageInstaller reference (36.1 additions); Android 16 QPR2 release notes; developer.android.com/developer-verification/guides (2026-09-30 enforcement, ADB installs exempt); the shipped restricted-settings detector as precedent.

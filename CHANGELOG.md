@@ -17,6 +17,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Detected truncated package lists from privileged mode. The main list now falls back to Android's normal app view and shows both counts instead of silently omitting apps.
 - Kept no-root force-stop and data/cache automation responsive with bounded scheduled retries, including modern Android Settings screens.
 - Made release build timestamps deterministic by honoring `SOURCE_DATE_EPOCH` first, then the Git commit time, and failing closed when neither is available.
+- Proved `am.jar` and `main.jar` across a detached checkout with a different path, locale, timezone, and builder identity. The verifier now reports both hash pairs.
 
 ### Security
 - Updated the Bouncy Castle provider to 1.85.2, with the matching PKIX and utility artifacts pinned to their latest compatible releases.
