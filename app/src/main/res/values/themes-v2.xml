@@ -38,6 +38,7 @@
         <item name="chipGroupStyle">@style/Widget.AppTheme.V2.ChipGroup</item>
         <item name="floatingActionButtonStyle">@style/Widget.AppTheme.V2.Button.FAB</item>
         <item name="searchViewStyle">@style/Widget.AppTheme.V2.SearchView</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.AppTheme.V2.MaterialAlertDialog</item>
 
         <item name="textAppearanceTitleMedium">@style/TextAppearance.AppTheme.V2.TitleMedium</item>
         <item name="android:textAppearanceListItem">@style/TextAppearance.AppTheme.V2.TitleMedium</item>
@@ -219,6 +220,19 @@
     <style name="Widget.AppTheme.V2.Button.FAB" parent="Widget.Material3.FloatingActionButton.Primary">
         <item name="elevation">@dimen/premium_elevation_3</item>
         <item name="shapeAppearanceOverlay">@style/ShapeAppearance.AppTheme.CircleComponent</item>
+    </style>
+
+    <style name="ThemeOverlay.AppTheme.V2.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="alertDialogStyle">@style/MaterialAlertDialog.AppTheme.V2</item>
+    </style>
+
+    <style name="MaterialAlertDialog.AppTheme.V2" parent="MaterialAlertDialog.Material3">
+        <item name="shapeAppearance">@style/ShapeAppearance.AppTheme.V2.Dialog</item>
+    </style>
+
+    <style name="ShapeAppearance.AppTheme.V2.Dialog" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/premium_radius_modal</item>
     </style>
 
     <style name="ShapeAppearance.AppTheme.V2.Control" parent="">
