@@ -3,6 +3,15 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## v0.6.18, 2026-08-22
+
+### Changed
+- Replaced outlined access-mode cards with compact filled rows and a single selected surface. Capability status now uses plain text and tighter spacing.
+- Restyled onboarding follow-up actions as borderless rows and shortened the notification prompt.
+
+### Fixed
+- Kept ready-state capability labels readable against Light, Dark, and AMOLED sheet surfaces.
+
 ## v0.6.17, 2026-08-22
 
 ### Changed

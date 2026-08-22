@@ -8,6 +8,16 @@
 <changelog>
     <release
         type="stable release"
+        version="v0.6.18"
+        code="26"
+        date="22 August 2026">
+        <improve title="First-run hierarchy">Access modes now use compact filled rows with one selected surface instead of a stack of outlined cards.</improve>
+        <improve title="Quieter status">Capability pills are plain status labels, spacing is tighter, and the notification prompt gets to the decision faster.</improve>
+        <fix title="AMOLED contrast">Ready-state capability labels stay readable on dark sheet surfaces.</fix>
+    </release>
+
+    <release
+        type="stable release"
         version="v0.6.17"
         code="25"
         date="22 August 2026">

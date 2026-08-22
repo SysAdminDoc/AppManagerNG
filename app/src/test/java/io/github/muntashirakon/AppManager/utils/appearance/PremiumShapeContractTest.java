@@ -85,6 +85,22 @@ public class PremiumShapeContractTest {
         assertFalse(mainPreferences.contains("pref_cat_settings_support_summary"));
     }
 
+    @Test
+    public void onboardingUsesFlatSelectionAndPlainStatusLabels() throws IOException {
+        Path appDir = findAppProjectDir();
+        String layout = read(appDir.resolve("src/main/res/layout/fragment_onboarding.xml"));
+        String fragment = read(appDir.resolve(
+                "src/main/java/io/github/muntashirakon/AppManager/onboarding/OnboardingFragment.java"));
+
+        assertFalse(layout.contains("@drawable/onboarding_status_background"));
+        assertFalse(layout.contains("Widget.Material3.Button.OutlinedButton"));
+        assertTrue(layout.contains("Widget.AppTheme.Button.TextButton.Icon"));
+        assertFalse(fragment.contains("GradientDrawable"));
+        assertFalse(fragment.contains("premium_stroke_focus"));
+        assertTrue(fragment.contains("colorSurfaceContainerHighest"));
+        assertTrue(fragment.contains("premium_stroke_none"));
+    }
+
     private static void assertThemeContrast(Map<String, String> colors) {
         assertContrast(colors, "premium_text_high", "premium_surface_0");
         assertContrast(colors, "premium_text_high", "premium_surface_1");
@@ -94,6 +110,8 @@ public class PremiumShapeContractTest {
         assertContrast(colors, "premium_text_medium", "premium_surface_1");
         assertContrast(colors, "premium_text_medium", "premium_surface_2");
         assertContrast(colors, "premium_text_medium", "premium_surface_3");
+        assertContrast(colors, "premium_color_primary", "premium_surface_0");
+        assertContrast(colors, "premium_color_primary", "premium_surface_1");
         assertContrast(colors, "premium_color_on_primary", "premium_color_primary");
         assertContrast(colors, "premium_color_on_primary_container", "premium_color_primary_container");
         assertContrast(colors, "premium_color_on_secondary", "premium_color_secondary");
