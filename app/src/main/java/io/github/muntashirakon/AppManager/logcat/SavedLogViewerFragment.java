@@ -15,7 +15,6 @@ import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.core.os.BundleCompat;
 
-import java.lang.ref.WeakReference;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
@@ -57,7 +56,7 @@ public class SavedLogViewerFragment extends AbsLogViewerFragment implements LogV
             return;
         }
         mFilename = formatSubtitle(uri.getLastPathSegment());
-        mViewModel.openLogsFromFile(uri, new WeakReference<>(this));
+        mViewModel.openLogsFromFile(uri, this);
     }
 
     @Override
