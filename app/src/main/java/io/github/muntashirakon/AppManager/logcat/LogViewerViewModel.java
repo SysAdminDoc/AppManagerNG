@@ -9,7 +9,6 @@ import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
-import androidx.annotation.WorkerThread;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -60,17 +59,33 @@ public class LogViewerViewModel extends AndroidViewModel {
     public interface LogLinesAvailableInterface {
         @UiThread
         void onNewLogsAvailable(@NonNull List<LogLine> logLines);
+
+        @UiThread
+        boolean isLogViewActive();
+    }
+
+    public static final class LogcatSession {
+        @NonNull
+        private final WeakReference<LogLinesAvailableInterface> mListener;
+        private volatile boolean mActive = true;
+        @Nullable
+        private volatile LogcatReader mReader;
+        @Nullable
+        private volatile Future<?> mFuture;
+
+        private LogcatSession(@NonNull LogLinesAvailableInterface listener) {
+            mListener = new WeakReference<>(listener);
+        }
     }
 
     private final Object mLock = new Object();
+    private final Object mReaderSessionLock = new Object();
 
     private volatile boolean mPaused;
-    private volatile boolean mKilled = true;
     private volatile boolean mCollapsedMode;
     private volatile int mLogLevel;
-    private volatile LogcatReader mReader;
     @Nullable
-    private Future<?> mLogcatReaderFuture;
+    private volatile LogcatSession mReaderSession;
 
     private final Pattern mFilterPattern;
     private final MutableLiveData<Boolean> mExpandLogsLiveData = new MutableLiveData<>();
@@ -90,13 +105,13 @@ public class LogViewerViewModel extends AndroidViewModel {
 
     @Override
     protected void onCleared() {
-        // Wake a paused reader first: it may be parked in mLock.wait() (the user selected a log
-        // line), and shutdown() does not interrupt it — without this the pool thread waits forever.
-        synchronized (mLock) {
-            mPaused = false;
-            mLock.notifyAll();
+        LogcatSession session;
+        synchronized (mReaderSessionLock) {
+            session = mReaderSession;
+            mReaderSession = null;
         }
-        killLogcatReaderInternal();
+        invalidateSession(session);
+        killSessionReader(session);
         mExecutor.shutdown();
         super.onCleared();
     }
@@ -134,42 +149,54 @@ public class LogViewerViewModel extends AndroidViewModel {
     }
 
     @AnyThread
-    public void startLogcat(@Nullable WeakReference<LogLinesAvailableInterface> logLinesAvailableInterface) {
-        // Ensure only one reader loop ever runs. The fragment calls this from onViewCreated, so a
-        // rotation would otherwise start a second loop against the same reader — silently dropping
-        // log lines and leaking the previous logcat process/thread. Supersede any running loop.
-        Future<?> previous = mLogcatReaderFuture;
-        if (previous != null && !previous.isDone()) {
-            killLogcatReaderInternal();          // make readLine() return -> loop exits
-            synchronized (mLock) {
-                mPaused = false;
-                mLock.notifyAll();               // wake it if it parked while paused
-            }
-            previous.cancel(true);
+    @NonNull
+    public LogcatSession startLogcat(@NonNull LogLinesAvailableInterface logLinesAvailableInterface) {
+        LogcatSession session = new LogcatSession(logLinesAvailableInterface);
+        LogcatSession previous;
+        synchronized (mReaderSessionLock) {
+            previous = mReaderSession;
+            mReaderSession = session;
         }
-        mLogcatReaderFuture = mExecutor.submit(() -> {
-            mKilled = false;
+        invalidateSession(previous);
+        killSessionReader(previous);
+        session.mFuture = mExecutor.submit(() -> {
             try {
-                mReader = LogcatReaderLoader.create(true).loadReader();
+                LogcatReader reader = LogcatReaderLoader.create(true).loadReader();
+                synchronized (session) {
+                    if (!session.mActive) {
+                        reader.killQuietly();
+                        return;
+                    }
+                    session.mReader = reader;
+                }
 
                 int maxLines = Prefs.LogViewer.getDisplayLimit();
 
                 String line;
                 LinkedList<LogLine> initialLines = new LinkedList<>();
-                while ((line = mReader.readLine()) != null && !ThreadUtils.isInterrupted()) {
+                while (session.mActive && !ThreadUtils.isInterrupted()) {
+                    synchronized (session) {
+                        reader = session.mReader;
+                    }
+                    if (reader == null || (line = reader.readLine()) == null) {
+                        break;
+                    }
                     if (mPaused) {
                         synchronized (mLock) {
-                            if (mPaused) {
+                            if (mPaused && session.mActive) {
                                 mLock.wait();
                             }
                         }
                     }
+                    if (!session.mActive) {
+                        break;
+                    }
                     LogLine logLine = LogLine.newLogLine(line, !mCollapsedMode, mFilterPattern);
                     if (logLine == null) {
-                        if (mReader.readyToRecord()) {
+                        if (reader.readyToRecord()) {
                             // Logcat is ready
                         }
-                    } else if (!mReader.readyToRecord()) {
+                    } else if (!reader.readyToRecord()) {
                         // "ready to record" in this case means all the initial lines have been flushed from the reader
                         initialLines.add(logLine);
                         if (initialLines.size() > maxLines) {
@@ -178,33 +205,67 @@ public class LogViewerViewModel extends AndroidViewModel {
                     } else if (!initialLines.isEmpty()) {
                         // flush all the initial lines we've loaded
                         initialLines.add(logLine);
-                        sendNewLogs(initialLines, logLinesAvailableInterface);
+                        sendNewLogs(initialLines, session.mListener);
                         initialLines.clear();
                     } else {
                         // just proceed as normal
-                        sendNewLogs(Collections.singletonList(logLine), logLinesAvailableInterface);
+                        sendNewLogs(Collections.singletonList(logLine), session.mListener);
                     }
                 }
             } catch (Exception e) {
-                Log.e(TAG, e);
-            } finally {
-                if (logLinesAvailableInterface != null) {
-                    logLinesAvailableInterface.clear();
+                if (session.mActive) {
+                    Log.e(TAG, e);
                 }
-                killLogcatReaderInternal();
+            } finally {
+                synchronized (session) {
+                    session.mActive = false;
+                    session.mListener.clear();
+                }
+                killSessionReader(session);
+                boolean wasCurrent;
+                synchronized (mReaderSessionLock) {
+                    wasCurrent = mReaderSession == session;
+                    if (wasCurrent) {
+                        mReaderSession = null;
+                    }
+                }
+                if (wasCurrent) {
+                    mLoggingFinishedLiveData.postValue(true);
+                }
             }
-            mLoggingFinishedLiveData.postValue(true);
         });
+        return session;
     }
 
     @AnyThread
     public void restartLogcat() {
+        LogcatSession session = mReaderSession;
+        if (session == null || !session.mActive) {
+            return;
+        }
         mExecutor.submit(() -> {
             synchronized (mLock) {
                 // Pause -> reload reader -> resume
                 mPaused = true;
+                LogcatReader replacement = null;
                 try {
-                    mReader = LogcatReaderLoader.create(true).loadReader();
+                    replacement = LogcatReaderLoader.create(true).loadReader();
+                    if (!session.mActive) {
+                        replacement.killQuietly();
+                        return;
+                    }
+                    LogcatReader previous;
+                    synchronized (session) {
+                        if (!session.mActive) {
+                            replacement.killQuietly();
+                            return;
+                        }
+                        previous = session.mReader;
+                        session.mReader = replacement;
+                    }
+                    if (previous != null) {
+                        previous.killQuietly();
+                    }
                 } catch (Exception e) {
                     // Errors do not matter
                     Log.e(TAG, e);
@@ -216,13 +277,16 @@ public class LogViewerViewModel extends AndroidViewModel {
         });
     }
 
-    private static void sendNewLogs(@NonNull List<LogLine> logLines, @Nullable WeakReference<LogLinesAvailableInterface> logLinesAvailableInterface) {
+    static void sendNewLogs(@NonNull List<LogLine> logLines,
+                            @Nullable WeakReference<LogLinesAvailableInterface> logLinesAvailableInterface) {
         if (logLinesAvailableInterface != null) {
-            LogLinesAvailableInterface i = logLinesAvailableInterface.get();
             List<LogLine> logLines1 = new ArrayList<>(logLines);
-            if (i != null) {
-                ThreadUtils.postOnMainThread(() -> i.onNewLogsAvailable(logLines1));
-            }
+            ThreadUtils.postOnMainThread(() -> {
+                LogLinesAvailableInterface listener = logLinesAvailableInterface.get();
+                if (listener != null && listener.isLogViewActive()) {
+                    listener.onNewLogsAvailable(logLines1);
+                }
+            });
         }
     }
 
@@ -250,7 +314,8 @@ public class LogViewerViewModel extends AndroidViewModel {
     }
 
     public boolean isLogcatKilled() {
-        return mKilled;
+        LogcatSession session = mReaderSession;
+        return session == null || !session.mActive;
     }
 
     public boolean isCollapsedMode() {
@@ -273,23 +338,61 @@ public class LogViewerViewModel extends AndroidViewModel {
 
     @AnyThread
     public void killLogcatReader() {
-        mExecutor.submit(this::killLogcatReaderInternal);
+        stopLogcat(null);
     }
 
-    @WorkerThread
-    private void killLogcatReaderInternal() {
-        if (!mKilled) {
-            synchronized (mLock) {
-                if (!mKilled && mReader != null) {
-                    mReader.killQuietly();
-                    mKilled = true;
-                }
+    @AnyThread
+    public void stopLogcat(@Nullable LogcatSession expectedSession) {
+        LogcatSession session;
+        synchronized (mReaderSessionLock) {
+            session = mReaderSession;
+            if (session == null || (expectedSession != null && session != expectedSession)) {
+                return;
             }
+            mReaderSession = null;
+        }
+        invalidateSession(session);
+        killSessionReader(session);
+    }
+
+    private void invalidateSession(@Nullable LogcatSession session) {
+        if (session == null) {
+            return;
+        }
+        Future<?> future;
+        synchronized (session) {
+            session.mActive = false;
+            session.mListener.clear();
+            future = session.mFuture;
+        }
+        if (future != null) {
+            future.cancel(true);
+        }
+        synchronized (mLock) {
+            mPaused = false;
+            mLock.notifyAll();
         }
     }
 
     @AnyThread
-    public void openLogsFromFile(Uri filename, @Nullable WeakReference<LogLinesAvailableInterface> logLinesAvailableInterface) {
+    private static void killSessionReader(@Nullable LogcatSession session) {
+        if (session == null) {
+            return;
+        }
+        LogcatReader reader;
+        synchronized (session) {
+            reader = session.mReader;
+            session.mReader = null;
+        }
+        if (reader != null) {
+            reader.killQuietly();
+        }
+    }
+
+    @AnyThread
+    public void openLogsFromFile(@NonNull Uri filename,
+                                 @NonNull LogLinesAvailableInterface logLinesAvailableInterface) {
+        WeakReference<LogLinesAvailableInterface> listener = new WeakReference<>(logLinesAvailableInterface);
         mExecutor.submit(() -> {
             // remove any lines at the beginning if necessary
             final int maxLines = Prefs.LogViewer.getDisplayLimit();
@@ -305,7 +408,7 @@ public class LogViewerViewModel extends AndroidViewModel {
                 }
                 mLoadingProgressLiveData.postValue(lineNumber * 100 / linesSize);
             }
-            sendNewLogs(logLines, logLinesAvailableInterface);
+            sendNewLogs(logLines, listener);
             if (savedLog.isTruncated()) {
                 mTruncatedLinesLiveData.postValue(maxLines);
             }

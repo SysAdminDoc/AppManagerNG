@@ -24,13 +24,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ### P1
 
-- [ ] P1: Drop live-log callbacks after the view is destroyed
-  Why: fork issue #10 reports a fully reproducible crash when leaving Log Viewer, and the current callback can retain a detached fragment across the main-thread post.
-  Evidence: `https://github.com/SysAdminDoc/AppManagerNG/issues/10`; `logcat/LogViewerViewModel.java:219`; `logcat/LiveLogViewerFragment.java:117`; `logcat/AbsLogViewerFragment.java`; v0.6.12 API 29 no-root crash trace.
-  Touches: `logcat/LogViewerViewModel.java`, `logcat/LiveLogViewerFragment.java`, `logcat/AbsLogViewerFragment.java`, lifecycle and reader tests.
-  Acceptance: `onDestroyView` detaches the listener and stops or supersedes its reader; a queued main-thread callback re-checks the active listener and view lifecycle before touching UI; rapid back, finish, and rotation while logs arrive produce no detached-fragment access on API 29 and the current API; a regression test reproduces the old ordering.
-  Complexity: M
-
 - [ ] P1: Decode untrusted file thumbnails in an isolated process
   Why: image, PDF, font, eBook, and archive thumbnails pass attacker-controlled files to decoders inside the permission-bearing app process.
   Evidence: upstream App Manager #2011 maintainer security analysis; Android `<service android:isolatedProcess="true">` documentation; `fm/icons/FmIconFetcher.java`; `fm/icons/FmIcons.java:322-410`; `app/src/main/AndroidManifest.xml`.
