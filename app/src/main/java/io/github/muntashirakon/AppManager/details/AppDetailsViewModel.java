@@ -114,6 +114,7 @@ import io.github.muntashirakon.AppManager.rules.struct.AppOpRule;
 import io.github.muntashirakon.AppManager.rules.struct.ComponentRule;
 import io.github.muntashirakon.AppManager.rules.struct.PermissionReferenceRule;
 import io.github.muntashirakon.AppManager.rules.struct.RuleEntry;
+import io.github.muntashirakon.AppManager.safety.AppOpsUidGuard;
 import io.github.muntashirakon.AppManager.scanner.NativeLibraries;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Prefs;
@@ -137,6 +138,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
     private final MutableLiveData<Integer> mFreezeTypeLiveData = new MutableLiveData<>();
     private final MutableLiveData<AppDetailsComponentItem> mComponentChangedLiveData = new MutableLiveData<>();
     private final MutableLiveData<PermOpResult> mPermOpResultLiveData = new MutableLiveData<>();
+    private final ThreadLocal<AppOpsUidGuard.Impact> mAppOpsUidImpact = new ThreadLocal<>();
 
     public static final class PermOpResult {
         /**
@@ -149,26 +151,35 @@ public class AppDetailsViewModel extends AndroidViewModel {
         @StringRes
         public final int failureMessageRes;
         @Nullable
+        public final AppOpsUidGuard.Impact uidImpact;
+        @Nullable
         public final Object changedItem;
 
         PermOpResult(@AppDetailsFragment.Property int property, boolean success,
-                     @StringRes int failureMessageRes, @Nullable Object changedItem) {
+                     @StringRes int failureMessageRes, @Nullable AppOpsUidGuard.Impact uidImpact,
+                     @Nullable Object changedItem) {
             this.property = property;
             this.success = success;
             this.failureMessageRes = failureMessageRes;
+            this.uidImpact = uidImpact;
             this.changedItem = changedItem;
         }
 
         static PermOpResult success(@AppDetailsFragment.Property int property) {
-            return new PermOpResult(property, true, 0, null);
+            return new PermOpResult(property, true, 0, null, null);
         }
 
         static PermOpResult successWithItem(@AppDetailsFragment.Property int property, @NonNull Object item) {
-            return new PermOpResult(property, true, 0, item);
+            return new PermOpResult(property, true, 0, null, item);
         }
 
         static PermOpResult failure(@AppDetailsFragment.Property int property, @StringRes int messageRes) {
-            return new PermOpResult(property, false, messageRes, null);
+            return failure(property, messageRes, null);
+        }
+
+        static PermOpResult failure(@AppDetailsFragment.Property int property, @StringRes int messageRes,
+                                    @Nullable AppOpsUidGuard.Impact uidImpact) {
+            return new PermOpResult(property, false, messageRes, uidImpact, null);
         }
     }
 
@@ -186,7 +197,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
             boolean ok = resetAppOps();
             mPermOpResultLiveData.postValue(ok
                     ? PermOpResult.success(property)
-                    : PermOpResult.failure(property, R.string.failed_to_reset_app_ops));
+                    : appOpsFailure(property, R.string.failed_to_reset_app_ops));
         });
     }
 
@@ -195,7 +206,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
             boolean ok = ignoreDangerousAppOps();
             mPermOpResultLiveData.postValue(ok
                     ? PermOpResult.success(property)
-                    : PermOpResult.failure(property, R.string.failed_to_deny_dangerous_app_ops));
+                    : appOpsFailure(property, R.string.failed_to_deny_dangerous_app_ops));
         });
     }
 
@@ -204,7 +215,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
             boolean ok = setAppOp(op, mode);
             mPermOpResultLiveData.postValue(ok
                     ? PermOpResult.success(property)
-                    : PermOpResult.failure(property, R.string.failed_to_enable_op));
+                    : appOpsFailure(property, R.string.failed_to_enable_op));
         });
     }
 
@@ -223,7 +234,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
             boolean ok = setAppOpMode(item, mode);
             mPermOpResultLiveData.postValue(ok
                     ? PermOpResult.successWithItem(property, item)
-                    : PermOpResult.failure(property, R.string.failed_to_change_app_op_mode));
+                    : appOpsFailure(property, R.string.failed_to_change_app_op_mode));
         });
     }
 
@@ -233,8 +244,27 @@ public class AppDetailsViewModel extends AndroidViewModel {
             boolean ok = setAppOps(ops, mode);
             mPermOpResultLiveData.postValue(ok
                     ? PermOpResult.success(property)
-                    : PermOpResult.failure(property, R.string.failed_to_change_app_op_mode));
+                    : appOpsFailure(property, R.string.failed_to_change_app_op_mode));
         });
+    }
+
+    @NonNull
+    private PermOpResult appOpsFailure(@AppDetailsFragment.Property int property,
+                                       @StringRes int messageRes) {
+        AppOpsUidGuard.Impact impact = mAppOpsUidImpact.get();
+        mAppOpsUidImpact.remove();
+        return PermOpResult.failure(property, messageRes, impact);
+    }
+
+    private void beginAppOpsMutation() {
+        mAppOpsUidImpact.remove();
+    }
+
+    private void recordAppOpsUidImpact(@Nullable Throwable throwable) {
+        AppOpsUidGuard.Impact impact = AppOpsUidGuard.findImpact(throwable);
+        if (impact != null) {
+            mAppOpsUidImpact.set(impact);
+        }
     }
 
     public void togglePermissionAsync(@AppDetailsFragment.Property int property,
@@ -1069,6 +1099,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
     @WorkerThread
     @GuardedBy("blockerLocker")
     public boolean setAppOp(int op, int mode) {
+        beginAppOpsMutation();
         if (mExternalApk) return false;
         PackageInfo packageInfo = getPackageInfoInternal();
         if (packageInfo == null) return false;
@@ -1088,6 +1119,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
             });
         } catch (PermissionException e) {
             Log.e(TAG, e);
+            recordAppOpsUidImpact(e);
             recordAppOpHistory(op, mode, false, e);
             return false;
         }
@@ -1097,6 +1129,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
     @WorkerThread
     @GuardedBy("blockerLocker")
     public boolean setAppOps(@NonNull int[] ops, int mode) {
+        beginAppOpsMutation();
         if (mExternalApk || ops.length == 0) return false;
         PackageInfo packageInfo = getPackageInfoInternal();
         if (packageInfo == null) return false;
@@ -1107,6 +1140,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 recordAppOpHistory(op, mode, true, null);
             } catch (PermissionException e) {
                 Log.e(TAG, e);
+                recordAppOpsUidImpact(e);
                 recordAppOpHistory(op, mode, false, e);
                 isSuccessful = false;
             }
@@ -1129,6 +1163,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
     @WorkerThread
     @GuardedBy("blockerLocker")
     public boolean setAppOpMode(AppDetailsAppOpItem appOpItem) {
+        beginAppOpsMutation();
         if (mExternalApk) return false;
         PackageInfo packageInfo = getPackageInfoInternal();
         if (packageInfo == null) return false;
@@ -1153,6 +1188,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
             return true;
         } catch (PermissionException e) {
             Log.e(TAG, e);
+            recordAppOpsUidImpact(e);
             recordAppOpHistory(appOpItem.getOp(), appOpItem.getMode(), false, e);
             return false;
         }
@@ -1161,6 +1197,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
     @WorkerThread
     @GuardedBy("blockerLocker")
     public boolean setAppOpMode(AppDetailsAppOpItem appOpItem, @AppOpsManagerCompat.Mode int mode) {
+        beginAppOpsMutation();
         if (mExternalApk) return false;
         PackageInfo packageInfo = getPackageInfoInternal();
         if (packageInfo == null) return false;
@@ -1181,6 +1218,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
             return true;
         } catch (PermissionException e) {
             Log.e(TAG, e);
+            recordAppOpsUidImpact(e);
             recordAppOpHistory(appOpItem.getOp(), mode, false, e);
             return false;
         }
@@ -1221,6 +1259,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
     @WorkerThread
     @GuardedBy("blockerLocker")
     public boolean resetAppOps() {
+        beginAppOpsMutation();
         if (mExternalApk) return false;
         if (getPackageInfoInternal() == null || mPackageName == null) return false;
         try {
@@ -1242,6 +1281,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
             return true;
         } catch (Exception e) {
             Log.e(TAG, e);
+            recordAppOpsUidImpact(e);
         }
         return false;
     }
@@ -1249,6 +1289,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
     @WorkerThread
     @GuardedBy("blockerLocker")
     public boolean ignoreDangerousAppOps() {
+        beginAppOpsMutation();
         if (mExternalApk) return false;
         PackageInfo packageInfo = getPackageInfoInternal();
         if (packageInfo == null) return false;
@@ -1267,11 +1308,13 @@ public class AppDetailsViewModel extends AndroidViewModel {
                             // Set mode
                             try {
                                 PermUtils.setAppOpMode(mAppOpsManager, mAppOpItem.getOp(), mPackageName,
-                                        packageInfo.applicationInfo.uid, AppOpsManager.MODE_IGNORED);
+                                        packageInfo.applicationInfo.uid, AppOpsManager.MODE_IGNORED,
+                                        AppOpsUidGuard.MutationSource.IGNORE_DANGEROUS, null);
                                 opItems.add(mAppOpItem.getOp());
                                 mAppOpItem.invalidate(mAppOpsManager, packageInfo);
                             } catch (PermissionException e) {
                                 Log.e(TAG, e);
+                                recordAppOpsUidImpact(e);
                                 isSuccessful = false;
                                 break;
                             }

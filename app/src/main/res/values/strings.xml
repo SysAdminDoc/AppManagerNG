@@ -640,6 +640,7 @@
     <string name="failed_to_revoke_permission">Could not revoke permission</string>
     <string name="permission_settings_unavailable">Cannot open this permission settings screen on this device.</string>
     <string name="failed_to_reset_app_ops">Could not reset app ops</string>
+    <string name="app_ops_uid_interlock_message">Blocked a UID-wide change. Affected packages: %1$s\nOperations: %2$s\nUse Batch operations and include every package listed here to review and apply the change.</string>
     <string name="failed_to_deny_dangerous_perms">Could not revoke all dangerous permissions</string>
     <string name="failed_to_deny_dangerous_app_ops">Could not revoke all dangerous app ops</string>
     <string name="launch_app">Launch</string>

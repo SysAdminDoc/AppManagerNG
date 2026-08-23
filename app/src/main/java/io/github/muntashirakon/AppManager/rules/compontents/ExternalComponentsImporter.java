@@ -39,7 +39,9 @@ import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.rules.RuleType;
+import io.github.muntashirakon.AppManager.safety.AppOpsUidGuard;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
+import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
@@ -57,12 +59,22 @@ public class ExternalComponentsImporter {
     public static void setModeToFilteredAppOps(@NonNull AppOpsManagerCompat appOpsManager,
                                                @NonNull UserPackagePair pair,
                                                int[] appOps,
-                                               @AppOpsManagerCompat.Mode int mode) throws RemoteException {
+                                               @AppOpsManagerCompat.Mode int mode,
+                                               @NonNull Collection<String> reviewedPackages)
+            throws RemoteException {
         Collection<Integer> appOpList;
         appOpList = PackageUtils.getFilteredAppOps(pair.getPackageName(), pair.getUserId(), appOps, mode);
+        int uid = PackageUtils.getAppUid(pair);
+        AppOpsUidGuard.ReviewedPlan reviewedPlan = null;
+        if (!appOpList.isEmpty()) {
+            reviewedPlan = AppOpsUidGuard.createReviewedPlan(uid, pair.getPackageName(),
+                    ArrayUtils.convertToIntArray(new ArrayList<>(appOpList)), AppOpsUidGuard.MutationSource.BATCH,
+                    reviewedPackages, true);
+        }
         try (ComponentsBlocker cb = ComponentsBlocker.getMutableInstance(pair.getPackageName(), pair.getUserId())) {
             for (int appOp : appOpList) {
-                appOpsManager.setMode(appOp, PackageUtils.getAppUid(pair), pair.getPackageName(), mode);
+                appOpsManager.setMode(appOp, uid, pair.getPackageName(), mode,
+                        AppOpsUidGuard.MutationSource.BATCH, reviewedPlan);
                 cb.setAppOp(appOp, mode);
             }
             cb.applyRules(true);

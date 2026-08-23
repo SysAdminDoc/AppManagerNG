@@ -46,6 +46,7 @@ import io.github.muntashirakon.AppManager.rules.struct.AppOpRule;
 import io.github.muntashirakon.AppManager.rules.struct.ComponentRule;
 import io.github.muntashirakon.AppManager.rules.struct.PermissionRule;
 import io.github.muntashirakon.AppManager.rules.struct.RuleEntry;
+import io.github.muntashirakon.AppManager.safety.AppOpsUidGuard;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
@@ -533,7 +534,8 @@ public final class ComponentsBlocker extends RulesStorageManager {
         // Apply all app ops
         for (AppOpRule appOp : getAll(AppOpRule.class)) {
             try {
-                appOpsManager.setMode(appOp.getOp(), uid, packageName, appOp.getMode());
+                appOpsManager.setMode(appOp.getOp(), uid, packageName, appOp.getMode(),
+                        AppOpsUidGuard.MutationSource.RULE_IMPORT, null);
             } catch (Throwable e) {
                 isSuccessful = false;
                 Log.e(TAG, "Could not set mode %d for app op %d", e, appOp.getMode(), appOp.getOp());

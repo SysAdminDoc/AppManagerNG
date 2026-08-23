@@ -66,6 +66,7 @@ import io.github.muntashirakon.AppManager.rules.struct.RuleEntry;
 import io.github.muntashirakon.AppManager.rules.struct.SsaidRule;
 import io.github.muntashirakon.AppManager.rules.struct.UriGrantRule;
 import io.github.muntashirakon.AppManager.runner.Runner;
+import io.github.muntashirakon.AppManager.safety.AppOpsUidGuard;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.ssaid.SsaidSettings;
 import io.github.muntashirakon.AppManager.uri.UriManager;
@@ -913,7 +914,8 @@ class RestoreOp implements Closeable {
                     case APP_OP:
                         if (capabilities.canRestoreAppOps) {
                             appOpsManager.setMode(Integer.parseInt(entry.name), mUid, mPackageName,
-                                    ((AppOpRule) entry).getMode());
+                                    ((AppOpRule) entry).getMode(),
+                                    AppOpsUidGuard.MutationSource.RESTORE, null);
                             applied = true;
                         } else {
                             recordExtraSkip(entry, capabilities);

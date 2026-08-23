@@ -44,6 +44,7 @@ import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.runner.Runner;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
+import io.github.muntashirakon.AppManager.safety.AppOpsUidGuard;
 import io.github.muntashirakon.AppManager.scanner.vt.VirusTotal;
 import io.github.muntashirakon.AppManager.scanner.vt.VtFileReport;
 import io.github.muntashirakon.AppManager.settings.Prefs;
@@ -310,7 +311,8 @@ public class RunningAppsViewModel extends AndroidViewModel {
                 int[] appOps = getBackgroundRunAppOpsForSdk(Build.VERSION.SDK_INT);
                 AppOpsManagerCompat appOpsService = new AppOpsManagerCompat();
                 for (int op : appOps) {
-                    appOpsService.setMode(op, info.uid, info.packageName, AppOpsManager.MODE_IGNORED);
+                    appOpsService.setMode(op, info.uid, info.packageName, AppOpsManager.MODE_IGNORED,
+                            AppOpsUidGuard.MutationSource.IGNORE_DANGEROUS, null);
                 }
                 if (appOps.length > 0) {
                     int userId = UserHandleHidden.getUserId(info.uid);
@@ -340,7 +342,8 @@ public class RunningAppsViewModel extends AndroidViewModel {
                 plan = BackgroundRunAppOpPlan.createRestorePlan(appOps, currentModes, null);
                 for (BackgroundRunAppOpPlan.OpModeChange change : plan) {
                     try {
-                        appOpsService.setMode(change.op, info.uid, info.packageName, change.restoreMode);
+                        appOpsService.setMode(change.op, info.uid, info.packageName, change.restoreMode,
+                                AppOpsUidGuard.MutationSource.DIRECT, null);
                         appliedChanges.add(change);
                     } catch (RemoteException | SecurityException e) {
                         failure = e;
