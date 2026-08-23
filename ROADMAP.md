@@ -31,13 +31,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Acceptance: thumbnail work receives only duplicated read-only file descriptors plus explicit pixel, byte, and time budgets; the service has no app permissions and cannot open arbitrary paths; malformed input, timeout, OOM, or decoder-process death returns the generic icon without crashing or blocking the file list; API 21 through 23 and a current API are covered.
   Complexity: L
 
-- [ ] P1: Authenticate app-private package-change signals
-  Why: internal package and database refresh actions share an exported dynamic receiver with protected system broadcasts, so another app can inject refresh work and package arrays.
-  Evidence: `types/PackageChangeReceiver.java:68-89`; `utils/BroadcastUtils.java:12-53`; `main/MainViewModel.java:1089-1120`; Android dynamic-receiver export rules.
-  Touches: `types/PackageChangeReceiver.java`, `utils/BroadcastUtils.java`, receiver lifecycle ownership, package-array validation, receiver contract tests.
-  Acceptance: system package actions remain receivable, while every `BuildConfig.APPLICATION_ID` action is non-exported or signature-protected; oversized, null, and malformed package arrays are rejected before work is scheduled; an external-app test cannot invoke the private callback; repeated valid signals reuse a bounded executor rather than creating an unbounded thread stream.
-  Complexity: S
-
 - [ ] P1: Re-read authoritative App Details state after mutations
   Why: successful privileged cache clears leave stale storage totals, and successful overlay toggles can rebind the cached pre-operation state.
   Evidence: upstream App Manager #2023; `details/info/AppInfoFragment.java:3073-3098`; `details/AppDetailsOverlaysFragment.java:227-232`; `details/struct/AppDetailsOverlayItem.java:73-75`.

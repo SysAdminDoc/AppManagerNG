@@ -111,6 +111,8 @@ so those small interactions follow the selected locale.
 UID-scoped AppOps changes resolve every package sharing the UID before Android is allowed to mutate it.
 Shared and system UIDs require a reviewed batch plan that includes the complete effect. App Details
 shows the affected packages and operations inline when a single-app action is blocked.
+Internal package refresh signals stay inside AppManagerNG, reject malformed package lists before work
+starts, and reuse one bounded background worker.
 
 ### Discovery and polish
 
