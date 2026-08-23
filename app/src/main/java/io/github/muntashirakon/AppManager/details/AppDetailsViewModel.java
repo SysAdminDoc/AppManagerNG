@@ -340,7 +340,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
             }
         }
         if (mReceiver != null) {
-            getApplication().unregisterReceiver(mReceiver);
+            mReceiver.close();
         }
         mReceiver = null;
         IoUtils.closeQuietly(mApkFile);

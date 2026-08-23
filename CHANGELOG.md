@@ -7,6 +7,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Security
 - Added a central AppOps UID interlock. Shared and system UIDs now fail closed unless a reviewed batch plan includes every affected package and operation.
+- Split system package broadcasts from app-private refresh signals. Private actions are no longer exported, malformed package lists are rejected before dispatch, and valid work shares one bounded worker.
 
 ### Changed
 - App Details shows the blocked UID-wide effect inline, including the package and AppOps lists, instead of reducing the failure to a generic toast.

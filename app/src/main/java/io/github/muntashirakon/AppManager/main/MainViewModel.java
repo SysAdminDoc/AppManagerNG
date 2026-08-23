@@ -55,6 +55,7 @@ import java.util.concurrent.TimeoutException;
 import io.github.muntashirakon.AppManager.apk.list.ListExporter;
 import io.github.muntashirakon.AppManager.apk.list.ListImporter;
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
+import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.db.entity.App;
@@ -1105,12 +1106,15 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
             case PackageChangeReceiver.ACTION_PACKAGE_REMOVED:
             case PackageChangeReceiver.ACTION_PACKAGE_ALTERED:
             case PackageChangeReceiver.ACTION_PACKAGE_ADDED:
-                // case BatchOpsService.ACTION_BATCH_OPS_COMPLETED:
+            case BatchOpsService.ACTION_BATCH_OPS_COMPLETED:
             case Intent.ACTION_PACKAGE_REMOVED:
             case Intent.ACTION_EXTERNAL_APPLICATIONS_UNAVAILABLE:
             case Intent.ACTION_PACKAGE_ADDED:
             case Intent.ACTION_EXTERNAL_APPLICATIONS_AVAILABLE:
-            case Intent.ACTION_PACKAGE_CHANGED: {
+            case Intent.ACTION_PACKAGE_CHANGED:
+            case Intent.ACTION_PACKAGE_RESTARTED:
+            case Intent.ACTION_PACKAGES_SUSPENDED:
+            case Intent.ACTION_PACKAGES_UNSUSPENDED: {
                 List<App> appList = new AppDb().updateApplications(getApplication(), packages);
                 for (String packageName : packages) {
                     ApplicationItem item = getNewApplicationItem(packageName, appList);
@@ -1274,7 +1278,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
 
     @Override
     protected void onCleared() {
-        if (mPackageObserver != null) getApplication().unregisterReceiver(mPackageObserver);
+        mPackageObserver.close();
         executor.shutdownNow();
         super.onCleared();
     }
