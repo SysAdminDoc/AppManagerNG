@@ -34,6 +34,7 @@ import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.compat.PermissionCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.safety.AppOpsUidGuard;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.utils.BroadcastUtils;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
@@ -410,15 +411,28 @@ public class PermUtils {
     @RequiresPermission("android.permission.MANAGE_APP_OPS_MODES")
     public static boolean setAppOpMode(@NonNull AppOpsManagerCompat appOpsManager,
                                        int appOp,
-                                       String packageName,
+                                       @NonNull String packageName,
                                        int uid,
                                        @AppOpsManagerCompat.Mode int mode) throws PermissionException {
+        return setAppOpMode(appOpsManager, appOp, packageName, uid, mode,
+                AppOpsUidGuard.MutationSource.DIRECT, null);
+    }
+
+    @RequiresPermission("android.permission.MANAGE_APP_OPS_MODES")
+    public static boolean setAppOpMode(@NonNull AppOpsManagerCompat appOpsManager,
+                                       int appOp,
+                                       @NonNull String packageName,
+                                       int uid,
+                                       @AppOpsManagerCompat.Mode int mode,
+                                       @NonNull AppOpsUidGuard.MutationSource source,
+                                       @Nullable AppOpsUidGuard.ReviewedPlan reviewedPlan)
+            throws PermissionException {
         try {
             int currentMode = appOpsManager.checkOperation(appOp, uid, packageName);
             if (currentMode == mode) {
                 return false;
             }
-            appOpsManager.setMode(appOp, uid, packageName, mode);
+            appOpsManager.setMode(appOp, uid, packageName, mode, source, reviewedPlan);
             return true;
         } catch (Exception e) {
             throw new PermissionException(e);

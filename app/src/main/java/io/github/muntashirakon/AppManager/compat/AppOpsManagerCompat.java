@@ -7,6 +7,8 @@ import android.annotation.UserIdInt;
 import android.app.AppOpsManager;
 import android.app.AppOpsManagerHidden;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -38,6 +40,7 @@ import dev.rikka.tools.refine.Refine;
 import io.github.muntashirakon.AppManager.ipc.ProxyBinder;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.revert.OsRevertMonitor;
+import io.github.muntashirakon.AppManager.safety.AppOpsUidGuard;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
 import io.github.muntashirakon.AppManager.utils.MiuiUtils;
@@ -800,11 +803,20 @@ public class AppOpsManagerCompat {
     @RequiresPermission("android.permission.MANAGE_APP_OPS_MODES")
     public void setMode(int op, int uid, String packageName, @AppOpsManagerCompat.Mode int mode)
             throws RemoteException {
+        setMode(op, uid, packageName, mode, AppOpsUidGuard.MutationSource.DIRECT, null);
+    }
+
+    @RequiresPermission("android.permission.MANAGE_APP_OPS_MODES")
+    public void setMode(int op, int uid, @NonNull String packageName,
+                        @AppOpsManagerCompat.Mode int mode,
+                        @NonNull AppOpsUidGuard.MutationSource source,
+                        @Nullable AppOpsUidGuard.ReviewedPlan reviewedPlan) throws RemoteException {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || !usesUidModeForSetMode(op)) {
             // Only package mode works in MIUI-only app ops and before Android M
             mAppOpsService.setMode(op, uid, packageName, mode);
         } else {
             // AOSP app-op providers, including audio-volume ops, are UID-scoped.
+            AppOpsUidGuard.requireAllowed(uid, packageName, new int[]{op}, source, reviewedPlan);
             mAppOpsService.setUidMode(op, uid, mode);
         }
         OsRevertMonitor.watchAppOp(ContextUtils.getContext(), packageName, uid, op, mode);
@@ -846,7 +858,23 @@ public class AppOpsManagerCompat {
 
     @RequiresPermission("android.permission.MANAGE_APP_OPS_MODES")
     public void resetAllModes(@UserIdInt int reqUserId, @NonNull String reqPackageName) throws RemoteException {
+        resetAllModes(reqUserId, reqPackageName, AppOpsUidGuard.MutationSource.RESET, null);
+    }
+
+    @RequiresPermission("android.permission.MANAGE_APP_OPS_MODES")
+    public void resetAllModes(@UserIdInt int reqUserId, @NonNull String reqPackageName,
+                              @NonNull AppOpsUidGuard.MutationSource source,
+                              @Nullable AppOpsUidGuard.ReviewedPlan reviewedPlan) throws RemoteException {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+            ApplicationInfo applicationInfo;
+            try {
+                applicationInfo = PackageManagerCompat.getApplicationInfo(reqPackageName,
+                        PackageManagerCompat.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES, reqUserId);
+            } catch (PackageManager.NameNotFoundException e) {
+                throw new SecurityException("Could not resolve the package before resetting AppOps.", e);
+            }
+            AppOpsUidGuard.requireAllowed(applicationInfo.uid, reqPackageName,
+                    new int[]{OP_NONE}, source, reviewedPlan);
             mAppOpsService.resetAllModes(reqUserId, reqPackageName);
         }
     }

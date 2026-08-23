@@ -12,6 +12,7 @@ import android.content.pm.PermissionInfo;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
+import android.text.TextUtils;
 import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -50,6 +51,7 @@ import io.github.muntashirakon.AppManager.details.struct.AppDetailsDefinedPermis
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsPermissionItem;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.safety.AppOpsUidGuard;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
 import io.github.muntashirakon.AppManager.self.pref.TipsPrefs;
@@ -154,10 +156,27 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                 } else if (isAdded()) {
                     refreshDetails();
                 }
+            } else if (result.uidImpact != null) {
+                alertView.setAlertType(MaterialAlertView.ALERT_TYPE_WARN);
+                alertView.setText(formatUidImpact(result.uidImpact));
+                alertView.show();
             } else if (result.failureMessageRes != 0) {
                 UIUtils.displayShortToast(result.failureMessageRes);
             }
         });
+    }
+
+    @NonNull
+    private CharSequence formatUidImpact(@NonNull AppOpsUidGuard.Impact impact) {
+        List<String> operationNames = new ArrayList<>(impact.getOperations().size());
+        for (int operation : impact.getOperations()) {
+            operationNames.add(operation == AppOpsManagerCompat.OP_NONE
+                    ? getString(R.string.reset_to_default)
+                    : AppOpsManagerCompat.getKnownOpName(operation));
+        }
+        return getString(R.string.app_ops_uid_interlock_message,
+                TextUtils.join(", ", impact.getAffectedPackages()),
+                TextUtils.join(", ", operationNames));
     }
 
     @Override
@@ -734,17 +753,10 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                 // IGNORE silently no-ops the op without throwing SecurityException. Long-press
                 // still opens the full single-choice mode picker (FOREGROUND/DEFAULT/etc.).
                 int nextMode = nextAppOpModeInCycle(item.getMode());
-                ThreadUtils.postOnBackgroundThread(() -> {
-                    if (viewModel != null && viewModel.setAppOpMode(item, nextMode)) {
-                        ThreadUtils.postOnMainThread(() -> {
-                            AppDetailsAdapterUtils.notifyItemChangedIfPresent(this, mAdapterList, item);
-                            UIUtils.displayShortToast(AppOpsManagerCompat.modeToName(nextMode));
-                        });
-                    } else {
-                        ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(
-                                R.string.failed_to_change_app_op_mode));
-                    }
-                });
+                if (viewModel != null) {
+                    ProgressIndicatorCompat.setVisibility(progressIndicator, true);
+                    viewModel.setAppOpModeAsync(mNeededProperty, item, nextMode);
+                }
             });
             holder.itemView.setOnLongClickListener(v -> {
                 List<Integer> modes = AppOpsManagerCompat.getModeConstants();

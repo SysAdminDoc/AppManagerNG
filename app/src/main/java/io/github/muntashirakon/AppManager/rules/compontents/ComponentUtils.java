@@ -45,6 +45,7 @@ import io.github.muntashirakon.AppManager.rules.struct.AppOpRule;
 import io.github.muntashirakon.AppManager.rules.struct.ComponentRule;
 import io.github.muntashirakon.AppManager.rules.struct.PermissionRule;
 import io.github.muntashirakon.AppManager.rules.struct.RuleEntry;
+import io.github.muntashirakon.AppManager.safety.AppOpsUidGuard;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.io.Path;
@@ -376,7 +377,7 @@ public final class ComponentUtils {
                     int uid = PackageUtils.getAppUid(new UserPackagePair(target.getPackageName(),
                             target.getUserId()));
                     new AppOpsManagerCompat().setMode(rule.getAppOp(), uid, target.getPackageName(),
-                            AppOpsManager.MODE_DEFAULT);
+                            AppOpsManager.MODE_DEFAULT, AppOpsUidGuard.MutationSource.RULE_IMPORT, null);
                 } else if (rule.isPermission()) {
                     PermissionCompat.grantPermission(target.getPackageName(), rule.getPermissionName(),
                             target.getUserId());
