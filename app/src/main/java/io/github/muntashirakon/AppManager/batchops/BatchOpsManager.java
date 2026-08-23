@@ -77,6 +77,7 @@ import io.github.muntashirakon.AppManager.rules.compontents.ComponentBlockingBat
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
 import io.github.muntashirakon.AppManager.rules.compontents.ExternalComponentsImporter;
 import io.github.muntashirakon.AppManager.safety.CriticalPackageGuard;
+import io.github.muntashirakon.AppManager.safety.AppOpsUidGuard;
 import io.github.muntashirakon.AppManager.safety.SystemAppRescueArtifacts;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
@@ -929,13 +930,26 @@ public class BatchOpsManager {
             }
             boolean failed = false;
             try {
+                List<Integer> requestedAppOps = new ArrayList<>(2);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    requestedAppOps.add(AppOpsManagerCompat.OP_RUN_IN_BACKGROUND);
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    requestedAppOps.add(AppOpsManagerCompat.OP_RUN_ANY_IN_BACKGROUND);
+                }
+                AppOpsUidGuard.ReviewedPlan reviewedPlan = requestedAppOps.isEmpty() ? null
+                        : AppOpsUidGuard.createReviewedPlan(uid, pair.getPackageName(),
+                        ArrayUtils.convertToIntArray(requestedAppOps), AppOpsUidGuard.MutationSource.BATCH,
+                        info.packages, true);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     appOpsManager.setMode(AppOpsManagerCompat.OP_RUN_IN_BACKGROUND, uid,
-                            pair.getPackageName(), AppOpsManager.MODE_IGNORED);
+                            pair.getPackageName(), AppOpsManager.MODE_IGNORED,
+                            AppOpsUidGuard.MutationSource.BATCH, reviewedPlan);
                 }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                     appOpsManager.setMode(AppOpsManagerCompat.OP_RUN_ANY_IN_BACKGROUND, uid,
-                            pair.getPackageName(), AppOpsManager.MODE_IGNORED);
+                            pair.getPackageName(), AppOpsManager.MODE_IGNORED,
+                            AppOpsUidGuard.MutationSource.BATCH, reviewedPlan);
                 }
                 try (ComponentsBlocker cb = ComponentsBlocker.getMutableInstance(pair.getPackageName(), pair.getUserId())) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -1092,7 +1106,7 @@ public class BatchOpsManager {
                         appOpList.add(entry.getOp());
                     }
                     ExternalComponentsImporter.setModeToFilteredAppOps(appOpsManager, pair,
-                            ArrayUtils.convertToIntArray(appOpList), options.getMode());
+                            ArrayUtils.convertToIntArray(appOpList), options.getMode(), info.packages);
                 } catch (Exception e) {
                     failed = true;
                     log("====> op=SET_APP_OPS, pkg=" + pair, e);
@@ -1106,8 +1120,9 @@ public class BatchOpsManager {
                 pair = info.getPair(i);
                 boolean failed = false;
                 try {
-                    ExternalComponentsImporter.setModeToFilteredAppOps(appOpsManager, pair, appOps, options.getMode());
-                } catch (RemoteException e) {
+                    ExternalComponentsImporter.setModeToFilteredAppOps(appOpsManager, pair, appOps,
+                            options.getMode(), info.packages);
+                } catch (Exception e) {
                     failed = true;
                     log("====> op=SET_APP_OPS, pkg=" + pair, e);
                     failedPkgList.add(pair);

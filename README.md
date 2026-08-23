@@ -108,6 +108,9 @@ When a privileged or destructive step cannot complete, the fallback stays conser
 operation is recorded with enough context to diagnose the missing permission or service.
 App Details permission and error messages and file-manager starter names also come from resources,
 so those small interactions follow the selected locale.
+UID-scoped AppOps changes resolve every package sharing the UID before Android is allowed to mutate it.
+Shared and system UIDs require a reviewed batch plan that includes the complete effect. App Details
+shows the affected packages and operations inline when a single-app action is blocked.
 
 ### Discovery and polish
 

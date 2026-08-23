@@ -3,6 +3,14 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## Unreleased
+
+### Security
+- Added a central AppOps UID interlock. Shared and system UIDs now fail closed unless a reviewed batch plan includes every affected package and operation.
+
+### Changed
+- App Details shows the blocked UID-wide effect inline, including the package and AppOps lists, instead of reducing the failure to a generic toast.
+
 ## v0.6.18, 2026-08-22
 
 ### Changed

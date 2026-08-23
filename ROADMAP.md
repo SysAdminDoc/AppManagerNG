@@ -22,13 +22,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ### P0
 
-- [ ] P0: Interlock UID-wide AppOps mutations for shared UIDs
-  Why: A package-looking AppOps action can silently alter every package sharing a UID, including UID 1000, and break core system services.
-  Evidence: upstream App Manager #2030; Android `AppOpsManager` documentation; `compat/AppOpsManagerCompat.java:808`; callers in `details/AppDetailsViewModel.java`, `permission/PermUtils.java`, `backup/RestoreOp.java`, `batchops/BatchOpsManager.java`, and `rules/compontents/ExternalComponentsImporter.java`.
-  Touches: `compat/AppOpsManagerCompat.java`; a central shared-UID preflight under `safety/`; every reset, ignore, batch, rule-import, and restore caller; operation-plan and UI tests.
-  Acceptance: before any UID-scoped mutation, the operation resolves every package sharing that UID; a multi-package UID, and every UID below `Process.FIRST_APPLICATION_UID`, fails closed unless the reviewed operation plan explicitly includes the UID-wide effect; the review surface names all affected packages and operations without a modal confirmation dialog; tests cover UID 1000, a shared application UID, a single-package UID, batch/reset/ignore/import/restore paths, and a package lookup failure.
-  Complexity: M
-
 ### P1
 
 - [ ] P1: Drop live-log callbacks after the view is destroyed
