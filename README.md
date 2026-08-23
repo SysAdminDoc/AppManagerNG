@@ -117,6 +117,8 @@ shows the affected packages and operations inline when a single-app action is bl
 Material 3 with dynamic colours and a pure-black theme, an onboarding capability wizard, a Pro
 Mode toggle that keeps advanced surfaces out of the way until you want them, global in-app
 Settings search, an in-app changelog viewer, and Quick Settings tiles for freeze and force-stop.
+The live Log Viewer also owns its reader for exactly as long as its view exists, so back navigation
+and rotation cannot deliver queued lines to an old screen.
 
 ### Releases you can check
 

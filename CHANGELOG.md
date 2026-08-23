@@ -11,6 +11,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 - App Details shows the blocked UID-wide effect inline, including the package and AppOps lists, instead of reducing the failure to a generic toast.
 
+### Fixed
+- Stopped queued Log Viewer updates when its view is destroyed. Leaving the screen or rotating now invalidates the callback and its reader before a detached fragment can be reached.
+
 ## v0.6.18, 2026-08-22
 
 ### Changed

@@ -14,7 +14,6 @@ import android.widget.Filter;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import java.lang.ref.WeakReference;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
@@ -36,6 +35,9 @@ public class LiveLogViewerFragment extends AbsLogViewerFragment implements LogVi
     public static final String TAG = LiveLogViewerFragment.class.getSimpleName();
 
     private int mLogCounter = 0;
+    @Nullable
+    private LogViewerViewModel.LogcatSession mLogcatSession;
+
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -47,7 +49,14 @@ public class LiveLogViewerFragment extends AbsLogViewerFragment implements LogVi
             }
             return false;
         });
-        mViewModel.startLogcat(new WeakReference<>(this));
+        mLogcatSession = mViewModel.startLogcat(this);
+    }
+
+    @Override
+    public void onDestroyView() {
+        mViewModel.stopLogcat(mLogcatSession);
+        mLogcatSession = null;
+        super.onDestroyView();
     }
 
     @Override

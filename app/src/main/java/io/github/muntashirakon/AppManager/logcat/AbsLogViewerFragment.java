@@ -22,6 +22,7 @@ import androidx.annotation.Nullable;
 import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -174,11 +175,19 @@ public abstract class AbsLogViewerFragment extends Fragment implements MenuProvi
 
     @CallSuper
     @Override
-    public void onDestroy() {
+    public void onDestroyView() {
         if (mRecyclerView != null) {
             mRecyclerView.removeOnScrollListener(mRecyclerViewScrollListener);
         }
-        super.onDestroy();
+        super.onDestroyView();
+    }
+
+    @Override
+    public final boolean isLogViewActive() {
+        LifecycleOwner viewLifecycleOwner = getViewLifecycleOwnerLiveData().getValue();
+        return getView() != null
+                && viewLifecycleOwner != null
+                && viewLifecycleOwner.getLifecycle().getCurrentState() != Lifecycle.State.DESTROYED;
     }
 
     public abstract void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater);
