@@ -59,6 +59,7 @@
         android:id="@+id/selection_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
         android:fitsSystemWindows="true"
         android:focusable="false"
         app:menu="@menu/activity_running_apps_popup_actions" />
