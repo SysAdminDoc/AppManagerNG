@@ -8,25 +8,32 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MultiSelectionLayoutContractTest {
-    private static final String[] LAYOUTS = {
-            "activity_debloater.xml",
-            "activity_finder.xml",
-            "activity_main.xml",
-            "activity_main_v2.xml",
-            "fragment_fm.xml",
-            "fragment_logcat.xml"
-    };
-
     @Test
     public void selectionSurfacesAreAnchoredAboveBottomInsets() throws IOException {
+        // Every layout that hosts a MultiSelectionView is checked, not a hardcoded list. The
+        // Running Apps screen was missed by the original per-screen fix (issue #9) precisely
+        // because a new selection surface can appear in any layout.
         Path layoutDir = findAppProjectDir().resolve("src/main/res/layout");
-        for (String layout : LAYOUTS) {
-            String xml = read(layoutDir.resolve(layout));
+        List<Path> layouts = new ArrayList<>();
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(layoutDir, "*.xml")) {
+            for (Path path : stream) {
+                if (read(path).contains("io.github.muntashirakon.widget.MultiSelectionView")) {
+                    layouts.add(path);
+                }
+            }
+        }
+        assertTrue("Expected layouts hosting MultiSelectionView", layouts.size() >= 7);
+        for (Path layoutPath : layouts) {
+            String layout = layoutPath.getFileName().toString();
+            String xml = read(layoutPath);
             int viewStart = xml.indexOf("io.github.muntashirakon.widget.MultiSelectionView");
             int viewEnd = xml.indexOf("/>", viewStart);
             assertTrue("Missing selection surface in " + layout, viewStart >= 0 && viewEnd > viewStart);
