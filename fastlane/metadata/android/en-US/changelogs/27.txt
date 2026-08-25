@@ -1,0 +1,2 @@
+- Fixed the Android 17 installed-app list, the Running Apps selection toolbar overlap, and the last of the Privacy settings crash pattern.
+- Locked shared and system UID AppOps changes behind reviewed plans and split private broadcasts from system ones.

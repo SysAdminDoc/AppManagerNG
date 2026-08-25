@@ -3,7 +3,7 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## Unreleased
+## v0.6.19, 2026-08-24
 
 ### Security
 - Added a central AppOps UID interlock. Shared and system UIDs now fail closed unless a reviewed batch plan includes every affected package and operation.
@@ -14,6 +14,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - Stopped queued Log Viewer updates when its view is destroyed. Leaving the screen or rotating now invalidates the callback and its reader before a detached fragment can be reached.
+- Kept the installed app list and the About device screen working when Android 17 changes the hidden getInstalledPackages and getInstalledApplications return type. The accessors now catch the linkage error, retry reflectively, and adapt whatever list container the platform returns. Based on the fix Saloframes carried in their fork.
+- Added a settings-wide guard that every persistent preference key is registered before it can ship, so no settings screen can crash during inflation the way Settings > Privacy did in v0.6.12.
+- Anchored the Running Apps selection toolbar to the bottom edge. It was the one selection surface still missing the anchor, so selecting a process left the toolbar drawn under the status bar.
 
 ## v0.6.18, 2026-08-22
 

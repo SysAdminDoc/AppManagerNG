@@ -8,6 +8,19 @@
 <changelog>
     <release
         type="stable release"
+        version="v0.6.19"
+        code="27"
+        date="24 August 2026">
+        <fix title="Android 17 app list">The installed-app list and About device survive the Android 17 return-type change in the hidden package APIs, using the compat approach from the Saloframes fork.</fix>
+        <fix title="Selection toolbar">The Running Apps selection toolbar now anchors to the bottom edge instead of overlapping the status bar, and a layout check covers every selection surface.</fix>
+        <fix title="Settings safety">Every settings screen is checked against unregistered preference keys, closing out the v0.6.12 Privacy crash for good.</fix>
+        <fix title="Log viewer">Queued log updates can no longer reach a destroyed Log Viewer after leaving or rotating the screen.</fix>
+        <improve title="AppOps safety">Shared and system UID changes now require a reviewed plan naming every affected package, and App Details explains blocked UID-wide effects inline.</improve>
+        <improve title="Broadcast hygiene">System package broadcasts and app-private refresh signals use separate registrations, and private actions are no longer exported.</improve>
+    </release>
+
+    <release
+        type="stable release"
         version="v0.6.18"
         code="26"
         date="22 August 2026">
