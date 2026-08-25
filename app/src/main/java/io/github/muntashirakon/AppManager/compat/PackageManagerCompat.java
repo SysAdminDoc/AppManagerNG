@@ -52,6 +52,8 @@ import androidx.annotation.WorkerThread;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -316,15 +318,26 @@ public final class PackageManagerCompat {
                                                                   int flags,
                                                                   @UserIdInt int userId) {
         try {
-            if (Build.VERSION.SDK_INT >= VersionCodes.CINNAMON_BUN) {
-                return Refine.<IPackageManagerV37>unsafeCast(pm)
-                        .getInstalledPackages(flags, userId)
-                        .getList();
+            Object result;
+            try {
+                if (Build.VERSION.SDK_INT >= VersionCodes.CINNAMON_BUN) {
+                    result = Refine.<IPackageManagerV37>unsafeCast(pm)
+                            .getInstalledPackages(flags, userId);
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    result = pm.getInstalledPackages((long) flags, userId);
+                } else {
+                    result = pm.getInstalledPackages(flags, userId);
+                }
+            } catch (NoSuchMethodError | AbstractMethodError e) {
+                // Android 17 (API 37) changed the return type of the hidden
+                // IPackageManager#getInstalledPackages overloads, so the descriptor baked into our
+                // bytecode may no longer resolve and the direct call fails with a linkage error.
+                // Re-dispatch reflectively (method resolution ignores the return type) and adapt
+                // whatever container the platform hands back.
+                Log.w(TAG, "getInstalledPackages return type changed; retrying reflectively", e);
+                result = invokeListMethodReflectively(pm, "getInstalledPackages", flags, userId);
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                return pm.getInstalledPackages((long) flags, userId).getList();
-            }
-            return pm.getInstalledPackages(flags, userId).getList();
+            return extractList(result);
         } catch (RemoteException e) {
             return ExUtils.rethrowFromSystemServer(e);
         } catch (BadParcelableException e) {
@@ -344,10 +357,96 @@ public final class PackageManagerCompat {
     @WorkerThread
     public static List<ApplicationInfo> getInstalledApplications(@NonNull IPackageManager pm, int flags,
                                                                  @UserIdInt int userId) throws RemoteException {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            return pm.getInstalledApplications((long) flags, userId).getList();
+        Object result;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                result = pm.getInstalledApplications((long) flags, userId);
+            } else {
+                result = pm.getInstalledApplications(flags, userId);
+            }
+        } catch (NoSuchMethodError | AbstractMethodError e) {
+            // Android 17 (API 37) changed the return type of the hidden
+            // IPackageManager#getInstalledApplications, so the ParceledListSlice descriptor baked
+            // into our bytecode no longer resolves and the direct call fails with a linkage error.
+            // Re-dispatch reflectively (method resolution ignores the return type) and adapt
+            // whatever container the platform now hands back.
+            Log.w(TAG, "getInstalledApplications return type changed; retrying reflectively", e);
+            result = invokeListMethodReflectively(pm, "getInstalledApplications", flags, userId);
         }
-        return pm.getInstalledApplications(flags, userId).getList();
+        return extractList(result);
+    }
+
+    /**
+     * Re-dispatch a {@code getInstalled{Packages,Applications}(flags, userId)} call reflectively.
+     * <p>
+     * The hidden {@link IPackageManager} overloads historically returned a
+     * {@link ParceledListSlice}, but Android 17 (API 37) changes the return type. Reflective
+     * method resolution matches on name and parameter types only, so it keeps working across such
+     * a change; {@link #extractList(Object)} then normalizes the result.
+     */
+    @Nullable
+    private static Object invokeListMethodReflectively(@NonNull IPackageManager pm, @NonNull String methodName,
+                                                       int flags, @UserIdInt int userId) throws RemoteException {
+        try {
+            Method method;
+            Object[] args;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                method = pm.getClass().getMethod(methodName, long.class, int.class);
+                args = new Object[]{(long) flags, userId};
+            } else {
+                method = pm.getClass().getMethod(methodName, int.class, int.class);
+                args = new Object[]{flags, userId};
+            }
+            return method.invoke(pm, args);
+        } catch (InvocationTargetException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof RemoteException) {
+                throw (RemoteException) cause;
+            }
+            if (cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
+            }
+            if (cause instanceof Error) {
+                throw (Error) cause;
+            }
+            throw new IllegalStateException("Could not invoke " + methodName + " reflectively", cause);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(methodName + " is unavailable on this platform", e);
+        }
+    }
+
+    /**
+     * Normalize the value returned by {@link IPackageManager}'s list accessors into a {@link List}.
+     * <p>
+     * Handles the historical {@link ParceledListSlice} wrapper, a plain {@link List} (the shape a
+     * future platform may switch to), a {@code null} result, and any other wrapper that still
+     * exposes a {@code getList()} accessor. Never returns {@code null}.
+     */
+    @NonNull
+    @SuppressWarnings("unchecked")
+    @VisibleForTesting
+    static <T> List<T> extractList(@Nullable Object sliceOrList) {
+        if (sliceOrList == null) {
+            return Collections.emptyList();
+        }
+        if (sliceOrList instanceof ParceledListSlice) {
+            List<T> list = ((ParceledListSlice) sliceOrList).getList();
+            return list != null ? list : Collections.emptyList();
+        }
+        if (sliceOrList instanceof List) {
+            return (List<T>) sliceOrList;
+        }
+        // Forward-compat: a ParceledListSlice replacement that still exposes getList().
+        try {
+            Method getList = sliceOrList.getClass().getMethod("getList");
+            Object list = getList.invoke(sliceOrList);
+            if (list instanceof List) {
+                return (List<T>) list;
+            }
+        } catch (ReflectiveOperationException e) {
+            Log.w(TAG, "Could not extract list from " + sliceOrList.getClass().getName(), e);
+        }
+        return Collections.emptyList();
     }
 
     @NonNull
