@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- SPDX-License-Identifier: CC-BY-SA-4.0 OR GPL-3.0-or-later -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <rect x="64" y="64" width="896" height="896" rx="216" fill="#11151A"/>
+  <rect x="64" y="64" width="896" height="896" rx="216" fill="#21182E"/>
   <path fill="#7052A3" d="M267 433l115 67 106-61v74l-106 62-115-67z"/>
   <path fill="#7052A3" d="M536 562l106-62 115-67v75l-115 67-106 62z"/>
   <path fill="#BEA1E8" d="M238 440c-12-7-27 2-27 16v226c0 23 12 44 32 56l201 116c20 12 45-3 45-26V600c0-18-10-35-26-44L238 440z"/>

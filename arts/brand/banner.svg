@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- SPDX-License-Identifier: CC-BY-SA-4.0 OR GPL-3.0-or-later -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180">
-  <rect width="320" height="180" fill="#11151A"/>
+  <rect width="320" height="180" fill="#21182E"/>
   <g transform="translate(14 27) scale(.123)">
     <path fill="#7052A3" d="M267 433l115 67 106-61v74l-106 62-115-67z"/>
     <path fill="#7052A3" d="M536 562l106-62 115-67v75l-115 67-106 62z"/>
