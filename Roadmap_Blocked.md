@@ -344,6 +344,22 @@ ROADMAP.md once the blocker is resolved.
 
 ### P3
 
+- [ ] P3 — New launcher icon so NG is distinguishable from upstream App Manager (issue #11)
+  Why: requested by @faramonius in issue #11. NG installs side by side with upstream App Manager
+  (separate applicationId), and both currently ship the same launcher icon, so users cannot tell
+  the two apps apart on the home screen.
+  Evidence: issue #11; `app/src/main/AndroidManifest.xml` (`android:icon="@mipmap/ic_launcher"`,
+  `android:roundIcon="@mipmap/ic_launcher_round"`).
+  Touches: adaptive icon sources `app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml` and
+  `ic_launcher_round.xml` (plus the File Manager alias icons `ic_launcher_fm*.xml` in the same
+  folder), `app/src/main/res/drawable/ic_launcher_foreground.xml`,
+  `app/src/main/res/values/ic_launcher_background.xml`, raster fallbacks under
+  `app/src/main/res/mipmap-{m,h,xh,xxh,xxxh}dpi/`, plus fastlane screenshots/feature graphics
+  and the README branding after the change.
+  Blocker: the icon itself is a branding decision for the maintainer (shape, color, how much of
+  the upstream identity to keep). Once a design is chosen, wiring it in is mechanical.
+  Complexity: S
+
 - [ ] P3 — DDG Tracker Radar as supplementary tracker source
   Why: TrackerControl layers DuckDuckGo's mobile-specific tracker database on top of Exodus for broader coverage. DDG Tracker Radar is MIT-licensed and maintained by DuckDuckGo.
   Evidence: TrackerControl multi-source approach; DDG Tracker Radar mobile TDS at staticcdn.duckduckgo.com
