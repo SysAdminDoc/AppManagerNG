@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-0.6.19-blue.svg" />
+  <img alt="Version" src="https://img.shields.io/badge/version-0.6.20-blue.svg" />
   <img alt="License" src="https://img.shields.io/badge/license-GPL--3.0--or--later-green.svg" />
   <img alt="Platform" src="https://img.shields.io/badge/platform-Android%205.0%2B-brightgreen.svg" />
   <img alt="Min SDK" src="https://img.shields.io/badge/minSdk-21-orange.svg" />
@@ -192,6 +192,7 @@ items. Maintainer-local historical archives are intentionally excluded from
 published checkouts; shipped work remains traceable through this changelog and Git history.
 Version targets:
 
+- **v0.6.20** ✅ 2026-08-24. Gave the fork its own launcher tile color, a deep violet behind the lavender mark, and finished the identity work by moving the File Manager shortcut icon off the old upstream artwork.
 - **v0.6.19** ✅ 2026-08-24. Ported the Android 17 installed-list compat fix from the Saloframes fork, locked AppOps changes to reviewed UID plans, and fixed the Running Apps selection toolbar overlapping the status bar.
 - **v0.6.18** ✅ 2026-08-22. Flattened the access-mode onboarding, removed capability pills, tightened first-run spacing, and corrected AMOLED capability contrast.
 - **v0.6.17** ✅ 2026-08-22. Simplified the visual system across core workflows and fixed Privacy settings plus selection toolbar regressions. Light, Dark, and AMOLED themes were checked on device.
