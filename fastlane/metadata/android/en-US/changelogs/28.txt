@@ -1,0 +1,2 @@
+- Recolored the launcher icon onto a deep violet tile so the fork stands apart from upstream App Manager.
+- Brought the File Manager shortcut icon into the same look, replacing the leftover upstream artwork.

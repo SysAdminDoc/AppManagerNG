@@ -8,6 +8,15 @@
 <changelog>
     <release
         type="stable release"
+        version="v0.6.20"
+        code="28"
+        date="24 August 2026">
+        <improve title="Distinct fork icon">The launcher icon now sits on the brand's deep violet tile instead of a near-black one, so AppManagerNG is easy to tell apart from upstream App Manager on the same home screen.</improve>
+        <improve title="File Manager icon">The File Manager shortcut icon joins the NG identity: a lavender folder carrying the open-package mark, with a matching themed-icon silhouette on Android 13 and later.</improve>
+    </release>
+
+    <release
+        type="stable release"
         version="v0.6.19"
         code="27"
         date="24 August 2026">

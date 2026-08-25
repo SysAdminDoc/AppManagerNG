@@ -3,6 +3,12 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## v0.6.20, 2026-08-24
+
+### Changed
+- Moved the launcher icon onto the brand's deep violet tile. Upstream App Manager and NG both used a near-black background, which made the two icons hard to tell apart side by side. That was the request in issue #11.
+- Brought the File Manager shortcut icon into the NG identity. It still carried upstream's tan folder artwork on upstream's background. It now uses the lavender folder with the open-package mark and ships a proper Android 13 themed-icon silhouette.
+
 ## v0.6.19, 2026-08-24
 
 ### Security
