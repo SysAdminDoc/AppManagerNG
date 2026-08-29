@@ -66,7 +66,7 @@ public class AMExceptionHandler implements Thread.UncaughtExceptionHandler {
                 .setAutoCancel(true)
                 .setDefaults(Notification.DEFAULT_ALL)
                 .setWhen(System.currentTimeMillis())
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setSmallIcon(R.mipmap.ic_launcher_monochrome)
                 .setTicker(mContext.getText(R.string.app_name))
                 .setContentTitle(mContext.getText(R.string.am_crashed))
                 .setContentText(mContext.getText(R.string.tap_to_submit_crash_report))

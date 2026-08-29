@@ -221,7 +221,7 @@ public abstract class AppsBaseProfileActivity extends BaseActivity implements Na
                         if (!isChecked) {
                             return;
                         }
-                        Drawable icon = Objects.requireNonNull(ContextCompat.getDrawable(this, R.drawable.ic_launcher_foreground));
+                        Drawable icon = Objects.requireNonNull(ContextCompat.getDrawable(this, R.mipmap.ic_launcher_monochrome));
                         ProfileShortcutInfo shortcutInfo = new ProfileShortcutInfo(model.getProfileId(),
                                 model.getProfileName(), shortcutTypes[which], shortcutTypesL[which]);
                         shortcutInfo.setIcon(UIUtils.getBitmapFromDrawable(icon));

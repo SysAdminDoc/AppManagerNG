@@ -613,7 +613,7 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
                                 if (!isChecked) {
                                     return;
                                 }
-                                Drawable icon = Objects.requireNonNull(ContextCompat.getDrawable(mActivity, R.drawable.ic_launcher_foreground));
+                                Drawable icon = Objects.requireNonNull(ContextCompat.getDrawable(mActivity, R.mipmap.ic_launcher_monochrome));
                                 ProfileShortcutInfo shortcutInfo = new ProfileShortcutInfo(profile.profileId,
                                         profile.name, shortcutTypes[which], shortcutTypesL[which]);
                                 shortcutInfo.setIcon(UIUtils.getBitmapFromDrawable(icon));

@@ -8,6 +8,14 @@
 <changelog>
     <release
         type="stable release"
+        version="v0.6.21"
+        code="29"
+        date="29 August 2026">
+        <improve title="New app icon">The launcher now uses the August 2026 icon set, with adaptive artwork, a themed icon for Android 13 and later, and matching legacy tiles.</improve>
+    </release>
+
+    <release
+        type="stable release"
         version="v0.6.20"
         code="28"
         date="24 August 2026">
