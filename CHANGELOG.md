@@ -3,6 +3,11 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## v0.6.21, 2026-08-29
+
+### Changed
+- New app icon: adaptive, themed (monochrome) and legacy variants regenerated from the 2026-08 icon set.
+
 ## v0.6.20, 2026-08-24
 
 ### Changed

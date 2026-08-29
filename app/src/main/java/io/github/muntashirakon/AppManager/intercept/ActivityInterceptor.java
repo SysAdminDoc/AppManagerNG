@@ -1178,7 +1178,7 @@ public class ActivityInterceptor extends BaseActivity {
                 if (shortcutName == null) {
                     shortcutName = Objects.requireNonNull(getTitle());
                 }
-                Drawable icon = Objects.requireNonNull(ContextCompat.getDrawable(this, R.drawable.ic_launcher_foreground));
+                Drawable icon = Objects.requireNonNull(ContextCompat.getDrawable(this, R.mipmap.ic_launcher_monochrome));
                 Intent intent = new Intent(mMutableIntent);
                 // Add necessary extras
                 intent.putExtra(EXTRA_AUTH, AuthManager.getKey());
