@@ -21,13 +21,14 @@ public class BatchAppOpsOptionsTest {
     @Test
     public void testParcelable() {
         int[] array = new int[]{AppOpsManagerCompat.OP_AUDIO_MEDIA_VOLUME};
-        BatchAppOpsOptions options = new BatchAppOpsOptions(array, AppOpsManager.MODE_ALLOWED);
+        BatchAppOpsOptions options = new BatchAppOpsOptions(array, AppOpsManager.MODE_ALLOWED, true);
         Parcel parcel = Parcel.obtain();
         options.writeToParcel(parcel, 0);
         parcel.setDataPosition(0);
         BatchAppOpsOptions options2 = BatchAppOpsOptions.CREATOR.createFromParcel(parcel);
         assertArrayEquals(array, options2.getAppOps());
         assertEquals(AppOpsManager.MODE_ALLOWED, options2.getMode());
+        assertTrue(options2.isUidWideEffectReviewed());
     }
 
     @Test
@@ -37,6 +38,7 @@ public class BatchAppOpsOptionsTest {
 
         assertArrayEquals(new int[]{AppOpsManagerCompat.OP_NONE}, options.getAppOps());
         assertEquals(AppOpsManager.MODE_DEFAULT, options.getMode());
+        assertFalse(options.isUidWideEffectReviewed());
     }
 
     @Test

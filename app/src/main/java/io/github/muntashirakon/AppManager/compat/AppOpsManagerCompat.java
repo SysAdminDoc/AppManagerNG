@@ -738,9 +738,19 @@ public class AppOpsManagerCompat {
     }
 
     private final IAppOpsService mAppOpsService;
+    @NonNull
+    private final AppOpsUidGuard.PackageResolver mUidPackageResolver;
 
     public AppOpsManagerCompat() {
-        mAppOpsService = IAppOpsService.Stub.asInterface(ProxyBinder.getService(Context.APP_OPS_SERVICE));
+        this(IAppOpsService.Stub.asInterface(ProxyBinder.getService(Context.APP_OPS_SERVICE)),
+                uid -> PackageManagerCompat.getPackageManager().getPackagesForUid(uid));
+    }
+
+    @VisibleForTesting
+    AppOpsManagerCompat(@NonNull IAppOpsService appOpsService,
+                        @NonNull AppOpsUidGuard.PackageResolver uidPackageResolver) {
+        mAppOpsService = appOpsService;
+        mUidPackageResolver = uidPackageResolver;
     }
 
     /**
@@ -816,7 +826,8 @@ public class AppOpsManagerCompat {
             mAppOpsService.setMode(op, uid, packageName, mode);
         } else {
             // AOSP app-op providers, including audio-volume ops, are UID-scoped.
-            AppOpsUidGuard.requireAllowed(uid, packageName, new int[]{op}, source, reviewedPlan);
+            AppOpsUidGuard.requireAllowed(uid, packageName, new int[]{op}, source, reviewedPlan,
+                    mUidPackageResolver);
             mAppOpsService.setUidMode(op, uid, mode);
         }
         OsRevertMonitor.watchAppOp(ContextUtils.getContext(), packageName, uid, op, mode);
@@ -873,10 +884,18 @@ public class AppOpsManagerCompat {
             } catch (PackageManager.NameNotFoundException e) {
                 throw new SecurityException("Could not resolve the package before resetting AppOps.", e);
             }
-            AppOpsUidGuard.requireAllowed(applicationInfo.uid, reqPackageName,
-                    new int[]{OP_NONE}, source, reviewedPlan);
-            mAppOpsService.resetAllModes(reqUserId, reqPackageName);
+            resetAllModesForUid(reqUserId, reqPackageName, applicationInfo.uid, source, reviewedPlan);
         }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP_MR1)
+    @VisibleForTesting
+    void resetAllModesForUid(@UserIdInt int reqUserId, @NonNull String reqPackageName, int uid,
+                             @NonNull AppOpsUidGuard.MutationSource source,
+                             @Nullable AppOpsUidGuard.ReviewedPlan reviewedPlan) throws RemoteException {
+        AppOpsUidGuard.requireAllowed(uid, reqPackageName, new int[]{OP_NONE}, source, reviewedPlan,
+                mUidPackageResolver);
+        mAppOpsService.resetAllModes(reqUserId, reqPackageName);
     }
 
     private static void addAllRelevantOpEntriesWithNoOverride(final List<AppOpsManagerCompat.OpEntry> opEntries,

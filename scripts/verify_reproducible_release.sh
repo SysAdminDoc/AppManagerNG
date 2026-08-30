@@ -7,7 +7,19 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 GRADLE_CMD="${GRADLE_CMD:-./gradlew}"
-PYTHON_CMD="${PYTHON_CMD:-python3}"
+if [[ -n "${PYTHON_CMD:-}" ]] && command -v "$PYTHON_CMD" >/dev/null 2>&1 \
+        && "$PYTHON_CMD" --version >/dev/null 2>&1; then
+    PYTHON_BIN=("$PYTHON_CMD")
+elif command -v python3 >/dev/null 2>&1 && python3 --version >/dev/null 2>&1; then
+    PYTHON_BIN=(python3)
+elif command -v python >/dev/null 2>&1 && python --version >/dev/null 2>&1; then
+    PYTHON_BIN=(python)
+elif command -v py >/dev/null 2>&1 && py -3 --version >/dev/null 2>&1; then
+    PYTHON_BIN=(py -3)
+else
+    echo "ERROR: Python 3 is required for reproducible release verification." >&2
+    exit 1
+fi
 # Deliberately outside build/: each build in this comparison runs `clean`, which empties the
 # root project's build directory. Keeping the evidence in there means the second build destroys
 # the first build's artifacts — and destroys the published artifacts and reports on the way out.
@@ -193,18 +205,18 @@ while IFS= read -r name; do
 
     publish_apk="$PUBLISH_DIR/$(publish_name_for "$name")"
     cp "$first_apk" "$publish_apk"
-    "$PYTHON_CMD" scripts/verify-native-page-alignment.py "$publish_apk"
+    "${PYTHON_BIN[@]}" scripts/verify-native-page-alignment.py "$publish_apk"
     printf '%s  %s\n' "$first_hash" "$(basename "$publish_apk")" | tee "$publish_apk.sha256" >> "$OUT_DIR/sha256.txt"
     printf '%s\n%s\n' "$publish_apk" "$publish_apk.sha256" >> "$ASSET_LIST"
     echo "Reproducible release APK verified: $name $first_hash"
 done <<< "$FIRST_APKS"
 
 sbom_path="$PUBLISH_DIR/AppManagerNG-reproducible.cdx.json"
-"$PYTHON_CMD" scripts/generate-cyclonedx-sbom.py --output "$sbom_path"
-"$PYTHON_CMD" scripts/generate-cyclonedx-sbom.py --check "$sbom_path"
+"${PYTHON_BIN[@]}" scripts/generate-cyclonedx-sbom.py --output "$sbom_path"
+"${PYTHON_BIN[@]}" scripts/generate-cyclonedx-sbom.py --check "$sbom_path"
 printf '%s\n' "$sbom_path" >> "$ASSET_LIST"
 
-"$PYTHON_CMD" scripts/run_dependency_cve_gate.py \
+"${PYTHON_BIN[@]}" scripts/run_dependency_cve_gate.py \
     --gradle-cmd "$GRADLE_CMD" \
     --out-dir "$PUBLISH_DIR"
 printf '%s\n' \

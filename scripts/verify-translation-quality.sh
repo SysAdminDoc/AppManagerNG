@@ -7,4 +7,13 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-exec python3 "$REPO_ROOT/scripts/translation_quality.py"
+if command -v python3 >/dev/null 2>&1 && python3 --version >/dev/null 2>&1; then
+  exec python3 "$REPO_ROOT/scripts/translation_quality.py"
+elif command -v python >/dev/null 2>&1 && python --version >/dev/null 2>&1; then
+  exec python "$REPO_ROOT/scripts/translation_quality.py"
+elif command -v py >/dev/null 2>&1 && py -3 --version >/dev/null 2>&1; then
+  exec py -3 "$REPO_ROOT/scripts/translation_quality.py"
+fi
+
+echo "ERROR: Python 3 is required for the translation quality gate" >&2
+exit 1

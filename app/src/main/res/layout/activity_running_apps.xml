@@ -27,6 +27,15 @@
             android:textAppearance="?attr/textAppearanceLabelMedium"
             android:textColor="?attr/colorOnSurfaceVariant" />
 
+        <io.github.muntashirakon.widget.MaterialAlertView
+            android:id="@+id/running_apps_uid_warning"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/premium_space_16"
+            android:layout_marginBottom="@dimen/premium_space_8"
+            android:visibility="gone"
+            app:alertType="warn" />
+
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"

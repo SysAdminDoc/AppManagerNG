@@ -1,0 +1,19 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace = 'io.github.sysadmindoc.appmanagerng.signaltestapp'
+    compileSdk = compile_sdk
+    buildToolsVersion = build_tools
+
+    defaultConfig {
+        applicationId = 'io.github.sysadmindoc.appmanagerng.signaltestapp'
+        minSdk = min_sdk
+        targetSdk = target_sdk
+        versionCode = 1
+        versionName = '1.0'
+    }
+}

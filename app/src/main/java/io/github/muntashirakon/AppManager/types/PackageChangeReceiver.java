@@ -38,6 +38,9 @@ import io.github.muntashirakon.AppManager.utils.PackageUtils;
 public abstract class PackageChangeReceiver extends BroadcastReceiver implements AutoCloseable {
     private static final String TAG = PackageChangeReceiver.class.getSimpleName();
     @VisibleForTesting
+    static final String INTERNAL_BROADCAST_PERMISSION =
+            BuildConfig.APPLICATION_ID + ".permission.INTERNAL_BROADCAST";
+    @VisibleForTesting
     static final int MAX_PACKAGE_COUNT = 4096;
     @VisibleForTesting
     static final int MAX_PENDING_SIGNALS = 64;
@@ -87,7 +90,8 @@ public abstract class PackageChangeReceiver extends BroadcastReceiver implements
         mExecutor = createExecutor();
         ContextCompat.registerReceiver(mContext, this, createPackageFilter(), ContextCompat.RECEIVER_EXPORTED);
         ContextCompat.registerReceiver(mContext, this, createSystemArrayFilter(), ContextCompat.RECEIVER_EXPORTED);
-        ContextCompat.registerReceiver(mContext, this, createPrivateFilter(), ContextCompat.RECEIVER_NOT_EXPORTED);
+        ContextCompat.registerReceiver(mContext, this, createPrivateFilter(),
+                INTERNAL_BROADCAST_PERMISSION, null, ContextCompat.RECEIVER_NOT_EXPORTED);
     }
 
     @NonNull

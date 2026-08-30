@@ -188,11 +188,10 @@ public final class AppOpsUidGuard {
                 resolvedUid -> PackageManagerCompat.getPackageManager().getPackagesForUid(resolvedUid));
     }
 
-    @VisibleForTesting
-    static void requireAllowed(int uid, @NonNull String requestedPackage,
-                               @NonNull int[] operations, @NonNull MutationSource source,
-                               @Nullable ReviewedPlan reviewedPlan,
-                               @NonNull PackageResolver resolver) {
+    public static void requireAllowed(int uid, @NonNull String requestedPackage,
+                                      @NonNull int[] operations, @NonNull MutationSource source,
+                                      @Nullable ReviewedPlan reviewedPlan,
+                                      @NonNull PackageResolver resolver) {
         Impact currentImpact = inspect(uid, requestedPackage, operations, source, resolver);
         if (!currentImpact.requiresReview()) {
             return;

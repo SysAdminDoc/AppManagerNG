@@ -15,6 +15,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.text.SpannableStringBuilder;
+import android.text.TextUtils;
 import android.text.format.Formatter;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -29,9 +30,11 @@ import androidx.annotation.VisibleForTesting;
 import androidx.collection.ArraySet;
 import androidx.appcompat.widget.LinearLayoutCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.widget.TextViewCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 
 import java.util.ArrayList;
@@ -77,6 +80,9 @@ public class OneClickOpsActivity extends BaseActivity {
     private LinearLayoutCompat mReviewContainer;
     private LinearLayoutCompat mBackupContainer;
     private LinearLayoutCompat mMaintenanceContainer;
+    private View mAppOpsReviewPanel;
+    private TextView mAppOpsReviewSummary;
+    private LinearLayoutCompat mAppOpsReviewList;
     private final BroadcastReceiver mBatchOpsBroadCastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -97,6 +103,9 @@ public class OneClickOpsActivity extends BaseActivity {
         setSupportActionBar(findViewById(R.id.toolbar));
         mViewModel = new ViewModelProvider(this).get(OneClickOpsViewModel.class);
         mContainer = findViewById(R.id.container);
+        mAppOpsReviewPanel = findViewById(R.id.app_ops_review_panel);
+        mAppOpsReviewSummary = findViewById(R.id.app_ops_review_summary);
+        mAppOpsReviewList = findViewById(R.id.app_ops_review_list);
         initItemContainers();
         progressIndicator = findViewById(R.id.progress_linear);
         progressIndicator.setVisibilityAfterHide(View.GONE);
@@ -466,6 +475,7 @@ public class OneClickOpsActivity extends BaseActivity {
     }
 
     private void showAppOpsSelectionDialog() {
+        mAppOpsReviewPanel.setVisibility(View.GONE);
         if (!SelfPermissions.canModifyAppOpMode()) {
             showInfoDialog(R.string.root_or_adb_required, R.string.app_ops_permission_required_message);
             return;
@@ -519,28 +529,44 @@ public class OneClickOpsActivity extends BaseActivity {
             showInfoDialog(R.string.no_matching_package_found, R.string.no_app_ops_matches_message);
             return;
         }
-        SpannableStringBuilder builder1;
-        final ArrayList<String> selectedPackages = new ArrayList<>();
-        List<CharSequence> packagesWithAppOpCount = new ArrayList<>();
+        mAppOpsReviewList.removeAllViews();
         for (AppOpCount appOp : appOpCounts) {
-            builder1 = new SpannableStringBuilder(appOp.packageLabel)
+            SpannableStringBuilder label = new SpannableStringBuilder(appOp.packageLabel)
                     .append("\n").append(getSmallerText("(" + appOp.count + ") " + TextUtilsCompat.joinSpannable(", ",
                             appOpToNames(appOp.appOps))));
-            selectedPackages.add(appOp.packageName);
-            packagesWithAppOpCount.add(builder1);
+            MaterialCheckBox packageCheckBox = new MaterialCheckBox(this);
+            packageCheckBox.setId(View.generateViewId());
+            packageCheckBox.setTag(appOp.packageName);
+            packageCheckBox.setText(label);
+            packageCheckBox.setChecked(true);
+            TextViewCompat.setTextAppearance(packageCheckBox, R.style.TextAppearance_AppTheme_V2_BodyMedium);
+            mAppOpsReviewList.addView(packageCheckBox, new LinearLayoutCompat.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         }
-        BatchAppOpsOptions options = new BatchAppOpsOptions(appOpList, mode);
-        new SearchableMultiChoiceDialogBuilder<>(this, selectedPackages, packagesWithAppOpCount)
-                .addSelections(selectedPackages)
-                .setTitle(R.string.review_app_ops_apps_title)
-                .setPositiveButton(R.string.apply, (dialog1, which1, selectedItems) -> {
-                    if (!requirePackageSelection(selectedItems)) return;
-                    BatchQueueItem item = BatchQueueItem.getOneClickQueue(BatchOpsManager.OP_SET_APP_OPS,
-                            selectedItems, null, options);
-                    launchService(item);
-                })
-                .setNegativeButton(R.string.cancel, (dialog1, which1, selectedItems) -> setBusy(false))
-                .show();
+        List<Integer> reviewedAppOps = new ArrayList<>(appOpList.length);
+        for (int appOp : appOpList) {
+            reviewedAppOps.add(appOp);
+        }
+        mAppOpsReviewSummary.setText(getString(R.string.review_app_ops_inline_summary,
+                TextUtils.join(", ", appOpToNames(reviewedAppOps))));
+        mAppOpsReviewPanel.setVisibility(View.VISIBLE);
+        findViewById(R.id.app_ops_review_cancel).setOnClickListener(v ->
+                mAppOpsReviewPanel.setVisibility(View.GONE));
+        findViewById(R.id.app_ops_review_apply).setOnClickListener(v -> {
+            ArrayList<String> selectedPackages = new ArrayList<>();
+            for (int i = 0; i < mAppOpsReviewList.getChildCount(); ++i) {
+                View child = mAppOpsReviewList.getChildAt(i);
+                if (child instanceof MaterialCheckBox && ((MaterialCheckBox) child).isChecked()) {
+                    selectedPackages.add((String) child.getTag());
+                }
+            }
+            if (!requirePackageSelection(selectedPackages)) return;
+            mAppOpsReviewPanel.setVisibility(View.GONE);
+            BatchAppOpsOptions options = new BatchAppOpsOptions(appOpList, mode, true);
+            BatchQueueItem item = BatchQueueItem.getOneClickQueue(BatchOpsManager.OP_SET_APP_OPS,
+                    selectedPackages, null, options);
+            launchService(item);
+        });
     }
 
     private void reviewLeftovers(@Nullable List<OneClickOpsViewModel.LeftoverEntry> entries) {

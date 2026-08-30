@@ -260,6 +260,17 @@ public class BatchOpsManager {
             }
             return Collections.unmodifiableList(userPackagePairs);
         }
+
+        @NonNull
+        public List<String> getPackagesForUser(int userId) {
+            List<String> packagesForUser = new ArrayList<>();
+            for (int i = 0; i < size(); ++i) {
+                if (users.get(i) == userId) {
+                    packagesForUser.add(packages.get(i));
+                }
+            }
+            return Collections.unmodifiableList(packagesForUser);
+        }
     }
 
     @Nullable
@@ -937,10 +948,14 @@ public class BatchOpsManager {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                     requestedAppOps.add(AppOpsManagerCompat.OP_RUN_ANY_IN_BACKGROUND);
                 }
-                AppOpsUidGuard.ReviewedPlan reviewedPlan = requestedAppOps.isEmpty() ? null
-                        : AppOpsUidGuard.createReviewedPlan(uid, pair.getPackageName(),
-                        ArrayUtils.convertToIntArray(requestedAppOps), AppOpsUidGuard.MutationSource.BATCH,
-                        info.packages, true);
+                AppOpsUidGuard.ReviewedPlan reviewedPlan = null;
+                if (!requestedAppOps.isEmpty()
+                        && info.options instanceof BatchAppOpsOptions
+                        && ((BatchAppOpsOptions) info.options).isUidWideEffectReviewed()) {
+                    reviewedPlan = AppOpsUidGuard.createReviewedPlan(uid, pair.getPackageName(),
+                            ArrayUtils.convertToIntArray(requestedAppOps), AppOpsUidGuard.MutationSource.BATCH,
+                            info.getPackagesForUser(pair.getUserId()), true);
+                }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     appOpsManager.setMode(AppOpsManagerCompat.OP_RUN_IN_BACKGROUND, uid,
                             pair.getPackageName(), AppOpsManager.MODE_IGNORED,
@@ -1106,7 +1121,8 @@ public class BatchOpsManager {
                         appOpList.add(entry.getOp());
                     }
                     ExternalComponentsImporter.setModeToFilteredAppOps(appOpsManager, pair,
-                            ArrayUtils.convertToIntArray(appOpList), options.getMode(), info.packages);
+                            ArrayUtils.convertToIntArray(appOpList), options.getMode(),
+                            info.getPackagesForUser(pair.getUserId()), options.isUidWideEffectReviewed());
                 } catch (Exception e) {
                     failed = true;
                     log("====> op=SET_APP_OPS, pkg=" + pair, e);
@@ -1121,7 +1137,8 @@ public class BatchOpsManager {
                 boolean failed = false;
                 try {
                     ExternalComponentsImporter.setModeToFilteredAppOps(appOpsManager, pair, appOps,
-                            options.getMode(), info.packages);
+                            options.getMode(), info.getPackagesForUser(pair.getUserId()),
+                            options.isUidWideEffectReviewed());
                 } catch (Exception e) {
                     failed = true;
                     log("====> op=SET_APP_OPS, pkg=" + pair, e);

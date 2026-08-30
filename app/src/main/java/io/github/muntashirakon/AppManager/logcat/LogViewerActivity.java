@@ -349,6 +349,14 @@ public class LogViewerActivity extends BaseActivity implements SearchView.OnQuer
     }
 
     @Override
+    protected void onStop() {
+        if (isFinishing()) {
+            mViewModel.killLogcatReader();
+        }
+        super.onStop();
+    }
+
+    @Override
     public void onDestroy() {
         CpuUtils.releaseWakeLock(mWakeLock);
         super.onDestroy();

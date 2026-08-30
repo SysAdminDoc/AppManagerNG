@@ -19,6 +19,7 @@ import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.List;
 
+import io.github.muntashirakon.AppManager.logcat.reader.LogcatReader;
 import io.github.muntashirakon.AppManager.logcat.struct.LogLine;
 
 @RunWith(RobolectricTestRunner.class)
@@ -59,6 +60,32 @@ public class LogViewerCallbackLifecycleTest {
         assertEquals(1, listener.mDeliveryCount);
     }
 
+    @Test
+    public void endedReaderCannotTearDownItsInstalledReplacement() {
+        TestListener listener = new TestListener();
+        LogViewerViewModel.LogcatSession session = new LogViewerViewModel.LogcatSession(listener);
+        TestReader oldReader = new TestReader();
+        TestReader replacementReader = new TestReader();
+
+        LogViewerViewModel.setSessionReader(session, oldReader);
+        LogViewerViewModel.setSessionReader(session, replacementReader);
+
+        assertEquals(true, LogViewerViewModel.continueWithReplacementReader(session, oldReader));
+        assertEquals(true, LogViewerViewModel.isSessionActive(session));
+        assertEquals(false, replacementReader.mKilled);
+    }
+
+    @Test
+    public void currentReaderOwnsSessionShutdownAtomically() {
+        TestListener listener = new TestListener();
+        LogViewerViewModel.LogcatSession session = new LogViewerViewModel.LogcatSession(listener);
+        TestReader reader = new TestReader();
+        LogViewerViewModel.setSessionReader(session, reader);
+
+        assertEquals(false, LogViewerViewModel.continueWithReplacementReader(session, reader));
+        assertEquals(false, LogViewerViewModel.isSessionActive(session));
+    }
+
     private static final class TestListener implements LogViewerViewModel.LogLinesAvailableInterface {
         private boolean mActive = true;
         private int mDeliveryCount;
@@ -71,6 +98,30 @@ public class LogViewerCallbackLifecycleTest {
         @Override
         public boolean isLogViewActive() {
             return mActive;
+        }
+    }
+
+    private static final class TestReader implements LogcatReader {
+        private boolean mKilled;
+
+        @Override
+        public String readLine() {
+            return null;
+        }
+
+        @Override
+        public void killQuietly() {
+            mKilled = true;
+        }
+
+        @Override
+        public boolean readyToRecord() {
+            return true;
+        }
+
+        @Override
+        public List<Process> getProcesses() {
+            return Collections.emptyList();
         }
     }
 }
