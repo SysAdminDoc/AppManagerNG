@@ -12,13 +12,13 @@ filed or accepted.
 ## Current Release
 
 - Repository: `https://github.com/SysAdminDoc/AppManagerNG`
-- Tag: `v0.6.12`
-- Commit: `8358e27e98c4b723efdd03d3f5141a57f3784044`
+- Tag: `v0.6.22`
+- Commit: `a3406d003c6e39889fca9f5421c59012ad305890`
 - Package name: `io.github.sysadmindoc.AppManagerNG`
 - Display name: `AppManagerNG`
-- Version name: `0.6.12`
-- Version code: `20`
-- Release: `https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.6.12`
+- Version name: `0.6.22`
+- Version code: `30`
+- Release: `https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.6.22`
 - License: `GPL-3.0-or-later`
 
 ## Build Target
@@ -51,9 +51,9 @@ RepoType: git
 Repo: https://github.com/SysAdminDoc/AppManagerNG.git
 
 Builds:
-  - versionName: 0.6.12
-    versionCode: 20
-    commit: 8358e27e98c4b723efdd03d3f5141a57f3784044
+  - versionName: 0.6.22
+    versionCode: 30
+    commit: a3406d003c6e39889fca9f5421c59012ad305890
     submodules: true
     gradle:
       - floss
@@ -63,8 +63,8 @@ Builds:
 
 AutoUpdateMode: Version v%v
 UpdateCheckMode: Tags
-CurrentVersion: 0.6.12
-CurrentVersionCode: 20
+CurrentVersion: 0.6.22
+CurrentVersionCode: 30
 ```
 
 The `rm` entries remove binary test fixtures that are not part of the release
