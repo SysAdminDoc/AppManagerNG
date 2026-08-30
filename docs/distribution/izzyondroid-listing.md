@@ -11,18 +11,18 @@ not proof that the external issue has been filed.
 ## Current Release
 
 - Repository: `https://github.com/SysAdminDoc/AppManagerNG`
-- Tag: `v0.6.12`
-- Commit: `8358e27e98c4b723efdd03d3f5141a57f3784044`
+- Tag: `v0.6.22`
+- Commit: `a3406d003c6e39889fca9f5421c59012ad305890`
 - Package name: `io.github.sysadmindoc.AppManagerNG`
 - Display name: `AppManagerNG`
-- Version name: `0.6.12`
-- Version code: `20`
-- Preferred APK: `AppManagerNG-0.6.12-floss-release.apk`
-- APK size: 20,028,420 bytes, under IzzyOnDroid's current 30 MB rule of thumb.
-- SHA-256: `290719f9a7124aa97d99ee398e1a6843b88bf0ba9a998a6f3d911153f8f4d630`
+- Version name: `0.6.22`
+- Version code: `30`
+- Preferred APK: `AppManagerNG-reproducible-floss-release.apk`
+- APK size: 20,428,492 bytes, under IzzyOnDroid's current 30 MB rule of thumb.
+- SHA-256: `f328f157f03ab4d9dd484c4510b65d179ca54a2c0dbc83ff2ad4e9a87df60ddf`
 - Signing certificate SHA-256:
   `21:5F:B4:70:63:2E:A6:CD:59:A4:BA:AB:35:0A:9E:0B:99:AD:11:0F:DD:FA:F5:A9:EA:64:61:E5:D0:C2:38:6C`
-- Release: `https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.6.12`
+- Release: `https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.6.22`
 
 The `floss` artifact is the listing target. The `full` artifact also exists on
 GitHub Releases for Obtainium users, but it enables optional online report
@@ -32,7 +32,7 @@ surfaces behind user opt-in gates and should not be the IzzyOnDroid artifact.
 
 Releases publish a single universal APK per flavor, carrying native libraries for
 `armeabi-v7a`, `arm64-v8a`, `x86`, and `x86_64`. It measures 20,028,420 bytes at
-v0.6.12, well under IzzyOnDroid's 30 MB rule of thumb. The local release build
+v0.6.22, well under IzzyOnDroid's 30 MB rule of thumb. The local release build
 enforces a hard size gate (`APK_SIZE_LIMIT_BYTES`, default 30 MiB) per APK.
 
 Per-ABI splits are configured in `app/build.gradle` but are **not enabled**, so no
@@ -72,16 +72,16 @@ Repository:
 https://github.com/SysAdminDoc/AppManagerNG
 
 Latest release:
-https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.6.12
+https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.6.22
 
 Package:
 io.github.sysadmindoc.AppManagerNG
 
 Preferred APK:
-AppManagerNG-0.6.12-floss-release.apk
+AppManagerNG-reproducible-floss-release.apk
 
 APK SHA-256:
-290719f9a7124aa97d99ee398e1a6843b88bf0ba9a998a6f3d911153f8f4d630
+f328f157f03ab4d9dd484c4510b65d179ca54a2c0dbc83ff2ad4e9a87df60ddf
 
 Notes:
 - AppManagerNG is a maintained fork of MuntashirAkon/AppManager with a unique
