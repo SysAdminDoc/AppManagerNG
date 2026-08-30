@@ -15,6 +15,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Running Apps now explains shared-UID background-operation blocks inline instead of reducing them to a generic failure.
 - Delayed first-run guidance now waits for a live activity, preventing a closed main screen from trying to open a dialog.
 - Hidden API device reports now distinguish unavailable OEM or SDK-specific symbols from reflection failures, and their generated baseline no longer mistakes field initializers for methods.
+- Release optimization now keeps archive path dispatch stable so repeated clean builds produce identical APKs.
 
 ## v0.6.21, 2026-08-29
 
