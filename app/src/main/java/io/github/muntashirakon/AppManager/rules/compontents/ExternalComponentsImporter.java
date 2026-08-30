@@ -60,13 +60,14 @@ public class ExternalComponentsImporter {
                                                @NonNull UserPackagePair pair,
                                                int[] appOps,
                                                @AppOpsManagerCompat.Mode int mode,
-                                               @NonNull Collection<String> reviewedPackages)
+                                               @NonNull Collection<String> reviewedPackages,
+                                               boolean uidWideEffectReviewed)
             throws RemoteException {
         Collection<Integer> appOpList;
         appOpList = PackageUtils.getFilteredAppOps(pair.getPackageName(), pair.getUserId(), appOps, mode);
         int uid = PackageUtils.getAppUid(pair);
         AppOpsUidGuard.ReviewedPlan reviewedPlan = null;
-        if (!appOpList.isEmpty()) {
+        if (!appOpList.isEmpty() && uidWideEffectReviewed) {
             reviewedPlan = AppOpsUidGuard.createReviewedPlan(uid, pair.getPackageName(),
                     ArrayUtils.convertToIntArray(new ArrayList<>(appOpList)), AppOpsUidGuard.MutationSource.BATCH,
                     reviewedPackages, true);

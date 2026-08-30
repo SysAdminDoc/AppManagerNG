@@ -21,10 +21,16 @@ public class BatchAppOpsOptions implements IBatchOpOptions {
     @NonNull
     private int[] mAppOps;
     private int mMode;
+    private boolean mUidWideEffectReviewed;
 
     public BatchAppOpsOptions(@NonNull int[] appOps, int mode) {
+        this(appOps, mode, false);
+    }
+
+    public BatchAppOpsOptions(@NonNull int[] appOps, int mode, boolean uidWideEffectReviewed) {
         mAppOps = requireValidAppOps(appOps);
         mMode = requireValidMode(mode);
+        mUidWideEffectReviewed = uidWideEffectReviewed;
     }
 
     @NonNull
@@ -36,9 +42,14 @@ public class BatchAppOpsOptions implements IBatchOpOptions {
         return mMode;
     }
 
+    public boolean isUidWideEffectReviewed() {
+        return mUidWideEffectReviewed;
+    }
+
     protected BatchAppOpsOptions(@NonNull Parcel in) {
         mAppOps = requireValidAppOps(Objects.requireNonNull(in.createIntArray()));
         mMode = requireValidMode(in.readInt());
+        mUidWideEffectReviewed = in.readByte() != 0;
     }
 
     public static final Creator<BatchAppOpsOptions> CREATOR = new Creator<BatchAppOpsOptions>() {
@@ -64,6 +75,7 @@ public class BatchAppOpsOptions implements IBatchOpOptions {
     public void writeToParcel(@NonNull Parcel dest, int flags) {
         dest.writeIntArray(mAppOps);
         dest.writeInt(mMode);
+        dest.writeByte((byte) (mUidWideEffectReviewed ? 1 : 0));
     }
 
     protected BatchAppOpsOptions(@NonNull JSONObject jsonObject) throws JSONException {
@@ -72,6 +84,7 @@ public class BatchAppOpsOptions implements IBatchOpOptions {
             int[] appOps = Objects.requireNonNull(JSONUtils.getIntArray(jsonObject.getJSONArray("app_ops")));
             mAppOps = requireValidAppOps(appOps);
             mMode = requireValidMode(jsonObject.getInt("mode"));
+            mUidWideEffectReviewed = jsonObject.optBoolean("uid_wide_effect_reviewed", false);
         } catch (IllegalArgumentException e) {
             throw new JSONException(e.getMessage());
         }
@@ -87,6 +100,7 @@ public class BatchAppOpsOptions implements IBatchOpOptions {
         jsonObject.put("tag", TAG);
         jsonObject.put("app_ops", JSONUtils.getJSONArray(mAppOps));
         jsonObject.put("mode", mMode);
+        jsonObject.put("uid_wide_effect_reviewed", mUidWideEffectReviewed);
         return jsonObject;
     }
 

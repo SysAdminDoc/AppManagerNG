@@ -9,6 +9,7 @@ import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
+import androidx.annotation.VisibleForTesting;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -73,7 +74,8 @@ public class LogViewerViewModel extends AndroidViewModel {
         @Nullable
         private volatile Future<?> mFuture;
 
-        private LogcatSession(@NonNull LogLinesAvailableInterface listener) {
+        @VisibleForTesting
+        LogcatSession(@NonNull LogLinesAvailableInterface listener) {
             mListener = new WeakReference<>(listener);
         }
     }
@@ -178,7 +180,21 @@ public class LogViewerViewModel extends AndroidViewModel {
                     synchronized (session) {
                         reader = session.mReader;
                     }
-                    if (reader == null || (line = reader.readLine()) == null) {
+                    if (reader == null) {
+                        break;
+                    }
+                    try {
+                        line = reader.readLine();
+                    } catch (Exception e) {
+                        if (continueWithReplacementReader(session, reader)) {
+                            continue;
+                        }
+                        throw e;
+                    }
+                    if (line == null) {
+                        if (continueWithReplacementReader(session, reader)) {
+                            continue;
+                        }
                         break;
                     }
                     if (mPaused) {
@@ -275,6 +291,35 @@ public class LogViewerViewModel extends AndroidViewModel {
                 }
             }
         });
+    }
+
+    /**
+     * Atomically decides whether an ended reader was replaced or owns the session shutdown.
+     * Marking the session inactive under the same monitor prevents a concurrent restart from
+     * installing a replacement after the read loop has already decided to exit.
+     */
+    @VisibleForTesting
+    static boolean continueWithReplacementReader(@NonNull LogcatSession session,
+                                                 @NonNull LogcatReader endedReader) {
+        synchronized (session) {
+            if (session.mActive && session.mReader != null && session.mReader != endedReader) {
+                return true;
+            }
+            session.mActive = false;
+            return false;
+        }
+    }
+
+    @VisibleForTesting
+    static void setSessionReader(@NonNull LogcatSession session, @Nullable LogcatReader reader) {
+        synchronized (session) {
+            session.mReader = reader;
+        }
+    }
+
+    @VisibleForTesting
+    static boolean isSessionActive(@NonNull LogcatSession session) {
+        return session.mActive;
     }
 
     static void sendNewLogs(@NonNull List<LogLine> logLines,

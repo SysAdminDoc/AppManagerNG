@@ -3,6 +3,19 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## v0.6.22, 2026-08-30
+
+### Security
+- AppOps changes now stop before Android's UID-wide binder call when a shared or system UID has not been fully reviewed. One-click batches show every selected package and operation before applying the change.
+- App-private package refresh broadcasts now require a signature permission as well as a non-exported receiver. A separately packaged test app verifies that external signals are rejected.
+
+### Fixed
+- Log Viewer reader replacement is now atomic, so an ended reader cannot tear down the replacement installed by a restart.
+- Leaving the live Log Viewer retires its active reader and callback. Rotation and final activity destruction are covered on an isolated emulator.
+- Running Apps now explains shared-UID background-operation blocks inline instead of reducing them to a generic failure.
+- Delayed first-run guidance now waits for a live activity, preventing a closed main screen from trying to open a dialog.
+- Hidden API device reports now distinguish unavailable OEM or SDK-specific symbols from reflection failures, and their generated baseline no longer mistakes field initializers for methods.
+
 ## v0.6.21, 2026-08-29
 
 ### Changed
