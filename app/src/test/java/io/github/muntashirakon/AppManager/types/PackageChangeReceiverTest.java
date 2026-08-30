@@ -68,6 +68,8 @@ public class PackageChangeReceiverTest {
             assertEquals(ContextCompat.RECEIVER_EXPORTED, context.mRegistrations.get(0).flags);
             assertEquals(ContextCompat.RECEIVER_EXPORTED, context.mRegistrations.get(1).flags);
             assertEquals(ContextCompat.RECEIVER_NOT_EXPORTED, context.mRegistrations.get(2).flags);
+            assertEquals(PackageChangeReceiver.INTERNAL_BROADCAST_PERMISSION,
+                    context.mRegistrations.get(2).permission);
             assertTrue(context.mRegistrations.get(2).filter.hasAction(
                     PackageChangeReceiver.ACTION_PACKAGE_ALTERED));
         } finally {
@@ -237,7 +239,7 @@ public class PackageChangeReceiverTest {
         @Override
         public Intent registerReceiver(@Nullable BroadcastReceiver receiver, @NonNull IntentFilter filter,
                                        @Nullable String permission, @Nullable Handler scheduler, int flags) {
-            mRegistrations.add(new Registration(filter, flags));
+            mRegistrations.add(new Registration(filter, permission, flags));
             return null;
         }
 
@@ -250,10 +252,13 @@ public class PackageChangeReceiverTest {
     private static final class Registration {
         @NonNull
         private final IntentFilter filter;
+        @Nullable
+        private final String permission;
         private final int flags;
 
-        private Registration(@NonNull IntentFilter filter, int flags) {
+        private Registration(@NonNull IntentFilter filter, @Nullable String permission, int flags) {
             this.filter = filter;
+            this.permission = permission;
             this.flags = flags;
         }
     }

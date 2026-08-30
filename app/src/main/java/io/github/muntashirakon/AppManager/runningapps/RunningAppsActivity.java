@@ -37,6 +37,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
+import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.history.ops.DestructiveActionConfirmation;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.logcat.LogViewerActivity;
@@ -45,6 +46,7 @@ import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.misc.SearchViewDebouncer;
 import io.github.muntashirakon.AppManager.scanner.vt.VtFileReport;
 import io.github.muntashirakon.AppManager.safety.CriticalPackageGuard;
+import io.github.muntashirakon.AppManager.safety.AppOpsUidGuard;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.settings.Ops;
@@ -54,6 +56,7 @@ import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.multiselection.MultiSelectionActionsView;
 import io.github.muntashirakon.util.UiUtils;
 import io.github.muntashirakon.widget.MultiSelectionView;
+import io.github.muntashirakon.widget.MaterialAlertView;
 import io.github.muntashirakon.widget.RecyclerView;
 
 public class RunningAppsActivity extends BaseActivity implements MultiSelectionView.OnSelectionChangeListener,
@@ -120,6 +123,8 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
     @Nullable
     private TextView mStatusView;
     @Nullable
+    private MaterialAlertView mUidWarningView;
+    @Nullable
     private MultiSelectionView mMultiSelectionView;
     @Nullable
     private AdvancedSearchView mSearchView;
@@ -162,6 +167,7 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
         mProgressIndicator = findViewById(R.id.progress_linear);
         mProgressIndicator.setVisibilityAfterHide(View.GONE);
         mStatusView = findViewById(R.id.running_apps_status);
+        mUidWarningView = findViewById(R.id.running_apps_uid_warning);
         RecyclerView recyclerView = findViewById(R.id.scrollView);
         recyclerView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(this));
         View emptyState = findViewById(android.R.id.empty);
@@ -216,19 +222,25 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
                         .loadLabel(getPackageManager()));
             }
         });
-        model.observePreventBackgroundRun().observe(this, applicationInfoBooleanPair -> {
-            if (applicationInfoBooleanPair.second /* is success */) {
+        model.observePreventBackgroundRun().observe(this, result -> {
+            if (result.success) {
+                hideUidWarning();
                 refresh();
+            } else if (result.uidImpact != null) {
+                showUidWarning(result.uidImpact);
             } else {
-                UIUtils.displayLongToast(R.string.failed_to_prevent_background_run, applicationInfoBooleanPair.first
+                UIUtils.displayLongToast(R.string.failed_to_prevent_background_run, result.applicationInfo
                         .loadLabel(getPackageManager()));
             }
         });
-        model.observeRestoreBackgroundRun().observe(this, applicationInfoBooleanPair -> {
-            if (applicationInfoBooleanPair.second /* is success */) {
+        model.observeRestoreBackgroundRun().observe(this, result -> {
+            if (result.success) {
+                hideUidWarning();
                 refresh();
+            } else if (result.uidImpact != null) {
+                showUidWarning(result.uidImpact);
             } else {
-                UIUtils.displayLongToast(R.string.failed_to_restore_background_run, applicationInfoBooleanPair.first
+                UIUtils.displayLongToast(R.string.failed_to_restore_background_run, result.applicationInfo
                         .loadLabel(getPackageManager()));
             }
         });
@@ -542,6 +554,27 @@ public class RunningAppsActivity extends BaseActivity implements MultiSelectionV
         mProgressIndicator.show();
         model.loadProcesses();
         model.loadMemoryInfo();
+    }
+
+    private void showUidWarning(@NonNull AppOpsUidGuard.Impact impact) {
+        if (mUidWarningView == null) return;
+        List<String> operationNames = new ArrayList<>(impact.getOperations().size());
+        for (int operation : impact.getOperations()) {
+            operationNames.add(operation == AppOpsManagerCompat.OP_NONE
+                    ? getString(R.string.reset_to_default)
+                    : AppOpsManagerCompat.getKnownOpName(operation));
+        }
+        mUidWarningView.setAlertType(MaterialAlertView.ALERT_TYPE_WARN);
+        mUidWarningView.setText(getString(R.string.app_ops_uid_interlock_message,
+                TextUtils.join(", ", impact.getAffectedPackages()),
+                TextUtils.join(", ", operationNames)));
+        mUidWarningView.show();
+    }
+
+    private void hideUidWarning() {
+        if (mUidWarningView != null) {
+            mUidWarningView.hide();
+        }
     }
 
     void requestForceStop(@NonNull ApplicationInfo applicationInfo) {

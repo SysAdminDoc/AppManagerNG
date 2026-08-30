@@ -13,6 +13,7 @@ import android.widget.Filter;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import java.util.List;
 
@@ -57,6 +58,12 @@ public class LiveLogViewerFragment extends AbsLogViewerFragment implements LogVi
         mViewModel.stopLogcat(mLogcatSession);
         mLogcatSession = null;
         super.onDestroyView();
+    }
+
+    @VisibleForTesting
+    @Nullable
+    LogViewerViewModel.LogcatSession getLogcatSession() {
+        return mLogcatSession;
     }
 
     @Override

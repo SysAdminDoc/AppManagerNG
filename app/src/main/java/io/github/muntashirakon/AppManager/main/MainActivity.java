@@ -32,6 +32,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.os.BundleCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.button.MaterialButton;
@@ -847,6 +848,12 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
      * doesn't trap the user.
      */
     private void maybeShowMainListTour() {
+        if (isFinishing() || isDestroyed()
+                || getSupportFragmentManager().isStateSaved()) return;
+        if (!getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED)) {
+            getWindow().getDecorView().post(this::maybeShowMainListTour);
+            return;
+        }
         if (!Prefs.Experience.isGuidedModeEnabled()) return;
         if (AppPref.getBoolean(AppPref.PrefKey.PREF_MAIN_TOUR_SHOWN_BOOL)) return;
         AppPref.set(AppPref.PrefKey.PREF_MAIN_TOUR_SHOWN_BOOL, true);
@@ -854,6 +861,9 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     }
 
     private void showMainListGuide() {
+        if (isFinishing() || isDestroyed()
+                || getSupportFragmentManager().isStateSaved()
+                || !getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED)) return;
         new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.main_tour_title)
                 .setMessage(R.string.main_tour_message)

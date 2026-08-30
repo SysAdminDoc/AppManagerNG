@@ -19,8 +19,8 @@ android {
         applicationId = 'io.github.sysadmindoc.AppManagerNG'
         minSdk = min_sdk
         targetSdk = target_sdk
-        versionCode = 29
-        versionName = "0.6.21"
+        versionCode = 30
+        versionName = "0.6.22"
         // AndroidX JUnit4 instrumentation runner so AndroidJUnit4-annotated tests
         // (e.g. AppsDbMigrationTest) are discovered. Default is the legacy
         // android.test.InstrumentationTestRunner which would silently skip them.
@@ -319,6 +319,10 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:1.2.1"
     androidTestImplementation "androidx.test.uiautomator:uiautomator:${uiautomator_version}"
     androidTestImplementation "junit:junit:${junit_version}"
+}
+
+tasks.matching { it.name == "connectedFlossDebugAndroidTest" }.configureEach {
+    dependsOn ":signaltestapp:installDebug"
 }
 
 def fuzzRuns = providers.gradleProperty("fuzzRuns").orElse("2000")

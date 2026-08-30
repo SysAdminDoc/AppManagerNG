@@ -8,6 +8,17 @@
 <changelog>
     <release
         type="stable release"
+        version="v0.6.22"
+        code="30"
+        date="30 August 2026">
+        <improve title="Safer AppOps review">Shared and system UID changes now stop before Android's UID-wide binder call unless the complete package and operation set was reviewed.</improve>
+        <improve title="Private refresh signals">Package refresh broadcasts now require the app's signature permission in addition to a non-exported receiver.</improve>
+        <fix title="Log Viewer lifecycle">Restarted readers can no longer be torn down by the reader they replaced, and leaving the screen retires the active reader and callback.</fix>
+        <fix title="Safe startup guidance">First-run guidance now waits for a live main screen instead of trying to open after the activity has closed.</fix>
+    </release>
+
+    <release
+        type="stable release"
         version="v0.6.21"
         code="29"
         date="29 August 2026">

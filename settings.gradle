@@ -9,5 +9,6 @@ include ':libcore:ui'
 include ':libopenpgp'
 include ':libserver'
 include ':server'
+include ':signaltestapp'
 rootProject.name = "AppManagerNG"
 gradle.ext.appManagerRoot = settingsDir

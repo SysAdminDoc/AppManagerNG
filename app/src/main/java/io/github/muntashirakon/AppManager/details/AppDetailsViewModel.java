@@ -37,6 +37,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.core.content.pm.PermissionInfoCompat;
 import androidx.lifecycle.AndroidViewModel;
@@ -121,6 +122,7 @@ import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.types.PackageChangeReceiver;
 import io.github.muntashirakon.AppManager.users.UserInfo;
 import io.github.muntashirakon.AppManager.users.Users;
+import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
 import io.github.muntashirakon.AppManager.utils.FreezeUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
@@ -1295,7 +1297,6 @@ public class AppDetailsViewModel extends AndroidViewModel {
         if (packageInfo == null) return false;
         String permName;
         final List<Integer> opItems = new ArrayList<>();
-        boolean isSuccessful = true;
         synchronized (mAppOpItems) {
             for (AppDetailsAppOpItem mAppOpItem : mAppOpItems) {
                 try {
@@ -1305,23 +1306,37 @@ public class AppDetailsViewModel extends AndroidViewModel {
                                 PackageManager.GET_META_DATA);
                         int basePermissionType = PermissionInfoCompat.getProtection(permissionInfo);
                         if (basePermissionType == PermissionInfo.PROTECTION_DANGEROUS) {
-                            // Set mode
-                            try {
-                                PermUtils.setAppOpMode(mAppOpsManager, mAppOpItem.getOp(), mPackageName,
-                                        packageInfo.applicationInfo.uid, AppOpsManager.MODE_IGNORED,
-                                        AppOpsUidGuard.MutationSource.IGNORE_DANGEROUS, null);
-                                opItems.add(mAppOpItem.getOp());
-                                mAppOpItem.invalidate(mAppOpsManager, packageInfo);
-                            } catch (PermissionException e) {
-                                Log.e(TAG, e);
-                                recordAppOpsUidImpact(e);
-                                isSuccessful = false;
-                                break;
-                            }
+                            opItems.add(mAppOpItem.getOp());
                         }
                     }
                 } catch (PackageManager.NameNotFoundException | IllegalArgumentException |
                          IndexOutOfBoundsException ignore) {
+                }
+            }
+            if (opItems.isEmpty()) {
+                return true;
+            }
+            int[] operations = ArrayUtils.convertToIntArray(opItems);
+            try {
+                requireDangerousAppOpsAllowed(packageInfo.applicationInfo.uid, mPackageName, operations);
+            } catch (SecurityException e) {
+                Log.e(TAG, e);
+                recordAppOpsUidImpact(e);
+                return false;
+            }
+            for (AppDetailsAppOpItem appOpItem : mAppOpItems) {
+                if (!opItems.contains(appOpItem.getOp())) {
+                    continue;
+                }
+                try {
+                    PermUtils.setAppOpMode(mAppOpsManager, appOpItem.getOp(), mPackageName,
+                            packageInfo.applicationInfo.uid, AppOpsManager.MODE_IGNORED,
+                            AppOpsUidGuard.MutationSource.IGNORE_DANGEROUS, null);
+                    appOpItem.invalidate(mAppOpsManager, packageInfo);
+                } catch (PermissionException e) {
+                    Log.e(TAG, e);
+                    recordAppOpsUidImpact(e);
+                    return false;
                 }
             }
         }
@@ -1337,7 +1352,21 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 mBlockerLocker.notifyAll();
             }
         });
-        return isSuccessful;
+        return true;
+    }
+
+    private static void requireDangerousAppOpsAllowed(int uid, @NonNull String packageName,
+                                                      @NonNull int[] operations) {
+        AppOpsUidGuard.requireAllowed(uid, packageName, operations,
+                AppOpsUidGuard.MutationSource.IGNORE_DANGEROUS, null);
+    }
+
+    @VisibleForTesting
+    static void requireDangerousAppOpsAllowed(int uid, @NonNull String packageName,
+                                              @NonNull int[] operations,
+                                              @NonNull AppOpsUidGuard.PackageResolver resolver) {
+        AppOpsUidGuard.requireAllowed(uid, packageName, operations,
+                AppOpsUidGuard.MutationSource.IGNORE_DANGEROUS, null, resolver);
     }
 
     @AnyThread

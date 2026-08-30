@@ -276,8 +276,23 @@ public class RunningAppsViewModel extends AndroidViewModel {
         return mForceStopAppResult;
     }
 
-    private final MutableLiveData<Pair<ApplicationInfo, Boolean>> mPreventBackgroundRunResult = new MutableLiveData<>();
-    private final MutableLiveData<Pair<ApplicationInfo, Boolean>> mRestoreBackgroundRunResult = new MutableLiveData<>();
+    public static final class BackgroundRunResult {
+        @NonNull
+        public final ApplicationInfo applicationInfo;
+        public final boolean success;
+        @Nullable
+        public final AppOpsUidGuard.Impact uidImpact;
+
+        private BackgroundRunResult(@NonNull ApplicationInfo applicationInfo, boolean success,
+                                    @Nullable AppOpsUidGuard.Impact uidImpact) {
+            this.applicationInfo = applicationInfo;
+            this.success = success;
+            this.uidImpact = uidImpact;
+        }
+    }
+
+    private final MutableLiveData<BackgroundRunResult> mPreventBackgroundRunResult = new MutableLiveData<>();
+    private final MutableLiveData<BackgroundRunResult> mRestoreBackgroundRunResult = new MutableLiveData<>();
 
     public boolean canRunInBackground(@NonNull ApplicationInfo info) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
@@ -307,8 +322,13 @@ public class RunningAppsViewModel extends AndroidViewModel {
 
     public void preventBackgroundRun(@NonNull ApplicationInfo info) {
         mExecutor.submit(() -> {
+            Throwable failure = null;
             try {
                 int[] appOps = getBackgroundRunAppOpsForSdk(Build.VERSION.SDK_INT);
+                if (appOps.length > 0) {
+                    requireBackgroundRunAppOpsAllowed(info.uid, info.packageName, appOps,
+                            AppOpsUidGuard.MutationSource.IGNORE_DANGEROUS);
+                }
                 AppOpsManagerCompat appOpsService = new AppOpsManagerCompat();
                 for (int op : appOps) {
                     appOpsService.setMode(op, info.uid, info.packageName, AppOpsManager.MODE_IGNORED,
@@ -322,11 +342,12 @@ public class RunningAppsViewModel extends AndroidViewModel {
                         }
                     }
                 }
-                mPreventBackgroundRunResult.postValue(new Pair<>(info, true));
             } catch (RemoteException | SecurityException e) {
+                failure = e;
                 Log.w(TAG, e);
-                mPreventBackgroundRunResult.postValue(new Pair<>(info, false));
             }
+            mPreventBackgroundRunResult.postValue(new BackgroundRunResult(info, failure == null,
+                    AppOpsUidGuard.findImpact(failure)));
         });
     }
 
@@ -340,6 +361,14 @@ public class RunningAppsViewModel extends AndroidViewModel {
                 AppOpsManagerCompat appOpsService = new AppOpsManagerCompat();
                 int[] currentModes = readAppOpModes(appOpsService, appOps, info);
                 plan = BackgroundRunAppOpPlan.createRestorePlan(appOps, currentModes, null);
+                int[] plannedOperations = new int[plan.size()];
+                for (int i = 0; i < plan.size(); ++i) {
+                    plannedOperations[i] = plan.get(i).op;
+                }
+                if (plannedOperations.length > 0) {
+                    requireBackgroundRunAppOpsAllowed(info.uid, info.packageName, plannedOperations,
+                            AppOpsUidGuard.MutationSource.DIRECT);
+                }
                 for (BackgroundRunAppOpPlan.OpModeChange change : plan) {
                     try {
                         appOpsService.setMode(change.op, info.uid, info.packageName, change.restoreMode,
@@ -362,7 +391,8 @@ public class RunningAppsViewModel extends AndroidViewModel {
             }
             boolean success = failure == null && appliedChanges.size() == plan.size();
             recordBackgroundRunRestoreHistory(info, appliedChanges, success, failure);
-            mRestoreBackgroundRunResult.postValue(new Pair<>(info, success));
+            mRestoreBackgroundRunResult.postValue(new BackgroundRunResult(info, success,
+                    AppOpsUidGuard.findImpact(failure)));
         });
     }
 
@@ -372,12 +402,28 @@ public class RunningAppsViewModel extends AndroidViewModel {
         return BackgroundRunAppOpPlan.getAppOpsForSdk(sdkInt);
     }
 
-    public LiveData<Pair<ApplicationInfo, Boolean>> observePreventBackgroundRun() {
+    @NonNull
+    public LiveData<BackgroundRunResult> observePreventBackgroundRun() {
         return mPreventBackgroundRunResult;
     }
 
-    public LiveData<Pair<ApplicationInfo, Boolean>> observeRestoreBackgroundRun() {
+    @NonNull
+    public LiveData<BackgroundRunResult> observeRestoreBackgroundRun() {
         return mRestoreBackgroundRunResult;
+    }
+
+    private static void requireBackgroundRunAppOpsAllowed(int uid, @NonNull String packageName,
+                                                          @NonNull int[] operations,
+                                                          @NonNull AppOpsUidGuard.MutationSource source) {
+        AppOpsUidGuard.requireAllowed(uid, packageName, operations, source, null);
+    }
+
+    @VisibleForTesting
+    static void requireBackgroundRunAppOpsAllowed(int uid, @NonNull String packageName,
+                                                  @NonNull int[] operations,
+                                                  @NonNull AppOpsUidGuard.MutationSource source,
+                                                  @NonNull AppOpsUidGuard.PackageResolver resolver) {
+        AppOpsUidGuard.requireAllowed(uid, packageName, operations, source, null, resolver);
     }
 
     @NonNull

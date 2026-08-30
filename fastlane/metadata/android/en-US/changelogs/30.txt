@@ -1,0 +1,4 @@
+- Added a complete package and operation review before shared-UID AppOps changes.
+- Protected private package refresh signals with a signature permission.
+- Fixed Log Viewer reader replacement and screen-exit cleanup.
+- Prevented delayed first-run guidance from opening after the main screen closed.

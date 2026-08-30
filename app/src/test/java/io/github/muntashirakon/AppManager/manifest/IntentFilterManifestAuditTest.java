@@ -113,6 +113,32 @@ public class IntentFilterManifestAuditTest {
     }
 
     @Test
+    public void internalBroadcastPermissionIsSignatureProtectedAndRequested() {
+        String permissionName = "${applicationId}.permission.INTERNAL_BROADCAST";
+        boolean declared = false;
+        NodeList permissions = sManifest.getElementsByTagName("permission");
+        for (int i = 0; i < permissions.getLength(); ++i) {
+            Element permission = (Element) permissions.item(i);
+            if (permissionName.equals(permission.getAttributeNS(ANDROID_NS, "name"))) {
+                assertEquals("signature",
+                        permission.getAttributeNS(ANDROID_NS, "protectionLevel"));
+                declared = true;
+            }
+        }
+        assertTrue("Internal broadcast permission must be declared", declared);
+
+        boolean requested = false;
+        NodeList usesPermissions = sManifest.getElementsByTagName("uses-permission");
+        for (int i = 0; i < usesPermissions.getLength(); ++i) {
+            Element permission = (Element) usesPermissions.item(i);
+            if (permissionName.equals(permission.getAttributeNS(ANDROID_NS, "name"))) {
+                requested = true;
+            }
+        }
+        assertTrue("The app must hold its internal broadcast permission", requested);
+    }
+
+    @Test
     public void automationBroadcastActionsAreNamespaced() {
         ExportedComponent comp = sComponents.get(SOURCE_PKG + ".automation.AutomationReceiver");
         assertNotNull(comp);

@@ -219,7 +219,15 @@ Get-ChildItem -Path $hiddenApiRoot -Recurse -Filter "*.java" |
                 $current = $classStack[$classStack.Count - 1]
                 $entry = $byName[$current.Stub]
                 $memberMinSdk = [Math]::Max($current.MinSdk, $pendingMinSdk)
-                if ($statement -match "\(" -and $statement -match "\)") {
+                if ($statement -match "(?:^| )(?:public|protected|private)?\s*(?:static\s+)?(?:final\s+)?(?:/\*final\*/\s+)?[A-Za-z0-9_.$<>\[\]?]+\s+([A-Za-z_][A-Za-z0-9_]*)\s*(=|;)") {
+                    $fieldName = $Matches[1]
+                    $entry.members.Add([ordered]@{
+                        kind = "field"
+                        name = $fieldName
+                        minSdk = $memberMinSdk
+                        deprecated = $pendingDeprecated
+                    })
+                } elseif ($statement -match "\(" -and $statement -match "\)") {
                     if ($statement -notmatch "^(if|for|while|switch|catch)\b") {
                         $methodName = $null
                         if ($statement -match "([A-Za-z_][A-Za-z0-9_]*)\s*\((.*)\)") {
@@ -237,14 +245,6 @@ Get-ChildItem -Path $hiddenApiRoot -Recurse -Filter "*.java" |
                             })
                         }
                     }
-                } elseif ($statement -match "(?:^| )(?:public|protected|private)?\s*(?:static\s+)?(?:final\s+)?(?:/\*final\*/\s+)?[A-Za-z0-9_.$<>\[\]?]+\s+([A-Za-z_][A-Za-z0-9_]*)\s*(=|;)") {
-                    $fieldName = $Matches[1]
-                    $entry.members.Add([ordered]@{
-                        kind = "field"
-                        name = $fieldName
-                        minSdk = $memberMinSdk
-                        deprecated = $pendingDeprecated
-                    })
                 }
                 $pendingMinSdk = 1
                 $pendingDeprecated = $false

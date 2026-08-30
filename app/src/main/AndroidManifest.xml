@@ -177,8 +177,12 @@
     <permission
         android:name="${applicationId}.permission.AUTOMATION"
         android:protectionLevel="signature" />
+    <permission
+        android:name="${applicationId}.permission.INTERNAL_BROADCAST"
+        android:protectionLevel="signature" />
 
     <uses-permission android:name="${applicationId}.permission.AUTOMATION" />
+    <uses-permission android:name="${applicationId}.permission.INTERNAL_BROADCAST" />
 
     <application
         android:name=".AppManager"

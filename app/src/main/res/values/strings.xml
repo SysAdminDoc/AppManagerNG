@@ -973,6 +973,7 @@
     <string name="review_tracker_apps_title">Review tracker apps</string>
     <string name="review_component_apps_title">Review component matches</string>
     <string name="review_app_ops_apps_title">Review app-op matches</string>
+    <string name="review_app_ops_inline_summary">Changing %1$s. Shared-UID changes require every affected package to remain selected.</string>
     <string name="review_orphan_data_title">Review leftover data</string>
     <string name="no_trackers_to_review_message">No tracker components were found in the scanned apps.</string>
     <string name="no_component_matches_message">No apps matched the component signatures you entered.</string>
