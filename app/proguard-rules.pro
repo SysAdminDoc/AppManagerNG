@@ -10,6 +10,18 @@
 -keepattributes SourceFile,LineNumberTable
 # Keep generics
 -keepattributes Signature
+
+# R8 can otherwise choose either Path.findFile or PathImpl.findFile as the owner of the same
+# virtual archive-extraction call. Keep this dispatch boundary stable so two clean release builds
+# produce the same DEX and baseline profile.
+-keep,allowobfuscation class io.github.muntashirakon.io.Path {
+    io.github.muntashirakon.io.Path findFile(java.lang.String);
+    io.github.muntashirakon.io.Path findFileOrNull(java.lang.String);
+}
+-keep,allowobfuscation class io.github.muntashirakon.io.PathImpl {
+    io.github.muntashirakon.io.Path findFile(java.lang.String);
+}
+
 # Keep all class members that implement the serializable interface
 -keepclassmembers class * implements java.io.Serializable {
     static final long serialVersionUID;
