@@ -2,25 +2,7 @@
 
 Actionable work only. Historical and completed roadmap material is archived in CHANGELOG.md; blocked work is kept in Roadmap_Blocked.md.
 
-## Research-Driven Additions (2026-08-10)
-
-### P1
-
-## Research-Driven Additions (2026-08-11)
-
-### P1
-
-### P2
-
-### P3
-
-## Research-Driven Additions (2026-08-11 follow-up)
-
-### P3
-
 ## Research-Driven Additions (2026-08-23)
-
-### P0
 
 ### P1
 
@@ -49,7 +31,7 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Why: the aggregate CVE report mixes packaged runtime, transformed wrappers, host tools, and test dependencies, leaving 962 result rows across 79 artifacts without a reliable shipped-risk boundary.
   Evidence: `build/reports/dependency-check/dependency-check-report.sarif` from 2026-08-22; `scripts/run_dependency_cve_gate.py`; root `build.gradle`; `config/owasp-suppressions.xml`; CVE-2026-11822 and CVE-2026-11824 mappings to AndroidX wrappers and host `sqlite-jdbc`.
   Touches: `scripts/run_dependency_cve_gate.py`, Gradle dependency-report inputs, reproducible-release evidence, SBOM/APK reachability join, SARIF/HTML outputs, suppression validation tests.
-  Acceptance: the gate produces separate packaged-release and host/build/test sections for FLOSS and full; every blocking finding records module, configuration, resolved artifact, and APK or SBOM reachability evidence; host-only and CPE-name-collision findings cannot be presented as shipped APK code; CVSS policy still fails closed for reachable findings; stale or blanket suppressions fail validation.
+  Acceptance: the gate produces separate packaged-release and host/build/test sections for FLOSS and full; every blocking finding records module, configuration, resolved artifact, and APK or SBOM reachability evidence; host-only and CPE-name-collision findings cannot be presented as shipped APK code; CVSS policy still fails closed for reachable findings; stale or blanket suppressions fail validation. The six August 2026 SQLite CVEs (CVE-2026-51296, -51297, -51300, -51302, -51303, -51304) are documented upstream as fabricated and must carry that disposition rather than being re-investigated each release.
   Complexity: M
 
 - [ ] P1: Bind the privacy policy to the compiled network ledger
@@ -84,7 +66,7 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 - [ ] P2: Bound embedded JADX class decompilation and pin its reachable surface
   Why: the Android JADX fork is fixed at 1.4.7 while upstream has moved, and untrusted DEX or smali can still consume excessive CPU or memory even though resource and export advisories are not reachable through the checked call surface.
-  Evidence: `versions.gradle:38`; `dex/DexUtils.java:161-223`; JADX Android fork releases; JADX 1.5.6 release and GHSA-hvp5-5x4f-33fq, GHSA-w6f5-h4x4-rfpj, GHSA-jwv3-q635-w9m4.
+  Evidence: `versions.gradle:38`; `dex/DexUtils.java:161-223`; JADX Android fork releases; JADX 1.5.6 release and GHSA-hvp5-5x4f-33fq, GHSA-w6f5-h4x4-rfpj, GHSA-jwv3-q635-w9m4. The 1.4.7 pin is inside GHSA-hvp5-5x4f-33fq's affected range and `skipResources(true)` is the only thing keeping it unreachable, which is what the contract test below has to hold.
   Touches: `dex/DexUtils.java`, a decompile-policy wrapper, worker cancellation, size/time/result ceilings, hostile DEX and smali fixtures, dependency disposition notes.
   Acceptance: class decompilation has explicit input, output, time, and memory ceilings and is cancellable when its host screen closes; malformed, recursive, and oversized fixtures return classified errors without process death; a contract test proves AppManagerNG continues to set `skipResources(true)` and never invokes JADX APK export or GUI paths; reachable upstream fixes are backported or documented against the narrow fork.
   Complexity: M
@@ -110,4 +92,89 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Evidence: `benchmark/build.gradle:48,51-52`; `app/build.gradle:318-319`; `versions.gradle`; `scripts/verify_dependency_floor.py`.
   Touches: `versions.gradle`, `benchmark/build.gradle`, `app/build.gradle`, `docs/policy/minsdk-21-ceiling.json`, dependency-floor tests and lockfiles.
   Acceptance: each duplicated version is declared once in `versions.gradle`; all modules resolve the same pin; the API 21 ceiling gate covers runtime and test pins that can affect the device floor; dependency locks regenerate without unrelated drift.
+  Complexity: S
+
+## Research-Driven Additions (2026-09-05)
+
+### P0
+
+- [ ] P0: Accept the platform's own installer and uninstaller confirmation intents
+  Why: AOSP builds the uninstall confirmation with no component and no package, so the guard rejects every no-root uninstall on every device, and any ROM that leaves the install confirmation implicit loses installs the same way.
+  Evidence: fork issue #14 (Xiaomi Redmi 9C, MIUI 12.0.16, API 29, v0.6.22; the reporter confirms upstream App Manager installs fine on the same device); AOSP `PackageInstallerService.java:861` on android-10.0.0_r47 and `:1182` on android-13.0.0_r83 build `new Intent(Intent.ACTION_UNINSTALL_PACKAGE)` carrying only a `package:` data URI; `apk/installer/InstallerConfirmIntentGuard.java:44-50` returns null for any payload without an explicit target; the guard landed in `7df18f1da` (2026-07-29, v0.6.7); `apk/installer/PackageInstallerActivity.java:580`.
+  Touches: `apk/installer/InstallerConfirmIntentGuard.java`, `apk/installer/PackageInstallerBroadcastReceiver.java`, `apk/installer/PackageInstallerActivity.java`, `app/src/test/java/io/github/muntashirakon/AppManager/apk/installer/InstallerConfirmIntentGuardTest.java`.
+  Acceptance: an implicit payload is resolved through `PackageManager` and forwarded only when it resolves to a component in a system package, bound explicitly to that resolved component before launch; a payload resolving to a non-system package, to this application, or to nothing is still rejected; caller-chosen flags and URI grants are still dropped; the guard test gains positive controls built from the exact AOSP payload shapes for `ACTION_UNINSTALL_PACKAGE` and `ACTION_CONFIRM_INSTALL`, and reverting the fix turns those cases red; a rejection records which rule fired and what the payload resolved to, so the next report names the ROM instead of guessing.
+  Complexity: M
+
+- [ ] P0: Give every install session outcome a single owner that clears its notification
+  Why: the confirmation notification is cancelled only from the success and failure branches of the broadcast receiver, so a rejected confirmation intent and an expired user-interaction wait both leave it posted indefinitely with a running progress bar.
+  Evidence: fork issue #14 reports the notification at 100 percent still scrolling after five minutes; `apk/installer/PackageInstallerBroadcastReceiver.java:88` posts it with `setAutoCancel(false)` and cancels only at `:108` and `:112`; `apk/installer/PackageInstallerActivity.java:587-595` reports `STATUS_FAILURE_INCOMPATIBLE_ROM` on a path that never reaches the receiver; `apk/installer/PackageInstallerCompat.java:99` sets `USER_INTERACTION_TIMEOUT_MINUTES = 5` and its expiry also bypasses the receiver.
+  Touches: `apk/installer/PackageInstallerBroadcastReceiver.java`, `apk/installer/PackageInstallerActivity.java`, `apk/installer/PackageInstallerCompat.java`, `apk/installer/PackageInstallerService.java`, `utils/NotificationUtils.java`, installer host tests.
+  Acceptance: success, platform failure, guard rejection, user cancel, interaction timeout, and install-result timeout all report through one sink that cancels the confirmation notification and emits exactly one completion broadcast; a host test drives each of those six outcomes and asserts the notification id is cancelled once and only once; a guard rejection also surfaces a user-visible failure rather than only a broadcast that no listener is registered for.
+  Complexity: M
+
+- [ ] P0: Stop the support bundle from erasing the stack traces it collects
+  Why: the scrubber replaces every dotted identifier with a placeholder, which deletes exception class names and every framework and application frame, so a crash report from a released build cannot be read at all.
+  Evidence: the trace pasted in fork issue #12, in which the only surviving frames are `nf0.<init>` and `j$.` entries because neither matches the regex; `misc/SupportInfoBundle.java:241`; the adjacent rule at `:242` maps any five-to-seven-digit run to a placeholder, which also corrupts long line numbers and the device build ID; the same function is applied by the uncaught-exception handler at `misc/AMExceptionHandler.java:82`, so the crash report `misc/LocalCrashSink.java` writes to disk is stripped too, and by `apk/installer/InstallTranscript.java:129,134,139`, which mangles installer failure explanations.
+  Touches: `misc/SupportInfoBundle.java`, `app/src/test/java/io/github/muntashirakon/AppManager/misc/SupportInfoBundleTest.java`, `.github/ISSUE_TEMPLATE/bug_report.yml`.
+  Acceptance: identifiers under `android.`, `androidx.`, `java.`, `javax.`, `dalvik.`, `libcore.`, `kotlin.`, `j$.`, `com.google.android.material.` and this application id survive verbatim in stack-trace context; third-party package names outside that allowlist are still replaced; the numeric rule no longer rewrites digits following a colon in a frame; a test feeds the exact trace from fork issue #12 through the scrubber and asserts the exception classes and frame classes are readable while an unrelated third-party package name and an email address are still redacted; removing the allowlist turns that test red.
+  Complexity: S
+
+### P1
+
+- [ ] P1: Publish the R8 mapping file with every release
+  Why: release builds are minified and no mapping is published, so even a correctly scrubbed crash report resolves only to obfuscated names.
+  Evidence: `app/build.gradle:71` sets `minifyEnabled = true`; the v0.6.22 release assets are two APKs, two `.sha256` files, the CycloneDX SBOM, the dependency-check HTML and SARIF, the CVE receipt, and `server-jars.txt`, with no mapping file; fork issue #12's trace contains `nf0.<init>` and an `r8-map-id` marker.
+  Touches: `scripts/release_gate.py`, `scripts/verify_release_metadata.py`, `docs/distribution/reproducible-builds.md`, `README.md`.
+  Acceptance: the gate emits a mapping file plus its SHA-256 for each minified flavor, records both hashes in the release receipt, and refuses to publish when a minified variant produced no mapping; the two-build reproducibility check treats a mapping difference between the two clean builds as a failure, because differing mappings mean differing DEX; `README.md` documents how to retrace a pasted trace against the published mapping.
+  Complexity: S
+
+- [ ] P1: Fix the Code Editor inflation crash and stop it taking the process down
+  Why: opening the Code Editor from Labs crashes and restarts the app on Android 10, and one third-party view failing to inflate should not end the process.
+  Evidence: fork issue #12, `Binary XML file line #51 in layout/fragment_code_editor: Error inflating class` followed by a null-pointer dereference, on a Redmi 9C running API 29, armeabi-v7a only, MIUI 12.0.16, AppManagerNG v0.6.22; `app/src/main/res/layout/fragment_code_editor.xml:41-51` is the `CodeEditorWidget` element; `editor/CodeEditorWidget.java:28-30` only delegates to the pinned sora-editor; `editor/Languages.java` and `LanguagesAssetTest` cover asset presence but never widget construction.
+  Touches: `editor/CodeEditorFragment.java`, `editor/CodeEditorWidget.java`, `app/src/main/res/layout/fragment_code_editor.xml`, `editor/EditorThemes.java`, editor host tests.
+  Acceptance: the reported trace is retraced against the published mapping and the failing constructor path is named in the fix; the editor screen catches an inflation or initialisation failure, shows a dismissible error naming what failed, and returns to Labs rather than terminating; a Robolectric test inflates `fragment_code_editor` at API 21, API 29, and the current target and fails when inflation throws; the underlying cause is fixed rather than only caught, and a regression test pins it.
+  Complexity: M
+
+- [ ] P1: Stop App Info subtitles clipping, and gate long locales and large fonts
+  Why: two App Info subtitles cap at one line with no ellipsize, so longer translations are cut mid-glyph with nothing signalling truncation, and nothing automated checks translated string length or font scale.
+  Evidence: fork issue #13, Russian locale, Android 10, App Info tab, v0.6.22, with a screenshot; `app/src/main/res/layout/pager_app_info.xml:160` `tracker_cta_subtitle` and `:236` `perms_cta_subtitle` set `android:maxLines="1"` with no `android:ellipsize`, while `:59`, `:73`, `:88` and `:313` all pair the two; the 2026-08-22 visual density pass was verified in English on a single API 35 emulator.
+  Touches: `app/src/main/res/layout/pager_app_info.xml`, any further layouts the new gate finds, `app/src/main/res/values/dimens-v2.xml`, a new layout-clipping host test.
+  Acceptance: no layout under `app/src/main/res/layout/` caps a text view with `maxLines` or `singleLine` without an `ellipsize`, and a host test enumerating that directory fails when one does; both App Info subtitles render their longest shipped translation without a mid-glyph cut; a Robolectric measurement test renders the App Info header and both CTA cards using the longest translated value of each string at font scales 1.0 and 1.3 and fails when measured text is truncated or a row overflows its container; the fix is checked against `values-ru`, the reported locale.
+  Complexity: M
+
+- [ ] P1: Warn on an untested Android version and log hidden-API fallbacks
+  Why: nothing tells a user that the running Android version is above what this build was tested against, and a hidden-API accessor that silently returns nothing writes no log line, which is how the Android 17 enumeration break reached users undiagnosed.
+  Evidence: upstream issue #2033 (2026-09-04) describes stepping line by line through a debugger because neither logcat nor a debug build gave any hint; this fork's own Android 17 fix `74fc7ae95` and fork issue #6; no maximum-SDK guard exists anywhere under `app/src/main/java/`; `misc/ProfilingTriggerHelper.java:23` documents the reflective-resolution pattern the warning should key off; `compat/PackageManagerCompat.java`; `settings/PrivilegeHealthPreferences.java`.
+  Touches: a shared platform-support constant derived from `compileSdk`, the `compat/` accessors that swallow reflection failures, `settings/PrivilegeHealthPreferences.java`, `misc/SupportInfoBundle.java`, strings, tests.
+  Acceptance: running on an SDK above the tested ceiling shows a dismissible non-blocking notice in Privilege Health and adds a line to the support bundle, and the app still starts and runs — it never refuses a new Android version; every `compat/` accessor that falls back after a reflection or linkage failure logs the class, member, and SDK at warning level once per process instead of silently returning a default; a host test asserts the ceiling constant tracks `compileSdk` so it cannot go stale, and asserts a simulated linkage failure produces exactly one log record.
+  Complexity: M
+
+- [ ] P1: Revoke internet access per app through privileged network rules
+  Why: upstream shipped per-app INTERNET revocation in v4.1.1 and this fork has only metered-background net policy, which does not block connectivity.
+  Evidence: upstream v4.1.1 release notes (2026-09-04) describe eBPF rules applied in root and ADB mode from the Uses-permissions tab, with loss on reboot named as a known limitation; `compat/NetworkPolicyManagerCompat.java` and `rules/struct/NetPolicyRule.java` cover metered background only; `self/BootReceiver.java:29-31` already re-applies routines on boot; `batchops/struct/BatchNetPolicyOptions.java`.
+  Touches: a new privileged network-rule executor, `rules/struct/`, `rules/RulesStorageManager.java`, the App Details uses-permissions tab, `batchops/BatchOpsManager.java`, `self/BootReceiver.java`, `profiles/`, host tests using a faked privileged executor.
+  Acceptance: a persisted rule type records package, UID, and rule state and round-trips through the existing rules import and export formats; the uses-permissions row for `android.permission.INTERNET` reflects stored state and is disabled with a stated reason when no privileged mode is active; rules are re-applied on `BOOT_COMPLETED` and the UI reports the window before enforcement resumes rather than claiming enforcement it does not have; host tests cover apply, revert, boot re-apply, and privilege loss against a faked executor; an unsupported kernel or ROM produces an explained unavailable state rather than a silent no-op. If on-device verification turns out to need a kernel floor that cannot be checked on the host, move the enforcement half to `Roadmap_Blocked.md` and keep the rule model here.
+  Complexity: L
+
+### P2
+
+- [ ] P2: Record permission grant state and report drift against a user policy
+  Why: the monitoring subsystem stores only manifest-declared permissions, so a permission the user revoked and something later re-granted is invisible, and there is no view of which apps deviate from what the user chose.
+  Evidence: fork issue #15 cites PermissionManagerX Pro's Permission Watcher and Scheduled Check as paid features solving exactly this; `permission/monitor/PermissionSnapshot.java:24-33` records declared, requested, and dangerous permissions and never a grant result; `permission/monitor/PermissionChangeMonitor.java:210` never calls `checkPermission`; `permission/monitor/PermissionSnapshotStore.java:60` is at schema version 2 and discards mismatched snapshots on load; `permission/monitor/PermissionChangeReceiver.java:31` fires only on package replacement; `history/ops/OpHistoryPruneScheduler.java:70` is the periodic-job pattern to copy.
+  Touches: `permission/monitor/PermissionSnapshot.java`, `PermissionSnapshotStore.java`, `PermissionChangeMonitor.java`, a policy store modelled on `profiles/trigger/ProfileTriggerStore.java`, a new periodic worker, `permission/monitor/AppChangeFeedStore.java`, `settings/PrivacyPreferences.java`, `self/BootReceiver.java`, tests.
+  Acceptance: snapshots carry grant state at schema 3 and older snapshots are re-primed rather than misread; an opt-in daily worker rescans and appends a drift entry to the existing app-change feed for every permission whose grant state differs from the stored policy, naming package, permission, expected state, and observed state; drift reporting works in every mode including no-root because it only reads; this item stays report-only and says so plainly in its user-facing copy, because automatic revocation needs a live privileged binder; a host test primes a policy, mutates a grant result behind a fake, and asserts exactly one drift entry, and reverting the schema change turns it red. Automatic remediation is deliberately left to the existing profile routines, which can already revoke permissions on a time-of-day trigger.
+  Complexity: M
+
+- [ ] P2: Bound the build-expiry lockout so it cannot strand a user
+  Why: an expired prerelease build shows a non-cancelable dialog with no way through, expiry is decided from an unvalidated device clock, and the debug update link points at a page this project does not use.
+  Evidence: `self/life/BuildExpiryChecker.java:88-105` compares `System.currentTimeMillis()` against `BuildConfig.BUILD_TIME_MILLIS`, with a source comment conceding it should use an SNTP server; `:64-86` adds a continue button only for the stable build type, leaving alpha, beta, and rc with only Update and Uninstall; it is enforced at `BaseActivity.java:86`, `main/SplashActivity.java:117`, and `crypto/ks/KeyStoreActivity.java:33`, so a skewed clock locks the user out of their own backups; `getUpdateUri()` returns the repository's Actions page for debug builds while this repository has no `.github/workflows` by policy.
+  Touches: `self/life/BuildExpiryChecker.java`, `BaseActivity.java`, `main/SplashActivity.java`, `crypto/ks/KeyStoreActivity.java`, `app/src/test/java/io/github/muntashirakon/AppManager/self/life/BuildExpiryCheckerTest.java`, strings.
+  Acceptance: every build type offers a continue path, so no expiry state can stop a user reaching their backups, rules, and snapshots; a build time in the future, or a device clock earlier than the build time, is treated as unknown rather than expired; the debug update link points at the releases page; the existing warning-period behaviour is unchanged; tests cover a clock set backwards, a clock set far forwards, and each build type, asserting a continue action exists in every case.
+  Complexity: S
+
+- [ ] P2: Make the Dhizuku capability copy match what Dhizuku can actually do
+  Why: onboarding tells the user Dhizuku is ready and active while Privilege Health correctly states its operations are disabled, and the reason Privilege Health gives for that is now answerable rather than open.
+  Evidence: fork discussion #5, where a user asks for full Dhizuku support because ColorOS 16 restricted ADB permissions and points at `trinadhthatakula/Thor`; `onboarding_confidence_mode_shizuku_ready` and `onboarding_mode_dhizuku_status_ready` in `app/src/main/res/values/strings.xml` against `privilege_health_dhizuku_dialog_message`; `settings/Ops.java:85-90` declares no Dhizuku mode; `apk/installer/InstallerPrivilegeCascade.java:182` adds Dhizuku only as an informational step with a null mode; `dhizuku/DhizukuBridge.java` is a detection probe; Dhizuku-API 2.6.0 declares a minimum SDK of 26 (https://raw.githubusercontent.com/iamr0s/Dhizuku-API/main/build.gradle) against a Dhizuku manager that already requires Android 8.0, so the AAR is a manifest-merger question rather than the API 21 floor conflict the string claims.
+  Touches: `app/src/main/res/values/strings.xml`, `onboarding/OnboardingFragment.java`, `settings/PrivilegeHealthPreferences.java`, `docs/policy/minsdk-21-ceiling.md`, `Roadmap_Blocked.md`.
+  Acceptance: no user-facing string implies Dhizuku can perform operations while it cannot, and none conflates Shizuku readiness with Dhizuku readiness; the Dhizuku status text states what detection gives the user today and what it does not; `docs/policy/minsdk-21-ceiling.md` records the measured Dhizuku-API minimum SDK and the decision on whether an API 26 guarded module with `tools:overrideLibrary` is acceptable under the API 21 policy, so the parked Dhizuku executor-parity row in `Roadmap_Blocked.md` carries a decided approach instead of an open question; a settings-string test fails if a readiness string is reintroduced without a matching capability.
   Complexity: S
