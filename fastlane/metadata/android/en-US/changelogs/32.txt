@@ -1,0 +1,5 @@
+Installing and uninstalling without root works again. Android sends its confirmation prompt as an intent that names no target, and AppManagerNG had been refusing those since v0.6.7, so the prompt never appeared and the install notification kept spinning.
+
+Crash reports are readable again. The support bundle used to strip every class name out of a stack trace, including the exception itself.
+
+Releases now publish the R8 mapping for each build, so a crash from a release APK can be turned back into real names.

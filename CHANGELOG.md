@@ -3,7 +3,7 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## Unreleased
+## v0.6.24, 2026-09-05
 
 ### Added
 - Every release now publishes the R8 mapping for each flavor, so a crash report from a released build can be turned back into real class and method names. The mapping is verified byte-identical across both clean builds, and publication stops if an APK has no mapping to go with it. README explains how to use it.
