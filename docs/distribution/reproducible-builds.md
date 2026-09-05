@@ -53,7 +53,7 @@ python scripts/release_gate.py --tag v0.6.6 \
 | `translation` | a source string regressed, or the report's own counts disagree |
 | `tests` | a host unit test fails, or the task reports success with no results |
 | `lint` | a lint issue is not in the baseline, or the baseline has stale entries |
-| `reproducible` | two clean builds differ, or the SBOM, page-alignment, or blocking CVE check fails |
+| `reproducible` | two clean builds differ, the R8 mapping is missing or differs between them, or the SBOM, page-alignment, or blocking CVE check fails |
 | `artifact` | the built APK's package, version, SDK level, or signer is not the one the sources declare |
 
 The receipt is written last and only on success, to

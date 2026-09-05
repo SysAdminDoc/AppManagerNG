@@ -98,13 +98,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ### P1
 
-- [ ] P1: Publish the R8 mapping file with every release
-  Why: release builds are minified and no mapping is published, so even a correctly scrubbed crash report resolves only to obfuscated names.
-  Evidence: `app/build.gradle:71` sets `minifyEnabled = true`; the v0.6.22 release assets are two APKs, two `.sha256` files, the CycloneDX SBOM, the dependency-check HTML and SARIF, the CVE receipt, and `server-jars.txt`, with no mapping file; fork issue #12's trace contains `nf0.<init>` and an `r8-map-id` marker.
-  Touches: `scripts/release_gate.py`, `scripts/verify_release_metadata.py`, `docs/distribution/reproducible-builds.md`, `README.md`.
-  Acceptance: the gate emits a mapping file plus its SHA-256 for each minified flavor, records both hashes in the release receipt, and refuses to publish when a minified variant produced no mapping; the two-build reproducibility check treats a mapping difference between the two clean builds as a failure, because differing mappings mean differing DEX; `README.md` documents how to retrace a pasted trace against the published mapping.
-  Complexity: S
-
 - [ ] P1: Fix the Code Editor inflation crash and stop it taking the process down
   Why: opening the Code Editor from Labs crashes and restarts the app on Android 10, and one third-party view failing to inflate should not end the process.
   Evidence: fork issue #12, `Binary XML file line #51 in layout/fragment_code_editor: Error inflating class` followed by a null-pointer dereference, on a Redmi 9C running API 29, armeabi-v7a only, MIUI 12.0.16, AppManagerNG v0.6.22; `app/src/main/res/layout/fragment_code_editor.xml:41-51` is the `CodeEditorWidget` element; `editor/CodeEditorWidget.java:28-30` only delegates to the pinned sora-editor; `editor/Languages.java` and `LanguagesAssetTest` cover asset presence but never widget construction.

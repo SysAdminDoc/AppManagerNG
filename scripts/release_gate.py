@@ -321,6 +321,32 @@ def check_artifact_identity(actual: dict, expected: dict) -> list[str]:
     return problems
 
 
+MAPPING_SUFFIX = "-mapping.txt"
+
+
+def check_mapping_coverage(artifact_names: Sequence[str]) -> list[str]:
+    """Every published APK must ship the R8 mapping that decodes its stack traces.
+
+    Release builds are minified. Without the mapping beside them a crash report from a published
+    APK resolves to names like ``nf0``, which is how a real report reached the tracker with nothing
+    in it that could be acted on.
+    """
+    problems: list[str] = []
+    apks = sorted(name for name in artifact_names if name.endswith(".apk"))
+    mappings = sorted(name for name in artifact_names if name.endswith(MAPPING_SUFFIX))
+    if not apks:
+        return ["no APK was published, so no mapping could be matched to one"]
+    for apk in apks:
+        expected = apk[: -len(".apk")] + MAPPING_SUFFIX
+        if expected not in mappings:
+            problems.append(f"{apk} ships no {expected}; a trace from it could not be retraced")
+    for mapping in mappings:
+        owner = mapping[: -len(MAPPING_SUFFIX)] + ".apk"
+        if owner not in apks:
+            problems.append(f"{mapping} does not belong to any published APK")
+    return problems
+
+
 _CERT_SHA256_RE = re.compile(r"SHA-256 digest:\s*([0-9a-fA-F]{64})")
 
 
@@ -626,6 +652,10 @@ def stage_reproducible(repo_root: Path, gradle_cmd: str, out_dir: Path) -> Stage
     artifacts = sorted(p for p in publish_dir.iterdir() if p.is_file())
     if not any(p.suffix == ".apk" for p in artifacts):
         raise GateError("the reproducible build published no APK")
+    mapping_problems = check_mapping_coverage([p.name for p in artifacts])
+    if mapping_problems:
+        raise GateError("the reproducible build did not publish a usable R8 mapping set:\n  "
+                        + "\n  ".join(mapping_problems))
     out_dir.mkdir(parents=True, exist_ok=True)
     recorded = []
     for artifact in artifacts:
