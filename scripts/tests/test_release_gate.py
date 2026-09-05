@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "release_gate.py"
@@ -145,6 +146,34 @@ class LintPruneTest(unittest.TestCase):
             self.skipTest("lint baseline not present")
         issues = gate.parse_lint_issues(real.read_text(encoding="utf-8"))
         self.assertGreater(len(issues), 0)
+
+
+class LintExecutionTest(unittest.TestCase):
+    def test_lint_forces_a_fresh_uncached_report(self) -> None:
+        issue = _issues_xml([("Known", "src/main/A.java", "known issue", 1)])
+        with tempfile.TemporaryDirectory() as raw:
+            repo = Path(raw)
+            baseline = repo / "app" / "lint-baseline.xml"
+            report = repo / "app" / "build" / "reports" / "lint-results-flossRelease.xml"
+            baseline.parent.mkdir(parents=True)
+            report.parent.mkdir(parents=True)
+            baseline.write_text(issue, encoding="utf-8")
+
+            def write_report(command, cwd):
+                self.assertEqual(repo, cwd)
+                report.write_text(issue, encoding="utf-8")
+                return mock.Mock(returncode=0, stdout="")
+
+            with mock.patch.object(gate, "run", side_effect=write_report) as run_mock:
+                result = gate.stage_lint(repo, "gradlew", False)
+
+            self.assertTrue(result.passed)
+            run_mock.assert_called_once_with([
+                "gradlew",
+                ":app:lintFlossRelease",
+                "--rerun-tasks",
+                "--no-build-cache",
+            ], repo)
 
 
 class TranslationOutputTest(unittest.TestCase):

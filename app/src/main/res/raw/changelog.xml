@@ -8,6 +8,15 @@
 <changelog>
     <release
         type="stable release"
+        version="v0.6.23"
+        code="31"
+        date="5 September 2026">
+        <improve title="Finder in stable builds">Finder is now available from the main menu, so saved queries and package filters work in the release users install.</improve>
+        <improve title="Current product tour">The project page now shows the current app, access choices, package details, permission review, and batch tools with release screenshots.</improve>
+    </release>
+
+    <release
+        type="stable release"
         version="v0.6.22"
         code="30"
         date="30 August 2026">

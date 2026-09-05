@@ -50,7 +50,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
-import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.behavior.FreezeUnfreeze;
 import io.github.muntashirakon.AppManager.apk.dexopt.DexOptDialog;
@@ -469,8 +468,6 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         } catch (PackageManager.NameNotFoundException e) {
             apkUpdaterMenu.setVisible(false);
         }
-        MenuItem finderMenu = menu.findItem(R.id.action_finder);
-        finderMenu.setVisible(BuildConfig.DEBUG);
         return super.onCreateOptionsMenu(menu);
     }
 

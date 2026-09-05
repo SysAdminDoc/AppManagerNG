@@ -562,7 +562,12 @@ def stage_lint(repo_root: Path, gradle_cmd: str, refresh: bool) -> StageResult:
     shutil.move(str(baseline_path), str(stashed))
     regenerated: str | None = None
     try:
-        run([gradle_cmd, f":app:lint{LINT_VARIANT[0].upper()}{LINT_VARIANT[1:]}"], repo_root)
+        run([
+            gradle_cmd,
+            f":app:lint{LINT_VARIANT[0].upper()}{LINT_VARIANT[1:]}",
+            "--rerun-tasks",
+            "--no-build-cache",
+        ], repo_root)
         if not report_path.is_file():
             raise GateError(f"lint produced no XML report at {report_path}")
         current = parse_lint_issues(report_path.read_text(encoding="utf-8", errors="replace"), repo_root)

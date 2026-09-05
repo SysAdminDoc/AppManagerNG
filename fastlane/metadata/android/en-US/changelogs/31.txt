@@ -1,0 +1,3 @@
+Finder is now available from the main menu in stable builds.
+
+The project page now uses current release screenshots and a shorter product tour, with clearer access-mode and install guidance.

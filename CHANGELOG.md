@@ -3,6 +3,15 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## v0.6.23, 2026-09-05
+
+### Changed
+- Finder is now available from the main menu in stable builds, matching the feature set documented for users.
+- Rebuilt the project page around real v0.6.23 product screenshots, a shorter feature tour, clearer access-mode guidance, and faster install choices.
+
+### Fixed
+- Increased the Gradle build heap and made release lint ignore cached reports, preventing an old out-of-memory result from surviving a corrected run.
+
 ## v0.6.22, 2026-08-30
 
 ### Security
@@ -137,19 +146,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Prevented the scanner from crashing when tracker results arrive before native-library data.
 - Kept privileged external-directory recovery on worker threads so cache-path lookup stays safe from UI code.
 
-## v0.6.13 — 2026-08-11
+## v0.6.13, 2026-08-11
 
 ### Added
 - Search input on the Debloater, Running Apps, and class-listing screens is now debounced, so
   typing filters the list once the query settles instead of re-filtering on every keystroke. The
-  class listing is the one that most needed it — a dex dump can hold tens of thousands of class
+  class listing is the one that most needed it, a dex dump can hold tens of thousands of class
   names. Submitting still applies immediately, and a queued pass is dropped when the screen goes
   away rather than running against a torn-down host.
 
 ### Added
 - Instrumented coverage for installed-package enumeration, run on Android 17 and Android 16.
   Android 17 moved the enumeration binder call to a paginated `PackageInfoList`, and a wrong
-  branch there returns a short or empty list instead of throwing — which would reach users as
+  branch there returns a short or empty list instead of throwing, which would reach users as
   an app list quietly missing entries. The tests pin the compat layer against the platform's
   own package set rather than against a fixed number, so they stay meaningful as the device
   changes.
@@ -159,7 +168,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Removed
 - The Pithus scanner integration. Upstream deleted it as a defunct service on 2026-05-26, and
-  beta.pithus.org no longer answers at all — every connection attempt times out while other
+  beta.pithus.org no longer answers at all, every connection attempt times out while other
   hosts respond normally, so the scanner card could only ever report "not available" after a
   ten-second wait. Gone with it: the scanner card, the pinned certificates for that domain, its
   row in the network transparency ledger, its key in the scan report JSON, and its strings in
@@ -167,20 +176,20 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - App Details now shows which package owns an app's updates, alongside the installer it already
-  listed. The two are not the same thing — an app installed by a file manager can still be owned
-  by a store — and the owner is who may replace it without asking again.
+  listed. The two are not the same thing, an app installed by a file manager can still be owned
+  by a store, and the owner is who may replace it without asking again.
 
 ### Fixed
 - A batch operation whose result could not be read back is no longer reported as having failed.
   After freezing, archiving, uninstalling and similar operations the app re-reads the system state
   to catch commands that report success without doing anything. That check treated an unreadable
-  state — a dropped privileged connection, a user whose packages we cannot query — as proof of
+  state, a dropped privileged connection, a user whose packages we cannot query, as proof of
   failure, so operations that had worked were listed as failures. Reading back now distinguishes
   confirmed, unchecked, and contradicted, and only a state that actively contradicts the operation
   marks it failed.
 - Archiving or unarchiving an app from the background no longer loses the confirmation prompt.
   The result receiver started the system's confirmation activity directly, which the platform
-  blocks for a backgrounded app — and because that block is a dropped launch rather than an
+  blocks for a backgrounded app, and because that block is a dropped launch rather than an
   exception, the surrounding error handling reported nothing. The prompt now arrives as a
   notification in that case, matching how the installer already handles the same situation.
 - The Settings mode-of-operation summary no longer keeps claiming a privilege the app has lost.
@@ -189,7 +198,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   working uid is now observable and the summary follows it, without anything polling for changes.
 - Selecting the Finder app-ops filter's "with mode" key no longer throws. The key was declared as
   flag-typed but never supplied the flag list the editor builds its checkboxes from, and the base
-  implementation of that call raises rather than returning an empty list — so choosing the option
+  implementation of that call raises rather than returning an empty list, so choosing the option
   failed instead of showing the allowed/ignored/errored/default/foreground choices it was meant to
   offer.
 - Backups no longer claim to contain Android KeyStore data they could not collect. From Android
@@ -220,12 +229,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   beyond the receipt; a checked-out release tag must match it exactly, while packet, tag, and
   artifact checks remain fail-closed.
 
-## v0.6.12 — 2026-08-08
+## v0.6.12, 2026-08-08
 
 ### Fixed
 - The real, universal root cause of issue #7: release builds could not load the app's BKS
   keystore at all. `AppManager` replaces Android's built-in BouncyCastle provider with the
-  bundled one, and JCA resolves every provider implementation reflectively by class name —
+  bundled one, and JCA resolves every provider implementation reflectively by class name,
   but `proguard-rules.pro` had no BouncyCastle keeps, so R8 stripped the keystore SPI classes
   from every minified build and `KeyStore.getInstance("BKS")` threw `BKS not found` on every
   device, every launch. That made `hasKeyStorePassword()` permanently false, which fed the
@@ -236,18 +245,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The splash screen could hang on "Authenticating…" forever. `SplashActivity` posted the
   keystore-password check result straight back to its own instance, so when the splash was
   relaunched mid-check (a theme/locale configuration change during startup) the destroyed
-  instance dropped the continuation and the recreated instance skipped the work entirely —
-  its ViewModel already reported `isAuthenticating()`. The check now lives in the ViewModel
+  instance dropped the continuation and the recreated instance skipped the work entirely,
+  since its ViewModel already reported `isAuthenticating()`. The check now lives in the ViewModel
   and republishes to whichever instance is alive, matching the pattern `BaseActivity` already
   used. Previously masked: the broken keystore above failed in about 3 ms, which usually beat
   the relaunch; a working keystore takes long enough to lose the race.
 
-## v0.6.11 — 2026-08-07
+## v0.6.11, 2026-08-07
 
 ### Fixed
 - Recovery password no longer regenerates on every launch when the device keystore misbehaves
   (#7). Three stacked defects: a failed keystore encryption was silently written as
-  `putString(key, null)` — which *removes* the entry — while the dialog presented the password as
+  `putString(key, null)`, which *removes* the entry, while the dialog presented the password as
   saved; the decrypt path minted a brand-new protection key whenever the alias was missing,
   guaranteeing `AEADBadTagException` instead of a diagnosable error; and the startup branch
   decided "first run" from the keystore file alone, so a stored-but-undecryptable password
@@ -256,7 +265,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   to the input dialog (its Delete button remains the deliberate reset).
 - The keystore password's ciphertext is no longer logged to logcat on decrypt failure.
 
-## v0.6.10 — 2026-08-02
+## v0.6.10, 2026-08-02
 
 ### Fixed
 - Serialized rules read-modify-write transactions by package and user, refreshed long-lived
@@ -274,7 +283,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   qualifiers, blocks stale keys and new coverage regressions, and records coverage counts in
   release-gate receipts.
 
-## v0.6.9 — 2026-08-02
+## v0.6.9, 2026-08-02
 
 ### Fixed
 - Promoted `NewApi`, `WrongThreadInterprocedural`, and
@@ -292,15 +301,15 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Corrected the local `CLAUDE.md` branding note to distinguish the one intentional
   upstream-compatibility label from non-rendered `xliff` translator examples.
 
-## v0.6.8 — 2026-08-02
+## v0.6.8, 2026-08-02
 
 ### Build
 - The release CVE gate runs again. It resolves configurations no ordinary build
   touches, and none of their POMs had a checksum in the dependency-verification
   metadata, so Gradle aborted the scan before it started and v0.6.7 shipped with
   no CVE evidence at all. The 178 missing checksums were added from the checksums
-  the upstream repositories publish beside each artifact — not from whatever the
-  local build cache happened to hold — and each entry records which published
+  the upstream repositories publish beside each artifact, not from whatever the
+  local build cache happened to hold, and each entry records which published
   checksum it was compared against. The scanner now completes and writes its
   receipt; the findings it reports are being triaged separately.
 
@@ -349,7 +358,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   `auth`/`token`/`secret`/`password` assignment or a UUID, so a token in any other
   shape was written out in full.
 - The privileged filesystem service now refuses a path carrying an embedded NUL,
-  which the native layer would have truncated — so the path acted on is always
+  which the native layer would have truncated, so the path acted on is always
   the path that was given. Changing a file's owner no longer follows a symlink,
   matching the reads, and the service's actual security boundary (who holds the
   binder, not which path they name) is now written down in the code so it cannot
@@ -357,8 +366,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   the file manager, backup and debloating all need whole-filesystem access.
 - The privileged command channel now checks who connected, not just what they
   present. The handshake token is a bearer credential, so a connecting peer's
-  owning uid is established first — from the socket's own credentials on the unix
-  path, and from the kernel's connection table on the loopback path — and a peer
+  owning uid is established first, from the socket's own credentials on the unix
+  path, and from the kernel's connection table on the loopback path, and a peer
   belonging to a different app is refused before the token is even read. When the
   peer cannot be identified at all, the connection still proceeds on the token
   and says so explicitly in the log rather than looking like a check that passed.
@@ -373,17 +382,17 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   being loaded.
 - The privileged server now refuses to start on a malformed parameter string
   instead of failing part-way through parsing it, and the failure it logs never
-  echoes the argument — it carries the privileged-channel token. A parameter
+  echoes the argument, it carries the privileged-channel token. A parameter
   value may now contain colons, which the previous parser truncated.
-- Starting a root service validates its command line — component name, client
-  uid and action — before any of it selects a user, a package, or a class to
+- Starting a root service validates its command line, component name, client
+  uid and action, before any of it selects a user, a package, or a class to
   load, and refuses to load code from a package that does not belong to the
   declared uid.
 - Replacing an older privileged server now confirms the candidate process is
   owned by the same uid before killing it. A matching process name alone is not
   an identity: any process can name itself after the server.
 - The privileged filesystem service now refuses read and write requests whose
-  length or offset it cannot honour — negative lengths, a write larger than the
+  length or offset it cannot honour, negative lengths, a write larger than the
   transport pipe, an offset below the "current position" sentinel, or an offset
   and length that overflow together. They are reported as an I/O error instead of
   reaching a raw descriptor splice or a fixed-capacity buffer inside the root
@@ -393,7 +402,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   recycled fails immediately rather than operating on a live buffer belonging to
   someone else.
 
-## v0.6.7 — 2026-07-29
+## v0.6.7, 2026-07-29
 
 ### Added
 - The installer now checks storage before it starts. It sums the selected
@@ -416,7 +425,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   translation, test, lint, reproducibility, and artifact-identity gates in
   order, and only then writes a receipt binding the released commit and tag to
   the SHA-256 of every artifact and report, the signing certificate
-  fingerprint, and the tool versions that produced them — so evidence can never
+  fingerprint, and the tool versions that produced them, so evidence can never
   describe a build that did not pass, or an artifact other than the one
   checked. Lint is now judged against the baseline by rule, module-relative
   file, and message rather than by line number, which also surfaces baseline
@@ -424,19 +433,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - App Details now explains why a sideloaded app's accessibility,
   notification-listener, and health toggles are greyed out. Android's
-  restricted-settings gate is read through the app-op that backs it — resolved
-  by name, because its numeric code has moved between releases — and an app the
+  restricted-settings gate is read through the app-op that backs it, resolved
+  by name, because its numeric code has moved between releases, and an app the
   gate cannot be read for is reported as unknown rather than as allowed.
 - Native-library readiness is now a Finder filter and an App Details chip. The
   device can be swept for apps whose libraries are not 16 KB page-aligned (and
   so will not run on Android 15+ devices using 16 KB pages), that ship only
   32-bit code, or that store their libraries compressed. A package whose
-  libraries could not be read is never reported as ready — it is reachable
+  libraries could not be read is never reported as ready, it is reachable
   through its own filter key instead. The main-list row does not carry the chip:
   the list model does not open APKs, so it could only ever say "unknown".
 - Batch actions attempted while the app list is still being built for the first
   time now say so instead of quietly acting on an empty selection. A refresh of
-  an already-shown list is not gated — the previous list stays usable.
+  an already-shown list is not gated, the previous list stays usable.
 - The install confirmation now shows what the APK asks for before it is
   installed: how many permissions it requests, which of those the platform
   classifies as sensitive (named), and the API levels it targets and supports.
@@ -447,8 +456,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   "No known tracker matches" and states why no match is not proof of absence
   (renamed identifiers, reflection, runtime-loaded code, and signatures added
   upstream after the build all evade class-name matching). Each matched rule is
-  labelled confirmed or tentative — second-degree dataset entries and rules that
-  matched no class are never presented as confirmed — and names the detector
+  labelled confirmed or tentative, second-degree dataset entries and rules that
+  matched no class are never presented as confirmed, and names the detector
   that produced it. Exported reports (schema 2) carry the same per-match
   provenance plus an explicit limitations block, so a report read on its own
   cannot be mistaken for a clean bill of health.
@@ -458,11 +467,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   paths now share one.
 - The reproducible-build check compared two builds that were not independent.
   `clean` empties the project's build directory but not Gradle's build cache,
-  so the second build restored task outputs produced by the first — confirming
+  so the second build restored task outputs produced by the first, confirming
   the cache was consistent rather than that the build was reproducible. Both
   builds now run with the build cache disabled.
 
-## v0.6.6 — 2026-07-29
+## v0.6.6, 2026-07-29
 
 ### Added
 - The App Change Auditor now records and diffs security-relevant manifest
@@ -477,12 +486,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The optional-network transparency ledger now shows real evidence. VirusTotal
   and Pithus record the time of their last successful and last failed request,
   so those rows no longer always read "never". Only the outcome and the time are
-  kept — no URLs, hashes, package names, headers, or response bodies — and the
+  kept, no URLs, hashes, package names, headers, or response bodies, and the
   record can be cleared.
 - Corrupt automation state is now recoverable instead of silently discarded.
   Profile triggers keep the last document that parsed and a verbatim copy of a
   document that did not, salvage the valid entries of a partly damaged one, and
-  surface a recovery dialog offering export or an explicit reset — an unreadable
+  surface a recovery dialog offering export or an explicit reset, an unreadable
   file can no longer be overwritten by the next edit.
 - Backup & Restore now supports ordered per-tag policies. The first matching app
   tag can select backup parts, encryption, retention, and a local or persisted
@@ -493,7 +502,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   destination registry are included in snapshots.
 - Snapshots can now be encrypted with a passphrase. Export offers an optional
   passphrase (or plaintext), and an encrypted bundle is wrapped in an
-  authenticated envelope — Argon2id key derivation (m=19456, t=2, p=1, random
+  authenticated envelope, Argon2id key derivation (m=19456, t=2, p=1, random
   16-byte salt) plus AES-256-GCM (random 12-byte nonce, 128-bit tag, header
   bound as additional authenticated data). A wrong passphrase or any tampering
   fails before a single byte of state is written or previewed; import prompts for
@@ -509,8 +518,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Security
 - The installer confirmation intent is no longer forwarded verbatim. It arrives
   through a mutable `PendingIntent`, so it is now rejected unless it names a
-  target outside this app, and the caller's flags — URI-permission grants above
-  all — are dropped before it is launched. The installer and app-archive
+  target outside this app, and the caller's flags, URI-permission grants above
+  all, are dropped before it is launched. The installer and app-archive
   callback intents also name an explicit component instead of just this package,
   so a holder of the mutable `PendingIntent` cannot redirect them, and the crash
   report's share intent is immutable.
@@ -573,7 +582,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A corrupt or crafted imported snapshot can no longer brick a settings screen.
   Preference initialization now detects a registered key stored with the wrong
   value type (e.g. an integer key written as a string) and resets it to its
-  default, instead of only seeding absent keys — previously such a value made the
+  default, instead of only seeding absent keys, previously such a value made the
   strongly-typed getter throw on every read with no self-repair. Imported
   file-manager favorites now validate their initial-directory URI, and imported
   per-package freeze methods reject out-of-range values.
@@ -594,7 +603,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - App Details now flags weak APK signing. An app that verifies using only the
-  legacy v1 (JAR) scheme — with none of the stronger v2/v3/v3.1/v4 schemes — shows
+  legacy v1 (JAR) scheme, with none of the stronger v2/v3/v3.1/v4 schemes, shows
   a "Weak signature" warning under its signature schemes, because v1-only APKs
   have no whole-file integrity protection and are exposed to the Janus
   (CVE-2017-13156) tampering class.
@@ -639,7 +648,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - Encrypted snapshot export and import now stream through app-private staging
-  instead of holding the bundle — twice — in heap, so peak memory no longer
+  instead of holding the bundle, twice, in heap, so peak memory no longer
   scales with bundle size. Authentication still completes before anything is
   parsed or applied: decrypted bytes go to private staging and are discarded
   unless the GCM tag verifies. Restored files are replaced atomically and all
@@ -683,21 +692,21 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   rule types.
 - Backup metadata version 8 now checksums Android KeyStore master keys as raw
   binary bytes instead of a lossy platform-default String round-trip. Restore
-  still reproduces the legacy transform for metadata versions 1–7, preserving
+  still reproduces the legacy transform for metadata versions 1 through 7, preserving
   compatibility with existing backups.
 - App Usage refreshes now capture immutable date, interval, comparison, and user
   inputs; cancel or supersede older work; and reject stale out-of-order results.
   Partial multi-user results remain available, while an all-user query failure
   is shown as a retryable error distinct from a successful empty interval.
 - Importing an encrypted OAndBackup no longer leaks the decrypted key material /
-  OpenPGP binding on the common "keep imported files" path — the source crypto is
+  OpenPGP binding on the common "keep imported files" path, the source crypto is
   now always released when the conversion finishes (which also removes a latent
   null-dereference in cleanup). Decrypting a backup file whose name only contains
   (rather than ends with) the crypto extension no longer mis-derives the output
   filename.
 - Opening a malformed APK bundle (`.apks`/`.xapk`/`.apkm` with a duplicate base,
   missing package name, or no base APK) no longer leaks the open archive file
-  handle — repeatedly trying such files could previously exhaust file descriptors.
+  handle, repeatedly trying such files could previously exhaust file descriptors.
   Those parse failures now also surface as a handled install error rather than an
   unchecked exception. A failed install session (commit or open failure) is now
   abandoned so its staged APK bytes don't linger on disk.
@@ -801,7 +810,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   stubs and a `VersionCodes.CINNAMON_BUN` gate, with a host-verifiable structural
   contract test. Behavior on API ≤ 36 is unchanged.
 
-## v0.6.5 — 2026-07-09
+## v0.6.5, 2026-07-09
 
 ### Added
 - Added a dedicated dark-theme preview for the clear-cache home-screen widget.
@@ -810,7 +819,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   pending work, and delay values are bounded to ten minutes.
 - Re-enabled the five Robolectric fixture test classes ignored since
   2026-05-25 (ZipFileSystem, ZipDocumentFile, TarUtils, OABConverter,
-  SettingsSearchIndex — 79 tests restored) and implemented
+  SettingsSearchIndex, 79 tests restored) and implemented
   `ZipFileSystem.setLastModified` so mounted-ZIP timestamps are writable in
   read-write mounts. The historical crashes were caused by running the suite
   under the Android Studio JBR; Eclipse Adoptium JDK 21 runs it green.
@@ -863,7 +872,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   stay out of snapshot bundles, and are redacted from app/server diagnostics.
 - Deep audit pass (2026-07-02):
   - Clear Data no longer crashes with an uncatchable `NoSuchMethodError` on
-    API 21–27 — the `IActivityManager` path now falls back to
+    API 21 through 27. The `IActivityManager` path now falls back to
     `IPackageManager` on `LinkageError` too (regression from the 2026-06-27
     IActivityManager preference).
   - Permission/App Ops operation results are routed to the initiating tab;
@@ -874,7 +883,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     its save executor is shut down with the activity (one leaked thread per
     session); history loaded after early-typed commands is prepended.
   - An invalid saved Log Viewer filter regex no longer crashes the Log Viewer
-    on every open — the setting is validated on save, and both consumers fall
+    on every open, the setting is validated on save, and both consumers fall
     back to the default pattern.
   - Scanner: a failed APK cache no longer leaves a permanently blank scan
     with no feedback; VirusTotal report polling is capped (~10 min) instead
@@ -885,7 +894,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
     re-pin overlay restores true black while keeping dynamic accents.
   - Dark mode on API 27+/29+ no longer loses the display-cutout and
     nav-bar-contrast window flags (night qualifier outranked values-v27/v29).
-  - Splash screen background uses concrete surface colors — the
+  - Splash screen background uses concrete surface colors, the
     `?attr/colorSurface` reference never resolved in the splash theme chain;
     the AMOLED splash is now actually black.
   - Home-screen widgets resolve their palette against the widget-container
@@ -972,14 +981,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   version. Verifies all seven pinned-cluster deps, minSdk, and OWASP dependency-check
   version.
 
-### Changed — clearApplicationUserData stability improvement (2026-06-20)
+### Changed, clearApplicationUserData stability improvement (2026-06-20)
 
 - Data-clear IPC now tries `IActivityManager.clearApplicationUserData()` first
   (stable across API versions), falling back to `IPackageManager` only on
   failure. Resolves the API-version-dependent method signature fragility
   that caused NoSuchMethodError on some Android 14 QPR builds.
 
-### Security — HiddenApiBypass Android 17 deprecation audit (2026-06-20)
+### Security, HiddenApiBypass Android 17 deprecation audit (2026-06-20)
 
 - Audited HiddenApiBypass usage: single call site in AppManager.attachBaseContext()
   with blanket `"L"` exemption. Documented @SuppressWarnings("deprecation")
@@ -987,32 +996,32 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   When HiddenApiBypass 6.2+ ships (mmap-based approach), updating is a
   one-commit dep bump + API switch.
 
-### Security — Android 17/18 forward-compatibility audit (2026-06-20)
+### Security, Android 17/18 forward-compatibility audit (2026-06-20)
 
-- Android 17 BAL hardening audit: clean — no deprecated
+- Android 17 BAL hardening audit: clean, no deprecated
   `MODE_BACKGROUND_ACTIVITY_START_ALLOWED` usage found. All background →
   foreground transitions use PendingIntentCompat. Contract test added.
-- Android 18 implicit URI grant audit: clean — all ACTION_SEND/
+- Android 18 implicit URI grant audit: clean, all ACTION_SEND/
   ACTION_SEND_MULTIPLE intents with content URIs already set
   FLAG_GRANT_READ_URI_PERMISSION + ClipData. Contract test added.
 
-### Fixed — Thread safety and threading hygiene (2026-06-20)
+### Fixed, Thread safety and threading hygiene (2026-06-20)
 
 - Fixed `AppDetailsViewModel.setPackageChanged()` misleading `@GuardedBy`
-  annotation — the method's `setPackageInfo()` call acquires the lock
+  annotation, the method's `setPackageInfo()` call acquires the lock
   internally. Removed stale TODO and corrected the annotation.
 - Replaced 3 raw `new Thread()` creations (OpenPGPCrypto, DebloatDefinitionsUpdater,
   TrackerDatabaseFreshnessChecker) with `ThreadUtils.postOnBackgroundThread()`.
   ADB stream reader threads kept as named daemon threads (blocking I/O
   requires dedicated threads, not a shared pool).
 
-### Security — Audit pass (2026-06-20)
+### Security, Audit pass (2026-06-20)
 
 - Bounded Android backup header line reader to 4096 bytes. A malicious
   backup file with a header line containing no newline could previously
   cause unbounded memory allocation in `AndroidBackupHeader.readHeaderLine()`.
 
-### Fixed — Audit pass (2026-06-20)
+### Fixed, Audit pass (2026-06-20)
 
 - Made `ApkFile.SUPPORTED_EXTENSIONS` and `SUPPORTED_MIMES` unmodifiable
   (`Collections.unmodifiableList`) to prevent accidental mutation of the
@@ -1022,14 +1031,14 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   allowing a race where the first call returns non-null but a subsequent
   call returns null after fragment detachment.
 
-### Fixed — Debloat safety rating (2026-06-20)
+### Fixed, Debloat safety rating (2026-06-20)
 
 - Fixed UAD-ng "Recommended" packages incorrectly displaying as "Unsafe" in
   the debloater. The `"delete"` removal string from the UAD-ng→debloat.json
   pipeline was falling through to the default case instead of mapping to
   `REMOVAL_SAFE`. Affects ~2000+ packages in the debloat database.
 
-### Fixed — Main-thread blocking audit (2026-06-20)
+### Fixed, Main-thread blocking audit (2026-06-20)
 
 - Moved KeyStore password check off the main thread during app startup in both
   BaseActivity and SplashActivity, eliminating 50-200ms of startup jank from
@@ -1043,7 +1052,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Added thread-safety synchronization to CommandHistory for concurrent access
   between the executor and calling threads.
 
-### Changed — Build infrastructure (2026-06-20)
+### Changed, Build infrastructure (2026-06-20)
 
 - Bumped compileSdk 36 → 37 for Android 17 (API 37) compilation support.
   AndroidX Core stays at 1.17.0 (core-ktx 1.19.0 raises minSdk to 23,
@@ -1051,7 +1060,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Disabled AAPT2 PNG crunching (`cruncherEnabled = false`) for deterministic
   APK output, prerequisite for F-Droid reproducible builds verification.
 
-### Fixed — Deep audit pass (2026-06-19)
+### Fixed, Deep audit pass (2026-06-19)
 
 - Replaced raw tracker overlay and permission-settings failure toasts with
   localized recovery copy while keeping diagnostics in the app log.
@@ -1061,7 +1070,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   they log scoped diagnostics, use stable recovery copy, and close failed
   transparent flows instead of hanging.
 
-### Changed — Premium polish pass (2026-06-19)
+### Changed, Premium polish pass (2026-06-19)
 
 - Refined Finder, permission, debloater, profile, operation-history, and
   backup/restore review surfaces with consistent V2 cards, icon frames, badge
@@ -1070,7 +1079,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   theme outline strokes, adding richer Finder row descriptions, and keeping
   icon-button touch target checks aligned with premium dimension tokens.
 
-### Fixed — Deep audit pass (2026-06-18)
+### Fixed, Deep audit pass (2026-06-18)
 
 - Replaced raw shortcut-launch exception toasts with the existing localized
   "shortcut target unavailable" recovery copy while logging the diagnostic.
@@ -1121,7 +1130,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Hardened editor diffs for empty files and mixed CRLF/LF/CR line endings with
   focused JVM coverage.
 
-### Fixed — Audit pass 2 (2026-06-17)
+### Fixed, Audit pass 2 (2026-06-17)
 
 - Fixed thread safety race in FilterableAppInfo intent filter loading:
   ensureIntentFiltersLoaded() is now synchronized and builds maps into
@@ -1147,7 +1156,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   buildGroupedByCategory() now sorts a copy instead of sorting the
   shared list in-place that is reused by per-category chip views.
 
-### Fixed — Deep audit pass (2026-06-17)
+### Fixed, Deep audit pass (2026-06-17)
 
 - Fixed BufferedReader resource leak in backup filesystem-type detection
   (detectFilesystemType used manual close, not try-with-resources).
@@ -1245,7 +1254,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Profile apply failures now use the same needs-attention recovery language as
   batch results and preserve target/failure counts in operation history.
 
-## v0.6.1 — 2026-06-15
+## v0.6.1, 2026-06-15
 
 ### Fixed - Release polish pass (2026-06-15)
 
@@ -1274,7 +1283,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   preset import refresh only affected rows, and removed unused premium/list-card
   visual tokens left behind by earlier UI passes.
 
-### Changed — AppManagerNG docs/privacy rebaseline (2026-06-15)
+### Changed, AppManagerNG docs/privacy rebaseline (2026-06-15)
 
 - Rebased the packaged manuals' app identity, distribution/source links,
   translation guidance, donation copy, and contact surface around
@@ -1287,13 +1296,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   the repo now tracks fork-specific `CONTRIBUTING.md` and
   `PROJECT_CONTEXT.md`.
 
-### Fixed — Resource leaks and fatal-error swallowing audit (2026-06-15)
+### Fixed, Resource leaks and fatal-error swallowing audit (2026-06-15)
 
 - Fixed unclosed `InputStream` resource leak in `XposedModuleInfo` when parsing
   modern Xposed module properties from ZIP entries.
 - Fixed unclosed `InputStream` resource leaks in `ApkFile` constructor when
   reading APKS/XAPK metadata (`info.json`) and `.idsig` files from bundled
-  archives — repeated APK scans could exhaust the ZipFile stream pool.
+  archives, repeated APK scans could exhaust the ZipFile stream pool.
 - Modernized `EglSurfaceBase.saveFrame()` to use try-with-resources, closing
   a potential `FileOutputStream` leak if the `BufferedOutputStream` wrapper
   threw during construction.
@@ -1309,7 +1318,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   code. Hidden API, privileged IPC, reflection, and framework-boundary catches
   remain deliberately broad.
 
-## v0.6.0 — 2026-06-14
+## v0.6.0, 2026-06-14
 
 Rootless Power release. Headline: package-filtered app-event routine triggers,
 backup/archive restore hardening (weak auth-tag warning, decompression-bomb
@@ -1318,7 +1327,7 @@ reliability, and an engineering/UX audit pass (crash guard, resource leak,
 microcopy and grammar). Signed with the same release key as v0.5.0, so it
 installs as an in-place update.
 
-### Fixed — Audit pass: crash guard, leak, microcopy (2026-06-14)
+### Fixed, Audit pass: crash guard, leak, microcopy (2026-06-14)
 
 - packagesToAppLabels no longer assumes the user-handle list is parallel to the
   package list. A shorter or null list previously threw
@@ -1332,7 +1341,7 @@ installs as an in-place update.
   to…" → "Are you sure you want to…"): uninstall system app, clear app data,
   and replace KeyStore.
 
-### Added — Package filter for app-event routine triggers (2026-06-14)
+### Added, Package filter for app-event routine triggers (2026-06-14)
 
 - App install/update/uninstall routine triggers can now be limited to packages
   matching an optional glob (e.g. com.vendor.*). When set, the trigger only runs
@@ -1343,7 +1352,7 @@ installs as an in-place update.
   field round-trips through the trigger JSON store and is covered by unit and
   scheduler tests.
 
-### Fixed — Stop swallowing fatal VM errors (2026-06-14)
+### Fixed, Stop swallowing fatal VM errors (2026-06-14)
 
 - Narrowed catch(Throwable) to catch(Exception) in backup-retention pruning
   (DB/file paths) and the main-list quick-action launch paths (startActivity).
@@ -1353,7 +1362,7 @@ installs as an in-place update.
   reflection/IPC/hidden-API Compat calls (which can throw Error subclasses),
   were deliberately left as-is.
 
-### Fixed — IPC binder cache reliability (2026-06-14)
+### Fixed, IPC binder cache reliability (2026-06-14)
 
 - ProxyBinder's service cache now evicts dead binders. Previously a cached
   binder whose remote process exited stayed cached forever, so every call
@@ -1363,7 +1372,7 @@ installs as an in-place update.
   re-cached binder is never wrongly evicted. Recovery is automatic: the next
   lookup re-fetches a fresh binder.
 
-### Security — Backup restore hardening (2026-06-14)
+### Security, Backup restore hardening (2026-06-14)
 
 - Restoring a pre-v4 backup, whose AES-GCM ciphertext was authenticated with a
   weak 32-bit tag (forgeable at ~2^-32 per attempt), now logs a clear security
@@ -1379,7 +1388,7 @@ installs as an in-place update.
   ratios are ordinary, are unaffected; a crafted bomb aborts with an error
   instead of filling the disk.
 
-### Changed — Fork branding cleanup (2026-06-14)
+### Changed, Fork branding cleanup (2026-06-14)
 
 - About screen and links now point at the AppManagerNG fork: source-code link
   is the SysAdminDoc/AppManagerNG repo, website/discussions links target the
@@ -1411,18 +1420,18 @@ installs as an in-place update.
 - Restored the missing minSdk-21 dependency ceiling ledger at
   docs/policy/minsdk-21-ceiling.md with pinned-cluster table and trigger status.
 
-### Added — Critical-flow contract tests (2026-06-13)
+### Added, Critical-flow contract tests (2026-06-13)
 
 - DestructiveConfirmationContractTest verifies every destructive operation
   entry point (batch uninstall, batch clear-data, install, terminal launch,
   backup deletion, file-manager delete, per-app uninstall/clear-data) calls
-  ActionAuthGate.authenticate — fails if a new destructive flow is added
+  ActionAuthGate.authenticate, fails if a new destructive flow is added
   without wiring the biometric/credential gate.
 - BackupItemClosureContractTest scans for BackupItems.BackupItem.getItem()
   calls not wrapped in try-with-resources, catching resource leaks of
   encrypted backup temp copies and key material.
 
-### Added — Biometric gate for terminal and backup deletion (2026-06-13)
+### Added, Biometric gate for terminal and backup deletion (2026-06-13)
 
 - Terminal launch from Labs and backup deletion (both individual and base
   backup) now challenge through the ActionAuthGate biometric prompt when
@@ -1431,7 +1440,7 @@ installs as an in-place update.
   gated; terminal and backup deletion were the remaining ungated
   destructive flows.
 
-### Fixed — Fragment lifecycle crash fixes (2026-06-13)
+### Fixed, Fragment lifecycle crash fixes (2026-06-13)
 
 - MainPreferences LiveData observer used requireActivity() as lifecycle
   owner instead of getViewLifecycleOwner(), causing observer to outlive
@@ -1441,7 +1450,7 @@ installs as an in-place update.
   6 times inside the switch body, preventing ISE crashes when the observer
   fires during fragment teardown.
 
-### Fixed — Security and reliability hardening (2026-06-13)
+### Fixed, Security and reliability hardening (2026-06-13)
 
 - Fixed shell command injection risk in backup restore: chown path argument
   is now passed through the String[] overload of Runner.runCommand (which
@@ -1477,7 +1486,7 @@ installs as an in-place update.
   RootServiceManagerTest asserting the staging path never falls under any
   external cache root.
 
-### Changed — Terminal formally deferred to Preview (2026-06-13)
+### Changed, Terminal formally deferred to Preview (2026-06-13)
 
 - Terminal labeled "Terminal (Preview)" with a toolbar subtitle explaining
   missing features (tab completion, command history, init scripts). The terminal
@@ -1486,21 +1495,21 @@ installs as an in-place update.
   EditText-based mock is functional for basic privileged shell commands but is
   not production-quality terminal emulation.
 
-### Added — Per-app process exit history (2026-06-13)
+### Added, Per-app process exit history (2026-06-13)
 
 - App details shows a "Recent Exits" section (API 30+) listing the last 10
   process exit events with reason labels (Crash, ANR, Low Memory, Force Stopped,
   etc.) and timestamps. Uses the privileged IActivityManager hidden API through
   ProxyBinder for cross-package querying in root/ADB/Shizuku modes.
 
-### Added — Per-app standby bucket inspect/set (2026-06-13)
+### Added, Per-app standby bucket inspect/set (2026-06-13)
 
 - App details (More info section) now shows the app's current standby bucket
   (Active, Working set, Frequent, Rare, Restricted) on API 28+.
 - In privileged modes (root, ADB, Shizuku), tapping the bucket row opens a
   picker to change the bucket. No-root mode shows the bucket read-only.
 
-### Added — Advanced Protection detection (2026-06-13)
+### Added, Advanced Protection detection (2026-06-13)
 
 - Installer pre-flight now detects Android 16+ Advanced Protection
   (AdvancedProtectionManager) and shows a blocking dialog before attempting
@@ -1511,7 +1520,7 @@ installs as an in-place update.
   active and links to Android security settings.
 - Updated sideload-verification.md to document the detection behavior.
 
-### Distribution — IzzyOnDroid readiness audit refreshed (2026-06-13)
+### Distribution, IzzyOnDroid readiness audit refreshed (2026-06-13)
 
 - IzzyOnDroid listing packet refreshed with per-ABI split size analysis. The CI
   release workflow enforces a hard 30 MiB size gate per APK; per-ABI splits are
@@ -1519,14 +1528,14 @@ installs as an in-place update.
   metadata, and suggested inclusion request remain current. Maintainer submission
   is the remaining blocker.
 
-### Improved — Empty state coverage (2026-06-13)
+### Improved, Empty state coverage (2026-06-13)
 
 - Finder (filter results), Permission Inspector (catalog), and Running Apps
   screens now show a contextual empty state with icon, title, and guidance
   instead of a blank screen when results are empty or filters exclude
   everything.
 
-### Fixed — Deferred-audit reliability batch (2026-06-13)
+### Fixed, Deferred-audit reliability batch (2026-06-13)
 
 - BackupItem resource leaks closed across five call sites: backup size
   resolution, duplicate backup deletion, backup existence validation,
@@ -1534,12 +1543,12 @@ installs as an in-place update.
   try-with-resources so encrypted backup temp copies and derived key
   material are cleaned up promptly.
 
-### Compliance — Android 17 behavior-change audit batch (2026-06-13)
+### Compliance, Android 17 behavior-change audit batch (2026-06-13)
 
 - Three new dated audit docs complete the Android 17 (API 37) behavior-change
-  sweep: static-final field reflection (clean — already guarded with SDK < 37
-  check), ACCESS_LOCAL_NETWORK runtime permission (clean — already declared and
-  runtime-requested), and cleartext-attribute deprecation (clean — network
+  sweep: static-final field reflection (clean, already guarded with SDK < 37
+  check), ACCESS_LOCAL_NETWORK runtime permission (clean, already declared and
+  runtime-requested), and cleartext-attribute deprecation (clean, network
   security config already uses the modern domain-config pattern). Together with
   the existing MessageQueue and System.load read-only audits, all five known
   A17 behavior changes are now recorded.
@@ -1583,9 +1592,9 @@ Reliability & data safety
   instead of throwing through the interceptor UI.
 - Intent-extra editing now uses API-safe typed Serializable argument reads.
 - Deleting a frozen (user-protected) backup no longer removes its database row
-  while leaving the files on disk — it now leaves both intact, so the backup
+  while leaving the files on disk, it now leaves both intact, so the backup
   can't silently disappear from the UI while still consuming storage.
-- `SplitInputStream.read()` masks the returned byte to 0–255; a raw `0xFF` data
+- `SplitInputStream.read()` masks the returned byte to 0 through 255; a raw `0xFF` data
   byte previously returned -1 (a false EOF) in the split-archive IO primitive.
 - Hostile or malformed binary Android manifests now fail as checked parser
   errors instead of leaking unchecked ARSC parser crashes into APK parsing,
@@ -1686,7 +1695,7 @@ Reliability & data safety
 - Profile apply now aggregates per-operation failures: a profile that completed
   without throwing but failed for some/all packages is recorded in history and
   notified as failed instead of always reporting success.
-- Routine triggers honour a profile's "Allow routine ops" switch — it was
+- Routine triggers honour a profile's "Allow routine ops" switch, it was
   enforced nowhere, so opted-out profiles still ran on schedule.
 - Profile routine triggers can now run from app install, update, and uninstall
   broadcasts without creating no-op periodic WorkManager jobs.
@@ -1718,7 +1727,7 @@ Reliability & data safety
   failing permission, fixing inflated failure counts, duplicated retry-queue
   entries and duplicated result-screen rows.
 - One-click "runtime optimization" (no root) now lists only apps installed by
-  App Manager, the only set an unprivileged caller can dexopt — it previously
+  App Manager, the only set an unprivileged caller can dexopt, it previously
   offered every installed app and mass-failed.
 - `FreezeUnfreezeService` now acquires its partial wakelock (it was created and
   released but never acquired, so a screen-off freeze pass could be suspended
@@ -1755,7 +1764,7 @@ UI lifecycle / crashes
   woken on `onCleared` so its thread can't leak.
 - App Details dialog/list guards across `AppInfoFragment`,
   `AppDetailsComponents/Permissions/Other/Overlays` fragments use `isAdded()`
-  instead of `isDetached()` — the latter is only true after an explicit
+  instead of `isDetached()`, the latter is only true after an explicit
   fragment detach, so the guards never fired on the common rotate/back path and
   could throw `BadTokenException`.
 - Icon picker callback survives configuration changes (hosted as a child
@@ -1913,7 +1922,7 @@ UI lifecycle / crashes
 - Privileged server message framing rejects negative or oversized
   (> 64 MiB) length prefixes before allocating, closing a pre-auth
   OutOfMemoryError / NegativeArraySizeException that could drop the accept loop.
-- App Details permission grant/revoke failure toast no longer inverted — a failed
+- App Details permission grant/revoke failure toast no longer inverted, a failed
   revoke now says "failed to revoke" and a failed grant "failed to grant".
 - App Details App Ops / Uses Permissions / Overlays sort no longer races the
   loader: the backing list is copied inside its lock before sort/post, and the
@@ -1941,7 +1950,7 @@ UI lifecycle / crashes
 - Fixed an `AdapterUtils` diff callback that matched a real old row to a header
   placeholder slot, emitting bogus moves in header-offset lists.
 - `MultithreadedExecutor` hands out a fresh executor per operation instead of
-  recycling a cached one and swapping its delegate in place — removing a race
+  recycling a cached one and swapping its delegate in place, removing a race
   where a finished op could wedge on an unrelated op's workload (and a static-cache
   leak); `awaitCompletion` now honors interruption for cooperative cancellation.
 - `AppDetailsViewModel.updateRulesForComponent` resumes the package watcher and
@@ -3695,10 +3704,10 @@ UI lifecycle / crashes
   encrypted-file extension is missing from the filename (corrupted backup or
   manual rename).
 - **Backup (HIGH):** Fixed `RandomAccessFile` and `FileChannel` resource leak in
-  `ConvertUtils.getChecksumsFromApk()` — the APK signature verification
+  `ConvertUtils.getChecksumsFromApk()`, the APK signature verification
   fallback path never closed either handle.
 - **Thread safety:** Made `BatchOpsService.mJournalPending` and
-  `mShizukuBinderDeadListenerRegistered` volatile — both are written on the
+  `mShizukuBinderDeadListenerRegistered` volatile, both are written on the
   worker thread and read from `onDestroy()` on the main thread.
 - **Thread safety:** Synchronized the three `Runner` shell-singleton factory
   methods to prevent duplicate shell creation from concurrent callers.
@@ -3710,14 +3719,14 @@ UI lifecycle / crashes
 
 ### Fixed - Deep audit hardening pass (2026-06-04)
 
-- **Native (CRITICAL):** Fixed heap overread in `CpuUtils.getCpuModel()` — the
+- **Native (CRITICAL):** Fixed heap overread in `CpuUtils.getCpuModel()`, the
   48-byte CPUID buffer was passed to `NewStringUTF` without null termination on
   x86/x86_64 emulators.
 - **Native:** Fixed stale-errno false-positive in 7 OsCompat JNI functions
   (`setgrent`, `setpwent`, `getgrent`, `getpwent`, `endgrent`, `endpwent`,
   `utimensat`) where a non-zero errno from a prior call could spuriously throw
   `ErrnoException`.
-- **UI:** Fixed ViewPager2 callback leak in AppDetailsActivity — the anonymous
+- **UI:** Fixed ViewPager2 callback leak in AppDetailsActivity, the anonymous
   page-change callback was never unregistered, leaking the Activity on every
   configuration change.
 - **UI:** Fixed potential NPE in AppDetailsActivity when `getSupportActionBar()`
@@ -4104,8 +4113,8 @@ UI lifecycle / crashes
   uid and is gated only by a handshake token, so in ADB-over-TCP/root port mode
   it was reachable from the LAN. It now binds the IPv4 loopback only, matching
   the client's connect target (`ServerConfig.getLocalServerHost`).
-- **Low-entropy session token.** The privileged-channel auth token was a 3–5
-  word phrase (~31–51 bits) — brute-forceable by an on-device peer over
+- **Low-entropy session token.** The privileged-channel auth token was a 3 to 5
+  word phrase (about 31 to 51 bits), brute-forceable by an on-device peer over
   loopback. Replaced with a 256-bit `SecureRandom` hex token.
 - **Handshake token disclosure + DoS.** `DataTransmission.shakeHands()` read
   `split[1]` with no length check (a comma-free first packet threw and tore
@@ -4233,7 +4242,7 @@ UI lifecycle / crashes
 - The Permission Inspector catalog now has a chip-row filter (All /
   Requested / Granted / Needs review) in its header. "Needs review" shows
   permission groups where at least one requesting app hasn't granted it
-  (`requested > granted`) — the actionable set.
+  (`requested > granted`), the actionable set.
 - Backed by the pure-function `PermissionInspectorFilter` (JVM-tested) and
   re-filters the list on chip change. Uses the existing bounded-radius
   filter-chip style (no pill backdrops).
@@ -4249,7 +4258,7 @@ UI lifecycle / crashes
   force-stop = 4s) and scaled by the system animation scale, so it honors
   reduced-motion settings. Wired at the single `MainActivity` batch
   chokepoint via a per-operation `UndoableActionQueue`.
-- `op_history` is unchanged — `BatchOpsService` still records it on dispatch,
+- `op_history` is unchanged, `BatchOpsService` still records it on dispatch,
   so the undo gate only delays the commit. Follow-up: on-device timing
   verification and extending the gate to App Details single-app actions.
 
@@ -4262,7 +4271,7 @@ UI lifecycle / crashes
   the privileged-runner gate and matches the validator's own test contract; no
   behavior change for valid perfetto/simpleperf argv (none contain spaces).
 - Corrected two stale unit tests: the `ApkDuplicateSelector` tie-break test now
-  compares basenames (host-independent — a Windows `getAbsolutePath()` adds a
+  compares basenames (host-independent, a Windows `getAbsolutePath()` adds a
   `C:\` drive prefix), and the `SnackbarDurationPolicy` floor test now asserts
   the documented scale-clamp behavior (a sub-0.5× request clamps to 0.5×, so
   NORMAL → 2000 ms, above the 1500 ms floor).
@@ -5171,7 +5180,7 @@ UI lifecycle / crashes
 - Extended the accessibility layout contract test to pin these large-font
   search constraints.
 
-### Changed — High-contrast theme hardening (2026-05-26)
+### Changed, High-contrast theme hardening (2026-05-26)
 
 - Replaced hardcoded red HTML warning spans in backup/rules and system-font
   preference copy with semantic styled warning labels so text follows the
@@ -5182,7 +5191,7 @@ UI lifecycle / crashes
 - Added `docs/audits/2026-05-26-high-contrast-theme.md` to record the static
   audit slice and the manual screen/device coverage still open.
 
-### Documentation — Accrescent listing packet (2026-05-26)
+### Documentation, Accrescent listing packet (2026-05-26)
 
 - Added `docs/distribution/accrescent-listing.md` with the current release
   identity, signing fingerprint, icon requirement, policy-review notes,
@@ -5193,7 +5202,7 @@ UI lifecycle / crashes
   release signing credentials, checking bundletool 1.11.4+, enforcing the
   128 MiB APK-set limit, and writing a SHA-256 sidecar.
 
-### Documentation — F-Droid listing packet (2026-05-26)
+### Documentation, F-Droid listing packet (2026-05-26)
 
 - Added `docs/distribution/fdroid-listing.md` with the current package ID,
   release tag, version code, `floss` build target, fdroiddata metadata draft,
@@ -5205,7 +5214,7 @@ UI lifecycle / crashes
 - Verified the current F-Droid build target locally with
   `.\gradlew.bat assembleFlossRelease`.
 
-### Changed — Code Editor large-font status row (2026-05-26)
+### Changed, Code Editor large-font status row (2026-05-26)
 
 - Code Editor status fields now use true weighted columns so line, indent, and
   language labels can wrap instead of crowding at 200 percent font scale.
@@ -5214,7 +5223,7 @@ UI lifecycle / crashes
 - Extended the accessibility layout contract test to pin the status row's
   large-font layout constraints.
 
-### Changed — Search control accessibility labels (2026-05-26)
+### Changed, Search control accessibility labels (2026-05-26)
 
 - Help search and Code Editor search navigation buttons now expose explicit
   "Previous match" / "Next match" content descriptions for TalkBack.
@@ -5224,7 +5233,7 @@ UI lifecycle / crashes
   "Lock editor", "Unlock editor", and the read-only locked state.
 - Added a source-level layout contract test for these search/action labels.
 
-### Changed — Routine and usage accessibility diagnostics (2026-05-26)
+### Changed, Routine and usage accessibility diagnostics (2026-05-26)
 
 - Routine schedules now persist WorkManager diagnostics beside last-run
   results: state, attempt count, stop reason, next run, and API 36
@@ -5237,7 +5246,7 @@ UI lifecycle / crashes
 - Added focused Robolectric coverage for routine stop/quota labels, persisted
   schedule diagnostics, and weekly-hours chart accessibility formatting.
 
-### Documentation — IzzyOnDroid listing packet (2026-05-26)
+### Documentation, IzzyOnDroid listing packet (2026-05-26)
 
 - Reworked Fastlane `en-US` metadata so AppManagerNG's title, short
   description, full description, and current changelog are NG-specific rather
@@ -5248,7 +5257,7 @@ UI lifecycle / crashes
   APK asset, SHA-256, package ID, policy checks, sensitive-permission rationale
   links, and a ready-to-file inclusion request body.
 
-### Changed — Premium polish v2 control contract (2026-05-26)
+### Changed, Premium polish v2 control contract (2026-05-26)
 
 - The v2 design token plane now uses a bounded `premium_radius_control` shape
   for search, chips, badges, extended FABs, and status text backdrops instead
@@ -5259,7 +5268,7 @@ UI lifecycle / crashes
 - Added a JVM resource contract test that fails if app resources reintroduce
   the deprecated v2 pill radius token, shape name, or user-facing copy.
 
-### Changed — Routine scheduler executor (2026-05-26)
+### Changed, Routine scheduler executor (2026-05-26)
 
 - Profile schedules now have a WorkManager-backed executor: non-boot triggers
   map to periodic work with charging/network/time-of-day constraints, while
@@ -5275,7 +5284,7 @@ UI lifecycle / crashes
 - Added focused JVM/Robolectric coverage for trigger enablement persistence,
   WorkManager timing/constraint mapping, and worker no-op/disable paths.
 
-### Changed — Dex viewer API caveat (2026-05-26)
+### Changed, Dex viewer API caveat (2026-05-26)
 
 - Smali-backed Code Editor views now surface a top info bar on Android 7.1 and
   older explaining that Decompiled Java requires Android 8.0 or newer while
@@ -5287,7 +5296,7 @@ UI lifecycle / crashes
 - Added focused JVM coverage for the API 25/API 26 support gate and banner
   visibility predicate.
 
-### Changed — BarChart manual minimum axis (2026-05-26)
+### Changed, BarChart manual minimum axis (2026-05-26)
 
 - `BarChartView` now honors the manual Y-axis minimum configured through
   `setManualYAxisRange(...)` instead of always anchoring bar scaling at zero.
@@ -5297,7 +5306,7 @@ UI lifecycle / crashes
 - Added focused Robolectric coverage for the default zero-minimum path, manual
   non-zero minimums, range clamping, and equal min/max padding.
 
-### Changed — File Manager hex viewer (2026-05-26)
+### Changed, File Manager hex viewer (2026-05-26)
 
 - File Manager now includes a read-only "Open as hex" path from both the file
   row overflow menu and the existing Open With dialog.
@@ -5311,7 +5320,7 @@ UI lifecycle / crashes
 - Added focused JVM coverage for offset parsing, hex pattern parsing, row
   formatting, page alignment, and byte-pattern search primitives.
 
-### Changed — Provider query inspector (2026-05-26)
+### Changed, Provider query inspector (2026-05-26)
 
 - App Details -> Providers now exposes a guarded "Query provider" action for
   current-profile providers that AppManagerNG can read through the normal
@@ -5326,7 +5335,7 @@ UI lifecycle / crashes
   projection/selection validation, row caps, cell formatting, TSV export, and
   provider access guard decisions.
 
-### Changed — Services start/stop actions (2026-05-26)
+### Changed, Services start/stop actions (2026-05-26)
 
 - App Details -> Services now labels the existing service launch affordance as
   "Start service" and adds a "Stop service" action for rows that Android
@@ -5341,7 +5350,7 @@ UI lifecycle / crashes
 - Added focused JVM coverage for explicit service intent construction and
   privileged-route decisions.
 
-### Changed — Receiver send-broadcast guardrails (2026-05-26)
+### Changed, Receiver send-broadcast guardrails (2026-05-26)
 
 - App Details -> Receivers now exposes a guarded "Send broadcast" action for
   installed receiver components, with declared manifest actions preloaded when
@@ -5357,7 +5366,7 @@ UI lifecycle / crashes
   category/extras parsing, component-name normalization, and privileged-route
   decisions.
 
-### Changed — SharedPrefs editor atomic writes (2026-05-26)
+### Changed, SharedPrefs editor atomic writes (2026-05-26)
 
 - SharedPrefs editor saves now route local file writes through
   `AtomicExtendedFile`, committing complete XML via the repo's `.new` +
@@ -5368,7 +5377,7 @@ UI lifecycle / crashes
 - Added focused JVM coverage for successful XML commits and simulated
   mid-write failures.
 
-### Changed — Main list select all visible action (2026-05-26)
+### Changed, Main list select all visible action (2026-05-26)
 
 - Main list selection mode now adds a "Select all visible" action whenever a
   search or list filter constrains the visible result set.
@@ -5378,7 +5387,7 @@ UI lifecycle / crashes
 - Added focused JVM coverage for the selection helper to pin hidden-selection
   clearing, canonical item selection, and missing-row skips.
 
-### Changed — Code Editor line separator conversion (2026-05-26)
+### Changed, Code Editor line separator conversion (2026-05-26)
 
 - Code Editor line separator changes now rewrite existing editor content to
   the selected CRLF, CR, or LF style instead of only changing the future
@@ -5388,7 +5397,7 @@ UI lifecycle / crashes
 - Added focused JVM coverage for mixed separators, CRLF preservation, and
   dangling carriage returns.
 
-### Changed — Code Editor search close affordance (2026-05-26)
+### Changed, Code Editor search close affordance (2026-05-26)
 
 - Code Editor search now has a dedicated close icon in the search panel instead
   of relying only on the toolbar toggle or back action.
@@ -5397,7 +5406,7 @@ UI lifecycle / crashes
   panel.
 - Hiding the search panel now also dismisses the keyboard.
 
-### Changed — File Manager bulk rename preview (2026-05-26)
+### Changed, File Manager bulk rename preview (2026-05-26)
 
 - File Manager selected-file rename now builds a preview plan before running,
   including the generated target names for each selected item.
@@ -5408,7 +5417,7 @@ UI lifecycle / crashes
 - Added focused JVM coverage for rename planning, conflict resolution, invalid
   target validation, and result metadata.
 
-### Changed — Scanner organization summaries (2026-05-26)
+### Changed, Scanner organization summaries (2026-05-26)
 
 - Scanner tracker details now roll matched signatures up by tracker
   organization, showing each organization category, signature count, and class
@@ -5420,7 +5429,7 @@ UI lifecycle / crashes
 - Added focused JVM coverage for tracker organization grouping and
   second-degree tracker label handling.
 
-### Changed — Logcat structured export polish (2026-05-26)
+### Changed, Logcat structured export polish (2026-05-26)
 
 - Logcat Export now offers the existing diagnostic bundle plus structured JSON
   and CSV exports for the currently visible filtered rows or the selected rows.
@@ -5432,7 +5441,7 @@ UI lifecycle / crashes
 - Added unit coverage for JSON fields, CSV escaping, formula defusing, and
   structured export filenames.
 
-### Changed — Activity Interceptor launch builder + privileged launch status (2026-05-26)
+### Changed, Activity Interceptor launch builder + privileged launch status (2026-05-26)
 
 - Added a formal `ActivityInterceptor.getLaunchIntent(...)` builder that lets
   App Details seed target action, flags, and extras without leaking interceptor
@@ -5447,7 +5456,7 @@ UI lifecycle / crashes
 - Added Robolectric coverage for the builder metadata and privileged launch
   result formatter.
 
-### Changed — Running Apps rules + multi-volume cache trim (2026-05-26)
+### Changed, Running Apps rules + multi-volume cache trim (2026-05-26)
 
 - Running Apps -> "prevent background run" now persists the applied background
   AppOps into `ComponentsBlocker` rules, matching the batch disable-background
@@ -5462,7 +5471,7 @@ UI lifecycle / crashes
   compile-safe debloat role-holder reflection, the missing `androidx.test:core`
   unit-test dependency, and the default `BatchKeepOpenHint.show()` return value.
 
-### Changed — Roadmap consolidation (2026-05-26)
+### Changed, Roadmap consolidation (2026-05-26)
 
 - Replaced the root roadmap with a single active checklist for the remaining
   pass-2 NF/EI backlog, v0.6.0 blockers, distribution tasks, platform
@@ -5473,7 +5482,7 @@ UI lifecycle / crashes
 - Refreshed `README.md` and `PROJECT_CONTEXT.md` to point at v0.5.0 and the
   consolidated roadmap/archive split.
 
-### Added — Architecture docs 04 / 05 + permissions catalogue (iter-146, 2026-05-25)
+### Added, Architecture docs 04 / 05 + permissions catalogue (iter-146, 2026-05-25)
 
 - New [`docs/architecture/04-filter-finder.md`](docs/architecture/04-filter-finder.md)
   documents the `IFilterableAppInfo` contract, the 28-option `FilterOption`
@@ -5497,9 +5506,9 @@ UI lifecycle / crashes
 - Architecture index ([`docs/architecture/README.md`](docs/architecture/README.md))
   updated with the two new rows.
 
-### Added — NF-09 trigger data layer + Saved Filter Presets + Keep-app-open hint (2026-05-25)
+### Added, NF-09 trigger data layer + Saved Filter Presets + Keep-app-open hint (2026-05-25)
 
-- **NF-09 data layer** — new `profiles/trigger/ProfileTrigger` value class
+- **NF-09 data layer**, new `profiles/trigger/ProfileTrigger` value class
   with five trigger types (time-of-day, on-charging, on-network Wi-Fi,
   on-network any, on-boot) and a SharedPreferences-backed
   `ProfileTriggerStore` mirroring the `AppTagStore` shape from NF-08.
@@ -5507,20 +5516,20 @@ UI lifecycle / crashes
   in `ProfileTriggerStoreTest`. Worker / Settings UI / boot trigger
   remain blocked on real-device validation; the data layer is the
   stable contract a future session can build the executor on.
-- **Saved Filter Presets data layer** — new
+- **Saved Filter Presets data layer**, new
   `filters/preset/FilterPresetStore` persists named `FilterItem` chains
   to SharedPreferences JSON with case-insensitive de-dup, rename, and
   validation against a `[a-z0-9 _-]` name allowlist. Pure-JVM coverage
   in `FilterPresetStoreTest`. A Finder "Save filter" UI iteration can
   ship without further data work.
-- **Keep-app-open hint** — new `BatchKeepOpenHint` static helper
+- **Keep-app-open hint**, new `BatchKeepOpenHint` static helper
   surfaces an indefinite Material Snackbar guiding the user not to
   background the app while long-running batch operations run. Wired
   from the BatchOps journal retry path in `MainActivity`; other
   call sites can opt in with a single static call. Robolectric smoke
   test pins show/dismiss/isShowing bookkeeping.
 
-### Added — Runtime activity chip in App Details (NF-17, 2026-05-25)
+### Added, Runtime activity chip in App Details (NF-17, 2026-05-25)
 
 - App Details info card now shows a "Runtime activity (24h)" tag-cloud
   chip on every installed package. Tapping the chip runs a background
@@ -5532,7 +5541,7 @@ UI lifecycle / crashes
 - Permission failures (missing `PACKAGE_USAGE_STATS`) surface as a
   short toast rather than a crash.
 
-### Added — Privacy Dashboard deep link (NF-12, 2026-05-25)
+### Added, Privacy Dashboard deep link (NF-12, 2026-05-25)
 
 - App Details -> Permissions tab overflow now has an "Open in Privacy
   Dashboard" action that deep-links Android 12+ system per-app
@@ -5540,7 +5549,7 @@ UI lifecycle / crashes
   older releases the action falls back to standard app-info settings
   and surfaces a toast explaining the timeline is unavailable.
 
-### Changed — Scheduled backup status row is tappable (EI-07, 2026-05-25)
+### Changed, Scheduled backup status row is tappable (EI-07, 2026-05-25)
 
 - Settings -> Backup/Restore -> "Scheduled backup status" row now opens
   a scrollable dialog with the full WorkManager / JobScheduler
@@ -5550,7 +5559,7 @@ UI lifecycle / crashes
 - The preference summary still shows the truncated version; the dialog
   is the new at-a-glance "Why did this skip?" surface.
 
-### Added — Permission Inspector filter chips (EI-04, 2026-05-25)
+### Added, Permission Inspector filter chips (EI-04, 2026-05-25)
 
 - The per-group "apps that hold this permission" screen now has a
   toolbar chip row with three filters: All apps (default), User apps
@@ -5561,7 +5570,7 @@ UI lifecycle / crashes
   the same view.
 - Pure-JVM coverage at `PermissionAppsViewModelFilterTest`.
 
-### Added — Debloater impact preview (NF-16, 2026-05-25)
+### Added, Debloater impact preview (NF-16, 2026-05-25)
 
 - The Debloater confirmation dialog now appends a "Removing N apps
   would un-bind default-app roles" section for every selected package
@@ -5575,7 +5584,7 @@ UI lifecycle / crashes
   pins the result struct, render layout, and the disruptive-role
   allowlist.
 
-### Added — Package visibility chip in App Details (NF-11, 2026-05-25)
+### Added, Package visibility chip in App Details (NF-11, 2026-05-25)
 
 - App Details info card now surfaces a package-visibility tag-cloud chip
   for any app that holds `QUERY_ALL_PACKAGES` or declares a non-empty
@@ -5589,14 +5598,14 @@ UI lifecycle / crashes
   package whose own `<queries>` block lists this one.
 - Pure-JVM coverage in [`PackageVisibilityInfoTest`](app/src/test/java/io/github/muntashirakon/AppManager/details/info/PackageVisibilityInfoTest.java).
 
-### Added — Multi-tag store + Finder filter (NF-08 data layer, 2026-05-25)
+### Added, Multi-tag store + Finder filter (NF-08 data layer, 2026-05-25)
 
 - New `AppTagStore` is a SharedPreferences-backed multi-tag store for
   installed apps. Tags are normalised on write (trim, lower-case, restrict
   to `[a-z0-9_-]` with an alphanumeric first character, 32-char cap) and
   persisted as a per-package JSON array.
 - New `TagsOption` Finder predicate registers under the `tags` key and
-  supports `any`, `none`, `has_all`, `has_any`, `missing_all` selectors —
+  supports `any`, `none`, `has_all`, `has_any`, `missing_all` selectors,
   so saved filter chains can target tagged sets without touching the App
   Details UI yet.
 - Pure-JVM coverage in [`AppTagStoreTest`](app/src/test/java/io/github/muntashirakon/AppManager/tags/AppTagStoreTest.java)
@@ -5605,7 +5614,7 @@ UI lifecycle / crashes
 - Follow-up: App Details tag editor + main-list tag filter chip + Room
   migration (when the JSON-only shape stops scaling).
 
-### Added — Tracker blocking intensity (NF-07, 2026-05-25)
+### Added, Tracker blocking intensity (NF-07, 2026-05-25)
 
 - Settings -> Privacy -> "Tracker blocking intensity" picks which detected
   tracker categories are blocked when "Block trackers" runs.
@@ -5617,7 +5626,7 @@ UI lifecycle / crashes
   the installer's "Block trackers after install" toggle.
 - Pure-JVM coverage in [`TrackerBlockingIntensityTest`](app/src/test/java/io/github/muntashirakon/AppManager/rules/compontents/TrackerBlockingIntensityTest.java).
 
-### Changed — Per-app rollback now shows a dry-run preview (2026-05-25)
+### Changed, Per-app rollback now shows a dry-run preview (2026-05-25)
 
 - App Details -> "Revert AppManager changes" now opens a multi-choice
   dialog listing every inverse `BatchOp` the planner produced so the user
@@ -5626,7 +5635,7 @@ UI lifecycle / crashes
   the new entry point; the existing single-arg variant delegates so older
   callers behave unchanged.
 
-### Added — Onboarding "Next steps" tiles on the final card (2026-05-25)
+### Added, Onboarding "Next steps" tiles on the final card (2026-05-25)
 
 - The replayable onboarding wizard now closes with three outlined-button
   tiles guiding the first-run user to the next high-value surface:
@@ -5634,7 +5643,7 @@ UI lifecycle / crashes
   Settings -> Backup/Restore. Tapping a tile dismisses the sheet, marks
   onboarding as shown, and launches the destination.
 
-### Added — Keystore password lifecycle invariant test (2026-05-25)
+### Added, Keystore password lifecycle invariant test (2026-05-25)
 
 - New `KeyStorePasswordLifecycleTest` pins the T3 keystore-password
   contract: methods and fields under `KeyStoreManager` whose names look
@@ -5643,7 +5652,7 @@ UI lifecycle / crashes
   refactor that reintroduces a `String` password parameter now breaks
   the build in `tests.yml`.
 
-### Changed — Mode Doctor can share results with a Support info bundle (2026-05-25)
+### Changed, Mode Doctor can share results with a Support info bundle (2026-05-25)
 
 - Settings -> Privileges -> Mode Doctor result dialog now offers a "Share
   with bundle" action that prepends the PASS/WARN/FAIL/SKIP probe report
@@ -5653,14 +5662,14 @@ UI lifecycle / crashes
   optional preamble that callers can use to inline any free-form section
   before the standard environment dump.
 
-### Changed — Onboarding re-checks capability badges on resume (2026-05-25)
+### Changed, Onboarding re-checks capability badges on resume (2026-05-25)
 
 - The replayable onboarding wizard now re-runs `refreshCapabilityStatuses`
   in `onResume`, so a user who jumps into Developer options to toggle USB
   debugging or Wireless debugging and returns sees the fresh state
   without manually tapping Re-check.
 
-### Added — Settings -> About -> Glossary & how-to (2026-05-25)
+### Added, Settings -> About -> Glossary & how-to (2026-05-25)
 
 - New `GlossaryPreferences` screen lists 14 plain-language explainers
   covering Mode of operations, Shizuku, root, ADB, app ops, freezing,
@@ -5674,17 +5683,17 @@ UI lifecycle / crashes
 - Pure-JVM coverage in [`GlossaryPreferencesTest`](app/src/test/java/io/github/muntashirakon/AppManager/settings/GlossaryPreferencesTest.java)
   pins key->body mapping integrity and the search reach.
 
-## v0.5.0 — 2026-05-25
+## v0.5.0, 2026-05-25
 
 Discovery & Polish release. Banks the Iter-91 → Iter-142 work that
 accumulated after v0.4.2 (2026-05-13). Highlights:
 
-- **Discovery** — Settings → About → "What's new" entry point, automatic
+- **Discovery**, Settings → About → "What's new" entry point, automatic
   release-notes display after in-place updates, global in-app Settings
   search wired through the existing toolbar SearchView, and a NG-native
   bundled changelog so the in-app viewer no longer ships upstream
   v4.0.5 release notes.
-- **Backup engine** — AES backup metadata v7 derives per-archive AES-GCM
+- **Backup engine**, AES backup metadata v7 derives per-archive AES-GCM
   content keys from the single `am_keystore.bks` master key through
   HKDF-SHA256, CIFS/SMB streaming hardening, scheduled-backup freshness
   gate, scheduled-backup launcher shortcut, scheduled-backup progress
@@ -5692,40 +5701,40 @@ accumulated after v0.4.2 (2026-05-13). Highlights:
   restore, backup path-exclusion globs, root-only Android System data
   backups, provider-backed Network destination, profile blocklist
   enumerates backup roots.
-- **Installer** — Privilege cascade (ADB → Shizuku → root) with route
+- **Installer**, Privilege cascade (ADB → Shizuku → root) with route
   chips and Dhizuku / MIUI diagnostics, split-APK cert-mismatch dialog,
   batch APK install from File Manager, installer SHA-256 checksum
   confirmation dialog, sensitive-action authentication gate for
   install / uninstall / clear-data, Android 17 cleartext-traffic
   deprecation warning, Android 17 ML-DSA key algorithm display.
-- **Rules** — New Settings → Rules → "Component rules" preview screen,
+- **Rules**, New Settings → Rules → "Component rules" preview screen,
   per-app rollback planner (App Details → "Revert AppManager changes"),
   settings snapshot bundle portability v2 (rule TSVs included), OEM
   uninstall-blocker bypass (Samsung One UI 8.5 SmartSuggestions / MIUI
   core / OPlus uninstall-guarded packages), debloat-definition auto-update.
-- **Privileges** — KernelSU diagnostics (seccomp / sulog / App Profile),
+- **Privileges**, KernelSU diagnostics (seccomp / sulog / App Profile),
   Magisk `--drop-cap` policy surface, Dhizuku Provider detection,
   Restricted Settings unlock walkthrough, OS-revert detection banner +
   Doze allowlist diff, capability-dropping probe, persistent ADB
   `tcpip 5555` detection + reuse in the onboarding Wireless ADB setup
   branch.
-- **Filters & Finder** — Install-date filter + filter-applied chip,
+- **Filters & Finder**, Install-date filter + filter-applied chip,
   permission-flags filter, Finder relevance scoring, backup-only Finder
   results, tracker-name search, per-app language picker, `pm hide`
   toggle, SELinux context display, audio-volume AppOps preset.
-- **Automation** — Tasker-parameterised `am://` intents, signature-gated
+- **Automation**, Tasker-parameterised `am://` intents, signature-gated
   broadcast API, Quick Settings freeze tile, profile import (Canta /
   UAD-NG / Hail), Material You / Monet AppWidget theming, assistant
   quick actions on `ACTION_ASSIST`.
-- **File Manager** — Recursive in-folder search, ZIP create / extract
+- **File Manager**, Recursive in-folder search, ZIP create / extract
   with zip-slip guard, smali decode-level option (`none` / `basic` /
   `verbose`).
-- **Distribution & build** — AGP 9.2.0 / Gradle 9.4.1 migration with
+- **Distribution & build**, AGP 9.2.0 / Gradle 9.4.1 migration with
   Gradle-10-safe build scripts, F-Droid 2.0 ROM preseed templates,
   LocalServer bootstrap smoke test, Support Info Bundle composer.
-- **Permission monitoring** — Permission Change Monitor and Signing-Cert
+- **Permission monitoring**, Permission Change Monitor and Signing-Cert
   Change Alert (both opt-in, default OFF).
-- **Security** — Deep-link parser crash / validation-bypass fix,
+- **Security**, Deep-link parser crash / validation-bypass fix,
   install-transcript URI redactor hardening, onboarding root-manager
   probe fragment-detach fix, OperationHistoryExporter CSV / formula
   injection defuse, static launcher shortcut export hardening, GitHub
@@ -5733,7 +5742,7 @@ accumulated after v0.4.2 (2026-05-13). Highlights:
 
 Full per-slice notes follow.
 
-### Added — Global Settings search (2026-05-25)
+### Added, Global Settings search (2026-05-25)
 
 - The Settings toolbar SearchView is now wired to an in-app preference index
   that walks every static `preferences_*.xml` file under `res/xml/` and
@@ -5750,7 +5759,7 @@ Full per-slice notes follow.
   ChangeLanguageFragment) are intentionally not indexed because their rows do
   not exist until the fragment is created.
 
-### Added — Settings -> About -> What's new + auto-display after update (2026-05-25)
+### Added, Settings -> About -> What's new + auto-display after update (2026-05-25)
 
 - New Settings -> About -> "What's new" preference opens the in-app changelog
   viewer directly, instead of relying on tapping the version row.
@@ -5760,7 +5769,7 @@ Full per-slice notes follow.
   flag is consumed atomically so screen rotation cannot redisplay.
 - Pure-JVM coverage in [`ChangelogAutoDisplayTest`](app/src/test/java/io/github/muntashirakon/AppManager/changelog/ChangelogAutoDisplayTest.java).
 
-### Changed — NG-native bundled changelog + doc drift fixes (2026-05-25)
+### Changed, NG-native bundled changelog + doc drift fixes (2026-05-25)
 
 - Replaced `app/src/main/res/raw/changelog.xml` with NG-native content covering
   v0.1.0 -> v0.4.2 plus a note that `Unreleased` work lands as v0.5.0; the parser
@@ -5773,7 +5782,7 @@ Full per-slice notes follow.
   `ROADMAP.md` / `CHANGELOG.md` / the iter research dirs for current state
   instead of stopping at factory-iter-7.
 
-### Added — Settings -> Rules -> Component rules (2026-05-25)
+### Added, Settings -> Rules -> Component rules (2026-05-25)
 
 - New Settings -> Rules -> "Component rules" entry opens a read-only viewer that
   scans every package with an AppManagerNG rule file plus the active IFW XML
@@ -5784,7 +5793,7 @@ Full per-slice notes follow.
 - "App info" jumps straight to the App Details Components tab for visual edits;
   "Copy" places the IFW XML on the clipboard for export to root tools.
 
-### Added — Persistent ADB tcpip setup path (2026-05-18)
+### Added, Persistent ADB tcpip setup path (2026-05-18)
 
 - Onboarding now probes `127.0.0.1:5555` for an existing fixed
   `adb tcpip 5555` session.
@@ -5793,7 +5802,7 @@ Full per-slice notes follow.
 - The action switches to ADB-over-TCP, pins port 5555, and reuses the existing
   LocalServer ADB connection flow.
 
-### Changed — AES backup archive-key derivation (2026-05-18)
+### Changed, AES backup archive-key derivation (2026-05-18)
 
 - New AES-mode backups now use metadata version 7 and derive a per-archive
   AES-GCM content key from the single `am_keystore.bks` AES master key plus the
@@ -5803,7 +5812,7 @@ Full per-slice notes follow.
 - The HKDF helper preserves 128-bit vs 256-bit master-key length and leaves
   RSA/ECC hybrid per-archive keys unchanged.
 
-### Changed — Android 17 ML-DSA key algorithm display (2026-05-18)
+### Changed, Android 17 ML-DSA key algorithm display (2026-05-18)
 
 - Package Info public-key rows and signer verification logs now map Android 17
   `ML-DSA`, `ML-DSA-65`, and `ML-DSA-87` key algorithm strings to readable
@@ -5813,7 +5822,7 @@ Full per-slice notes follow.
 - Focused JVM coverage now verifies both certificate OID and key algorithm
   fallback behavior.
 
-### Changed — AGP 9.2 build migration (2026-05-18)
+### Changed, AGP 9.2 build migration (2026-05-18)
 
 - Android Gradle Plugin is now pinned to 9.2.0 with Gradle wrapper 9.4.1 and
   NDK 28.2.13676358.
@@ -5824,7 +5833,7 @@ Full per-slice notes follow.
   classpath explicitly, with small runtime hardening for MIUI op names and log
   setup under non-Android JVM tests.
 
-### Added — Split APK signing mismatch dialog (2026-05-18)
+### Added, Split APK signing mismatch dialog (2026-05-18)
 
 - Split bundle installs now preflight selected split signing certificates against
   the base APK before the package installer session is launched.
@@ -5834,7 +5843,7 @@ Full per-slice notes follow.
   from removal, or explicitly continue anyway for verification-disabled
   workflows.
 
-### Added — Installer privilege cascade (2026-05-18)
+### Added, Installer privilege cascade (2026-05-18)
 
 - The installer confirmation dialog now previews the detected install route with
   chips for the primary path, fallback providers, Dhizuku detection, and MIUI /
@@ -5845,7 +5854,7 @@ Full per-slice notes follow.
 - Installer progress notifications now report the provider being tried before
   falling back to Android's normal confirmation, with focused route-order tests.
 
-### Added — Audio-volume AppOps preset (2026-05-18)
+### Added, Audio-volume AppOps preset (2026-05-18)
 
 - AppOps now exposes the Android audio-volume op family as named constants,
   including media, ring, alarm, notification, Bluetooth, voice, master, and
@@ -5856,7 +5865,7 @@ Full per-slice notes follow.
 - Added focused coverage for supported audio-volume op enumeration, fallback
   labels, and UID-mode routing.
 
-### Added — Root-only Android system data backups (2026-05-18)
+### Added, Root-only Android system data backups (2026-05-18)
 
 - Root/system mode now exposes a **System data** backup category for the
   Android System package.
@@ -5866,7 +5875,7 @@ Full per-slice notes follow.
 - System-data restores skip Android framework package data clearing and restore
   only the captured system roots.
 
-### Added — Profile blocklist backup-root enumeration (2026-05-18)
+### Added, Profile blocklist backup-root enumeration (2026-05-18)
 
 - The Profiles app/blocklist picker now merges installed packages with validated
   latest backup metadata, so packages represented only by an existing backup
@@ -5877,7 +5886,7 @@ Full per-slice notes follow.
   keep the delete affordance available, so stale blocklist entries remain
   manageable.
 
-### Changed — CIFS/SMB backup streaming hardening (2026-05-18)
+### Changed, CIFS/SMB backup streaming hardening (2026-05-18)
 
 - Backup archive creation now writes split tar streams in bounded 256 KiB
   provider chunks instead of handing large compressed buffers directly to SAF
@@ -5889,7 +5898,7 @@ Full per-slice notes follow.
   add a boundary regression that writes one oversized provider buffer, re-reads
   every split, and verifies byte-for-byte reconstruction.
 
-### Changed — scheduled backup freshness gate (2026-05-18)
+### Changed, scheduled backup freshness gate (2026-05-18)
 
 - Scheduled Auto-Backup now skips only packages whose newest valid backup is
   still inside the configured freshness window, rather than treating backup
@@ -5899,7 +5908,7 @@ Full per-slice notes follow.
 - Scheduled-backup result notifications now report how many recent backups were
   skipped alongside normal success or partial-failure counts.
 
-### Added — Default-app role restore rebinds (2026-05-18)
+### Added, Default-app role restore rebinds (2026-05-18)
 
 - Backup metadata now records whether a package held the Phone, SMS, Home, or
   Browser default-app role at backup time.
@@ -5909,7 +5918,7 @@ Full per-slice notes follow.
   when Android rejects an automatic rebind, opening the system Default apps
   settings with the affected apps and roles listed.
 
-### Changed — Material You widget theming (2026-05-18)
+### Changed, Material You widget theming (2026-05-18)
 
 - Existing home-screen widgets now resolve a shared dynamic AppWidget palette
   from the themed Material context and apply RemoteViews tints at update time.
@@ -5919,7 +5928,7 @@ Full per-slice notes follow.
   icons, and text from the same widget palette, with Android 12+ XML preview
   fallbacks backed by system Monet color resources.
 
-### Added — App Info cleartext deprecation badge (2026-05-18)
+### Added, App Info cleartext deprecation badge (2026-05-18)
 
 - App Info now shows a caution tag when a package opts into manifest-wide
   cleartext traffic without declaring a Network Security Config.
@@ -5928,7 +5937,7 @@ Full per-slice notes follow.
 - Added hidden-API access for `ApplicationInfo.networkSecurityConfigRes` and a
   focused unit test for the cleartext/no-config warning predicate.
 
-### Compliance — Android 17 ML-DSA certificate names (2026-05-18)
+### Compliance, Android 17 ML-DSA certificate names (2026-05-18)
 
 - Closed the Android 17 ML-DSA certificate OID roadmap row as already
   implemented: certificate display already maps ML-DSA-65 and ML-DSA-87 OIDs to
@@ -5938,7 +5947,7 @@ Full per-slice notes follow.
 - Removed an unrelated `Utils` class-load dependency on `OsEnvironment` so the
   ML-DSA mapping regression test runs in the JVM unit-test runner.
 
-### Compliance — Android 17 targetSdk 37 audit batch (2026-05-18)
+### Compliance, Android 17 targetSdk 37 audit batch (2026-05-18)
 
 - Declared the Android 17 `ACCESS_LOCAL_NETWORK` permission and added a
   targetSdk/runtime gate before Wireless ADB mDNS discovery tries to locate
@@ -5952,7 +5961,7 @@ Full per-slice notes follow.
   static-final reflection, Android Keystore entry caps, MemoryLimiter exit
   reasons, native DCL, and `IntentSender` BAL hardening.
 
-### Documentation — F-Droid ROM preseed templates (2026-05-18)
+### Documentation, F-Droid ROM preseed templates (2026-05-18)
 
 - Added a ROM-builder guide for F-Droid 2.0 repository pre-seeding, including
   the new JSON placement paths and legacy XML transition guidance.
@@ -5961,7 +5970,7 @@ Full per-slice notes follow.
   production repo URL and repo signing certificate.
 - Linked the ROM preseed guide from the README install/distribution section.
 
-### Added — Sensitive action authentication gate (2026-05-18)
+### Added, Sensitive action authentication gate (2026-05-18)
 
 - Settings -> Privacy now has an optional "Require authentication for app
   changes" toggle for package/data-changing operations.
@@ -5972,7 +5981,7 @@ Full per-slice notes follow.
   can protect destructive operations without requiring authentication on every
   AppManagerNG launch.
 
-### Added — Per-app language picker (2026-05-18)
+### Added, Per-app language picker (2026-05-18)
 
 - App Info now shows the selected package/user's Android 13+ per-app language,
   including a System default state when no override is set.
@@ -5981,7 +5990,7 @@ Full per-slice notes follow.
 - The hidden API baseline now tracks `android.app.ILocaleManager`, and focused
   tests cover locale option de-duplication plus display summaries.
 
-### Added — App Info hide/unhide action (2026-05-18)
+### Added, App Info hide/unhide action (2026-05-18)
 
 - App Info now exposes a dedicated Hide/Unhide quick action for `pm hide`
   semantics when the active privilege path has `MANAGE_USERS`.
@@ -5991,7 +6000,7 @@ Full per-slice notes follow.
 - The existing Hidden status badge remains the state indicator, keeping hide
   separate from disable, suspend, and saved freeze-method choices.
 
-### Added — Quick assist action sheet (2026-05-18)
+### Added, Quick assist action sheet (2026-05-18)
 
 - Registered a dedicated `android.intent.action.ASSIST` activity so the
   Digital Assistant gesture can open AppManagerNG's foreground-app quick sheet.
@@ -6001,7 +6010,7 @@ Full per-slice notes follow.
   actions according to the active privilege path, with a Running Apps fallback
   when no foreground target can be identified.
 
-### Changed — Roadmap triage (2026-05-18)
+### Changed, Roadmap triage (2026-05-18)
 
 - Parked the Squashfs writer header-validation row after confirming the live
   backup engine has no SquashFS writer or dependency; NG currently writes
@@ -6011,7 +6020,7 @@ Full per-slice notes follow.
   T12 JADX viewer or external JADX handoff surface to attach `.apks` ingestion,
   UI zoom, and FlatLaf CJK-font behavior to.
 
-### Added — App Info SELinux context display (2026-05-18)
+### Added, App Info SELinux context display (2026-05-18)
 
 - App Info now surfaces SELinux policy info, file contexts for the app's data
   and source paths, and live process contexts for running package processes.
@@ -6020,7 +6029,7 @@ Full per-slice notes follow.
 - Added focused coverage for package/process matching, normalization, and
   missing process-name fallback.
 
-### Added — File Manager batch APK installer (2026-05-18)
+### Added, File Manager batch APK installer (2026-05-18)
 
 - File Manager multi-selection now offers **Install selected APKs** for readable
   `.apk`, `.apks`, `.apkm`, and `.xapk` files.
@@ -6030,7 +6039,7 @@ Full per-slice notes follow.
   entries, while existing destructive reinstall/signature safety prompts remain
   in place.
 
-### Added — KernelSU app profile visibility (2026-05-18)
+### Added, KernelSU app profile visibility (2026-05-18)
 
 - Settings -> Privileges now shows the active KernelSU `su` App Profile shape:
   UID, GID, groups, SELinux context, and effective capabilities.
@@ -6040,7 +6049,7 @@ Full per-slice notes follow.
 - The KernelSU details dialog includes raw `id` output and missing-capability
   context next to the existing seccomp and sulog diagnostics.
 
-### Added — smali decode options (2026-05-18)
+### Added, smali decode options (2026-05-18)
 
 - Settings -> File Manager now exposes smali comment-level options for decoded
   APK/dex classes: `none`, `basic`, and `verbose`.
@@ -6049,7 +6058,7 @@ Full per-slice notes follow.
 - Added an opt-in smali post-processor that strips common `@Nullable`,
   `@NotNull`, and `@RequiresApi` annotation blocks from decoded output.
 
-### Added — Android full-SDK version helpers (2026-05-18)
+### Added, Android full-SDK version helpers (2026-05-18)
 
 - Added `AndroidUtils.sdkAtLeast(int major, int minor)` plus full-SDK
   encoding helpers so Android 16.1+ gates can use `SDK_INT_FULL` semantics
@@ -6059,7 +6068,7 @@ Full per-slice notes follow.
 - Existing older major-version guards remain unchanged because they do not
   distinguish minor Android releases.
 
-### Added — KernelSU sulog/seccomp diagnostics (2026-05-18)
+### Added, KernelSU sulog/seccomp diagnostics (2026-05-18)
 
 - Settings -> Privileges now shows a KernelSU status row when KernelSU is the
   active root provider.
@@ -6069,7 +6078,7 @@ Full per-slice notes follow.
 - The details dialog is copyable and offers an Open action for KernelSU Manager
   or KernelSU Next when a manager launcher is visible.
 
-### Added — Magisk drop-cap diagnostics (2026-05-18)
+### Added, Magisk drop-cap diagnostics (2026-05-18)
 
 - Settings -> Privileges -> Capability dropping now includes Magisk version and
   version-code context when Magisk is available to the active privileged shell.
@@ -6080,7 +6089,7 @@ Full per-slice notes follow.
   behavior while the existing UID/CapEff probe remains the source-of-truth
   runtime state.
 
-### Added — File Manager whole-volume scan warning (2026-05-18)
+### Added, File Manager whole-volume scan warning (2026-05-18)
 
 - File Manager now warns before a recursive search starts from a storage-volume
   root such as `/storage/emulated/0`, removable `/storage/XXXX-XXXX`, or
@@ -6089,7 +6098,7 @@ Full per-slice notes follow.
   available and requires explicit confirmation before the whole-volume walk
   begins.
 
-### Added — File Manager recursive search (2026-05-18)
+### Added, File Manager recursive search (2026-05-18)
 
 - File Manager now has a toolbar search action for filtering the current
   folder recursively.
@@ -6098,7 +6107,7 @@ Full per-slice notes follow.
 - Recursive results include containing-folder context in row subtitles and
   respect the existing hidden dot-file display option.
 
-### Added — install-date filtering and active filter indicators (2026-05-18)
+### Added, install-date filtering and active filter indicators (2026-05-18)
 
 - Finder now exposes an `install_date` filter with date-picker backed
   `before` and `after` predicates.
@@ -6107,7 +6116,7 @@ Full per-slice notes follow.
 - Main list and Finder now show a clearable active-filter count chip whenever
   non-default filters are hiding apps.
 
-### Changed — settings snapshot portability (2026-05-18)
+### Changed, settings snapshot portability (2026-05-18)
 
 - Snapshot exports now include blocking/freeze rule TSV files from
   AppManagerNG's rule configuration directory.
@@ -6116,7 +6125,7 @@ Full per-slice notes follow.
 - Snapshot UI copy and completion toasts now account for rule files and clearly
   distinguish merged preferences/rules from overwritten profile/tag files.
 
-### Added — per-app rollback from operation history (2026-05-18)
+### Added, per-app rollback from operation history (2026-05-18)
 
 - App Details now exposes "Revert AppManager changes" for the selected package
   and user.
@@ -6128,7 +6137,7 @@ Full per-slice notes follow.
   backup deletion, and history rows without enough previous-state data remain
   manual review items.
 
-### Added — OEM debloat uninstall fallbacks (2026-05-18)
+### Added, OEM debloat uninstall fallbacks (2026-05-18)
 
 - Debloater now detects OEM-protected removal targets for Samsung
   SmartSuggestions on One UI 8.5, MIUI core, and known OPlus/ColorOS/Realme
@@ -6140,7 +6149,7 @@ Full per-slice notes follow.
 - Added focused JVM coverage for Samsung, MIUI, and OPlus fallback policy
   matching.
 
-### Added — Hidden-Shizuku fork detection (2026-05-18)
+### Added, Hidden-Shizuku fork detection (2026-05-18)
 
 - Shizuku manager package discovery now resolves through the package declaring
   `moe.shizuku.manager.permission.API_V23`, with a legacy service-permission
@@ -6149,7 +6158,7 @@ Full per-slice notes follow.
   authorization warnings now use the resolved manager package, so renamed
   Hidden-Shizuku-style forks work without weakening the binder trust model.
 
-### Added — Tasker parameterized automation intents (2026-05-18)
+### Added, Tasker parameterized automation intents (2026-05-18)
 
 - Public `am://` operation URIs now cover freeze, unfreeze, force-stop,
   clear-cache, clear-data, uninstall, backup, restore, component
@@ -6162,7 +6171,7 @@ Full per-slice notes follow.
   `EXTRA_PROFILE_OVERRIDES` / `profile_overrides`, including package targets
   and backup flags, while preserving the saved profile identity.
 
-### Added — backup path exclusions (2026-05-18)
+### Added, backup path exclusions (2026-05-18)
 
 - Backup data archives now support glob-style path exclusions such as
   `**/cache/**`, `**/.thumbnails/**`, and `databases/*.db-journal`.
@@ -6173,7 +6182,7 @@ Full per-slice notes follow.
   backup dialog can add one-off exclusions for the current run, and profile
   backup configs persist `exclusion_globs` for routine/profile backups.
 
-### Changed — WebDAV certificate-trust posture (2026-05-18)
+### Changed, WebDAV certificate-trust posture (2026-05-18)
 
 - Closed the Material Files self-signed WebDAV certificate-trust roadmap row as
   covered by the provider-backed network destination path.
@@ -6183,7 +6192,7 @@ Full per-slice notes follow.
   first-party WebDAV/provider work rather than the current SAF-backed backup
   engine.
 
-### Added — provider-backed network backup destination (2026-05-18)
+### Added, provider-backed network backup destination (2026-05-18)
 
 - Settings -> Backup/Restore now has a Network backup destination action for
   SMB, WebDAV, SFTP, and cloud folders exposed by user-installed
@@ -6195,7 +6204,7 @@ Full per-slice notes follow.
   so callers can safely store tree/document URIs selected by Android's folder
   picker.
 
-### Added — app-list import/export workflow (2026-05-18)
+### Added, app-list import/export workflow (2026-05-18)
 
 - Main-list overflow can export the current visible/filtered app list through
   the existing CSV, JSON, XML, and Markdown exporters.
@@ -6205,7 +6214,7 @@ Full per-slice notes follow.
   `packages` / `apps` arrays, de-dupe valid package names, select matching
   installed apps, and surface the existing batch-operation toolbar.
 
-### Added — scheduled backup diagnostics (2026-05-18)
+### Added, scheduled backup diagnostics (2026-05-18)
 
 - Settings -> Backup now shows WorkManager diagnostics for scheduled and manual
   auto-backup requests: state, run attempt, next run time, and stop reason.
@@ -6214,7 +6223,7 @@ Full per-slice notes follow.
 - API 37 `JobDebugInfo` pending-reason stats remain parked until the project
   raises compile SDK beyond 36.
 
-### Changed — scheduled backup progress notifications (2026-05-18)
+### Changed, scheduled backup progress notifications (2026-05-18)
 
 - Scheduled and manual auto-backup runs now update their WorkManager foreground
   notification with app-count progress and the current app being backed up.
@@ -6224,7 +6233,7 @@ Full per-slice notes follow.
   current-progress point markers; older devices continue to use the standard
   progress-bar notification fallback.
 
-### Added — scheduled backup launcher shortcuts (2026-05-18)
+### Added, scheduled backup launcher shortcuts (2026-05-18)
 
 - Added a Settings -> Backup action to pin a "Run scheduled backup" home-screen
   shortcut.
@@ -6233,7 +6242,7 @@ Full per-slice notes follow.
 - Shortcut launches route through an authenticated no-UI activity before
   queuing the existing scheduled-backup manual WorkManager request.
 
-### Changed — scheduled backup battery optimization guardrail (2026-05-18)
+### Changed, scheduled backup battery optimization guardrail (2026-05-18)
 
 - Enabling Scheduled Auto-Backup now checks whether AppManagerNG is exempt from
   Android battery optimization.
@@ -6245,7 +6254,7 @@ Full per-slice notes follow.
 - The schedule status row now shows the current battery state so users can see
   whether Android may pause scheduled backups while idle.
 
-### Added — Scheduled auto-backup core (2026-05-18)
+### Added, Scheduled auto-backup core (2026-05-18)
 
 - Added a WorkManager-backed scheduled backup engine with a daily time-of-day
   trigger plus charging and network constraints.
@@ -6261,7 +6270,7 @@ Full per-slice notes follow.
 - Added focused JVM coverage for daily delay rollover, schedule value clamping,
   and WorkManager network constraint mapping.
 
-### Added — Dhizuku provider diagnostics (2026-05-18)
+### Added, Dhizuku provider diagnostics (2026-05-18)
 
 - Added a no-dependency Dhizuku provider probe that detects the installed
   manager version, official DeviceOwner/ProfileOwner component, API provider
@@ -6274,7 +6283,7 @@ Full per-slice notes follow.
 - Added focused JVM coverage for the Dhizuku package/provider/action constants
   and Android version guardrails.
 
-### Added — File Manager ZIP archive actions (2026-05-18)
+### Added, File Manager ZIP archive actions (2026-05-18)
 
 - Added File Manager actions to create a ZIP archive from the current selection
   and extract a selected ZIP archive to a folder.
@@ -6288,7 +6297,7 @@ Full per-slice notes follow.
   `tools:overrideLibrary` allowance into the test manifest and fixing three
   stale Java compile blockers found during verification.
 
-### Added — Restricted Settings unlock walkthrough (2026-05-17)
+### Added, Restricted Settings unlock walkthrough (2026-05-17)
 
 - Added a Settings -> Privileges row for Android 13+ Restricted Settings,
   classifying AppManagerNG's install source as trusted-store, likely sideloaded,
@@ -6301,7 +6310,7 @@ Full per-slice notes follow.
   install-source metadata, not a public per-app restricted-settings-blocked bit.
 - Added unit coverage for the install-source classification rules.
 
-### Added — Achno Samsung debloat cross-check audit (2026-05-17)
+### Added, Achno Samsung debloat cross-check audit (2026-05-17)
 
 - Added [`docs/audits/2026-05-17-achno-samsung-debloat-cross-check.md`](docs/audits/2026-05-17-achno-samsung-debloat-cross-check.md).
 - Compared 82 package-like tokens from `Achno/debloat-samsung-ADB-shizuku`
@@ -6309,7 +6318,7 @@ Full per-slice notes follow.
 - Rejected the six exact misses as apparent typos, non-package activity names,
   or uncorroborated single-source IDs, so no debloat dataset mutation shipped.
 
-### Changed — Doze allowlist revert diagnostics (2026-05-17)
+### Changed, Doze allowlist revert diagnostics (2026-05-17)
 
 - Doze allowlist revert checks now wait 60 seconds and include a one-line
   `device_idle_constants` diff in the "OS reverted your change" detail dialog.
@@ -6320,7 +6329,7 @@ Full per-slice notes follow.
   Care / enterprise policy, system-app reverts, and unknown-package cases.
 - Added unit coverage for Doze config parsing and one-line diff generation.
 
-### Added — OS-revert detection banner (2026-05-17)
+### Added, OS-revert detection banner (2026-05-17)
 
 - Added `OsRevertMonitor`, a generic 30-second post-write re-poll layer for
   state mutations that Android or OEM policy may silently undo.
@@ -6332,7 +6341,7 @@ Full per-slice notes follow.
   expected state, current state, and context-hint details.
 - Added unit coverage for the monitor's state-match predicates.
 
-### Changed — Shizuku root-backed avoidance (2026-05-17)
+### Changed, Shizuku root-backed avoidance (2026-05-17)
 
 - Auto mode now skips root-backed Shizuku when local ADB is available, avoiding a
   KernelSU/root-backed Shizuku service becoming AppManagerNG's default privilege
@@ -6347,7 +6356,7 @@ Full per-slice notes follow.
 - Added unit coverage for Shizuku uid classification and the Auto-mode avoidance
   gate.
 
-### Added — Shizuku 13.6.0 OEM compatibility warning (2026-05-17)
+### Added, Shizuku 13.6.0 OEM compatibility warning (2026-05-17)
 
 - Added Shizuku 13.6.0 known-bad device detection for Transsion/Infinix/Tecno/Itel
   Android 15 ROMs, Mediatek platform tags, and Pixel 9 Android 16 QPR1-class
@@ -6359,7 +6368,7 @@ Full per-slice notes follow.
   repo APK.
 - Added unit coverage for the version gate and each known-bad OEM/SoC family.
 
-### Compliance — Android Developer Verification guardrails (2026-05-17)
+### Compliance, Android Developer Verification guardrails (2026-05-17)
 
 - Added `DeveloperVerificationCompat` for `developer_verifier` service detection
   and Android 36.1 `PackageInstaller` developer-verification failure reasons.
@@ -6372,7 +6381,7 @@ Full per-slice notes follow.
 - Updated `docs/sideload-verification.md` to document the implemented behavior
   and the public API limit around verified/unverified preflight checks.
 
-### Compliance — Android 17 16 KB native page-size compatibility (2026-05-17)
+### Compliance, Android 17 16 KB native page-size compatibility (2026-05-17)
 
 - Native `libam.so` builds now pass both `-Wl,-z,max-page-size=16384`
   and `-Wl,-z,common-page-size=16384` through CMake.
@@ -6385,7 +6394,7 @@ Full per-slice notes follow.
 - Recorded the remediation and remaining device-test gap in
   `docs/audits/2026-05-17-android17-16kb-native-page-size.md`.
 
-### Changed — operation history access and recovery guidance (2026-05-17)
+### Changed, operation history access and recovery guidance (2026-05-17)
 
 - Added Settings -> Privacy -> History as a direct entry point into the existing
   operation-history screen.
@@ -6396,7 +6405,7 @@ Full per-slice notes follow.
   batch/profile/installer journals; automatic inverse replay remains tracked by
   the separate Per-App Rollback row.
 
-### Added — Shizuku clear-data revoke warnings (2026-05-17)
+### Added, Shizuku clear-data revoke warnings (2026-05-17)
 
 - App Info clear-data confirmations now warn when clearing AppManagerNG,
   Shizuku Manager, or an installed app that declares the Shizuku provider.
@@ -6408,7 +6417,7 @@ Full per-slice notes follow.
 - Batch/profile clear-data logs the same post-action revocation signal for
   result review when no foreground re-authorization dialog is available.
 
-### Added — hidden-API compatibility harness (2026-05-17)
+### Added, hidden-API compatibility harness (2026-05-17)
 
 - Added a checked-in androidTest hidden-API baseline at
   `app/src/androidTest/assets/api/api-versions-appmanagerng-hiddenapi.json`
@@ -6420,7 +6429,7 @@ Full per-slice notes follow.
   hidden classes/methods/fields on the active SDK, emits a JSON diff report, and
   fails on required missing APIs while treating deprecated removals as warnings.
 
-### Added — Quick Settings freeze profile tile (2026-05-17)
+### Added, Quick Settings freeze profile tile (2026-05-17)
 
 - Added `QuickFreezeTileService`, a platform Quick Settings tile that runs the
   selected freeze-enabled profile through the existing `ProfileApplierService`.
@@ -6432,7 +6441,7 @@ Full per-slice notes follow.
   is missing or no longer freeze-capable.
 - Added JVM coverage for the freeze-profile eligibility gate.
 
-### Changed — Apktool migration audit (2026-05-17)
+### Changed, Apktool migration audit (2026-05-17)
 
 - Re-audited the Gradle graph and source tree and confirmed AppManagerNG has no
   Apktool 2.x dependency, `org.apktool` dependency, or `brut.apktool` call site
@@ -6443,7 +6452,7 @@ Full per-slice notes follow.
   second smali fork plus runtime dependencies that must be classpath-tested
   against NG's current Google smali/baksmali dependency before adoption.
 
-### Changed — JobScheduler quota stop-reason audit (2026-05-17)
+### Changed, JobScheduler quota stop-reason audit (2026-05-17)
 
 - Re-audited the source and Gradle configuration and confirmed AppManagerNG still
   has no `androidx.work`, WorkManager, JobScheduler, JobService, or Schedules
@@ -6454,7 +6463,7 @@ Full per-slice notes follow.
   JobScheduler stop and pending-reason output in schedule history and result
   notifications when the scheduler is implemented.
 
-### Added — Shizuku trusted-WLAN auto-start action (2026-05-17)
+### Added, Shizuku trusted-WLAN auto-start action (2026-05-17)
 
 - Operating Mode and the replayable onboarding Shizuku card now show a
   "Configure auto-start in Shizuku" action when Android 13+ has Shizuku Manager
@@ -6465,7 +6474,7 @@ Full per-slice notes follow.
 - Added unit coverage for the Android-version, Shizuku-version, and stopped-binder
   gating rules.
 
-### Added — mode doctor active probes (2026-05-17)
+### Added, mode doctor active probes (2026-05-17)
 
 - Settings -> Privileges now includes a "Mode doctor" action distinct from the
   passive health summary rows.
@@ -6475,7 +6484,7 @@ Full per-slice notes follow.
 - Results are shown as a copyable PASS/WARN/FAIL/SKIP report with fix guidance
   for the failing or incomplete provider path.
 
-### Added — privileged batch journal and recovery (2026-05-17)
+### Added, privileged batch journal and recovery (2026-05-17)
 
 - Added `BatchOpsJournal`, a persistent intent/executing journal around
   `BatchOpsService` so interrupted batch operations survive process death until
@@ -6487,7 +6496,7 @@ Full per-slice notes follow.
   service is currently working and shows a recovery dialog with retry, not-now,
   and clear actions.
 
-### Added — privileged operation audit log closure (2026-05-17)
+### Added, privileged operation audit log closure (2026-05-17)
 
 - Audited the existing Room-backed operation history as AppManagerNG's
   privileged operation audit log: it already has a viewer, search/filter/sort,
@@ -6498,7 +6507,7 @@ Full per-slice notes follow.
   reports can correlate a privileged action with the most recent LocalServer
   bootstrap context.
 
-### Added — support-info bundle composer (2026-05-17)
+### Added, support-info bundle composer (2026-05-17)
 
 - Settings -> Troubleshooting now has a "Share support info" action that writes
   a zero-network `support-info-<device>-<timestamp>.txt` file and shares it via
@@ -6510,7 +6519,7 @@ Full per-slice notes follow.
   tokens, file/content/http URIs, storage paths, email addresses, UIDs, and large
   numeric identifiers before sharing.
 
-### Added — LocalServer bootstrap smoke test (2026-05-17)
+### Added, LocalServer bootstrap smoke test (2026-05-17)
 
 - Settings -> Privileges now includes a "LocalServer bootstrap smoke test" row
   that runs the LocalServer privileged-shell handshake plus an `id -u` probe for
@@ -6522,7 +6531,7 @@ Full per-slice notes follow.
   `LocalServer.buildBootstrapSignature(...)` formatter as the success-path smoke
   test, keeping issue reports consistent.
 
-### Added — distribution build flavors (2026-05-17)
+### Added, distribution build flavors (2026-05-17)
 
 - Added default `floss` and optional `full` product flavors in the
   `distribution` dimension. `floss` compiles optional online surfaces off while
@@ -6536,7 +6545,7 @@ Full per-slice notes follow.
   contract so F-Droid metadata targets `flossRelease` and GitHub/Obtainium
   users receive `full` assets.
 
-### Added — per-app launcher action shortcuts (2026-05-17)
+### Added, per-app launcher action shortcuts (2026-05-17)
 
 - Added dynamic launcher shortcuts for recent installed apps, exposing freeze,
   force-stop, and clear-cache actions only when the current Root/Shizuku/ADB
@@ -6548,7 +6557,7 @@ Full per-slice notes follow.
   long-pressing those actions; freeze/unfreeze shortcut defaults now use explicit
   `Freeze <app>` / `Unfreeze <app>` labels.
 
-### Changed — APK share-target roadmap audit (2026-05-17)
+### Changed, APK share-target roadmap audit (2026-05-17)
 
 - Closed the stale `APK Share-Target Receiver` roadmap row after verifying the
   installer already accepts shared APK/APKM/XAPK payloads via `ACTION_SEND`,
@@ -6557,7 +6566,7 @@ Full per-slice notes follow.
   access, parse the payload, and surface tracker, dependency, checksum, and
   signature-mismatch context in the install path.
 
-### Added — signature-gated automation broadcast API (2026-05-17)
+### Added, signature-gated automation broadcast API (2026-05-17)
 
 - Added `AutomationReceiver` behind the new signature permission
   `io.github.sysadmindoc.AppManagerNG.permission.AUTOMATION`.
@@ -6568,7 +6577,7 @@ Full per-slice notes follow.
   profile execution routes through `ProfileApplierService`; install and tracker
   actions reuse the existing installer and App Details tracker view.
 
-### Added — Finder relevance scoring (2026-05-17)
+### Added, Finder relevance scoring (2026-05-17)
 
 - Finder now sorts filtered package results through `FinderRelevanceScorer` when
   literal package-name, component-name, or tracker-name search predicates are
@@ -6580,7 +6589,7 @@ Full per-slice notes follow.
 - New `FinderRelevanceScorerTest` covers edit distance, exact-token preference,
   longer-token demotion, and case-insensitive scoring.
 
-### Added — permission-state Finder filters (2026-05-17)
+### Added, permission-state Finder filters (2026-05-17)
 
 - `PermissionsOption` now filters requested permissions by `granted`, `denied`,
   `custom`, `fixed`, `with_flags`, and `without_flags`.
@@ -6588,7 +6597,7 @@ Full per-slice notes follow.
   source package, declaration/protection metadata, and runtime permission flags
   for both Finder/filter rows and main-list `ApplicationItem` consumers.
 
-### Added — Finder backup-only app results (2026-05-17)
+### Added, Finder backup-only app results (2026-05-17)
 
 - Finder now opts into validated backup-only rows for AppManagerNG backup
   metadata whose package/user pair is not already returned by PackageManager,
@@ -6597,7 +6606,7 @@ Full per-slice notes follow.
   package/user while keeping existing backup filters wired to the validated
   backup metadata DB.
 
-### Added — Finder debloat-description predicates (2026-05-17)
+### Added, Finder debloat-description predicates (2026-05-17)
 
 - Finder's `bloatware` filter now searches debloat-list human descriptions via
   `description_eq`, `description_contains`, `description_starts_with`,
@@ -6606,7 +6615,7 @@ Full per-slice notes follow.
   query such as `nfc tags` can match prose from `debloat.json` without requiring
   exact capitalization.
 
-### Added — capability-dropping diagnostic (2026-05-17)
+### Added, capability-dropping diagnostic (2026-05-17)
 
 - Settings -> Privileges now includes a "Capability dropping (--drop-cap)" row
   that probes the active privileged shell with `id -u` plus `CapEff` from
@@ -6617,7 +6626,7 @@ Full per-slice notes follow.
 - New `RootCapabilityDiagnosticsTest` covers dropped, present, root, and malformed
   probe-output parsing.
 
-### Added — privilege health-check screen (2026-05-17)
+### Added, privilege health-check screen (2026-05-17)
 
 - New Settings -> Privileges page consolidates the mode diagnostics that were
   split across onboarding, Mode of operation, and Troubleshooting.
@@ -6630,7 +6639,7 @@ Full per-slice notes follow.
   path can whitelist AppManagerNG, tapping the row attempts that fix before
   falling back to the Android system exemption prompt.
 
-### Added — opt-in debloat definition auto-updates (2026-05-17)
+### Added, opt-in debloat definition auto-updates (2026-05-17)
 
 - New
   [`DebloatDefinitionsUpdater`](app/src/main/java/io/github/muntashirakon/AppManager/debloat/DebloatDefinitionsUpdater.java)
@@ -6649,7 +6658,7 @@ Full per-slice notes follow.
   covers SHA-256 formatting, approved raw-GitHub URL guardrails, and dataset
   validation.
 
-### Added — cross-user package state surfacing (2026-05-17)
+### Added, cross-user package state surfacing (2026-05-17)
 
 - Main-list `ApplicationItem` rows now preserve per-user package state buckets
   (`enabledUserIds`, `disabledUserIds`, `uninstalledUserIds`) instead of only
@@ -6661,7 +6670,7 @@ Full per-slice notes follow.
   instead of only the current user, and each Finder result shows the user id and
   enabled/disabled/not-installed state.
 
-### Changed — privileged battery-optimization auto-fix for routines (2026-05-17)
+### Changed, privileged battery-optimization auto-fix for routines (2026-05-17)
 
 - New
   [`SelfBatteryOptimization`](app/src/main/java/io/github/muntashirakon/AppManager/self/SelfBatteryOptimization.java)
@@ -6675,7 +6684,7 @@ Full per-slice notes follow.
   helper while preserving the manual system-settings fallback for unprivileged
   devices.
 
-### Added — install-session SHA-256 confirmation (2026-05-17)
+### Added, install-session SHA-256 confirmation (2026-05-17)
 
 - `PackageInstallerCompat` now computes SHA-256 over the exact bytes copied into
   each `PackageInstaller.Session.openWrite()` stream, including split installs,
@@ -6686,7 +6695,7 @@ Full per-slice notes follow.
 - New [`InstallChecksumDisplayTest`](app/src/test/java/io/github/muntashirakon/AppManager/apk/installer/InstallChecksumDisplayTest.java)
   covers lowercase hex encoding and readable 8-character checksum grouping.
 
-### Changed — USB debugging preflight for Wireless ADB / Shizuku setup (2026-05-17)
+### Changed, USB debugging preflight for Wireless ADB / Shizuku setup (2026-05-17)
 
 - [`OnboardingFragment`](app/src/main/java/io/github/muntashirakon/AppManager/onboarding/OnboardingFragment.java)
   now checks the Developer Options `adb_enabled` flag before starting Wireless
@@ -6698,7 +6707,7 @@ Full per-slice notes follow.
   This closes the T5 Canta-model follow-up where `adb pair` / `adb connect` could
   fail silently because the user enabled only Wireless debugging.
 
-### Compliance — Shizuku Android-17 detection + onboarding fallback (2026-05-17)
+### Compliance, Shizuku Android-17 detection + onboarding fallback (2026-05-17)
 
 - [`ShizukuBridge`](app/src/main/java/io/github/muntashirakon/AppManager/shizuku/ShizukuBridge.java)
   now exposes `hasAndroid17CompatibilityRisk(Context)`, combining
@@ -6716,7 +6725,7 @@ Full per-slice notes follow.
   covers API-floor behavior, the unknown-fixed-version state, future fixed-version
   comparison, and `v13.6.0.r...` suffix parsing.
 
-### Added — Shizuku release watcher CI workflow (2026-05-17)
+### Added, Shizuku release watcher CI workflow (2026-05-17)
 
 - New [`.github/workflows/shizuku-release-watch.yml`](.github/workflows/shizuku-release-watch.yml)
   runs weekly Thursday 09:27 UTC plus `workflow_dispatch`. It scans recent official
@@ -6724,7 +6733,7 @@ Full per-slice notes follow.
   release note mentions Android 17 or Shizuku #1965 / #1967, with a checklist to
   verify the release and populate `MIN_ANDROID_17_COMPATIBLE_VERSION`.
 
-### Changed — ML-DSA certificate algorithm display names (2026-05-17)
+### Changed, ML-DSA certificate algorithm display names (2026-05-17)
 
 - `Utils.getCertificateSignatureAlgorithmName(X509Certificate)` now maps Android
   17's ML-DSA OIDs (`1.3.6.1.4.1.2.267.12.6.5`, `1.3.6.1.4.1.2.267.12.8.7`) to
@@ -6735,56 +6744,56 @@ Full per-slice notes follow.
   [`UtilsCertificateAlgorithmTest`](app/src/test/java/io/github/muntashirakon/AppManager/utils/UtilsCertificateAlgorithmTest.java)
   covers both mapped OIDs and fallback behavior for known/unknown algorithms.
 
-### Compliance — Android 17 targetSdk=37 audit batch closed clean (2026-05-17)
+### Compliance, Android 17 targetSdk=37 audit batch closed clean (2026-05-17)
 
-The five open sub-audits in the Engineering Debt Register's Android 17 targetSdk=37 compliance batch were executed during the iter-26 walk-away research follow-through. All five return clean — NG ships **zero source-side compliance work** for the targetSdk=37 bump.
+The five open sub-audits in the Engineering Debt Register's Android 17 targetSdk=37 compliance batch were executed during the iter-26 walk-away research follow-through. All five return clean, NG ships **zero source-side compliance work** for the targetSdk=37 bump.
 
-- **`usesCleartextTraffic` enforcement** ✅ clean — `network_security_config.xml` declares `base-config cleartextTrafficPermitted="false"`; manifest has no `usesCleartextTraffic` attribute; pinned domains (VirusTotal, Pithus) are HTTPS-only with cert-pin sets; loopback (`127.0.0.1` / `localhost`) is explicitly opted in for libadb-android pairing. [`docs/audits/2026-05-17-android17-cleartext-traffic-enforcement.md`](docs/audits/2026-05-17-android17-cleartext-traffic-enforcement.md).
-- **`ACCESS_LOCAL_NETWORK` runtime permission** ✅ clean — zero `NsdManager` / `MulticastSocket` / mDNS / `NetworkInterface.getNetworkInterfaces()` in production. Wireless ADB pairing is input-driven (user types host+port from device Wireless Debugging panel); no LAN discovery surface. [`docs/audits/2026-05-17-android17-access-local-network.md`](docs/audits/2026-05-17-android17-access-local-network.md).
-- **BAL hardening + `MODE_BACKGROUND_ACTIVITY_START_ALLOWED` migration** ✅ clean — zero matches across `app/src/main/java/` for the deprecated BAL flag or `setPendingIntentBackgroundActivityStartMode()`. NG launches activities from foreground UI contexts; the `am://` URI scheme and the planned Tasker-parameterized broadcast API are receiver-driven and unaffected. [`docs/audits/2026-05-17-android17-bal-intentsender.md`](docs/audits/2026-05-17-android17-bal-intentsender.md).
-- **ECH default-on for TLS** ✅ clean — NG's three network destinations all handle ECH default-on without renegotiation. No `<domainEncryption>` opt-out needed in `network_security_config.xml`. [`docs/audits/2026-05-17-android17-ech-default-on.md`](docs/audits/2026-05-17-android17-ech-default-on.md).
-- **ML-DSA Keystore OID recognition** ✅ clean (audit) — NG's APK cert display surfaces both `getSigAlgName()` AND `getSigAlgOID()`; no algorithm-name string-comparison branches downstream; forward-compatible with Android 17's new `1.3.6.1.4.1.2.267.12.6.5` (ML-DSA-65) and `.8.7` (ML-DSA-87) OIDs. Polish opportunity (not compliance-blocking): a small OID→display-name map. [`docs/audits/2026-05-17-android17-ml-dsa-keystore-oid.md`](docs/audits/2026-05-17-android17-ml-dsa-keystore-oid.md).
+- **`usesCleartextTraffic` enforcement** ✅ clean, `network_security_config.xml` declares `base-config cleartextTrafficPermitted="false"`; manifest has no `usesCleartextTraffic` attribute; pinned domains (VirusTotal, Pithus) are HTTPS-only with cert-pin sets; loopback (`127.0.0.1` / `localhost`) is explicitly opted in for libadb-android pairing. [`docs/audits/2026-05-17-android17-cleartext-traffic-enforcement.md`](docs/audits/2026-05-17-android17-cleartext-traffic-enforcement.md).
+- **`ACCESS_LOCAL_NETWORK` runtime permission** ✅ clean, zero `NsdManager` / `MulticastSocket` / mDNS / `NetworkInterface.getNetworkInterfaces()` in production. Wireless ADB pairing is input-driven (user types host+port from device Wireless Debugging panel); no LAN discovery surface. [`docs/audits/2026-05-17-android17-access-local-network.md`](docs/audits/2026-05-17-android17-access-local-network.md).
+- **BAL hardening + `MODE_BACKGROUND_ACTIVITY_START_ALLOWED` migration** ✅ clean, zero matches across `app/src/main/java/` for the deprecated BAL flag or `setPendingIntentBackgroundActivityStartMode()`. NG launches activities from foreground UI contexts; the `am://` URI scheme and the planned Tasker-parameterized broadcast API are receiver-driven and unaffected. [`docs/audits/2026-05-17-android17-bal-intentsender.md`](docs/audits/2026-05-17-android17-bal-intentsender.md).
+- **ECH default-on for TLS** ✅ clean, NG's three network destinations all handle ECH default-on without renegotiation. No `<domainEncryption>` opt-out needed in `network_security_config.xml`. [`docs/audits/2026-05-17-android17-ech-default-on.md`](docs/audits/2026-05-17-android17-ech-default-on.md).
+- **ML-DSA Keystore OID recognition** ✅ clean (audit), NG's APK cert display surfaces both `getSigAlgName()` AND `getSigAlgOID()`; no algorithm-name string-comparison branches downstream; forward-compatible with Android 17's new `1.3.6.1.4.1.2.267.12.6.5` (ML-DSA-65) and `.8.7` (ML-DSA-87) OIDs. Polish opportunity (not compliance-blocking): a small OID→display-name map. [`docs/audits/2026-05-17-android17-ml-dsa-keystore-oid.md`](docs/audits/2026-05-17-android17-ml-dsa-keystore-oid.md).
 
-Engineering Debt Register's "Android 17 targetSdk=37 compliance" row is now **closed**. The remaining blockers to the `targetSdk = 37` bump are external: (a) the 1 deferred finding from the iter-20 static-final-reflection audit; (b) the Shizuku 13.6.0 / Android 17 regression (Shizuku #1965 / #1967) — see "Audit — Shizuku Android-17 compatibility" below. Android 17 stable lands June 2026 ([S324]).
+Engineering Debt Register's "Android 17 targetSdk=37 compliance" row is now **closed**. The remaining blockers to the `targetSdk = 37` bump are external: (a) the 1 deferred finding from the iter-20 static-final-reflection audit; (b) the Shizuku 13.6.0 / Android 17 regression (Shizuku #1965 / #1967), see "Audit, Shizuku Android-17 compatibility" below. Android 17 stable lands June 2026 ([S324]).
 
-### Audit — Shizuku Android-17 compatibility (mitigated, needs device verification) (2026-05-17)
+### Audit, Shizuku Android-17 compatibility (mitigated, needs device verification) (2026-05-17)
 
-- New [`docs/audits/2026-05-17-shizuku-android17-compat.md`](docs/audits/2026-05-17-shizuku-android17-compat.md) — verdict on NG's iter-23 Shizuku integration against the Android 17 Beta 3 regressions reported in Shizuku #1965 / #1967.
+- New [`docs/audits/2026-05-17-shizuku-android17-compat.md`](docs/audits/2026-05-17-shizuku-android17-compat.md), verdict on NG's iter-23 Shizuku integration against the Android 17 Beta 3 regressions reported in Shizuku #1965 / #1967.
 - **Verdict updated after iter-27: `mitigated, needs device verification + fixed-version floor`**. NG's [`ShizukuBridge.java`](app/src/main/java/io/github/muntashirakon/AppManager/shizuku/ShizukuBridge.java) probes are all `Throwable`-caught and **will not crash** on Android 17. Mixed evidence from Shizuku #1965 / #1967 / #1988 means NG should warn and offer Wireless ADB fallback without disabling Shizuku outright.
 - **Design implemented** in iter-27: the non-destructive `hasAndroid17CompatibilityRisk(Context)` probe landed with `MIN_ANDROID_17_COMPATIBLE_VERSION = null`, and onboarding now shows a fallback banner that launches Wireless ADB setup.
 - Remaining work is (a) device verification against an Android 17 Beta/stable image, and (b) populating `MIN_ANDROID_17_COMPATIBLE_VERSION` after Shizuku or a vetted fork ships a confirmed fix.
 
-### Added — minSdk-21 cascade analysis (2026-05-17)
+### Added, minSdk-21 cascade analysis (2026-05-17)
 
-- [`docs/policy/minsdk-21-ceiling.md`](docs/policy/minsdk-21-ceiling.md) gained a new "Cascade analysis: what `minSdk = 23` would unlock" sub-section. Maps the Material Components 1.14 ceiling pressure to the four other pinned-cluster lines (`activity` 1.11 → 1.12, `biometric` 1.4.0-alpha04 → alpha05+, `room` 2.7.2 → 2.8, `webkit` 1.14 → 1.15) and documents the decision pressure: Material 1.14.0 is still alpha (alpha06/07/08 — [S325]), so the floor decision can stay deferred. Bumping the cluster one-at-a-time is explicitly discouraged — the floor lift lands as a single `min_sdk = 23` PR that also bumps the five pinned-cluster deps in lockstep when the decision is forced.
+- [`docs/policy/minsdk-21-ceiling.md`](docs/policy/minsdk-21-ceiling.md) gained a new "Cascade analysis: what `minSdk = 23` would unlock" sub-section. Maps the Material Components 1.14 ceiling pressure to the four other pinned-cluster lines (`activity` 1.11 → 1.12, `biometric` 1.4.0-alpha04 → alpha05+, `room` 2.7.2 → 2.8, `webkit` 1.14 → 1.15) and documents the decision pressure: Material 1.14.0 is still alpha (alpha06/07/08, [S325]), so the floor decision can stay deferred. Bumping the cluster one-at-a-time is explicitly discouraged, the floor lift lands as a single `min_sdk = 23` PR that also bumps the five pinned-cluster deps in lockstep when the decision is forced.
 - Closes iter-24 backlog row F-NEW-09.
 
-### Added — Docs Markdown link checker CI workflow (2026-05-17)
+### Added, Docs Markdown link checker CI workflow (2026-05-17)
 
-- New [`.github/workflows/docs-link-check.yml`](.github/workflows/docs-link-check.yml) — `lycheeverse/lychee-action@v2` runs on push, PR, and weekly Tuesday 11:11 UTC (staggered off existing CI cadences). Scope: all `*.md` at repo root, `docs/**/*.md`, `.ai/**/*.md`, plus `ROADMAP.md` / `CHANGELOG.md` / `PROJECT_CONTEXT.md`. Cache-backed (7-day TTL) to avoid hammering external URLs on every push; uploads a `lychee-out.md` report as a CI artifact for inspection.
-- Closes iter-24 backlog row F-NEW-13 — link-rot insurance for the new `PROJECT_CONTEXT.md` + `docs/architecture/` tree.
+- New [`.github/workflows/docs-link-check.yml`](.github/workflows/docs-link-check.yml), `lycheeverse/lychee-action@v2` runs on push, PR, and weekly Tuesday 11:11 UTC (staggered off existing CI cadences). Scope: all `*.md` at repo root, `docs/**/*.md`, `.ai/**/*.md`, plus `ROADMAP.md` / `CHANGELOG.md` / `PROJECT_CONTEXT.md`. Cache-backed (7-day TTL) to avoid hammering external URLs on every push; uploads a `lychee-out.md` report as a CI artifact for inspection.
+- Closes iter-24 backlog row F-NEW-13, link-rot insurance for the new `PROJECT_CONTEXT.md` + `docs/architecture/` tree.
 
-### Added — JaCoCo coverage rollout plan (2026-05-17)
+### Added, JaCoCo coverage rollout plan (2026-05-17)
 
-- New [`docs/policy/jacoco-coverage-rollout.md`](docs/policy/jacoco-coverage-rollout.md) — implementation plan for JaCoCo coverage reporting (ROADMAP iter-24 backlog F-NEW-11; T11 row "Unit Test Coverage Expansion"). Five concrete steps: (1) apply the `jacoco` Gradle plugin in `app/build.gradle`, (2) pin `jacoco_version = "0.8.13"` in `versions.gradle`, (3) wire the `jacoco` block + `jacocoTestReport` task with the standard Android exclusion set, (4) update `.github/workflows/tests.yml` to generate the report and upload the HTML artifact (optional Codecov step), (5) optional README badge.
-- The autonomous-research session that drafted this plan deliberately did **not** modify `app/build.gradle` — JaCoCo wire-in benefits from local-build verification on a Windows / macOS / Linux build host (which the session does not have). The doc is detailed enough that the maintainer can land it as a single copy-paste-and-verify commit.
+- New [`docs/policy/jacoco-coverage-rollout.md`](docs/policy/jacoco-coverage-rollout.md), implementation plan for JaCoCo coverage reporting (ROADMAP iter-24 backlog F-NEW-11; T11 row "Unit Test Coverage Expansion"). Five concrete steps: (1) apply the `jacoco` Gradle plugin in `app/build.gradle`, (2) pin `jacoco_version = "0.8.13"` in `versions.gradle`, (3) wire the `jacoco` block + `jacocoTestReport` task with the standard Android exclusion set, (4) update `.github/workflows/tests.yml` to generate the report and upload the HTML artifact (optional Codecov step), (5) optional README badge.
+- The autonomous-research session that drafted this plan deliberately did **not** modify `app/build.gradle`, JaCoCo wire-in benefits from local-build verification on a Windows / macOS / Linux build host (which the session does not have). The doc is detailed enough that the maintainer can land it as a single copy-paste-and-verify commit.
 
-### Fixed — Finder regex predicates compiled as regex, not literals (2026-05-17)
+### Fixed, Finder regex predicates compiled as regex, not literals (2026-05-17)
 
 - [`FilterOption.setKeyValue()`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/FilterOption.java) was wrapping every user-supplied regex value in `Pattern.quote()` before `Pattern.compile()`, so a pattern like `".*facebook.*"` only matched the literal 9-character string and never anything *containing* "facebook". The iter-23 work that added `name_regex` to [`TrackersOption`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/TrackersOption.java) and `regex` to `ComponentsOption` would have failed silently in production. The fix drops `Pattern.quote()`, wraps the compile in `try/catch (PatternSyntaxException)` so an invalid pattern surfaces with the key/type/message instead of crashing the filter pass, and adds the missing `break` between the `TYPE_REGEX` and `TYPE_STR_MULTIPLE` switch cases (the fall-through was overwriting `stringValues` after a regex predicate compile).
 - Defensive null-safety alongside: [`AppOpsOption.matchesAny()`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/AppOpsOption.java) drops the unused `ArrayList` allocation and skips null op names; [`TrackersOption.matchesAny()`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/TrackersOption.java) skips null `ComponentInfo.name` so a malformed APK that omits the field doesn't NPE the filter pass.
 - New [`FilterOptionTest`](app/src/test/java/io/github/muntashirakon/AppManager/filters/options/FilterOptionTest.java) (Robolectric) covers the regex-not-literal behaviour, the `PatternSyntaxException` surfacing, and the `TYPE_STR_MULTIPLE` fall-through. Commit [`73387cd`](https://github.com/SysAdminDoc/AppManagerNG/commit/73387cd).
 
-### Security — Install transcript URI redactor closes userinfo / query / fragment leak (2026-05-17)
+### Security, Install transcript URI redactor closes userinfo / query / fragment leak (2026-05-17)
 
 - [`InstallTranscript.redactSourceUri()`](app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/InstallTranscript.java) previously only stripped after the first `/` of the path. A URI shaped `https://host?token=secret` (no `/` path) was returned verbatim including the query; the same hole existed for `https://user:pass@host/...` (userinfo not stripped) and `#`-appended fragments. The redacted transcript is what the user pastes into a public issue tracker via "Copy diagnostic info", so a leak there equals an unintentional credential disclosure.
-- The fix parses the authority per RFC 3986 §3.2 — authority ends at the first `/`, `?`, or `#`. Strips any `user[:password]@` userinfo prefix; drops query and fragment entirely (download providers append document IDs and signed tokens there). New [`InstallTranscriptTest`](app/src/test/java/io/github/muntashirakon/AppManager/apk/installer/InstallTranscriptTest.java) cases cover query-string redaction on path-less URI, userinfo redaction, fragment redaction, and the no-truncation path. Commit [`bcb2874`](https://github.com/SysAdminDoc/AppManagerNG/commit/bcb2874).
+- The fix parses the authority per RFC 3986 §3.2, authority ends at the first `/`, `?`, or `#`. Strips any `user[:password]@` userinfo prefix; drops query and fragment entirely (download providers append document IDs and signed tokens there). New [`InstallTranscriptTest`](app/src/test/java/io/github/muntashirakon/AppManager/apk/installer/InstallTranscriptTest.java) cases cover query-string redaction on path-less URI, userinfo redaction, fragment redaction, and the no-truncation path. Commit [`bcb2874`](https://github.com/SysAdminDoc/AppManagerNG/commit/bcb2874).
 
-### Fixed — Onboarding root-manager probe survives fragment-detach (2026-05-17)
+### Fixed, Onboarding root-manager probe survives fragment-detach (2026-05-17)
 
-- [`OnboardingFragment.refreshRootManagerStatus()`](app/src/main/java/io/github/muntashirakon/AppManager/onboarding/OnboardingFragment.java) posted root-manager detection to a background pool, then called `requireContext().getApplicationContext()` on the worker thread. If the fragment detached between the post and the run, `requireContext()` threw `IllegalStateException` from the worker and the throw was uncaught/silent — leaving the user-visible root-manager suffix (" · KernelSU", " · APatch", etc.) un-populated without explanation. The fix captures the `Application` context on the main thread before posting, so the worker carries a non-null context regardless of fragment lifecycle. Commit [`25c629a`](https://github.com/SysAdminDoc/AppManagerNG/commit/25c629a).
+- [`OnboardingFragment.refreshRootManagerStatus()`](app/src/main/java/io/github/muntashirakon/AppManager/onboarding/OnboardingFragment.java) posted root-manager detection to a background pool, then called `requireContext().getApplicationContext()` on the worker thread. If the fragment detached between the post and the run, `requireContext()` threw `IllegalStateException` from the worker and the throw was uncaught/silent, leaving the user-visible root-manager suffix (" · KernelSU", " · APatch", etc.) un-populated without explanation. The fix captures the `Application` context on the main thread before posting, so the worker carries a non-null context regardless of fragment lifecycle. Commit [`25c629a`](https://github.com/SysAdminDoc/AppManagerNG/commit/25c629a).
 
-### Added — Project-context consolidation (2026-05-17)
+### Added, Project-context consolidation (2026-05-17)
 
 - New [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md) canonical entry-point index, designed so new contributors can orient against the project surface in <5 minutes instead of re-reading every scattered planning artifact. Links into [`ROADMAP.md`](ROADMAP.md), [`CHANGELOG.md`](CHANGELOG.md), the audit / research dirs, [`design/`](design/), [`docs/policy/minsdk-21-ceiling.md`](docs/policy/minsdk-21-ceiling.md), and the new `.ai/` research run.
 - New [`.ai/research/2026-05-17/`](.ai/research/2026-05-17/) directory holds the 2026-05-17 autonomous research-run audit trail: `STATE_OF_REPO.md`, `MEMORY_CONSOLIDATION.md`, `SOURCE_REGISTER.md`, `RESEARCH_LOG.md`, `COMPETITOR_MATRIX.md`, `FEATURE_BACKLOG.md`, `PRIORITIZATION_MATRIX.md`, `SECURITY_AND_DEPENDENCY_REVIEW.md`, `DATASET_MODEL_INTEGRATION_REVIEW.md`, `CHANGESET_SUMMARY.md`, `CONTINUE_FROM_HERE.md`. The pass surfaced an iter-24 backlog of three commit-ready in-progress fixes (Finder regex predicate quoting, install transcript URI redactor, onboarding root-probe race) plus governance items, all documented in `FEATURE_BACKLOG.md`.
@@ -6794,50 +6803,50 @@ Engineering Debt Register's "Android 17 targetSdk=37 compliance" row is now **cl
 - [`README.md`](README.md) §"Roadmap" version-target preview refreshed to reflect ground truth: v0.2.0 / v0.3.0 / v0.4.0 marked ✅ (v0.4.0 shipped both Permission Inspector + Onboarding capability wizard via the 2026-05-14 `feat: refine capability onboarding` work); v0.5.0 retargeted to "Settings reorganization, global in-app search, contextual help tooltips, in-app changelog viewer" matching ROADMAP §"Committed Version Targets"; new v0.6.0 row "Rootless Power: Shizuku integration polish, wireless ADB auto-pairing, rootless debloat".
 - [`versions.gradle`](versions.gradle) `material_version` comment extended to flag the cascade implication: Material Components 1.14.0-rc01+ raises minSdkVersion to 23 and is the single ceiling dep whose bump unblocks the activity/biometric/room/webkit pinned-line cluster. Cross-references [`docs/policy/minsdk-21-ceiling.md`](docs/policy/minsdk-21-ceiling.md).
 
-### Changed — Roadmap hygiene (2026-05-16)
+### Changed, Roadmap hygiene (2026-05-16)
 
 - Closed eight long-standing roadmap rows that turned out to already be implemented in the codebase or shipped under a different name: Backup Tag Autocomplete (covered by iter-21 "Existing-Tag Suggestions"), Force Stop via Shizuku Rootless (already in `AppInfoFragment` via `SelfPermissions.checkSelfOrRemotePermission(FORCE_STOP_PACKAGES)`), Backup Integrity Verification (`BackupOp` + `RestoreOp` + `BackupItems.Checksum`), AES-256 Backup Encryption (`AESCrypto` with Android Keystore-backed keys, metadata v6 per-file IV), PGP Backup Encryption (`OpenPGPCrypto` via OpenIntents OpenPGP API), Finder: Components (`ComponentsOption` with class-name + type-flag predicates), Finder: Permissions (`PermissionsOption` with declared-permission-name predicates), and Biometric App Lock (`BaseActivity.BiometricPrompt` gates `onAuthenticated()` for every authenticated screen). Each row now documents the existing implementation surface for future contributors.
 
-### Added — Finder filter extensions (2026-05-16)
+### Added, Finder filter extensions (2026-05-16)
 
 - New [`AppOpsOption`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/AppOpsOption.java) under the `app_ops` filter key with both name predicates (`eq` / `contains` / `starts_with` / `ends_with` / `regex` over the op name) and a `with_mode` bitfield (`MODE_FLAG_ALLOWED` / `_IGNORED` / `_ERRORED` / `_DEFAULT` / `_FOREGROUND`) so users can filter by op state.
 - [`TrackersOption`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/TrackersOption.java) gains class-name predicates (`name_eq` / `name_contains` / `name_starts_with` / `name_ends_with` / `name_regex`) alongside the existing count predicates. Matched tracker subsets are threaded through `TestResult.setMatchedTrackers` so downstream filters can compose with the narrowed set. Closes the "Finder: Tracker Name Search" and "Finder: Regex Support" rows from the early roadmap.
 - [`DataUsageOption`](app/src/main/java/io/github/muntashirakon/AppManager/filters/options/DataUsageOption.java) gains `mobile_le` / `mobile_ge` / `wifi_le` / `wifi_ge` predicates so users can filter by cellular-only or Wi-Fi-only consumption instead of just the combined total. `IFilterableAppInfo` gained `getMobileDataUsage()` and `getWifiDataUsage()` accessors (implemented in both `FilterableAppInfo` and `ApplicationItem` from the existing `PackageUsageInfo.mobileData` / `wifiData` fields).
 
-### Added — Backup sharing (2026-05-16)
+### Added, Backup sharing (2026-05-16)
 
-- Restore-Single → popup menu now carries a "Share backup" action when exactly one backup is selected. The chooser opens with every file under the backup directory as an `ACTION_SEND_MULTIPLE` payload via `FmProvider`, so users can pipe a backup into another file manager, messaging app, or cloud SAF provider without first zipping it. Encrypted backups stay encrypted on the way out — recipients still need the user's AppManagerNG key to restore. Closes the iter-18, iter-21, and v0.x roadmap rows for "Backup Sharing Button" / "Neo-Backup-Style Backup Sharing Button" in one pass.
+- Restore-Single → popup menu now carries a "Share backup" action when exactly one backup is selected. The chooser opens with every file under the backup directory as an `ACTION_SEND_MULTIPLE` payload via `FmProvider`, so users can pipe a backup into another file manager, messaging app, or cloud SAF provider without first zipping it. Encrypted backups stay encrypted on the way out, recipients still need the user's AppManagerNG key to restore. Closes the iter-18, iter-21, and v0.x roadmap rows for "Backup Sharing Button" / "Neo-Backup-Style Backup Sharing Button" in one pass.
 
-### Added — Install diagnostics (2026-05-16)
+### Added, Install diagnostics (2026-05-16)
 
-- Install-failure dialog now exposes a "Copy diagnostic info" button that copies a paste-friendly install transcript (timestamp, AppManagerNG version, device, Android version + security patch, ABI, active mode, package, status code + name, status message, redacted source URI). Source URIs are redacted by default — `file:///` paths drop to `file://<redacted>`, `content://` and `http(s)://` keep scheme + authority but drop the path / document id — so the transcript can be pasted into a public issue safely.
+- Install-failure dialog now exposes a "Copy diagnostic info" button that copies a paste-friendly install transcript (timestamp, AppManagerNG version, device, Android version + security patch, ABI, active mode, package, status code + name, status message, redacted source URI). Source URIs are redacted by default, `file:///` paths drop to `file://<redacted>`, `content://` and `http(s)://` keep scheme + authority but drop the path / document id, so the transcript can be pasted into a public issue safely.
 - Install confirmation dialog now warns when the APK's `minSdkVersion` exceeds the device's API level, before the user taps Install. New [`InstallDependencyChecker`](app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/InstallDependencyChecker.java) is structured so future versions can add ABI / split-APK base-missing checks without changing the call site.
-- Install confirmation dialog now also warns when the APK declares `<uses-library>` entries the device does not advertise — `INSTALL_FAILED_MISSING_SHARED_LIBRARY` would have been the post-commit failure. The required library names are read from `applicationInfo.sharedLibraryFiles` and compared against `PackageManager.getSystemSharedLibraryNames()`; only the missing names are surfaced in the warning text.
+- Install confirmation dialog now also warns when the APK declares `<uses-library>` entries the device does not advertise, `INSTALL_FAILED_MISSING_SHARED_LIBRARY` would have been the post-commit failure. The required library names are read from `applicationInfo.sharedLibraryFiles` and compared against `PackageManager.getSystemSharedLibraryNames()`; only the missing names are surfaced in the warning text.
 
-### Added — Backup destination guidance (2026-05-16)
+### Added, Backup destination guidance (2026-05-16)
 
-- New [`docs/distribution/backup-destinations.md`](docs/distribution/backup-destinations.md) — canonical inventory of supported backup destinations (native + indirect-via-SAF + rejected), reliability watch-outs per DocumentsProvider class, the FOSS rationale for not shipping direct Google Drive / Dropbox / OneDrive OAuth, and recommended user setups per use case (local, Syncthing, Nextcloud, NAS, removable, cold archive).
+- New [`docs/distribution/backup-destinations.md`](docs/distribution/backup-destinations.md), canonical inventory of supported backup destinations (native + indirect-via-SAF + rejected), reliability watch-outs per DocumentsProvider class, the FOSS rationale for not shipping direct Google Drive / Dropbox / OneDrive OAuth, and recommended user setups per use case (local, Syncthing, Nextcloud, NAS, removable, cold archive).
 
-### Added — Distribution-channel posture (2026-05-16)
+### Added, Distribution-channel posture (2026-05-16)
 
-- New [`docs/distribution/package-visibility.md`](docs/distribution/package-visibility.md) — canonical `QUERY_ALL_PACKAGES` justification for F-Droid / IzzyOnDroid / Accrescent / Obtainium review, with per-surface impact table and a maintainer gate for future `AndroidManifest.xml` permission changes.
-- New [`docs/policy/minsdk-21-ceiling.md`](docs/policy/minsdk-21-ceiling.md) — running ledger of every dependency that has already dropped (or imminently drops) API 21-22 support, plus the decision tree for raising the minSdk floor vs. raising a single dependency. `versions.gradle` now carries an inline pointer above `min_sdk = 21` so contributors hit the ledger before bumping.
+- New [`docs/distribution/package-visibility.md`](docs/distribution/package-visibility.md), canonical `QUERY_ALL_PACKAGES` justification for F-Droid / IzzyOnDroid / Accrescent / Obtainium review, with per-surface impact table and a maintainer gate for future `AndroidManifest.xml` permission changes.
+- New [`docs/policy/minsdk-21-ceiling.md`](docs/policy/minsdk-21-ceiling.md), running ledger of every dependency that has already dropped (or imminently drops) API 21-22 support, plus the decision tree for raising the minSdk floor vs. raising a single dependency. `versions.gradle` now carries an inline pointer above `min_sdk = 21` so contributors hit the ledger before bumping.
 
-### Changed — Triage intake (2026-05-16)
+### Changed, Triage intake (2026-05-16)
 
 - All five `.github/ISSUE_TEMPLATE/*` files now point at the NG repo, `CONTRIBUTING.md`, and `ROADMAP.md` instead of upstream `muntashir.dev` / `MuntashirAkon/AppManager`.
-- The bug-report template now collects NG-specific support-bundle fields: active mode (Auto/Root/Shizuku/ADB-WiFi/ADB-USB/No-root), privilege provider (Magisk/KernelSU/APatch/Shizuku/Sui/ZygiskNext/None), LocalServer bootstrap signature, install source, security patch level, ROM/build, architecture, and the affected operation — meshes with the upcoming Support Info Bundle Composer.
+- The bug-report template now collects NG-specific support-bundle fields: active mode (Auto/Root/Shizuku/ADB-WiFi/ADB-USB/No-root), privilege provider (Magisk/KernelSU/APatch/Shizuku/Sui/ZygiskNext/None), LocalServer bootstrap signature, install source, security patch level, ROM/build, architecture, and the affected operation, meshes with the upcoming Support Info Bundle Composer.
 - The PR template now references the NG `CONTRIBUTING.md` and replaces the upstream blanket AI/LLM ban with the tool-assisted-but-reviewed contract from `CONTRIBUTING.md`; the assignment-required checkbox is dropped.
 - The issue-template contact links point first at the AppManagerNG roadmap and Discussions, with upstream user-guide / ADL / android-libraries listed as supporting datasets rather than primary routing.
 
-### Changed — Premium UX polish (2026-05-16)
+### Changed, Premium UX polish (2026-05-16)
 
 - Refined onboarding warning and capability status treatments with semantic color, icon, and accessible state handling.
 - Stabilized onboarding mode-card highlighting so replayed capability checks reset inactive cards and do not stack active-state accessibility text.
 - Normalized dual-pane Settings toolbars to the V2 shell height and surface treatment for better large-screen consistency.
 - Tightened main-list badge typography and empty/status copy for clearer scanning in high-density app lists.
 
-### Changed — Release hardening and backup crypto (2026-05-16)
+### Changed, Release hardening and backup crypto (2026-05-16)
 
 - New encrypted backup metadata now uses backup metadata version 6, enabling per-file AES-GCM IV derivation while keeping older encrypted backups readable with their legacy IV behavior.
 - Package install and uninstall waits now fail with a bounded timeout and diagnostic status instead of hanging indefinitely when PackageInstaller callbacks are lost.
@@ -6847,88 +6856,88 @@ Engineering Debt Register's "Android 17 targetSdk=37 compliance" row is now **cl
 - Reproducible-release verification now tracks every generated release APK and checksum sidecar instead of assuming a single universal APK output.
 - CI tests/lint now run on the `main` branch, matching the repository's active default branch.
 
-### Changed — Capability onboarding (2026-05-14)
+### Changed, Capability onboarding (2026-05-14)
 
 - Added a Shizuku manager version check to the onboarding capability wizard so v13.6.0+ guidance is visible before users rely on Shizuku for Android 16 QPR1-era rootless flows.
 - Added the Android 13+ trusted-WLAN auto-start tip to the Shizuku onboarding card, keeping the rootless recovery guidance visible during first-run and replayed onboarding.
 
-### Added — Package URI install intake (2026-05-14)
+### Added, Package URI install intake (2026-05-14)
 
 - Added external installer handling for `package:package-name` view/install intents so already-present packages can be installed for the current user through the installer surface.
 - Improved mixed install batches by reading package/file/content URIs from both `EXTRA_STREAM` and `ClipData` on `SEND_MULTIPLE`, de-duplicating repeated entries before they enter the queue.
 
-### Changed — Installer source streaming (2026-05-14)
+### Changed, Installer source streaming (2026-05-14)
 
 - Installer queue items now preserve direct file/content URI sources instead of first staging every APK into the app cache.
 - PackageInstaller session writes prefer the original readable source stream when possible, while retaining cache-backed fallbacks for preview parsing, signing, and APKM conversion.
 - Tightened APK cleanup so closing an `ApkFile` no longer attempts to delete user-provided source files.
 
-### Added — Debloat presets (2026-05-14)
+### Added, Debloat presets (2026-05-14)
 
 - Added Privacy, Gaming, and Minimal OEM presets to Debloater so installed recommendations can be selected as curated batches with a recommended freeze or removal path.
 - Presets now preview installed match counts, explain their selection logic, and route through the existing reviewed freeze/remove confirmations before any changes run.
 
-### Changed — Factory-reset before system app uninstall (2026-05-14)
+### Changed, Factory-reset before system app uninstall (2026-05-14)
 
 - Updated Debloater uninstall flows to reset updated system apps back to their factory version before user-scope removal, avoiding stale updated-system stubs on ROMs that otherwise leave packages in a stalled state.
 - Added confirmation and row-level copy for updated system apps so the reset step is explicit before the batch starts.
 
-### Added — Rootless Debloat via Shizuku/ADB shell (2026-05-14)
+### Added, Rootless Debloat via Shizuku/ADB shell (2026-05-14)
 
 - Added a Debloater uninstall path that uses `pm uninstall --user <id>` through the active Shizuku/ADB shell service, avoiding the accessibility-driven uninstall flow when a rootless privileged shell is available.
 - Expanded Debloater safety feedback so selected removals show safe/replace/caution/unsafe counts, dependency or required-by warning counts, and high-risk examples before the batch starts.
 - Debloater list rows now surface dependency and required-by counts from the bundled android-debloat-list metadata, making risky removals visible before opening the details sheet.
 
-### Added — Guided Wireless ADB setup (2026-05-14)
+### Added, Guided Wireless ADB setup (2026-05-14)
 
 - Added a first-run Wireless ADB setup affordance in onboarding, including Android 11+ fallback guidance, direct pairing/connect recovery, and remembered paired-device status.
 - Persisted successful Wireless ADB pairing metadata so onboarding and mode settings can distinguish a never-paired device from a paired device that simply needs Wireless debugging enabled again.
 
-### Added — Shizuku privilege provider (2026-05-14)
+### Added, Shizuku privilege provider (2026-05-14)
 
 - Added Shizuku/Sui UserService as a first-class privileged binder path alongside root and ADB, including automatic mode detection, permission recovery, and shell/root/system uid status handling.
 - Added Shizuku onboarding and mode-selection status copy so users can see whether Shizuku is running, authorized, missing, or below the supported Android 7.0+ runtime boundary.
 
-### Changed — Adaptive large-screen workflows (2026-05-14)
+### Changed, Adaptive large-screen workflows (2026-05-14)
 
 - Added AndroidX Activity Embedding for the high-traffic Main → AppDetails flow so ≥900dp displays can keep the app catalog and details open side by side.
 - Added a calm split-placeholder panel for wide screens before an app is selected, and pinned WindowManager to the latest stable line that preserves the repo's API 21 floor.
 - Added a ≥900dp OneClickOps layout that separates review actions from backup and maintenance actions, while preserving the phone layout and smoothing busy-state transitions.
 - Added ≥900dp backup/restore review layouts that keep the summary card beside the package or backup-version list, reducing vertical scanning and making the final action state easier to compare before committing changes.
 
-### Changed — Reproducible release verification (2026-05-14)
+### Changed, Reproducible release verification (2026-05-14)
 
 - Added a two-clean-build release gate that compares signed APK SHA-256 hashes before publishing, plus a release checksum sidecar and local Windows/Linux reproducibility verification scripts.
 - Normalized Gradle archive ordering/timestamps and server-jar D8 input ordering so release artifacts are stable across clean builds.
 
-## v0.4.2 — 2026-05-13
+## v0.4.2, 2026-05-13
 
-### Changed — Contextual notification permission for installer progress (2026-05-13)
+### Changed, Contextual notification permission for installer progress (2026-05-13)
 
 - Added a just-in-time Android 13+ notification rationale before the installer foreground service starts, so install progress, completion, and failure feedback remain visible when the user sends an install to the background.
 
-### Changed — Contextual notification permission for batch operations (2026-05-13)
+### Changed, Contextual notification permission for batch operations (2026-05-13)
 
 - Added a just-in-time Android 13+ notification rationale before long-running batch operations so progress, completion, and failure feedback are not silently hidden.
 - Corrected the persistent session notification text to describe that tapping opens notification settings.
 
-### Changed — Contextual notification permission for wireless pairing (2026-05-13)
+### Changed, Contextual notification permission for wireless pairing (2026-05-13)
 
 - Moved the Android 13+ notification ask into the wireless ADB pairing flow, with a clear rationale that pairing status and pairing-code entry use the ongoing notification.
 
-### Changed — First-run prompt sequencing and recovery-password handoff (2026-05-13)
+### Changed, First-run prompt sequencing and recovery-password handoff (2026-05-13)
 
 - Deferred optional notification permission checks from cold startup so first-run opens with AppManagerNG-owned security context instead of an Android permission sheet.
 - Clarified the pre-auth KeyStore handoff as a recovery password, with calmer generated/input copy and a denser readable password field.
 
-### Changed — Premium polish: shape system, first-run trust, and warning tone (2026-05-13)
+### Changed, Premium polish: shape system, first-run trust, and warning tone (2026-05-13)
 
-- Normalized the Material shape language away from capsule-style surfaces: chips, popup menus, bottom sheets, onboarding/icon frames, screen-time widget markers, app-info headers, dashed panels, badges, status bars, and shared card/list shapes now use bounded 8–12dp radii while true icon-only controls remain circular.
+- Normalized the Material shape language away from capsule-style surfaces: chips, popup menus, bottom sheets, onboarding/icon frames, screen-time widget markers, app-info headers, dashed panels, badges, status bars, and shared card/list shapes now use bounded 8 to 12 dp radii while true icon-only controls remain circular.
 - Reworked the first-run disclaimer into a clearer trust panel with a stronger hierarchy, visible privileged-operations callout, separated external-project disclosure, and a calmer **I understand** confirmation label.
 - Softened warning alert treatments so debug-expiry and privileged-risk notices read as elevated guidance instead of hard error blocks.
 - Updated build-expiry copy and update links to point to AppManagerNG release/actions channels instead of the upstream App Manager project.
 
-### Security — Deep-link parser hardening + CSV-injection defuse (2026-05-13)
+### Security, Deep-link parser hardening + CSV-injection defuse (2026-05-13)
 
 Audit pass on NG-authored surfaces that handle attacker-influenced strings. Two real bugs fixed:
 
@@ -6937,31 +6946,31 @@ Audit pass on NG-authored surfaces that handle attacker-influenced strings. Two 
     2. The package-name validation was applied to `pkg.trim()` but the un-trimmed `pkg` was passed into `UserPackagePair`. A URL-encoded leading/trailing space (`?id=%20com.foo`) would pass `PackageUtils.validateName()` yet land a whitespace-padded package name in the activity's `mPackageName` field, breaking every downstream `PackageManager` lookup. Now trims **before** validation and uses the trimmed value end-to-end.
     Reference: surfaced during the iter-22 `am://` short-alias audit.
 
-- **`OperationHistoryExporter.toCsv()` CSV / formula injection** ([`history/ops/OperationHistoryExporter.java`](app/src/main/java/io/github/muntashirakon/AppManager/history/ops/OperationHistoryExporter.java)). Operation-history CSV exports include attacker-influenced fields — app labels come from `PackageManager.loadLabel()` (fully controlled by the installed app), and installer failure messages may include vendor-provided text. A hostile package installed with a label like `=HYPERLINK("http://evil/","click")` would land that string verbatim in an exported CSV cell; Excel and LibreOffice Calc evaluate any cell whose first character is `= + - @ \t \r` as a formula, opening data-exfiltration and (on unpatched Excel + legacy DDE) code-execution windows when the user opens the export. New `escapeCsvField()` prepends the OWASP-standard apostrophe defuse to any value beginning with a trigger character; embedded double-quote escaping is unchanged. Regression test landed in [`OperationHistoryExporterTest.exportCsvDefusesFormulaInjection`](app/src/test/java/io/github/muntashirakon/AppManager/history/ops/OperationHistoryExporterTest.java).
+- **`OperationHistoryExporter.toCsv()` CSV / formula injection** ([`history/ops/OperationHistoryExporter.java`](app/src/main/java/io/github/muntashirakon/AppManager/history/ops/OperationHistoryExporter.java)). Operation-history CSV exports include attacker-influenced fields, app labels come from `PackageManager.loadLabel()` (fully controlled by the installed app), and installer failure messages may include vendor-provided text. A hostile package installed with a label like `=HYPERLINK("http://evil/","click")` would land that string verbatim in an exported CSV cell; Excel and LibreOffice Calc evaluate any cell whose first character is `= + - @ \t \r` as a formula, opening data-exfiltration and (on unpatched Excel + legacy DDE) code-execution windows when the user opens the export. New `escapeCsvField()` prepends the OWASP-standard apostrophe defuse to any value beginning with a trigger character; embedded double-quote escaping is unchanged. Regression test landed in [`OperationHistoryExporterTest.exportCsvDefusesFormulaInjection`](app/src/test/java/io/github/muntashirakon/AppManager/history/ops/OperationHistoryExporterTest.java).
 
-### Security — Hardening pass on iter-22 changes (2026-05-09)
+### Security, Hardening pass on iter-22 changes (2026-05-09)
 
 Defense-in-depth follow-up to the iter-22 work that landed earlier today. Three findings, all addressed:
 
 - **`upstream-rename-watch.yml` GitHub-Actions script injection** ([`.github/workflows/upstream-rename-watch.yml`](.github/workflows/upstream-rename-watch.yml)). The original `actions/github-script@v7` step interpolated `${{ steps.probe.outputs.actual }}` directly into the JS body. Even though `actual` is sourced from a curl-parsed `full_name` string and shouldn't contain shell-injecting characters, this is the exact pattern that GitHub's own security documentation flags as a supply-chain risk: a value containing `'`, `\\`, `` ` ``, or a newline could break out of the string literal and execute arbitrary JS in the runner. Fixed by passing the value via a step-level `env: ACTUAL_SLUG: ${{ steps.probe.outputs.actual }}` and reading `process.env.ACTUAL_SLUG` inside the script. The probe step also now (a) uses heredoc-style `{ ... } >> "$GITHUB_OUTPUT"` to atomically write the multi-key block (instead of separate `echo X >> $GITHUB_OUTPUT` lines that leak partial state if the script bails) and (b) regex-validates the slug `^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$` before writing it, so a malformed API response never makes it into the output channel.
 
-- **AppDetailsActivity intent-filter split** ([`AndroidManifest.xml`](app/src/main/AndroidManifest.xml)). The original iter-22 `am://app/<pkg>` alias was added as a second `<data>` element inside the existing `app-manager://details` intent-filter. While the parser ([`SelfUriManager.getUserPackagePairFromUri()`](app/src/main/java/io/github/muntashirakon/AppManager/self/SelfUriManager.java)) explicitly enforces the `(scheme, host)` pair in code so cross-matched URIs like `app-manager://app/...` are rejected, the loose filter would still match them at OS resolution time — a footgun against any future regression in the parser. Split into two distinct `<intent-filter>` blocks so the resolver only routes URIs that match an exact `(scheme, host)` pair to us. End-to-end verified on Samsung S25 Ultra: both `am://app/<pkg>` and `app-manager://details?id=<pkg>` correctly open `AppInfoActivity`.
+- **AppDetailsActivity intent-filter split** ([`AndroidManifest.xml`](app/src/main/AndroidManifest.xml)). The original iter-22 `am://app/<pkg>` alias was added as a second `<data>` element inside the existing `app-manager://details` intent-filter. While the parser ([`SelfUriManager.getUserPackagePairFromUri()`](app/src/main/java/io/github/muntashirakon/AppManager/self/SelfUriManager.java)) explicitly enforces the `(scheme, host)` pair in code so cross-matched URIs like `app-manager://app/...` are rejected, the loose filter would still match them at OS resolution time, a footgun against any future regression in the parser. Split into two distinct `<intent-filter>` blocks so the resolver only routes URIs that match an exact `(scheme, host)` pair to us. End-to-end verified on Samsung S25 Ultra: both `am://app/<pkg>` and `app-manager://details?id=<pkg>` correctly open `AppInfoActivity`.
 
 - **`ShortcutDispatchActivity` hardening** ([`shortcut/ShortcutDispatchActivity.java`](app/src/main/java/io/github/muntashirakon/AppManager/shortcut/ShortcutDispatchActivity.java)). The trampoline now: (a) wraps the dispatch logic in `try { … } finally { finish(); }` so the `Theme.NoDisplay` activity contract is honoured even if something unexpected throws (Theme.NoDisplay requires `finish()` before `onCreate` returns; failing to do so leaves a phantom no-display task on the recents stack); (b) catches `ActivityNotFoundException` from `startActivity()` so a disabled-by-PackageManager target component or a removed-by-upgrade-migration shortcut doesn't crash the trampoline; (c) truncates the unknown-action log entry to 80 chars so a hostile caller can't pollute the device log with arbitrary-length entries. End-to-end re-verified on-device: known actions still dispatch correctly, unknown actions silently no-op.
 
-### Security — Static-shortcut export regression closed; trampoline-based dispatch (2026-05-09)
+### Security, Static-shortcut export regression closed; trampoline-based dispatch (2026-05-09)
 
-Hardening pass on the iter-22 static launcher shortcuts that landed earlier the same day. The original implementation flipped `OneClickOpsActivity` and `FinderActivity` to `android:exported="true"` so the launcher could resolve the shortcut intents. **`OneClickOpsActivity` accepts an `EXTRA_OP` intent extra that triggers a destructive batch operation (clear cache for all installed apps) without confirmation when set to `OP_CLEAR_CACHE` — this path is intended for the trusted in-process clear-cache home-screen widget (`ClearCacheAppWidget`), not for arbitrary callers.** Combined with the export, any installed app could fire the activity with the destructive extra after the user was process-authenticated, silently clearing the cache of every app on the device. **`FinderActivity` was reverted to `exported=false` for symmetry / minimum exposure.**
+Hardening pass on the iter-22 static launcher shortcuts that landed earlier the same day. The original implementation flipped `OneClickOpsActivity` and `FinderActivity` to `android:exported="true"` so the launcher could resolve the shortcut intents. **`OneClickOpsActivity` accepts an `EXTRA_OP` intent extra that triggers a destructive batch operation (clear cache for all installed apps) without confirmation when set to `OP_CLEAR_CACHE`, this path is intended for the trusted in-process clear-cache home-screen widget (`ClearCacheAppWidget`), not for arbitrary callers.** Combined with the export, any installed app could fire the activity with the destructive extra after the user was process-authenticated, silently clearing the cache of every app on the device. **`FinderActivity` was reverted to `exported=false` for symmetry / minimum exposure.**
 
 Fix:
 
 - **`OneClickOpsActivity` and `FinderActivity` reverted to `android:exported="false"`** in [`AndroidManifest.xml`](app/src/main/AndroidManifest.xml). Verified post-fix: `am start -n io.github.sysadmindoc.AppManagerNG.debug/io.github.muntashirakon.AppManager.oneclickops.OneClickOpsActivity --ei op 16` is rejected with `Permission Denial: ... not exported`.
-- **New trampoline activity** [`shortcut/ShortcutDispatchActivity.java`](app/src/main/java/io/github/muntashirakon/AppManager/shortcut/ShortcutDispatchActivity.java) — the only exported component the launcher resolves to for shortcuts. Hard-whitelists two action constants (`OPEN_ONE_CLICK_OPS`, `OPEN_FINDER`), constructs a fresh `Intent` for the unexported target, and **does not forward intent extras**. Untrusted callers cannot smuggle in `EXTRA_OP` or any other destructive extra.
+- **New trampoline activity** [`shortcut/ShortcutDispatchActivity.java`](app/src/main/java/io/github/muntashirakon/AppManager/shortcut/ShortcutDispatchActivity.java), the only exported component the launcher resolves to for shortcuts. Hard-whitelists two action constants (`OPEN_ONE_CLICK_OPS`, `OPEN_FINDER`), constructs a fresh `Intent` for the unexported target, and **does not forward intent extras**. Untrusted callers cannot smuggle in `EXTRA_OP` or any other destructive extra.
 - **`shortcuts.xml` updated** to target the trampoline via the explicit action constants instead of the underlying activities.
-- The widget / pinned-shortcut consent flow (`ClearCacheAppWidget` → `PendingIntent.getActivity(OneClickOpsActivity.class, EXTRA_OP=OP_CLEAR_CACHE)`) is unaffected — that path is in-process and the destructive extra is the user's explicit consent at widget tap time.
+- The widget / pinned-shortcut consent flow (`ClearCacheAppWidget` → `PendingIntent.getActivity(OneClickOpsActivity.class, EXTRA_OP=OP_CLEAR_CACHE)`) is unaffected, that path is in-process and the destructive extra is the user's explicit consent at widget tap time.
 - End-to-end verification on Samsung S25 Ultra (`SM-S938B`): trampoline dispatches `OPEN_FINDER` and `OPEN_ONE_CLICK_OPS` correctly; activity stack shows the unexported target as the foreground activity; passing `--ei op 16` to the trampoline action does not trigger the destructive shortcut path because `OneClickOpsActivity` opens with no extras.
 
-### Fixed — Per-app locale store-of-truth reconciliation at startup (2026-05-09)
+### Fixed, Per-app locale store-of-truth reconciliation at startup (2026-05-09)
 
 Companion fix to the iter-22 Per-App Locale Picker that landed earlier today. The original wiring made `Prefs.Appearance.setLanguage()` mirror to `AppCompatDelegate.setApplicationLocales()` so the OS-side per-app locale (Settings → Apps → AppManagerNG → Language on Android 13+) stays in sync when the user changes language **in-app**. It did not handle the inverse: when the user changes the language **in the OS surface**, `AppCompatDelegate` updated but `Prefs` was stale; `LangUtils.getFromPreference()` (the in-app source-of-truth read by `AppearanceUtils.applyOnlyLocale()` on every activity recreate) then overrode the OS choice with the stale Prefs value on the next configuration change.
 
@@ -6971,145 +6980,145 @@ Fix: new [`AppearanceUtils.reconcileLocalePreference()`](app/src/main/java/io/gi
 - If `Prefs` has a non-`AUTO` value but `AppCompatDelegate` is empty (first launch after the iter-22 wiring landed, or a user with a long-standing in-app language preference) → push `Prefs` into `AppCompatDelegate` so the OS-side picker reflects reality.
 - Wrapped in `try/catch` so a binder failure during `LocaleManager` reconciliation can never kill app startup.
 
-### Compliance — Predictive-Back WebView Freeze (Obtainium #2911) audit (clean) (2026-05-09)
-- **Audit clean — no remediation required.** The iter-20 roadmap row's premise that NG ships WebView surfaces in `RulesActivity` and an APK-info preview pane is stale; neither activity exists in NG. Component Rules surfaces are `RulesFragment` RecyclerView UIs, not WebView.
+### Compliance, Predictive-Back WebView Freeze (Obtainium #2911) audit (clean) (2026-05-09)
+- **Audit clean, no remediation required.** The iter-20 roadmap row's premise that NG ships WebView surfaces in `RulesActivity` and an APK-info preview pane is stale; neither activity exists in NG. Component Rules surfaces are `RulesFragment` RecyclerView UIs, not WebView.
 - The single WebView surface in NG is [`HelpActivity`](app/src/main/java/io/github/muntashirakon/AppManager/misc/HelpActivity.java) and it already uses the correct predictive-back propagation pattern: `android:enableOnBackInvokedCallback="true"` declared in the manifest, `OnBackPressedCallback` registered via `getOnBackPressedDispatcher().addCallback(...)`, and the WebView's `canGoBack()` state tracked on `doUpdateVisitedHistory()` so predictive-back animation only previews when there's a back-stack entry.
-- The Obtainium #2911 regression class only affects activities that bypass the dispatcher or register a raw `OnBackInvokedCallback` without integrating with the WebView's back-stack — neither pattern is present in NG.
+- The Obtainium #2911 regression class only affects activities that bypass the dispatcher or register a raw `OnBackInvokedCallback` without integrating with the WebView's back-stack, neither pattern is present in NG.
 - Audit at [`docs/audits/2026-05-09-predictive-back-webview.md`](docs/audits/2026-05-09-predictive-back-webview.md). Establishes the canonical pattern for any future WebView-hosting activity (in-app changelog viewer planned for v0.5.0, JADX decompile pane in T12). Reference: [S200].
 
-### Added — Upstream repo-rename watcher CI workflow (2026-05-09)
+### Added, Upstream repo-rename watcher CI workflow (2026-05-09)
 - New [`.github/workflows/upstream-rename-watch.yml`](.github/workflows/upstream-rename-watch.yml) hits the GitHub API on a weekly cadence (Wednesday 09:27 UTC, staggered off CodeQL Thursday 14:43 + dependency-scan Sunday 04:13) plus `workflow_dispatch`. Asserts that `MuntashirAkon/AppManager` still resolves to the same `full_name`; on drift, auto-opens an `upstream-sync`/`eng-debt`-labelled issue containing a 7-step rename audit checklist (workflow `EXPECTED_SLUG`, README baseline + Credits, ROADMAP baseline + research-source citations, CLAUDE.md Origin section, CHANGELOG historical refs, submodule URLs, Obtainium config, Sphinx docs).
-- Idempotent — never opens a duplicate issue for the same drift in a single window. Uses unauthenticated GitHub API (full-name lookup needs no auth) so it does not consume `GITHUB_TOKEN` rate limits for the third-party probe; `GITHUB_TOKEN` is used only for the issue creation.
-- Closes ROADMAP iter-18 row "Repo-Rename Detection for Upstream Pin" — Eng-Debt Next (Effort 1/5). Reference: [S121].
+- Idempotent, never opens a duplicate issue for the same drift in a single window. Uses unauthenticated GitHub API (full-name lookup needs no auth) so it does not consume `GITHUB_TOKEN` rate limits for the third-party probe; `GITHUB_TOKEN` is used only for the issue creation.
+- Closes ROADMAP iter-18 row "Repo-Rename Detection for Upstream Pin", Eng-Debt Next (Effort 1/5). Reference: [S121].
 
-### Added — Pseudolocale resources on debug builds (2026-05-09)
+### Added, Pseudolocale resources on debug builds (2026-05-09)
 - `pseudoLocalesEnabled true` set on the `debug` build type in [`app/build.gradle`](app/build.gradle); release builds stay clean.
 - Debug AM-NG now ships `en-XA` (accented + bracketed pseudolocale that catches truncation and untranslatable string regressions) and `en-XB` (RTL mirror of English that catches mirroring/layout breakage). Activate via `adb shell setprop persist.sys.locale en-XA` or **Settings → Developer options → Pseudolocale** on Android 13+.
-- The CI screenshot-diff portion of the iter-22 T10 row stays open — it gates on the upcoming **Espresso + UI Automator Smoke Pack** providing the headless instrumentation pipe the screenshot capture needs.
+- The CI screenshot-diff portion of the iter-22 T10 row stays open, it gates on the upcoming **Espresso + UI Automator Smoke Pack** providing the headless instrumentation pipe the screenshot capture needs.
 - Closes the build-side half of ROADMAP iter-22 T10 row "Pseudolocale Build Variants + RTL CI Pass" (Effort 2/5, [S268]).
 
-### Added — CI Dependency CVE Scan (PR review + weekly OWASP) (2026-05-09)
+### Added, CI Dependency CVE Scan (PR review + weekly OWASP) (2026-05-09)
 - New [`.github/workflows/dependency-scan.yml`](.github/workflows/dependency-scan.yml) ships two layers:
-    - **PR Dependency Review** (`actions/dependency-review-action@v4`) on every pull request: fails the PR on HIGH/CRITICAL CVEs introduced by a dependency change. Also denies CC-BY-NC* / CC-BY-ND* / AGPL-1.0 license bumps up-front (GPL-3.0-or-later redistribution compatibility — see ROADMAP iter-19 DDG Tracker Radar reject [S69]).
+    - **PR Dependency Review** (`actions/dependency-review-action@v4`) on every pull request: fails the PR on HIGH/CRITICAL CVEs introduced by a dependency change. Also denies CC-BY-NC* / CC-BY-ND* / AGPL-1.0 license bumps up-front (GPL-3.0-or-later redistribution compatibility, see ROADMAP iter-19 DDG Tracker Radar reject [S69]).
     - **Weekly OWASP Dependency Check** (Sunday 04:13 UTC, staggered off the existing CodeQL Thursday 14:43 cadence) plus `workflow_dispatch`: runs `./gradlew dependencyCheckAggregate` and uploads HTML + SARIF reports as artifacts (30-day retention). Catches CVEs disclosed *after* a dependency landed.
 - `org.owasp:dependency-check-gradle:10.0.3` plugin wired into [`build.gradle`](build.gradle) at the root; `dependency_check_version = '10.0.3'` declared in [`versions.gradle`](versions.gradle).
 - Local runs default to `failBuildOnCVSS = 11.0` (effectively never fail) so the report is purely informational on developer machines; CI uses `continue-on-error: true` and surfaces the report as an artifact rather than killing the weekly cadence on a single new CVE. NVD API rate limit honored via optional `NVD_API_KEY` secret with anonymous fallback.
-- Suppression file path is wired but optional (`config/owasp-suppressions.xml`) — populate on first weekly audit to silence vendored-AAR false positives without losing the failing-on-real-CVE behavior.
-- Closes ROADMAP iter-22 row "CI Dependency CVE Scan" — T4 Now (Effort 2/5). Reference: [S274].
+- Suppression file path is wired but optional (`config/owasp-suppressions.xml`), populate on first weekly audit to silence vendored-AAR false positives without losing the failing-on-real-CVE behavior.
+- Closes ROADMAP iter-22 row "CI Dependency CVE Scan", T4 Now (Effort 2/5). Reference: [S274].
 
-### Added — `am://app/<pkg>` short-alias deep link + intent-API documentation (2026-05-09)
-- New `am://app/<pkg>?user=<uid>` URI scheme as a short alias for the canonical `app-manager://details?id=<pkg>&user=<uid>`. Parses through the existing [`SelfUriManager.getUserPackagePairFromUri()`](app/src/main/java/io/github/muntashirakon/AppManager/self/SelfUriManager.java) — both schemes share the code path so consumers downstream don't change.
+### Added, `am://app/<pkg>` short-alias deep link + intent-API documentation (2026-05-09)
+- New `am://app/<pkg>?user=<uid>` URI scheme as a short alias for the canonical `app-manager://details?id=<pkg>&user=<uid>`. Parses through the existing [`SelfUriManager.getUserPackagePairFromUri()`](app/src/main/java/io/github/muntashirakon/AppManager/self/SelfUriManager.java), both schemes share the code path so consumers downstream don't change.
 - Intent-filter `<data android:host="app" android:scheme="am"/>` added to the existing `details.AppInfoActivity` activity-alias in [`AndroidManifest.xml`](app/src/main/AndroidManifest.xml). Mirrors `hail://`'s shape.
 - New [`docs/intent-api.md`](docs/intent-api.md) documents the full URI / broadcast-intent surface: shipped App Info alias, reserved-but-not-yet-wired shapes (`am://freeze/<pkg>`, `am://profile/<id>/run`, `am://install?source=<url>`), and the then-roadmapped signature-permission-gated broadcast schema. The broadcast surface later shipped on 2026-05-17 under `io.github.sysadmindoc.AppManagerNG.action.*`; Tasker / MacroDroid integration still needs the planned plugin broker.
-- The freeze / profile / install URI shapes are deliberately not wired yet — they need user-confirmed dialogs on top of the broadcast-intent automation surface (iter-22 T8 [S247]) before becoming public URL actions. Reserved here so a future implementation doesn't churn the schema.
-- Closes ROADMAP iter-22 T8 row "`am://` URI Scheme — Concrete Schema" (Effort 1/5, [S246]) for the App Info alias slice; remaining shapes carried forward.
+- The freeze / profile / install URI shapes are deliberately not wired yet, they need user-confirmed dialogs on top of the broadcast-intent automation surface (iter-22 T8 [S247]) before becoming public URL actions. Reserved here so a future implementation doesn't churn the schema.
+- Closes ROADMAP iter-22 T8 row "`am://` URI Scheme, Concrete Schema" (Effort 1/5, [S246]) for the App Info alias slice; remaining shapes carried forward.
 
-### Added — Static launcher shortcuts for power-user entry points (2026-05-09)
+### Added, Static launcher shortcuts for power-user entry points (2026-05-09)
 - Long-pressing the AppManagerNG icon on the launcher now surfaces three core entry points: **1-Click Ops** (batch operations), **Running Apps** (process inspector), and **Finder** (cross-app search). Shortcuts shipped at [`app/src/main/res/xml/shortcuts.xml`](app/src/main/res/xml/shortcuts.xml) and registered on `SplashActivity` via `<meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts"/>`.
 - `FinderActivity` and `OneClickOpsActivity` flipped to `exported="true"` in [`AndroidManifest.xml`](app/src/main/AndroidManifest.xml) so the launcher can dispatch the shortcut intents. `RunningAppsActivity` was already exported.
 - Pinned per-app shortcuts (Freeze / Force-Stop / Clear Cache) continue to flow through `ShortcutManagerCompat` in `CreateShortcutDialogFragment` and the existing FreezeUnfreeze service path; this commit is the static-launcher anchor the upcoming dynamic top-N pinned-app set will extend.
 - Closes ROADMAP T8 row "Launcher Shortcuts for AM Features" (Issue #660 [S32]). Iter-22 [S252] dynamic per-app shortcut work remains.
 
-### Added — Per-app locale picker now syncs with OS Settings (2026-05-09)
+### Added, Per-app locale picker now syncs with OS Settings (2026-05-09)
 - The in-app **Settings → Appearance → Language** picker now mirrors its selection to `AppCompatDelegate.setApplicationLocales(...)` after persisting the in-app preference. On Android 13+ (API 33+) AppManagerNG appears under **Settings → Apps → AppManagerNG → Language** and the OS-side picker stays in sync with the in-app picker bidirectionally.
 - New `AppLocalesMetadataHolderService` registration in [`AndroidManifest.xml`](app/src/main/AndroidManifest.xml) (with `autoStoreLocales=true`, `enabled=false`) provides the SharedPreferences-backed back-port so per-app locale selection survives process death on API 26-32 devices via androidx.appcompat 1.7.1.
 - The `LANG_AUTO` setting maps to `LocaleListCompat.getEmptyLocaleList()` so "Auto" tracks the system locale through the platform mechanism instead of the legacy NG-only override pipeline.
-- Existing `AppearanceUtils.applyConfigurationChangesToActivities()` activity-recreate path is unchanged — in-app re-render after a language change is still immediate.
-- Closes ROADMAP iter-22 row "Per-App Locale Picker (`AppCompatDelegate.setApplicationLocales`)" — T10 Now (Effort 1/5). Reference: [S269].
+- Existing `AppearanceUtils.applyConfigurationChangesToActivities()` activity-recreate path is unchanged, in-app re-render after a language change is still immediate.
+- Closes ROADMAP iter-22 row "Per-App Locale Picker (`AppCompatDelegate.setApplicationLocales`)", T10 Now (Effort 1/5). Reference: [S269].
 
-## v0.4.1 — 2026-05-08
+## v0.4.1, 2026-05-08
 
-Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/iter-20 ROADMAP drains plus one CONFIRMED audit finding flagged for design (GCM cipher reuse). All changes ship as user-visible polish + compliance + diagnostics; no breaking format changes. The GCM cipher-reuse bug in `AESCrypto.handleFiles()` is documented but **not yet fixed** — multi-file AES-encrypted backups produced by v0.4.0 and v0.4.1 cannot be trusted to restore. OpenPGP / RSA / ECC backup modes are unaffected; single-file AES backups are unaffected. See the audit at `docs/audits/2026-05-08-gcm-cipher-reuse-large-backup.md` for remediation options. The next release will pick a fix path and ship it behind a backup metadata version flag.
+Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/iter-20 ROADMAP drains plus one CONFIRMED audit finding flagged for design (GCM cipher reuse). All changes ship as user-visible polish + compliance + diagnostics; no breaking format changes. The GCM cipher-reuse bug in `AESCrypto.handleFiles()` is documented but **not yet fixed**, multi-file AES-encrypted backups produced by v0.4.0 and v0.4.1 cannot be trusted to restore. OpenPGP / RSA / ECC backup modes are unaffected; single-file AES backups are unaffected. See the audit at `docs/audits/2026-05-08-gcm-cipher-reuse-large-backup.md` for remediation options. The next release will pick a fix path and ship it behind a backup metadata version flag.
 
-### Audit — GCM cipher reuse in `AESCrypto.handleFiles()` (CONFIRMED BUG, needs-design) (2026-05-08)
+### Audit, GCM cipher reuse in `AESCrypto.handleFiles()` (CONFIRMED BUG, needs-design) (2026-05-08)
 - ⚠️ **Confirmed:** [`AESCrypto.handleFiles()`](app/src/main/java/io/github/muntashirakon/AppManager/crypto/AESCrypto.java) instantiates a single `GCMBlockCipher` once before the per-file for-loop and reuses it across every file with the same `mIv`. After file 0's `doFinal()`, the cipher is in finalized state; iteration 1 wraps the same cipher in a fresh `CipherOutputStream`, with behavior that's either fail-fast or silent nonce-reuse depending on BouncyCastle's internals. This matches upstream AM issue #1958.
 - GCM mode has a hard cryptographic invariant: `(key, IV)` must NEVER encrypt more than one distinct plaintext. Reuse silently breaks confidentiality and breaks the auth tag. The single-file `encrypt(InputStream, OutputStream)` path creates its own cipher and isn't affected; only the multi-file `handleFiles` path triggers the bug. OpenPGP / RSA / ECC modes are unaffected.
-- **Remediation requires backup format planning**, not a one-line cipher re-init (re-init with the same IV is still nonce reuse). Three options documented at [`docs/audits/2026-05-08-gcm-cipher-reuse-large-backup.md`](docs/audits/2026-05-08-gcm-cipher-reuse-large-backup.md): (A) HKDF-Expand-derive per-file IV (no format change, old backups stay broken — they're already corrupt); (B) per-file IV stored alongside ciphertext (clean, requires metadata version bump); (C) fresh Crypto instance per file.
-- **No code change shipped** in this commit — the audit is the deliverable. The next pass picks an option, ships the fix behind a metadata-version flag, and adds a synthetic-4-GB-blob round-trip regression test. Reference: AM #1958 / [S138].
+- **Remediation requires backup format planning**, not a one-line cipher re-init (re-init with the same IV is still nonce reuse). Three options documented at [`docs/audits/2026-05-08-gcm-cipher-reuse-large-backup.md`](docs/audits/2026-05-08-gcm-cipher-reuse-large-backup.md): (A) HKDF-Expand-derive per-file IV (no format change, old backups stay broken, they're already corrupt); (B) per-file IV stored alongside ciphertext (clean, requires metadata version bump); (C) fresh Crypto instance per file.
+- **No code change shipped** in this commit, the audit is the deliverable. The next pass picks an option, ships the fix behind a metadata-version flag, and adds a synthetic-4-GB-blob round-trip regression test. Reference: AM #1958 / [S138].
 
-### Compliance — Zip-slip protection audit (clean) (2026-05-08)
-- **Audit clean — every disk-writing extraction path canonicalizes the output path and rejects traversal entries before any bytes are written.**
+### Compliance, Zip-slip protection audit (clean) (2026-05-08)
+- **Audit clean, every disk-writing extraction path canonicalizes the output path and rejects traversal entries before any bytes are written.**
 - `TarUtils.extract` and `AndroidBackupExtractor.extract` both carry the canonical "double-check" guard from upstream AM v4.0.0-alpha02: pre-write `Paths.normalize(entry.getName())` + `startsWith("../")` rejection, plus post-create `realFilePath.startsWith(realDestPath)` containment verification. Both raise `IOException("Zip slip vulnerability detected!")` with diff-able expected/actual paths on the (extremely unlikely) malicious-archive case.
-- Archive-to-archive converters (`SBConverter`, `OABConverter`, `TBConverter`) cache entries by extension to `FileCache.createCachedFile()` or do tar-to-tar metadata copying — they never use the source entry name as a disk path, so they're inherently safe; any malicious entry name is re-encoded into the output archive and rejected at the eventual extraction step. `ApkUtils.getManifestFromApk` is in-memory only.
+- Archive-to-archive converters (`SBConverter`, `OABConverter`, `TBConverter`) cache entries by extension to `FileCache.createCachedFile()` or do tar-to-tar metadata copying, they never use the source entry name as a disk path, so they're inherently safe; any malicious entry name is re-encoded into the output archive and rejected at the eventual extraction step. `ApkUtils.getManifestFromApk` is in-memory only.
 - Audit at [`docs/audits/2026-05-08-zip-slip-protection.md`](docs/audits/2026-05-08-zip-slip-protection.md). Closes the iter-20 Engineering Debt Register row "Zip-slip protection in APK/backup extraction".
 
-### Compliance — libsu 6.0.0 `Shell.cmd` migration audit (clean) (2026-05-08)
-- **Audit clean — zero matches.** Recursive sweep across `app/`, `libcore/`, `libserver/`, `libopenpgp/`, `hiddenapi/`, `server/` returned 0 `Shell.sh(` / `Shell.su(` / `FLAG_REDIRECT_STDERR` references.
+### Compliance, libsu 6.0.0 `Shell.cmd` migration audit (clean) (2026-05-08)
+- **Audit clean, zero matches.** Recursive sweep across `app/`, `libcore/`, `libserver/`, `libopenpgp/`, `hiddenapi/`, `server/` returned 0 `Shell.sh(` / `Shell.su(` / `FLAG_REDIRECT_STDERR` references.
 - The single `Shell.cmd(` call site in [`RemoteShellImpl.java:25`](app/src/main/java/io/github/muntashirakon/AppManager/ipc/RemoteShellImpl.java#L25) implements the 6.0.0 idiom; all other privileged shell invocations route through NG's `Runner.runCommand` abstraction on top of it.
 - Audit at [`docs/audits/2026-05-08-libsu-shell-cmd-migration.md`](docs/audits/2026-05-08-libsu-shell-cmd-migration.md). Closes the iter-20 Engineering Debt Register row "libsu `6.0.0`".
 
-### Added — LocalServer bootstrap-failure signature line (2026-05-08)
+### Added, LocalServer bootstrap-failure signature line (2026-05-08)
 - New `logBootstrapFailureSignature()` helper in [`LocalServer.checkConnect()`](app/src/main/java/io/github/muntashirakon/AppManager/servermanager/LocalServer.java) emits a single-line failure signature whenever the privileged-shell handshake throws (`IOException` / `AdbPairingRequiredException`). The signature captures `Build.MANUFACTURER/PRODUCT/DEVICE`, `SDK_INT`, `Build.ID`, `ro.lineage.version` (when present), the exception class + message, and the cause chain.
 - Bug reporters can copy this one `Log.e("IPC", …)` line into an issue instead of a full audit log. Targets in particular the LineageOS 23.2 / Android 16 root-binder regression (AM #1962 / [S185]) where the SELinux denial in `system_server` kills the handshake silently. The actual SELinux denial line still has to come from `dmesg` / `logcat` separately, but the device + exception fingerprint is now structured and trivially diff-able across reports.
 - Diagnostic logging is wrapped in a try/catch so it can never mask the original failure. Closes the iter-20 Now/T2 row.
 
-### Fixed — A16 QPR2 silent `clearApplicationUserData` failure (2026-05-08)
+### Fixed, A16 QPR2 silent `clearApplicationUserData` failure (2026-05-08)
 - [`PackageManagerCompat.clearApplicationUserData()`](app/src/main/java/io/github/muntashirakon/AppManager/compat/PackageManagerCompat.java) now snapshots `IStorageStatsManager.queryStatsForPackage()` `dataBytes + cacheBytes` pre-clear, calls the hidden-API IPC path, re-snapshots post-clear, and when the post-clear size hasn't dropped below the pre-clear baseline (with a 64 KiB tolerance for the user-data dir's skeleton state), runs `pm clear --user N <pkg>` as a shell fallback.
 - The IPC path is also fallen-back-to-shell when it throws, so true IPC failures plus the QPR2 silent-success class of bug both route to the same shell remediation. The 64 KiB tolerance avoids false positives on the small placeholder state the OS retains even after a clean wipe; full-MB-or-GB silent-failure cases (Poco F3 / Infinity-X 3.9 / Root mode on QPR2) are caught and recovered.
 - New helpers: `clearApplicationUserDataViaIpc()`, `clearApplicationUserDataViaShell()`, `queryAppDataBytesQuietly()`. Reference: AM #1965 / [S184]. Closes the iter-20 Now/T2 row.
 
-### Added — `Ops.isAdbShellRoot()` detection helper (2026-05-08)
-- New static helper [`Ops.isAdbShellRoot()`](app/src/main/java/io/github/muntashirakon/AppManager/settings/Ops.java) returns true when the configured mode is ADB but the working shell's uid is 0 — the "ADB Root" surface KernelSU v3.2.3+ added in 2026 (also reachable via APatch's adb-root toggle and Magisk's kang mode).
+### Added, `Ops.isAdbShellRoot()` detection helper (2026-05-08)
+- New static helper [`Ops.isAdbShellRoot()`](app/src/main/java/io/github/muntashirakon/AppManager/settings/Ops.java) returns true when the configured mode is ADB but the working shell's uid is 0, the "ADB Root" surface KernelSU v3.2.3+ added in 2026 (also reachable via APatch's adb-root toggle and Magisk's kang mode).
 - Cheap, all-thread-safe, no shell round-trip. The detection layer intentionally doesn't gate on KernelSU specifically because APatch / Magisk-kang reach the same privilege state; callers wanting a stricter "root manager confirmed" gate pair this with `RootManagerInfo.detect()`.
 - The javadoc carries the trust caveat ("anyone can plug in via USB"): a device left unattended with USB debugging enabled grants any laptop the same uid-0 surface, so consumers (the still-pending Privilege Health-Check screen and onboarding wizard) MUST gate elevated trust on explicit user confirmation before treating this as full-root for sensitive ops. Reference: [S166]. Closes the iter-20 Now/T9 row at the detection-foundation layer; UX confirmation flow lands with the Privilege Health-Check screen.
 
-### Changed — Backup-name dialog now autocompletes from prior backup names (2026-05-08)
+### Changed, Backup-name dialog now autocompletes from prior backup names (2026-05-08)
 - The "Multiple backup" name dialog in [`BackupFragment.handleBackup()`](app/src/main/java/io/github/muntashirakon/AppManager/backup/dialog/BackupFragment.java) is now backed by `TextInputDropdownDialogBuilder` instead of `TextInputDialogBuilder`. Users tagging a fresh backup get an autocomplete dropdown of every prior backup label across the apps in scope, so re-using the same tag as last time is one tap instead of a full retype.
 - New `collectExistingBackupNames()` walks `viewModel.getBackupInfoList()` → per-backup `BackupMetadataV5.metadata.backupName` and feeds the de-duplicated `LinkedHashSet` into `setDropdownItems(items, -1, true)` (filterable), so typing narrows the suggestion list as the user goes. Empty/null names are skipped.
 - Re-scoped from the iter-20 row's original wording: NG's multi-tag dao hasn't shipped yet, so the *applicable* user-facing surface today is the backup-name dialog. When the multi-tag dao lands, the same `setDropdownItems` adapter pattern can be reused for the tag-add dialog with zero code change. Reference: Neo-Backup 8.3.17 / [S135]. Closes the iter-20 Now/T8 row.
 
-### Added — Per-OEM Debloat Risk Ribbon (Samsung One UI 8.5) (2026-05-08)
+### Added, Per-OEM Debloat Risk Ribbon (Samsung One UI 8.5) (2026-05-08)
 - New [`OemBloatRiskTable`](app/src/main/java/io/github/muntashirakon/AppManager/debloat/OemBloatRiskTable.java) helper resolves vendor-aware known-bad debloat warnings from a `(package, Build.MANUFACTURER, vendor-OS-version)` triple, where vendor-OS-version comes from the platform's vendor-specific system property (`ro.build.version.oneui` for Samsung One UI, `ro.mi.os.version.name` / `ro.miui.ui.version.code` for Xiaomi HyperOS / MIUI).
-- First entry: `com.samsung.android.smartsuggestions` on Samsung One UI 8.5 (`ro.build.version.oneui == 80500`) — UAD-NG #1394 documented Settings → Mobile-Networks crash-loop on Galaxy A57. The new warning string `oem_bloat_risk_samsung_smartsuggestions_oneui85` ships with localizable copy directing users to disable/freeze the package instead of removing it.
+- First entry: `com.samsung.android.smartsuggestions` on Samsung One UI 8.5 (`ro.build.version.oneui == 80500`), UAD-NG #1394 documented Settings → Mobile-Networks crash-loop on Galaxy A57. The new warning string `oem_bloat_risk_samsung_smartsuggestions_oneui85` ships with localizable copy directing users to disable/freeze the package instead of removing it.
 - Wired into [`BloatwareDetailsDialog.bind()`](app/src/main/java/io/github/muntashirakon/AppManager/debloat/BloatwareDetailsDialog.java) via a new `composeWarning()` helper: vendor-known-bad ribbon leads, the upstream debloat-list warning trails for additional context, and the alert chip is forced to `ALERT_TYPE_WARN` regardless of the upstream removal rating (a system-surface crash loop is not "info").
 - Resolution order is exact match → wildcard match (`*` handles devices where the vendor-OS-version property is unreadable). Generic "this looks Samsung-y" warnings stay on the upstream string; this surface is reserved for verified field reports keyed to a specific OEM/version combo. Reference: [S188]. Closes the iter-20 Now/T7 row.
 
-### Added — Cert dialog now shows Subject + Issuer (2026-05-08)
+### Added, Cert dialog now shows Subject + Issuer (2026-05-08)
 - The "Sign · SHA-256" tag chip's dialog in App Info now exposes the X.509 **Subject** and **Issuer** distinguished names alongside the SHA-256 fingerprint, so users vetting an APK can see who the certificate claims to be issued *to* without dropping to `apksigner verify --print-certs`.
-- New `AppInfoViewModel.populateSigningCertInfo()` (replaces `computeSigningCertSha256`) writes `signingCertSha256` / `signingCertSubject` / `signingCertIssuer` together off the same `X509Certificate` instance — Subject/Issuer come from `getSubjectX500Principal().getName()` / `getIssuerX500Principal().getName()` (RFC 2253 form). All three stay `null` for unparseable / multi-signer / unsigned packages.
+- New `AppInfoViewModel.populateSigningCertInfo()` (replaces `computeSigningCertSha256`) writes `signingCertSha256` / `signingCertSubject` / `signingCertIssuer` together off the same `X509Certificate` instance, Subject/Issuer come from `getSubjectX500Principal().getName()` / `getIssuerX500Principal().getName()` (RFC 2253 form). All three stay `null` for unparseable / multi-signer / unsigned packages.
 - [`AppInfoFragment.showCertFingerprintDialog()`](app/src/main/java/io/github/muntashirakon/AppManager/details/info/AppInfoFragment.java) renders the trio as labelled sections; new strings `cert_fingerprint_dialog_{sha256,subject,issuer}_header`. Copy button still copies fingerprint-only to keep AppVerifier / `apksigner` paste-compatibility.
-- The iter-20 row's other layout-density bullets (SDK-row reorder, two-column trackers|SDK, popup `maxHeightPercent`) target an upstream `app_info_card.xml` that doesn't exist in NG — App Info is a full pager fragment, not a bottom-sheet popup, so those don't map. Reference: AM #1966 / [S187]. Closes the iter-20 Now/T21 row (Subject + Issuer scope).
+- The iter-20 row's other layout-density bullets (SDK-row reorder, two-column trackers|SDK, popup `maxHeightPercent`) target an upstream `app_info_card.xml` that doesn't exist in NG, App Info is a full pager fragment, not a bottom-sheet popup, so those don't map. Reference: AM #1966 / [S187]. Closes the iter-20 Now/T21 row (Subject + Issuer scope).
 
-### Changed — AppOps row-tap cycles ALLOWED → IGNORED → ERRORED (2026-05-08)
+### Changed, AppOps row-tap cycles ALLOWED → IGNORED → ERRORED (2026-05-08)
 - Row-tap on an AppOps entry in App Details (`AppDetailsPermissionsFragment`) now cycles **ALLOWED → IGNORED → ERRORED → ALLOWED** instead of binary toggling between ALLOWED and a derived deny.
-- The IGNORE (`MODE_IGNORED`) state silently no-ops the op without throwing `SecurityException`, matching platform behavior. It's the correct option for ops that misbehaving apps would otherwise crash on if DENY (`MODE_ERRORED`) is set — Inure build106.5.0 model.
+- The IGNORE (`MODE_IGNORED`) state silently no-ops the op without throwing `SecurityException`, matching platform behavior. It's the correct option for ops that misbehaving apps would otherwise crash on if DENY (`MODE_ERRORED`) is set, Inure build106.5.0 model.
 - A short Toast names the new mode after each tap (`AppOpsManagerCompat.modeToName(mode)`); long-press still opens the full single-choice mode picker (FOREGROUND/DEFAULT/etc.) for advanced users.
 - New `nextAppOpModeInCycle()` helper in [`AppDetailsPermissionsFragment.java`](app/src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsPermissionsFragment.java). Reference: [S131]. Closes the iter-20 Now/T9 row.
 
-### Added — Sui (Magisk-module Shizuku) detection in onboarding (2026-05-08)
+### Added, Sui (Magisk-module Shizuku) detection in onboarding (2026-05-08)
 - New `checkSuiViaShell()` probe in [`runner/RootManagerInfo`](app/src/main/java/io/github/muntashirakon/AppManager/runner/RootManagerInfo.java) reads `/data/adb/modules/sui/` whenever the privileged shell already returned a non-NONE root manager (Magisk / KernelSU / APatch). New `RootManagerInfo.suiPresent` boolean carries the result through to consumers.
 - [`OnboardingFragment.buildRootManagerSuffix()`](app/src/main/java/io/github/muntashirakon/AppManager/onboarding/OnboardingFragment.java) appends a " + Sui" suffix on the Root status line alongside the existing ZygiskNext suffix; combined cases render as e.g. "Detected · Magisk + Sui" or "Detected · KernelSU + Sui + ZygiskNext".
-- Sui has no `moe.shizuku.privileged.api` package install, so the Magisk-module marker is the only authoritative signal — the iter-20 `PackageManager` enumeration approach the row originally proposed is unnecessary once the marker is read directly. The "prefer Sui over Shizuku" routing decision is deferred to the still-pending Privilege Health-Check screen (T5); `info.suiPresent` is the wire for it. Reference: [S178]. Closes the iter-20 Now/T5 row.
+- Sui has no `moe.shizuku.privileged.api` package install, so the Magisk-module marker is the only authoritative signal, the iter-20 `PackageManager` enumeration approach the row originally proposed is unnecessary once the marker is read directly. The "prefer Sui over Shizuku" routing decision is deferred to the still-pending Privilege Health-Check screen (T5); `info.suiPresent` is the wire for it. Reference: [S178]. Closes the iter-20 Now/T5 row.
 
-### Docs — GrapheneOS A16 background-install fix patch reference (2026-05-08)
+### Docs, GrapheneOS A16 background-install fix patch reference (2026-05-08)
 - A maintainer-local `docs/patch-references/2026-05-08-grapheneos-a16-background-install.md` note captured both fixes from GrapheneOS AppStore Release 36: (a) wrap user-confirmation `startActivity()` in an `isResumed` check + defer to `onPostResume()` when paused (Android 16 `IllegalStateException: Can not perform this action after onSaveInstanceState`), and (b) audit `getCallingPackage()` + `getReferrer()` and drop queued `PendingActions` when an external untrusted caller re-targets the activity.
 - Port deferred until an Android 16 test device is available; doc lists the exact NG site ([`PackageInstallerActivity.java`](app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/PackageInstallerActivity.java)) and validation steps. Closes the iter-20 Now/T11 row in patch-reference form.
 
-### Fixed — Debloater shortcut crash on pre-A13 / Unisoc devices (2026-05-08)
+### Fixed, Debloater shortcut crash on pre-A13 / Unisoc devices (2026-05-08)
 - Added `.debloat.DebloaterActivityAlias` (`android:exported="true"`, `targetActivity=".debloat.DebloaterActivity"`) in [`AndroidManifest.xml`](app/src/main/AndroidManifest.xml) so external launcher pins / Tasker shortcuts / third-party app shortcuts resolve to a stable component name on platforms where pinning the underlying activity directly fails with `ActivityNotFoundException`. Reproduces upstream AM #1963 (Moto g22 / Unisoc T606 / Android 12).
-- The alias has no `CATEGORY_LAUNCHER` filter — it does not appear as a separate launcher icon. Closes the iter-20 Now/T2 row.
+- The alias has no `CATEGORY_LAUNCHER` filter, it does not appear as a separate launcher icon. Closes the iter-20 Now/T2 row.
 
-### Compliance — Android 17 static-final reflection audit (1 fix, 1 deferred) (2026-05-08)
+### Compliance, Android 17 static-final reflection audit (1 fix, 1 deferred) (2026-05-08)
 - Audited 20 `setAccessible(true)` call sites across `app/`, `libcore/`, `server/` for the Android 17 ban on `Field.set()` against `static final` fields with `setAccessible(true)`.
 - 17 sites safe (10 `Method`/`Constructor`, 7 read-only `Field.get`).
-- 1 fixed: [`TypefaceUtil.restoreFonts()`](app/src/main/java/io/github/muntashirakon/AppManager/utils/appearance/TypefaceUtil.java) wrote a same-reference back to `Typeface.sSystemFontMap` (static-final). Removed the redundant `Field.set()` call — the map's contents are mutated in place via `remove()` / `put()` so the write-back was a no-op. Behavior preserved.
+- 1 fixed: [`TypefaceUtil.restoreFonts()`](app/src/main/java/io/github/muntashirakon/AppManager/utils/appearance/TypefaceUtil.java) wrote a same-reference back to `Typeface.sSystemFontMap` (static-final). Removed the redundant `Field.set()` call, the map's contents are mutated in place via `remove()` / `put()` so the write-back was a no-op. Behavior preserved.
 - 1 deferred: [`RootServiceMain.startService()`](server/src/main/java/io/github/muntashirakon/AppManager/server/RootServiceMain.java) writes to `Resources.mSystem` (static-final). Currently `targetSdk=36` so the site is not yet broken; flagged for the targetSdk=37 bump task with three remediation options documented in the audit. Audit at [`docs/audits/2026-05-08-android17-static-final-reflection.md`](docs/audits/2026-05-08-android17-static-final-reflection.md). Closes the iter-20 Now/Eng-Debt audit row.
 
-### Compliance — Google Play Contacts / Location-Button Policy audit (clean) (2026-05-08)
-- Audit clean — the policy does not apply. NG's manifest declares only `READ_PHONE_STATE` (used for the telephony-side mobile/Wi-Fi data-usage split). NG does **not** declare `READ_CONTACTS`, `WRITE_CONTACTS`, `GET_ACCOUNTS`, `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `ACCESS_BACKGROUND_LOCATION`, `READ_PHONE_NUMBERS`, or any call-log / SMS permission.
+### Compliance, Google Play Contacts / Location-Button Policy audit (clean) (2026-05-08)
+- Audit clean, the policy does not apply. NG's manifest declares only `READ_PHONE_STATE` (used for the telephony-side mobile/Wi-Fi data-usage split). NG does **not** declare `READ_CONTACTS`, `WRITE_CONTACTS`, `GET_ACCOUNTS`, `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`, `ACCESS_BACKGROUND_LOCATION`, `READ_PHONE_NUMBERS`, or any call-log / SMS permission.
 - The contact and location permission strings that appear in [`PermissionGroupCatalog.java`](app/src/main/java/io/github/muntashirakon/AppManager/permissions/PermissionGroupCatalog.java) are **label constants** for the Permission Inspector UI to render groups when inspecting *other* installed apps; AppManagerNG itself never requests them at runtime. The iter-19 ROADMAP row's claim to the contrary was incorrect; the audit corrects the record.
 - No NG UI button reveals contact info or precise location; no remediation required before the 2026-05-15 Google Play Console enforcement window. Audit at [`docs/audits/2026-05-08-google-play-contacts-location-policy.md`](docs/audits/2026-05-08-google-play-contacts-location-policy.md). Closes the iter-19 Now/Eng-Debt row.
 
-### Security — CVE-2026-0073 disclosure for ADB mode (2026-05-08)
+### Security, CVE-2026-0073 disclosure for ADB mode (2026-05-08)
 - New [`docs/security-advisories/2026-05-08-cve-2026-0073-adb-mode.md`](docs/security-advisories/2026-05-08-cve-2026-0073-adb-mode.md) discloses the Critical zero-click proximal RCE in `adbd` patched in the May 2026 Android Security Bulletin. AppManagerNG's ADB mode and Shizuku-via-wireless-debug provisioning talk to the same daemon, so devices below patch level `2026-05-01` carry residual risk.
-- AppManagerNG itself is **not vulnerable** — the bug is in the platform `adbd` binary, not in any code we ship. Advisory documents impact split (USB-ADB on trusted network = moderate, wireless-debug = high), recommended actions for end users + downstream packagers, and the cross-reference to the sideload-verification doc (BR/ID/SG/TH overlap). Closes the iter-20 Now/T5 row; the companion in-app patch-level banner is deferred to the upcoming Onboarding Capability Wizard.
+- AppManagerNG itself is **not vulnerable**, the bug is in the platform `adbd` binary, not in any code we ship. Advisory documents impact split (USB-ADB on trusted network = moderate, wireless-debug = high), recommended actions for end users + downstream packagers, and the cross-reference to the sideload-verification doc (BR/ID/SG/TH overlap). Closes the iter-20 Now/T5 row; the companion in-app patch-level banner is deferred to the upcoming Onboarding Capability Wizard.
 
-### Compliance — Android 17 `System.load()` read-only native audit (2026-05-08)
-- **Audit clean — zero matches.** Recursive sweep across all source roots; AppManagerNG does not extract native libraries to disk via any of its own code paths and does not use `System.load(absolutePath)` anywhere.
+### Compliance, Android 17 `System.load()` read-only native audit (2026-05-08)
+- **Audit clean, zero matches.** Recursive sweep across all source roots; AppManagerNG does not extract native libraries to disk via any of its own code paths and does not use `System.load(absolutePath)` anywhere.
 - Two `System.loadLibrary("am")` call sites (`AhoCorasick.java:7`, `CpuUtils.java:13`) use the canonical AOSP path; the platform installer handles the read-only flag for bundled `jniLibs/`.
-- Forty-plus `IoUtils.copy` call sites — none of them write `.so` files. Audit at [`docs/audits/2026-05-08-android17-system-load-readonly.md`](docs/audits/2026-05-08-android17-system-load-readonly.md). Closes the iter-20 Now/Eng-Debt row.
+- Forty-plus `IoUtils.copy` call sites, none of them write `.so` files. Audit at [`docs/audits/2026-05-08-android17-system-load-readonly.md`](docs/audits/2026-05-08-android17-system-load-readonly.md). Closes the iter-20 Now/Eng-Debt row.
 
-### Docs — AOSP source-pull retarget to `android-latest-release` (2026-05-08)
+### Docs, AOSP source-pull retarget to `android-latest-release` (2026-05-08)
 - AOSP moved to a trunk-stable publishing cadence in 2026: public source publishing now happens on a Q2 + Q4 schedule rather than continuous; `master` reflects a transient mid-quarter snapshot whose private-API surface may not survive to a published Android release.
 - Pinned the **`android-latest-release`** branch as the only safe target for `hiddenapi/` stub harvesting in two places:
   - new "Pulling AOSP source for `hiddenapi/`" section in [`CONTRIBUTING.md`](CONTRIBUTING.md);
@@ -7117,63 +7126,63 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
 - Both forbid `master` / `main` / `android-mainline` / date-stamped tags and point version-specific backports at version-tagged branches (`android-15.0.0_r1`, `android-16.0.0_r1`, etc.).
 - The iter-52 Hidden-API Compatibility Harness now inherits this pinning through `scripts/generate-hidden-api-baseline.ps1`, which should be rerun after future `hiddenapi/` stub refreshes. Closes the iter-20 Now/Eng-Debt row.
 
-### Build — Gson 2.13.2 → 2.14.0 (2026-05-08)
+### Build, Gson 2.13.2 → 2.14.0 (2026-05-08)
 - `gson_version` bumped 2.13.2 → 2.14.0 in [`versions.gradle:26`](versions.gradle).
 - Built-in `java.time` adapters drop the `--add-opens` requirement on JDK17 CI runners.
 - Strict duplicate-JSON-key handling: malformed `{"foo": null, "foo": …}` now throws `JsonSyntaxException` instead of silently overwriting. Audited every Gson call-site (7 files); zero `setLenient(true)` opt-outs in the codebase, so all parse paths benefit. Audit + verification plan at [`docs/audits/2026-05-08-gson-2-14-0-bump.md`](docs/audits/2026-05-08-gson-2-14-0-bump.md). Closes the iter-20 Now/Eng-Debt row; supersedes the Engineering Debt Register entry that pinned 2.13.2.
 
-### Security — BouncyCastle 1.83 → 1.84 (CVE-2026-3505 / 5588 / 5598) (2026-05-08)
+### Security, BouncyCastle 1.83 → 1.84 (CVE-2026-3505 / 5588 / 5598) (2026-05-08)
 - `bouncycastle_version` bumped 1.83 → 1.84 in [`versions.gradle:21`](versions.gradle); CVE list inlined as a trailing comment so the rationale lives at the dependency line.
-- Closes **CVE-2026-3505** (PGP AEAD chunk-size DoS — directly relevant since `libopenpgp` powers OpenPGP-encrypted backup archives), **CVE-2026-5588**, and **CVE-2026-5598** (FrodoKEM non-constant-time compare; pre-emptive against future ML-DSA / PQ adoption).
+- Closes **CVE-2026-3505** (PGP AEAD chunk-size DoS, directly relevant since `libopenpgp` powers OpenPGP-encrypted backup archives), **CVE-2026-5588**, and **CVE-2026-5598** (FrodoKEM non-constant-time compare; pre-emptive against future ML-DSA / PQ adoption).
 - Audit at [`docs/audits/2026-05-08-bouncycastle-1-84-cve-bump.md`](docs/audits/2026-05-08-bouncycastle-1-84-cve-bump.md). Closes the iter-20 Now/Eng-Debt row; supersedes the long-standing low-urgency Engineering Debt Register entry that pinned 1.83.
 
-### Docs — Sideloading Verification position document (2026-05-08)
-- New [`docs/sideload-verification.md`](docs/sideload-verification.md) explaining what AppManagerNG does and does not do regarding Google's [Android Developer Verification](https://developers.google.com/android/play-protect/developer-verification) program — preempts the user-confusion wave when the 2026-09-30 enforcement starts hitting BR/ID/SG/TH users on certified devices.
+### Docs, Sideloading Verification position document (2026-05-08)
+- New [`docs/sideload-verification.md`](docs/sideload-verification.md) explaining what AppManagerNG does and does not do regarding Google's [Android Developer Verification](https://developers.google.com/android/play-protect/developer-verification) program, preempts the user-confusion wave when the 2026-09-30 enforcement starts hitting BR/ID/SG/TH users on certified devices.
 - README "Install" section gains an `IMPORTANT` callout linking the document for users in the four enforcement regions.
-- Closes the Iter-20 Now/T1/Docs row "Sideloading-Verification Position Document" (companion to "Android Developer Verification — BR/ID/SG/TH Enforcement"; that row remains in flight as a code-bearing task tracked separately).
+- Closes the Iter-20 Now/T1/Docs row "Sideloading-Verification Position Document" (companion to "Android Developer Verification, BR/ID/SG/TH Enforcement"; that row remains in flight as a code-bearing task tracked separately).
 
-### Docs — ROADMAP iter-20 research delta (2026-05-08)
-- Appended "Iter-20 Research Additions" table to `ROADMAP.md` (38 rows: 19 Now / 16 Next / 1 Later / 1 Under Consideration / 1 Watch; 40 new sources S172–S211). Two-day delta from iter-19 (closing 2026-05-06): GitHub-issue mining of MuntashirAkon/AppManager (#1956–#1968), Canta, Hail (#387–#391), Neo-Backup (#1029–#1034), sdmaid-se (#2410–#2413), UAD-NG (#1386–#1394), Hamza417/Inure (#480), Obtainium (#2908–#2911 + discussion #2846), RikkaApps/Shizuku (#2036–#2052); Android 17 / QPR1 Beta 2 / Android Security Bulletin May-2026; Google Play Developer Verification rollout (BR/ID/SG/TH, enforcement 2026-09-30); 7-day GitHub-releases sweep (Neo-Backup 8.3.18, sdmaid-se v1.7.2-rc0 cert publish, Material Components 1.14.0-rc01, Gson 2.14.0, BouncyCastle 1.84 with three CVE fixes, hddq/restoid v0.5.0 restic-backed backup engine, wxxsfxyzm/InstallerX-Revived 26.05); new-competitor harvest the iter-19 list missed (Sui Magisk-module Shizuku, sameerasw/essentials, yume-chan/VolumeManager, pass-with-high-score/universal-installer, Hjsosn/FireWall-Blocks, kerneldroid/Shizuku-modern, BugeStudioTeam/Buge-App-Manager); GrapheneOS forum + XDA Shizuku/QPR1 threads.
-- New themes: Android Developer Verification (single biggest sideload-tooling regulatory event of 2026), CVE-2026-0073 adbd zero-click RCE min-patch-level disclosure, BouncyCastle 1.83 → 1.84 PGP-AEAD DoS fix, Sui Magisk-module Shizuku detection, Shizuku 13.6.0 OEM allowlist (Transsion NPE / Mediatek / Pixel-9 QPR1), Shizuku root-backed avoidance for banking apps, OS-revert detection banner (novel — no competitor surfaces this), A16 QPR2 `clearApplicationUserData` fallback shell path with disk-usage-delta verification, LineageOS 23.2 root binder regression probe, Debloater activity-alias for pre-A13 Unisoc devices, App Info popup density refactor, per-OEM debloat risk ribbon (One UI 8.5 SmartSuggestions known-bad), default-app role re-binding after restore, restic-style backup engine (Under Consideration leapfrog), backup scheduler newest-age gate, CIFS/SMB streaming hardening, Wi-Fi configurations backup (root), squashfs writer header validation, FileManager recursive in-folder search, per-app volume via AppOps `OP_AUDIO_VOLUME` (closes upstream #1863), InstallerX-Revived privilege-elevation cascade, GrapheneOS A16 background-install-confirmation fix, split-APK cert-mismatch dialog, predictive-back WebView freeze fix, Material Components 1.14 FocusRingDrawable + SplitButton, AGP 8.13 → 9.2 migration ahead of AGP-10 cliff, AOSP source-pull retarget to `android-latest-release` (trunk-stable cadence), ML-DSA Keystore `KeyPairGenerator` recognition, HKDF-from-master backup key derivation (50K key cap mitigation), `System.load()` read-only native audit, Android 17 static-final reflection severity-promotion, persistent ADB tcpip 5555 detection in Shizuku setup, Doze allowlist diff banner, sideloading-verification position document.
+### Docs, ROADMAP iter-20 research delta (2026-05-08)
+- Appended "Iter-20 Research Additions" table to `ROADMAP.md` (38 rows: 19 Now / 16 Next / 1 Later / 1 Under Consideration / 1 Watch; 40 new sources S172 through S211). Two-day delta from iter-19 (closing 2026-05-06): GitHub-issue mining of MuntashirAkon/AppManager (#1956 through #1968), Canta, Hail (#387 through #391), Neo-Backup (#1029 through #1034), sdmaid-se (#2410 through #2413), UAD-NG (#1386 through #1394), Hamza417/Inure (#480), Obtainium (#2908 through #2911 + discussion #2846), RikkaApps/Shizuku (#2036 through #2052); Android 17 / QPR1 Beta 2 / Android Security Bulletin May-2026; Google Play Developer Verification rollout (BR/ID/SG/TH, enforcement 2026-09-30); 7-day GitHub-releases sweep (Neo-Backup 8.3.18, sdmaid-se v1.7.2-rc0 cert publish, Material Components 1.14.0-rc01, Gson 2.14.0, BouncyCastle 1.84 with three CVE fixes, hddq/restoid v0.5.0 restic-backed backup engine, wxxsfxyzm/InstallerX-Revived 26.05); new-competitor harvest the iter-19 list missed (Sui Magisk-module Shizuku, sameerasw/essentials, yume-chan/VolumeManager, pass-with-high-score/universal-installer, Hjsosn/FireWall-Blocks, kerneldroid/Shizuku-modern, BugeStudioTeam/Buge-App-Manager); GrapheneOS forum + XDA Shizuku/QPR1 threads.
+- New themes: Android Developer Verification (single biggest sideload-tooling regulatory event of 2026), CVE-2026-0073 adbd zero-click RCE min-patch-level disclosure, BouncyCastle 1.83 → 1.84 PGP-AEAD DoS fix, Sui Magisk-module Shizuku detection, Shizuku 13.6.0 OEM allowlist (Transsion NPE / Mediatek / Pixel-9 QPR1), Shizuku root-backed avoidance for banking apps, OS-revert detection banner (novel, no competitor surfaces this), A16 QPR2 `clearApplicationUserData` fallback shell path with disk-usage-delta verification, LineageOS 23.2 root binder regression probe, Debloater activity-alias for pre-A13 Unisoc devices, App Info popup density refactor, per-OEM debloat risk ribbon (One UI 8.5 SmartSuggestions known-bad), default-app role re-binding after restore, restic-style backup engine (Under Consideration leapfrog), backup scheduler newest-age gate, CIFS/SMB streaming hardening, Wi-Fi configurations backup (root), squashfs writer header validation, FileManager recursive in-folder search, per-app volume via AppOps `OP_AUDIO_VOLUME` (closes upstream #1863), InstallerX-Revived privilege-elevation cascade, GrapheneOS A16 background-install-confirmation fix, split-APK cert-mismatch dialog, predictive-back WebView freeze fix, Material Components 1.14 FocusRingDrawable + SplitButton, AGP 8.13 → 9.2 migration ahead of AGP-10 cliff, AOSP source-pull retarget to `android-latest-release` (trunk-stable cadence), ML-DSA Keystore `KeyPairGenerator` recognition, HKDF-from-master backup key derivation (50K key cap mitigation), `System.load()` read-only native audit, Android 17 static-final reflection severity-promotion, persistent ADB tcpip 5555 detection in Shizuku setup, Doze allowlist diff banner, sideloading-verification position document.
 - Iter-19 row promotions: Android Developer Verification rolled into a top-level T1 row; static-final reflection audit promoted to **Now** (severity revision); BouncyCastle bump promoted to **CVE-driven** Now; AGP migration promoted to **Next** with AGP-10 cliff dependency.
 
-### Docs — ROADMAP iter-19 research delta (2026-05-06)
+### Docs, ROADMAP iter-19 research delta (2026-05-06)
 - Appended "Iter-19 Research Additions" table to `ROADMAP.md` covering 30 new items mined from a three-day GitHub-issue / community-pain-point sweep, a Shizuku-era competitor harvest (`timschneeb/awesome-shizuku`), and Android 17 Beta 4 + F-Droid 2.0 platform deltas. New themes: Hidden-API compatibility harness, GCM-cipher reuse on large OBB backup (#1958), Shizuku-permission auto-revoke warning on data-clear (Canta #359), Hidden-Shizuku fork detection, OEM debloat-blocker bypass (OPlus / Samsung / MIUI), per-app rollback / undo, Tasker parameterized intent API, freeze / operation audit-log UI, settings import/export portability, install-date filter, Android 17 16 KB page-size fix, Google Play Contacts/Location-button policy enforcement, KernelSU ADB-Root privilege enum, Blocker-style IFW rule editor, Amarok-Hider `pm hide` toggle, Language-Selector per-app locale via Shizuku, InstallerX-style biometric install gate, debuggable-app rootless backup, F-Droid 2.0 ROM JSON pre-seeding format, F-Droid 2.0 protobuf index v2, Android 17 ACCESS_LOCAL_NETWORK + static-final reflection ban + 50K Keystore cap + ML-DSA cert OIDs + cleartext deprecation, OwnDroid Dhizuku DPM mode, FireOS SYSTEM USER privilege backend, PI install-interception, UpgradeAll getter-plugin API, Material You / Monet widget theming. Two explicit rejects (Shizuku-iptables firewall, Thanox-style Accessibility-Service auto-freeze) per NG philosophy.
-- Source Appendix extended S137–S171 (35 new sources). All iter-19 rows cite `[S###]` references.
+- Source Appendix extended S137 through S171 (35 new sources). All iter-19 rows cite `[S###]` references.
 
-## v0.4.0 — 2026-05-02
+## v0.4.0, 2026-05-02
 
-### Fixed — Permission Inspector: recovery action for previously revoked critical packages
+### Fixed, Permission Inspector: recovery action for previously revoked critical packages
 - New "Restore system app permissions" action on the Permission Inspector home screen. Re-grants every dangerous permission to a fixed set of OS- and vendor-critical packages (Phone, system UI, Settings, telephony/contacts/media providers, fused location, Google Play services / GSF, Samsung location & IMS, etc.) and clears any persisted ComponentsBlocker permission rules for those packages so a bad state from a pre-guard build cannot survive reboot or reinstall.
 - Required because earlier builds without the bulk-revoke guard could leave Phone, voicemail, location services, and other system functions broken via REVOKED_COMPAT appop flags. The recovery action makes that recoverable from inside the app instead of via adb.
 
-### Added — Permission Inspector: master grant + info dialog
-- New "Grant for all apps" toolbar action mirrors the existing "Revoke for all" — mass-grants the permission group to every modifiable app on the device. Useful when you've over-revoked and want to start fresh.
-- New info icon on the toolbar opens a dialog explaining what the screen does and, importantly, **why some apps are skipped during a bulk revoke** (OS- and vendor-critical packages — GMS, GSF, system UI, telephony/media providers, fused location, Samsung location/IMS, etc. — are excluded from the bulk action because revoking from them can crash system_server). Per-app toggles remain unrestricted.
+### Added, Permission Inspector: master grant + info dialog
+- New "Grant for all apps" toolbar action mirrors the existing "Revoke for all", mass-grants the permission group to every modifiable app on the device. Useful when you've over-revoked and want to start fresh.
+- New info icon on the toolbar opens a dialog explaining what the screen does and, importantly, **why some apps are skipped during a bulk revoke** (OS- and vendor-critical packages, GMS, GSF, system UI, telephony/media providers, fused location, Samsung location/IMS, etc., are excluded from the bulk action because revoking from them can crash system_server). Per-app toggles remain unrestricted.
 - The same explanation dialog auto-pops after a bulk revoke whenever any app was skipped, so users see the reason in context.
 
-### Fixed — Permission Inspector: bulk-revoke could reboot device
-- The master "Revoke for all apps" action now skips a denylist of critical system packages (`android`, `com.google.android.gms`/`gsf`, `com.android.systemui`, `com.android.settings`, `com.android.phone`, telephony/media/contacts providers, `com.android.location.fused`, Samsung location/IMS/phone services, etc.) and any `com.android.server.*` / `com.google.android.gms.*` subpackage. Revoking `ACCESS_FINE_LOCATION` / `ACCESS_BACKGROUND_LOCATION` from these crashed `system_server` and rebooted the device on Samsung One UI. Per-app toggles remain unrestricted — the guard only applies to the bulk action. A toast now reports both how many apps were revoked and how many were skipped.
+### Fixed, Permission Inspector: bulk-revoke could reboot device
+- The master "Revoke for all apps" action now skips a denylist of critical system packages (`android`, `com.google.android.gms`/`gsf`, `com.android.systemui`, `com.android.settings`, `com.android.phone`, telephony/media/contacts providers, `com.android.location.fused`, Samsung location/IMS/phone services, etc.) and any `com.android.server.*` / `com.google.android.gms.*` subpackage. Revoking `ACCESS_FINE_LOCATION` / `ACCESS_BACKGROUND_LOCATION` from these crashed `system_server` and rebooted the device on Samsung One UI. Per-app toggles remain unrestricted, the guard only applies to the bulk action. A toast now reports both how many apps were revoked and how many were skipped.
 
-### Added — Permission Inspector: review and bulk-revoke permissions across apps
+### Added, Permission Inspector: review and bulk-revoke permissions across apps
 
 - New top-level screen accessible from the main overflow menu (shield-key icon) that inverts the standard "app -> permissions" view. Catalog lists 12 curated dangerous permission groups (Camera, Microphone, Location, Contacts, SMS, Phone, Files & media, Calendar, Body sensors, Physical activity, Nearby devices, Notifications) each with a "X of Y apps granted" count. Tap a group to drill into the per-permission list of every app that requested it; toggle individual apps with a Material switch, or use the master "Revoke for all apps" toolbar action to mass-revoke in one shot. Persists changes through `ComponentsBlocker` so they survive reinstalls, same as the existing per-app permissions tab. SDK-version-gated for permission groups added in API 29/31/33/34.
 
-### Added — Main List & Item Layout: v2 Design System Integration (v0.5.x surface migration phase 1)
+### Added, Main List & Item Layout: v2 Design System Integration (v0.5.x surface migration phase 1)
 - New `activity_main_v2.xml` and `item_main_v2.xml` wired behind the `PREF_PREMIUM_PREVIEW_BOOL`
   toggle. When enabled, MainActivity and MainRecyclerAdapter load v2 layouts with refined v2 token
   palette (calmer surfaces, tighter typography, pill-shaped search, outlined card variants).
   Layout switching is conditional per-view, allowing zero-impact on classic theme users.
   Completes v0.5.x phase 1 (top-5 surface migration). Next phases: AppDetails, AppUsage, Settings.
 
-### Added — Troubleshooting: auto-fix battery optimization via root/ADB (SD-Maid parity, ROADMAP iter-18 T20)
+### Added, Troubleshooting: auto-fix battery optimization via root/ADB (SD-Maid parity, ROADMAP iter-18 T20)
 - Settings → Troubleshooting → "Battery optimization" now auto-applies the
   exemption when NG has root or ADB privileges (checks `DEVICE_POWER`). If
   permitted: silently grants the whitelist in background, updates summary,
   and shows a confirmation toast. If not: falls back to the system dialog.
   Matches SD-Maid's "auto-fix" UX pattern. No user setup needed.
 
-### Added — App Details: copyable error dialog helper (UAD parity, ROADMAP iter-18 T4)
+### Added, App Details: copyable error dialog helper (UAD parity, ROADMAP iter-18 T4)
 - New `UIUtils.displayCopyableErrorDialog(context, title, message)` shows a
   Material alert with OK + **Copy** buttons. Copy invokes `ClipboardUtils`
   (which already handles >1MB error blobs via FileProvider URI fallback)
@@ -7181,15 +7190,15 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   of screenshotting + transcribing. Foundation only; high-traffic toast
   failure sites migrate in a follow-up commit.
 
-### Changed — App Info / AppOps / Permissions: descriptions now selectable (UAD parity, ROADMAP iter-18 T10)
+### Changed, App Info / AppOps / Permissions: descriptions now selectable (UAD parity, ROADMAP iter-18 T10)
 - `item_app_details_appop.xml` and `item_app_details_perm.xml` now mark
   `perm_description`, `perm_protection_level`, `op_mode_running_duration`
   and `op_accept_reject_time` as `textIsSelectable="true"`. Long-press to
   copy permission/op descriptions and runtime metadata directly from the
-  list — matches Universal Android Debloater's selectable-description
+  list, matches Universal Android Debloater's selectable-description
   affordance.
 
-### Added — Appearance: Preview new design (BETA) toggle (premium polish v0.4.x foundation)
+### Added, Appearance: Preview new design (BETA) toggle (premium polish v0.4.x foundation)
 - New Settings → Appearance → "Preview new design (BETA)" switch
   (default OFF, key `PREF_PREMIUM_PREVIEW_BOOL`). When enabled the
   app inflates the v2 design system: a refined teal-leaning palette
@@ -7203,7 +7212,7 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   Resources copied verbatim from `design/impl/values/{themes,colors,
   dimens}-v2.xml`; rollout plan: `design/plan/3-rollout.md`.
 
-### Added — Backup: Android 14+ "Keep device awake" warning toast (ROADMAP iter-18 item closed)
+### Added, Backup: Android 14+ "Keep device awake" warning toast (ROADMAP iter-18 item closed)
 - When a backup operation begins on Android 14+ (`SDK_INT >=
   UPSIDE_DOWN_CAKE`), NG now displays a long Toast asking the user
   to keep the device awake and AppManager open until the backup
@@ -7211,15 +7220,15 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   and aggressive Doze kills of long-running foreground services.
   Mirrors Neo Backup 8.3.17 behavior. Source: ROADMAP S135.
 
-### Audit — App list / Finder search history (ROADMAP iter-18 item closed)
+### Audit, App list / Finder search history (ROADMAP iter-18 item closed)
 - Audited persistent search-term storage per Inure build107.0.1
   privacy posture. NG's `SearchView` usage is already session-only
-  in memory — `recent_search`, `searchHistory`,
+  in memory, `recent_search`, `searchHistory`,
   `SearchRecentSuggestionsProvider` grep all return zero hits.
   No persistent storage exists; no remediation needed. Source:
   ROADMAP S131.
 
-### Added — App Info: Device page size row (ROADMAP iter-18 item closed)
+### Added, App Info: Device page size row (ROADMAP iter-18 item closed)
 - New "Device page size" row in App Info under Primary ABI for any
   app with native code. Populated via `Os.sysconf(_SC_PAGESIZE)` and
   rendered as "4 KB", "16 KB (page-size compatibility required)",
@@ -7229,7 +7238,7 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   looking spurious on 4k devices. Source: Termux v0.118.3
   page-size detection (ROADMAP S126).
 
-### Docs — ROADMAP iter-18 research (no code change)
+### Docs, ROADMAP iter-18 research (no code change)
 - Research-only iteration. 29 new candidate items added under a new
   "Iter-18 Research Additions" section in `ROADMAP.md`, drawn from
   Shizuku v13.6.0, Magisk v30.7, KernelSU v3.2, Termux v0.118.3,
@@ -7243,10 +7252,10 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   comment-level "basic", Hail-style auto-freeze QS tile,
   Inure-style AppOps IGNORE flag, UAD-style cross-user package
   state detection, Neo-Backup-style backup sharing button.
-  Sources S121–S136 appended to the appendix; baseline line bumped
+  Sources S121 through S136 appended to the appendix; baseline line bumped
   with iter-18 summary.
 
-### Added — Settings: Battery optimization entry (ROADMAP Trivial closed)
+### Added, Settings: Battery optimization entry (ROADMAP Trivial closed)
 - New "Battery optimization" preference under Settings → Troubleshooting.
   Summary reflects the current `PowerManager.isIgnoringBatteryOptimizations()`
   state and refreshes on resume. Tap routes to the per-app request prompt
@@ -7256,7 +7265,7 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   entry with explanatory copy. Manifest now declares
   `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`.
 
-### Added — AppType filter: Play App Signing + Overlay flags (eng-debt TODO partially closed)
+### Added, AppType filter: Play App Signing + Overlay flags (eng-debt TODO partially closed)
 - The AppType filter (used by Saved Filters and Finder) gains two
   previously-stubbed flags: **Uses Play App Signing** (APK signed by
   Google rather than the developer's release key) and **Overlay app**
@@ -7266,11 +7275,11 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   implemented on both `FilterableAppInfo` (eager via
   `PackageUtils.usesPlayAppSigning` and `PackageInfoCompat2.getOverlayTarget`)
   and `ApplicationItem` (lazy via `fetchPackageInfo()`). PWA and
-  short-code remain on the TODO list pending a stable detection signal —
+  short-code remain on the TODO list pending a stable detection signal.
   TWA detection requires manifest service-tag sniffing and short-code
   isn't exposed by `PackageManager`.
 
-### Added — Code Editor: language / tab-size / go-to-line pickers (ROADMAP T14 ×3 closed)
+### Added, Code Editor: language / tab-size / go-to-line pickers (ROADMAP T14 ×3 closed)
 - **Language toolbar button** now opens a popup listing all seven
   tmLanguage-backed languages bundled in `assets/languages/`
   (java / json / kotlin / properties / sh / smali / xml). Picking switches
@@ -7292,7 +7301,7 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   setting custom tab size`, `13/9/22 Enable going to custom places`,
   `13/9/22 Use localization`).
 
-### Changed — Plural string audit (ROADMAP T10 closed)
+### Changed, Plural string audit (ROADMAP T10 closed)
 - Three remaining pluralizable count strings converted to `<plurals>`:
   `main_status_showing_apps` ("Showing N of M apps"),
   `main_status_all_apps` ("Showing N apps"), and
@@ -7303,13 +7312,13 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   (Russian / Polish / Arabic / etc.) render correctly. Orphan
   `selected_items_accessibility_description` (no callers) removed.
 - The remaining `%d`-using strings in `values/strings.xml` describe
-  IDs, positions, range bounds, or "X of Y" composites — none are
+  IDs, positions, range bounds, or "X of Y" composites, none are
   pluralizable, so the audit is closed.
 
-### Added — Share profile as JSON (ROADMAP T8 closed)
+### Added, Share profile as JSON (ROADMAP T8 closed)
 - New **Share as JSON** popup action on each profile in the Profiles
   list (`action_share` between Export and Shortcut). Sends the profile's
-  pretty-printed JSON via `Intent.ACTION_SEND` — Telegram / KDE Connect
+  pretty-printed JSON via `Intent.ACTION_SEND`, Telegram / KDE Connect
   / email / Gmail draft / Slack pick it up directly, no SAF round-trip
   required. The wire format is identical to what `Export` writes, so
   the receiving NG instance can re-import via the existing Import
@@ -7320,22 +7329,22 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   `CreateDocument("application/json")`); ROADMAP row was stale, now
   closed.
 
-### Added — Signing-cert SHA-256 chip in App Info (ROADMAP T18 closed)
+### Added, Signing-cert SHA-256 chip in App Info (ROADMAP T18 closed)
 - New "Sign · SHA-256 21:5F…38:6C" chip in the App Info tag cloud
   surfaces the colon-separated, upper-case SHA-256 fingerprint of the
   current signing certificate. Tap opens a Material dialog showing the
   full digest with a one-tap **Copy** button so users can paste the
   fingerprint directly into AppVerifier or compare against
   `apksigner verify --print-certs` output without leaving NG. Single-
-  signer APKs only — multi-signer cases stay routed through the existing
+  signer APKs only, multi-signer cases stay routed through the existing
   icon-tap verify-from-clipboard flow.
 - Backed by `AppInfoViewModel.computeSigningCertSha256()` (worker-side
   via `PackageUtils.getSignerInfo` + `DigestUtils.SHA_256`); result is
   cached on `TagCloud.signingCertSha256`.
 
-### Changed — VirusTotal poll-wait scales with upload size (engineering-debt TODO closed)
+### Changed, VirusTotal poll-wait scales with upload size (engineering-debt TODO closed)
 - `VirusTotal.fetchFileReportOrScan` now scales the *first* poll wait
-  by file size via the new `computeInitialPollWait(fileSize)` helper —
+  by file size via the new `computeInitialPollWait(fileSize)` helper,
   roughly +1 s per MB above a 10 MB threshold, clamped to [60 s, 240 s].
   Avoids burning the 4 req/min free-API rate-limit quota on a large
   upload that hasn't finished engine processing yet. Subsequent polls
@@ -7343,7 +7352,7 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   `VirusTotal.java` (originally filed 2022-05-23) and the matching
   Engineering Debt Register row.
 
-### Added — Root manager detection: Magisk / KernelSU / APatch / ZygiskNext (ROADMAP T5 ×3 closed)
+### Added, Root manager detection: Magisk / KernelSU / APatch / ZygiskNext (ROADMAP T5 ×3 closed)
 - New `runner/RootManagerInfo` helper probes `/data/adb/{magisk,ksu,ap}` via
   the privileged shell when root is granted, and falls back to a
   `PackageManager` lookup of the manager apps
@@ -7353,7 +7362,7 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   identifies the ZygiskNext layer.
 - Onboarding sheet (`OnboardingFragment.refreshCapabilityStatuses`) now
   appends the resolved manager name (and " + ZygiskNext" if applicable)
-  to the Root status line — e.g. "Detected · KernelSU + ZygiskNext". The
+  to the Root status line, e.g. "Detected · KernelSU + ZygiskNext". The
   probe runs on a background thread (one shell round-trip), result is
   posted back to the main thread, and the suffix update is idempotent so
   the Re-check button can be tapped repeatedly without stacking suffixes.
@@ -7362,15 +7371,15 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   and ZygiskNext error-count surfacing remain on the Privilege
   Health-Check Screen row.
 
-### Added — Stable signing-cert fingerprint URL (ROADMAP T1 closed)
+### Added, Stable signing-cert fingerprint URL (ROADMAP T1 closed)
 - New [`docs/fingerprints.txt`](docs/fingerprints.txt) publishes the SHA-256
   signing-cert fingerprint in a comment-tolerant `package:` / `sha256:`
   record format (SD Maid SE precedent), served via the stable
-  `raw.githubusercontent.com/.../docs/fingerprints.txt` URL — AppVerifier
+  `raw.githubusercontent.com/.../docs/fingerprints.txt` URL, AppVerifier
   and similar tooling can fetch it programmatically without scraping the
   README. README "Verifying releases" section now points users at the URL.
 
-### Added — Android 17 ProfilingManager OOM/anomaly triggers (ROADMAP T4 closed)
+### Added, Android 17 ProfilingManager OOM/anomaly triggers (ROADMAP T4 closed)
 - New `misc/ProfilingTriggerHelper.registerTriggersIfSupported(Context)`
   registers `TRIGGER_TYPE_OOM` and `TRIGGER_TYPE_ANOMALY` via reflection on
   API 37+ devices, so the system auto-captures heap profiles when
@@ -7382,11 +7391,11 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   diagnostic-ZIP-attach side of the workflow is deferred until API 37 is
   available on a real device for end-to-end test.
 
-### Compliance — Android 17 per-app Keystore key-cap audit (clean; ROADMAP T2 closed)
+### Compliance, Android 17 per-app Keystore key-cap audit (clean; ROADMAP T2 closed)
 - Audit confirms NG can never exceed Android 17's 50,000-key per-app
   `AndroidKeyStore` cap: it generates at most **two** static, idempotently
   guarded aliases (`aes_local_protection` on API ≥ M, plus a legacy
-  `rsa_wrap_local_protection` on pre-M devices) — both in
+  `rsa_wrap_local_protection` on pre-M devices), both in
   `CompatUtil.getAesGcmLocalProtectionKey()` behind `containsAlias`
   checks. All backup-crypto paths route through a file-backed BKS
   keystore (`am_keystore.bks` via `KeyStoreManager`) which is outside
@@ -7394,7 +7403,7 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   closed. Audit at
   [docs/audits/2026-05-02-android17-keystore-key-cap.md](docs/audits/2026-05-02-android17-keystore-key-cap.md).
 
-### Changed — Pre-emptive Android 18 share-intent compliance (ROADMAP T3 closed)
+### Changed, Pre-emptive Android 18 share-intent compliance (ROADMAP T3 closed)
 - All seven outgoing `ACTION_SEND` / `ACTION_SEND_MULTIPLE` paths that carry
   a content URI (App Info APK share, log viewer attachment chooser, code
   editor share, single + multi file-manager share, diagnostic export, crash
@@ -7408,7 +7417,7 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   No `IMAGE_CAPTURE` callers in source; `PackageInstaller` install path
   streams via `openWrite()` and is unaffected.
 
-### Changed — Utils.java flag-string i18n (ROADMAP T3 closed)
+### Changed, Utils.java flag-string i18n (ROADMAP T3 closed)
 - `Utils.getSoftInputString`, `getServiceFlagsString`,
   `getActivitiesFlagsString`, and `getInputFeaturesString` now read their
   flag labels from `strings.xml` (`soft_input_flag_*`, `service_flag_*`,
@@ -7417,33 +7426,33 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   device locale instead of hardcoded English.
 - `Utils.getProtectionLevelString` keeps Android's canonical manifest
   `android:protectionLevel="..."` tokens (`dangerous`, `signature`,
-  `signature|privileged`, etc.) untranslated by design — they are
+  `signature|privileged`, etc.) untranslated by design, they are
   technical identifiers, and `AppDetailsPermissionsFragment` does a
   `protectionLevel.contains("dangerous")` check that must keep working.
   Replaced the stale `FIXME` with a comment documenting the rationale.
 
-### Added — Settings: Mode-of-Ops live capability refresh
+### Added, Settings: Mode-of-Ops live capability refresh
 - Capability badges (Root / Wireless ADB / USB ADB) now refresh every time
   the Mode-of-Ops settings screen resumes. Toggling Wireless debugging in
   Quick Settings or granting root in another app while Settings is in the
-  background now reflects on return — no need to leave the screen entirely.
+  background now reflects on return, no need to leave the screen entirely.
 
-### Added — Android TV launcher parity (audit)
+### Added, Android TV launcher parity (audit)
 - Confirmed `SplashActivity` already declares `LEANBACK_LAUNCHER`, the
   manifest declares leanback `uses-feature` with `required="false"` and
   optional touchscreen, and the `ic_banner` mipmap is wired. AppManagerNG
   appears on Android TV / Google TV launchers with no additional work.
   ROADMAP item closed.
 
-### Added — App Info bloatware safety rating
-- **Bloatware tag now surfaces the safety call directly** — App Info →
+### Added, App Info bloatware safety rating
+- **Bloatware tag now surfaces the safety call directly**, App Info →
   tag cloud previously showed a generic "Bloatware" chip coloured by
   removal type. Tag text now reads "Bloatware · Safe", "Bloatware ·
   Replace", "Bloatware · Caution", or "Bloatware · Unsafe", so users can
   read the recommendation without tapping into the details dialog.
   Colour is preserved (`ColorCodes.getBloatwareIndicatorColor`).
 
-### Added — Onboarding replay (v0.4.0)
+### Added, Onboarding replay (v0.4.0)
 - **Replay welcome wizard** action in Settings → Troubleshooting; clears
   `PREF_ONBOARDING_SHOWN_BOOL` and immediately surfaces the privilege-mode
   picker (Auto / Root / Wireless ADB / ADB-TCP / No-root) so power users
@@ -7452,24 +7461,24 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
 - **Replay quick tour** action in Settings → Troubleshooting; clears
   `PREF_MAIN_TOUR_SHOWN_BOOL` so the main-list tour re-arms on the next
   launch. Toast confirms the reset.
-- **Active-mode highlight in onboarding** — when the wizard opens (first
+- **Active-mode highlight in onboarding**, when the wizard opens (first
   run or replay), the card matching the currently saved mode is ringed
   with a 2dp `colorPrimary` stroke, so users replaying see at a glance
   which mode is in effect. A11y description is prefixed with "Currently
   active." for screen-reader parity.
-- **Pick-Root-without-detection guardrail** — when a user taps the Root
+- **Pick-Root-without-detection guardrail**, when a user taps the Root
   card and `Ops.hasRoot()` returns false, a confirmation dialog explains
   the situation (root managers can hide su until first request, but most
   ops will fail until granted) and lets them cancel without burning the
   onboarding-shown flag.
-- **Re-check capabilities button** in the onboarding sheet — refreshes
+- **Re-check capabilities button** in the onboarding sheet, refreshes
   the Root / Wireless-ADB / USB-ADB badges and the active-mode highlight
   in place without dismissing the sheet, so users who toggle Wireless
   debugging from quick-settings or grant root from another app can see
   the new state immediately. Snackbar confirms the refresh.
 
-### Added — Premium facelift design system (foundation)
-- **`design/` deliverable folder** (audit, spec, impl, plan, README) — full
+### Added, Premium facelift design system (foundation)
+- **`design/` deliverable folder** (audit, spec, impl, plan, README), full
   v2 design system reference: palette, typography, 4dp spacing ladder,
   elevation tokens, motion vocabulary, iconography choice, and 5 drop-in
   reference XML files (themes-v2, colors-v2, dimens-v2, item_main_v2,
@@ -7482,7 +7491,7 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   (v0.4.x foundation → v0.5.x top-5 migration → v0.6.x long tail → v0.7.x
   toggle removal).
 
-### Added — Main list polish (preview)
+### Added, Main list polish (preview)
 - **Semantic threshold tinting** for the tracker indicator (green ≤4,
   amber 5-19, red ≥20) and the dangerous-permission badge (success when
   zero granted, warning below 50%, danger 50%+).
@@ -7495,14 +7504,14 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
 - New `ColorCodes` semantic colors and `Widget.AppTheme.Chip.MainFilter` /
   `Widget.AppTheme.Chip.MainSuggestion` chip styles.
 
-### Added — Settings & onboarding polish
+### Added, Settings & onboarding polish
 - Tighter `m3_preference*.xml` row treatments (preference category
   indicator, dual-pane divider, focused-pane state).
 - Onboarding fragment redesign: tonally-tinted mode-of-operation cards,
   status background drawables, plain-language privilege explainer.
 - Reorganised `preferences_main.xml` to match the new tier hierarchy.
 
-### Added — Operation Activity Log (ROADMAP T8 closed)
+### Added, Operation Activity Log (ROADMAP T8 closed)
 - Persistent journal of every operation AppManagerNG performs (freeze,
   backup, batch, install, profile execution). Per-entry metadata: target
   app(s), operation type, timestamp, mode (root/ADB/Shizuku/no-root),
@@ -7514,12 +7523,12 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   `OperationHistoryExporter` (with Robolectric test). Per-entry copy/
   delete actions; rerun preflight gates dangerous reruns.
 - Debug-only "Add sample entries" menu action under `BuildConfig.DEBUG`
-  for development verification — never visible in release builds.
+  for development verification, never visible in release builds.
 
 ### ROADMAP additions (research-driven)
 - New T19 tier: **Package-Aware Storage Analysis** (App Details Storage
   Panel, Leftover Detection After Uninstall, APK Duplicate Finder,
-  Backup Duplicate Cleaner — SD Maid SE / UAD-NG models).
+  Backup Duplicate Cleaner, SD Maid SE / UAD-NG models).
 - T2 row: **Android 17 Keystore Per-App Key Cap** (50,000-key audit
   before targetSdk=37 bump).
 - T3 row: **Android 18 Implicit URI Grant Removal** (preemptive
@@ -7532,7 +7541,7 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   Mapping** (Inure 106.5.0 model).
 - T12 rows: **Native Library Sizes in App Details** + **Batch APK
   Installer from File Manager** (Inure 107.0.0/.1 model).
-- New sources S65–S68 logged. Full research at
+- New sources S65 through S68 logged. Full research at
   [docs/research/2026-05-02-android-power-tools.md](docs/research/2026-05-02-android-power-tools.md).
 
 ### Compliance
@@ -7556,11 +7565,11 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
   tiers when the available width is ≥ 600dp (tablets, foldables in
   landscape, Chromebooks, free-form windowed mode). Phone-sized devices
   read the existing `values/dimens.xml` unchanged. No per-layout edits
-  required — the new values propagate to every layout already consuming
+  required, the new values propagate to every layout already consuming
   these tokens.
 - **Sort by Dangerous Permissions**: new `SORT_BY_DANGEROUS_PERMS` option in
-  the main app list (Sort menu). Mirrors the `SORT_BY_TRACKERS` shape —
-  primary key is granted dangerous perms (most-privileged-by-actual-grant
+  the main app list (Sort menu). Mirrors the `SORT_BY_TRACKERS` shape.
+  The primary key is granted dangerous perms (most-privileged-by-actual-grant
   apps surface first); secondary key is total declared dangerous perms.
   Wires `dangerous_perm_total` / `dangerous_perm_granted` (Room schema v9)
   into the user-facing UI.
@@ -7575,10 +7584,10 @@ Maintenance release. Concentrates 19 closed Now/Eng-Debt rows from the iter-19/i
 - **`elegantTextHeight` audit (clean)**: Android 16 / targetSdk=36 silently
   ignores `android:elegantTextHeight`; affects Arabic/Thai/Indic text
   rendering. Recursive sweep across all source roots returned zero
-  matches — no remediation required. Audit recorded at
+  matches, no remediation required. Audit recorded at
   [docs/audits/2026-05-01-elegant-text-height.md](docs/audits/2026-05-01-elegant-text-height.md).
 
-## v0.3.0 — 2026-06-05
+## v0.3.0, 2026-06-05
 
 Platform compliance, bug fixes, and observability hardening.
 
@@ -7611,7 +7620,7 @@ Platform compliance, bug fixes, and observability hardening.
   `main` (was limited to `master`); `workflow_dispatch` added for on-demand scans.
 
 ### Deferred
-- `Utils.java` flag-string i18n (5 methods × ~50 string resources) — deferred to v0.4.0.
+- `Utils.java` flag-string i18n (5 methods × ~50 string resources), deferred to v0.4.0.
   Caller Context injection required before extracting strings.
 
 Identity milestone: AppManagerNG now has its own install identity, signing key, and release
@@ -7621,7 +7630,7 @@ pipeline, fully separated from the upstream package.
 - **`applicationId` rename**: install identity changed from `io.github.muntashirakon.AppManager`
   to `io.github.sysadmindoc.AppManagerNG`. Source namespace kept at
   `io.github.muntashirakon.AppManager` (full namespace rename is future work).
-- **New release keystore**: `AppManagerNG-release.jks` — 4096-bit RSA, 10,000-day validity.
+- **New release keystore**: `AppManagerNG-release.jks`, 4096-bit RSA, 10,000-day validity.
   SHA-256: `21:5F:B4:70:63:2E:A6:CD:59:A4:BA:AB:35:0A:9E:0B:99:AD:11:0F:DD:FA:F5:A9:EA:64:61:E5:D0:C2:38:6C`
 - **GitHub Actions release pipeline** (`.github/workflows/release.yml`): tag push → build →
   sign → upload arm64-v8a + universal APKs to GitHub Releases.
@@ -7637,7 +7646,7 @@ pipeline, fully separated from the upstream package.
   instead of a literal string, so it tracks applicationId changes automatically.
 - `settings.gradle`: `rootProject.name` updated to `AppManagerNG`.
 
-## v0.1.0 — 2026-04-30
+## v0.1.0, 2026-04-30
 
 Initial AppManagerNG release. Repo bootstrap from upstream
 [App Manager](https://github.com/MuntashirAkon/AppManager) commit
@@ -7655,7 +7664,7 @@ Initial AppManagerNG release. Repo bootstrap from upstream
 
 ### Preserved (unchanged from upstream)
 - All Java/Kotlin/Native sources
-- Package name (`io.github.muntashirakon.AppManager`) and namespace — rebrand deferred to v0.2.0
+- Package name (`io.github.muntashirakon.AppManager`) and namespace, rebrand deferred to v0.2.0
 - License files: `COPYING`, `LICENSES/` directory (REUSE-compliant), per-file SPDX headers
 - Build configuration (Gradle, AGP version, dependencies, signing config)
 - Documentation: `BUILDING.rst`, `CONTRIBUTING.rst`, `PRIVACY_POLICY.rst`, `docs/`
@@ -7663,12 +7672,12 @@ Initial AppManagerNG release. Repo bootstrap from upstream
 - Submodule pointers (`scripts/android-libraries`, `scripts/android-debloat-list`)
 
 ### Roadmap
-- **v0.2.0** — applicationId + namespace rename to `io.github.sysadmindoc.AppManagerNG`; fresh keystore
-- **v0.3.0** — Material 3 dashboard refresh + Pro-mode toggle for advanced features
-- **v0.4.0** — Onboarding flow (root/ADB capability detection + plain-language explainer)
-- **v0.5.0** — Settings reorganization + in-app search and help
+- **v0.2.0**, applicationId + namespace rename to `io.github.sysadmindoc.AppManagerNG`; fresh keystore
+- **v0.3.0**, Material 3 dashboard refresh + Pro-mode toggle for advanced features
+- **v0.4.0**, Onboarding flow (root/ADB capability detection + plain-language explainer)
+- **v0.5.0**, Settings reorganization + in-app search and help
 
-## Roadmap archive — 2026-08-10 — ROADMAP.md
+## Roadmap archive, 2026-08-10, ROADMAP.md
 
 <details>
 <summary>Original roadmap snapshot</summary>
@@ -7681,9 +7690,9 @@ Live checklist of incomplete work. Maintainer-local historical archives are not
 published with the repository. Research backing the items below: `RESEARCH.md`.
 
 If a live copy of this file exists on another machine, merge these additions
-into it — existing items take precedence over duplicates.
+into it, existing items take precedence over duplicates.
 
-All remaining items are in `Roadmap_Blocked.md` — gated on device access,
+All remaining items are in `Roadmap_Blocked.md`, gated on device access,
 visual verification, privileged-mode testing, or external dependencies.
 
 ## Research-Driven Additions (2026-06-20)
@@ -7694,9 +7703,9 @@ All remaining blocked items are in `Roadmap_Blocked.md`.
 
 ## Research-Driven Additions
 
-Backing research: `RESEARCH.md` (2026-07-12) — user-state protection (snapshot secret
+Backing research: `RESEARCH.md` (2026-07-12), user-state protection (snapshot secret
 boundary, Room migration safety, snapshot portability, encrypted bundles, release/screenshot
-truth) — combined with a host-verifiable code-level correctness audit of the intercept /
+truth), combined with a host-verifiable code-level correctness audit of the intercept /
 backup / apk-parser / search / debloat / filters / rules / uri subsystems (findings cited
 inline per item). All items are fixable and unit-testable offline except the screenshot
 refresh, which needs a capture environment.
@@ -7759,13 +7768,13 @@ fixed, so these are net-new. Every item below is host-implementable and host-tes
 ## Security Threat-Model Follow-ups (2026-07-30)
 
 Source: an automated security scan of the privileged core (`server`, `libserver`,
-`libcore/io`, `libcore/compat` — 99 files at revision `57838cd`) that was **stopped during
+`libcore/io`, `libcore/compat`, 99 files at revision `57838cd`) that was **stopped during
 the research stage**. The inventory and four threat models completed; no vulnerability
 researcher reported and nothing below was confirmed by a verification panel.
 
 Every row is therefore an **unverified hypothesis with a file:line anchor**, not a
 confirmed vulnerability. Each one starts by establishing whether the weakness is real and
-reachable — several are plausibly already mitigated by callers outside the scanned scope
+reachable, several are plausibly already mitigated by callers outside the scanned scope
 (notably `RootServiceServer` doing the `getCallingUid()` work at
 `app/src/main/java/io/github/muntashirakon/AppManager/ipc/RootServiceServer.java:127/145/182`).
 Closing a row with evidence that it is already handled is a valid outcome and should leave
@@ -7779,47 +7788,47 @@ a device.
 ### P3
 
 
-## Audit Findings — 2026-08-02
+## Audit Findings, 2026-08-02
 
 Source: a read-only, multi-pass audit at revision `c1e609861`. Baseline recorded before any
 inspection: `:app:testFlossDebugUnitTest` + `:libcore:compat:test` = 2491 tests, 0 failures, 1
 skipped; `py -3.12 -m unittest discover -s scripts/tests` = 47 tests, 0 failures;
-`./gradlew :app:lint` **fails** (see the first P0 below — pre-existing baseline failure). Every
+`./gradlew :app:lint` **fails** (see the first P0 below, pre-existing baseline failure). Every
 item was traced to a reachable caller and checked against existing guards, `CLAUDE.md` and the
 last 50 commits before being logged.
 
-Investigated and deliberately **not** logged — do not re-raise these:
+Investigated and deliberately **not** logged, do not re-raise these:
 `CutPasteId` in `AppDetailsComponentsFragment` (deliberate view-slot aliasing, not a paste error);
 `NewApi` on `AppLocaleOptions.stripExtensions` (guarded by an `SDK_INT < TIRAMISU` early return in
 `AppInfoFragment#showAppLocalePicker`); `NewApi` tooltips in `MultiSelectionActionsView`,
 `ModeOfOpsPreference` and `AudioPlayerDialogFragment` (all correctly `SDK_INT`-guarded); missing
 night overrides for the `premium_*_light/_dark/_amoled` colours (correct raw-token plus
-semantic-alias architecture — `values-night/colors-v2.xml` overrides the aliases); AMOLED tokens
+semantic-alias architecture, `values-night/colors-v2.xml` overrides the aliases); AMOLED tokens
 (all six are referenced); `notifyDataSetChanged` in `MainActivity` (one-shot import path only, the
 main list already diffs via `AdapterUtils`); unused `ArrayUtils.remove(ArraySet)` (vendored AOSP
 file kept verbatim by design); `Overdraw` (14 layouts, negligible impact).
 
-Two dimensions were swept and found **genuinely clean** — recorded here so the next pass does not
+Two dimensions were swept and found **genuinely clean**, recorded here so the next pass does not
 repeat the work:
 
 - **Security.** No `WebView` anywhere in the app, so the usual JavaScript/file-access/JS-bridge
   surface does not exist. Every `PendingIntent` factory call already passes an explicit mutability
   flag (the only three grep hits are method declarations returning `PendingIntent`, not factory
   calls). Of 36 exported components with no `android:permission`, the sensitive ones are gated in
-  code rather than by manifest permission: `AutomationUriActivity` — reachable from the web via
-  `BROWSABLE` `am://` links — runs behind the app's authentication gate (`onAuthenticated`) and then
+  code rather than by manifest permission: `AutomationUriActivity`, reachable from the web via
+  `BROWSABLE` `am://` links, runs behind the app's authentication gate (`onAuthenticated`) and then
   shows an explicit confirmation naming the action, target and user
   (`automation_request_confirm_message` = "Action: %1$s\\nTarget: %2$s\\nUser: %3$s"). The backup
   rules correctly keep `server_secrets.xml` out of both cloud backup and device transfer, and those
   excludes sit inside an `<include domain="sharedpref" path="."/>`, so they take effect. The nine
   `FullBackupContent` lint Fatals are redundant `<exclude>` entries for domains that were never
-  included — noise, not a leak. The privileged core (`server`, `libserver`, `libcore/io`,
+  included, noise, not a leak. The privileged core (`server`, `libserver`, `libcore/io`,
   `libcore/compat`) was hardened across the nine commits ending at `c1e609861` and was not re-audited
   here.
 - **Performance.** No material issue found. `Overdraw` affects 14 layouts but is negligible;
   `notifyDataSetChanged` survives only on a one-shot import path; `StaticDataset` uses lazy static
-  caches rather than parsing its large resource tables eagerly. Note this was assessed statically —
-  no profiling or device run was performed, so see the "Unaudited areas" item below.
+  caches rather than parsing its large resource tables eagerly. Note this was assessed statically.
+  No profiling or device run was performed, so see the "Unaudited areas" item below.
 
 ### P1
 

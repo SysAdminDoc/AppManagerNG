@@ -1,6 +1,6 @@
 Deep audit hardening release.
 
-- Clear Data fallback fixed on Android 5–8 devices.
+- Clear Data fallback fixed on Android 5 through 8 devices.
 - Pure-black theme now survives Material You dynamic colors.
 - Log Viewer no longer crashes on an invalid saved filter pattern.
 - Terminal thread-safety and resource fixes.
