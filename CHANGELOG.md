@@ -5,6 +5,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Added
+- Every release now publishes the R8 mapping for each flavor, so a crash report from a released build can be turned back into real class and method names. The mapping is verified byte-identical across both clean builds, and publication stops if an APK has no mapping to go with it. README explains how to use it.
+
 ### Fixed
 - Installing and uninstalling without root works again. Android hands back its confirmation prompt as an intent that names no target at all, and since v0.6.7 AppManagerNG refused those outright, so the prompt never appeared and the session sat there. The refusal was meant to stop a hostile payload being launched with our identity, and it still does: an unaddressed payload is now resolved and forwarded only when it lands on an activity inside a system package, bound to exactly that component.
 - The install notification no longer sticks at full progress after a session ends. It is retired by whichever path ends the session, including the ones that never reached a status broadcast, and a refused prompt now ends the session instead of leaving a notification whose only action could fail.

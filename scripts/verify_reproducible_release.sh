@@ -25,6 +25,7 @@ fi
 # the first build's artifacts — and destroys the published artifacts and reports on the way out.
 OUT_DIR="${REPRO_OUT_DIR:-reproducible-release}"
 APK_ROOT="app/build/outputs/apk"
+MAPPING_ROOT="app/build/outputs/mapping"
 FIRST_DIR="$OUT_DIR/first"
 SECOND_DIR="$OUT_DIR/second"
 PUBLISH_DIR="$OUT_DIR/publish"
@@ -81,6 +82,37 @@ publish_name_for() {
     printf 'AppManagerNG-reproducible-%s.apk' "$variant"
 }
 
+# flossRelease -> floss-release, so a mapping pairs with the APK built from the same variant.
+variant_to_apk_suffix() {
+    printf '%s' "$1" | sed 's/\([a-z0-9]\)\([A-Z]\)/\1-\2/g' | tr '[:upper:]' '[:lower:]'
+}
+
+# The release build is minified, so a stack trace from a published APK is unreadable without the
+# mapping R8 wrote beside it. Collect it with the APKs and fail closed when a variant has none:
+# publishing an obfuscated build with no way to decode it makes every crash report unactionable.
+copy_mappings() {
+    local destination_dir="$1"
+    local mapping_dir="$destination_dir/mapping"
+    mkdir -p "$mapping_dir"
+    local variant_dir
+    local variant
+    local found=0
+    for variant_dir in "$MAPPING_ROOT"/*Release; do
+        [[ -d "$variant_dir" ]] || continue
+        variant="$(basename "$variant_dir")"
+        if [[ ! -f "$variant_dir/mapping.txt" ]]; then
+            echo "ERROR: Minified variant $variant produced no mapping.txt under $variant_dir" >&2
+            exit 1
+        fi
+        cp "$variant_dir/mapping.txt" "$mapping_dir/$variant.txt"
+        found=1
+    done
+    if (( found == 0 )); then
+        echo "ERROR: No R8 mapping was produced under $MAPPING_ROOT" >&2
+        exit 1
+    fi
+}
+
 build_once() {
     local label="$1"
     local destination_dir="$2"
@@ -111,6 +143,7 @@ build_once() {
         seen[$name]="$apk"
         cp "$apk" "$destination_dir/$name"
     done
+    copy_mappings "$destination_dir"
     copy_server_jars "." "$destination_dir/server-jars"
     (
         cd "$destination_dir"
@@ -210,6 +243,31 @@ while IFS= read -r name; do
     printf '%s\n%s\n' "$publish_apk" "$publish_apk.sha256" >> "$ASSET_LIST"
     echo "Reproducible release APK verified: $name $first_hash"
 done <<< "$FIRST_APKS"
+
+# A mapping that differs between two clean builds means the DEX differs too, so the APK
+# comparison above would be the only thing that looked stable.
+for mapping in "$FIRST_DIR"/mapping/*.txt; do
+    [[ -f "$mapping" ]] || continue
+    variant="$(basename "$mapping" .txt)"
+    second_mapping="$SECOND_DIR/mapping/$variant.txt"
+    if [[ ! -f "$second_mapping" ]]; then
+        echo "ERROR: Variant $variant produced a mapping in the first build but not the second." >&2
+        exit 1
+    fi
+    first_hash="$(sha256sum "$mapping" | awk '{print $1}')"
+    second_hash="$(sha256sum "$second_mapping" | awk '{print $1}')"
+    if [[ "$first_hash" != "$second_hash" ]]; then
+        echo "ERROR: R8 mapping for $variant is not reproducible across two clean builds." >&2
+        echo "ERROR: first=$first_hash second=$second_hash" >&2
+        exit 1
+    fi
+    publish_mapping="$PUBLISH_DIR/AppManagerNG-reproducible-$(variant_to_apk_suffix "$variant")-mapping.txt"
+    cp "$mapping" "$publish_mapping"
+    printf '%s  %s\n' "$first_hash" "$(basename "$publish_mapping")" \
+        | tee "$publish_mapping.sha256" >> "$OUT_DIR/sha256.txt"
+    printf '%s\n%s\n' "$publish_mapping" "$publish_mapping.sha256" >> "$ASSET_LIST"
+    echo "Reproducible R8 mapping verified: $variant $first_hash"
+done
 
 sbom_path="$PUBLISH_DIR/AppManagerNG-reproducible.cdx.json"
 "${PYTHON_BIN[@]}" scripts/generate-cyclonedx-sbom.py --output "$sbom_path"

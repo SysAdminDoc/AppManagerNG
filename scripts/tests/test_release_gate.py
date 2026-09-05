@@ -227,6 +227,50 @@ BADGING = (
 )
 
 
+class MappingCoverageTest(unittest.TestCase):
+    """A minified APK published without its R8 mapping cannot have its crashes read.
+
+    Fork issue #12 arrived with frames like ``nf0.<init>`` and nothing to resolve them against,
+    which is what this check exists to prevent shipping again.
+    """
+
+    FLOSS_APK = "AppManagerNG-reproducible-floss-release.apk"
+    FULL_APK = "AppManagerNG-reproducible-full-release.apk"
+    FLOSS_MAPPING = "AppManagerNG-reproducible-floss-release-mapping.txt"
+    FULL_MAPPING = "AppManagerNG-reproducible-full-release-mapping.txt"
+
+    def test_a_mapping_for_every_apk_passes(self) -> None:
+        artifacts = [
+            self.FLOSS_APK, self.FLOSS_APK + ".sha256", self.FLOSS_MAPPING,
+            self.FLOSS_MAPPING + ".sha256", self.FULL_APK, self.FULL_MAPPING,
+            "AppManagerNG-reproducible.cdx.json", "server-jars.txt",
+        ]
+        self.assertEqual([], gate.check_mapping_coverage(artifacts))
+
+    def test_an_apk_without_a_mapping_blocks_the_release(self) -> None:
+        problems = gate.check_mapping_coverage(
+            [self.FLOSS_APK, self.FLOSS_MAPPING, self.FULL_APK]
+        )
+        self.assertTrue(any(self.FULL_APK in p for p in problems), problems)
+
+    def test_no_mapping_at_all_blocks_the_release(self) -> None:
+        self.assertNotEqual([], gate.check_mapping_coverage([self.FLOSS_APK, self.FULL_APK]))
+
+    def test_a_sha256_sidecar_is_not_mistaken_for_a_mapping(self) -> None:
+        problems = gate.check_mapping_coverage([self.FLOSS_APK, self.FLOSS_MAPPING + ".sha256"])
+        self.assertTrue(any(self.FLOSS_APK in p for p in problems), problems)
+
+    def test_a_mapping_whose_apk_was_not_published_is_caught(self) -> None:
+        problems = gate.check_mapping_coverage(
+            [self.FLOSS_APK, self.FLOSS_MAPPING, self.FULL_MAPPING]
+        )
+        self.assertTrue(any(self.FULL_MAPPING in p for p in problems), problems)
+
+    def test_a_publish_set_with_no_apk_is_an_error_not_a_pass(self) -> None:
+        self.assertNotEqual([], gate.check_mapping_coverage(["server-jars.txt"]))
+        self.assertNotEqual([], gate.check_mapping_coverage([]))
+
+
 class ArtifactIdentityTest(unittest.TestCase):
     EXPECTED = {
         "packageName": "io.github.sysadmindoc.AppManagerNG",
