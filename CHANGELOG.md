@@ -3,6 +3,13 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## Unreleased
+
+### Fixed
+- Installing and uninstalling without root works again. Android hands back its confirmation prompt as an intent that names no target at all, and since v0.6.7 AppManagerNG refused those outright, so the prompt never appeared and the session sat there. The refusal was meant to stop a hostile payload being launched with our identity, and it still does: an unaddressed payload is now resolved and forwarded only when it lands on an activity inside a system package, bound to exactly that component.
+- The install notification no longer sticks at full progress after a session ends. It is retired by whichever path ends the session, including the ones that never reached a status broadcast, and a refused prompt now ends the session instead of leaving a notification whose only action could fail.
+- Crash reports are readable again. The support bundle used to replace every dotted name with a placeholder, which erased the exception and every line of the stack trace along with it. Platform, language, and AppManagerNG class names are kept; anything that could name an app you installed is still masked, and a line number is no longer mistaken for an identifier.
+
 ## v0.6.23, 2026-09-05
 
 ### Changed

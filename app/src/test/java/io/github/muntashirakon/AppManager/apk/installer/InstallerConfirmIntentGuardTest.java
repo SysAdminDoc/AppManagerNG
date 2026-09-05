@@ -10,11 +10,20 @@ import static org.junit.Assert.assertTrue;
 
 import android.content.ComponentName;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
+import org.robolectric.Shadows;
 
 /**
  * The confirmation intent reaches us through a mutable {@code PendingIntent}, so whoever can make
@@ -103,5 +112,144 @@ public class InstallerConfirmIntentGuardTest {
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         InstallerConfirmIntentGuard.sanitize(confirm, SELF);
         assertTrue(InstallerConfirmIntentGuard.carriesUriGrants(confirm));
+    }
+
+    // The cases below are the payloads the platform actually hands back. Every case above builds
+    // its own intent, so none of them proved the guard passes a real confirmation through.
+
+    /**
+     * AOSP builds this one in {@code PackageInstallerService}: action, a {@code package:} data URI,
+     * a callback binder, and nothing else. Verified against android-10.0.0_r47 and
+     * android-13.0.0_r83, which are byte-for-byte identical in this respect.
+     */
+    @NonNull
+    private static Intent aospUninstallConfirmation() {
+        return new Intent(Intent.ACTION_UNINSTALL_PACKAGE)
+                .setData(Uri.fromParts("package", "com.example.victim", null));
+    }
+
+    /**
+     * {@code PackageInstaller.ACTION_CONFIRM_INSTALL} is hidden, so the literal is used here. AOSP
+     * sets a package on this one, but a ROM whose {@code getPackageInstallerPackageName()} comes
+     * back null leaves it implicit, which is the shape reported in fork issue #14.
+     */
+    @NonNull
+    private static Intent implicitInstallConfirmation() {
+        return new Intent("android.content.pm.action.CONFIRM_INSTALL")
+                .putExtra("android.content.pm.extra.SESSION_ID", 42);
+    }
+
+    @NonNull
+    private PackageManager resolverFor(@NonNull Intent query, @Nullable String targetPackage,
+                                       boolean system) {
+        PackageManager packageManager = RuntimeEnvironment.getApplication().getPackageManager();
+        if (targetPackage == null) {
+            return packageManager;
+        }
+        ApplicationInfo applicationInfo = new ApplicationInfo();
+        applicationInfo.packageName = targetPackage;
+        applicationInfo.flags = system ? ApplicationInfo.FLAG_SYSTEM : 0;
+        ActivityInfo activityInfo = new ActivityInfo();
+        activityInfo.packageName = targetPackage;
+        activityInfo.name = targetPackage + ".InstallStart";
+        activityInfo.applicationInfo = applicationInfo;
+        ResolveInfo resolveInfo = new ResolveInfo();
+        resolveInfo.activityInfo = activityInfo;
+        Shadows.shadowOf(packageManager).addResolveInfoForIntent(query, resolveInfo);
+        return packageManager;
+    }
+
+    @Test
+    public void theAospUninstallConfirmationIsForwardedToTheResolvedSystemActivity() {
+        Intent confirm = aospUninstallConfirmation();
+        InstallerConfirmIntentGuard.Decision decision = InstallerConfirmIntentGuard.decide(
+                confirm, SELF, resolverFor(confirm, INSTALLER, true));
+        assertTrue(decision.isForwarded());
+        assertEquals(InstallerConfirmIntentGuard.RULE_RESOLVED_SYSTEM, decision.rule);
+        assertNotNull(decision.intent);
+        assertEquals(new ComponentName(INSTALLER, INSTALLER + ".InstallStart"),
+                decision.intent.getComponent());
+        assertEquals(confirm.getData(), decision.intent.getData());
+        assertEquals(Intent.FLAG_ACTIVITY_NEW_TASK, decision.intent.getFlags());
+    }
+
+    @Test
+    public void anImplicitInstallConfirmationIsForwardedToTheResolvedSystemActivity() {
+        Intent confirm = implicitInstallConfirmation();
+        InstallerConfirmIntentGuard.Decision decision = InstallerConfirmIntentGuard.decide(
+                confirm, SELF, resolverFor(confirm, INSTALLER, true));
+        assertTrue(decision.isForwarded());
+        assertEquals(InstallerConfirmIntentGuard.RULE_RESOLVED_SYSTEM, decision.rule);
+        assertNotNull(decision.intent);
+        assertEquals(INSTALLER, decision.intent.getComponent().getPackageName());
+        assertEquals(42, decision.intent.getIntExtra("android.content.pm.extra.SESSION_ID", -1));
+    }
+
+    @Test
+    public void anImplicitPayloadResolvingToANonSystemPackageIsRejected() {
+        Intent confirm = aospUninstallConfirmation();
+        InstallerConfirmIntentGuard.Decision decision = InstallerConfirmIntentGuard.decide(
+                confirm, SELF, resolverFor(confirm, "com.attacker.app", false));
+        assertNull(decision.intent);
+        assertEquals(InstallerConfirmIntentGuard.RULE_NOT_SYSTEM, decision.rule);
+        assertEquals("com.attacker.app/.InstallStart", decision.target);
+    }
+
+    @Test
+    public void anImplicitPayloadResolvingBackToUsIsRejected() {
+        Intent confirm = aospUninstallConfirmation();
+        InstallerConfirmIntentGuard.Decision decision = InstallerConfirmIntentGuard.decide(
+                confirm, SELF, resolverFor(confirm, SELF, true));
+        assertNull(decision.intent);
+        assertEquals(InstallerConfirmIntentGuard.RULE_SELF_REDIRECT, decision.rule);
+    }
+
+    @Test
+    public void anImplicitPayloadThatResolvesToNothingIsRejected() {
+        Intent confirm = aospUninstallConfirmation();
+        InstallerConfirmIntentGuard.Decision decision = InstallerConfirmIntentGuard.decide(
+                confirm, SELF, resolverFor(confirm, null, false));
+        assertNull(decision.intent);
+        assertEquals(InstallerConfirmIntentGuard.RULE_UNRESOLVABLE, decision.rule);
+    }
+
+    @Test
+    public void anImplicitPayloadIsStillRejectedWithoutAResolver() {
+        InstallerConfirmIntentGuard.Decision decision = InstallerConfirmIntentGuard.decide(
+                aospUninstallConfirmation(), SELF, null);
+        assertNull(decision.intent);
+        assertEquals(InstallerConfirmIntentGuard.RULE_NO_RESOLVER, decision.rule);
+    }
+
+    @Test
+    public void uriGrantsAreStrippedFromAResolvedPayload() {
+        Intent confirm = aospUninstallConfirmation()
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+        assertTrue(InstallerConfirmIntentGuard.carriesUriGrants(confirm));
+        InstallerConfirmIntentGuard.Decision decision = InstallerConfirmIntentGuard.decide(
+                confirm, SELF, resolverFor(confirm, INSTALLER, true));
+        assertNotNull(decision.intent);
+        assertFalse(InstallerConfirmIntentGuard.carriesUriGrants(decision.intent));
+        assertEquals(Intent.FLAG_ACTIVITY_NEW_TASK, decision.intent.getFlags());
+        assertTrue(InstallerConfirmIntentGuard.carriesUriGrants(confirm));
+    }
+
+    @Test
+    public void anExplicitlyTargetedPayloadStillReportsItsRule() {
+        Intent confirm = new Intent(Intent.ACTION_VIEW).setPackage(INSTALLER);
+        InstallerConfirmIntentGuard.Decision decision =
+                InstallerConfirmIntentGuard.decide(confirm, SELF, null);
+        assertTrue(decision.isForwarded());
+        assertEquals(InstallerConfirmIntentGuard.RULE_EXPLICIT_TARGET, decision.rule);
+        assertEquals(INSTALLER, decision.target);
+    }
+
+    @Test
+    public void anAbsentPayloadReportsItsRule() {
+        InstallerConfirmIntentGuard.Decision decision =
+                InstallerConfirmIntentGuard.decide(null, SELF, null);
+        assertNull(decision.intent);
+        assertEquals(InstallerConfirmIntentGuard.RULE_ABSENT, decision.rule);
     }
 }

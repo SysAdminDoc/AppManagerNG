@@ -45,6 +45,31 @@ class PackageInstallerBroadcastReceiver extends BroadcastReceiver {
         mSessionSha256 = sessionSha256;
     }
 
+    /**
+     * Retire the confirmation notification this receiver posted, if it still owns one.
+     *
+     * <p>The notification is posted with {@code setAutoCancel(false)} because the user has to be
+     * able to come back to it, which means nothing retires it on its own. Only two of this
+     * receiver's own branches used to do it, so an install that ended anywhere else — a refused
+     * confirmation payload, an expired interaction wait, a retry on MIUI — left the notification
+     * sitting there with a running progress bar and no way to act on it.
+     *
+     * <p>{@link PackageInstallerCompat} calls this from the {@code finally} that ends every
+     * install and uninstall path, so the receiver's own branches and every other terminal outcome
+     * converge here. Forgetting the id first makes every later caller a no-op.
+     *
+     * @return whether this call was the one that retired it.
+     */
+    boolean clearConfirmNotification(@NonNull Context context) {
+        int notificationId = mConfirmNotificationId;
+        if (notificationId <= 0) {
+            return false;
+        }
+        mConfirmNotificationId = 0;
+        NotificationUtils.cancelInstallConfirmNotification(context, notificationId);
+        return true;
+    }
+
     @Override
     public void onReceive(Context nullableContext, @NonNull Intent intent) {
         Context context = nullableContext != null ? nullableContext : ContextUtils.getContext();
@@ -64,9 +89,20 @@ class PackageInstallerBroadcastReceiver extends BroadcastReceiver {
                 // Open confirmIntent using the PackageInstallerActivity.
                 // If the confirmIntent isn't open via an activity, it will fail for large apk files
                 // The payload arrives through a mutable PendingIntent; never forward it verbatim.
-                Intent confirmIntent = InstallerConfirmIntentGuard.sanitize(
+                InstallerConfirmIntentGuard.Decision decision = InstallerConfirmIntentGuard.decide(
                         IntentCompat.getParcelableExtra(intent, Intent.EXTRA_INTENT, Intent.class),
-                        context.getPackageName());
+                        context.getPackageName(), context.getPackageManager());
+                Intent confirmIntent = decision.intent;
+                if (confirmIntent == null) {
+                    // There is no prompt to show, so posting a notification that opens an activity
+                    // which can only fail would leave the user with a progress bar and no action.
+                    // End the session here instead, and do it from the receiver so it happens
+                    // whether or not the app is in the foreground.
+                    Log.w(TAG, "Confirmation intent refused: %s", decision);
+                    PackageInstallerCompat.sendCompletedBroadcast(context, mPackageName,
+                            PackageInstallerCompat.STATUS_FAILURE_INCOMPATIBLE_ROM, sessionId);
+                    break;
+                }
                 Intent intent2 = new Intent(context, PackageInstallerActivity.class);
                 intent2.setAction(PackageInstallerActivity.ACTION_PACKAGE_INSTALLED);
                 intent2.putExtra(Intent.EXTRA_INTENT, confirmIntent);
@@ -105,11 +141,11 @@ class PackageInstallerBroadcastReceiver extends BroadcastReceiver {
                 break;
             case PackageInstaller.STATUS_SUCCESS:
                 Log.d(TAG, "Install success!");
-                NotificationUtils.cancelInstallConfirmNotification(context, mConfirmNotificationId);
+                clearConfirmNotification(context);
                 PackageInstallerCompat.sendCompletedBroadcast(context, mPackageName, PackageInstallerCompat.STATUS_SUCCESS, sessionId);
                 break;
             default:
-                NotificationUtils.cancelInstallConfirmNotification(context, mConfirmNotificationId);
+                clearConfirmNotification(context);
                 Intent broadcastError = new Intent(PackageInstallerCompat.ACTION_INSTALL_COMPLETED);
                 broadcastError.setPackage(context.getPackageName());
                 String statusMessage = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);

@@ -7,9 +7,9 @@ Confidence labels: **[Verified]** observed in the checked tree or in an authorit
 
 ## Executive Summary
 
-[Verified] AppManagerNG v0.6.22 (2026-08-30, versionCode 30) is an offline-first Android package administration suite: 971 Java files, ~225k lines, 464 host test classes, minSdk 21 / targetSdk 36 / compileSdk 37, FLOSS and full flavors, and a fail-closed local release gate that produces byte-identical builds plus an SBOM, a CVE receipt, and a signing receipt. Its release evidence is stronger than upstream's — upstream App Manager's own v4.1.1 reproducible build is currently failing IzzyOnDroid verification (upstream #2035), which is precisely the failure class this fork's two-checkout server-JAR rehash already guards.
+[Verified] AppManagerNG is an offline-first Android package administration suite: 971 Java files, ~225k lines, 464 host test classes, minSdk 21 / targetSdk 36 / compileSdk 37, FLOSS and full flavors, and a fail-closed local release gate that produces byte-identical builds plus an SBOM, a CVE receipt, and a signing receipt. Its release evidence is stronger than upstream's — upstream App Manager's own v4.1.1 reproducible build is currently failing IzzyOnDroid verification (upstream #2035), which is precisely the failure class this fork's two-checkout server-JAR rehash already guards.
 
-The tree has not moved since v0.6.22 shipped, and four user reports have arrived since: fork issues #12, #13, #14 (all 2026-08-30) and #15 (2026-08-31). Three are bugs. One of them is a regression this fork introduced. That is where the next release has to go, and the previous research pass (2026-08-30) predates all four.
+[Verified] The tree is at **v0.6.23, versionCode 31** (`app/build.gradle:22-23`), tagged `v0.6.23` and not yet published; the newest GitHub release is still v0.6.22 from 2026-08-30. Four user reports have arrived since that release: fork issues #12, #13, #14 (all 2026-08-30) and #15 (2026-08-31). Three are bugs. One of them is a regression this fork introduced. That is where the next release has to go, and the previous research pass (2026-08-30) predates all four.
 
 Top opportunities, in priority order:
 
