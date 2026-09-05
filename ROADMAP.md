@@ -96,29 +96,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ## Research-Driven Additions (2026-09-05)
 
-### P0
-
-- [ ] P0: Accept the platform's own installer and uninstaller confirmation intents
-  Why: AOSP builds the uninstall confirmation with no component and no package, so the guard rejects every no-root uninstall on every device, and any ROM that leaves the install confirmation implicit loses installs the same way.
-  Evidence: fork issue #14 (Xiaomi Redmi 9C, MIUI 12.0.16, API 29, v0.6.22; the reporter confirms upstream App Manager installs fine on the same device); AOSP `PackageInstallerService.java:861` on android-10.0.0_r47 and `:1182` on android-13.0.0_r83 build `new Intent(Intent.ACTION_UNINSTALL_PACKAGE)` carrying only a `package:` data URI; `apk/installer/InstallerConfirmIntentGuard.java:44-50` returns null for any payload without an explicit target; the guard landed in `7df18f1da` (2026-07-29, v0.6.7); `apk/installer/PackageInstallerActivity.java:580`.
-  Touches: `apk/installer/InstallerConfirmIntentGuard.java`, `apk/installer/PackageInstallerBroadcastReceiver.java`, `apk/installer/PackageInstallerActivity.java`, `app/src/test/java/io/github/muntashirakon/AppManager/apk/installer/InstallerConfirmIntentGuardTest.java`.
-  Acceptance: an implicit payload is resolved through `PackageManager` and forwarded only when it resolves to a component in a system package, bound explicitly to that resolved component before launch; a payload resolving to a non-system package, to this application, or to nothing is still rejected; caller-chosen flags and URI grants are still dropped; the guard test gains positive controls built from the exact AOSP payload shapes for `ACTION_UNINSTALL_PACKAGE` and `ACTION_CONFIRM_INSTALL`, and reverting the fix turns those cases red; a rejection records which rule fired and what the payload resolved to, so the next report names the ROM instead of guessing.
-  Complexity: M
-
-- [ ] P0: Give every install session outcome a single owner that clears its notification
-  Why: the confirmation notification is cancelled only from the success and failure branches of the broadcast receiver, so a rejected confirmation intent and an expired user-interaction wait both leave it posted indefinitely with a running progress bar.
-  Evidence: fork issue #14 reports the notification at 100 percent still scrolling after five minutes; `apk/installer/PackageInstallerBroadcastReceiver.java:88` posts it with `setAutoCancel(false)` and cancels only at `:108` and `:112`; `apk/installer/PackageInstallerActivity.java:587-595` reports `STATUS_FAILURE_INCOMPATIBLE_ROM` on a path that never reaches the receiver; `apk/installer/PackageInstallerCompat.java:99` sets `USER_INTERACTION_TIMEOUT_MINUTES = 5` and its expiry also bypasses the receiver.
-  Touches: `apk/installer/PackageInstallerBroadcastReceiver.java`, `apk/installer/PackageInstallerActivity.java`, `apk/installer/PackageInstallerCompat.java`, `apk/installer/PackageInstallerService.java`, `utils/NotificationUtils.java`, installer host tests.
-  Acceptance: success, platform failure, guard rejection, user cancel, interaction timeout, and install-result timeout all report through one sink that cancels the confirmation notification and emits exactly one completion broadcast; a host test drives each of those six outcomes and asserts the notification id is cancelled once and only once; a guard rejection also surfaces a user-visible failure rather than only a broadcast that no listener is registered for.
-  Complexity: M
-
-- [ ] P0: Stop the support bundle from erasing the stack traces it collects
-  Why: the scrubber replaces every dotted identifier with a placeholder, which deletes exception class names and every framework and application frame, so a crash report from a released build cannot be read at all.
-  Evidence: the trace pasted in fork issue #12, in which the only surviving frames are `nf0.<init>` and `j$.` entries because neither matches the regex; `misc/SupportInfoBundle.java:241`; the adjacent rule at `:242` maps any five-to-seven-digit run to a placeholder, which also corrupts long line numbers and the device build ID; the same function is applied by the uncaught-exception handler at `misc/AMExceptionHandler.java:82`, so the crash report `misc/LocalCrashSink.java` writes to disk is stripped too, and by `apk/installer/InstallTranscript.java:129,134,139`, which mangles installer failure explanations.
-  Touches: `misc/SupportInfoBundle.java`, `app/src/test/java/io/github/muntashirakon/AppManager/misc/SupportInfoBundleTest.java`, `.github/ISSUE_TEMPLATE/bug_report.yml`.
-  Acceptance: identifiers under `android.`, `androidx.`, `java.`, `javax.`, `dalvik.`, `libcore.`, `kotlin.`, `j$.`, `com.google.android.material.` and this application id survive verbatim in stack-trace context; third-party package names outside that allowlist are still replaced; the numeric rule no longer rewrites digits following a colon in a frame; a test feeds the exact trace from fork issue #12 through the scrubber and asserts the exception classes and frame classes are readable while an unrelated third-party package name and an email address are still redacted; removing the allowlist turns that test red.
-  Complexity: S
-
 ### P1
 
 - [ ] P1: Publish the R8 mapping file with every release
