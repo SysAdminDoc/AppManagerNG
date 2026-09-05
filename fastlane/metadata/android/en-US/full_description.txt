@@ -1,31 +1,29 @@
-<p><b>AppManagerNG</b> is a maintained fork of MuntashirAkon's App Manager. It keeps the original power-user scope, uses the unique package name <code>io.github.sysadmindoc.AppManagerNG</code>, and ships a refreshed NG identity, release pipeline, and distribution-friendly build flavors.</p>
+<p><b>AppManagerNG</b> gives you a detailed view of the apps installed on your Android device, plus the tools to change them carefully. It works without root for everyday inspection and standard Android actions. Choose a privileged mode when you need deeper package control.</p>
 
-<p>AppManagerNG is built for users who need to inspect, repair, back up, and automate Android apps from one place. It works without privilege where Android allows it, and can use Shizuku, ADB, or root for operations that the platform normally reserves for system tools.</p>
-
-<p><b>Core features</b></p>
+<p><b>Find what Android normally hides</b></p>
 
 <ul>
-<li>List installed and backed-up apps across users and profiles</li>
-<li>Inspect activities, services, receivers, providers, app ops, permissions, signatures, trackers, libraries, manifests, storage, and usage</li>
-<li>Launch activities and services, send guarded broadcasts, and query content providers</li>
+<li>Inspect activities, services, receivers, providers, permissions, AppOps, signatures, trackers, libraries, storage, usage, and manifests</li>
+<li>Build reusable Finder queries for package state, sensitive access, installer, SDK level, size, backups, bloatware classification, and native-library readiness</li>
+<li>Review Camera, Location, Contacts, Notifications, and other sensitive permission groups across every installed app</li>
+<li>See evidence labels in tracker scans and useful explanations when Android blocks an action</li>
+</ul>
+
+<p><b>Maintain your device</b></p>
+
+<ul>
 <li>Install APK, APKS, APKM, XAPK, split APK, and OBB packages</li>
-<li>Back up and restore apps, data, rules, extras, roles, permissions, and encrypted archives</li>
-<li>Run batch operations, one-click operations, profiles, scheduled routines, and Tasker-compatible intents</li>
-<li>Use the debloater, file manager, code editor, shared-preferences editor, logcat exporter, terminal, and tracker scanner</li>
+<li>Freeze, force-stop, clear, uninstall, archive, or back up supported apps</li>
+<li>Use reviewed batch operations, scheduled profiles, package-event triggers, and Tasker-compatible intents</li>
+<li>Work with the built-in debloater, file manager, code editor, log viewer, terminal, and shared-preferences editor</li>
 </ul>
 
-<p><b>Privileged features</b></p>
+<p><b>Keep a way back</b></p>
 
-<ul>
-<li>Freeze, unfreeze, force-stop, clear data, clear cache, and control battery optimization</li>
-<li>Change app ops, revoke runtime and development permissions, and inspect privileged state</li>
-<li>Block components with rule import/export support</li>
-<li>Back up and restore app data with root, Shizuku, ADB, and fallback paths where supported</li>
-<li>Inspect running apps, processes, network policy, SSAID, and system configuration</li>
-</ul>
+<p>Backups can include APKs, app data, rules, permissions, roles, and extras where the selected access mode permits it. Encrypted snapshot bundles carry rules, profiles, and preferences between devices with a preview before restore.</p>
 
-<p><b>Distribution posture</b></p>
+<p><b>Private by default</b></p>
 
-<p>The default <code>floss</code> build disables optional third-party online report features at compile time. AppManagerNG has no ads, no analytics, no telemetry upload, and no bundled tracking SDKs. Broad package visibility is required because this is an on-device package manager; the project documents that permission in <code>docs/distribution/package-visibility.md</code>.</p>
+<p>AppManagerNG has no ads, analytics, telemetry upload, or bundled tracking SDKs. The FLOSS build removes optional third-party report features at compile time. The full build makes VirusTotal reports and debloat-list updates available, but leaves them off until you enable them.</p>
 
-<p>Source, license, reproducible-build notes, changelog, and issue tracker are available from the project repository.</p>
+<p>AppManagerNG is a maintained continuation of Muntashir Al-Islam's App Manager. Source code, signing fingerprints, reproducible-build notes, checksums, and release evidence are published with the project.</p>
