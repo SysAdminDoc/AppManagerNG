@@ -98,13 +98,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ### P1
 
-- [ ] P1: Fix the Code Editor inflation crash and stop it taking the process down
-  Why: opening the Code Editor from Labs crashes and restarts the app on Android 10, and one third-party view failing to inflate should not end the process.
-  Evidence: fork issue #12, `Binary XML file line #51 in layout/fragment_code_editor: Error inflating class` followed by a null-pointer dereference, on a Redmi 9C running API 29, armeabi-v7a only, MIUI 12.0.16, AppManagerNG v0.6.22; `app/src/main/res/layout/fragment_code_editor.xml:41-51` is the `CodeEditorWidget` element; `editor/CodeEditorWidget.java:28-30` only delegates to the pinned sora-editor; `editor/Languages.java` and `LanguagesAssetTest` cover asset presence but never widget construction.
-  Touches: `editor/CodeEditorFragment.java`, `editor/CodeEditorWidget.java`, `app/src/main/res/layout/fragment_code_editor.xml`, `editor/EditorThemes.java`, editor host tests.
-  Acceptance: the reported trace is retraced against the published mapping and the failing constructor path is named in the fix; the editor screen catches an inflation or initialisation failure, shows a dismissible error naming what failed, and returns to Labs rather than terminating; a Robolectric test inflates `fragment_code_editor` at API 21, API 29, and the current target and fails when inflation throws; the underlying cause is fixed rather than only caught, and a regression test pins it.
-  Complexity: M
-
 - [ ] P1: Stop App Info subtitles clipping, and gate long locales and large fonts
   Why: two App Info subtitles cap at one line with no ellipsize, so longer translations are cut mid-glyph with nothing signalling truncation, and nothing automated checks translated string length or font scale.
   Evidence: fork issue #13, Russian locale, Android 10, App Info tab, v0.6.22, with a screenshot; `app/src/main/res/layout/pager_app_info.xml:160` `tracker_cta_subtitle` and `:236` `perms_cta_subtitle` set `android:maxLines="1"` with no `android:ellipsize`, while `:59`, `:73`, `:88` and `:313` all pair the two; the 2026-08-22 visual density pass was verified in English on a single API 35 emulator.
@@ -147,4 +140,13 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Evidence: fork discussion #5, where a user asks for full Dhizuku support because ColorOS 16 restricted ADB permissions and points at `trinadhthatakula/Thor`; `onboarding_confidence_mode_shizuku_ready` and `onboarding_mode_dhizuku_status_ready` in `app/src/main/res/values/strings.xml` against `privilege_health_dhizuku_dialog_message`; `settings/Ops.java:85-90` declares no Dhizuku mode; `apk/installer/InstallerPrivilegeCascade.java:182` adds Dhizuku only as an informational step with a null mode; `dhizuku/DhizukuBridge.java` is a detection probe; Dhizuku-API 2.6.0 declares a minimum SDK of 26 (https://raw.githubusercontent.com/iamr0s/Dhizuku-API/main/build.gradle) against a Dhizuku manager that already requires Android 8.0, so the AAR is a manifest-merger question rather than the API 21 floor conflict the string claims.
   Touches: `app/src/main/res/values/strings.xml`, `onboarding/OnboardingFragment.java`, `settings/PrivilegeHealthPreferences.java`, `docs/policy/minsdk-21-ceiling.md`, `Roadmap_Blocked.md`.
   Acceptance: no user-facing string implies Dhizuku can perform operations while it cannot, and none conflates Shizuku readiness with Dhizuku readiness; the Dhizuku status text states what detection gives the user today and what it does not; `docs/policy/minsdk-21-ceiling.md` records the measured Dhizuku-API minimum SDK and the decision on whether an API 26 guarded module with `tools:overrideLibrary` is acceptable under the API 21 policy, so the parked Dhizuku executor-parity row in `Roadmap_Blocked.md` carries a decided approach instead of an open question; a settings-string test fails if a readiness string is reintroduced without a matching capability.
+  Complexity: S
+
+### P3
+
+- [ ] P3: Let the consistency gate find Python the way its sibling script does
+  Why: `scripts/verify-release-consistency.sh` fails with "Python 3 is required to verify the release receipt" on a machine where Python is installed but not on `PATH`, so the whole gate reports FAILED for an environment reason while every version surface it checked passed.
+  Evidence: `scripts/verify-release-consistency.sh:181-189` probes only `python3` and `python`; `scripts/verify_reproducible_release.sh:10-22` already honours `$PYTHON_CMD` and falls back to `py -3`. Hit on 2026-09-05 during a version bump; the run passed once `PATH` was patched by hand.
+  Touches: `scripts/verify-release-consistency.sh`, `scripts/tests/test_verify_release_consistency.py`.
+  Acceptance: the script resolves an interpreter through `$PYTHON_CMD`, then `python3`, then `python`, then `py -3`, matching `verify_reproducible_release.sh`; a test proves that an environment with none of them still fails closed with the existing message, and that `$PYTHON_CMD` is preferred when set.
   Complexity: S
