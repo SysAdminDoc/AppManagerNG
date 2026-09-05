@@ -124,6 +124,18 @@ The default FLOSS build has no ads, analytics, telemetry upload, or optional thi
 
 Releases are built twice from clean checkouts. Publication stops unless the APKs are byte-identical. Each release includes checksums, a CycloneDX SBOM, dependency review evidence, and a receipt tying the artifacts to the source commit.
 
+### Reading a stack trace from a release build
+
+Release builds are minified, so a crash report from one shows names like `nf0` instead of real classes. Every release publishes the R8 mapping that decodes them, as `AppManagerNG-reproducible-<flavor>-release-mapping.txt` with a matching `.sha256`. Both mappings are verified byte-identical across the two clean builds, and the gate refuses to publish an APK whose mapping is missing.
+
+To turn an obfuscated trace back into source names, save the trace to a file and run `retrace` from the Android build tools that match the release:
+
+```bash
+retrace AppManagerNG-reproducible-floss-release-mapping.txt trace.txt
+```
+
+Pick the mapping for the flavor you installed. Trace lines from `android.*`, `java.*`, and AppManagerNG's own classes are already readable in a support bundle; the mapping is what recovers everything else.
+
 The signing certificate SHA-256 fingerprint is:
 
 ```text
