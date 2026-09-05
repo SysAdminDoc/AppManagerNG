@@ -1,1 +1,1 @@
-Power package manager for Android, Shizuku, root and ADB
+Inspect, debloat, back up, and control Android apps

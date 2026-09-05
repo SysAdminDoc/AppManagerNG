@@ -7,7 +7,7 @@ Confidence labels: **[Verified]** means observed in the checked tree or an autho
 
 ## Executive Summary
 
-[Verified] AppManagerNG v0.6.22 is an offline-first Android package administration suite for privacy-conscious power users. Its strongest current shape is the combination of package inspection, privileged actions, installer preflight, backup conversion, local diagnostics, an API 21 floor, a FLOSS flavor without optional remote-network features, and unusually strict release evidence. The UID-wide AppOps guard, private broadcast boundary, and Log Viewer lifecycle work identified in the previous research are now implemented and covered by host plus isolated-emulator tests. Its next gains should continue closing narrow trust boundaries rather than adding another broad tool surface.
+[Verified] AppManagerNG v0.6.23 is an offline-first Android package administration suite for privacy-conscious power users. Its strongest current shape is the combination of package inspection, privileged actions, installer preflight, backup conversion, local diagnostics, an API 21 floor, a FLOSS flavor without optional remote-network features, and unusually strict release evidence. The UID-wide AppOps guard, private broadcast boundary, and Log Viewer lifecycle work identified in the previous research are now implemented and covered by host plus isolated-emulator tests. Its next gains should continue closing narrow trust boundaries rather than adding another broad tool surface.
 
 Top opportunities, in priority order:
 
@@ -19,7 +19,7 @@ Top opportunities, in priority order:
 6. **[Verified] Probe backup destinations before trusting their semantics.** Neo Backup and Android DataBackup reports show that SAF, CIFS, and SMB providers can pass basic selection yet fail parallel writes, rename, retention, or restore. AppManagerNG has capacity checks and transactional publish, but no destination conformance test or stored sequential-mode fallback.
 7. **[Verified] Finish several contained correctness gaps.** Main-list state still relies on color and terse symbols, empty regex replacement is rejected, Swift APK plus OBB conversion has a disabled regression test, and API 30 proxy attribution is left behind a TODO.
 
-[Verified] The v0.6.22 release tree packages the accumulated fixes and the August 2026 icon set. Its local release gate binds the signed FLOSS and full artifacts to the exact tag before publication.
+[Verified] The v0.6.23 release tree packages the accumulated fixes, the August 2026 icon set, and Finder in stable builds. Its local release gate binds the signed FLOSS and full artifacts to the exact tag before publication.
 
 ## Product Map
 
@@ -85,7 +85,7 @@ Feature requests and weak reports:
 - Test gaps with direct user impact remain in overlay readback, empty regex replacement, and Swift APK plus OBB conversion. Log Viewer teardown, UID-wide AppOps preflight, and external-broadcast rejection now have host or isolated-emulator coverage.
 - API 21 is an intentional product constraint. Activity 1.12, Room 2.8, Material 1.14, WebKit 1.15, and WorkManager 2.11 raise the floor. Dependency modernization must follow `docs/policy/minsdk-21-ceiling.md`, not generic version churn.
 - No new i18n row is justified. Per-app locale handling and API 21 language fallback have shipped, while the hosted translation intake remains explicitly service-gated in `Roadmap_Blocked.md`. Accessibility is addressed by visible app-state text; observability by the log lifecycle and AppOps provenance items; testing and docs by their dedicated additions.
-- Multi-user, migration, distribution, and upgrade risks are already accounted for: device matrices and the AppsDb migration ladder remain in `Roadmap_Blocked.md`, the v0.6.22 release gate preserves the established signer, and the API 21 ceiling governs dependency upgrades. Offline resilience is strengthened through the backup-provider probe without adding cloud state.
+- Multi-user, migration, distribution, and upgrade risks are already accounted for: device matrices and the AppsDb migration ladder remain in `Roadmap_Blocked.md`, the v0.6.23 release gate preserves the established signer, and the API 21 ceiling governs dependency upgrades. Offline resilience is strengthened through the backup-provider probe without adding cloud state.
 
 ## Rejected Ideas
 
