@@ -1581,6 +1581,11 @@ public final class PackageInstallerCompat {
 
     private void unregisterReceiver() {
         if (mPkgInstallerReceiver != null) {
+            // This is the one point every install and uninstall path reaches, including the
+            // interaction and result timeouts and the MIUI/HyperOS retries. The confirmation
+            // notification is never auto-cancelled, so retiring it here is what stops an
+            // abandoned session leaving a running progress bar behind.
+            mPkgInstallerReceiver.clearConfirmNotification(mContext);
             ContextUtils.unregisterReceiver(mContext, mPkgInstallerReceiver);
         }
         ContextUtils.unregisterReceiver(mContext, mBroadcastReceiver);

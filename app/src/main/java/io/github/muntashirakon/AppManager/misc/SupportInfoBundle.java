@@ -24,6 +24,8 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
@@ -47,6 +49,31 @@ public final class SupportInfoBundle {
     private static final int LOGCAT_TAIL_LINES = 120;
     private static final String UNKNOWN = "unknown";
     private static final String REDACTED = "<redacted>";
+
+    private static final Pattern DOTTED_IDENTIFIER = Pattern.compile(
+            "\\b[a-zA-Z][a-zA-Z0-9_$]*(?:\\.[a-zA-Z_$][a-zA-Z0-9_$]*){1,}\\b");
+
+    /**
+     * Namespaces that cannot name an app the user installed. This fork's source namespace
+     * ({@code io.github.muntashirakon.}) and its install identity ({@code io.github.sysadmindoc.})
+     * are different strings, and a debug build appends a suffix to the latter, so the vendor
+     * prefixes are listed here rather than derived from the application id alone.
+     */
+    private static final String[] KEPT_IDENTIFIER_PREFIXES = {
+            "android.",
+            "androidx.",
+            "com.android.",
+            "com.google.android.material.",
+            "dalvik.",
+            "io.github.muntashirakon.",
+            "io.github.sysadmindoc.",
+            "j$.",
+            "java.",
+            "javax.",
+            "kotlin.",
+            "kotlinx.",
+            "libcore.",
+    };
 
     public static final class SectionOptions {
         public boolean includeDevice = true;
@@ -238,9 +265,47 @@ public final class SupportInfoBundle {
         scrubbed = scrubbed.replaceAll("(?i)(?:/storage/emulated/\\d+|/sdcard|/data/user/\\d+|/data/data|/data/media/\\d+|/mnt/media_rw)/\\S+", "<path>");
         scrubbed = scrubbed.replaceAll("(?i)\\b(appUid|uid|userId|user)\\s*[:=]\\s*\\d+\\b", "$1=<redacted>");
         scrubbed = scrubbed.replaceAll("\\bu\\d+_a\\d+\\b", "u<redacted>");
-        scrubbed = scrubbed.replaceAll("\\b[a-zA-Z][a-zA-Z0-9_]*(?:\\.[a-zA-Z_][a-zA-Z0-9_]*){1,}\\b", "<package>");
-        scrubbed = scrubbed.replaceAll("\\b\\d{5,7}\\b", "<id>");
+        scrubbed = maskThirdPartyIdentifiers(scrubbed);
+        // Digits after a colon are a line number in a stack frame, not an identifier.
+        scrubbed = scrubbed.replaceAll("(?<!:)\\b\\d{5,7}\\b", "<id>");
         return scrubbed;
+    }
+
+    /**
+     * Replace dotted identifiers that could name an installed third-party package, and leave the
+     * ones that cannot.
+     *
+     * <p>A stack frame is made of platform, language, and application class names. None of those
+     * is user data, and without them a crash report is unreadable: it degrades to a column of
+     * placeholders that names neither the exception nor a single frame. That is what a report on
+     * this fork's own tracker looked like, so the allowlist below is the difference between a
+     * report that can be acted on and one that cannot.
+     *
+     * <p>The pattern accepts {@code $} so that desugared ({@code j$.time.*}) and nested
+     * ({@code Outer$Inner}) names match as one token, instead of the leading segment being skipped
+     * and the readable tail replaced on its own.
+     */
+    @NonNull
+    private static String maskThirdPartyIdentifiers(@NonNull String input) {
+        Matcher matcher = DOTTED_IDENTIFIER.matcher(input);
+        StringBuffer out = new StringBuffer(input.length());
+        while (matcher.find()) {
+            String identifier = matcher.group();
+            String replacement = isNonSensitiveIdentifier(identifier) ? identifier : "<package>";
+            matcher.appendReplacement(out, Matcher.quoteReplacement(replacement));
+        }
+        matcher.appendTail(out);
+        return out.toString();
+    }
+
+    private static boolean isNonSensitiveIdentifier(@NonNull String identifier) {
+        for (String prefix : KEPT_IDENTIFIER_PREFIXES) {
+            if (identifier.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return identifier.startsWith(BuildConfig.APPLICATION_ID + ".")
+                || identifier.equals(BuildConfig.APPLICATION_ID);
     }
 
     @VisibleForTesting

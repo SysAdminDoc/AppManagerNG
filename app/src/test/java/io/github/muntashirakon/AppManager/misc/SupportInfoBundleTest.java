@@ -55,6 +55,54 @@ public class SupportInfoBundleTest {
         assertFalse(scrubbed.contains("person@example.com"));
     }
 
+    /**
+     * Fork issue #12 arrived with every frame reduced to a placeholder, so the report named
+     * neither the exception nor a single line of code. This is the raw form the device produced
+     * before the scrubber ran: a real inflation failure inside the code editor.
+     */
+    @Test
+    public void scrubForPublicIssue_keepsStackFrameClassNames() {
+        String rawTrace = "android.view.InflateException: Binary XML file line #51 in "
+                + "io.github.sysadmindoc.AppManagerNG:layout/fragment_code_editor: "
+                + "Error inflating class io.github.muntashirakon.AppManager.editor.CodeEditorWidget\n"
+                + " Caused by: java.lang.NullPointerException: Attempt to invoke virtual method "
+                + "'j$.time.ZoneId java.util.TimeZone.toZoneId()' on a null object reference\n"
+                + "   at j$.time.ZoneId.systemDefault(ZoneId.java:12345)\n"
+                + "   at io.github.rosemoe.sora.widget.CodeEditor.<init>(CodeEditor.java:51)\n"
+                + "   at io.github.muntashirakon.AppManager.editor.CodeEditorWidget.<init>(CodeEditorWidget.java:29)\n"
+                + "   at android.view.LayoutInflater.createView(LayoutInflater.java:858)\n"
+                + "   at androidx.appcompat.app.AppCompatViewInflater.createView(AppCompatViewInflater.java:193)\n"
+                + "   at com.google.android.material.internal.ViewUtils.doOnApplyWindowInsets(ViewUtils.java:107)\n"
+                + "   at dalvik.system.VMStack.getThreadStackTrace(Native Method)\n"
+                + "   at com.acme.injector.Hook.before(Hook.java:7)\n"
+                + " reporter@example.com";
+
+        String scrubbed = SupportInfoBundle.scrubForPublicIssue(rawTrace);
+
+        // The exception and every frame that belongs to the platform, the language runtime, or
+        // this application must survive, or the report cannot be acted on.
+        assertTrue(scrubbed.contains("android.view.InflateException"));
+        assertTrue(scrubbed.contains("java.lang.NullPointerException"));
+        assertTrue(scrubbed.contains("j$.time.ZoneId"));
+        assertTrue(scrubbed.contains("java.util.TimeZone"));
+        assertTrue(scrubbed.contains("android.view.LayoutInflater"));
+        assertTrue(scrubbed.contains("androidx.appcompat.app.AppCompatViewInflater"));
+        assertTrue(scrubbed.contains("com.google.android.material.internal.ViewUtils"));
+        assertTrue(scrubbed.contains("dalvik.system.VMStack"));
+        assertTrue(scrubbed.contains("io.github.muntashirakon.AppManager.editor.CodeEditorWidget"));
+        assertTrue(scrubbed.contains("io.github.sysadmindoc.AppManagerNG:layout/fragment_code_editor"));
+        // A line number is not an identifier. The source file name beside it is still masked,
+        // which is fine: the class, the method and the line all survive.
+        assertTrue(scrubbed.contains(":12345"));
+
+        // Everything that could name something the user installed is still masked.
+        assertFalse(scrubbed.contains("com.acme.injector"));
+        assertFalse(scrubbed.contains("io.github.rosemoe"));
+        assertFalse(scrubbed.contains("reporter@example.com"));
+        assertTrue(scrubbed.contains("<package>"));
+        assertTrue(scrubbed.contains("<email>"));
+    }
+
     @Test
     public void buildFileName_sanitizesDeviceNameAndUsesUtcTimestamp() {
         String fileName = SupportInfoBundle.buildFileName("Pixel 9/Pro", new Date(0));
