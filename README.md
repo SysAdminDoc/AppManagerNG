@@ -25,6 +25,16 @@
 </p>
 
 <p align="center">
+  <a href="https://ko-fi.com/X8K126YVER">
+    <img height="42" src="https://storage.ko-fi.com/cdn/kofi2.png?v=3" alt="Buy me a coffee on Ko-fi" />
+  </a>
+</p>
+
+<p align="center">
+  <sub><em>If AppManagerNG helps you understand or fix an Android device, a coffee helps me keep it tested and maintained.</em></sub>
+</p>
+
+<p align="center">
   <a href="https://github.com/SysAdminDoc/AppManagerNG/releases/latest/download/AppManagerNG-reproducible-full-release.apk"><strong>Download the full APK</strong></a>
   &nbsp;•&nbsp;
   <a href="https://github.com/SysAdminDoc/AppManagerNG/releases/latest">All release files</a>
