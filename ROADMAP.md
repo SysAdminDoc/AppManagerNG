@@ -8,7 +8,7 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 - [ ] P1: Decode untrusted file thumbnails in an isolated process
   Why: image, PDF, font, eBook, and archive thumbnails pass attacker-controlled files to decoders inside the permission-bearing app process.
-  Evidence: upstream App Manager #2011 maintainer security analysis; Android `<service android:isolatedProcess="true">` documentation; `fm/icons/FmIconFetcher.java`; `fm/icons/FmIcons.java:322-410`; `app/src/main/AndroidManifest.xml`.
+  Evidence: upstream App Manager #2011 maintainer security analysis; upstream commit `8fbd0ef76` isolates PDF rendering but leaves the broader decoder set; Android `<service android:isolatedProcess="true">` documentation; `fm/icons/FmIconFetcher.java`; `fm/icons/FmIcons.java:322-410`; `app/src/main/AndroidManifest.xml`.
   Touches: a non-exported isolated decoder service and binder contract, `fm/icons/FmIconFetcher.java`, `fm/icons/FmIcons.java`, manifest, malformed-file fixtures, process-death tests.
   Acceptance: thumbnail work receives only duplicated read-only file descriptors plus explicit pixel, byte, and time budgets; the service has no app permissions and cannot open arbitrary paths; malformed input, timeout, OOM, or decoder-process death returns the generic icon without crashing or blocking the file list; API 21 through 23 and a current API are covered.
   Complexity: L
@@ -22,7 +22,7 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 - [ ] P1: Enforce user-owned signer policies before installer commit
   Why: AppManagerNG can inspect certificates and detect changes after installation, but it cannot reject an unrecognized signer against a user-approved package policy before a session is committed.
-  Evidence: InstallerX 26.05 signer-policy release; Obtainium #2922; AppVerifier; Inure feature matrix; `permission/monitor/SigningCertSnapshotStore.java`; `apk/signing/SignerInfo.java`; `apk/installer/PackageInstallerActivity.java`.
+  Evidence: InstallerX 26.05 signer-policy release; Obtainium #2922; AppVerifier; Inure feature matrix; upstream App Manager #2055; `permission/monitor/SigningCertSnapshotStore.java`; `apk/signing/SignerInfo.java`; `apk/installer/PackageInstallerActivity.java`.
   Touches: schema extension for `SigningCertSnapshotStore`, signer-policy model, installer preflight, App Details certificate actions, snapshot export/import, audit history, tests.
   Acceptance: a user can pin the installed or reviewed SHA-256 signer set for a package; strict policy blocks a fresh install or update before session commit when the candidate signer and valid rotation lineage do not satisfy the pin; the blocked result names both fingerprints and never consults a remote database; changing a pin is a separate reviewed action and is recorded; policies survive restart and snapshot round-trip.
   Complexity: M
@@ -109,14 +109,14 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Why: nothing tells a user that the running Android version is above what this build was tested against, and a hidden-API accessor that silently returns nothing writes no log line, which is how the Android 17 enumeration break reached users undiagnosed.
   Evidence: upstream issue #2033 (2026-09-04) describes stepping line by line through a debugger because neither logcat nor a debug build gave any hint; this fork's own Android 17 fix `74fc7ae95` and fork issue #6; no maximum-SDK guard exists anywhere under `app/src/main/java/`; `misc/ProfilingTriggerHelper.java:23` documents the reflective-resolution pattern the warning should key off; `compat/PackageManagerCompat.java`; `settings/PrivilegeHealthPreferences.java`.
   Touches: a shared platform-support constant derived from `compileSdk`, the `compat/` accessors that swallow reflection failures, `settings/PrivilegeHealthPreferences.java`, `misc/SupportInfoBundle.java`, strings, tests.
-  Acceptance: running on an SDK above the tested ceiling shows a dismissible non-blocking notice in Privilege Health and adds a line to the support bundle, and the app still starts and runs — it never refuses a new Android version; every `compat/` accessor that falls back after a reflection or linkage failure logs the class, member, and SDK at warning level once per process instead of silently returning a default; a host test asserts the ceiling constant tracks `compileSdk` so it cannot go stale, and asserts a simulated linkage failure produces exactly one log record.
+  Acceptance: running on an SDK above the tested ceiling shows a dismissible non-blocking notice in Privilege Health and adds a line to the support bundle, and the app still starts and runs. It never refuses a new Android version; every `compat/` accessor that falls back after a reflection or linkage failure logs the class, member, and SDK at warning level once per process instead of silently returning a default; a host test asserts the ceiling constant tracks `compileSdk` so it cannot go stale, and asserts a simulated linkage failure produces exactly one log record.
   Complexity: M
 
 - [ ] P1: Revoke internet access per app through privileged network rules
   Why: upstream shipped per-app INTERNET revocation in v4.1.1 and this fork has only metered-background net policy, which does not block connectivity.
-  Evidence: upstream v4.1.1 release notes (2026-09-04) describe eBPF rules applied in root and ADB mode from the Uses-permissions tab, with loss on reboot named as a known limitation; `compat/NetworkPolicyManagerCompat.java` and `rules/struct/NetPolicyRule.java` cover metered background only; `self/BootReceiver.java:29-31` already re-applies routines on boot; `batchops/struct/BatchNetPolicyOptions.java`.
+  Evidence: upstream v4.1.1 release notes (2026-09-04) describe eBPF rules applied in root and ADB mode from the Uses-permissions tab, with loss on reboot named as a known limitation; upstream #2044 reports access returning immediately after an install; `compat/NetworkPolicyManagerCompat.java` and `rules/struct/NetPolicyRule.java` cover metered background only; `self/BootReceiver.java:29-31` already re-applies routines on boot; `batchops/struct/BatchNetPolicyOptions.java`.
   Touches: a new privileged network-rule executor, `rules/struct/`, `rules/RulesStorageManager.java`, the App Details uses-permissions tab, `batchops/BatchOpsManager.java`, `self/BootReceiver.java`, `profiles/`, host tests using a faked privileged executor.
-  Acceptance: a persisted rule type records package, UID, and rule state and round-trips through the existing rules import and export formats; the uses-permissions row for `android.permission.INTERNET` reflects stored state and is disabled with a stated reason when no privileged mode is active; rules are re-applied on `BOOT_COMPLETED` and the UI reports the window before enforcement resumes rather than claiming enforcement it does not have; host tests cover apply, revert, boot re-apply, and privilege loss against a faked executor; an unsupported kernel or ROM produces an explained unavailable state rather than a silent no-op. If on-device verification turns out to need a kernel floor that cannot be checked on the host, move the enforcement half to `Roadmap_Blocked.md` and keep the rule model here.
+  Acceptance: a persisted rule type records package, UID, and rule state and round-trips through the existing rules import and export formats; the uses-permissions row for `android.permission.INTERNET` reflects stored state and is disabled with a stated reason when no privileged mode is active; rules are re-applied after a successful install or update and on `BOOT_COMPLETED`, and the UI reports any window before enforcement resumes rather than claiming enforcement it does not have; host tests cover apply, revert, post-install re-apply, boot re-apply, and privilege loss against a faked executor; an unsupported kernel or ROM produces an explained unavailable state rather than a silent no-op. If on-device verification needs a kernel floor that cannot be checked on the host, move the enforcement half to `Roadmap_Blocked.md` and keep the rule model here.
   Complexity: L
 
 ### P2
@@ -150,3 +150,167 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Touches: `scripts/verify-release-consistency.sh`, `scripts/tests/test_verify_release_consistency.py`.
   Acceptance: the script resolves an interpreter through `$PYTHON_CMD`, then `python3`, then `python`, then `py -3`, matching `verify_reproducible_release.sh`; a test proves that an environment with none of them still fails closed with the existing message, and that `$PYTHON_CMD` is preferred when set.
   Complexity: S
+
+## Research-Driven Additions (2026-09-25)
+
+### P0
+
+- [ ] P0: Align Bouncy Castle 1.86 and bound hostile keystore imports
+  Why: user-selected BKS and PKCS12 files reach Bouncy Castle parsing, where hostile PBE parameters can force unbounded key derivation, and the current provider family is split across 1.85, 1.85.1, and 1.85.2.
+  Evidence: CVE-2026-17508; Bouncy Castle Java 1.86 release and discussion #2449; the 1.86 `bcpkix-jdk15to18` and `bcutil-jdk15to18` POMs; `settings/crypto/ImportExportKeyStoreDialogFragment.java:131-134`; `crypto/ks/KeyStoreUtils.java:116-134`; current dependency locks. The existing CVE-reachability item fixes report classification, not this reachable dependency and import path.
+  Touches: `versions.gradle`, Bouncy Castle declarations and locks, keystore import policy, `ImportExportKeyStoreDialogFragment.java`, `KeyStoreUtils.java`, hostile BKS and PKCS12 fixtures, SBOM and dependency checksums.
+  Acceptance: `bcprov`, `bcpkix`, and `bcutil` resolve to 1.86 from one version declaration in every variant; import rejects files, KDF counts, salt sizes, and derived-memory requests above documented ceilings before expensive work begins; parsing runs with an elapsed-time budget and returns a classified error without blocking the main thread; hostile fixtures cannot exhaust the test process; FLOSS and full SBOMs show one aligned provider family.
+  Complexity: M
+
+- [ ] P0: Make no-root initialization side-effect free
+  Why: choosing no-root can still enter root-capable shell construction and remote-server detection before the selected mode is honored, causing an unwanted superuser prompt and slow startup.
+  Evidence: upstream App Manager #2048 and #2036; `settings/Ops.java`; `runner/Runner.java:95-112`; `runner/NormalShell.java`; libsu's default `Shell.getShell()` behavior.
+  Touches: `settings/Ops.java`, `runner/Runner.java`, `runner/NormalShell.java`, remote-service initialization, privilege-mode tests, Privilege Health diagnostics.
+  Acceptance: an explicit no-root start makes zero calls to root detection, `Shell.getShell()`, Shizuku or ADB server connection, or remote UID discovery; it creates only the non-root process shell after the mode decision; switching from a privileged mode tears down its connection before no-root becomes active; spy-based tests fail on any forbidden call; startup reports the selected mode without a root prompt or avoidable timeout.
+  Complexity: M
+
+- [ ] P0: Separate app Usage Access from remote query capability
+  Why: the permission check uses the remote shell UID in Shizuku mode while Android's Usage Access settings grant belongs to AppManagerNG, so the app can repeatedly ask for a grant the user already supplied.
+  Evidence: fork issue #16; Android `UsageStatsManager` and `AppOpsManager` contracts; `self/SelfPermissions.java:179-188`; `users/Users.java:151`; `compat/UsageStatsManagerCompat.java`; every UI caller of `checkUsageStatsPermission()`.
+  Touches: `SelfPermissions.java`, `UsageStatsManagerCompat.java`, Usage Access settings routing, App Usage and widget callers, secondary-user capability model, tests.
+  Acceptance: one method answers whether AppManagerNG's own UID has the user-facing grant, and a separate method answers whether a concrete execution identity can query one specified user; the settings prompt is based only on the app UID; Shizuku UID 2000 cannot turn a granted UI state into a false negative; local, Shizuku, root, and cross-user tests cover granted, denied, and unavailable results without broadening access.
+  Complexity: M
+
+- [ ] P0: Degrade gracefully when optional telephony binder services are absent
+  Why: usage-data collection assumes the `isub` binder exists, but Wi-Fi-only hardware and some OEM builds omit it, allowing service-not-found to escape instead of returning an empty subscriber set.
+  Evidence: fork issue #18; `compat/SubscriptionManagerCompat.java:28-79`; `ipc/ProxyBinder.java`; Android's optional telephony feature model.
+  Touches: `SubscriptionManagerCompat.java`, binder lookup result handling, network-usage aggregation, support-bundle diagnostics, service-absence tests.
+  Acceptance: a missing, null, dead, or security-rejected subscription service returns no subscriber IDs and does not discard the rest of the usage result; support diagnostics record one classified line without a stack-trace loop; devices with a working service retain current behavior; tests cover no service, binder death, `RemoteException`, and a valid multi-SIM response.
+  Complexity: S
+
+### P1
+
+- [ ] P1: Store exact mutation before and after images
+  Why: inverse-operation rollback can overwrite a newer change because it does not prove that current state still matches the state AppManagerNG wrote.
+  Evidence: upstream App Manager #1959; Thor's Changed elsewhere model; `history/ops/PerAppRollbackManager.java`; current operation history and App Change Feed stores. The existing App Details readback item covers two screen caches, not durable cross-operation rollback.
+  Touches: operation-history schema, mutation executors, authoritative readback adapters, `PerAppRollbackManager.java`, rollback review UI, retention and export, tests.
+  Acceptance: every supported mutation records target, operation, exact before value, requested value, confirmed post value, execution identity, result, and timestamp in an append-only entry; rollback reads current state first and proceeds only when it matches the recorded post value; a mismatch displays Changed elsewhere with both values and performs no write; partial batch results remain independently reversible; schema migration, pruning, restart, export, and tamper tests pass.
+  Complexity: L
+
+- [ ] P1: Decode binary XML with an API-correct framework table
+  Why: the decoder always loads the newest Android framework resources, so an old numeric resource ID can be labelled as a different modern attribute.
+  Evidence: upstream App Manager #2040; `apk/parser/AndroidBinXmlDecoder.java`; Android resource-table evolution across API levels.
+  Touches: `AndroidBinXmlDecoder.java`, compiled-against API metadata discovery, framework table selection and cache, raw-ID rendering, old-manifest fixtures, tests.
+  Acceptance: the decoder uses the APK's compiled-against API metadata when present; when it is absent, a name is emitted only if every plausible framework table agrees, otherwise the hexadecimal resource ID is preserved; fixtures compiled against at least API 21, 28, 35, and 37 assert stable attribute names and values; malformed tables still produce a bounded parse error.
+  Complexity: M
+
+- [ ] P1: Keep shortcut-launched targets in Recents
+  Why: the shortcut trampoline is excluded from Recents and no-history, then calls `finishActivity(0)`, which can leave the launched target without the normal task lifecycle users expect.
+  Evidence: upstream App Manager #2054; Android Tasks and Recents documentation; shortcut-management guidance; `details/ActivityLauncherShortcutActivity.java`; its manifest entry.
+  Touches: shortcut trampoline lifecycle, target launch-intent construction, manifest task flags, shortcut regression tests, API 21 through 37 device checks.
+  Acceptance: the trampoline calls `finish()` or `finishAndRemoveTask()` on itself after a successful handoff and never relies on request code 0; a target launched from an AppManagerNG shortcut appears in Recents with the target app's normal label and task behavior unless that target itself opts out; repeated launches do not create duplicate orphan tasks; cancellation and missing-target paths close cleanly.
+  Complexity: M
+
+- [ ] P1: Include archived packages in API 35 and later inventory
+  Why: archive and unarchive actions exist, but package enumeration narrows match flags to `int`, so `MATCH_ARCHIVED_PACKAGES` cannot reach the framework query and archived apps disappear from inventory.
+  Evidence: upstream App Manager #2043; Android `PackageManager.MATCH_ARCHIVED_PACKAGES`; `compat/PackageManagerCompat.java`; archive actions and filters in the app list.
+  Touches: `PackageManagerCompat.java`, long-backed `PackageInfoFlags` adapters, inventory queries, archived-state model, filters, secondary-user tests.
+  Acceptance: API 35 and later query with a lossless long flag path and include archived packages when the user enables the archived filter; older APIs retain current queries; archived rows cannot expose actions that require an installed APK; primary and secondary-user tests cover installed, archived, restored, and unavailable states; a contract test fails if flags are narrowed to `int`.
+  Complexity: M
+
+- [ ] P1: Stabilize scheduled backup work on Android 15 and later
+  Why: WorkManager 2.10.5 retains connectivity and periodic-work defects fixed in 2.11.1 and 2.11.2, while taking 2.11 directly would raise its minimum SDK from 21 to 23.
+  Evidence: AndroidX WorkManager release notes; AndroidX version ledger; the pinned version in `versions.gradle`; scheduled backup workers and network-backed SAF support.
+  Touches: backup scheduling, worker constraints, connectivity observation, WorkManager patch or app-owned gate, API-floor policy, API 21 and API 35 through 37 tests.
+  Acceptance: a reproduction test first proves the affected behavior on WorkManager 2.10.5; the chosen fix retains minSdk 21 and is limited to the confirmed Android 15 or later path; a scheduled network-backed backup waits for usable connectivity, runs once after connectivity returns, and retains its next period after process death or reboot; API 21 scheduling remains unchanged; the dependency decision and upstream fix reference are recorded.
+  Complexity: L
+
+- [ ] P1: Reconcile persisted SAF grants when backup destinations change
+  Why: selecting a new backup or restore destination takes another persistable URI grant but never releases an abandoned one, eventually consuming Android's finite per-app grant pool.
+  Evidence: Android Storage Access Framework documentation; AOSP `UriGrantsManagerService`; `settings/BackupRestorePreferences.java:111,131,151`; current destination preference storage.
+  Touches: `BackupRestorePreferences.java`, a reference-counted active-destination resolver, startup repair, destination migration, fake DocumentsProvider tests.
+  Acceptance: the app acquires and verifies a replacement grant before switching preferences; it releases the old grant only when no active backup, restore, schedule, or profile references it; startup removes only provably stale grants owned by AppManagerNG; a failed replacement preserves the last working destination; tests cover shared URIs, revoked providers, process death during handoff, and repeated destination changes without grant growth.
+  Complexity: M
+
+- [ ] P1: Complete the read-only DocumentsProvider child contract
+  Why: the provider advertises a local document tree but does not implement `isChildDocument()` or advertise child checks, leaving containment behavior incomplete for clients and security-sensitive path handling.
+  Evidence: Android `DocumentsProvider` and `DocumentsContract.Root` documentation; `fm/AppManagerDocumentsProvider.java`; provider manifest and root flags.
+  Touches: `AppManagerDocumentsProvider.java`, canonical document-ID mapping, root flags, symlink and prefix-confusion fixtures, provider instrumentation tests.
+  Acceptance: the root advertises `FLAG_SUPPORTS_IS_CHILD`; `isChildDocument()` resolves canonical paths and returns true only inside the declared root; sibling-prefix, `..`, encoded-separator, symlink, deleted-node, and cross-root cases fail closed; the provider remains read-only and publishes no mutation flags; API 21 fallback behavior is documented and tested.
+  Complexity: M
+
+- [ ] P1: Accept APKs shared through ACTION_SEND in App Details
+  Why: App Details reads only `Intent.getData()`, so an APK sent through the standard `ACTION_SEND` `EXTRA_STREAM` contract is ignored.
+  Evidence: upstream App Manager #2047 and fix commit `2d9223a7a`; Android `Intent` documentation; `details/AppDetailsActivity.java#getApkSource()`.
+  Touches: a shared intent-data resolver, `AppDetailsActivity.java`, URI grant validation, intent fixtures and tests.
+  Acceptance: App Details resolves one APK URI from explicit data, `ClipData`, or `EXTRA_STREAM` in deterministic precedence order; it accepts only readable content or file URIs already allowed by the app's policy; multiple streams, wrong MIME types, revoked grants, and missing payloads produce a concise error without a crash; existing deep links behave unchanged.
+  Complexity: S
+
+### P2
+
+- [ ] P2: Restore UID and AppId in compact app rows
+  Why: `ApplicationItem` still computes UID and AppId and the adapter still binds them, but the compact row hides their containing view, removing useful identity evidence.
+  Evidence: fork issue #19; `main/ApplicationItem.java`; `main/MainRecyclerAdapter.java`; `res/layout/item_main_v2.xml`.
+  Touches: compact row layout, metadata formatter, adapter visibility rules, content descriptions, long-locale and font-scale snapshots.
+  Acceptance: installed rows show concise `UID 10123` or shared-user context in the existing metadata line, not a pill; archived and uninstalled rows never display a stale UID; the same value is available to accessibility services; API, locale, 1.3 font scale, and narrow-width snapshots retain package-name readability and current row density.
+  Complexity: S
+
+- [ ] P2: Add an authenticated external operation contract
+  Why: automation users need targeted package actions, but a general exported broadcast would create an unauthenticated privileged-operation surface.
+  Evidence: the automation half of fork issue #19; existing Tasker integration and signature-protected components; InstallerX's explicit option model; Android exported-component guidance.
+  Touches: signed Tasker or signature-permission integration, explicit operation schema, validation, audit history, result callback, security tests and documentation.
+  Acceptance: callers must hold the existing signature-level trust or complete the existing Tasker authorization path; each request names one supported operation, package, user, and immutable options; ambiguous, wildcard, stale, replayed, or unauthorized requests are rejected before privilege use; accepted operations enter the same confirmation-free executor and audit journal as UI actions; no general shell command or arbitrary intent field is exposed.
+  Complexity: M
+
+- [ ] P2: Show storage composition and deltas in the App Change Feed
+  Why: a single current total cannot explain growth after an update, cache clear, restore, or package event, even though Android 15 exposes detailed app data types.
+  Evidence: Android `StorageStats.getAppBytesByDataType()`; LibChecker #1945; App Info storage code; `permission/monitor/AppChangeFeedStore.java`.
+  Touches: storage snapshot model, API 35 adapter, App Info storage presentation, App Change Feed event schema, retention, tests.
+  Acceptance: API 35 and later show available categories with their capture time and record deltas after a user-requested refresh, install, update, restore, or clear; older APIs keep aggregate totals; shared UID, hard-link overlap, unsupported category, and unknown values are labelled and never forced to sum exactly; feed coalescing avoids duplicate entries for one mutation; tests cover positive, negative, unknown, and shared-UID deltas.
+  Complexity: M
+
+- [ ] P2: Preview backup and restore footprint before work begins
+  Why: users cannot see which backup parts dominate the job or whether a selected destination is likely to fit before a long operation starts.
+  Evidence: Neo Backup #906; Neo Backup and Swift Backup documentation; Android DataBackup; AppManagerNG's backup part, capacity, publish, and rollback paths.
+  Touches: backup planning model, part estimators, destination-capacity adapter, backup and restore review screens, provider conformance result, tests.
+  Acceptance: preflight lists APK, private data, external data, OBB, rules, and extras separately with an estimated, exact, or unknown label; known destination free space is compared with a documented safety margin; unknown remote capacity does not appear as zero or sufficient; restore previews compressed input and estimated expanded output; the final job records estimate versus actual without scanning unrelated user data.
+  Complexity: M
+
+- [ ] P2: Qualify debloat recommendations with device evidence
+  Why: package safety changes by OEM, ROM, region, Android build, and dependency set, while current definitions cannot express when or where an observation was valid.
+  Evidence: UAD-NG issues #1164, #1400, and #1311; Canta's UAD-backed workflow; `debloat/DebloatObject.java`; current OEM, dependency, web-reference, and warning fields.
+  Touches: debloat schema and bundled definitions, source and observation metadata, device applicability matcher, review UI, import validation, tests.
+  Acceptance: each recommendation can record source URL, observation date, device or ROM, region, build range, package role, dependencies, recovery path, and confidence; missing or mismatched applicability displays Unverified for this device and never Safe; imports preserve provenance and reject invalid dates or confidence values; filtering explains why a definition matched; existing records migrate with an explicit legacy-unknown state.
+  Complexity: M
+
+- [ ] P2: Capture bounded Android 17 pre-ANR evidence
+  Why: Android 17 can warn before an ANR and provide an identifier that can be correlated with later evidence, but the current support bundle sees only post-event process information.
+  Evidence: Android 17 feature and behavior-change documentation; `ActivityManager.registerAnrWarningListener`; `AnrWarningResult`; `ApplicationExitInfo.AnrInfo`; current profiling and support-bundle helpers.
+  Touches: process lifecycle registration, a bounded ANR-warning store, support bundle, process-exit correlation, API 37 tests.
+  Acceptance: API 37 registers one listener while the app process is active; each warning stores only time, process identity, warning type, and ANR identifier under a small count and age cap; later exit evidence links by identifier when available; callback work cannot block the main thread or read app content; older APIs and unsupported devices remain silent; tests cover correlation, pruning, duplicate callbacks, and listener teardown.
+  Complexity: M
+
+- [ ] P2: Add Shizuku OEM failure diagnostics
+  Why: Android 16 MediaTek and HyperOS failures can look like generic privilege loss, making it impossible to tell whether the app, provider, binder, or OEM service path failed.
+  Evidence: Shizuku API 13.1.5; Shizuku API pull request #299; current Shizuku bridge and Privilege Health diagnostics.
+  Touches: Shizuku bridge diagnostics, Privilege Health, support bundle, binder-death classification, OEM fixture tests.
+  Acceptance: a failed Shizuku operation records SDK, manufacturer, provider package and version, binder alive state, permission state, remote UID, and one stable failure code without device identifiers or command contents; Privilege Health distinguishes provider missing, permission denied, binder dead, incompatible provider, and operation failure; no open upstream patch is vendored by this item; tests redact user data and cover MediaTek or HyperOS signatures only as diagnostic inputs.
+  Complexity: S
+
+- [ ] P2: Honor Android 16 outlined text in custom usage charts
+  Why: `BarChartView` draws labels directly on Canvas, bypassing the platform's automatic outlined-text treatment for users who enable it.
+  Evidence: Android 16 accessibility features; WCAG 2.2 contrast guidance; `usage/BarChartView.java`.
+  Touches: `BarChartView.java`, accessibility-setting adapter, chart paint calculation, light and dark screenshot tests.
+  Acceptance: on Android 16 and later, when outlined text is requested, chart labels draw a contrast-calculated stroke followed by the existing fill without changing metrics; the outline is absent when the setting is off and on older APIs; labels remain legible in light, dark, high-contrast, and large-text snapshots; TalkBack content is unchanged.
+  Complexity: S
+
+- [ ] P2: Keep UI Tracker focused on the last external activity
+  Why: on affected Samsung builds, AppManagerNG's own tracker overlay can become the detected foreground activity and replace the app the user is trying to inspect.
+  Evidence: upstream App Manager #2039; `accessibility/activity/TrackerWindow.java`; `LeadingActivityTrackerActivity.java`; current self-filtering limited to one EditText path.
+  Touches: tracker event filter, last-external-activity state, overlay lifecycle, Samsung event fixtures, tests.
+  Acceptance: events from AppManagerNG's tracker and overlay windows never replace a valid external target; closing or moving the overlay preserves the last external package and activity until a different external activity arrives or a bounded stale timeout expires; genuine navigation into AppManagerNG outside the overlay remains observable when tracking is not active; tests cover Samsung-style self events, split screen, rapid app switches, and timeout.
+  Complexity: M
+
+### P3
+
+- [ ] P3: Add named local installer presets
+  Why: installer options are global, so users who repeat different workflows must reconfigure individual controls and can miss a risky carried-over setting.
+  Evidence: InstallerX Revived option model and issue #821; `apk/installer/InstallerOptions.java`; installer preferences and preflight.
+  Touches: preset model and store, installer options UI, preflight diff, import and export, migration, tests.
+  Acceptance: users can save, rename, duplicate, apply, and delete local presets; applying a preset shows the fields that differ from current options before commit; unsupported options are ignored with an explanation, not silently coerced; no preset changes the default until explicitly applied; presets round-trip through app settings export without secrets or device-specific paths.
+  Complexity: M
