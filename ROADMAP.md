@@ -188,13 +188,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Acceptance: the root advertises `FLAG_SUPPORTS_IS_CHILD`; `isChildDocument()` resolves canonical paths and returns true only inside the declared root; sibling-prefix, `..`, encoded-separator, symlink, deleted-node, and cross-root cases fail closed; the provider remains read-only and publishes no mutation flags; API 21 fallback behavior is documented and tested.
   Complexity: M
 
-- [ ] P1: Accept APKs shared through ACTION_SEND in App Details
-  Why: App Details reads only `Intent.getData()`, so an APK sent through the standard `ACTION_SEND` `EXTRA_STREAM` contract is ignored.
-  Evidence: upstream App Manager #2047 and fix commit `2d9223a7a`; Android `Intent` documentation; `details/AppDetailsActivity.java#getApkSource()`.
-  Touches: a shared intent-data resolver, `AppDetailsActivity.java`, URI grant validation, intent fixtures and tests.
-  Acceptance: App Details resolves one APK URI from explicit data, `ClipData`, or `EXTRA_STREAM` in deterministic precedence order; it accepts only readable content or file URIs already allowed by the app's policy; multiple streams, wrong MIME types, revoked grants, and missing payloads produce a concise error without a crash; existing deep links behave unchanged.
-  Complexity: S
-
 ### P2
 
 - [ ] P2: Restore UID and AppId in compact app rows
