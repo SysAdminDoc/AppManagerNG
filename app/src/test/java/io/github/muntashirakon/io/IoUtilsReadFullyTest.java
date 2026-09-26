@@ -74,6 +74,24 @@ public class IoUtilsReadFullyTest {
         assertEquals(500, IoUtils.readFully(new ByteArrayInputStream(source), 600, false).length);
     }
 
+    @Test
+    public void aLimitPlusOneReadWithShortReadsSeesExactlyWhereTheLimitIs() throws IOException {
+        // The editor and the keystore import read limit + 1 bytes to learn whether a stream is too
+        // long. Providers often return a few bytes per read, which must not end the read early.
+        int limit = 1_000;
+        for (int size : new int[]{limit - 1, limit, limit + 1, limit * 20}) {
+            TrackingStream in = new TrackingStream(size, 3);
+
+            byte[] bytes = IoUtils.readFully(in, limit + 1, false);
+
+            assertEquals("stream of " + size + " bytes", Math.min(size, limit + 1), bytes.length);
+            assertTrue("buffer grew to " + in.largestBuffer, in.largestBuffer <= limit + 1);
+            for (int i = 0; i < bytes.length; ++i) {
+                assertEquals((byte) i, bytes[i]);
+            }
+        }
+    }
+
     /** Serves {@code length} bytes, at most {@code maxChunk} per read, and records buffer sizes. */
     private static final class TrackingStream extends InputStream {
         private final int mLength;
