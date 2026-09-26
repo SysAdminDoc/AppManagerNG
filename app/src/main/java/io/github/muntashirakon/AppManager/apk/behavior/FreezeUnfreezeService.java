@@ -62,7 +62,9 @@ public class FreezeUnfreezeService extends Service {
     // (freezeAllPackages via the screen-lock receiver); use concurrent maps to avoid CME.
     private final Map<String, FreezeUnfreezeShortcutInfo> mPackagesToShortcut = new ConcurrentHashMap<>();
     private final Map<String, String> mPackagesToNotificationTag = new ConcurrentHashMap<>();
+    @Nullable
     private ScreenLockChecker mScreenLockChecker;
+    private boolean mDestroyed;
     private final BroadcastReceiver mScreenLockedReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -71,10 +73,10 @@ public class FreezeUnfreezeService extends Service {
                     mCheckLockResult.cancel(true);
                 }
                 mCheckLockResult = ThreadUtils.postOnBackgroundThread(() -> {
-                    if (mScreenLockChecker == null) {
-                        mScreenLockChecker = new ScreenLockChecker(FreezeUnfreezeService.this, () -> freezeAllPackages());
+                    ScreenLockChecker checker = getScreenLockChecker();
+                    if (checker != null) {
+                        checker.checkLock();
                     }
-                    mScreenLockChecker.checkLock();
                 });
             } catch (Throwable th) {
                 Log.e(TAG, "Could not schedule freeze/unfreeze lock check.", th);
@@ -149,8 +151,29 @@ public class FreezeUnfreezeService extends Service {
         if (mCheckLockResult != null) {
             mCheckLockResult.cancel(true);
         }
+        synchronized (this) {
+            mDestroyed = true;
+            if (mScreenLockChecker != null) {
+                mScreenLockChecker.close();
+            }
+        }
         CpuUtils.releaseWakeLock(mWakeLock);
         super.onDestroy();
+    }
+
+    /**
+     * The service's lock checker, or {@code null} once the service is destroyed, so a screen event
+     * that arrives during teardown cannot start a new timer.
+     */
+    @Nullable
+    private synchronized ScreenLockChecker getScreenLockChecker() {
+        if (mDestroyed) {
+            return null;
+        }
+        if (mScreenLockChecker == null) {
+            mScreenLockChecker = new ScreenLockChecker(this, () -> freezeAllPackages());
+        }
+        return mScreenLockChecker;
     }
 
     @Nullable

@@ -41,7 +41,9 @@ public class SessionMonitoringService extends Service {
     private boolean mIsWorking;
     @Nullable
     private Future<?> mCheckLockResult;
+    @Nullable
     private ScreenLockChecker mScreenLockChecker;
+    private boolean mDestroyed;
     private boolean mScreenLockedReceiverRegistered = false;
 
     private final BroadcastReceiver mScreenLockedReceiver = new BroadcastReceiver() {
@@ -52,10 +54,10 @@ public class SessionMonitoringService extends Service {
                     mCheckLockResult.cancel(true);
                 }
                 mCheckLockResult = ThreadUtils.postOnBackgroundThread(() -> {
-                    if (mScreenLockChecker == null) {
-                        mScreenLockChecker = new ScreenLockChecker(SessionMonitoringService.this, () -> lockScreen());
+                    ScreenLockChecker checker = getScreenLockChecker();
+                    if (checker != null) {
+                        checker.checkLock();
                     }
-                    mScreenLockChecker.checkLock();
                 });
             } catch (Exception th) {
                 Log.w(TAG, th);
@@ -130,8 +132,32 @@ public class SessionMonitoringService extends Service {
             unregisterReceiver(mScreenLockedReceiver);
             mScreenLockedReceiverRegistered = false;
         }
+        if (mCheckLockResult != null) {
+            mCheckLockResult.cancel(true);
+        }
+        synchronized (this) {
+            mDestroyed = true;
+            if (mScreenLockChecker != null) {
+                mScreenLockChecker.close();
+            }
+        }
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
         super.onDestroy();
+    }
+
+    /**
+     * The service's lock checker, or {@code null} once the service is destroyed, so a screen event
+     * that arrives during teardown cannot start a new timer.
+     */
+    @Nullable
+    private synchronized ScreenLockChecker getScreenLockChecker() {
+        if (mDestroyed) {
+            return null;
+        }
+        if (mScreenLockChecker == null) {
+            mScreenLockChecker = new ScreenLockChecker(this, () -> lockScreen());
+        }
+        return mScreenLockChecker;
     }
 
     public void lockScreen() {
