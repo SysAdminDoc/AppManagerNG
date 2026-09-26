@@ -153,13 +153,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Acceptance: `bcprov`, `bcpkix`, and `bcutil` resolve to 1.86 from one version declaration in every variant; import rejects files, KDF counts, salt sizes, and derived-memory requests above documented ceilings before expensive work begins; parsing runs with an elapsed-time budget and returns a classified error without blocking the main thread; hostile fixtures cannot exhaust the test process; FLOSS and full SBOMs show one aligned provider family.
   Complexity: M
 
-- [ ] P0: Make no-root initialization side-effect free
-  Why: choosing no-root can still enter root-capable shell construction and remote-server detection before the selected mode is honored, causing an unwanted superuser prompt and slow startup.
-  Evidence: upstream App Manager #2048 and #2036; `settings/Ops.java`; `runner/Runner.java:95-112`; `runner/NormalShell.java`; libsu's default `Shell.getShell()` behavior.
-  Touches: `settings/Ops.java`, `runner/Runner.java`, `runner/NormalShell.java`, remote-service initialization, privilege-mode tests, Privilege Health diagnostics.
-  Acceptance: an explicit no-root start makes zero calls to root detection, `Shell.getShell()`, Shizuku or ADB server connection, or remote UID discovery; it creates only the non-root process shell after the mode decision; switching from a privileged mode tears down its connection before no-root becomes active; spy-based tests fail on any forbidden call; startup reports the selected mode without a root prompt or avoidable timeout.
-  Complexity: M
-
 - [ ] P0: Separate app Usage Access from remote query capability
   Why: the permission check uses the remote shell UID in Shizuku mode while Android's Usage Access settings grant belongs to AppManagerNG, so the app can repeatedly ask for a grant the user already supplied.
   Evidence: fork issue #16; Android `UsageStatsManager` and `AppOpsManager` contracts; `self/SelfPermissions.java:179-188`; `users/Users.java:151`; `compat/UsageStatsManagerCompat.java`; every UI caller of `checkUsageStatsPermission()`.

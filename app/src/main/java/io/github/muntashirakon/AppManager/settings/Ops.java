@@ -339,24 +339,15 @@ public class Ops {
     @Status
     private static int init(@NonNull Context context, boolean force, @NonNull @Mode String mode,
                             boolean persistAutoDetectedMode) {
-        sDirectRoot = hasRoot();
+        if (MODE_NO_ROOT.equals(mode)) {
+            return initNoRoot();
+        }
+        // Only the modes that can use root probe for it. The probe builds a root shell, which is a
+        // superuser prompt on a rooted device.
+        sDirectRoot = (MODE_AUTO.equals(mode) || MODE_ROOT.equals(mode)) && hasRoot();
         if (MODE_AUTO.equals(mode)) {
             autoDetectRootSystemOrAdb(context, persistAutoDetectedMode);
             return sIsAdb ? STATUS_SUCCESS : initPermissionsWithSuccess();
-        }
-        if (MODE_NO_ROOT.equals(mode)) {
-            sDirectRoot = false;
-            sIsAdb = sIsSystem = sIsRoot = sIsShizuku = false;
-            // Also, stop existing services if any
-            if (LocalServices.alive()) {
-                LocalServices.stopServices();
-            }
-            if (LocalServer.alive(context)) {
-                // We don't care about its results
-                ThreadUtils.postOnBackgroundThread(() -> ExUtils.exceptionAsIgnored(() ->
-                        LocalServer.getInstance().closeBgServer()));
-            }
-            return STATUS_SUCCESS;
         }
         if (!force && isAMServiceUpAndRunning(context, mode)) {
             // An instance of AMService is already running
@@ -413,6 +404,23 @@ public class Ops {
             ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(R.string.failed_to_use_the_current_mode_of_operation));
         }
         return STATUS_FAILURE;
+    }
+
+    /**
+     * An explicit no-root choice makes no root probe, no Shizuku or ADB connection and no remote UID
+     * lookup. It only tears down a privileged connection this process already holds, and finishes that
+     * before reporting success, so a fresh start never waits on a server another mode left listening.
+     */
+    @WorkerThread
+    @Status
+    private static int initNoRoot() {
+        if (LocalServices.alive()) {
+            LocalServices.stopServices();
+        }
+        sDirectRoot = false;
+        sIsAdb = sIsSystem = sIsRoot = sIsShizuku = false;
+        LocalServer.closeIfConnected();
+        return STATUS_SUCCESS;
     }
 
     /**

@@ -15,8 +15,11 @@ class NormalShell extends Runner {
     private final Shell mShell;
 
     public NormalShell(boolean isRoot) {
-        if (isRoot == Shell.getShell().isRoot()) {
-            mShell = Shell.getShell();
+        // Shell.getShell() builds libsu's default shell, which asks for root. A non-root shell may
+        // only reuse a main shell that already exists and is itself non-root.
+        Shell mainShell = isRoot ? Shell.getShell() : Shell.getCachedShell();
+        if (mainShell != null && mainShell.isRoot() == isRoot) {
+            mShell = mainShell;
             return;
         }
         int flags = isRoot ? Shell.FLAG_MOUNT_MASTER : Shell.FLAG_NON_ROOT_SHELL;

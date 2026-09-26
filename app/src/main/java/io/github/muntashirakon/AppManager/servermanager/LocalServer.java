@@ -76,6 +76,28 @@ public class LocalServer {
         }
     }
 
+    /**
+     * Closes the privileged server when this process holds a connection to it. A process that never
+     * connected does nothing: it neither probes the port nor connects to a server another mode left
+     * listening.
+     */
+    @WorkerThread
+    public static void closeIfConnected() {
+        LocalServer server;
+        synchronized (sLock) {
+            server = sLocalServer;
+            sLocalServer = null;
+        }
+        if (server == null) {
+            return;
+        }
+        try {
+            server.closeBgServer();
+        } catch (IOException e) {
+            Log.w(TAG, "Could not close the privileged server.", e);
+        }
+    }
+
     @WorkerThread
     @NoOps
     public static boolean alive(Context context) {
