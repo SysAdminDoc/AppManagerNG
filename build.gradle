@@ -64,7 +64,8 @@ dependencyCheck {
     // always pass -PdependencyCheckFailBuildOnCvss=9.0 and preserve both reports.
     failBuildOnCVSS = dependencyCheckFailBuildOnCvss
     // Dependency-Check 13 requires an NVD API key for online updates. Keep keyed
-    // environments current, while keyless local gates use the checked local database.
+    // environments current. The release gate (scripts/run_dependency_cve_gate.py) refuses a
+    // local database whose recorded refresh is missing or older than its age limit.
     autoUpdate = Boolean.parseBoolean(
             (findProperty('dependencyCheckAutoUpdate')
                     ?: (System.getenv('NVD_API_KEY') ? 'true' : 'false')).toString())
