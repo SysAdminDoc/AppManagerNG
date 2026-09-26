@@ -411,16 +411,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Confidence: Verified
   Effort: M
 
-- [ ] P1 — Include R8 mappings in the Windows reproducibility check
-  Category: Release integrity
-  Where: `scripts/verify_reproducible_release.ps1:16-22,97-126,234-285`; `scripts/verify_reproducible_release.sh:93-114,146,247-269`; `docs/distribution/dependency-verification.md:83-110`; `README.md:139`
-  Problem: The Windows verifier omits mapping-file comparison even though the shell verifier and documentation describe equivalent reproducibility coverage.
-  Evidence: The shell path collects and compares R8 mappings; the PowerShell artifact set and comparison loop contain no mapping counterpart.
-  Fix: Derive both front ends from one artifact manifest or have PowerShell delegate to the canonical verifier, then add parity tests for missing and mismatched mappings.
-  Acceptance: Identical inputs pass on both front ends; a changed APK, bundle, metadata file, or R8 mapping fails both with the same artifact identity; the receipts enumerate every compared file and documentation matches behavior.
-  Confidence: Verified
-  Effort: S
-
 - [ ] P1 — Reproduce and symbolicate profile creation crash on API 37
   Category: Crash triage
   Where: `app/src/main/java/io/github/muntashirakon/AppManager/profiles/ProfilesActivity.java:391-393`; `app/src/main/java/io/github/muntashirakon/AppManager/profiles/ProfileManager.java:41-53`; `app/src/main/java/io/github/muntashirakon/AppManager/profiles/AppsBaseProfileActivity.java:111-126`; `app/src/main/java/io/github/muntashirakon/AppManager/profiles/AppsProfileViewModel.java:285-310`; `RESEARCH.md:83,263-266`
