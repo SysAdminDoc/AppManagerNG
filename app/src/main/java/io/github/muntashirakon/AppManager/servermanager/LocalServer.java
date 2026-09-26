@@ -95,6 +95,9 @@ public class LocalServer {
             server.closeBgServer();
         } catch (IOException e) {
             Log.w(TAG, "Could not close the privileged server.", e);
+        } finally {
+            // closeBgServer skips this when stopping the server fails; the streams close regardless.
+            server.destroy();
         }
     }
 

@@ -410,6 +410,8 @@ public class Ops {
      * An explicit no-root choice makes no root probe, no Shizuku or ADB connection and no remote UID
      * lookup. It only tears down a privileged connection this process already holds, and finishes that
      * before reporting success, so a fresh start never waits on a server another mode left listening.
+     * The teardown runs before the mode flags change, because stopping a server that ignores the close
+     * request needs the ADB or root channel of the mode being left.
      */
     @WorkerThread
     @Status
@@ -417,9 +419,9 @@ public class Ops {
         if (LocalServices.alive()) {
             LocalServices.stopServices();
         }
+        LocalServer.closeIfConnected();
         sDirectRoot = false;
         sIsAdb = sIsSystem = sIsRoot = sIsShizuku = false;
-        LocalServer.closeIfConnected();
         return STATUS_SUCCESS;
     }
 
