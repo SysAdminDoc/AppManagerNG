@@ -22,7 +22,9 @@ import org.robolectric.annotation.Config;
 import org.robolectric.annotation.Implementation;
 import org.robolectric.annotation.Implements;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -51,6 +53,7 @@ import io.github.muntashirakon.AppManager.users.Users;
 public class OpsNoRootInitTest {
     static final List<String> sCalls = new ArrayList<>();
     static boolean sServicesAlive;
+    static boolean sServerHeld;
 
     private final Context mContext = ApplicationProvider.getApplicationContext();
 
@@ -64,6 +67,7 @@ public class OpsNoRootInitTest {
     public void tearDown() {
         sCalls.clear();
         sServicesAlive = false;
+        sServerHeld = false;
     }
 
     @Test
@@ -88,13 +92,16 @@ public class OpsNoRootInitTest {
     }
 
     @Test
-    public void switchingToNoRootTearsDownAHeldConnectionBeforeReturning() {
+    public void switchingFromAdbTearsDownTheHeldConnectionBeforeBecomingNoRoot() throws Exception {
+        setOpsFlag("sIsAdb", true);
         sServicesAlive = true;
+        sServerHeld = true;
 
         int status = Ops.init(mContext, true, Ops.MODE_NO_ROOT);
 
         assertEquals(Ops.STATUS_SUCCESS, status);
-        assertEquals(Collections.singletonList("LocalServices.stopServices"), sCalls);
+        // The server is closed while the ADB channel is still usable to stop it, then the mode flips.
+        assertEquals(Arrays.asList("LocalServices.stopServices", "LocalServer.closeIfConnected adb=true"), sCalls);
         assertFalse(LocalServices.alive());
         assertNoPrivilegedMode();
     }
@@ -113,6 +120,12 @@ public class OpsNoRootInitTest {
 
         assertFalse(sCalls.toString(), sCalls.contains("RunnerUtils.isAppGrantedRoot"));
         assertFalse(Ops.isDirectRoot());
+    }
+
+    private static void setOpsFlag(String name, boolean value) throws ReflectiveOperationException {
+        Field field = Ops.class.getDeclaredField(name);
+        field.setAccessible(true);
+        field.setBoolean(null, value);
     }
 
     private static void assertNoPrivilegedMode() {
@@ -190,6 +203,15 @@ public class OpsNoRootInitTest {
         protected static boolean alive(Context context, int port) {
             sCalls.add("LocalServer.alive");
             return false;
+        }
+
+        /** Without a held connection the real method does nothing, which is what a fresh start sees. */
+        @Implementation
+        protected static void closeIfConnected() {
+            if (sServerHeld) {
+                sCalls.add("LocalServer.closeIfConnected adb=" + Ops.isAdb());
+                sServerHeld = false;
+            }
         }
     }
 
