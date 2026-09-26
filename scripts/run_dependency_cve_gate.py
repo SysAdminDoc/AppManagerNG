@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Run the blocking local OWASP release gate and preserve its reports."""
+"""Run the blocking local OWASP release gate and preserve its reports.
+
+The scan is only as current as Dependency-Check's local vulnerability database, so the gate
+refuses to scan with a database of unknown or excessive age. With ``NVD_API_KEY`` set it first
+refreshes the database and records when that succeeded. Without a key it accepts only a database
+whose recorded refresh is younger than ``MAX_FEED_AGE_HOURS``.
+"""
 
 from __future__ import annotations
 
@@ -11,8 +17,9 @@ import os
 import shutil
 import subprocess
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Sequence
+from typing import Callable, Mapping, Sequence
 
 
 BLOCKING_CVSS = "9.0"
@@ -22,9 +29,134 @@ REPORT_NAMES = {
 }
 RECEIPT_NAME = "dependency-cve-receipt.json"
 
+# A week keeps a keyless release inside the NVD's normal publication rhythm while still allowing
+# a release to be cut from a machine that refreshed a few days earlier.
+MAX_FEED_AGE_HOURS = 168
+# A refresh receipt dated slightly ahead of this clock is tolerated; anything further is a clock
+# problem, and a future date cannot vouch for anything.
+CLOCK_SKEW_TOLERANCE = timedelta(minutes=5)
+# Dependency-Check keeps its database under GRADLE_USER_HOME in a data-format directory. An upgrade
+# that changes the format starts an empty directory with no refresh receipt, so the gate blocks
+# until that database has been refreshed.
+DATA_FORMAT_DIRECTORY = "11.0"
+DATABASE_NAME = "odc.mv.db"
+FEED_RECEIPT_NAME = "appmanagerng-feed-refresh.json"
+
 
 class GateError(RuntimeError):
     pass
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _iso(moment: datetime) -> str:
+    return moment.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def default_data_directory(env: Mapping[str, str]) -> Path:
+    gradle_home = env.get("GRADLE_USER_HOME")
+    base = Path(gradle_home) if gradle_home else Path.home() / ".gradle"
+    return base / "dependency-check-data" / DATA_FORMAT_DIRECTORY
+
+
+def refresh_feed(
+    gradle_command: Sequence[str],
+    repo_root: Path,
+    data_dir: Path,
+    clock: Callable[[], datetime],
+) -> None:
+    """Refreshes the database online and records when that succeeded.
+
+    The build reads ``NVD_API_KEY`` from the environment. Nothing is recorded unless the refresh
+    exits cleanly and leaves a database behind, so a failed refresh can never look recent.
+    """
+    receipt_path = data_dir / FEED_RECEIPT_NAME
+    command = [
+        *gradle_command,
+        "--no-daemon",
+        "--stacktrace",
+        "dependencyCheckUpdate",
+        "-PdependencyCheckAutoUpdate=true",
+    ]
+    try:
+        result = subprocess.run(command, cwd=repo_root, check=False)
+    except OSError as exc:
+        raise GateError(f"could not start the vulnerability feed refresh: {exc}") from exc
+    if result.returncode != 0:
+        raise GateError(
+            f"vulnerability feed refresh failed (exit code {result.returncode}); release is "
+            "blocked because the local database could not be brought up to date"
+        )
+    if not (data_dir / DATABASE_NAME).is_file():
+        raise GateError(
+            f"vulnerability feed refresh reported success but left no database at "
+            f"{data_dir / DATABASE_NAME}"
+        )
+    receipt_path.write_text(
+        json.dumps(
+            {
+                "schemaVersion": 1,
+                "refreshedAt": _iso(clock()),
+                "gradleTask": "dependencyCheckUpdate",
+                "result": "succeeded",
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def check_feed(
+    data_dir: Path,
+    now: datetime,
+    update_mode: str,
+    refresh_result: str,
+) -> dict:
+    """Returns the feed provenance for the receipt, or blocks when the age is unknown or too old."""
+    database = data_dir / DATABASE_NAME
+    if not database.is_file():
+        raise GateError(
+            f"no vulnerability database at {database}; set NVD_API_KEY and run the gate to "
+            "download one"
+        )
+    receipt_path = data_dir / FEED_RECEIPT_NAME
+    if not receipt_path.is_file():
+        raise GateError(
+            f"the vulnerability database at {database} has no refresh record, so its age is "
+            "unknown; set NVD_API_KEY and run the gate once to refresh it"
+        )
+    try:
+        recorded = json.loads(receipt_path.read_text(encoding="utf-8"))
+        refreshed_at = datetime.strptime(recorded["refreshedAt"], "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=timezone.utc)
+        if recorded.get("result") != "succeeded":
+            raise ValueError("refresh result is not 'succeeded'")
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise GateError(f"the vulnerability feed refresh record {receipt_path} is unreadable: {exc}") from exc
+    age = now - refreshed_at
+    if age < -CLOCK_SKEW_TOLERANCE:
+        raise GateError(
+            f"the vulnerability feed refresh record is dated {_iso(refreshed_at)}, after the "
+            f"current time {_iso(now)}; check the system clock"
+        )
+    age_hours = max(age, timedelta(0)).total_seconds() / 3600
+    if age_hours > MAX_FEED_AGE_HOURS:
+        raise GateError(
+            f"the vulnerability database was last refreshed {age_hours / 24:.1f} days ago, on "
+            f"{_iso(refreshed_at)}; releases require a refresh within {MAX_FEED_AGE_HOURS // 24} "
+            "days. Set NVD_API_KEY and run the gate again"
+        )
+    return {
+        "updateMode": update_mode,
+        "refreshResult": refresh_result,
+        "databaseRefreshedAt": _iso(refreshed_at),
+        "ageHours": round(age_hours, 1),
+        "maxAgeHours": MAX_FEED_AGE_HOURS,
+        "decision": "fresh",
+    }
 
 
 def _sha256(path: Path) -> str:
@@ -59,8 +191,13 @@ def run_gate(
     repo_root: Path,
     out_dir: Path,
     report_dir: Path | None = None,
+    data_dir: Path | None = None,
+    env: Mapping[str, str] | None = None,
+    clock: Callable[[], datetime] = _utc_now,
 ) -> list[Path]:
     gradle_command = resolve_gradle_command(gradle_command, repo_root)
+    env = os.environ if env is None else env
+    data_dir = data_dir or default_data_directory(env)
     report_dir = report_dir or repo_root / "build" / "reports"
     report_paths = [report_dir / name for name in REPORT_NAMES.values()]
     nested_report_paths = [report_dir / "dependency-check" / name for name in REPORT_NAMES.values()]
@@ -69,12 +206,22 @@ def run_gate(
     for name in (*REPORT_NAMES.values(), RECEIPT_NAME):
         (out_dir / name).unlink(missing_ok=True)
 
+    # Settle the database's age before any advisory is evaluated. A blocked feed leaves no
+    # receipt, because nothing was scanned.
+    if env.get("NVD_API_KEY"):
+        refresh_feed(gradle_command, repo_root, data_dir, clock)
+        feed = check_feed(data_dir, clock(), "online-refresh", "succeeded")
+    else:
+        feed = check_feed(data_dir, clock(), "local", "not-attempted")
+
     command = [
         *gradle_command,
         "--no-daemon",
         "--stacktrace",
         "dependencyCheckAggregate",
         f"-PdependencyCheckFailBuildOnCvss={BLOCKING_CVSS}",
+        # The database was settled above; the scan must use exactly that data.
+        "-PdependencyCheckAutoUpdate=false",
     ]
     try:
         result = subprocess.run(command, cwd=repo_root, check=False)
@@ -108,12 +255,13 @@ def run_gate(
     receipt_path.write_text(
         json.dumps(
             {
-                "schemaVersion": 1,
+                "schemaVersion": 2,
                 "scanner": "OWASP Dependency-Check",
                 "gradleTask": "dependencyCheckAggregate",
                 "blockingCvss": BLOCKING_CVSS,
                 "passed": result.returncode == 0,
                 "scannerExitCode": result.returncode,
+                "vulnerabilityFeed": feed,
                 "reports": reports,
             },
             indent=2,

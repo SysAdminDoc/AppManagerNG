@@ -47,11 +47,25 @@ Run the gate at the release threshold and retain its local reports for review:
 py -3.12 scripts/run_dependency_cve_gate.py --out-dir reproducible-release/publish
 ```
 
-Dependency-Check 13 requires an NVD API key when it refreshes online. The
-Gradle configuration refreshes when `NVD_API_KEY` is present and otherwise
-uses the local vulnerability database, so a keyless run still produces a
-blocking report instead of failing before analysis. Set
-`-PdependencyCheckAutoUpdate=true` only when the machine has a valid NVD key.
+A scan is only as current as Dependency-Check's local vulnerability database,
+so the gate settles the database's age before it evaluates a single advisory:
+
+- With `NVD_API_KEY` set, the gate runs `dependencyCheckUpdate` first. When
+  that succeeds it writes `appmanagerng-feed-refresh.json` next to the
+  database (`~/.gradle/dependency-check-data/11.0/`, or the same path under
+  `GRADLE_USER_HOME`). A failed refresh blocks the release and records
+  nothing.
+- Without a key, the gate scans only when that record exists, reads
+  `"result": "succeeded"`, and is less than 7 days old. A missing, unreadable,
+  future-dated, or older record blocks the release before the scan starts, and
+  no receipt is written for it.
+- Either way the scan itself runs with `-PdependencyCheckAutoUpdate=false`, so
+  it uses exactly the data that was checked.
+
+The receipt's `vulnerabilityFeed` block states the update mode, whether a
+refresh was attempted, when the database was last refreshed, its age in hours,
+the limit, and the decision. An NVD API key is free from the NVD, and one
+keyed run a week is enough to keep keyless release runs going.
 
 The Gradle configuration fails when a suppression rule has zero matches. This
 means a fixed dependency or withdrawn advisory turns into a visible gate

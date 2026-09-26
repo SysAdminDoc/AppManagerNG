@@ -5,6 +5,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Unreleased
 
+### Security
+- The local release gate no longer scans against a vulnerability database of unknown age. With an NVD API key it refreshes the database first and stops if that fails. Without one it scans only when the last recorded refresh is under seven days old. The CVE receipt now states the update mode, the refresh result, when the data was refreshed, and its age.
+
 ### Fixed
 - App Usage no longer crashes on phones that don't register Android's `isub` subscription service (issue #18). When a telephony service is missing, dead or refuses the call, AppManagerNG treats it as "no subscriber IDs" and counts mobile usage across all mobile networks instead. The support bundle names each service's state in one line.
 - Mobile data is no longer counted twice when one SIM's subscriber ID can't be read.

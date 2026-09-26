@@ -322,16 +322,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Confidence: Verified
   Effort: M
 
-- [ ] P0 — Reject stale vulnerability data in the release gate
-  Category: Supply-chain security
-  Where: `build.gradle:66-81`; `scripts/run_dependency_cve_gate.py:72-130`; `scripts/tests/test_run_dependency_cve_gate.py:40-57`; `docs/distribution/dependency-verification.md:51-52`
-  Problem: A keyless CVE gate can pass against an arbitrarily old local database, and its receipt does not disclose feed age or update mode.
-  Evidence: The audit ran on 2026-09-25 with local dependency-check data last updated on 2026-08-22; the retained 2026-09-05 receipt records scanner exit status and report hashes but no feed timestamp.
-  Fix: Require a successful refresh or enforce a documented maximum feed age, and write the database timestamp, update mode, refresh result, and age decision into the receipt.
-  Acceptance: A release gate with fresh data passes and records provenance; an expired or undated database blocks release before advisory evaluation; offline use requires an explicit recent-data receipt and tests cover fresh, stale, missing, and failed-refresh states.
-  Confidence: Verified
-  Effort: M
-
 ### P1
 
 - [ ] P1 — Make Code Editor saves atomic and await Save and exit
