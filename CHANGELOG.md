@@ -11,7 +11,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Other apps can no longer start a backup through AppManagerNG's launcher shortcut. The shortcut, now called Scheduled backup, opens the scheduled backup settings with Run now in view, and the backup starts when you tap it. A shortcut you pinned from Settings still starts a backup with one tap. The backup status now says what started the last run.
 
 ### Changed
-- The privacy policy no longer lists Pithus, which AppManagerNG stopped contacting in v0.6.13. Its optional-network section now names the exact hosts the full build can reach, and a test keeps that list in step with the Network transparency screen.
+- The privacy policy no longer lists Pithus, which AppManagerNG stopped contacting in v0.6.13. Its optional-network section now names each service the full build can reach, with its host, and a test keeps that list in step with the Network transparency screen.
 
 ### Fixed
 - Choosing No root no longer asks for superuser access. Starting in no-root mode used to probe for root before it looked at the chosen mode, which put up a superuser prompt on rooted phones, and it could stall on a privileged server another mode had left running. Shizuku and ADB modes don't probe for root any more either.
