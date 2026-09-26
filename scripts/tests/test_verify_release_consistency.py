@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import os
 import shutil
 import subprocess
 import sys
@@ -61,6 +62,53 @@ class VerifyReleaseConsistencyTest(unittest.TestCase):
         result = self.run_function('extract_release_tag_version "$2"', "v1.2.3-preview1")
 
         self.assertNotEqual(0, result.returncode)
+
+    def resolve_python(self, interpreters: dict[str, int],
+                       python_cmd: str | None = None) -> subprocess.CompletedProcess[str]:
+        """Runs the resolver with PATH holding only stub interpreters that exit with the given code."""
+        with tempfile.TemporaryDirectory() as raw:
+            stub_dir = Path(raw)
+            for name, exit_code in interpreters.items():
+                stub = stub_dir / name
+                stub.write_text(f"#!/bin/sh\nexit {exit_code}\n", encoding="utf-8", newline="\n")
+                stub.chmod(0o755)
+            env = dict(os.environ, PATH=str(stub_dir))
+            env.pop("PYTHON_CMD", None)
+            if python_cmd is not None:
+                env["PYTHON_CMD"] = python_cmd
+            return subprocess.run(
+                [BASH, "-c", 'source "$1"; resolve_python_command && printf "%s\\n" "${PYTHON_BIN[*]}"',
+                 "test", SCRIPT.as_posix()],
+                check=False,
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+
+    def test_python_cmd_is_preferred_when_set(self) -> None:
+        result = self.resolve_python({"python3": 0, "python": 0, "py": 0, "release-python": 0},
+                                     python_cmd="release-python")
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual("release-python", result.stdout.strip())
+
+    def test_python3_then_python_then_the_windows_launcher(self) -> None:
+        self.assertEqual("python3", self.resolve_python({"python3": 0, "python": 0, "py": 0}).stdout.strip())
+        self.assertEqual("python", self.resolve_python({"python": 0, "py": 0}).stdout.strip())
+        self.assertEqual("py -3", self.resolve_python({"py": 0}).stdout.strip())
+
+    def test_an_interpreter_that_does_not_run_is_skipped(self) -> None:
+        # A PATH entry that fails --version, like the Windows Store python3 alias, is not Python.
+        result = self.resolve_python({"python3": 1, "python": 0}, python_cmd="python3")
+
+        self.assertEqual("python", result.stdout.strip())
+
+    def test_no_interpreter_fails_closed_with_the_existing_message(self) -> None:
+        result = self.resolve_python({"python3": 1, "py": 1})
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual("", result.stdout.strip())
+        self.assertIn("ERROR: Python 3 is required to verify the release receipt", result.stderr)
 
 
 if __name__ == "__main__":

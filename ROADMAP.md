@@ -142,15 +142,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Acceptance: no user-facing string implies Dhizuku can perform operations while it cannot, and none conflates Shizuku readiness with Dhizuku readiness; the Dhizuku status text states what detection gives the user today and what it does not; `docs/policy/minsdk-21-ceiling.md` records the measured Dhizuku-API minimum SDK and the decision on whether an API 26 guarded module with `tools:overrideLibrary` is acceptable under the API 21 policy, so the parked Dhizuku executor-parity row in `Roadmap_Blocked.md` carries a decided approach instead of an open question; a settings-string test fails if a readiness string is reintroduced without a matching capability.
   Complexity: S
 
-### P3
-
-- [ ] P3: Let the consistency gate find Python the way its sibling script does
-  Why: `scripts/verify-release-consistency.sh` fails with "Python 3 is required to verify the release receipt" on a machine where Python is installed but not on `PATH`, so the whole gate reports FAILED for an environment reason while every version surface it checked passed.
-  Evidence: `scripts/verify-release-consistency.sh:181-189` probes only `python3` and `python`; `scripts/verify_reproducible_release.sh:10-22` already honours `$PYTHON_CMD` and falls back to `py -3`. Hit on 2026-09-05 during a version bump; the run passed once `PATH` was patched by hand.
-  Touches: `scripts/verify-release-consistency.sh`, `scripts/tests/test_verify_release_consistency.py`.
-  Acceptance: the script resolves an interpreter through `$PYTHON_CMD`, then `python3`, then `python`, then `py -3`, matching `verify_reproducible_release.sh`; a test proves that an environment with none of them still fails closed with the existing message, and that `$PYTHON_CMD` is preferred when set.
-  Complexity: S
-
 ## Research-Driven Additions (2026-09-25)
 
 ### P0
