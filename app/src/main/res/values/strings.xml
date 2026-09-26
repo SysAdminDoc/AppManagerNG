@@ -3676,7 +3676,7 @@
     <string name="snapshot_section_fm_favorites">File-manager favorites (%1$d)</string>
     <string name="snapshot_section_freeze_types">Freeze methods (%1$d)</string>
     <string name="snapshot_encrypt_title">Encrypt snapshot?</string>
-    <string name="snapshot_encrypt_message">Enter a passphrase to encrypt this snapshot with AES-256, or leave it blank to save it unencrypted. The passphrase can\'t be recovered — store it somewhere safe.</string>
+    <string name="snapshot_encrypt_message">Enter a passphrase to encrypt this snapshot with AES-256, or choose Save unencrypted. The passphrase can\'t be recovered, so store it somewhere safe.</string>
     <string name="snapshot_passphrase_hint">Passphrase</string>
     <string name="snapshot_encrypt_action">Encrypt</string>
     <string name="snapshot_export_plaintext">Save unencrypted</string>

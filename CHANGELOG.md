@@ -17,6 +17,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - AppManagerNG stops asking for Usage Access you already granted (issue #16). With Shizuku active it used to check the grant of Shizuku's shell, which some phones deny, instead of its own. It now reads its own grant, and when the shell can't read usage data it asks as the app itself.
 - App Usage no longer crashes on phones that don't register Android's `isub` subscription service (issue #18). When a telephony service is missing, dead or refuses the call, AppManagerNG treats it as "no subscriber IDs" and counts mobile usage across all mobile networks instead. The support bundle names each service's state in one line.
 - Mobile data is no longer counted twice, or dropped, when one SIM's subscriber ID can't be read.
+- Choosing Encrypt with an empty or blank passphrase no longer saves the settings snapshot unencrypted. The dialog stays open and asks for a passphrase. Save unencrypted is still its own button.
 
 ## v0.6.24, 2026-09-05
 
