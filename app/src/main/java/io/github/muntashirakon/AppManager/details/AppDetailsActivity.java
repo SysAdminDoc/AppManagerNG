@@ -16,6 +16,7 @@ import android.view.MenuItem;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.os.BundleCompat;
@@ -163,6 +164,7 @@ public class AppDetailsActivity extends BaseActivity {
         model = new ViewModelProvider(this).get(AppDetailsViewModel.class);
         // Restore instance state
         SavedState ss = savedInstanceState != null ? BundleCompat.getParcelable(savedInstanceState, "ss", SavedState.class) : null;
+        @StringRes int apkIntentError = 0;
         if (ss != null) {
             mBackToMainPage = ss.mBackToMainPage;
             mPackageName = ss.mPackageName;
@@ -179,7 +181,9 @@ public class AppDetailsActivity extends BaseActivity {
                 mUserId = pair.getUserId();
             } else {
                 mPackageName = getPackageNameFromExtras(intent);
-                mApkSource = getApkSource(intent);
+                ApkIntentSource apkIntentSource = ApkIntentSource.resolve(intent);
+                mApkSource = getApkSource(intent, apkIntentSource);
+                apkIntentError = apkIntentSource.error;
                 mUserId = intent.getIntExtra(EXTRA_USER_HANDLE, UserHandleHidden.myUserId());
             }
             mApkType = intent.getType();
@@ -190,7 +194,7 @@ public class AppDetailsActivity extends BaseActivity {
         mTabFragments = new Fragment[mTabTitleIds.length()];
         mLoadedTabs = new boolean[mTabTitleIds.length()];
         if (mPackageName == null && mApkSource == null) {
-            UIUtils.displayLongToast(R.string.empty_package_name);
+            UIUtils.displayLongToast(apkIntentError != 0 ? apkIntentError : R.string.empty_package_name);
             finish();
             return;
         }
@@ -298,10 +302,12 @@ public class AppDetailsActivity extends BaseActivity {
     }
 
     @Nullable
-    private ApkSource getApkSource(@NonNull Intent intent) {
-        Uri uri = intent.getData();
-        if (uri != null) {
-            return ApkSource.getApkSource(uri, intent.getType());
+    private ApkSource getApkSource(@NonNull Intent intent, @NonNull ApkIntentSource apkIntentSource) {
+        if (apkIntentSource.uri != null) {
+            return ApkSource.getApkSource(apkIntentSource.uri, intent.getType());
+        }
+        if (apkIntentSource.error != 0) {
+            return null;
         }
         return IntentCompat.getUnwrappedParcelableExtra(intent, EXTRA_APK_SOURCE, ApkSource.class);
     }

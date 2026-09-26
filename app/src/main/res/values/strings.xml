@@ -200,6 +200,8 @@
     <string name="user_id">User ID</string>
     <string name="main_activity">Main activity</string>
     <string name="empty_package_name">Empty package name</string>
+    <string name="apk_intent_multiple">Share one file at a time</string>
+    <string name="apk_intent_unusable">App info couldn\'t find a file to open</string>
     <string name="error_creating_shortcut">Error creating shortcut</string>
     <string name="error_verbose_pin_shortcut">Current launcher does not support PinShortcut. Unable to create shortcut.</string>
     <string name="starting_activity">Starting activity: <xliff:g id="activity_name" example=".main.MainActivity">%1$s</xliff:g></string>
