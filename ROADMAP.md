@@ -468,6 +468,36 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Confidence: Likely
   Effort: S
 
+- [ ] P2 — Stop screens probing for root while no-root is selected
+  Category: Privilege boundaries
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/details/info/AppInfoFragment.java:468-471`; `app/src/main/java/io/github/muntashirakon/AppManager/misc/DeviceInfo2.java:158`; `app/src/main/java/io/github/muntashirakon/AppManager/utils/FileUtils.java:241`; `app/src/main/java/io/github/muntashirakon/AppManager/runner/RunnerUtils.java:104-122`
+  Problem: With No root chosen, opening App Info (to size the Open in Termux menu item), the device info dialog, and a failed shared-storage lookup still call `RunnerUtils.isRootAvailable()` or `isRootGiven()`, which builds libsu's root shell and raises a superuser prompt on a rooted phone.
+  Evidence: Found on 2026-09-26 while fixing the side-effect-free no-root start; `isAppGrantedRoot()` constructs `Runner.getRootInstance()`, and `NormalShell(true)` asks libsu for the root main shell. Upstream App Manager #2048 describes the resulting repeated "denied superuser rights" toasts during ordinary use.
+  Fix: Answer these UI questions from the selected mode or from a root-manager presence check that spawns no `su`, and keep the real grant probe for the mode chooser, onboarding, and Privilege Health, where the user asked for it.
+  Acceptance: In no-root mode, opening App Info, the device info dialog, and the storage fallback make no `su` attempt, pinned by a spy test like `OpsNoRootInitTest`; the mode chooser and Privilege Health still report a granted root when the user checks.
+  Confidence: Verified
+  Effort: S
+
+- [ ] P2 — Stop the snapshot import preview crashing on an unavailable section
+  Category: Crash
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/settings/PrivacyPreferences.java` (`showImportPreview`, the multi-choice listener)
+  Problem: Tapping a section the snapshot does not contain runs `((android.app.AlertDialog) dialog).getListView()`, but `MaterialAlertDialogBuilder` builds an `androidx.appcompat.app.AlertDialog`, so the cast throws `ClassCastException` and the settings screen crashes.
+  Evidence: Found on 2026-09-26 while editing the export passphrase dialog in the same file; the builder and the cast are a few lines apart.
+  Fix: Cast to the AppCompat dialog, or keep unavailable rows disabled so they cannot be toggled at all.
+  Acceptance: Tapping an unavailable section leaves it unchecked without a crash; available sections still toggle; a Robolectric test clicks an unavailable row in the preview dialog.
+  Confidence: Likely
+  Effort: S
+
+- [ ] P2 — Import PKCS #8 keys off the main thread
+  Category: Responsiveness
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/settings/crypto/KeyPairImporterDialogFragment.java:135-147`; `app/src/main/java/io/github/muntashirakon/AppManager/crypto/ks/KeyStoreUtils.java` (`getKeyPair(Context, Uri, Uri)`)
+  Problem: The PKCS #8 and PEM path reads both files in full, with no size limit, and parses the key and certificate on the UI thread, while the keystore paths beside it already run in the background.
+  Evidence: Found on 2026-09-26 while routing keystore imports through `KeyStoreImportPolicy`; the OK handler calls `KeyStoreUtils.getKeyPair(mActivity, mPk8File, mKsOrPemFile)` directly, and that method uses `IoUtils.readFully(pk, -1, true)`.
+  Fix: Run the import on a worker, bound both reads to a small documented ceiling, and post the result back to the dialog.
+  Acceptance: A slow or oversized key or certificate file never blocks the UI thread; files above the ceiling fail with a classified error; the existing successful import still selects the key pair.
+  Confidence: Verified
+  Effort: S
+
 ### P3
 
 - [ ] P3 — Add the current version to What’s New
