@@ -9,6 +9,7 @@ import android.util.Log;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -45,20 +46,25 @@ public final class IoUtils {
     @AnyThread
     public static byte[] readFully(@NonNull InputStream is, int length, boolean readAll)
             throws IOException {
+        return readFully(is, length, readAll, MAX_UNBOUNDED_READ_BYTES);
+    }
+
+    /**
+     * An unbounded read holds at most {@code unboundedLimit + 1} bytes: the extra byte is how it
+     * learns the stream is too long. The buffer never grows past that, so an oversized stream fails
+     * with an {@link IOException} instead of first doubling its buffer beyond the limit.
+     */
+    @VisibleForTesting
+    static byte[] readFully(@NonNull InputStream is, int length, boolean readAll, int unboundedLimit)
+            throws IOException {
         byte[] output = {};
         final boolean unbounded = length == -1;
-        if (unbounded) length = Integer.MAX_VALUE;
+        final int capacity = unbounded ? unboundedLimit + 1 : length;
         int pos = 0;
-        while (pos < length) {
-            if (unbounded && pos > MAX_UNBOUNDED_READ_BYTES) {
-                // Catchable failure instead of an OOM Error on an oversized /
-                // decompression-bomb stream (see MAX_UNBOUNDED_READ_BYTES).
-                throw new IOException("Stream exceeds the maximum allowed length of "
-                        + MAX_UNBOUNDED_READ_BYTES + " bytes");
-            }
+        while (pos < capacity) {
             int bytesToRead;
             if (pos >= output.length) {
-                bytesToRead = Math.min(length - pos, output.length + 1024);
+                bytesToRead = Math.min(capacity - pos, output.length + 1024);
                 if (output.length < pos + bytesToRead) {
                     output = Arrays.copyOf(output, pos + bytesToRead);
                 }
@@ -67,16 +73,20 @@ public final class IoUtils {
             }
             int cc = is.read(output, pos, bytesToRead);
             if (cc < 0) {
-                if (readAll && length != Integer.MAX_VALUE) {
+                if (readAll && !unbounded && length != Integer.MAX_VALUE) {
                     throw new EOFException("Detect premature EOF");
-                } else {
-                    if (output.length != pos) {
-                        output = Arrays.copyOf(output, pos);
-                    }
-                    break;
                 }
+                if (output.length != pos) {
+                    output = Arrays.copyOf(output, pos);
+                }
+                return output;
             }
             pos += cc;
+        }
+        if (unbounded) {
+            // Catchable failure instead of an OOM Error on an oversized /
+            // decompression-bomb stream (see MAX_UNBOUNDED_READ_BYTES).
+            throw new IOException("Stream exceeds the maximum allowed length of " + unboundedLimit + " bytes");
         }
         return output;
     }
