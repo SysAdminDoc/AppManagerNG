@@ -14,6 +14,7 @@ import android.os.UserHandleHidden;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresPermission;
+import androidx.annotation.VisibleForTesting;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -52,8 +53,7 @@ public final class UsageStatsManagerCompat {
                     && SelfPermissions.getUsageStatsQueryUid(userId) == Process.myUid()) {
                 // The privileged identity has no Usage Access here, but AppManagerNG's own grant
                 // covers this user, so ask as the app instead of through the privileged binder.
-                usm = IUsageStatsManager.Stub.asInterface(
-                        ProxyBinder.getUnprivilegedService(USAGE_STATS_SERVICE_NAME));
+                usm = getUnprivilegedUsageStatsManager();
                 callingPackage = SelfPermissions.getCallingPackage(Process.myUid());
             } else {
                 usm = getUsageStatsManager();
@@ -151,5 +151,11 @@ public final class UsageStatsManagerCompat {
 
     public static IUsageStatsManager getUsageStatsManager() {
         return IUsageStatsManager.Stub.asInterface(ProxyBinder.getService(USAGE_STATS_SERVICE_NAME));
+    }
+
+    /** The usage-stats service called as AppManagerNG itself, never through a privileged binder. */
+    @VisibleForTesting
+    static IUsageStatsManager getUnprivilegedUsageStatsManager() {
+        return IUsageStatsManager.Stub.asInterface(ProxyBinder.getUnprivilegedService(USAGE_STATS_SERVICE_NAME));
     }
 }

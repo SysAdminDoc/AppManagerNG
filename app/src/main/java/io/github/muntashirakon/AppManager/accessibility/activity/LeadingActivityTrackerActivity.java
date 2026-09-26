@@ -59,7 +59,9 @@ public class LeadingActivityTrackerActivity extends BaseActivity {
                     .show();
             return;
         }
-        if (!SelfPermissions.checkUsageStatsPermission()) {
+        // The Usage Access screen changes only AppManagerNG's own grant, so that grant alone decides
+        // whether to send the user there (issue #16).
+        if (!SelfPermissions.hasAppUsageAccessGrant()) {
             ThreadUtils.postOnMainThread(() -> new MaterialAlertDialogBuilder(this)
                     .setTitle(R.string.grant_usage_access)
                     .setMessage(R.string.grant_usage_acess_message)

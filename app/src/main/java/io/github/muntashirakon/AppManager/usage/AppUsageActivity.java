@@ -175,8 +175,9 @@ public class AppUsageActivity extends BaseActivity implements SwipeRefreshLayout
     }
 
     private void checkPermissions() {
-        // Check permission
-        if (!SelfPermissions.checkUsageStatsPermission()) {
+        // The Usage Access screen changes only AppManagerNG's own grant, so that grant alone decides
+        // whether to prompt; with it, the app can always read its own user's usage (issue #16).
+        if (!SelfPermissions.hasAppUsageAccessGrant()) {
             ProgressIndicatorCompat.setVisibility(progressIndicator, false);
             mWaitingForUsageAccess = false;
             viewModel.cancelUsageLoad();
