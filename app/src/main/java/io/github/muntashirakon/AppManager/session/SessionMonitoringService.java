@@ -12,6 +12,7 @@ import android.os.IBinder;
 import android.os.Process;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.PendingIntentCompat;
@@ -149,8 +150,9 @@ public class SessionMonitoringService extends Service {
      * The service's lock checker, or {@code null} once the service is destroyed, so a screen event
      * that arrives during teardown cannot start a new timer.
      */
+    @VisibleForTesting
     @Nullable
-    private synchronized ScreenLockChecker getScreenLockChecker() {
+    synchronized ScreenLockChecker getScreenLockChecker() {
         if (mDestroyed) {
             return null;
         }

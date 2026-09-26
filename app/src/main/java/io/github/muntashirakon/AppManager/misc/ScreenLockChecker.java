@@ -9,6 +9,7 @@ import android.os.PowerManager;
 import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import java.io.Closeable;
@@ -19,7 +20,7 @@ import io.github.muntashirakon.AppManager.logs.Log;
 
 /**
  * Waits for a secure device to lock after its screen goes off, then runs a callback. The owner must
- * {@link #close()} it when it stops: after that, nothing already queued can reach the callback.
+ * {@link #close()} it when it stops: once that returns, no callback is running and none can start.
  */
 public final class ScreenLockChecker implements Closeable {
     public static final String TAG = ScreenLockChecker.class.getSimpleName();
@@ -33,22 +34,66 @@ public final class ScreenLockChecker implements Closeable {
     private static final int[] sCheckLockDelays = new int[]{SECOND, 5 * SECOND, 10 * SECOND, 20 * SECOND, 30 * SECOND,
             MINUTE, 3 * MINUTE, 5 * MINUTE, 10 * MINUTE, 30 * MINUTE};
 
+    /** Runs the delayed checks. The checker uses a daemon {@link Timer}; tests drive a clock by hand. */
+    @VisibleForTesting
+    interface Scheduler {
+        /**
+         * Runs {@code task} once {@code delayMillis} have passed.
+         *
+         * @return an action that cancels the task if it has not started
+         */
+        @NonNull
+        Runnable schedule(@NonNull Runnable task, long delayMillis);
+
+        /** Cancels every task and releases the scheduler's thread. */
+        void shutdown();
+    }
+
+    private static final class TimerScheduler implements Scheduler {
+        // A daemon thread, so a checker that was never closed cannot keep a process alive either.
+        private final Timer mTimer = new Timer(TIMER_THREAD_NAME, true);
+
+        @NonNull
+        @Override
+        public Runnable schedule(@NonNull Runnable task, long delayMillis) {
+            TimerTask timerTask = new TimerTask() {
+                @Override
+                public void run() {
+                    task.run();
+                }
+            };
+            mTimer.schedule(timerTask, delayMillis);
+            return timerTask::cancel;
+        }
+
+        @Override
+        public void shutdown() {
+            mTimer.cancel();
+            mTimer.purge();
+        }
+    }
+
     private final Context mContext;
     private final Object mLock = new Object();
-    // A daemon thread, so a checker that was never closed cannot keep a process alive either.
-    private final Timer mTimer = new Timer(TIMER_THREAD_NAME, true);
+    private final Scheduler mScheduler;
     @Nullable
     private final Runnable mRunnable;
 
     @GuardedBy("mLock")
     @Nullable
-    private CheckLockTask mCheckLockTask;
+    private Runnable mCancelPendingCheck;
     @GuardedBy("mLock")
     private boolean mClosed;
 
     public ScreenLockChecker(@NonNull Context context, @Nullable Runnable runnable) {
+        this(context, runnable, new TimerScheduler());
+    }
+
+    @VisibleForTesting
+    ScreenLockChecker(@NonNull Context context, @Nullable Runnable runnable, @NonNull Scheduler scheduler) {
         mContext = context.getApplicationContext();
         mRunnable = runnable;
+        mScheduler = scheduler;
     }
 
     public void checkLock() {
@@ -56,8 +101,9 @@ public final class ScreenLockChecker implements Closeable {
     }
 
     /**
-     * Cancels the pending check and stops the timer thread. Later calls to {@link #checkLock()} and
-     * any task that was already running do nothing. Safe to call more than once and from any thread.
+     * Cancels the pending check and stops the timer thread. A callback that is already running is
+     * waited for; after that, later calls to {@link #checkLock()} and any check still in flight do
+     * nothing. Safe to call more than once and from any thread, the callback's included.
      */
     @Override
     public void close() {
@@ -66,12 +112,11 @@ public final class ScreenLockChecker implements Closeable {
                 return;
             }
             mClosed = true;
-            if (mCheckLockTask != null) {
-                mCheckLockTask.cancel();
-                mCheckLockTask = null;
+            if (mCancelPendingCheck != null) {
+                mCancelPendingCheck.run();
+                mCancelPendingCheck = null;
             }
-            mTimer.cancel();
-            mTimer.purge();
+            mScheduler.shutdown();
         }
     }
 
@@ -92,31 +137,31 @@ public final class ScreenLockChecker implements Closeable {
         final boolean isProtected = keyguardManager.isKeyguardSecure();
         final boolean isLocked = keyguardManager.isKeyguardLocked();
         final boolean isInteractive = powerManager.isInteractive();
-        delayIndex = getSafeCheckLockDelay(delayIndex);
+        final int safeDelayIndex = getSafeCheckLockDelay(delayIndex);
         Log.i(TAG, "checkLock: isProtected=%b, isLocked=%b, isInteractive=%b, delay=%d",
-                isProtected, isLocked, isInteractive, sCheckLockDelays[delayIndex]);
+                isProtected, isLocked, isInteractive, sCheckLockDelays[safeDelayIndex]);
 
         synchronized (mLock) {
             if (mClosed) {
                 return;
             }
-            if (mCheckLockTask != null) {
-                Log.i(TAG, "checkLock: cancelling CheckLockTask[%x]", System.identityHashCode(mCheckLockTask));
-                mCheckLockTask.cancel();
-                mCheckLockTask = null;
+            if (mCancelPendingCheck != null) {
+                Log.i(TAG, "checkLock: cancelling the pending check");
+                mCancelPendingCheck.run();
+                mCancelPendingCheck = null;
             }
             if (isProtected && !isLocked && !isInteractive) {
-                mCheckLockTask = new CheckLockTask(delayIndex);
-                Log.i(TAG, "checkLock: scheduling CheckLockTask[%x] for %d ms", System.identityHashCode(mCheckLockTask), sCheckLockDelays[delayIndex]);
-                mTimer.schedule(mCheckLockTask, sCheckLockDelays[delayIndex]);
+                Log.i(TAG, "checkLock: checking again in %d ms", sCheckLockDelays[safeDelayIndex]);
+                mCancelPendingCheck = mScheduler.schedule(() -> checkLock(getSafeCheckLockDelay(safeDelayIndex + 1)),
+                        sCheckLockDelays[safeDelayIndex]);
                 return;
             }
-        }
-        Log.d(TAG, "checkLock: no need to schedule CheckLockTask");
-        // The callback runs outside the lock so close() never waits for it, which is why the
-        // closed state is checked once more right before it.
-        if (isProtected && isLocked && mRunnable != null && !isClosed()) {
-            mRunnable.run();
+            Log.d(TAG, "checkLock: no need to check again");
+            if (isProtected && isLocked && mRunnable != null) {
+                // The lock is held for the callback, so close() cannot slip in between the closed
+                // check and the call: it waits for a callback that has begun and stops any other.
+                mRunnable.run();
+            }
         }
     }
 
@@ -127,19 +172,5 @@ public final class ScreenLockChecker implements Closeable {
         } else safeDelayIndex = Math.max(delayIndex, 0);
         Log.v(TAG, "getSafeCheckLockDelay(%d) returns %d", delayIndex, safeDelayIndex);
         return safeDelayIndex;
-    }
-
-    private class CheckLockTask extends TimerTask {
-        final int delayIndex;
-
-        CheckLockTask(final int delayIndex) {
-            this.delayIndex = delayIndex;
-        }
-
-        @Override
-        public void run() {
-            Log.i(TAG, "CLT.run [%x]: redirect intent to LockMonitor", System.identityHashCode(this));
-            checkLock(getSafeCheckLockDelay(delayIndex + 1));
-        }
     }
 }
