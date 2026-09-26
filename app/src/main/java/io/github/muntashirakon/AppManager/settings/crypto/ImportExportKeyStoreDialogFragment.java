@@ -30,7 +30,9 @@ import java.security.KeyStore;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreImportPolicy;
 import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreManager;
+import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreUtils;
 import io.github.muntashirakon.AppManager.crypto.ks.ScopedKeyStoreImporter;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
@@ -128,10 +130,10 @@ public class ImportExportKeyStoreDialogFragment extends DialogFragment {
             boolean backupPrepared = false;
             boolean importSucceeded = false;
             try {
-                KeyStore importKs = KeyStore.getInstance("BKS");
+                KeyStore importKs;
                 try (InputStream is = mActivity.getContentResolver().openInputStream(uri)) {
                     if (is == null) throw new IOException("Unable to open URI");
-                    importKs.load(is, importPassword);
+                    importKs = KeyStoreImportPolicy.load(is, KeyStoreUtils.KEY_STORE_TYPE_BKS, null, importPassword);
                 }
                 KeyStoreManager liveKsm = KeyStoreManager.getInstance();
                 ScopedKeyStoreImporter.ImportPreview preview =

@@ -144,15 +144,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ## Research-Driven Additions (2026-09-25)
 
-### P0
-
-- [ ] P0: Align Bouncy Castle 1.86 and bound hostile keystore imports
-  Why: user-selected BKS and PKCS12 files reach Bouncy Castle parsing, where hostile PBE parameters can force unbounded key derivation, and the current provider family is split across 1.85, 1.85.1, and 1.85.2.
-  Evidence: CVE-2026-17508; Bouncy Castle Java 1.86 release and discussion #2449; the 1.86 `bcpkix-jdk15to18` and `bcutil-jdk15to18` POMs; `settings/crypto/ImportExportKeyStoreDialogFragment.java:131-134`; `crypto/ks/KeyStoreUtils.java:116-134`; current dependency locks. The existing CVE-reachability item fixes report classification, not this reachable dependency and import path.
-  Touches: `versions.gradle`, Bouncy Castle declarations and locks, keystore import policy, `ImportExportKeyStoreDialogFragment.java`, `KeyStoreUtils.java`, hostile BKS and PKCS12 fixtures, SBOM and dependency checksums.
-  Acceptance: `bcprov`, `bcpkix`, and `bcutil` resolve to 1.86 from one version declaration in every variant; import rejects files, KDF counts, salt sizes, and derived-memory requests above documented ceilings before expensive work begins; parsing runs with an elapsed-time budget and returns a classified error without blocking the main thread; hostile fixtures cannot exhaust the test process; FLOSS and full SBOMs show one aligned provider family.
-  Complexity: M
-
 ### P1
 
 - [ ] P1: Store exact mutation before and after images

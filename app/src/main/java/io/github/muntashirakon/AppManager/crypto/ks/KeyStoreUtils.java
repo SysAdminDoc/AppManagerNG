@@ -111,14 +111,7 @@ public class KeyStoreUtils {
                                                 @KeyType int ksType,
                                                 @Nullable char[] ksPass)
             throws IOException, GeneralSecurityException {
-        String keyType = TYPES[ksType];
-        Log.d(TAG, "Loading keystore %s", keyType);
-        final KeyStore ks = KeyStore.getInstance(keyType, getKeyStoreProvider(keyType));
-        try (InputStream is = context.getContentResolver().openInputStream(ksUri)) {
-            if (is == null) throw new FileNotFoundException(ksUri + " does not exist.");
-            ks.load(is, ksPass);
-        }
-        return Collections.list(ks.aliases());
+        return Collections.list(loadUntrustedKeyStore(context, ksUri, ksType, ksPass).aliases());
     }
 
     @NonNull
@@ -126,13 +119,7 @@ public class KeyStoreUtils {
                                      @Nullable String ksAlias, @Nullable char[] ksPass,
                                      @Nullable char[] aliasPass)
             throws GeneralSecurityException, IOException {
-        String keyType = TYPES[ksType];
-        Log.d(TAG, "Loading keystore %s", keyType);
-        final KeyStore ks = KeyStore.getInstance(keyType, getKeyStoreProvider(keyType));
-        try (InputStream is = context.getContentResolver().openInputStream(ksUri)) {
-            if (is == null) throw new FileNotFoundException(ksUri + " does not exist.");
-            ks.load(is, ksPass);
-        }
+        final KeyStore ks = loadUntrustedKeyStore(context, ksUri, ksType, ksPass);
         if (TextUtils.isEmpty(ksAlias)) {
             ksAlias = ks.aliases().nextElement();
         }
@@ -142,6 +129,18 @@ public class KeyStoreUtils {
             return new KeyPair((PrivateKey) key, cert);
         }
         throw new KeyStoreException("The provided alias " + ksAlias + " does not exist.");
+    }
+
+    @NonNull
+    private static KeyStore loadUntrustedKeyStore(@NonNull Context context, @NonNull Uri ksUri,
+                                                  @KeyType int ksType, @Nullable char[] ksPass)
+            throws IOException, GeneralSecurityException {
+        String keyType = TYPES[ksType];
+        Log.d(TAG, "Loading keystore %s", keyType);
+        try (InputStream is = context.getContentResolver().openInputStream(ksUri)) {
+            if (is == null) throw new FileNotFoundException(ksUri + " does not exist.");
+            return KeyStoreImportPolicy.load(is, keyType, getKeyStoreProvider(keyType), ksPass);
+        }
     }
 
     @NonNull
