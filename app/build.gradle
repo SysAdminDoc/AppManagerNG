@@ -92,7 +92,7 @@ android {
     productFlavors {
         // Default distribution channel for F-Droid / IzzyOnDroid style builds:
         // keep local networking needed by ADB/localhost plumbing, but compile
-        // out optional third-party network features such as VirusTotal, Pithus,
+        // out optional third-party network features such as VirusTotal,
         // MOTD/update-check style calls, and debloat-definition auto-fetches.
         floss {
             dimension = "distribution"
