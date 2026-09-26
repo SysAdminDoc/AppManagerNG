@@ -335,16 +335,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Confidence: Verified
   Effort: M
 
-- [ ] P1 — Cancel screen-lock timers when services stop
-  Category: Lifecycle reliability
-  Where: `app/src/main/java/io/github/muntashirakon/AppManager/misc/ScreenLockChecker.java:29-97`; `app/src/main/java/io/github/muntashirakon/AppManager/apk/behavior/FreezeUnfreezeService.java:65-78,146-153`; `app/src/main/java/io/github/muntashirakon/AppManager/session/SessionMonitoringService.java:44-59,127-140`
-  Problem: `ScreenLockChecker` owns a timer that callers cannot close, so queued work can invoke service callbacks after normal destruction.
-  Evidence: Both services create the checker and stop their own work in `onDestroy`, but the checker exposes no cancellation, purge, or closed-state guard.
-  Fix: Make the checker closeable, cancel and purge its scheduler during teardown, reject new work after close, and guard callbacks with lifecycle state.
-  Acceptance: Repeated service start and stop cycles leave no timer threads; advancing the clock after `onDestroy` invokes no callback; concurrent close and screen events are idempotent and covered by deterministic scheduler tests.
-  Confidence: Verified
-  Effort: S
-
 - [ ] P1 — Serialize Debloater loads and discard stale results
   Category: Concurrency
   Where: `app/src/main/java/io/github/muntashirakon/AppManager/debloat/DebloaterViewModel.java:40-85,210-308`; `app/src/main/java/io/github/muntashirakon/AppManager/debloat/DebloaterActivity.java:157-162,289-294`; `app/src/main/java/io/github/muntashirakon/AppManager/debloat/DebloaterListOptions.java:148-155`; `app/src/main/java/io/github/muntashirakon/AppManager/utils/MultithreadedExecutor.java:22-40`
