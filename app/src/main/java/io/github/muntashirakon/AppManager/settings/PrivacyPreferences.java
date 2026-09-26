@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.settings;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -27,6 +28,8 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.preference.Preference;
 import androidx.preference.SwitchPreferenceCompat;
@@ -642,14 +645,8 @@ public class PrivacyPreferences extends PreferenceFragment {
                                 @Nullable char[] passphrase) {
         SnapshotBundle.ExportResult result = null;
         Throwable failure = null;
-        try (OutputStream out = appContext.getContentResolver().openOutputStream(target)) {
-            if (out == null) {
-                failure = new IOException("Cannot open output stream for " + target);
-            } else if (passphrase != null && passphrase.length > 0) {
-                result = SnapshotBundle.writeEncryptedTo(appContext, out, passphrase);
-            } else {
-                result = SnapshotBundle.writeTo(appContext, out);
-            }
+        try {
+            result = writeSnapshot(appContext, target, passphrase);
         } catch (Exception t) {
             failure = t;
         } finally {
@@ -785,16 +782,65 @@ public class PrivacyPreferences extends PreferenceFragment {
         Context context = requireContext();
         TextInputLayout input = buildPassphraseInput(context);
         TextInputEditText edit = (TextInputEditText) input.getEditText();
-        new MaterialAlertDialogBuilder(context)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(context)
                 .setTitle(R.string.snapshot_encrypt_title)
                 .setMessage(R.string.snapshot_encrypt_message)
                 .setView(input)
-                .setPositiveButton(R.string.snapshot_encrypt_action, (d, w) ->
-                        dispatchExport(context, target, extractPassphrase(edit)))
+                // Wired after show() so a blank passphrase keeps the dialog open.
+                .setPositiveButton(R.string.snapshot_encrypt_action, null)
                 .setNeutralButton(R.string.snapshot_export_plaintext, (d, w) ->
                         dispatchExport(context, target, null))
                 .setNegativeButton(R.string.cancel, null)
                 .show();
+        dialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(v -> {
+            char[] passphrase = extractPassphrase(edit);
+            if (!isUsablePassphrase(passphrase)) {
+                java.util.Arrays.fill(passphrase, '\0');
+                input.setError(getString(R.string.snapshot_passphrase_empty));
+                if (edit != null) {
+                    edit.requestFocus();
+                }
+                return;
+            }
+            dialog.dismiss();
+            dispatchExport(context, target, passphrase);
+        });
+    }
+
+    /**
+     * Writes the snapshot. {@code null} is the explicit Save unencrypted choice; any passphrase,
+     * even a blank one, means Encrypt was chosen and must never fall back to plaintext, so a blank
+     * one is refused before the target is opened.
+     */
+    @VisibleForTesting
+    @NonNull
+    static SnapshotBundle.ExportResult writeSnapshot(@NonNull Context appContext, @NonNull Uri target,
+                                                     @Nullable char[] passphrase) throws Exception {
+        if (passphrase != null && !isUsablePassphrase(passphrase)) {
+            throw new IOException("A passphrase is required to encrypt the snapshot");
+        }
+        try (OutputStream out = appContext.getContentResolver().openOutputStream(target)) {
+            if (out == null) {
+                throw new IOException("Cannot open output stream for " + target);
+            }
+            return passphrase != null
+                    ? SnapshotBundle.writeEncryptedTo(appContext, out, passphrase)
+                    : SnapshotBundle.writeTo(appContext, out);
+        }
+    }
+
+    /** A passphrase that is empty or only whitespace cannot protect a snapshot. */
+    @VisibleForTesting
+    static boolean isUsablePassphrase(@Nullable char[] passphrase) {
+        if (passphrase == null) {
+            return false;
+        }
+        for (char c : passphrase) {
+            if (!Character.isWhitespace(c)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void dispatchExport(@NonNull Context context, @NonNull Uri target,

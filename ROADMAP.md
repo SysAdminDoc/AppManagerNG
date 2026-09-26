@@ -325,16 +325,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Confidence: Verified
   Effort: M
 
-- [ ] P1 — Prevent blank Encrypt actions from exporting plaintext
-  Category: Privacy
-  Where: `app/src/main/java/io/github/muntashirakon/AppManager/settings/PrivacyPreferences.java:641-652,783-797,855-861`; `app/src/main/res/values/strings.xml:3678-3685`
-  Problem: Choosing Encrypt with a blank passphrase silently takes the plaintext export branch even though the dialog offers a separate plaintext action.
-  Evidence: Blank input becomes a zero-length byte array, and encryption is enabled only when its length is positive.
-  Fix: Require a non-empty passphrase for Encrypt, keep the dialog open with an inline error, and reserve unencrypted output for the explicit plaintext action.
-  Acceptance: Blank and whitespace-only Encrypt attempts write no file; every successful Encrypt output has the authenticated encrypted header and fails plaintext parsing; the explicit plaintext action remains available and is clearly labeled.
-  Confidence: Verified
-  Effort: S
-
 - [ ] P1 — Bound exported XML reads before buffer growth
   Category: Availability security
   Where: `libcore/io/src/main/java/io/github/muntashirakon/io/IoUtils.java:27-33,46-80`; `app/src/main/AndroidManifest.xml:323-380`; `app/src/main/java/io/github/muntashirakon/AppManager/editor/CodeEditorViewModel.java:145-185`; `libcore/io/src/main/java/io/github/muntashirakon/io/Path.java:566-580`
