@@ -549,13 +549,3 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Acceptance: About and first-run What’s New show 0.6.24 first; a version bump without a matching first record fails the local release gate; historic entries keep their order and content.
   Confidence: Verified
   Effort: S
-
-- [ ] P3 — Remove the stale release number from Discussion #4
-  Category: Public documentation
-  Where: `https://github.com/SysAdminDoc/AppManagerNG/discussions/4`; `https://github.com/SysAdminDoc/AppManagerNG/releases/latest`
-  Problem: The pinned explanation says the current release is 0.6.7 while GitHub's latest published release is 0.6.23.
-  Evidence: Both public pages were checked on 2026-09-25, and the hard-coded version in the discussion is eighteen patch releases behind.
-  Fix: Replace the mutable version claim with a link to the latest release, then add public version claims to the release checklist.
-  Acceptance: The discussion has no stale hard-coded current version, its latest-release link resolves to the published tag, and the next release review checks pinned discussions and repository metadata.
-  Confidence: Verified
-  Effort: S

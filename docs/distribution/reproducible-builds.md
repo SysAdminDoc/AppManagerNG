@@ -66,6 +66,18 @@ not pass, or an artifact other than the one that was checked.
 Stage selection (`--only` / `--skip`) exists for maintainer iteration. The
 receipt records exactly which stages ran, so a partial run is visibly partial.
 
+### After publishing
+
+The gate covers every version surface inside the repository. Some public
+claims live outside it and nothing checks them, so review them once the
+release is live:
+
+- Pinned and Announcements discussions. They should link to
+  `releases/latest` rather than name a current version, because a named
+  version goes stale with the next release.
+- The repository description, website field, and topics on GitHub, which
+  must not promise features or versions the release does not ship.
+
 ### The lint baseline
 
 The gate runs lint with the committed baseline moved aside and compares the
