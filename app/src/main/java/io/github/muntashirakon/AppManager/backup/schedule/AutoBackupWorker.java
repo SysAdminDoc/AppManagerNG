@@ -46,6 +46,12 @@ import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 
 public class AutoBackupWorker extends Worker {
     static final String KEY_MANUAL = "manual";
+    static final String KEY_ORIGIN = "origin";
+    // Where a run was started from. The worker records it with the run, so the status screen can
+    // say what started the last backup.
+    public static final String ORIGIN_SCHEDULE = "schedule";
+    public static final String ORIGIN_SETTINGS = "settings";
+    public static final String ORIGIN_HOME_SCREEN_SHORTCUT = "home_screen_shortcut";
     private static final String TAG = AutoBackupWorker.class.getSimpleName();
     private static final String CHANNEL_ID = BuildConfig.APPLICATION_ID + ".channel.AUTO_BACKUP";
     private static final int FOREGROUND_NOTIFICATION_ID_NAMESPACE = 0x4a11_0000;
@@ -60,8 +66,25 @@ public class AutoBackupWorker extends Worker {
     }
 
     @NonNull
-    static Data manualInputData() {
-        return new Data.Builder().putBoolean(KEY_MANUAL, true).build();
+    static Data manualInputData(@NonNull String origin) {
+        return new Data.Builder().putBoolean(KEY_MANUAL, true).putString(KEY_ORIGIN, origin).build();
+    }
+
+    /**
+     * The origin a run records: the schedule for periodic work, otherwise the origin its request
+     * named. A manual run queued before origins were recorded, or with an origin this version
+     * doesn't know, records none rather than a guess.
+     */
+    @NonNull
+    static String originOf(@NonNull Data inputData) {
+        if (!inputData.getBoolean(KEY_MANUAL, false)) {
+            return ORIGIN_SCHEDULE;
+        }
+        String origin = inputData.getString(KEY_ORIGIN);
+        if (ORIGIN_SETTINGS.equals(origin) || ORIGIN_HOME_SCREEN_SHORTCUT.equals(origin)) {
+            return origin;
+        }
+        return "";
     }
 
     @NonNull
@@ -69,6 +92,9 @@ public class AutoBackupWorker extends Worker {
     public Result doWork() {
         Context context = getApplicationContext();
         boolean manual = getInputData().getBoolean(KEY_MANUAL, false);
+        String origin = originOf(getInputData());
+        Log.i(TAG, "Auto-backup run started from " + (origin.isEmpty() ? "an unknown origin" : origin));
+        AutoBackupScheduler.recordRunOrigin(origin);
         if (!manual && !Prefs.BackupRestore.isScheduledAutoBackupEnabled()) {
             AutoBackupScheduler.recordRunResult(context.getString(R.string.auto_backup_result_disabled));
             AutoBackupScheduler.refreshDiagnostics(context);

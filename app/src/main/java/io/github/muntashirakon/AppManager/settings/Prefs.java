@@ -419,6 +419,15 @@ public final class Prefs {
             AppPref.set(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_LAST_SKIPPED_STR, skippedPackages);
         }
 
+        @NonNull
+        public static String getScheduledBackupLastOrigin() {
+            return AppPref.getString(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_LAST_ORIGIN_STR);
+        }
+
+        public static void setScheduledBackupLastOrigin(@NonNull String origin) {
+            AppPref.set(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_LAST_ORIGIN_STR, origin);
+        }
+
         public static boolean backupDirectoryExists() {
             Uri uri = Storage.getVolumePath();
             Path path;

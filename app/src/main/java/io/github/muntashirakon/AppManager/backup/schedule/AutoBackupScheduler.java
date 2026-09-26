@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.backup.schedule;
 import android.content.Context;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.StringRes;
 import androidx.annotation.VisibleForTesting;
 import androidx.work.Constraints;
 import androidx.work.ExistingPeriodicWorkPolicy;
@@ -95,9 +96,15 @@ public final class AutoBackupScheduler {
         wm.cancelUniqueWork(MANUAL_WORK_NAME);
     }
 
-    public static void enqueueManualRun(@NonNull Context context) {
+    /**
+     * Queues one immediate run. Call it only from a user's tap inside AppManagerNG: an exported
+     * component that reached this would let any installed app start or replace backup work.
+     *
+     * @param origin one of the {@code AutoBackupWorker.ORIGIN_*} values, recorded with the run
+     */
+    public static void enqueueManualRun(@NonNull Context context, @NonNull String origin) {
         OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(AutoBackupWorker.class)
-                .setInputData(AutoBackupWorker.manualInputData())
+                .setInputData(AutoBackupWorker.manualInputData(origin))
                 .addTag(WORK_TAG)
                 .build();
         WorkManager.getInstance(context.getApplicationContext())
@@ -224,6 +231,26 @@ public final class AutoBackupScheduler {
      */
     public static void recordRunStarted() {
         Prefs.BackupRestore.setScheduledBackupLastRun(System.currentTimeMillis());
+    }
+
+    /** Stamps what started the current run; empty when that isn't known. */
+    public static void recordRunOrigin(@NonNull String origin) {
+        Prefs.BackupRestore.setScheduledBackupLastOrigin(origin);
+    }
+
+    /** The label for a recorded origin, or 0 when the origin is unknown. */
+    @StringRes
+    public static int getOriginLabel(@NonNull String origin) {
+        switch (origin) {
+            case AutoBackupWorker.ORIGIN_SCHEDULE:
+                return R.string.auto_backup_origin_schedule;
+            case AutoBackupWorker.ORIGIN_SETTINGS:
+                return R.string.auto_backup_origin_settings;
+            case AutoBackupWorker.ORIGIN_HOME_SCREEN_SHORTCUT:
+                return R.string.auto_backup_origin_home_screen_shortcut;
+            default:
+                return 0;
+        }
     }
 
     public static void recordRunResult(@NonNull String result) {
