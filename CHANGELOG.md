@@ -9,6 +9,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Bouncy Castle is now 1.86 for all three of its libraries (provider, PKIX and utilities), which fixes CVE-2026-17508. Keystores you import, BKS for AppManagerNG's own keys and JKS, PKCS12 or BKS for signing keys, are now checked before any key derivation starts. Files over 1 MiB, iteration counts beyond what the format's own tools write (100,000 for BKS, 10 million for PKCS12), oversized salts and scrypt settings that need more than 64 MiB are refused before any key is derived, and a load that runs past 30 seconds is abandoned instead of hanging the import. The log records which limit a refused file hit.
 - The local release gate no longer scans against a vulnerability database of unknown age. With an NVD API key it refreshes the database first and stops if that fails. Without one it scans only when the last recorded refresh is under seven days old. The CVE receipt now states the update mode, the refresh result, when the data was refreshed, and its age.
 
+### Changed
+- The privacy policy no longer lists Pithus, which AppManagerNG stopped contacting in v0.6.13. Its optional-network section now names the exact hosts the full build can reach, and a test keeps that list in step with the Network transparency screen.
+
 ### Fixed
 - Choosing No root no longer asks for superuser access. Starting in no-root mode used to probe for root before it looked at the chosen mode, which put up a superuser prompt on rooted phones, and it could stall on a privileged server another mode had left running. Shizuku and ADB modes don't probe for root any more either.
 - AppManagerNG stops asking for Usage Access you already granted (issue #16). With Shizuku active it used to check the grant of Shizuku's shell, which some phones deny, instead of its own. It now reads its own grant, and when the shell can't read usage data it asks as the app itself.

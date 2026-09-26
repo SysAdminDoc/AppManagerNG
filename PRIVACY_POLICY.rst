@@ -3,7 +3,7 @@
 ===========================
 AppManagerNG Privacy Policy
 ===========================
-(DRAFT REVISION NO. 4)
+(DRAFT REVISION NO. 5)
 
 1. Definition
 =============
@@ -18,7 +18,7 @@ AppManagerNG Privacy Policy
 - "The Project Hosting Providers" refers to GitHub and any future official
   project hosting service linked from the repository.
 - "Third-party Services" refers to The Project Hosting Providers along with
-  VirusTotal, Pithus, Obtainium, F-Droid, IzzyOnDroid, and any future hosted
+  VirusTotal, Obtainium, F-Droid, IzzyOnDroid, and any future hosted
   translation service linked from the repository.
 - "Third-party Websites" refers to websites We do not control or operate.
 - "You", "Yours", and similar capitalized pronouns refer to anyone who uses
@@ -49,11 +49,14 @@ Software.
 The optional ``full`` build contains network-capable features. These features
 are disabled until You opt in from Settings. When enabled:
 
-- VirusTotal lookups may upload APK files or file hashes to VirusTotal.
-- Pithus lookups may open or request reports from Pithus.
+- VirusTotal lookups may upload APK files or file hashes to VirusTotal
+  (``virustotal.com``).
 - Debloat-definition and tracker-database update checks may fetch pinned files
-  from GitHub-hosted raw content. These checks do not intentionally send your
-  installed package list or device identifiers.
+  from GitHub-hosted raw content (``raw.githubusercontent.com``). These checks
+  do not intentionally send your installed package list or device identifiers.
+
+In the ``full`` build, Settings shows the same list, with the current state of
+each feature, under Privacy, Network transparency.
 
 Local networking used for ADB-over-TCP, wireless ADB pairing, and the local
 privileged server is part of the app's device-control workflow and is not an
@@ -67,7 +70,6 @@ will apply to You:
 - `GitHub`_ (stars, issues, pull requests, discussions, releases, traffic,
   raw-content hosting)
 - `VirusTotal`_ (malware reports, file uploads, traffic)
-- `Pithus`_ (malware reports, APK analysis pages, traffic)
 - `Obtainium`_ (release-update tracking, if You use Obtainium)
 - `F-Droid`_ and `IzzyOnDroid`_ (repository metadata and app-store traffic, if
   AppManagerNG is distributed through those channels)
@@ -118,7 +120,6 @@ will apply only to The Software released after the changes.
 
 .. _GitHub: https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement
 .. _VirusTotal: https://support.virustotal.com/hc/en-us/articles/115002168385-Privacy-Policy
-.. _Pithus: https://beta.pithus.org/about
 .. _Obtainium: https://github.com/ImranR98/Obtainium
 .. _F-Droid: https://f-droid.org/en/about/#terms-etc
 .. _IzzyOnDroid: https://apt.izzysoft.de/fdroid/

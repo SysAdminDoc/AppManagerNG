@@ -34,13 +34,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Acceptance: the gate produces separate packaged-release and host/build/test sections for FLOSS and full; every blocking finding records module, configuration, resolved artifact, and APK or SBOM reachability evidence; host-only and CPE-name-collision findings cannot be presented as shipped APK code; CVSS policy still fails closed for reachable findings; stale or blanket suppressions fail validation. The six August 2026 SQLite CVEs (CVE-2026-51296, -51297, -51300, -51302, -51303, -51304) are documented upstream as fabricated and must carry that disposition rather than being re-investigated each release.
   Complexity: M
 
-- [ ] P1: Bind the privacy policy to the compiled network ledger
-  Why: the policy still promises optional Pithus traffic after the integration and its network-ledger entry were removed in v0.6.13.
-  Evidence: `PRIVACY_POLICY.rst:21,53,70,121`; `CHANGELOG.md` v0.6.13; `settings/NetworkTransparencyLedger.java`; `settings/NetworkTransparencyLedgerTest.java`. This is the narrow current-network contract, not the broader documentation-truth item parked in `Roadmap_Blocked.md`.
-  Touches: `PRIVACY_POLICY.rst`, network-policy contract test, policy build or link check.
-  Acceptance: Pithus is absent from current-service definitions, behavior, vendor lists, and references while historical changelog entries remain; a test compares the policy's current optional endpoints with `NetworkTransparencyLedger` and fails when either side adds or removes a service without the other; the policy renders without broken references.
-  Complexity: S
-
 ### P2
 
 - [ ] P2: Show Disabled, Frozen, and Suspended as text in app rows
