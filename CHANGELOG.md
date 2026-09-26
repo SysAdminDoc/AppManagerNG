@@ -10,6 +10,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - Choosing No root no longer asks for superuser access. Starting in no-root mode used to probe for root before it looked at the chosen mode, which put up a superuser prompt on rooted phones, and it could stall on a privileged server another mode had left running. Shizuku and ADB modes don't probe for root any more either.
+- AppManagerNG stops asking for Usage Access you already granted (issue #16). With Shizuku active it used to check the grant of Shizuku's shell, which some phones deny, instead of its own. It now reads its own grant, and when the shell can't read usage data it asks as the app itself.
 - App Usage no longer crashes on phones that don't register Android's `isub` subscription service (issue #18). When a telephony service is missing, dead or refuses the call, AppManagerNG treats it as "no subscriber IDs" and counts mobile usage across all mobile networks instead. The support bundle names each service's state in one line.
 - Mobile data is no longer counted twice when one SIM's subscriber ID can't be read.
 
