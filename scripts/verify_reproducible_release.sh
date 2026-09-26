@@ -82,6 +82,82 @@ copy_mappings() {
     fi
 }
 
+# Keeps each variant's output-metadata.json, which names the APK, its version and its baseline
+# profiles, so the two builds can be shown to describe the same outputs.
+copy_output_metadata() {
+    local metadata_dir="$1/metadata"
+    mkdir -p "$metadata_dir"
+    local metadata
+    local flavor
+    while IFS= read -r metadata; do
+        flavor="$(basename "$(dirname "$(dirname "$metadata")")")"
+        cp "$metadata" "$metadata_dir/$flavor-release-output-metadata.json"
+    done < <(find "$APK_ROOT" -path '*/release/output-metadata.json' -type f | sort)
+}
+
+# Appends one "sha256  kind/name" line to the list of every file the two builds were compared on.
+record_compared() {
+    printf '%s  %s\n' "$1" "$2" >> "$OUT_DIR/compared.sha256"
+}
+
+verify_output_metadata() {
+    local metadata
+    local name
+    local first_hash
+    local second_hash
+    for metadata in "$FIRST_DIR"/metadata/*.json; do
+        [[ -f "$metadata" ]] || continue
+        name="$(basename "$metadata")"
+        if [[ ! -f "$SECOND_DIR/metadata/$name" ]]; then
+            echo "ERROR: $name was produced by the first build but not the second." >&2
+            exit 1
+        fi
+        first_hash="$(sha256sum "$metadata" | awk '{print $1}')"
+        second_hash="$(sha256sum "$SECOND_DIR/metadata/$name" | awk '{print $1}')"
+        if [[ "$first_hash" != "$second_hash" ]]; then
+            echo "ERROR: $name is not reproducible across two clean builds." >&2
+            echo "ERROR: first=$first_hash second=$second_hash" >&2
+            exit 1
+        fi
+        record_compared "$first_hash" "metadata/$name"
+    done
+    for metadata in "$SECOND_DIR"/metadata/*.json; do
+        [[ -f "$metadata" ]] || continue
+        if [[ ! -f "$FIRST_DIR/metadata/$(basename "$metadata")" ]]; then
+            echo "ERROR: $(basename "$metadata") was produced by the second build but not the first." >&2
+            exit 1
+        fi
+    done
+}
+
+# Every published APK must ship the mapping that decodes its stack traces, and every mapping must
+# belong to a published APK. This is the pairing release_gate.py's check_mapping_coverage makes.
+verify_published_mapping_pairs() {
+    local apk
+    local mapping
+    local published=0
+    for apk in "$PUBLISH_DIR"/*.apk; do
+        [[ -f "$apk" ]] || continue
+        published=1
+        mapping="${apk%.apk}-mapping.txt"
+        if [[ ! -f "$mapping" ]]; then
+            echo "ERROR: $(basename "$apk") ships no $(basename "$mapping"); a trace from it could not be retraced." >&2
+            exit 1
+        fi
+    done
+    if (( published == 0 )); then
+        echo "ERROR: No APK was published, so no mapping could be matched to one." >&2
+        exit 1
+    fi
+    for mapping in "$PUBLISH_DIR"/*-mapping.txt; do
+        [[ -f "$mapping" ]] || continue
+        if [[ ! -f "${mapping%-mapping.txt}.apk" ]]; then
+            echo "ERROR: $(basename "$mapping") does not belong to any published APK." >&2
+            exit 1
+        fi
+    done
+}
+
 # A mapping that differs between two clean builds means the DEX differs too, so the APK
 # comparison would be the only thing that looked stable. Publishes each verified mapping.
 verify_and_publish_mappings() {
@@ -106,6 +182,7 @@ verify_and_publish_mappings() {
             echo "ERROR: first=$first_hash second=$second_hash" >&2
             exit 1
         fi
+        record_compared "$first_hash" "mapping/$variant.txt"
         publish_mapping="$PUBLISH_DIR/AppManagerNG-reproducible-$(variant_to_apk_suffix "$variant")-mapping.txt"
         cp "$mapping" "$publish_mapping"
         printf '%s  %s\n' "$first_hash" "$(basename "$publish_mapping")" \
@@ -154,6 +231,7 @@ build_once() {
         cp "$apk" "$destination_dir/$name"
     done
     copy_mappings "$destination_dir"
+    copy_output_metadata "$destination_dir"
     copy_server_jars "." "$destination_dir/server-jars"
     (
         cd "$destination_dir"
@@ -211,6 +289,7 @@ verify_cross_environment_server_jars() {
             echo "ERROR: Server jar $name is not reproducible across environments." >&2
             exit 1
         fi
+        record_compared "$first_hash" "server-jar/$name"
     done
 }
 
@@ -250,6 +329,7 @@ SERVER_JAR_REPORT="$OUT_DIR/server-jars.txt"
 
 rm -rf "$OUT_DIR"
 mkdir -p "$FIRST_DIR" "$SECOND_DIR" "$PUBLISH_DIR"
+: > "$OUT_DIR/compared.sha256"
 
 set_build_time_source
 
@@ -290,10 +370,14 @@ while IFS= read -r name; do
     "${PYTHON_BIN[@]}" scripts/verify-native-page-alignment.py "$publish_apk"
     printf '%s  %s\n' "$first_hash" "$(basename "$publish_apk")" | tee "$publish_apk.sha256" >> "$OUT_DIR/sha256.txt"
     printf '%s\n%s\n' "$publish_apk" "$publish_apk.sha256" >> "$ASSET_LIST"
+    record_compared "$first_hash" "apk/$name"
     echo "Reproducible release APK verified: $name $first_hash"
 done <<< "$FIRST_APKS"
 
 verify_and_publish_mappings
+verify_published_mapping_pairs
+verify_output_metadata
+printf '%s\n' "$OUT_DIR/compared.sha256" >> "$ASSET_LIST"
 
 sbom_path="$PUBLISH_DIR/AppManagerNG-reproducible.cdx.json"
 "${PYTHON_BIN[@]}" scripts/generate-cyclonedx-sbom.py --output "$sbom_path"

@@ -100,9 +100,9 @@ itself.
    `./gradlew clean :app:assembleRelease` twice from the local checkout.
 2. **SHA-256 comparison** - every output APK's hash is compared across the two
    builds. If any APK differs, the release is rejected.
-3. **Sidecar publication** - each verified APK is published alongside a
-   `.sha256` file containing its hash and a combined `sha256.txt` covering all
-   release assets.
+3. **Sidecar publication** - each verified APK and R8 mapping is published
+   alongside a `.sha256` file containing its hash, and a combined `sha256.txt`
+   lists those APK and mapping hashes.
 4. **16 KB page-alignment check** - `scripts/verify-native-page-alignment.py`
    confirms native `.so` entries are aligned to 16 KB pages (Android 15+
    requirement).
@@ -130,16 +130,22 @@ entry points check exactly the same things. The verifier:
 
 - Builds twice into `reproducible-release/{first,second}/`. That's outside
   `build/` on purpose, because each clean build empties `build/`.
-- Compares every release APK's SHA-256, then the R8 mapping of every minified
-  variant. A mapping that differs, or that only one build produced, fails the
-  run.
+- Compares every release APK's SHA-256, the R8 mapping of every minified
+  variant, and each variant's `output-metadata.json`. A file that differs, or
+  that only one build produced, fails the run.
 - Rebuilds the privileged server jars in a separate worktree with a different
   time zone, locale and user name, and compares those too.
 - Publishes the verified APKs as `AppManagerNG-reproducible-<variant>.apk`,
-  plus each mapping, under `reproducible-release/publish/`.
+  plus each mapping, under `reproducible-release/publish/`, and fails if a
+  published APK has no mapping or a mapping has no APK.
 - Runs the native page-alignment check, SBOM generation and validation, and
-  the dependency CVE gate, then writes `sha256.txt` and `release-assets.txt`
-  covering every published file.
+  the dependency CVE gate.
+- Writes `compared.sha256`, one line per compared file (APKs, mappings,
+  metadata and server jars), `sha256.txt` with the published APK and mapping
+  hashes, and `release-assets.txt` listing every published file.
+
+The verifier builds APKs with `:app:assembleRelease`; it produces no app
+bundle, so there is no bundle to compare.
 
 ## Published Release Receipt
 
