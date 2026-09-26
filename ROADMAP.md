@@ -511,5 +511,5 @@ Open GitHub issues checked against this list on 2026-09-26. Already covered: #13
 - [ ] P3: Reply on #18 with the v0.6.24 outcome and ask for a fresh trace (issue #18)
   Reported: Veratian, 2026-09-08, v0.6.23 on a Samsung SM-A156U (Android 16), Shizuku shell mode; GreenMystic added a different Material-theme crash on 2026-09-15.
   Why: the original `Service couldn't be found: isub` crash was fixed on 2026-09-26 (see Roadmap_Blocked.md), but the issue has no maintainer reply and the second reporter's trace is unreadable from a v0.6.23 build.
-  Next: name the fix and the release it ships in, ask both reporters for a v0.6.24 or later trace, close when the first reporter confirms.
+  Next: name the fix and the release it ships in, ask both reporters for a v0.6.24 or later trace; once the first reporter confirms, the issue is Matt's to close, never an agent's.
   Evidence: https://github.com/SysAdminDoc/AppManagerNG/issues/18
