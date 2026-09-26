@@ -325,16 +325,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Confidence: Verified
   Effort: M
 
-- [ ] P1 — Bound exported XML reads before buffer growth
-  Category: Availability security
-  Where: `libcore/io/src/main/java/io/github/muntashirakon/io/IoUtils.java:27-33,46-80`; `app/src/main/AndroidManifest.xml:323-380`; `app/src/main/java/io/github/muntashirakon/AppManager/editor/CodeEditorViewModel.java:145-185`; `libcore/io/src/main/java/io/github/muntashirakon/io/Path.java:566-580`
-  Problem: The nominal 256 MiB read limit can allocate a 536,869,888-byte buffer before rejection, and exported XML editing can reach this whole-stream path.
-  Evidence: The limit check runs before geometric growth; a 268,434,432-byte buffer grows by another 268,435,456 bytes, then the next loop rejects it.
-  Fix: Cap growth at `limit + 1`, reject as soon as the next read would exceed the limit, and apply a much smaller documented editor-specific limit before binary XML parsing.
-  Acceptance: Inputs at, below, and above each limit use bounded memory; an oversized exported URI fails without an allocation spike or process death; exact-boundary and short-read tests cover byte arrays and provider streams.
-  Confidence: Verified
-  Effort: S
-
 - [ ] P1 — Treat Pure black as a night-only palette
   Category: Accessibility
   Where: `app/src/main/java/io/github/muntashirakon/AppManager/settings/AppearancePreferences.java:44-70`; `app/src/main/java/io/github/muntashirakon/AppManager/settings/Prefs.java:199-235`; `app/src/main/java/io/github/muntashirakon/AppManager/utils/appearance/AppearanceUtils.java:189-221,365-370`; `app/src/main/res/values/themes-v2.xml:93-127,249`
