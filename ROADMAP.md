@@ -492,3 +492,24 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Acceptance: About and first-run What’s New show 0.6.24 first; a version bump without a matching first record fails the local release gate; historic entries keep their order and content.
   Confidence: Verified
   Effort: S
+
+## Issue Intake (2026-09-26)
+
+Open GitHub issues checked against this list on 2026-09-26. Already covered: #13 (App Info subtitles clip, P1 above), #15 (permission watcher, P2 above), #17 (new-profile crash, Audit Findings above), #19 (UID in compact rows and an automation contract, both P2 above), #12 (Code Editor inflation crash, Roadmap_Blocked.md, Reporter-Evidence-Gated P1) and the second crash on #18 (Material theme inflation, Roadmap_Blocked.md P2). New below.
+
+### P2
+
+- [ ] P2: Stop re-asking for Usage Access after it has been granted (issue #16)
+  Reported: GreenMystic, 2026-09-05, v0.6.22 (30), Shizuku mode, installed from GitHub Release via Obtainium, screenshot attached.
+  Why: opening any App Info page inside AppManagerNG prompts for Usage Access even though the user already granted it in system settings, so the prompt fires on every visit.
+  Next: find where the grant check runs (likely `AppOpsManager` mode versus `PACKAGE_USAGE_STATS` permission on Android 14+ with Shizuku active) and make the check agree with what Settings shows; a Robolectric test covers granted, denied and "granted but restricted".
+  Evidence: https://github.com/SysAdminDoc/AppManagerNG/issues/16
+  Complexity: S
+
+### P3
+
+- [ ] P3: Reply on #18 with the v0.6.24 outcome and ask for a fresh trace (issue #18)
+  Reported: Veratian, 2026-09-08, v0.6.23 on a Samsung SM-A156U (Android 16), Shizuku shell mode; GreenMystic added a different Material-theme crash on 2026-09-15.
+  Why: the original `Service couldn't be found: isub` crash was fixed on 2026-09-26 (see Roadmap_Blocked.md), but the issue has no maintainer reply and the second reporter's trace is unreadable from a v0.6.23 build.
+  Next: name the fix and the release it ships in, ask both reporters for a v0.6.24 or later trace, close when the first reporter confirms.
+  Evidence: https://github.com/SysAdminDoc/AppManagerNG/issues/18
