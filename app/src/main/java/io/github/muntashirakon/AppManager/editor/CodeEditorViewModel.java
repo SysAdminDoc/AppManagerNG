@@ -94,11 +94,11 @@ public class CodeEditorViewModel extends AndroidViewModel {
     public static final int XML_TYPE_ABX = 2;
 
     /**
-     * The largest XML file the editor opens. Manifests and binary XML preference files are a few
-     * hundred kilobytes at most, far below this.
+     * The largest file the editor opens. Manifests, binary XML preference files and the text files
+     * people edit on a phone are a few hundred kilobytes at most, far below this.
      */
     @VisibleForTesting
-    static final int MAX_XML_BYTES = 16 * 1024 * 1024;
+    static final int MAX_FILE_BYTES = 16 * 1024 * 1024;
 
     @Nullable
     private volatile String mOriginalContent;
@@ -163,13 +163,14 @@ public class CodeEditorViewModel extends AndroidViewModel {
     }
 
     /**
-     * Reads an XML file of at most {@code limit} bytes, or returns {@code null} when it is larger or
-     * unreadable. The editor accepts files from other apps, so an oversized one must fail before it is
-     * held whole in memory and handed to a binary XML decoder.
+     * Reads a file of at most {@code limit} bytes, or returns {@code null} when it is larger or
+     * unreadable. The editor accepts XML and any text file from other apps, whatever the file is
+     * called, so an oversized one must fail before it is held whole in memory, decoded as binary XML,
+     * or turned into editor text.
      */
     @VisibleForTesting
     @Nullable
-    static byte[] readXmlBytes(@NonNull Path file, int limit) {
+    static byte[] readFileBytes(@NonNull Path file, int limit) {
         try (InputStream is = file.openInputStream()) {
             byte[] bytes = IoUtils.readFully(is, limit + 1, false);
             if (bytes.length > limit) {
@@ -190,24 +191,23 @@ public class CodeEditorViewModel extends AndroidViewModel {
         }
         mContentLoaderResult = ThreadUtils.postOnBackgroundThread(() -> {
             Content content = null;
-            byte[] xmlBytes = null;
+            byte[] bytes = readFileBytes(mSourceFile, MAX_FILE_BYTES);
+            if (bytes == null) {
+                // Too large or unreadable: fail rather than read it again without a limit.
+                mContentLiveData.postValue(null);
+                return;
+            }
             if ("xml".equals(mLanguage)) {
-                xmlBytes = readXmlBytes(mSourceFile, MAX_XML_BYTES);
-                if (xmlBytes == null) {
-                    // Too large or unreadable: fail rather than read the whole file again as text.
-                    mContentLiveData.postValue(null);
-                    return;
-                }
-                ByteBuffer buffer = ByteBuffer.wrap(xmlBytes);
+                ByteBuffer buffer = ByteBuffer.wrap(bytes);
                 try {
                     if (AndroidBinXmlDecoder.isBinaryXml(buffer)) {
-                        content = new Content(AndroidBinXmlDecoder.decode(xmlBytes));
+                        content = new Content(AndroidBinXmlDecoder.decode(bytes));
                         mXmlType = XML_TYPE_AXML;
                     } else if (Xml.isBinaryXml(buffer)) {
                         // ABX (Android Binary XML) decoding is enabled for viewing.
                         // Write-back is blocked in canWrite() because the text→ABX path is lossy
                         // (typed attributes like int/boolean become strings). See copyXml().
-                        content = new Content(getXmlFromAbx(xmlBytes));
+                        content = new Content(getXmlFromAbx(bytes));
                         mXmlType = XML_TYPE_ABX;
                     }
                 } catch (IOException e) {
@@ -215,10 +215,10 @@ public class CodeEditorViewModel extends AndroidViewModel {
                 }
             }
             if (content == null) {
-                try (InputStream is = xmlBytes != null ? new ByteArrayInputStream(xmlBytes) : mSourceFile.openInputStream()) {
+                try (InputStream is = new ByteArrayInputStream(bytes)) {
                     content = ContentIO.createFrom(is);
                     mXmlType = XML_TYPE_NONE;
-                }catch (IOException e) {
+                } catch (IOException e) {
                     Log.e(TAG, "Could not read file %s", e, mSourceFile);
                 }
             }
