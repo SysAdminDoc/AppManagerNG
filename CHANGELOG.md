@@ -20,7 +20,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Mobile data is no longer counted twice, or dropped, when one SIM's subscriber ID can't be read.
 - Choosing Encrypt with an empty or blank passphrase no longer saves the settings snapshot unencrypted. The dialog stays open and asks for a passphrase. Save unencrypted is still its own button.
 - The code editor no longer loads a file over 16 MiB whole, whatever the file is called, which another app could hand it, and a stream just under the general 256 MiB read limit no longer makes AppManagerNG allocate about twice that before it fails.
-- Stopping the freeze-on-lock or session-lock service now cancels its pending screen-lock check, so a check queued before the service stopped can no longer run afterwards.
+- Stopping the freeze-on-lock or session-lock service now cancels its pending screen-lock check and waits for one that is already running, so no check can freeze apps or end the session after the service has stopped.
 - Sharing an APK to App info from another app now opens it. App info used to close with "Empty package name" because it only looked for an opened file, not a shared one. A share with several files, or with nothing App info can open, now gets a short message instead.
 
 ## v0.6.24, 2026-09-05
