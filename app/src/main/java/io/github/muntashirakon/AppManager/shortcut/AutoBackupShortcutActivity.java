@@ -15,6 +15,7 @@ import androidx.core.graphics.drawable.IconCompat;
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.backup.schedule.AutoBackupScheduler;
+import io.github.muntashirakon.AppManager.backup.schedule.AutoBackupWorker;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 
@@ -57,7 +58,9 @@ public class AutoBackupShortcutActivity extends BaseActivity {
             finish();
             return;
         }
-        AutoBackupScheduler.enqueueManualRun(this);
+        // Only a pinned shortcut the user added from Settings starts this unexported activity, so the
+        // tap on it is the user's go-ahead. The exported launcher shortcut opens Settings instead.
+        AutoBackupScheduler.enqueueManualRun(this, AutoBackupWorker.ORIGIN_HOME_SCREEN_SHORTCUT);
         UIUtils.displayShortToast(R.string.pref_backup_schedule_run_now_queued);
         finish();
     }

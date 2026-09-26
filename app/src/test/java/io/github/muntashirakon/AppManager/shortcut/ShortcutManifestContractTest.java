@@ -26,6 +26,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 public class ShortcutManifestContractTest {
     private static final String ANDROID_NS = "http://schemas.android.com/apk/res/android";
+    private static final String APP_NS = "http://schemas.android.com/apk/res-auto";
     private static final String SOURCE_PACKAGE = "io.github.muntashirakon.AppManager";
 
     @Test
@@ -50,6 +51,61 @@ public class ShortcutManifestContractTest {
                         component.actions.contains(action));
             }
         }
+    }
+
+    @Test
+    public void exportedComponentsNeverQueueReplaceOrCancelBackupWork() throws Exception {
+        Document manifest = parse(findAppProjectDir().resolve("src/main/AndroidManifest.xml"));
+        Map<String, ManifestComponent> components = new HashMap<>();
+        for (String tag : new String[]{"activity", "activity-alias", "service", "receiver", "provider"}) {
+            addManifestComponents(manifest, components, tag);
+        }
+        String[] backupWork = {
+                "AutoBackupScheduler.enqueueManualRun(",
+                "AutoBackupScheduler.schedule(",
+                "AutoBackupScheduler.scheduleOrCancel(",
+                "AutoBackupScheduler.cancel(",
+                "AutoBackupShortcutActivity.getIntent(",
+        };
+        int checked = 0;
+        for (ManifestComponent component : components.values()) {
+            if (!component.exported) {
+                continue;
+            }
+            String className = component.targetActivity != null ? component.targetActivity : component.name;
+            if (!className.startsWith(SOURCE_PACKAGE + ".")) {
+                continue;
+            }
+            Path source = findAppProjectDir().resolve("src/main/java")
+                    .resolve(className.replace('.', '/') + ".java");
+            if (!Files.exists(source)) {
+                continue;
+            }
+            String code = new String(Files.readAllBytes(source), StandardCharsets.UTF_8);
+            for (String call : backupWork) {
+                assertFalse("Exported " + component.name + " must not call " + call, code.contains(call));
+            }
+            ++checked;
+        }
+        assertTrue("The scan should reach the exported shortcut trampoline and others", checked > 5);
+    }
+
+    @Test
+    public void scheduledBackupReviewTargetIsALeafPreference() throws Exception {
+        // Settings deep links click only preferences that open a fragment, so pointing the shortcut at
+        // Run now scrolls to it and leaves the tap to the user.
+        Document preferences = parse(findAppProjectDir().resolve("src/main/res/xml/preferences_backup_restore.xml"));
+        NodeList nodes = preferences.getElementsByTagName("Preference");
+        Element runNow = null;
+        for (int i = 0; i < nodes.getLength(); i++) {
+            Element element = (Element) nodes.item(i);
+            if ("backup_schedule_run_now".equals(element.getAttributeNS(APP_NS, "key"))) {
+                runNow = element;
+            }
+        }
+        assertNotNull("backup_schedule_run_now must exist for the shortcut to land on", runNow);
+        assertEquals("", runNow.getAttributeNS(APP_NS, "fragment"));
+        assertEquals("", runNow.getAttributeNS(ANDROID_NS, "fragment"));
     }
 
     @Test

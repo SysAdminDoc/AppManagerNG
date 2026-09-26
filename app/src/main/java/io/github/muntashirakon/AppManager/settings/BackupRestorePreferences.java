@@ -50,6 +50,7 @@ import io.github.muntashirakon.AppManager.backup.BackupUtils;
 import io.github.muntashirakon.AppManager.backup.CryptoUtils;
 import io.github.muntashirakon.AppManager.backup.convert.ImportType;
 import io.github.muntashirakon.AppManager.backup.schedule.AutoBackupScheduler;
+import io.github.muntashirakon.AppManager.backup.schedule.AutoBackupWorker;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
@@ -509,7 +510,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
             return true;
         });
         scheduleRunNow.setOnPreferenceClickListener(preference -> {
-            AutoBackupScheduler.enqueueManualRun(requireContext());
+            AutoBackupScheduler.enqueueManualRun(requireContext(), AutoBackupWorker.ORIGIN_SETTINGS);
             io.github.muntashirakon.AppManager.utils.UIUtils.displayShortToast(
                     R.string.pref_backup_schedule_run_now_queued);
             updateScheduledBackupSummaries(scheduleTime, scheduleNetwork, scheduleMinimumAge, scheduleStatus);
@@ -613,6 +614,10 @@ public class BackupRestorePreferences extends PreferenceFragment {
                     DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
                             .format(new java.util.Date(lastRun)),
                     lastResult.isEmpty() ? getString(R.string.state_unknown) : lastResult);
+            String originLine = getScheduledBackupOriginLine();
+            if (originLine != null) {
+                lastRunSummary += "\n" + originLine;
+            }
         }
         scheduleStatus.setSummary(getString(R.string.pref_backup_schedule_status_msg,
                 getString(Prefs.BackupRestore.isScheduledAutoBackupEnabled()
@@ -620,6 +625,12 @@ public class BackupRestorePreferences extends PreferenceFragment {
                         : R.string.pref_backup_schedule_state_disabled),
                 time, charging, network, minimumAge, battery, nextRun,
                 getScheduledBackupDiagnosticsSummary(), lastRunSummary));
+    }
+
+    @Nullable
+    private String getScheduledBackupOriginLine() {
+        int label = AutoBackupScheduler.getOriginLabel(Prefs.BackupRestore.getScheduledBackupLastOrigin());
+        return label != 0 ? getString(R.string.pref_backup_schedule_last_origin, getString(label)) : null;
     }
 
     @NonNull
@@ -844,6 +855,10 @@ public class BackupRestorePreferences extends PreferenceFragment {
                     lastResult == null || lastResult.isEmpty()
                             ? getString(R.string.state_unknown)
                             : lastResult));
+            String originLine = getScheduledBackupOriginLine();
+            if (originLine != null) {
+                body.append('\n').append(originLine);
+            }
             body.append("\n\n");
         }
         body.append(getString(R.string.pref_backup_schedule_diagnostics_freshness_explainer,

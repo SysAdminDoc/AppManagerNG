@@ -338,16 +338,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Confidence: Verified
   Effort: M
 
-- [ ] P1 — Remove the exported path that queues a manual backup
-  Category: Security
-  Where: `app/src/main/AndroidManifest.xml:245-258`; `app/src/main/java/io/github/muntashirakon/AppManager/shortcut/ShortcutDispatchActivity.java:41-80`; `app/src/main/java/io/github/muntashirakon/AppManager/shortcut/AutoBackupShortcutActivity.java:21-63`; `app/src/main/java/io/github/muntashirakon/AppManager/backup/schedule/AutoBackupScheduler.java:98-105`; `app/src/main/java/io/github/muntashirakon/AppManager/backup/schedule/AutoBackupWorker.java:63-84,107-176`
-  Problem: Any installed app can explicitly launch the exported, permissionless shortcut trampoline and queue a manual backup when app authentication is disabled or already satisfied.
-  Evidence: The whitelisted action forwards to an unexported target that immediately enqueues `REPLACE` work, and manual input bypasses the scheduled-backup-enabled guard.
-  Fix: Make the static exported shortcut open a review and status screen only; move enqueueing behind a user-tapped action in an unexported component and reject untrusted direct intents.
-  Acceptance: An external instrumentation app cannot enqueue, replace, or cancel backup work through exported components; a launcher shortcut still opens the review screen; one user tap starts the job and records its origin without a confirmation dialog.
-  Confidence: Verified
-  Effort: M
-
 - [ ] P1 — Make Full Android-test dependency locks round-trip
   Category: Build integrity
   Where: `build.gradle:30-32`; `app/build.gradle:317-321`; `app/gradle.lockfile:355,366`; `gradle/verification-metadata.xml:6646-6649`

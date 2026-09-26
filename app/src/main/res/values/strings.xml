@@ -3748,6 +3748,10 @@
     <string name="pref_backup_schedule_battery_optimization_open">Request exemption</string>
     <string name="pref_backup_schedule_battery_auto_fixed">Battery optimization exemption enabled for scheduled backups.</string>
     <string name="pref_backup_schedule_never_run">Last run: never</string>
+    <string name="pref_backup_schedule_last_origin">Started from: <xliff:g id="origin" example="Run now in Settings">%1$s</xliff:g></string>
+    <string name="auto_backup_origin_schedule">the schedule</string>
+    <string name="auto_backup_origin_settings">Run now in Settings</string>
+    <string name="auto_backup_origin_home_screen_shortcut">the home screen shortcut</string>
     <string name="pref_backup_schedule_last_run">Last run: <xliff:g id="time" example="5/18/26, 2:00 AM">%1$s</xliff:g> - <xliff:g id="result" example="Backed up 3 apps">%2$s</xliff:g></string>
     <string name="auto_backup_notification_channel">Scheduled backup</string>
     <string name="auto_backup_notification_title">Scheduled backup</string>
@@ -4310,6 +4314,8 @@ Components removed: %8$s</string>
     <string name="shortcut_finder_long">Cross-app search</string>
     <string name="shortcut_auto_backup_short">Backup now</string>
     <string name="shortcut_auto_backup_long">Run scheduled backup</string>
+    <string name="shortcut_auto_backup_review_short">Backup schedule</string>
+    <string name="shortcut_auto_backup_review_long">Review and run scheduled backup</string>
     <string name="shortcut_freeze_app">Freeze <xliff:g id="app_label" example="Slack">%1$s</xliff:g></string>
     <string name="shortcut_unfreeze_app">Unfreeze <xliff:g id="app_label" example="Slack">%1$s</xliff:g></string>
     <string name="shortcut_force_stop_app">Force-stop <xliff:g id="app_label" example="Slack">%1$s</xliff:g></string>

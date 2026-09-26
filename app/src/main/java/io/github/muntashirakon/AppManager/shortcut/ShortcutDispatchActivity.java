@@ -4,16 +4,19 @@ package io.github.muntashirakon.AppManager.shortcut;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.filters.FinderActivity;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.oneclickops.OneClickOpsActivity;
+import io.github.muntashirakon.AppManager.settings.SettingsActivity;
 
 /**
  * Trampoline for static launcher shortcuts.
@@ -48,6 +51,11 @@ public class ShortcutDispatchActivity extends Activity {
     public static final String ACTION_RUN_SCHEDULED_BACKUP =
             AutoBackupShortcutActivity.ACTION_RUN_SCHEDULED_BACKUP;
 
+    @NonNull
+    static Intent getScheduledBackupReviewIntent(@NonNull Context context) {
+        return SettingsActivity.getSettingsIntent(context, "backup_restore_prefs", "backup_schedule_run_now");
+    }
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,7 +68,10 @@ public class ShortcutDispatchActivity extends Activity {
             } else if (ACTION_OPEN_FINDER.equals(action)) {
                 out = new Intent(this, FinderActivity.class);
             } else if (ACTION_RUN_SCHEDULED_BACKUP.equals(action)) {
-                out = AutoBackupShortcutActivity.getIntent(this);
+                // Any installed app can launch this trampoline, so it must never start, replace or
+                // cancel backup work. The shortcut opens the scheduled-backup settings with Run now
+                // in view, and the user's tap there queues the run.
+                out = getScheduledBackupReviewIntent(this);
             } else {
                 // Unknown action — refuse to dispatch. Anything fired at this trampoline must
                 // declare one of the explicit ACTION_* constants above. Treating unknown actions
