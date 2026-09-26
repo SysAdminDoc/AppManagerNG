@@ -20,7 +20,6 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.RemoteException;
 import android.os.UserHandleHidden;
-import android.telephony.SubscriptionInfo;
 import android.telephony.TelephonyManager;
 
 import androidx.annotation.IntDef;
@@ -522,20 +521,12 @@ public class AppUsageStatsManager {
             Log.w(TAG, "Missing required permission: %s", ManifestCompat.permission.READ_PRIVILEGED_PHONE_STATE);
             return Collections.singletonList(null);
         }
-        List<SubscriptionInfo> subscriptionInfoList = SubscriptionManagerCompat.getActiveSubscriptionInfoList();
-        if (subscriptionInfoList == null) {
-            Log.i(TAG, "No subscriptions found.");
+        List<String> subscriberIds = SubscriptionManagerCompat.getActiveSubscriberIds();
+        if (subscriberIds.isEmpty()) {
+            // No readable subscriber (or no subscription service): query every mobile network at once.
+            Log.i(TAG, "No subscriber IDs available.");
             return Collections.singletonList(null);
         }
-        List<String> subscriberIds = new ArrayList<>();
-        for (SubscriptionInfo info : subscriptionInfoList) {
-            int subscriptionId = info.getSubscriptionId();
-            try {
-                String subscriberId = SubscriptionManagerCompat.getSubscriberIdForSubscriber(subscriptionId);
-                subscriberIds.add(subscriberId);
-            } catch (SecurityException ignore) {
-            }
-        }
-        return subscriberIds.isEmpty() ? Collections.singletonList(null) : subscriberIds;
+        return subscriberIds;
     }
 }

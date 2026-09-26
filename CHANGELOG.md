@@ -3,6 +3,12 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## Unreleased
+
+### Fixed
+- App Usage no longer crashes on phones that don't register Android's `isub` subscription service (issue #18). When a telephony service is missing, dead or refuses the call, AppManagerNG treats it as "no subscriber IDs" and counts mobile usage across all mobile networks instead. The support bundle names each service's state in one line.
+- Mobile data is no longer counted twice when one SIM's subscriber ID can't be read.
+
 ## v0.6.24, 2026-09-05
 
 ### Added

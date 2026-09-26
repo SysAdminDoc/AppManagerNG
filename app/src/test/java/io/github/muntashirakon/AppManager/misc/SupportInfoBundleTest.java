@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.misc;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Intent;
@@ -15,6 +16,8 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
 import java.util.Date;
+
+import io.github.muntashirakon.AppManager.compat.SubscriptionManagerCompat;
 
 @RunWith(RobolectricTestRunner.class)
 public class SupportInfoBundleTest {
@@ -166,5 +169,17 @@ public class SupportInfoBundleTest {
         assertTrue(text.contains("Local crash sink"));
         assertTrue(text.contains("Scrubbed logcat tail"));
         assertTrue(text.contains("test logcat line"));
+    }
+
+    @Test
+    public void deviceSectionClassifiesAMissingSubscriptionService() {
+        android.content.Context ctx = androidx.test.core.app.ApplicationProvider.getApplicationContext();
+        // Robolectric registers no isub binder, the shape reported in fork issue #18.
+        assertNull(SubscriptionManagerCompat.getActiveSubscriptionInfoList());
+
+        String text = SupportInfoBundle.formatBundleTextForPublicIssue(SupportInfoBundle.buildText(
+                ctx, "2026-09-26T00:00:00Z", null, new SupportInfoBundle.SectionOptions()));
+
+        assertTrue(text, text.contains("Telephony services: isub unavailable: service not registered"));
     }
 }
