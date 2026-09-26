@@ -299,11 +299,11 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Acceptance: on Android 16 and later, when outlined text is requested, chart labels draw a contrast-calculated stroke followed by the existing fill without changing metrics; the outline is absent when the setting is off and on older APIs; labels remain legible in light, dark, high-contrast, and large-text snapshots; TalkBack content is unchanged.
   Complexity: S
 
-- [ ] P2: Keep UI Tracker focused on the last external activity
-  Why: on affected Samsung builds, AppManagerNG's own tracker overlay can become the detected foreground activity and replace the app the user is trying to inspect.
-  Evidence: upstream App Manager #2039; `accessibility/activity/TrackerWindow.java`; `LeadingActivityTrackerActivity.java`; current self-filtering limited to one EditText path.
-  Touches: tracker event filter, last-external-activity state, overlay lifecycle, Samsung event fixtures, tests.
-  Acceptance: events from AppManagerNG's tracker and overlay windows never replace a valid external target; closing or moving the overlay preserves the last external package and activity until a different external activity arrives or a bounded stale timeout expires; genuine navigation into AppManagerNG outside the overlay remains observable when tracking is not active; tests cover Samsung-style self events, split screen, rapid app switches, and timeout.
+- [ ] P2: Keep UI Tracker focused and bound its event work
+  Why: on affected Samsung builds, AppManagerNG's own overlay can replace the external target, while every accessibility event can also start a new UsageStats scan and later publish stale data.
+  Evidence: upstream App Manager #2039 and #1848; `accessibility/NoRootAccessibilityService.java:42-50`; `accessibility/activity/TrackerWindow.java:194-240,377-408,429-461`; the current fixed-pool queries do not debounce events, honor interruption during the scan, or reject an obsolete callback.
+  Touches: tracker event filter, last-external-activity state, a dedicated serial query executor, generation and dismissal guards, overlay lifecycle, Samsung event fixtures, tests.
+  Acceptance: tracker and overlay events never replace a valid external target; a 100-event burst causes at most one immediate and one trailing UsageStats query; an unchanged target is not rescanned; an older generation and a dismissed window can never publish; closing the overlay cancels pending work; genuine navigation into AppManagerNG remains observable when tracking is inactive; tests cover Samsung self events, split screen, rapid switches, interruption, timeout, and teardown.
   Complexity: M
 
 ### P3
@@ -314,3 +314,274 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Touches: preset model and store, installer options UI, preflight diff, import and export, migration, tests.
   Acceptance: users can save, rename, duplicate, apply, and delete local presets; applying a preset shows the fields that differ from current options before commit; unsupported options are ignored with an explanation, not silently coerced; no preset changes the default until explicitly applied; presets round-trip through app settings export without secrets or device-specific paths.
   Complexity: M
+
+## Audit Findings — 2026-09-25
+
+### P0
+
+- [ ] P0 — Restore the strict dependency-verification baseline
+  Category: Build integrity
+  Where: `build.gradle:6-33`; `gradle/verification-metadata.xml:4-5,3935-3938,5083-5086,8085-8193`; `scripts/release_gate.py:571-606`
+  Problem: A clean strict build cannot resolve every release-gate dependency, so the trusted build path is not reproducible from the committed verification metadata.
+  Evidence: Two fresh strict runs stopped on missing checksums for Guava parent metadata, Jackson parents, JUnit BOM module metadata, and OpenTelemetry BOM module metadata before lint and CVE checks could complete.
+  Fix: Add publisher-verified hashes for every resolved artifact and parent descriptor, then make a cold-cache strict resolution part of the local release gate. Do not use lenient verification or trust-on-first-use.
+  Acceptance: On an empty Gradle dependency cache, the documented JDK 21 release gate resolves FLOSS and Full release configurations with strict verification, produces no dependency-verification report, and leaves `verification-metadata.xml` unchanged on a second run.
+  Confidence: Verified
+  Effort: M
+
+- [ ] P0 — Reject stale vulnerability data in the release gate
+  Category: Supply-chain security
+  Where: `build.gradle:66-81`; `scripts/run_dependency_cve_gate.py:72-130`; `scripts/tests/test_run_dependency_cve_gate.py:40-57`; `docs/distribution/dependency-verification.md:51-52`
+  Problem: A keyless CVE gate can pass against an arbitrarily old local database, and its receipt does not disclose feed age or update mode.
+  Evidence: The audit ran on 2026-09-25 with local dependency-check data last updated on 2026-08-22; the retained 2026-09-05 receipt records scanner exit status and report hashes but no feed timestamp.
+  Fix: Require a successful refresh or enforce a documented maximum feed age, and write the database timestamp, update mode, refresh result, and age decision into the receipt.
+  Acceptance: A release gate with fresh data passes and records provenance; an expired or undated database blocks release before advisory evaluation; offline use requires an explicit recent-data receipt and tests cover fresh, stale, missing, and failed-refresh states.
+  Confidence: Verified
+  Effort: M
+
+### P1
+
+- [ ] P1 — Make Code Editor saves atomic and await Save and exit
+  Category: Data integrity
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/editor/CodeEditorViewModel.java:207-238`; `app/src/main/java/io/github/muntashirakon/AppManager/editor/CodeEditorFragment.java:266-291,520-532,944-962`; `libcore/io/src/main/java/io/github/muntashirakon/io/Path.java:553-558`; `app/src/main/java/io/github/muntashirakon/io/PathImpl.java:1240-1259`
+  Problem: Saving truncates the destination before serialization and writing finish, while Save and exit navigates away before the asynchronous result is known.
+  Evidence: Raw paths use replacement semantics and provider paths request `wt`; an encoding or write failure can leave an empty or partial file, and the destroyed view can miss the failure notice.
+  Fix: Serialize into a staged file first, replace raw files atomically where supported, use a provider-safe staged replacement elsewhere, and navigate back only after a successful result.
+  Acceptance: Injected encode, open, short-write, flush, and replace failures preserve the original bytes and keep the editor open with actionable feedback; successful Save and exit returns only after the committed bytes can be reopened and verified.
+  Confidence: Verified
+  Effort: M
+
+- [ ] P1 — Bind restore verification to the bytes that are consumed
+  Category: Security
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/settings/Prefs.java:1162-1182`; `app/src/main/java/io/github/muntashirakon/AppManager/backup/RestoreOp.java:369-460,609-815`; `app/src/main/java/io/github/muntashirakon/io/PathImpl.java:1263-1285`; `libcore/io/src/main/java/io/github/muntashirakon/io/SplitInputStream.java:214-231`
+  Problem: Restore hashes one provider stream, then reopens the path for listing, decryption, staging, or extraction, so a mutable provider can change the consumed archive after verification.
+  Evidence: Digesting and extraction independently call `openInputStream`; plaintext backup paths are returned unchanged, and destructive restore work can begin from bytes that were never hashed.
+  Fix: Copy every selected archive into private staging once, enforce size limits while copying, verify that exact staged object, and perform all later reads from it.
+  Acceptance: A provider that changes content between opens cannot alter the restored payload; checksum or authentication failure occurs before app data is cleared; plaintext, encrypted, split, APK, and data archives share the same stage-once contract and cleanup tests.
+  Confidence: Verified
+  Effort: L
+
+- [ ] P1 — Parse and import one immutable settings snapshot
+  Category: Security
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/settings/PrivacyPreferences.java:725-755,807-818`; `app/src/main/java/io/github/muntashirakon/AppManager/snapshot/SnapshotBundle.java:394-429,548-658`
+  Problem: Snapshot preview and import open the selected URI separately, and duplicate ZIP names are interpreted with inconsistent first-wins, last-wins, and append behavior.
+  Evidence: Preview returns the first `manifest.json`; import keeps the last manifest and scalar entry while appending duplicate file-list entries, with no duplicate-name rejection.
+  Fix: Stage and hash the selected snapshot once, preview and import that staged object, reject every duplicate entry name, and reconcile manifest counts with parsed payloads before writes.
+  Acceptance: Mutable-provider and duplicate-entry fixtures cannot make the applied snapshot differ from the reviewed preview; malformed counts and repeated names fail before any preference or file mutation; one digest identifies both review and import.
+  Confidence: Verified
+  Effort: M
+
+- [ ] P1 — Install the exact APK bytes shown in review
+  Category: Security
+  Where: `app/src/main/AndroidManifest.xml:749-795`; `app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/ApkQueueItem.java:36-61`; `app/src/main/java/io/github/muntashirakon/AppManager/apk/UriApkSource.java:29-49`; `app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/PackageInstallerViewModel.java:86-107,211-234`; `app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/PackageInstallerService.java:248-270`
+  Problem: A reviewed seekable `content://` APK can remain backed by a mutable provider file until the deferred installer rereads it.
+  Evidence: Seekable inputs can be represented by a live `/proc/self/fd` path; final staging computes a digest but never compares it with a review-time digest.
+  Fix: Ingest external APK and split inputs into immutable private staging before parsing, then bind size and SHA-256 to the queue item used for approval and installation.
+  Acceptance: Provider mutation after review cannot change installed bytes; the service rejects any size or digest mismatch; split membership, signer details, requested permissions, and installed payload all derive from the same staged files.
+  Confidence: Verified
+  Effort: M
+
+- [ ] P1 — Prevent blank Encrypt actions from exporting plaintext
+  Category: Privacy
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/settings/PrivacyPreferences.java:641-652,783-797,855-861`; `app/src/main/res/values/strings.xml:3678-3685`
+  Problem: Choosing Encrypt with a blank passphrase silently takes the plaintext export branch even though the dialog offers a separate plaintext action.
+  Evidence: Blank input becomes a zero-length byte array, and encryption is enabled only when its length is positive.
+  Fix: Require a non-empty passphrase for Encrypt, keep the dialog open with an inline error, and reserve unencrypted output for the explicit plaintext action.
+  Acceptance: Blank and whitespace-only Encrypt attempts write no file; every successful Encrypt output has the authenticated encrypted header and fails plaintext parsing; the explicit plaintext action remains available and is clearly labeled.
+  Confidence: Verified
+  Effort: S
+
+- [ ] P1 — Bound exported XML reads before buffer growth
+  Category: Availability security
+  Where: `libcore/io/src/main/java/io/github/muntashirakon/io/IoUtils.java:27-33,46-80`; `app/src/main/AndroidManifest.xml:323-380`; `app/src/main/java/io/github/muntashirakon/AppManager/editor/CodeEditorViewModel.java:145-185`; `libcore/io/src/main/java/io/github/muntashirakon/io/Path.java:566-580`
+  Problem: The nominal 256 MiB read limit can allocate a 536,869,888-byte buffer before rejection, and exported XML editing can reach this whole-stream path.
+  Evidence: The limit check runs before geometric growth; a 268,434,432-byte buffer grows by another 268,435,456 bytes, then the next loop rejects it.
+  Fix: Cap growth at `limit + 1`, reject as soon as the next read would exceed the limit, and apply a much smaller documented editor-specific limit before binary XML parsing.
+  Acceptance: Inputs at, below, and above each limit use bounded memory; an oversized exported URI fails without an allocation spike or process death; exact-boundary and short-read tests cover byte arrays and provider streams.
+  Confidence: Verified
+  Effort: S
+
+- [ ] P1 — Treat Pure black as a night-only palette
+  Category: Accessibility
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/settings/AppearancePreferences.java:44-70`; `app/src/main/java/io/github/muntashirakon/AppManager/settings/Prefs.java:199-235`; `app/src/main/java/io/github/muntashirakon/AppManager/utils/appearance/AppearanceUtils.java:189-221,365-370`; `app/src/main/res/values/themes-v2.xml:93-127,249`
+  Problem: Enabling Pure black in Night mode, then applying Day, produces a persistent black surface with Day text and icon colors.
+  Evidence: The headless API 35 reproduction persisted across a cold launch; sampled preference titles were about 1.22:1 and icons about 2.12:1 against black.
+  Fix: Gate AMOLED themes and overlays by effective night state, keep the stored preference for future Night use, and bind preference text and icons to semantic on-surface colors.
+  Acceptance: Night to Pure black to Day remains readable after recreation and cold launch; Day uses the normal light palette, Night uses true black, Follow system and Battery follow effective state, text reaches 4.5:1, and controls and icons reach 3:1 with and without dynamic color.
+  Confidence: Verified
+  Effort: M
+
+- [ ] P1 — Cancel screen-lock timers when services stop
+  Category: Lifecycle reliability
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/misc/ScreenLockChecker.java:29-97`; `app/src/main/java/io/github/muntashirakon/AppManager/apk/behavior/FreezeUnfreezeService.java:65-78,146-153`; `app/src/main/java/io/github/muntashirakon/AppManager/session/SessionMonitoringService.java:44-59,127-140`
+  Problem: `ScreenLockChecker` owns a timer that callers cannot close, so queued work can invoke service callbacks after normal destruction.
+  Evidence: Both services create the checker and stop their own work in `onDestroy`, but the checker exposes no cancellation, purge, or closed-state guard.
+  Fix: Make the checker closeable, cancel and purge its scheduler during teardown, reject new work after close, and guard callbacks with lifecycle state.
+  Acceptance: Repeated service start and stop cycles leave no timer threads; advancing the clock after `onDestroy` invokes no callback; concurrent close and screen events are idempotent and covered by deterministic scheduler tests.
+  Confidence: Verified
+  Effort: S
+
+- [ ] P1 — Serialize Debloater loads and discard stale results
+  Category: Concurrency
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/debloat/DebloaterViewModel.java:40-85,210-308`; `app/src/main/java/io/github/muntashirakon/AppManager/debloat/DebloaterActivity.java:157-162,289-294`; `app/src/main/java/io/github/muntashirakon/AppManager/debloat/DebloaterListOptions.java:148-155`; `app/src/main/java/io/github/muntashirakon/AppManager/utils/MultithreadedExecutor.java:22-40`
+  Problem: Filter, sort, and reload requests can run concurrently over mutable shared state, allowing an older computation to overwrite a newer selection.
+  Evidence: UI option changes submit independent work to a fixed pool without a generation check, serialized snapshot, or immutable result dataset.
+  Fix: Snapshot inputs, serialize or cancel superseded loads, compute immutable result sets, and publish only the newest generation.
+  Acceptance: Rapid filter, sort, source, and search changes always end on the latest requested state; delayed older work cannot publish; stress tests use forced completion reordering and report no concurrent mutation or mixed-source rows.
+  Confidence: Verified
+  Effort: M
+
+- [ ] P1 — Remove the exported path that queues a manual backup
+  Category: Security
+  Where: `app/src/main/AndroidManifest.xml:245-258`; `app/src/main/java/io/github/muntashirakon/AppManager/shortcut/ShortcutDispatchActivity.java:41-80`; `app/src/main/java/io/github/muntashirakon/AppManager/shortcut/AutoBackupShortcutActivity.java:21-63`; `app/src/main/java/io/github/muntashirakon/AppManager/backup/schedule/AutoBackupScheduler.java:98-105`; `app/src/main/java/io/github/muntashirakon/AppManager/backup/schedule/AutoBackupWorker.java:63-84,107-176`
+  Problem: Any installed app can explicitly launch the exported, permissionless shortcut trampoline and queue a manual backup when app authentication is disabled or already satisfied.
+  Evidence: The whitelisted action forwards to an unexported target that immediately enqueues `REPLACE` work, and manual input bypasses the scheduled-backup-enabled guard.
+  Fix: Make the static exported shortcut open a review and status screen only; move enqueueing behind a user-tapped action in an unexported component and reject untrusted direct intents.
+  Acceptance: An external instrumentation app cannot enqueue, replace, or cancel backup work through exported components; a launcher shortcut still opens the review screen; one user tap starts the job and records its origin without a confirmation dialog.
+  Confidence: Verified
+  Effort: M
+
+- [ ] P1 — Make Full Android-test dependency locks round-trip
+  Category: Build integrity
+  Where: `build.gradle:30-32`; `app/build.gradle:317-321`; `app/gradle.lockfile:355,366`; `gradle/verification-metadata.xml:6646-6649`
+  Problem: The Full debug Android-test runtime resolves `kotlin-stdlib-common:2.3.10`, but the lock assigns it only to the FLOSS runtime, and the documented lock refresh removes rather than repairs the entry.
+  Evidence: `generateFullDebugAndroidTestLintModel` fails under strict locking; the failure reproduces with verification enabled, while FLOSS lint, Full release lint, and Full release assembly pass. Commit `c4f3dacd1` narrowed the lock assignment.
+  Fix: Make the metadata-only Kotlin module deterministic for both Android-test runtimes through an explicit constraint or safe exclusion, or use a Gradle and AGP pair whose lock writer preserves it.
+  Acceptance: Both Android-test lint models, `lintFullDebug`, and `assembleFullDebugAndroidTest` pass under strict verification and locking; refreshing locks then rerunning changes no lockfile and needs no manual repair or bypass.
+  Confidence: Verified
+  Effort: M
+
+- [ ] P1 — Include R8 mappings in the Windows reproducibility check
+  Category: Release integrity
+  Where: `scripts/verify_reproducible_release.ps1:16-22,97-126,234-285`; `scripts/verify_reproducible_release.sh:93-114,146,247-269`; `docs/distribution/dependency-verification.md:83-110`; `README.md:139`
+  Problem: The Windows verifier omits mapping-file comparison even though the shell verifier and documentation describe equivalent reproducibility coverage.
+  Evidence: The shell path collects and compares R8 mappings; the PowerShell artifact set and comparison loop contain no mapping counterpart.
+  Fix: Derive both front ends from one artifact manifest or have PowerShell delegate to the canonical verifier, then add parity tests for missing and mismatched mappings.
+  Acceptance: Identical inputs pass on both front ends; a changed APK, bundle, metadata file, or R8 mapping fails both with the same artifact identity; the receipts enumerate every compared file and documentation matches behavior.
+  Confidence: Verified
+  Effort: S
+
+- [ ] P1 — Reproduce and symbolicate profile creation crash on API 37
+  Category: Crash triage
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/profiles/ProfilesActivity.java:391-393`; `app/src/main/java/io/github/muntashirakon/AppManager/profiles/ProfileManager.java:41-53`; `app/src/main/java/io/github/muntashirakon/AppManager/profiles/AppsBaseProfileActivity.java:111-126`; `app/src/main/java/io/github/muntashirakon/AppManager/profiles/AppsProfileViewModel.java:285-310`; `RESEARCH.md:83,263-266`
+  Problem: Issue #17 reports a crash on every new-profile attempt, but its v0.6.23 Android 17 trace redacts the exception and every frame, so the current defect location is unknown.
+  Evidence: The report is repeatable on a Pixel 6a with Shizuku, but there is no v0.6.24 reproduction, symbolicated AppManagerNG frame, attachment, or follow-up comment.
+  Fix: Supply a current debug or mapping-backed build, reproduce the exact create flow on API 37, capture the first app frame and inputs, then add the smallest failing test before choosing a code fix.
+  Acceptance: The issue contains a current-build result and symbolicated first-party frame; a deterministic test reproduces the failure if present, or three clean creation runs across empty, app, and component profiles document closure evidence.
+  Confidence: Needs-repro
+  Effort: M
+  Reported: #17
+
+### P2
+
+- [ ] P2 — Represent complete routes in Settings search
+  Category: Navigation
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/settings/SettingsSearchIndex.java:50-105`; `app/src/main/java/io/github/muntashirakon/AppManager/settings/SettingsActivity.java:184-193,215-243,332-343`; `app/src/main/java/io/github/muntashirakon/AppManager/settings/PreferenceFragment.java:88-97`; `app/src/main/res/xml/preferences_main.xml:16-21,37-55,132-137`
+  Problem: Search entries store only one parent and one target, so nested results cannot be opened and root-level settings are absent from the index.
+  Evidence: The current-run Shizuku glossary result returned to the Settings root; its real route is root to About to Glossary to topic, while root rows are never harvested.
+  Fix: Store a full key path for each result, index the root resource, validate every segment, and integrate navigation with the existing fragment stack.
+  Acceptance: Every indexed result opens and focuses the intended row from a cold Settings launch; root, two-level, and deeper routes have tests; removed or conditional keys fail safely with a clear unavailable state.
+  Confidence: Verified
+  Effort: M
+
+- [ ] P2 — Handle every supported ABX token in Code Editor
+  Category: Correctness
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/editor/CodeEditorViewModel.java:158-180,353-414`; `libcore/compat/src/main/java/io/github/muntashirakon/compat/xml/BinaryXmlSerializer.java:313-338`
+  Problem: Valid binary XML tokens outside start, end, text, ignorable whitespace, and end-document can throw `UnsupportedOperationException` and leave the editor blank.
+  Evidence: The serializer supports CDATA sections, entity references, processing instructions, comments, and document declarations, while `copyXml()` has no handling for them and the load path catches only `IOException`.
+  Fix: Map every supported parser token or preserve it losslessly, convert parse failures into a structured editor error, and never publish a blank successful document.
+  Acceptance: Fixtures for every ABX token open, display, and round-trip without loss; unknown and malformed tokens show a stable error with no crash; unit tests cover both binary-to-text and save-back paths.
+  Confidence: Verified
+  Effort: M
+
+- [ ] P2 — Stop log recording through a non-exported receiver
+  Category: Component security
+  Where: `app/src/main/AndroidManifest.xml:1822-1838`; `app/src/main/java/io/github/muntashirakon/AppManager/logcat/RecordingWidgetProvider.java:42-63`; `app/src/main/java/io/github/muntashirakon/AppManager/logcat/helper/ServiceHelper.java:35-41`; `app/src/main/java/io/github/muntashirakon/AppManager/logcat/helper/WidgetHelper.java:70-79`
+  Problem: Any installed app can send the custom explicit widget action to the exported provider and stop active log recording.
+  Evidence: The provider must receive system widget broadcasts, but the same exported component also handles the app-only stop action without caller authentication.
+  Fix: Route the PendingIntent to a non-exported receiver or service and leave only required system widget actions on the exported provider.
+  Acceptance: External broadcasts cannot stop recording; the widget stop control still works from every supported launcher; system update, delete, enable, and disable broadcasts remain functional in instrumentation tests.
+  Confidence: Verified
+  Effort: S
+
+- [ ] P2 — Shut down Debloater worker pools with the ViewModel
+  Category: Resource lifecycle
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/debloat/DebloaterViewModel.java:40-85,210-310`; `app/src/main/java/io/github/muntashirakon/AppManager/utils/MultithreadedExecutor.java:22-40`
+  Problem: Each Debloater ViewModel creates a fixed thread pool and never cancels queued work or shuts the pool down in `onCleared`.
+  Evidence: The executor uses persistent core threads with no timeout, and the ViewModel has no lifecycle teardown through the end of the class.
+  Fix: Track submitted work, cancel it in `onCleared`, call `shutdownNow`, and prevent late LiveData publication.
+  Acceptance: Fifty create and destroy cycles return executor thread count to baseline; queued and running work cannot publish after clear; shutdown remains idempotent under simultaneous reload and navigation.
+  Confidence: Verified
+  Effort: S
+
+- [ ] P2 — Release the Sora editor when its view is destroyed
+  Category: Resource lifecycle
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/editor/CodeEditorFragment.java:204-218,312-345,546-568`; `versions.gradle:48`; `app/build.gradle:300-301`
+  Problem: The fragment detaches observers but never calls Sora's `release()`, so editor threads, language resources, and view references can survive back-stack churn.
+  Evidence: The project uses Sora 0.24.6, whose editor lifecycle includes explicit release; current `onDestroyView` cleanup does not perform it.
+  Fix: Stop callbacks, detach language and diagnostics resources, release the editor exactly once, and clear view-bound fields after preserving required state.
+  Acceptance: Repeated open, rotate, back, and reopen cycles retain content and produce no growing editor threads or retained Fragment views; release is once-only and late callbacks are ignored.
+  Confidence: Verified
+  Effort: S
+
+- [ ] P2 — Invalidate Settings search after locale changes
+  Category: Localization
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/settings/SettingsSearchIndex.java:110-144,187-198`; `app/src/main/java/io/github/muntashirakon/AppManager/settings/ChangeLanguageFragment.java:133-142`; `app/src/main/java/io/github/muntashirakon/AppManager/settings/Prefs.java:179-188`
+  Problem: The process-wide search index caches localized titles and summaries without keying them by locale or invalidating them when the app language changes.
+  Evidence: Language application updates configuration, while the production index cache has no locale transition hook; invalidation appears only in tests.
+  Fix: Key cached entries by effective locale and configuration, or invalidate and rebuild after language application before new search results are shown.
+  Acceptance: Switching languages in one process updates every search title, summary, and normalized query without restart; switching back is also correct; tests cover script and region variants plus rapid consecutive changes.
+  Confidence: Verified
+  Effort: S
+
+- [ ] P2 — Announce onboarding access checks only after they finish
+  Category: Accessibility
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/onboarding/OnboardingFragment.java:161-168,267-276,361-414,445-471,659-692`
+  Problem: Re-check announces completion before asynchronous root and ADB probes finish, and stored accessibility descriptions can continue to describe the previous result.
+  Evidence: The completion snackbar is posted immediately after starting background checks, while content descriptions are assembled from snapshots that are not recomputed for every result.
+  Fix: Aggregate a generation-scoped pending check set, announce only the final combined state, discard stale generations, and rebuild descriptions from the published result.
+  Acceptance: TalkBack hears one accurate completion announcement per re-check; slow older probes cannot overwrite newer state; every row's spoken status matches its visible state under success, denial, timeout, and teardown.
+  Confidence: Verified
+  Effort: M
+
+- [ ] P2 — Keep text-input dialogs open when validation fails
+  Category: Form usability
+  Where: `libcore/ui/src/main/java/io/github/muntashirakon/dialog/TextInputDialogBuilder.java:128-139,191-208`; `app/src/main/java/io/github/muntashirakon/AppManager/details/info/AppInfoFragment.java:972-989`; `app/src/main/java/io/github/muntashirakon/AppManager/filters/EditFilterOptionFragment.java:101-146,208-229`
+  Problem: Positive actions use the platform auto-dismiss listener, so validation callbacks can report an error and return but cannot keep the user's input dialog open.
+  Evidence: Invalid tag input shows feedback and exits the callback, yet the dialog closes because the builder never replaces the positive listener after `show()`.
+  Fix: Add a validated positive-action API that runs after show, dismisses only on success, focuses the invalid field, and exposes inline error text.
+  Acceptance: Invalid values in tag, filter, and log-viewer dialogs retain input and focus; valid values dismiss once; IME action and button paths share validation and have UI tests.
+  Confidence: Verified
+  Effort: S
+
+- [ ] P2 — Use density units for screen-time widget geometry
+  Category: Responsive layout
+  Where: `app/src/main/res/layout/app_widget_screen_time.xml:63-153`; `app/src/main/res/xml/app_widget_info_screen_time.xml:6-16`; `app/src/main/java/io/github/muntashirakon/AppManager/usage/ScreenTimeAppWidget.java:64-72`
+  Problem: Margins and positional geometry use `sp`, so font scaling moves non-text layout independently of widget bounds and can cause overlap or clipping.
+  Evidence: Bubble sizes use `dp`, but several layout margins and top offsets use `sp` in the same fixed widget composition.
+  Fix: Use `dp` or constraints for geometry, reserve `sp` for text size, and provide size-specific resources where launcher bounds require different composition.
+  Acceptance: Widget snapshots at 100, 130, and 200 percent font scale and minimum and expanded launcher sizes show no overlap, clipping, or displaced controls in light and dark themes.
+  Confidence: Likely
+  Effort: S
+
+### P3
+
+- [ ] P3 — Add the current version to What’s New
+  Category: Release communication
+  Where: `app/build.gradle:22-23`; `app/src/main/res/raw/changelog.xml:8-16`; `app/src/main/java/io/github/muntashirakon/AppManager/settings/AboutPreferences.java:127-142`
+  Problem: A 0.6.24 build displays 0.6.23 as the newest bundled What’s New entry.
+  Evidence: HEAD declares version code 32 and version name 0.6.24, while the first changelog record is version code 31 and 0.6.23; the current-run screen showed that older entry.
+  Fix: Add the 0.6.24 entry and make release consistency parse the first bundled changelog record against the application version.
+  Acceptance: About and first-run What’s New show 0.6.24 first; a version bump without a matching first record fails the local release gate; historic entries keep their order and content.
+  Confidence: Verified
+  Effort: S
+
+- [ ] P3 — Remove the stale release number from Discussion #4
+  Category: Public documentation
+  Where: `https://github.com/SysAdminDoc/AppManagerNG/discussions/4`; `https://github.com/SysAdminDoc/AppManagerNG/releases/latest`
+  Problem: The pinned explanation says the current release is 0.6.7 while GitHub's latest published release is 0.6.23.
+  Evidence: Both public pages were checked on 2026-09-25, and the hard-coded version in the discussion is eighteen patch releases behind.
+  Fix: Replace the mutable version claim with a link to the latest release, then add public version claims to the release checklist.
+  Acceptance: The discussion has no stale hard-coded current version, its latest-release link resolves to the published tag, and the next release review checks pinned discussions and repository metadata.
+  Confidence: Verified
+  Effort: S
