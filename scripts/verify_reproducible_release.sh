@@ -3,37 +3,8 @@
 
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT_DIR"
-
-GRADLE_CMD="${GRADLE_CMD:-./gradlew}"
-if [[ -n "${PYTHON_CMD:-}" ]] && command -v "$PYTHON_CMD" >/dev/null 2>&1 \
-        && "$PYTHON_CMD" --version >/dev/null 2>&1; then
-    PYTHON_BIN=("$PYTHON_CMD")
-elif command -v python3 >/dev/null 2>&1 && python3 --version >/dev/null 2>&1; then
-    PYTHON_BIN=(python3)
-elif command -v python >/dev/null 2>&1 && python --version >/dev/null 2>&1; then
-    PYTHON_BIN=(python)
-elif command -v py >/dev/null 2>&1 && py -3 --version >/dev/null 2>&1; then
-    PYTHON_BIN=(py -3)
-else
-    echo "ERROR: Python 3 is required for reproducible release verification." >&2
-    exit 1
-fi
-# Deliberately outside build/: each build in this comparison runs `clean`, which empties the
-# root project's build directory. Keeping the evidence in there means the second build destroys
-# the first build's artifacts — and destroys the published artifacts and reports on the way out.
-OUT_DIR="${REPRO_OUT_DIR:-reproducible-release}"
-APK_ROOT="app/build/outputs/apk"
-MAPPING_ROOT="app/build/outputs/mapping"
-FIRST_DIR="$OUT_DIR/first"
-SECOND_DIR="$OUT_DIR/second"
-PUBLISH_DIR="$OUT_DIR/publish"
-ASSET_LIST="$OUT_DIR/release-assets.txt"
-SERVER_JAR_REPORT="$OUT_DIR/server-jars.txt"
-
-rm -rf "$OUT_DIR"
-mkdir -p "$FIRST_DIR" "$SECOND_DIR" "$PUBLISH_DIR"
+# This is the one reproducibility check. scripts/verify_reproducible_release.ps1 runs this file
+# through Git for Windows' bash, so both entry points compare the same artifacts.
 
 set_build_time_source() {
     if [[ "${SOURCE_DATE_EPOCH:-}" =~ ^[0-9]+$ ]]; then
@@ -53,8 +24,6 @@ set_build_time_source() {
 
     echo "Build timestamp source: none; release Gradle tasks will fail closed." >&2
 }
-
-set_build_time_source
 
 copy_server_jars() {
     local source_root="$1"
@@ -111,6 +80,47 @@ copy_mappings() {
         echo "ERROR: No R8 mapping was produced under $MAPPING_ROOT" >&2
         exit 1
     fi
+}
+
+# A mapping that differs between two clean builds means the DEX differs too, so the APK
+# comparison would be the only thing that looked stable. Publishes each verified mapping.
+verify_and_publish_mappings() {
+    local mapping
+    local variant
+    local second_mapping
+    local first_hash
+    local second_hash
+    local publish_mapping
+    for mapping in "$FIRST_DIR"/mapping/*.txt; do
+        [[ -f "$mapping" ]] || continue
+        variant="$(basename "$mapping" .txt)"
+        second_mapping="$SECOND_DIR/mapping/$variant.txt"
+        if [[ ! -f "$second_mapping" ]]; then
+            echo "ERROR: Variant $variant produced a mapping in the first build but not the second." >&2
+            exit 1
+        fi
+        first_hash="$(sha256sum "$mapping" | awk '{print $1}')"
+        second_hash="$(sha256sum "$second_mapping" | awk '{print $1}')"
+        if [[ "$first_hash" != "$second_hash" ]]; then
+            echo "ERROR: R8 mapping for $variant is not reproducible across two clean builds." >&2
+            echo "ERROR: first=$first_hash second=$second_hash" >&2
+            exit 1
+        fi
+        publish_mapping="$PUBLISH_DIR/AppManagerNG-reproducible-$(variant_to_apk_suffix "$variant")-mapping.txt"
+        cp "$mapping" "$publish_mapping"
+        printf '%s  %s\n' "$first_hash" "$(basename "$publish_mapping")" \
+            | tee "$publish_mapping.sha256" >> "$OUT_DIR/sha256.txt"
+        printf '%s\n%s\n' "$publish_mapping" "$publish_mapping.sha256" >> "$ASSET_LIST"
+        echo "Reproducible R8 mapping verified: $variant $first_hash"
+    done
+    for mapping in "$SECOND_DIR"/mapping/*.txt; do
+        [[ -f "$mapping" ]] || continue
+        variant="$(basename "$mapping" .txt)"
+        if [[ ! -f "$FIRST_DIR/mapping/$variant.txt" ]]; then
+            echo "ERROR: Variant $variant produced a mapping in the second build but not the first." >&2
+            exit 1
+        fi
+    done
 }
 
 build_once() {
@@ -204,6 +214,45 @@ verify_cross_environment_server_jars() {
     done
 }
 
+# Keep the helpers sourceable for host regression tests.
+if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
+    return 0
+fi
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
+
+GRADLE_CMD="${GRADLE_CMD:-./gradlew}"
+if [[ -n "${PYTHON_CMD:-}" ]] && command -v "$PYTHON_CMD" >/dev/null 2>&1 \
+        && "$PYTHON_CMD" --version >/dev/null 2>&1; then
+    PYTHON_BIN=("$PYTHON_CMD")
+elif command -v python3 >/dev/null 2>&1 && python3 --version >/dev/null 2>&1; then
+    PYTHON_BIN=(python3)
+elif command -v python >/dev/null 2>&1 && python --version >/dev/null 2>&1; then
+    PYTHON_BIN=(python)
+elif command -v py >/dev/null 2>&1 && py -3 --version >/dev/null 2>&1; then
+    PYTHON_BIN=(py -3)
+else
+    echo "ERROR: Python 3 is required for reproducible release verification." >&2
+    exit 1
+fi
+# Deliberately outside build/: each build in this comparison runs `clean`, which empties the
+# root project's build directory. Keeping the evidence in there means the second build destroys
+# the first build's artifacts — and destroys the published artifacts and reports on the way out.
+OUT_DIR="${REPRO_OUT_DIR:-reproducible-release}"
+APK_ROOT="app/build/outputs/apk"
+MAPPING_ROOT="app/build/outputs/mapping"
+FIRST_DIR="$OUT_DIR/first"
+SECOND_DIR="$OUT_DIR/second"
+PUBLISH_DIR="$OUT_DIR/publish"
+ASSET_LIST="$OUT_DIR/release-assets.txt"
+SERVER_JAR_REPORT="$OUT_DIR/server-jars.txt"
+
+rm -rf "$OUT_DIR"
+mkdir -p "$FIRST_DIR" "$SECOND_DIR" "$PUBLISH_DIR"
+
+set_build_time_source
+
 build_once "first" "$FIRST_DIR"
 build_once "second" "$SECOND_DIR"
 verify_cross_environment_server_jars
@@ -244,30 +293,7 @@ while IFS= read -r name; do
     echo "Reproducible release APK verified: $name $first_hash"
 done <<< "$FIRST_APKS"
 
-# A mapping that differs between two clean builds means the DEX differs too, so the APK
-# comparison above would be the only thing that looked stable.
-for mapping in "$FIRST_DIR"/mapping/*.txt; do
-    [[ -f "$mapping" ]] || continue
-    variant="$(basename "$mapping" .txt)"
-    second_mapping="$SECOND_DIR/mapping/$variant.txt"
-    if [[ ! -f "$second_mapping" ]]; then
-        echo "ERROR: Variant $variant produced a mapping in the first build but not the second." >&2
-        exit 1
-    fi
-    first_hash="$(sha256sum "$mapping" | awk '{print $1}')"
-    second_hash="$(sha256sum "$second_mapping" | awk '{print $1}')"
-    if [[ "$first_hash" != "$second_hash" ]]; then
-        echo "ERROR: R8 mapping for $variant is not reproducible across two clean builds." >&2
-        echo "ERROR: first=$first_hash second=$second_hash" >&2
-        exit 1
-    fi
-    publish_mapping="$PUBLISH_DIR/AppManagerNG-reproducible-$(variant_to_apk_suffix "$variant")-mapping.txt"
-    cp "$mapping" "$publish_mapping"
-    printf '%s  %s\n' "$first_hash" "$(basename "$publish_mapping")" \
-        | tee "$publish_mapping.sha256" >> "$OUT_DIR/sha256.txt"
-    printf '%s\n%s\n' "$publish_mapping" "$publish_mapping.sha256" >> "$ASSET_LIST"
-    echo "Reproducible R8 mapping verified: $variant $first_hash"
-done
+verify_and_publish_mappings
 
 sbom_path="$PUBLISH_DIR/AppManagerNG-reproducible.cdx.json"
 "${PYTHON_BIN[@]}" scripts/generate-cyclonedx-sbom.py --output "$sbom_path"

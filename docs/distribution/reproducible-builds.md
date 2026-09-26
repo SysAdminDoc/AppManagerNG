@@ -119,17 +119,27 @@ Maintainers can run the same two-build-and-compare locally:
 ```
 
 ```bash
-# Linux / macOS shell
+# Linux, macOS, or Git Bash
 ./scripts/verify_reproducible_release.sh
 ```
 
-Both scripts:
-- Build twice into `build/reproducible-release/{first,second}/`
-- Compare per-APK SHA-256 hashes
-- Copy verified APKs to `build/reproducible-release/publish/` with
-  `AppManagerNG-reproducible-<variant>.apk` naming
-- Run native page-alignment and SBOM generation/validation
-- Write `release-assets.txt` listing all publishable artifacts
+There is one verifier. The PowerShell script finds Git for Windows' bash and
+runs `verify_reproducible_release.sh`, handing `-GradleCmd`, `-PythonCmd` and
+`-OutDir` over as `GRADLE_CMD`, `PYTHON_CMD` and `REPRO_OUT_DIR`, so both
+entry points check exactly the same things. The verifier:
+
+- Builds twice into `reproducible-release/{first,second}/`. That's outside
+  `build/` on purpose, because each clean build empties `build/`.
+- Compares every release APK's SHA-256, then the R8 mapping of every minified
+  variant. A mapping that differs, or that only one build produced, fails the
+  run.
+- Rebuilds the privileged server jars in a separate worktree with a different
+  time zone, locale and user name, and compares those too.
+- Publishes the verified APKs as `AppManagerNG-reproducible-<variant>.apk`,
+  plus each mapping, under `reproducible-release/publish/`.
+- Runs the native page-alignment check, SBOM generation and validation, and
+  the dependency CVE gate, then writes `sha256.txt` and `release-assets.txt`
+  covering every published file.
 
 ## Published Release Receipt
 
