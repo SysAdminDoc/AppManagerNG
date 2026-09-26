@@ -176,13 +176,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Acceptance: one method answers whether AppManagerNG's own UID has the user-facing grant, and a separate method answers whether a concrete execution identity can query one specified user; the settings prompt is based only on the app UID; Shizuku UID 2000 cannot turn a granted UI state into a false negative; local, Shizuku, root, and cross-user tests cover granted, denied, and unavailable results without broadening access.
   Complexity: M
 
-- [ ] P0: Degrade gracefully when optional telephony binder services are absent
-  Why: usage-data collection assumes the `isub` binder exists, but Wi-Fi-only hardware and some OEM builds omit it, allowing service-not-found to escape instead of returning an empty subscriber set.
-  Evidence: fork issue #18; `compat/SubscriptionManagerCompat.java:28-79`; `ipc/ProxyBinder.java`; Android's optional telephony feature model.
-  Touches: `SubscriptionManagerCompat.java`, binder lookup result handling, network-usage aggregation, support-bundle diagnostics, service-absence tests.
-  Acceptance: a missing, null, dead, or security-rejected subscription service returns no subscriber IDs and does not discard the rest of the usage result; support diagnostics record one classified line without a stack-trace loop; devices with a working service retain current behavior; tests cover no service, binder death, `RemoteException`, and a valid multi-SIM response.
-  Complexity: S
-
 ### P1
 
 - [ ] P1: Store exact mutation before and after images

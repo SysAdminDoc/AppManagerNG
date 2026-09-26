@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.compat.SubscriptionManagerCompat;
 import io.github.muntashirakon.AppManager.fm.FmProvider;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
@@ -166,6 +167,7 @@ public final class SupportInfoBundle {
             appendLine(sb, "MIUI/HyperOS", firstKnown(
                     SystemProperties.get("ro.mi.os.version.name", ""),
                     SystemProperties.get("ro.miui.ui.version.name", "")));
+            appendLine(sb, "Telephony services", SubscriptionManagerCompat.describeServiceAvailability());
             sb.append('\n');
         }
 
