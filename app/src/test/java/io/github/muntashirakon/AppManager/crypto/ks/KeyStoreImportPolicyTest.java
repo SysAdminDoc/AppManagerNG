@@ -17,21 +17,26 @@ import org.bouncycastle.asn1.oiw.OIWObjectIdentifiers;
 import org.bouncycastle.asn1.pkcs.AuthenticatedSafe;
 import org.bouncycastle.asn1.pkcs.ContentInfo;
 import org.bouncycastle.asn1.pkcs.EncryptedData;
+import org.bouncycastle.asn1.pkcs.EncryptedPrivateKeyInfo;
 import org.bouncycastle.asn1.pkcs.EncryptionScheme;
 import org.bouncycastle.asn1.pkcs.KeyDerivationFunc;
 import org.bouncycastle.asn1.pkcs.MacData;
 import org.bouncycastle.asn1.pkcs.PBES2Parameters;
 import org.bouncycastle.asn1.pkcs.PBKDF2Params;
 import org.bouncycastle.asn1.pkcs.PBMAC1Params;
+import org.bouncycastle.asn1.pkcs.PKCS12PBEParams;
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.pkcs.Pfx;
+import org.bouncycastle.asn1.pkcs.SafeBag;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.DigestInfo;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.operator.OutputEncryptor;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.bouncycastle.pkcs.jcajce.JcePKCSPBEOutputEncryptorBuilder;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
@@ -199,6 +204,108 @@ public class KeyStoreImportPolicyTest {
     }
 
     @Test(timeout = 10_000)
+    public void aPbmac1KeyLongerThanAnyMacNeedsIsRejected() throws IOException {
+        // Review finding: 5,000,000 iterations stay inside Bouncy Castle's own limits, but a 1,024-byte
+        // key makes PBKDF2 run them 32 times, whatever password is typed, before the MAC is compared.
+        MacData mac = pbmac1(new PBKDF2Params(new byte[16], 5_000_000, 1024,
+                new AlgorithmIdentifier(PKCSObjectIdentifiers.id_hmacWithSHA256)));
+
+        assertRejected(Rejection.KDF_TOO_EXPENSIVE, pfx(new ContentInfo[0], mac), "PKCS12");
+    }
+
+    @Test(timeout = 10_000)
+    public void pbkdf2WorkCountsEveryOutputBlock() throws Exception {
+        // 4,000,000 iterations are allowed alone, but a 64-byte key over SHA-1 needs four blocks.
+        MacData mac = pbmac1(new PBKDF2Params(new byte[16], 4_000_000, 64,
+                new AlgorithmIdentifier(PKCSObjectIdentifiers.id_hmacWithSHA1)));
+        MacData oneBlock = pbmac1(new PBKDF2Params(new byte[16], 4_000_000, 20,
+                new AlgorithmIdentifier(PKCSObjectIdentifiers.id_hmacWithSHA1)));
+
+        assertRejected(Rejection.KDF_TOO_EXPENSIVE, pfx(new ContentInfo[0], mac), "PKCS12");
+        assertEquals(4_000_000L, KeyStoreImportPolicy.check(pfx(new ContentInfo[0], oneBlock), "PKCS12", PASSWORD));
+    }
+
+    @Test(timeout = 10_000)
+    public void anUnknownPbkdf2PrfIsRejected() throws IOException {
+        MacData mac = pbmac1(new PBKDF2Params(new byte[16], 1000, 32,
+                new AlgorithmIdentifier(new ASN1ObjectIdentifier("1.2.3.4.5"))));
+
+        assertRejected(Rejection.UNSUPPORTED_KDF, pfx(new ContentInfo[0], mac), "PKCS12");
+    }
+
+    @Test(timeout = 10_000)
+    public void countsBouncyCastleWouldRefuseAreRefusedFirstWithAReason() throws IOException {
+        // Bouncy Castle 1.86 caps PKCS12 iterations at 5,000,000; between that and the old
+        // 10,000,000 ceiling it used to fail later with an unclassified IOException.
+        MacData mac = new MacData(new DigestInfo(new AlgorithmIdentifier(OIWObjectIdentifiers.idSHA1), new byte[20]),
+                new byte[8], 6_000_000);
+
+        assertRejected(Rejection.KDF_TOO_EXPENSIVE, pfx(new ContentInfo[0], mac), "PKCS12");
+    }
+
+    @Test(timeout = 10_000)
+    public void derivationsAddUpAcrossTheWholeFile() throws Exception {
+        // Each shrouded key alone is within limits: four fit the total work allowed, five do not.
+        SafeBag[] bags = new SafeBag[5];
+        for (int i = 0; i < bags.length; ++i) {
+            bags[i] = shroudedKey(1_000_000);
+        }
+
+        assertRejected(Rejection.KDF_TOO_EXPENSIVE, pfx(plain(bags), null), "PKCS12");
+        assertEquals(4 * 3_000_000L, KeyStoreImportPolicy.check(
+                pfx(plain(java.util.Arrays.copyOf(bags, 4)), null), "PKCS12", PASSWORD));
+    }
+
+    @Test(timeout = 10_000)
+    public void tooManyContentBlocksAreRejected() throws IOException {
+        ContentInfo[] contents = new ContentInfo[KeyStoreImportPolicy.MAX_ENTRIES + 1];
+        for (int i = 0; i < contents.length; ++i) {
+            contents[i] = plain(new SafeBag[0])[0];
+        }
+
+        assertRejected(Rejection.MALFORMED, pfx(contents, null), "PKCS12");
+    }
+
+    @Test(timeout = 30_000)
+    public void derivationsInsideEncryptedContentsAreCountedBeforeTheLoad() throws Exception {
+        // Review finding: bags inside encrypted contents were invisible to the check. With the right
+        // password they are opened and priced first.
+        byte[] keyStore = pfx(encrypted(PASSWORD, shroudedKey(4_000_000), shroudedKey(4_000_000)), null);
+
+        assertRejected(Rejection.KDF_TOO_EXPENSIVE, keyStore, "PKCS12");
+    }
+
+    @Test(timeout = 30_000)
+    public void encryptedContentsWithoutAMacMustOpenWithThePassword() throws Exception {
+        byte[] keyStore = pfx(encrypted("another password".toCharArray(), shroudedKey(1000)), null);
+
+        assertRejected(Rejection.MALFORMED, keyStore, "PKCS12");
+    }
+
+    @Test(timeout = 60_000)
+    public void aWrongPasswordOnAMacProtectedPkcs12KeepsItsOrdinaryException() throws Exception {
+        byte[] pkcs12 = pkcs12WithPrivateKey();
+
+        try {
+            KeyStoreImportPolicy.load(pkcs12, "PKCS12", BC, "wrong".toCharArray(), BUDGET);
+            fail("A wrong password must not open the keystore");
+        } catch (RejectedKeyStoreException e) {
+            fail("A wrong password is not a hostile file: " + e);
+        } catch (IOException expected) {
+            // Bouncy Castle reports the failed MAC check as an IOException.
+        }
+    }
+
+    @Test(timeout = 60_000)
+    public void aBouncyCastlePkcs12LeavesRoomForThreeMoreKeys() throws Exception {
+        long work = KeyStoreImportPolicy.check(pkcs12WithPrivateKey(), "PKCS12", PASSWORD);
+
+        // MAC 1,200,000 x 1, shrouded key 600,000 x 3, encrypted certificates 600,000 x 3.
+        assertEquals(4_800_000L, work);
+        assertTrue(work + 3 * 1_800_000L <= KeyStoreImportPolicy.MAX_TOTAL_KDF_WORK);
+    }
+
+    @Test(timeout = 10_000)
     public void aPbes2Pbkdf2IterationCountAboveTheCeilingIsRejected() throws IOException {
         KeyDerivationFunc kdf = new KeyDerivationFunc(PKCSObjectIdentifiers.id_PBKDF2,
                 new PBKDF2Params(new byte[16], Integer.MAX_VALUE));
@@ -335,6 +442,39 @@ public class KeyStoreImportPolicyTest {
                 new EncryptionScheme(NISTObjectIdentifiers.id_aes256_CBC, new DEROctetString(new byte[16]))));
         EncryptedData encrypted = new EncryptedData(PKCSObjectIdentifiers.data, pbes2, new DEROctetString(new byte[32]));
         return new ContentInfo[]{new ContentInfo(PKCSObjectIdentifiers.encryptedData, encrypted)};
+    }
+
+    private static MacData pbmac1(PBKDF2Params kdf) {
+        AlgorithmIdentifier pbkdf2 = new AlgorithmIdentifier(PKCSObjectIdentifiers.id_PBKDF2, kdf);
+        AlgorithmIdentifier pbmac1 = new AlgorithmIdentifier(PKCSObjectIdentifiers.id_PBMAC1,
+                new PBMAC1Params(pbkdf2, new AlgorithmIdentifier(PKCSObjectIdentifiers.id_hmacWithSHA256)));
+        return new MacData(new DigestInfo(pbmac1, new byte[32]), new byte[8], 1);
+    }
+
+    /** A shrouded key bag declaring triple-DES PKCS12 encryption; its ciphertext is never opened. */
+    private static SafeBag shroudedKey(int iterations) {
+        AlgorithmIdentifier pbe = new AlgorithmIdentifier(PKCSObjectIdentifiers.pbeWithSHAAnd3_KeyTripleDES_CBC,
+                new PKCS12PBEParams(new byte[20], iterations));
+        return new SafeBag(PKCSObjectIdentifiers.pkcs8ShroudedKeyBag,
+                new EncryptedPrivateKeyInfo(pbe, new byte[64]).toASN1Primitive());
+    }
+
+    private static ContentInfo[] plain(SafeBag[] bags) throws IOException {
+        return new ContentInfo[]{new ContentInfo(PKCSObjectIdentifiers.data,
+                new DEROctetString(new DERSequence(bags).getEncoded()))};
+    }
+
+    /** Encrypted safe contents holding {@code bags}, opened by {@code password} with cheap PBES2. */
+    private static ContentInfo[] encrypted(char[] password, SafeBag... bags) throws Exception {
+        OutputEncryptor encryptor = new JcePKCSPBEOutputEncryptorBuilder(NISTObjectIdentifiers.id_aes256_CBC)
+                .setProvider(BC).setIterationCount(1000).build(password);
+        ByteArrayOutputStream ciphertext = new ByteArrayOutputStream();
+        try (OutputStream out = encryptor.getOutputStream(ciphertext)) {
+            out.write(new DERSequence(bags).getEncoded());
+        }
+        EncryptedData data = new EncryptedData(PKCSObjectIdentifiers.data, encryptor.getAlgorithmIdentifier(),
+                new DEROctetString(ciphertext.toByteArray()));
+        return new ContentInfo[]{new ContentInfo(PKCSObjectIdentifiers.encryptedData, data)};
     }
 
     private static byte[] pfx(ContentInfo[] contents, MacData mac) throws IOException {
