@@ -49,11 +49,15 @@ Software.
 The optional ``full`` build contains network-capable features. These features
 are disabled until You opt in from Settings. When enabled:
 
-- VirusTotal lookups may upload APK files or file hashes to VirusTotal
-  (``virustotal.com``).
-- Debloat-definition and tracker-database update checks may fetch pinned files
-  from GitHub-hosted raw content (``raw.githubusercontent.com``). These checks
-  do not intentionally send your installed package list or device identifiers.
+- VirusTotal (``virustotal.com``): lookups may upload APK files or file hashes
+  to VirusTotal.
+- Debloat definitions (``raw.githubusercontent.com``): update checks may fetch
+  pinned definition files from GitHub-hosted raw content.
+- Tracker database freshness (``raw.githubusercontent.com``): checks may fetch
+  the pinned tracker database's version from GitHub-hosted raw content.
+
+The debloat and tracker checks do not intentionally send your installed package
+list or device identifiers.
 
 In the ``full`` build, Settings shows the same list, with the current state of
 each feature, under Privacy, Network transparency.
