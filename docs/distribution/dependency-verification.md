@@ -59,8 +59,12 @@ so the gate settles the database's age before it evaluates a single advisory:
   `"result": "succeeded"`, and is less than 7 days old. A missing, unreadable,
   future-dated, or older record blocks the release before the scan starts, and
   no receipt is written for it.
-- Either way the scan itself runs with `-PdependencyCheckAutoUpdate=false`, so
-  it uses exactly the data that was checked.
+- The record also stores the database file's size and modification time. A
+  database copied or restored over the refreshed one no longer matches, so it
+  counts as undated and blocks too.
+- Both Gradle runs get `-PdependencyCheckDataDirectory=<that directory>`, and
+  the scan runs with `-PdependencyCheckAutoUpdate=false`, so the scan reads
+  exactly the database whose age was checked.
 
 The receipt's `vulnerabilityFeed` block states the update mode, whether a
 refresh was attempted, when the database was last refreshed, its age in hours,

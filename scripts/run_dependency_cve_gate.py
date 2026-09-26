@@ -35,9 +35,9 @@ MAX_FEED_AGE_HOURS = 168
 # A refresh receipt dated slightly ahead of this clock is tolerated; anything further is a clock
 # problem, and a future date cannot vouch for anything.
 CLOCK_SKEW_TOLERANCE = timedelta(minutes=5)
-# Dependency-Check keeps its database under GRADLE_USER_HOME in a data-format directory. An upgrade
-# that changes the format starts an empty directory with no refresh receipt, so the gate blocks
-# until that database has been refreshed.
+# Where the gate keeps the database by default: Dependency-Check's own default location under
+# GRADLE_USER_HOME. Both Gradle runs are pinned to this directory, so the checked database and the
+# scanned one cannot drift apart even if a plugin upgrade changes its default.
 DATA_FORMAT_DIRECTORY = "11.0"
 DATABASE_NAME = "odc.mv.db"
 FEED_RECEIPT_NAME = "appmanagerng-feed-refresh.json"
@@ -73,12 +73,14 @@ def refresh_feed(
     exits cleanly and leaves a database behind, so a failed refresh can never look recent.
     """
     receipt_path = data_dir / FEED_RECEIPT_NAME
+    database = data_dir / DATABASE_NAME
     command = [
         *gradle_command,
         "--no-daemon",
         "--stacktrace",
         "dependencyCheckUpdate",
         "-PdependencyCheckAutoUpdate=true",
+        data_directory_argument(data_dir),
     ]
     try:
         result = subprocess.run(command, cwd=repo_root, check=False)
@@ -89,11 +91,11 @@ def refresh_feed(
             f"vulnerability feed refresh failed (exit code {result.returncode}); release is "
             "blocked because the local database could not be brought up to date"
         )
-    if not (data_dir / DATABASE_NAME).is_file():
+    if not database.is_file():
         raise GateError(
-            f"vulnerability feed refresh reported success but left no database at "
-            f"{data_dir / DATABASE_NAME}"
+            f"vulnerability feed refresh reported success but left no database at {database}"
         )
+    stat = database.stat()
     receipt_path.write_text(
         json.dumps(
             {
@@ -101,12 +103,21 @@ def refresh_feed(
                 "refreshedAt": _iso(clock()),
                 "gradleTask": "dependencyCheckUpdate",
                 "result": "succeeded",
+                # Ties the record to the database it vouches for, so a database copied or
+                # restored over this one afterwards is not taken as the refreshed one.
+                "databaseBytes": stat.st_size,
+                "databaseModifiedNs": stat.st_mtime_ns,
             },
             indent=2,
         )
         + "\n",
         encoding="utf-8",
     )
+
+
+def data_directory_argument(data_dir: Path) -> str:
+    """Pins Dependency-Check to the database directory the gate checks (see build.gradle)."""
+    return f"-PdependencyCheckDataDirectory={data_dir}"
 
 
 def check_feed(
@@ -134,8 +145,16 @@ def check_feed(
             tzinfo=timezone.utc)
         if recorded.get("result") != "succeeded":
             raise ValueError("refresh result is not 'succeeded'")
+        recorded_bytes = int(recorded["databaseBytes"])
+        recorded_modified = int(recorded["databaseModifiedNs"])
     except (OSError, ValueError, KeyError, TypeError) as exc:
         raise GateError(f"the vulnerability feed refresh record {receipt_path} is unreadable: {exc}") from exc
+    stat = database.stat()
+    if stat.st_size != recorded_bytes or stat.st_mtime_ns != recorded_modified:
+        raise GateError(
+            f"the vulnerability database at {database} changed after its recorded refresh, so its "
+            "age is unknown; set NVD_API_KEY and run the gate once to refresh it"
+        )
     age = now - refreshed_at
     if age < -CLOCK_SKEW_TOLERANCE:
         raise GateError(
@@ -222,6 +241,7 @@ def run_gate(
         f"-PdependencyCheckFailBuildOnCvss={BLOCKING_CVSS}",
         # The database was settled above; the scan must use exactly that data.
         "-PdependencyCheckAutoUpdate=false",
+        data_directory_argument(data_dir),
     ]
     try:
         result = subprocess.run(command, cwd=repo_root, check=False)

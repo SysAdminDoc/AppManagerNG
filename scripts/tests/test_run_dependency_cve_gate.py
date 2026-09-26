@@ -39,14 +39,18 @@ class DependencyCveGateTest(unittest.TestCase):
 
     def _write_feed(self, refreshed_at=None, database=True, record=None) -> None:
         self.data_dir.mkdir(parents=True, exist_ok=True)
+        database_path = self.data_dir / gate.DATABASE_NAME
         if database:
-            (self.data_dir / gate.DATABASE_NAME).write_bytes(b"h2")
+            database_path.write_bytes(b"h2")
         record_path = self.data_dir / gate.FEED_RECEIPT_NAME
         record_path.unlink(missing_ok=True)
         if record is None and refreshed_at is not None:
+            stat = database_path.stat() if database_path.exists() else None
             record = json.dumps({"schemaVersion": 1,
                                  "refreshedAt": refreshed_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                                 "gradleTask": "dependencyCheckUpdate", "result": "succeeded"})
+                                 "gradleTask": "dependencyCheckUpdate", "result": "succeeded",
+                                 "databaseBytes": stat.st_size if stat else 0,
+                                 "databaseModifiedNs": stat.st_mtime_ns if stat else 0})
         if record is not None:
             record_path.write_text(record, encoding="utf-8")
 
@@ -266,6 +270,38 @@ class DependencyCveGateTest(unittest.TestCase):
         self.assertEqual(1, len(calls), "the scan must not run after a failed refresh")
         self.assertEqual(before, (self.data_dir / gate.FEED_RECEIPT_NAME).read_text(encoding="utf-8"))
         self.assertFalse((self.out_dir / gate.RECEIPT_NAME).exists())
+
+    def test_both_gradle_runs_are_pinned_to_the_checked_database_directory(self) -> None:
+        calls = []
+
+        with mock.patch.object(gate.subprocess, "run", side_effect=self._passing_scanner(calls)):
+            self._run_gate(env={"NVD_API_KEY": "fixture"})
+
+        expected = f"-PdependencyCheckDataDirectory={self.data_dir}"
+        self.assertEqual(2, len(calls))
+        for command in calls:
+            self.assertIn(expected, command)
+
+    def test_a_database_replaced_after_its_refresh_record_is_undated(self) -> None:
+        # The record vouches for one database file; a copy put in its place later does not inherit it.
+        (self.data_dir / gate.DATABASE_NAME).write_bytes(b"an older database restored from a backup")
+
+        with mock.patch.object(gate.subprocess, "run") as run:
+            with self.assertRaisesRegex(gate.GateError, "changed after its recorded refresh"):
+                self._run_gate()
+
+        run.assert_not_called()
+
+    def test_a_keyed_refresh_records_the_database_it_vouches_for(self) -> None:
+        calls = []
+
+        with mock.patch.object(gate.subprocess, "run", side_effect=self._passing_scanner(calls)):
+            self._run_gate(env={"NVD_API_KEY": "fixture"})
+
+        record = json.loads((self.data_dir / gate.FEED_RECEIPT_NAME).read_text(encoding="utf-8"))
+        stat = (self.data_dir / gate.DATABASE_NAME).stat()
+        self.assertEqual(stat.st_size, record["databaseBytes"])
+        self.assertEqual(stat.st_mtime_ns, record["databaseModifiedNs"])
 
     def test_the_default_database_lives_under_gradle_user_home(self) -> None:
         self.assertEqual(Path("/g") / "dependency-check-data" / gate.DATA_FORMAT_DIRECTORY,

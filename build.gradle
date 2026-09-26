@@ -82,4 +82,12 @@ dependencyCheck {
             apiKey = System.getenv('NVD_API_KEY')
         }
     }
+    data {
+        // The release gate passes the database directory whose age it checked, so the refresh and
+        // the scan read exactly that database.
+        def dataDirectory = findProperty('dependencyCheckDataDirectory')
+        if (dataDirectory) {
+            directory = dataDirectory.toString()
+        }
+    }
 }
