@@ -211,7 +211,8 @@ public class SelfPermissions {
             mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(),
                     context.getPackageName());
         }
-        return isUsageAccessGranted(mode, mode == AppOpsManager.MODE_DEFAULT
+        return isUsageAccessGranted(mode, Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+                && mode == AppOpsManager.MODE_DEFAULT
                 && checkSelfPermission(Manifest.permission.PACKAGE_USAGE_STATS));
     }
 
@@ -231,7 +232,8 @@ public class SelfPermissions {
             try {
                 int mode = new AppOpsManagerCompat().checkOpNoThrow(AppOpsManagerHidden.OP_GET_USAGE_STATS,
                         executionUid, getCallingPackage(executionUid));
-                granted = isUsageAccessGranted(mode, mode == AppOpsManager.MODE_DEFAULT
+                granted = isUsageAccessGranted(mode, Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+                        && mode == AppOpsManager.MODE_DEFAULT
                         && checkSelfOrRemotePermission(Manifest.permission.PACKAGE_USAGE_STATS, executionUid));
             } catch (RuntimeException e) {
                 Log.w("SelfPermissions", "Could not read the Usage Access state of uid %d.", e, executionUid);
