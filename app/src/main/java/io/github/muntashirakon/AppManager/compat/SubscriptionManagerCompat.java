@@ -11,6 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.VisibleForTesting;
+import androidx.annotation.WorkerThread;
 
 import com.android.internal.telephony.IPhoneSubInfo;
 import com.android.internal.telephony.ISub;
@@ -48,11 +49,13 @@ public class SubscriptionManagerCompat {
     @VisibleForTesting
     enum Availability {
         NOT_QUERIED("not queried"),
+        REGISTERED("registered, not queried"),
         AVAILABLE("available"),
         NOT_FOUND("unavailable: service not registered"),
         BINDER_DEAD("unavailable: binder died"),
         ACCESS_REJECTED("unavailable: access rejected"),
-        REMOTE_FAILURE("unavailable: remote call failed");
+        REMOTE_FAILURE("unavailable: remote call failed"),
+        INCOMPATIBLE("unavailable: incompatible service interface");
 
         @NonNull
         final String label;
@@ -139,12 +142,30 @@ public class SubscriptionManagerCompat {
     }
 
     /**
-     * One line for the support bundle naming the state of each telephony service this class uses.
+     * One line for the support bundle naming the state of each telephony service this class uses. A
+     * service no lookup has touched in this process is checked for registration, so a fresh process
+     * still reports a missing service.
      */
+    @WorkerThread
     @NonNull
     public static String describeServiceAvailability() {
-        return SERVICE_SUB + " " + getAvailability(SERVICE_SUB).label
-                + ", " + SERVICE_PHONE_SUB_INFO + " " + getAvailability(SERVICE_PHONE_SUB_INFO).label;
+        return SERVICE_SUB + " " + probe(SERVICE_SUB).label
+                + ", " + SERVICE_PHONE_SUB_INFO + " " + probe(SERVICE_PHONE_SUB_INFO).label;
+    }
+
+    @NonNull
+    private static Availability probe(@NonNull String serviceName) {
+        Availability availability = getAvailability(serviceName);
+        if (availability != Availability.NOT_QUERIED) {
+            return availability;
+        }
+        try {
+            ProxyBinder.getService(serviceName);
+            return Availability.REGISTERED;
+        } catch (ServiceNotFoundException e) {
+            record(serviceName, Availability.NOT_FOUND);
+            return Availability.NOT_FOUND;
+        }
     }
 
     @VisibleForTesting
@@ -158,9 +179,13 @@ public class SubscriptionManagerCompat {
                 continue;
             }
             String subscriberId = lookup.getSubscriberId(info.getSubscriptionId());
-            // A null ID would make the caller query every mobile network once per subscription
-            // and count the same traffic more than once.
-            if (subscriberId != null && !subscriberIds.contains(subscriberId)) {
+            if (subscriberId == null) {
+                // Querying only the readable subscriptions would drop this SIM's traffic, and adding
+                // an unfiltered query beside them would count theirs twice. One unfiltered query
+                // covers every mobile network exactly once.
+                return Collections.emptyList();
+            }
+            if (!subscriberIds.contains(subscriberId)) {
                 subscriberIds.add(subscriberId);
             }
         }
@@ -183,6 +208,13 @@ public class SubscriptionManagerCompat {
             failure = Availability.REMOTE_FAILURE;
         } catch (SecurityException e) {
             failure = Availability.ACCESS_REJECTED;
+        } catch (RuntimeException e) {
+            // Parcel.readException turns a failure inside the telephony process into a runtime
+            // exception here; it must not throw away the rest of the usage result.
+            failure = Availability.REMOTE_FAILURE;
+        } catch (LinkageError e) {
+            // An OEM build whose hidden interface lacks the method signature this API level uses.
+            failure = Availability.INCOMPATIBLE;
         }
         record(serviceName, failure);
         return null;

@@ -52,9 +52,23 @@ public class SubscriptionManagerCompatTest {
     }
 
     @Test
-    public void supportLineNamesServicesThatWereNeverQueried() {
-        assertEquals("isub not queried, iphonesubinfo not queried",
+    public void supportLineProbesServicesNoLookupHasTouched() {
+        // A support bundle from a fresh process must still show the missing service.
+        assertEquals("isub unavailable: service not registered, iphonesubinfo unavailable: service not registered",
                 SubscriptionManagerCompat.describeServiceAvailability());
+    }
+
+    @Test
+    public void otherRemoteFailuresAreClassifiedAndDoNotEscape() {
+        assertNull(SubscriptionManagerCompat.queryOrUnavailable("isub", () -> {
+            throw new IllegalStateException("thrown inside the phone process");
+        }));
+        assertEquals(Availability.REMOTE_FAILURE, SubscriptionManagerCompat.getAvailability("isub"));
+
+        assertNull(SubscriptionManagerCompat.queryOrUnavailable("isub", () -> {
+            throw new NoSuchMethodError("getActiveSubscriptionInfoList");
+        }));
+        assertEquals(Availability.INCOMPATIBLE, SubscriptionManagerCompat.getAvailability("isub"));
     }
 
     @Test
@@ -108,16 +122,25 @@ public class SubscriptionManagerCompatTest {
     }
 
     @Test
-    public void unreadableAndDuplicateSubscriberIdsAreDropped() {
+    public void duplicateSubscriberIdsAreQueriedOnce() {
         Map<Integer, String> ids = new HashMap<>();
         ids.put(1, "310260000000001");
         ids.put(3, "310260000000001");
-        List<SubscriptionInfo> subscriptions = Arrays.asList(subscription(1), subscription(2), subscription(3));
+        List<SubscriptionInfo> subscriptions = Arrays.asList(subscription(1), subscription(3));
 
-        // A null ID for subscription 2 would otherwise become an unfiltered query that counts
-        // every mobile network again on top of subscription 1.
         assertEquals(Collections.singletonList("310260000000001"),
                 SubscriptionManagerCompat.collectSubscriberIds(subscriptions, ids::get));
+    }
+
+    @Test
+    public void anUnreadableSubscriberIdFallsBackToOneUnfilteredQuery() {
+        Map<Integer, String> ids = new HashMap<>();
+        ids.put(1, "310260000000001");
+        List<SubscriptionInfo> subscriptions = Arrays.asList(subscription(1), subscription(2));
+
+        // Querying only subscription 1 would lose subscription 2's traffic; an extra unfiltered
+        // query beside it would count subscription 1 twice. No IDs means one unfiltered query.
+        assertTrue(SubscriptionManagerCompat.collectSubscriberIds(subscriptions, ids::get).isEmpty());
     }
 
     private static SubscriptionInfo subscription(int id) {
