@@ -4043,14 +4043,16 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 }));
             }
         }
-        if (!SelfPermissions.checkUsageStatsPermission()) {
+        // The Usage Access screen changes only AppManagerNG's own grant, so that grant alone decides
+        // whether to send the user there; a privileged identity's grant is irrelevant (issue #16).
+        if (!SelfPermissions.hasAppUsageAccessGrant()) {
             ThreadUtils.postOnMainThread(() -> new MaterialAlertDialogBuilder(mActivity)
                     .setTitle(R.string.grant_usage_access)
                     .setMessage(R.string.grant_usage_acess_message)
                     .setPositiveButton(R.string.go, (dialog, which) -> {
                         try {
                             mActivityLauncher.launch(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS), result -> {
-                                if (SelfPermissions.checkUsageStatsPermission()) {
+                                if (SelfPermissions.hasAppUsageAccessGrant()) {
                                     FeatureController.getInstance().modifyState(FeatureController
                                             .FEAT_USAGE_ACCESS, true);
                                     // Reload app info
