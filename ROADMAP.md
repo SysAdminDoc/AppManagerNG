@@ -153,13 +153,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Acceptance: `bcprov`, `bcpkix`, and `bcutil` resolve to 1.86 from one version declaration in every variant; import rejects files, KDF counts, salt sizes, and derived-memory requests above documented ceilings before expensive work begins; parsing runs with an elapsed-time budget and returns a classified error without blocking the main thread; hostile fixtures cannot exhaust the test process; FLOSS and full SBOMs show one aligned provider family.
   Complexity: M
 
-- [ ] P0: Separate app Usage Access from remote query capability
-  Why: the permission check uses the remote shell UID in Shizuku mode while Android's Usage Access settings grant belongs to AppManagerNG, so the app can repeatedly ask for a grant the user already supplied.
-  Evidence: fork issue #16; Android `UsageStatsManager` and `AppOpsManager` contracts; `self/SelfPermissions.java:179-188`; `users/Users.java:151`; `compat/UsageStatsManagerCompat.java`; every UI caller of `checkUsageStatsPermission()`.
-  Touches: `SelfPermissions.java`, `UsageStatsManagerCompat.java`, Usage Access settings routing, App Usage and widget callers, secondary-user capability model, tests.
-  Acceptance: one method answers whether AppManagerNG's own UID has the user-facing grant, and a separate method answers whether a concrete execution identity can query one specified user; the settings prompt is based only on the app UID; Shizuku UID 2000 cannot turn a granted UI state into a false negative; local, Shizuku, root, and cross-user tests cover granted, denied, and unavailable results without broadening access.
-  Complexity: M
-
 ### P1
 
 - [ ] P1: Store exact mutation before and after images

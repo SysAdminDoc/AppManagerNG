@@ -7,6 +7,7 @@ import android.app.usage.IUsageStatsManager;
 import android.app.usage.UsageEvents;
 import android.content.Context;
 import android.os.Build;
+import android.os.Process;
 import android.os.RemoteException;
 import android.os.UserHandleHidden;
 
@@ -44,8 +45,20 @@ public final class UsageStatsManagerCompat {
     @Nullable
     public static UsageEvents queryEvents(long beginTime, long endTime, int userId) {
         try {
-            IUsageStatsManager usm = getUsageStatsManager();
-            String callingPackage = SelfPermissions.getCallingPackage(Users.getSelfOrRemoteUid());
+            int executionUid = Users.getSelfOrRemoteUid();
+            IUsageStatsManager usm;
+            String callingPackage;
+            if (executionUid != Process.myUid()
+                    && SelfPermissions.getUsageStatsQueryUid(userId) == Process.myUid()) {
+                // The privileged identity has no Usage Access here, but AppManagerNG's own grant
+                // covers this user, so ask as the app instead of through the privileged binder.
+                usm = IUsageStatsManager.Stub.asInterface(
+                        ProxyBinder.getUnprivilegedService(USAGE_STATS_SERVICE_NAME));
+                callingPackage = SelfPermissions.getCallingPackage(Process.myUid());
+            } else {
+                usm = getUsageStatsManager();
+                callingPackage = SelfPermissions.getCallingPackage(executionUid);
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 return usm.queryEventsForUser(beginTime, endTime, userId, callingPackage);
             }

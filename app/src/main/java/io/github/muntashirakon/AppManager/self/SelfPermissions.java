@@ -6,6 +6,7 @@ import android.Manifest;
 import android.annotation.UserIdInt;
 import android.app.AppOpsManager;
 import android.app.AppOpsManagerHidden;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Environment;
@@ -176,17 +177,96 @@ public class SelfPermissions {
         return callingUid == Ops.ROOT_UID || callingUid == Ops.SYSTEM_UID || callingUid == Ops.PHONE_UID;
     }
 
+    /**
+     * Returned by {@link #getUsageStatsQueryUid(int)} when no identity can read the requested user's
+     * usage statistics.
+     */
+    public static final int USAGE_STATS_UNAVAILABLE = -1;
+
+    /**
+     * Whether usage statistics of the current user can be read, either by the privileged identity or
+     * through AppManagerNG's own grant. {@link #getUsageStatsQueryUid(int)} picks the identity a query
+     * uses, so a privileged identity without Usage Access never hides a grant the user already gave.
+     */
     public static boolean checkUsageStatsPermission() {
-        AppOpsManagerCompat appOps = new AppOpsManagerCompat();
-        int callingUid = Users.getSelfOrRemoteUid();
-        if (callingUid == Ops.ROOT_UID || callingUid == Ops.SYSTEM_UID) {
+        return getUsageStatsQueryUid(UserHandleHidden.myUserId()) != USAGE_STATS_UNAVAILABLE;
+    }
+
+    /**
+     * Whether AppManagerNG's own UID holds the Usage Access grant the user controls in Settings. This
+     * is the only grant that screen can change: a privileged identity such as Shizuku's shell
+     * (UID 2000) has a separate one.
+     */
+    public static boolean hasAppUsageAccessGrant() {
+        Context context = ContextUtils.getContext();
+        AppOpsManager appOps = (AppOpsManager) context.getSystemService(Context.APP_OPS_SERVICE);
+        if (appOps == null) {
+            return false;
+        }
+        int mode;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            mode = appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(),
+                    context.getPackageName());
+        } else {
+            mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(),
+                    context.getPackageName());
+        }
+        return isUsageAccessGranted(mode, mode == AppOpsManager.MODE_DEFAULT
+                && checkSelfPermission(Manifest.permission.PACKAGE_USAGE_STATS));
+    }
+
+    /**
+     * Whether {@code executionUid} may read usage statistics of {@code userId}. Root and system read
+     * every user. Any other identity needs its own Usage Access, and cross-user access for another
+     * user's data. A grant that cannot be read counts as absent.
+     */
+    public static boolean canQueryUsageStats(int executionUid, @UserIdInt int userId) {
+        if (executionUid == Ops.ROOT_UID || executionUid == Ops.SYSTEM_UID) {
             return true;
         }
-        int mode = appOps.checkOpNoThrow(AppOpsManagerHidden.OP_GET_USAGE_STATS, callingUid, getCallingPackage(callingUid));
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && mode == AppOpsManager.MODE_DEFAULT) {
-            return checkSelfOrRemotePermission(Manifest.permission.PACKAGE_USAGE_STATS, callingUid);
+        boolean granted;
+        if (executionUid == Process.myUid()) {
+            granted = hasAppUsageAccessGrant();
+        } else {
+            try {
+                int mode = new AppOpsManagerCompat().checkOpNoThrow(AppOpsManagerHidden.OP_GET_USAGE_STATS,
+                        executionUid, getCallingPackage(executionUid));
+                granted = isUsageAccessGranted(mode, mode == AppOpsManager.MODE_DEFAULT
+                        && checkSelfOrRemotePermission(Manifest.permission.PACKAGE_USAGE_STATS, executionUid));
+            } catch (RuntimeException e) {
+                Log.w("SelfPermissions", "Could not read the Usage Access state of uid %d.", e, executionUid);
+                granted = false;
+            }
         }
-        return mode == AppOpsManager.MODE_ALLOWED;
+        return granted && checkCrossUserPermission(userId, false, executionUid);
+    }
+
+    /**
+     * The identity a usage-statistics query for {@code userId} should run as: the privileged identity
+     * when it can query, otherwise AppManagerNG itself when its own grant covers that user, otherwise
+     * {@link #USAGE_STATS_UNAVAILABLE}. Some OEM builds deny Usage Access to Shizuku's shell even
+     * though the user granted it to AppManagerNG (fork issue #16).
+     */
+    public static int getUsageStatsQueryUid(@UserIdInt int userId) {
+        int executionUid = Users.getSelfOrRemoteUid();
+        if (canQueryUsageStats(executionUid, userId)) {
+            return executionUid;
+        }
+        int appUid = Process.myUid();
+        if (executionUid != appUid && canQueryUsageStats(appUid, userId)) {
+            return appUid;
+        }
+        return USAGE_STATS_UNAVAILABLE;
+    }
+
+    private static boolean isUsageAccessGranted(int opMode, boolean permissionGranted) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && opMode == AppOpsManager.MODE_DEFAULT) {
+            return permissionGranted;
+        }
+        if (opMode == AppOpsManager.MODE_ALLOWED) {
+            return true;
+        }
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && opMode == AppOpsManager.MODE_FOREGROUND;
     }
 
     public static boolean checkSelfStoragePermission() {
