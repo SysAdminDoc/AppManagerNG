@@ -148,6 +148,7 @@ public class SubscriptionManagerCompat {
     }
 
     @VisibleForTesting
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP_MR1)
     @NonNull
     static List<String> collectSubscriberIds(@NonNull List<SubscriptionInfo> subscriptions,
                                              @NonNull SubscriberIdLookup lookup) {
