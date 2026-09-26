@@ -27,6 +27,25 @@ extract_release_tag_version() {
   return 1
 }
 
+# Finds Python 3 the way verify_reproducible_release.sh does: $PYTHON_CMD, then python3, then
+# python, then the Windows launcher. Fills PYTHON_BIN, or reports the failure and returns 1.
+resolve_python_command() {
+  if [[ -n "${PYTHON_CMD:-}" ]] && command -v "$PYTHON_CMD" >/dev/null 2>&1 \
+      && "$PYTHON_CMD" --version >/dev/null 2>&1; then
+    PYTHON_BIN=("$PYTHON_CMD")
+  elif command -v python3 >/dev/null 2>&1 && python3 --version >/dev/null 2>&1; then
+    PYTHON_BIN=(python3)
+  elif command -v python >/dev/null 2>&1 && python --version >/dev/null 2>&1; then
+    PYTHON_BIN=(python)
+  elif command -v py >/dev/null 2>&1 && py -3 --version >/dev/null 2>&1; then
+    PYTHON_BIN=(py -3)
+  else
+    PYTHON_BIN=()
+    echo "ERROR: Python 3 is required to verify the release receipt" >&2
+    return 1
+  fi
+}
+
 # Keep the parsing seam sourceable for host regression tests.
 if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
   return 0
@@ -178,16 +197,9 @@ fi
 # --- Distribution listing packets must match the published-release receipt ---
 DIST_DIR="$REPO_ROOT/docs/distribution"
 RELEASE_METADATA_VERIFIER="$REPO_ROOT/scripts/verify_release_metadata.py"
-if command -v python3 >/dev/null 2>&1 && python3 --version >/dev/null 2>&1; then
-  PYTHON_BIN=python3
-elif command -v python >/dev/null 2>&1 && python --version >/dev/null 2>&1; then
-  PYTHON_BIN=python
-else
-  echo "ERROR: Python 3 is required to verify the release receipt" >&2
+if ! resolve_python_command; then
   FAIL=1
-  PYTHON_BIN=""
-fi
-if [[ -n "$PYTHON_BIN" ]] && ! "$PYTHON_BIN" "$RELEASE_METADATA_VERIFIER" \
+elif ! "${PYTHON_BIN[@]}" "$RELEASE_METADATA_VERIFIER" \
     --receipt "$DIST_DIR/release-receipt.json" \
     --distribution-dir "$DIST_DIR" \
     --build-gradle "$BUILD_GRADLE" \
