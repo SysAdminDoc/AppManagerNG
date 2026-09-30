@@ -6,6 +6,9 @@ import android.Manifest;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.Uri;
 import android.os.Build;
 import android.os.SystemClock;
@@ -34,6 +37,26 @@ import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
 import io.github.muntashirakon.adb.android.AdbMdns;
 
 public class AdbUtils {
+    /**
+     * Whether the device is on any Wi-Fi network. Upstream 2f2b31e89: the Wi-Fi network doesn't
+     * have to be the default one or reach the Internet, since a local-only or captive-portal
+     * network can still carry Wireless Debugging while mobile data stays the default.
+     */
+    public static boolean isWifiConnected(@NonNull Context context) {
+        ConnectivityManager cm = (ConnectivityManager) context.getApplicationContext()
+                .getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm == null) {
+            return false;
+        }
+        for (Network network : cm.getAllNetworks()) {
+            NetworkCapabilities capabilities = cm.getNetworkCapabilities(network);
+            if (capabilities != null && capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @WorkerThread
     @NonNull
     public static Pair<String, Integer> getLatestAdbDaemon(@NonNull Context context, long timeout, @NonNull TimeUnit unit)

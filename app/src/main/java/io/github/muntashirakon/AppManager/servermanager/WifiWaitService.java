@@ -11,15 +11,20 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+
+import java.util.concurrent.Future;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
@@ -28,12 +33,40 @@ import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.types.ForegroundService;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
-import io.github.muntashirakon.AppManager.utils.Utils;
 
+/**
+ * Restores the wireless ADB connection after a boot, once Wi-Fi is up. Port of upstream 22d439d61
+ * and 355813cae: a transient failure is retried a few times on the same network, a network that
+ * replaced the one being tried is tried at once, and the service goes away when the mode changes.
+ */
 @RequiresApi(Build.VERSION_CODES.R)
 public class WifiWaitService extends Service {
     private static final String TAG = WifiWaitService.class.getSimpleName();
+    private static final long RETRY_DELAY_MILLIS = 2_000;
+    @VisibleForTesting
+    static final int MAX_RETRY_ATTEMPTS = 5;
     public static final String CHANNEL_ID = BuildConfig.APPLICATION_ID + ".channel.WIFI_WAIT_SERVICE";
+
+    private enum ConnectionResult {
+        SUCCESS,
+        RETRY,
+        TERMINAL_FAILURE,
+        MODE_CHANGED
+    }
+
+    private final Object mStateLock = new Object();
+    private final Handler mHandler = new Handler(Looper.getMainLooper());
+    @Nullable
+    private Network mWifiNetwork;
+    private final Runnable mRetryRunnable = () -> {
+        Network network;
+        synchronized (mStateLock) {
+            network = mWifiNetwork;
+        }
+        if (network != null) {
+            connectAdbWifi(network);
+        }
+    };
 
     private final ConnectivityManager.NetworkCallback mNetworkCallback = new ConnectivityManager.NetworkCallback() {
         @Override
@@ -44,22 +77,37 @@ public class WifiWaitService extends Service {
         @Override
         public void onLost(@NonNull Network network) {
             Log.d(TAG, "Network lost");
+            synchronized (mStateLock) {
+                if (network.equals(mWifiNetwork)) {
+                    mWifiNetwork = null;
+                    mRetryCount = 0;
+                    mHandler.removeCallbacks(mRetryRunnable);
+                }
+            }
         }
 
         @Override
         public void onCapabilitiesChanged(@NonNull Network network,
                                           @NonNull NetworkCapabilities networkCapabilities) {
-            // Double-check Wi-Fi availability when capabilities change
-            if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) &&
-                    !mAutoconnectCompleted) {
-                connectAdbWifi();
-                unregisterNetworkCallback();
+            if (isWifiNetwork(networkCapabilities)) {
+                synchronized (mStateLock) {
+                    if (!network.equals(mWifiNetwork)) {
+                        mRetryCount = 0;
+                    }
+                    mWifiNetwork = network;
+                }
+                connectAdbWifi(network);
             }
         }
     };
     private ConnectivityManager mConnectivityManager;
-    private boolean mAutoconnectCompleted = false;
-    private boolean mUnregisterDone = true;
+    @Nullable
+    private Future<?> mConnectionTask;
+    private boolean mConnecting;
+    private boolean mCallbackRegistered;
+    private boolean mDestroyed;
+    private int mRetryCount;
+    private int mLastStartId;
 
     @Override
     public void onCreate() {
@@ -77,86 +125,158 @@ public class WifiWaitService extends Service {
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setOngoing(true)
                 .build();
+        // Android 15 doesn't let a boot receiver start a data sync service
         ForegroundService.start(this, NotificationUtils.nextNotificationId(null),
-                notification, ForegroundService.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+                notification, ForegroundService.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
 
-        if (LocalServer.alive(getApplicationContext())) {
-            // Already connected
-            mAutoconnectCompleted = true;
+        mLastStartId = startId;
+
+        if (!isWirelessAdbMode() || LocalServer.alive(getApplicationContext())) {
+            finishService();
+            return START_NOT_STICKY;
         }
 
-        if (!mAutoconnectCompleted) {
-            registerNetworkCallback();
-        } else {
-            stopSelf();
-        }
+        registerNetworkCallback();
 
         return START_NOT_STICKY; // Don't restart if killed
     }
 
     private void registerNetworkCallback() {
-        NetworkRequest networkRequest = new NetworkRequest.Builder()
-                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-                .build();
-        try {
-            mConnectivityManager.registerNetworkCallback(networkRequest, mNetworkCallback);
-            mUnregisterDone = false;
-            Log.d(TAG, "Network callback registered");
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to register network callback", e);
-            stopSelf();
+        synchronized (mStateLock) {
+            if (mCallbackRegistered || mDestroyed) {
+                return;
+            }
+            mCallbackRegistered = true;
+            NetworkRequest networkRequest = new NetworkRequest.Builder()
+                    .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                    .build();
+            try {
+                mConnectivityManager.registerNetworkCallback(networkRequest, mNetworkCallback);
+                Log.d(TAG, "Network callback registered");
+            } catch (Exception e) {
+                mCallbackRegistered = false;
+                Log.e(TAG, "Failed to register network callback", e);
+                finishService();
+            }
         }
     }
 
-    private void connectAdbWifi() {
-        if (mAutoconnectCompleted) {
-            return; // Prevent multiple executions
+    private void connectAdbWifi(@NonNull Network network) {
+        if (!isWirelessAdbMode()) {
+            finishService();
+            return;
         }
-        mAutoconnectCompleted = true;
-
-        ThreadUtils.postOnBackgroundThread(() -> {
-            try {
-                doConnectAdbWifi();
-            } finally {
-                stopSelf();
+        synchronized (mStateLock) {
+            if (mDestroyed || mConnecting || !network.equals(mWifiNetwork)) {
+                return;
             }
+            mConnecting = true;
+            mHandler.removeCallbacks(mRetryRunnable);
+        }
+
+        mConnectionTask = ThreadUtils.postOnBackgroundThread(() -> {
+            ConnectionResult result = doConnectAdbWifi();
+            mHandler.post(() -> handleConnectionResult(network, result));
         });
     }
 
     @WorkerThread
-    private void doConnectAdbWifi() {
+    @NonNull
+    private ConnectionResult doConnectAdbWifi() {
         Context context = getApplicationContext();
-        if (!Utils.isWifiActive(context)) {
-            Log.w(TAG, "Autoconnect failed: Wi-Fi not enabled.");
-            return;
+        if (!isWirelessAdbMode()) {
+            return ConnectionResult.MODE_CHANGED;
         }
 
         if (!AdbUtils.enableWirelessDebugging(context)) {
-            Log.w(TAG, "Autoconnect failed: Could not enable wireless debugging.");
-            return;
+            Log.w(TAG, "Autoconnect deferred: Could not enable wireless debugging.");
+            return ConnectionResult.RETRY;
+        }
+        if (!isWirelessAdbMode()) {
+            return ConnectionResult.MODE_CHANGED;
         }
 
         int status = Ops.autoConnectWirelessDebugging(context);
-        if (status == Ops.STATUS_ADB_PAIRING_REQUIRED) {
-            Log.w(TAG, "Autoconnect failed: pairing required");
-        } else if (status == Ops.STATUS_WIRELESS_DEBUGGING_CHOOSER_REQUIRED) {
-            Log.w(TAG, "Autoconnect failed: could not find a valid port");
-        } else if (status == Ops.STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED) {
-            Log.w(TAG, "Autoconnect failed: local network permission required");
-        } else if (status == Ops.STATUS_FAILURE_ADB_NEED_MORE_PERMS) {
-            Log.w(TAG, "Autoconnect failed: not enough permissions available");
-        } else if (status == Ops.STATUS_SUCCESS) {
+        if (status == Ops.STATUS_SUCCESS) {
             Log.i(TAG, "Autoconnect success!");
+            return ConnectionResult.SUCCESS;
+        } else if (isRetryableStatus(status)) {
+            Log.w(TAG, "Autoconnect deferred: status " + status);
+            return ConnectionResult.RETRY;
+        }
+        Log.w(TAG, "Autoconnect failed: status " + status);
+        return ConnectionResult.TERMINAL_FAILURE;
+    }
+
+    @VisibleForTesting
+    static boolean isWifiNetwork(@NonNull NetworkCapabilities capabilities) {
+        return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI);
+    }
+
+    /**
+     * Statuses another try a moment later can fix, such as no Wireless Debugging port found yet.
+     * Pairing, permissions and the local network grant need the user, and a server that won't
+     * start or answer was already retried and reported by the server manager.
+     */
+    @VisibleForTesting
+    static boolean isRetryableStatus(@Ops.Status int status) {
+        return status == Ops.STATUS_WIRELESS_DEBUGGING_CHOOSER_REQUIRED
+                || status == Ops.STATUS_FAILURE;
+    }
+
+    private void handleConnectionResult(@NonNull Network network, @NonNull ConnectionResult result) {
+        boolean retry;
+        Network replacementNetwork;
+        synchronized (mStateLock) {
+            if (mDestroyed) {
+                return;
+            }
+            mConnecting = false;
+            mConnectionTask = null;
+            replacementNetwork = shouldTryReplacementNetwork(network, mWifiNetwork,
+                    result == ConnectionResult.RETRY) ? mWifiNetwork : null;
+            retry = result == ConnectionResult.RETRY && network.equals(mWifiNetwork)
+                    && ++mRetryCount <= MAX_RETRY_ATTEMPTS;
+        }
+        if (!isWirelessAdbMode() || result == ConnectionResult.MODE_CHANGED) {
+            finishService();
+        } else if (replacementNetwork != null) {
+            // Wi-Fi changed while the last attempt ran. Try the new network now instead of
+            // stopping on the stale attempt's result.
+            connectAdbWifi(replacementNetwork);
+        } else if (retry) {
+            mHandler.postDelayed(mRetryRunnable, RETRY_DELAY_MILLIS);
         } else {
-            Log.w(TAG, "Autoconnect failed");
+            if (result == ConnectionResult.RETRY) {
+                Log.w(TAG, "Autoconnect failed: retry limit reached");
+            }
+            finishService();
         }
     }
 
+    @VisibleForTesting
+    static boolean shouldTryReplacementNetwork(@NonNull Network attemptedNetwork,
+                                               @Nullable Network currentNetwork,
+                                               boolean retryable) {
+        return retryable && currentNetwork != null && !attemptedNetwork.equals(currentNetwork);
+    }
+
+    private boolean isWirelessAdbMode() {
+        return Ops.MODE_ADB_WIFI.equals(Ops.getMode());
+    }
+
+    private void finishService() {
+        unregisterNetworkCallback();
+        stopSelfResult(mLastStartId);
+    }
+
     private void unregisterNetworkCallback() {
-        if (mUnregisterDone) {
-            return;
+        synchronized (mStateLock) {
+            if (!mCallbackRegistered) {
+                return;
+            }
+            mCallbackRegistered = false;
         }
-        mUnregisterDone = true;
         try {
             mConnectivityManager.unregisterNetworkCallback(mNetworkCallback);
             Log.d(TAG, "Network callback unregistered");
@@ -173,6 +293,17 @@ public class WifiWaitService extends Service {
 
     @Override
     public void onDestroy() {
+        Future<?> connectionTask;
+        synchronized (mStateLock) {
+            mDestroyed = true;
+            mWifiNetwork = null;
+            connectionTask = mConnectionTask;
+            mConnectionTask = null;
+        }
+        mHandler.removeCallbacks(mRetryRunnable);
+        if (connectionTask != null) {
+            connectionTask.cancel(true);
+        }
         unregisterNetworkCallback();
         super.onDestroy();
         Log.d(TAG, "Service destroyed");

@@ -58,16 +58,17 @@ import io.github.muntashirakon.AppManager.servermanager.LocalServer;
 import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
 import io.github.muntashirakon.AppManager.servermanager.ServerConnectionFailure;
 import io.github.muntashirakon.AppManager.servermanager.ServerStatusChangeReceiver;
+import io.github.muntashirakon.AppManager.servermanager.WifiWaitService;
 import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.session.SessionMonitoringService;
 import io.github.muntashirakon.AppManager.users.Owners;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.AppPref;
+import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
-import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.adb.AdbPairingRequiredException;
 import io.github.muntashirakon.dialog.DialogTitleBuilder;
 import io.github.muntashirakon.dialog.ScrollableDialogBuilder;
@@ -328,6 +329,11 @@ public class Ops {
     @NoOps
     public static void setMode(@NonNull String newMode) {
         AppPref.set(AppPref.PrefKey.PREF_MODE_OF_OPS_STR, newMode);
+        if (!MODE_ADB_WIFI.equals(newMode) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // A boot-time reconnect for the old mode must not bring wireless ADB back
+            Context context = ContextUtils.getContext();
+            context.stopService(new Intent(context, WifiWaitService.class));
+        }
     }
 
     @WorkerThread
@@ -387,7 +393,7 @@ public class Ops {
                         if (isLocalNetworkPermissionMissing(context)) {
                             return STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED;
                         }
-                        if (!Utils.isWifiActive(context.getApplicationContext())) {
+                        if (!AdbUtils.isWifiConnected(context)) {
                             throw new Exception("Wifi not enabled.");
                         }
                         if (AdbUtils.enableWirelessDebugging(context)) {
