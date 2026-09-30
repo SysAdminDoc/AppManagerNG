@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.adb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -22,6 +23,9 @@ import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ServiceController;
+import org.robolectric.shadows.ShadowLooper;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Port of upstream 2f2b31e89. The pairing port used to travel through a LiveData, which handed a
@@ -50,6 +54,51 @@ public class AdbPairingServiceTest {
             String text = pairingPortText(app, 37002);
             assertNotNull(text);
             assertTrue(text, text.contains("37002"));
+        } finally {
+            controller.destroy();
+        }
+    }
+
+    @Test
+    public void aSearchNobodyFinishesStopsAfterTenMinutesCountedFromTheLastPortFound() {
+        Application app = ApplicationProvider.getApplicationContext();
+        shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
+        ServiceController<AdbPairingService> controller = Robolectric.buildService(AdbPairingService.class).create();
+        AdbPairingService service = controller.get();
+        try {
+            service.onStartCommand(AdbPairingService.getStartSearchingIntent(app), 0, 1);
+            ShadowLooper.idleMainLooper(9, TimeUnit.MINUTES);
+            assertFalse(shadowOf(service).isStoppedBySelf());
+
+            // Found near the end of the search, the port still leaves the full time to type the code
+            service.onPairingPortFound(service.getSearchGeneration(), 37003);
+            ShadowLooper.idleMainLooper(9, TimeUnit.MINUTES);
+            assertFalse(shadowOf(service).isStoppedBySelf());
+
+            ShadowLooper.idleMainLooper(2, TimeUnit.MINUTES);
+            assertTrue(shadowOf(service).isStoppedBySelf());
+            assertNull(shadowOf(app.getSystemService(NotificationManager.class)).getNotification(NOTIFICATION_ID));
+        } finally {
+            controller.destroy();
+        }
+    }
+
+    @Test
+    public void thePairingItselfIsNotCutOffByTheSearchTimeout() {
+        Application app = ApplicationProvider.getApplicationContext();
+        shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
+        ServiceController<AdbPairingService> controller = Robolectric.buildService(AdbPairingService.class).create();
+        AdbPairingService service = controller.get();
+        try {
+            service.onStartCommand(AdbPairingService.getStartSearchingIntent(app), 0, 1);
+            ShadowLooper.idleMainLooper(9, TimeUnit.MINUTES);
+            // Port 9 refuses at once, so the pairing fails and leaves its Retry notification up
+            AdbPairingRequest request = AdbPairingRequest.create(9, "123456");
+            assertNotNull(request);
+            service.onStartCommand(AdbPairingService.getStartPairingIntent(app, request), 0, 2);
+
+            ShadowLooper.idleMainLooper(11, TimeUnit.MINUTES);
+            assertFalse(shadowOf(service).isStoppedBySelf());
         } finally {
             controller.destroy();
         }

@@ -16,6 +16,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 
+import androidx.annotation.AnyThread;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -174,18 +175,16 @@ public class AdbPairingService extends Service {
             return;
         }
         mStartedSearching = true;
-        ++mSearchGeneration;
-        mHandler.removeCallbacks(mSearchTimeout);
-        mHandler.postDelayed(mSearchTimeout, SEARCH_TIMEOUT_MILLIS);
+        int generation = ++mSearchGeneration;
+        restartSearchTimeout();
         AdbPairingSession.searching();
-        if (mAdbMdnsPairing == null) {
-            mAdbMdnsPairing = new AdbMdns(getApplication(), AdbMdns.SERVICE_TYPE_TLS_PAIRING, (hostAddress, port) -> {
-                if (port != -1) {
-                    int generation = mSearchGeneration;
-                    ThreadUtils.postOnMainThread(() -> onPairingPortFound(generation, port));
-                }
-            });
-        }
+        // Each search gets its own listener, so a port an earlier one reports late still carries
+        // that search's number and is ignored
+        mAdbMdnsPairing = new AdbMdns(getApplication(), AdbMdns.SERVICE_TYPE_TLS_PAIRING, (hostAddress, port) -> {
+            if (port != -1) {
+                ThreadUtils.postOnMainThread(() -> onPairingPortFound(generation, port));
+            }
+        });
         PendingIntent stopPendingIntent = getStopIntent();
         NotificationCompat.Action stopAction = new NotificationCompat.Action.Builder(null, getString(R.string.adb_pairing_stop_searching), stopPendingIntent).build();
         mNotificationBuilder.setContentText(getText(R.string.adb_pairing_searching_for_port))
@@ -215,8 +214,16 @@ public class AdbPairingService extends Service {
         return mSearchGeneration;
     }
 
+    @AnyThread
+    private void restartSearchTimeout() {
+        mHandler.removeCallbacks(mSearchTimeout);
+        mHandler.postDelayed(mSearchTimeout, SEARCH_TIMEOUT_MILLIS);
+    }
+
     @MainThread
     private void inputPairingCode(int port) {
+        // A port found late in the search still leaves the user the full time to type the code
+        restartSearchTimeout();
         AdbPairingSession.portFound(port);
         Intent inputIntent = new Intent(this, getClass())
                 .setAction(ACTION_START_PAIRING)
@@ -249,6 +256,8 @@ public class AdbPairingService extends Service {
 
     @MainThread
     private void startPairing(int port, String code) {
+        // The pairing has its own time limit, and the search's must not cancel it partway
+        mHandler.removeCallbacks(mSearchTimeout);
         AdbPairingSession.pairing(port);
         mNotificationBuilder.setContentText(getString(R.string.adb_pairing_pairing_in_progress))
                 .clearActions();
