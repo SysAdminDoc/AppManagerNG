@@ -1477,8 +1477,6 @@
     <string name="adb_pairing_pairing_in_progress">Accoppiamento…</string>
     <string name="adb_pairing_retry_pairing">Riprova</string>
     <string name="mode_of_op_custom_command_title">Comando personalizzato</string>
-    <string name="mode_of_op_custom_command">Se non riesci a utilizzare nessuna delle modalità, puoi eseguire il comando seguente in qualsiasi shell supportata per eseguire App Manager in modalità privilegiata:</string>
-    <string name="mode_of_op_alternative_custom_command">Se ricevi un errore di \"autorizzazione negata\" con il comando precedente, esegui invece il comando seguente:</string>
     <string name="sensors">Sensori</string>
     <string name="tag_sensors_disabled">Sensori disabilitati</string>
     <string name="pref_use_system_font">Usa font di sistema</string>

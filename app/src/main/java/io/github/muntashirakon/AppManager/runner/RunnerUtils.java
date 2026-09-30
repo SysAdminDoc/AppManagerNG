@@ -107,15 +107,27 @@ public final class RunnerUtils {
             return true;
         }
         // Check if root is available
+        if (isSuOnPath()) {
+            // Root available but App Manager is not granted root
+            return null;
+        }
+        return false;
+    }
+
+    /**
+     * Whether an executable {@code su} is on the PATH. Unlike {@link #isAppGrantedRoot()}, this
+     * never opens a root shell, so it can't put up a superuser prompt.
+     */
+    @NoOps
+    public static boolean isSuOnPath() {
         String pathEnv = System.getenv("PATH");
         Log.d(TAG, "PATH=%s", pathEnv);
         if (pathEnv == null) return false;
         for (String pathDir : pathEnv.split(":")) {
             File suFile = new File(pathDir, "su");
             Log.d(TAG, "SU(file=%s, exists=%s, executable=%s)", suFile, suFile.exists(), suFile.canExecute());
-            if (new File(pathDir, "su").canExecute()) {
-                // Root available but App Manager is not granted root
-                return null;
+            if (suFile.canExecute()) {
+                return true;
             }
         }
         return false;

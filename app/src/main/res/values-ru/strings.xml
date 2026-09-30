@@ -1489,7 +1489,6 @@
     <string name="launch_activity_dialog_title">Запуск Активити: Требуется Действие</string>
     <string name="pref_use_log_viewer">Использовать средство просмотра логов</string>
     <string name="netpolicy_reject_metered_background_data">Отклонить фоновые данные в сетях с лимитным трафиком</string>
-    <string name="mode_of_op_custom_command">Если вы не можете использовать ни один из режимов, вы можете запустить следующую команду в любой поддерживаемой оболочке, чтобы запустить диспетчер приложений в привилегированном режиме:</string>
     <string name="pref_use_vt">Используйте VirusTotal</string>
     <string name="pref_use_vt_no_internet">Для работы VirusTotal требуется Интернет, который не включен. Сначала включите <a href="app-manager://settings/privacy_prefs/toggle_internet">\"Использовать Интернет\"</a>.</string>
     <string name="status_remote_server_inactive">Удаленный сервер неактивен</string>
@@ -1523,7 +1522,6 @@
     <string name="apk_source">Источник APK</string>
     <string name="actual_installer">Фактический установщик</string>
     <string name="pref_use_system_font">Использовать системный шрифт</string>
-    <string name="mode_of_op_alternative_custom_command">Если при выполнении вышеуказанной команды вы получите ошибку «разрешение отклонено», выполните следующую команду:</string>
     <string name="activity_name">Имя активити</string>
     <string name="pref_use_system_font_msg">Использовать системный шрифт по умолчанию вместо material шрифта. <font fgcolor="#ff0000">Это экспериментальная функция.</font></string>
     <string name="backup_cache">Кэш</string>

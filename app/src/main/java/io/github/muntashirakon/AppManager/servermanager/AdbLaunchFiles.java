@@ -40,6 +40,11 @@ public final class AdbLaunchFiles {
     public static final String MAIN_JAR = STAGING_DIR + "/" + MAIN_JAR_NAME;
     @VisibleForTesting
     static final String LOCKED_MARKER = "AMNG_STAGING_LOCKED";
+    /**
+     * What run_server.sh starts, spelled the same way.
+     */
+    @VisibleForTesting
+    static final String SERVER_MAIN_CLASS = "io.github.muntashirakon.AppManager.server.ServerRunner";
 
     private AdbLaunchFiles() {
     }
@@ -124,6 +129,37 @@ public final class AdbLaunchFiles {
             }
             return buildExtractCommand(getApkPath(context, afd), afd.getStartOffset(), jar, MAIN_JAR);
         }
+    }
+
+    /**
+     * A command to paste into {@code adb shell} that starts the server by hand. It copies am.jar
+     * out of the installed APK into {@link #STAGING_DIR}, checks it, and starts the server from
+     * there, which is all run_server.sh does for this case. Nothing in it reads the app's data
+     * directory, which SELinux keeps the shell out of.
+     */
+    @WorkerThread
+    @NonNull
+    public static String manualShellCommand(@NonNull Context context, int port, @NonNull String token)
+            throws IOException {
+        byte[] jar = AssetsUtils.readAsset(context, Constants.JAR_NAME);
+        try (AssetFileDescriptor afd = context.getAssets().openFd(Constants.JAR_NAME)) {
+            if (afd.getLength() != jar.length) {
+                throw new IOException(Constants.JAR_NAME + " isn't stored uncompressed in the APK.");
+            }
+            return buildManualShellCommand(getApkPath(context, afd), afd.getStartOffset(), jar, SERVER_JAR,
+                    "path:" + port + AssetsUtils.getServerArgs() + ",token:" + token);
+        }
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String buildManualShellCommand(@NonNull String apkPath, long offset, @NonNull byte[] jar,
+                                          @NonNull String dest, @NonNull String config) {
+        // Only the server goes in the background, so the shell waits for the copy and can say it failed
+        return buildExtractCommand(apkPath, offset, jar, dest)
+                + "{ CLASSPATH=" + quote(dest) + " app_process /system/bin --nice-name=" + Constants.SERVER_NAME
+                + " " + SERVER_MAIN_CLASS + " " + quote(config) + " & }"
+                + " || echo \"Error! Could not copy " + Constants.JAR_NAME + " out of the APK.\"";
     }
 
     @VisibleForTesting

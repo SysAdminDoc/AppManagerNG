@@ -183,7 +183,14 @@ public class ModeOfOpsPreference extends Fragment {
         // Services can bind or stop after the screen opened, a mode switch or a late SERVER_STARTED
         LocalServices.state().observe(getViewLifecycleOwner(), ignored -> updateViews());
         mModel.getCustomCommand0().observe(getViewLifecycleOwner(), customCommand0::setText);
-        mModel.getCustomCommand1().observe(getViewLifecycleOwner(), customCommand1::setText);
+        View rootCommandLabel = view.findViewById(R.id.root_command_label);
+        mModel.getCustomCommand1().observe(getViewLifecycleOwner(), rootCommand -> {
+            // Only a device with su gets the root command
+            int visibility = rootCommand != null ? View.VISIBLE : View.GONE;
+            rootCommandLabel.setVisibility(visibility);
+            customCommand1Layout.setVisibility(visibility);
+            customCommand1.setText(rootCommand);
+        });
     }
 
     @Override

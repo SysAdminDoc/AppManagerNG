@@ -828,7 +828,6 @@
     <string name="system_app_put_back">Terugzetten</string>
     <string name="grant_required_permission">Verleen de vereiste rechten</string>
     <string name="read_only_file">Alleen-lezen bestand</string>
-    <string name="mode_of_op_custom_command">Als u geen van de modi kunt gebruiken, kunt u de volgende opdracht uitvoeren in een ondersteunde shell om App Manager in de bevoorrechte modus uit te voeren:</string>
     <string name="advanced_suspend_app_description">Het stopt de app geforceerd en schort deze op om ervoor te zorgen dat de app niet op de achtergrond draait. Deze methode verdient de voorkeur boven de reguliere <b>opschortings</b> methode.</string>
     <string name="hide_app_description">Deze methode wordt alleen aanbevolen voor dagelijks gebruik. Een verborgen app wordt weergegeven alsof deze is verwijderd. Maar de app kan opnieuw verschijnen als deze opnieuw wordt geïnstalleerd of bijgewerkt.</string>
     <string name="file_open_as">Open als…</string>
@@ -1410,7 +1409,6 @@
     <string name="adb_pairing_found_pairing_service_with_port">Service gevonden met poort %d</string>
     <string name="adb_pairing_pairing_in_progress">Koppelen…</string>
     <string name="adb_pairing_retry_pairing">Opnieuw proberen</string>
-    <string name="mode_of_op_alternative_custom_command">Als u bij de bovenstaande opdracht de foutmelding \'machtiging geweigerd\' krijgt, voer dan de volgende opdracht uit:</string>
     <string name="sensors">Sensoren</string>
     <string name="tag_sensors_disabled">Sensoren uitgeschakeld</string>
     <string name="pref_use_system_font">Gebruik systeemlettertype</string>

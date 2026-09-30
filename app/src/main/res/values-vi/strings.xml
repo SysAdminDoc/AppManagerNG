@@ -1375,7 +1375,6 @@
     <string name="adb_pairing_found_pairing_service_with_port">Đã tìm thấy dịch vụ có cổng %d</string>
     <string name="adb_pairing_retry_pairing">Thử lại</string>
     <string name="adb_pairing_pairing_in_progress">Đang ghép nối…</string>
-    <string name="mode_of_op_custom_command">Nếu không thể sử dụng bất kỳ chế độ nào, bạn có thể chạy lệnh sau trong bất kỳ shell nào được hỗ trợ để chạy App Manager ở chế độ đặc quyền:</string>
     <string name="launch_activity_dialog_message">App Manager đang cố gắng khởi chạy hoạt động thông qua <b>Trợ lý tìm kiếm</b> (thường là Trợ lý Google), nhưng không thể thực hiện được do không có đủ quyền. Để mở hoạt động, vui lòng kích hoạt <b>Trợ lý tìm kiếm</b> theo cách thủ công (việc này thường được thực hiện bằng cách nhấp và giữ nút Trang chủ). Nhấp vào nút <b>Đóng</b> sau khi bạn khởi chạy xong hoạt động để quay lại trợ lý ban đầu.</string>
     <string name="pref_use_vt_no_internet">VirusTotal yêu cầu Internet để hoạt động nhưng Internet chưa được kích hoạt. Trước tiên, hãy bật <a href="app-manager://settings/privacy_prefs/toggle_internet">“Sử dụng Internet”</a>.</string>
     <string name="netpolicy_reject_metered_background_data">Từ chối dữ liệu nền trên mạng có đồng hồ đo</string>
@@ -1390,7 +1389,6 @@
     <string name="status_connected_via_mode">Đã kết nối qua %s</string>
     <string name="status_not_connected_via_mode">Không thể kết nối qua %s</string>
     <string name="adb_pairing_instruction">Vui lòng điều hướng đến tùy chọn nhà phát triển để bật gỡ lỗi không dây và tạo mã ghép nối.</string>
-    <string name="mode_of_op_alternative_custom_command">Nếu bạn gặp lỗi “quyền bị từ chối” với lệnh trên, thay vào đó hãy chạy lệnh sau:</string>
     <string name="sensors">Cảm biến</string>
     <string name="tag_sensors_disabled">Cảm biến bị vô hiệu hóa</string>
     <string name="pref_use_system_font">Sử dụng phông chữ hệ thống</string>

@@ -177,7 +177,7 @@
             <com.google.android.material.textview.MaterialTextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/mode_of_op_custom_command" />
+                android:text="@string/mode_of_op_adb_shell_command" />
 
             <com.google.android.material.textfield.TextInputLayout
                 style="@style/Widget.AppTheme.TextInputLayout.Small"
@@ -195,16 +195,18 @@
                     android:inputType="textMultiLine"
                     android:fontFamily="monospace"
                     android:textIsSelectable="true"
-                    tools:text="sh /sdcard/Android/data/io.github.muntashirakon.AppManager/cache/run_server.sh 6001 yolk-good-folk" />
+                    tools:text="{ mkdir -p '/data/local/tmp/io.github.sysadmindoc.AppManagerNG' &amp;&amp; dd if='/data/app/base.apk' ... } &amp;&amp; CLASSPATH=... app_process /system/bin ... &amp;" />
 
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/root_command_label"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/mode_of_op_alternative_custom_command" />
+                android:text="@string/mode_of_op_root_command" />
 
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/root_command_layout"
                 style="@style/Widget.AppTheme.TextInputLayout.Small"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
