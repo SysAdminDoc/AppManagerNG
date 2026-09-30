@@ -12,7 +12,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 
-import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -99,20 +98,19 @@ class ShizukuServiceConnectionWrapper {
 
     @NonNull
     public IBinder getService() throws RemoteException {
-        if (!isBinderActive()) {
+        IBinder binder = mIBinder;
+        if (binder == null || !binder.pingBinder()) {
             throw new RemoteException("Binder not running.");
         }
-        return Objects.requireNonNull(mIBinder);
+        return binder;
     }
 
     @NonNull
     public IBinder bindService() throws RemoteException {
-        synchronized (mServiceConnection) {
-            if (!isBinderActive()) {
-                startDaemon();
-            }
-            return getService();
+        if (!isBinderActive()) {
+            startDaemon();
         }
+        return getService();
     }
 
     @MainThread
@@ -124,37 +122,61 @@ class ShizukuServiceConnectionWrapper {
 
     @WorkerThread
     private void startDaemon() throws RemoteException {
+        CountDownLatch watcher;
         synchronized (mServiceConnection) {
             if (isBinderActive()) {
                 Log.d(TAG, "Binder is already active?");
                 return;
             }
-            if (!ShizukuBridge.supportsUserService()) {
-                throw new RemoteException("Shizuku UserService is unavailable.");
-            }
-            if (!ShizukuBridge.hasPermission()) {
-                throw new RemoteException("Shizuku permission not granted.");
-            }
-            mServiceBoundWatcher = new CountDownLatch(1);
-            Log.d(TAG, "Launching Shizuku user service...");
-            try {
-                Shizuku.bindUserService(getUserServiceArgs(), mServiceConnection);
-                if (!mServiceBoundWatcher.await(45, TimeUnit.SECONDS) || !isBinderActive()) {
-                    throw new RemoteException("Shizuku user service was not bound.");
+            watcher = mServiceBoundWatcher;
+            if (watcher == null) {
+                // Nobody is binding yet. A second caller waits for this bind instead of starting its own.
+                if (!ShizukuBridge.supportsUserService()) {
+                    throw new RemoteException("Shizuku UserService is unavailable.");
                 }
-            } catch (RemoteException e) {
-                throw e;
-            } catch (Throwable e) {
-                throw asRemoteException("Could not bind Shizuku user service.", e);
+                if (!ShizukuBridge.hasPermission()) {
+                    throw new RemoteException("Shizuku permission not granted.");
+                }
+                watcher = new CountDownLatch(1);
+                mServiceBoundWatcher = watcher;
+                Log.d(TAG, "Launching Shizuku user service...");
+                try {
+                    Shizuku.bindUserService(getUserServiceArgs(), mServiceConnection);
+                } catch (Throwable e) {
+                    mServiceBoundWatcher = null;
+                    throw asRemoteException("Could not bind Shizuku user service.", e);
+                }
+            }
+        }
+        // Wait without the lock: unbindService() takes it on the main thread, and stopDaemon()
+        // takes it to cancel a bind that never gets an answer.
+        try {
+            if (!watcher.await(45, TimeUnit.SECONDS) || !isBinderActive()) {
+                throw new RemoteException("Shizuku user service was not bound.");
+            }
+        } catch (InterruptedException e) {
+            throw asRemoteException("Could not bind Shizuku user service.", e);
+        } finally {
+            synchronized (mServiceConnection) {
+                if (mServiceBoundWatcher == watcher) {
+                    mServiceBoundWatcher = null;
+                }
             }
         }
     }
 
     @WorkerThread
     public void stopDaemon() {
+        CountDownLatch watcher;
         synchronized (mServiceConnection) {
             unbindService(true);
             mIBinder = null;
+            watcher = mServiceBoundWatcher;
+            mServiceBoundWatcher = null;
+        }
+        if (watcher != null) {
+            // Release a bind still waiting for the service
+            watcher.countDown();
         }
     }
 
@@ -173,7 +195,8 @@ class ShizukuServiceConnectionWrapper {
     }
 
     boolean isBinderActive() {
-        return mIBinder != null && mIBinder.pingBinder();
+        IBinder binder = mIBinder;
+        return binder != null && binder.pingBinder();
     }
 
     @NonNull

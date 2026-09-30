@@ -209,6 +209,8 @@ public class ModeOfOpsPreference extends Fragment {
                     finishModeApply(false, true);
             }
         });
+        // Services can bind or stop after the screen opened, a mode switch or a late SERVER_STARTED
+        LocalServices.state().observe(getViewLifecycleOwner(), ignored -> updateViews());
         mModel.getCustomCommand0().observe(getViewLifecycleOwner(), customCommand0::setText);
         mModel.getCustomCommand1().observe(getViewLifecycleOwner(), customCommand1::setText);
     }

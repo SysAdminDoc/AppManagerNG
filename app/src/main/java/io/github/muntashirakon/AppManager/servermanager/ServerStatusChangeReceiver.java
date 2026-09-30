@@ -15,6 +15,8 @@ import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -27,6 +29,8 @@ import io.github.muntashirakon.adb.AdbPairingRequiredException;
 // Copyright 2016 Zheng Li
 public class ServerStatusChangeReceiver extends BroadcastReceiver {
     private static final String TAG = ServerStatusChangeReceiver.class.getSimpleName();
+    private static final long SERVER_START_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(30);
+    private static final AtomicInteger sServerStartGeneration = new AtomicInteger();
 
     @Override
     public void onReceive(Context context, @NonNull Intent intent) {
@@ -73,9 +77,11 @@ public class ServerStatusChangeReceiver extends BroadcastReceiver {
                 startServerIfNotAlready(context);
                 break;
             case ServerActions.ACTION_SERVER_STOPPED:
-                // Server was stopped
-                LocalServer.die();
+                // Server was stopped. die() waits for any connect in progress, which can take a
+                // minute, so it can't run here on the main thread.
+                sServerStartGeneration.incrementAndGet();
                 Ops.setWorkingUid(Process.myUid());
+                ThreadUtils.postOnBackgroundThread(LocalServer::die);
                 break;
             case ServerActions.ACTION_SERVER_CONNECTED:
                 // Server was connected with App Manager
@@ -103,14 +109,31 @@ public class ServerStatusChangeReceiver extends BroadcastReceiver {
 
     @AnyThread
     private void startServerIfNotAlready(@NonNull Context context) {
+        int generation = sServerStartGeneration.incrementAndGet();
         ThreadUtils.postOnBackgroundThread(() -> {
             try {
+                long waitStarted = SystemClock.elapsedRealtime();
                 while (!LocalServer.alive(context)) {
+                    if (isStale(generation)) {
+                        return;
+                    }
+                    if (hasServerStartTimedOut(waitStarted, SystemClock.elapsedRealtime())) {
+                        Log.w(TAG, "Timed out waiting for the server to listen.");
+                        return;
+                    }
                     // Server isn't yet in listening mode
                     Log.w(TAG, "Waiting for server...");
                     SystemClock.sleep(100);
                 }
+                if (isStale(generation)) {
+                    return;
+                }
                 LocalServer.getInstance();
+                if (isStale(generation)) {
+                    // The mode changed while this connected. Don't bind services for it.
+                    LocalServer.die();
+                    return;
+                }
                 LocalServices.bindServicesIfNotAlready();
             } catch (IOException | AdbPairingRequiredException e) {
                 Log.w(TAG, "Failed to start server", e);
@@ -118,5 +141,23 @@ public class ServerStatusChangeReceiver extends BroadcastReceiver {
                 Log.w(TAG, "Failed to start services", e);
             }
         });
+    }
+
+    private static boolean isStale(int generation) {
+        return generation != sServerStartGeneration.get() || Thread.currentThread().isInterrupted();
+    }
+
+    @VisibleForTesting
+    static boolean hasServerStartTimedOut(long waitStarted, long now) {
+        return now - waitStarted >= SERVER_START_TIMEOUT_MILLIS;
+    }
+
+    /**
+     * Drop the work a SERVER_STARTED broadcast began, so it can't bind services after the mode
+     * was switched away or rolled back.
+     */
+    @AnyThread
+    public static void cancelPendingServerStart() {
+        sServerStartGeneration.incrementAndGet();
     }
 }
