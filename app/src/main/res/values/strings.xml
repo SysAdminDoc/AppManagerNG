@@ -3586,6 +3586,9 @@
     <string name="pref_cat_general">General</string>
     <string name="status_remote_server_active">Remote server is active</string>
     <string name="status_remote_server_inactive">Remote server is inactive</string>
+    <string name="server_start_failed">Couldn\'t start the privileged server. Check that ADB or root access still works, then try again.</string>
+    <string name="server_unresponsive">The privileged server isn\'t answering. Check that ADB or root access still works, then try again.</string>
+    <string name="server_not_acknowledged">Another server is using the local server port and didn\'t accept this app. Restart the device, or change the ADB local server port in Advanced settings.</string>
     <string name="status_remote_services_active">Remote services are active</string>
     <string name="status_remote_services_inactive">Remote services are inactive</string>
     <string name="status_connecting">Connecting…</string>

@@ -232,11 +232,11 @@ public final class DataTransmission implements Closeable {
             try {
                 reply = readMessage();
             } catch (EOFException e) {
-                throw new IOException("The server closed the connection without acknowledging this app's token.", e);
+                throw new HandshakeRejectedException("The server closed the connection without acknowledging this app's token.", e);
             }
             if (!constantTimeEquals(ACK_PREFIX + acknowledgement(token, nonce),
                     new String(reply, StandardCharsets.UTF_8))) {
-                throw new IOException("The server didn't acknowledge this app's token.");
+                throw new HandshakeRejectedException("The server didn't acknowledge this app's token.", null);
             }
         }
     }
@@ -349,6 +349,16 @@ public final class DataTransmission implements Closeable {
     public static class ProtocolVersionException extends IOException {
         public ProtocolVersionException(String message) {
             super(message);
+        }
+    }
+
+    /**
+     * The server on the port answered, but not as a holder of this app's token: another app's
+     * server, a leftover one from before the token changed, or one speaking another protocol.
+     */
+    public static class HandshakeRejectedException extends IOException {
+        public HandshakeRejectedException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 }

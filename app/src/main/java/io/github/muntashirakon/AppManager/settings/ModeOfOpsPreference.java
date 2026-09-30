@@ -266,6 +266,12 @@ public class ModeOfOpsPreference extends Fragment {
                 });
                 mModel.onModeStatusDialogShown();
                 return;
+            case Ops.STATUS_FAILURE_SERVER_START:
+            case Ops.STATUS_FAILURE_SERVER_UNRESPONSIVE:
+            case Ops.STATUS_FAILURE_SERVER_NOT_ACKNOWLEDGED:
+                // Ops already told the user what went wrong, so no rollback message on top
+                finishModeApply(false, false);
+                return;
             case Ops.STATUS_SUCCESS:
                 finishModeApply(true, false);
                 return;

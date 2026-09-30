@@ -21,6 +21,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.StringDef;
+import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.annotation.WorkerThread;
 import androidx.core.app.ActivityCompat;
@@ -55,6 +56,7 @@ import io.github.muntashirakon.AppManager.runner.RunnerUtils;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.servermanager.LocalServer;
 import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
+import io.github.muntashirakon.AppManager.servermanager.ServerConnectionFailure;
 import io.github.muntashirakon.AppManager.servermanager.ServerStatusChangeReceiver;
 import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.session.SessionMonitoringService;
@@ -101,6 +103,9 @@ public class Ops {
             STATUS_FAILURE_ADB_NEED_MORE_PERMS,
             STATUS_SHIZUKU_PERMISSION_REQUIRED,
             STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED,
+            STATUS_FAILURE_SERVER_START,
+            STATUS_FAILURE_SERVER_UNRESPONSIVE,
+            STATUS_FAILURE_SERVER_NOT_ACKNOWLEDGED,
     })
     @Retention(RetentionPolicy.SOURCE)
     public @interface Status {
@@ -115,6 +120,9 @@ public class Ops {
     public static final int STATUS_FAILURE_ADB_NEED_MORE_PERMS = 6;
     public static final int STATUS_SHIZUKU_PERMISSION_REQUIRED = 7;
     public static final int STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED = 8;
+    public static final int STATUS_FAILURE_SERVER_START = 9;
+    public static final int STATUS_FAILURE_SERVER_UNRESPONSIVE = 10;
+    public static final int STATUS_FAILURE_SERVER_NOT_ACKNOWLEDGED = 11;
     private static final int SDK_ANDROID_17 = 37;
 
     public static int ROOT_UID = 0;
@@ -403,7 +411,11 @@ public class Ops {
             // Fallback to no-root mode for this session, this does not modify the user preference
             ServerStatusChangeReceiver.cancelPendingServerStart();
             sIsAdb = sIsSystem = sIsRoot = sIsShizuku = false;
-            ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(R.string.failed_to_use_the_current_mode_of_operation));
+            int status = reportServerFailure(e, STATUS_FAILURE);
+            if (status == STATUS_FAILURE) {
+                ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(R.string.failed_to_use_the_current_mode_of_operation));
+            }
+            return status;
         }
         return STATUS_FAILURE;
     }
@@ -628,7 +640,9 @@ public class Ops {
             if (e instanceof AdbPairingRequiredException) {
                 // Only pairing is required
                 return STATUS_ADB_PAIRING_REQUIRED;
-            } else return STATUS_WIRELESS_DEBUGGING_CHOOSER_REQUIRED;
+            }
+            // Pairing or another port can't fix a server that won't start or answer
+            return reportServerFailure(e, STATUS_WIRELESS_DEBUGGING_CHOOSER_REQUIRED);
         }
     }
 
@@ -651,7 +665,61 @@ public class Ops {
             sIsAdb = lastAdb;
             sIsSystem = lastSystem;
             sIsRoot = lastRoot;
-            return returnCodeOnFailure;
+            return reportServerFailure(e, returnCodeOnFailure);
+        }
+    }
+
+    /**
+     * Like {@link #getServerFailureStatus(Throwable, int)}, and tells the user what went wrong when
+     * it is a server failure. Done here rather than by the screens because background callers
+     * (auto-freeze, the installer) ignore the status.
+     */
+    @Status
+    private static int reportServerFailure(@NonNull Throwable failure, @Status int fallback) {
+        int status = getServerFailureStatus(failure, fallback);
+        int message = getServerFailureMessage(status);
+        if (message != 0) {
+            ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(message));
+        }
+        return status;
+    }
+
+    /**
+     * The status for a failure the user can act on (the server won't start, answer or accept this
+     * app), or {@code fallback} for anything else.
+     */
+    @Status
+    static int getServerFailureStatus(@NonNull Throwable failure, @Status int fallback) {
+        ServerConnectionFailure serverFailure = ServerConnectionFailure.find(failure);
+        if (serverFailure == null) {
+            return fallback;
+        }
+        switch (serverFailure.getReason()) {
+            case SERVER_START:
+                return STATUS_FAILURE_SERVER_START;
+            case UNRESPONSIVE:
+                return STATUS_FAILURE_SERVER_UNRESPONSIVE;
+            case NOT_ACKNOWLEDGED:
+                return STATUS_FAILURE_SERVER_NOT_ACKNOWLEDGED;
+            default:
+                return fallback;
+        }
+    }
+
+    /**
+     * What to tell the user about a server failure status, or {@code 0} when it isn't one.
+     */
+    @StringRes
+    public static int getServerFailureMessage(@Status int status) {
+        switch (status) {
+            case STATUS_FAILURE_SERVER_START:
+                return R.string.server_start_failed;
+            case STATUS_FAILURE_SERVER_UNRESPONSIVE:
+                return R.string.server_unresponsive;
+            case STATUS_FAILURE_SERVER_NOT_ACKNOWLEDGED:
+                return R.string.server_not_acknowledged;
+            default:
+                return 0;
         }
     }
 
