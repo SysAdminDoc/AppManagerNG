@@ -40,6 +40,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -155,6 +156,11 @@ public class Ops {
      * mode flags and restart the server, so one at a time, in the order they came in.
      */
     private static final ReentrantLock sTransitionLock = new ReentrantLock(true);
+    /**
+     * Goes up each time a transition takes the lock. The settings screen saves a new mode only once
+     * the switch to it worked, so a reconnect that queued behind the switch can't tell from the mode.
+     */
+    private static final AtomicInteger sTransitions = new AtomicInteger();
 
     // Security
     private static final Object sSecurityLock = new Object();
@@ -365,6 +371,7 @@ public class Ops {
     private static int init(@NonNull Context context, boolean force, @NonNull @Mode String mode,
                             boolean persistAutoDetectedMode) {
         sTransitionLock.lock();
+        sTransitions.incrementAndGet();
         try {
             return initLocked(context, force, mode, persistAutoDetectedMode);
         } finally {
@@ -658,6 +665,7 @@ public class Ops {
     @Status
     public static int autoConnectWirelessDebugging(@NonNull Context context) {
         sTransitionLock.lock();
+        sTransitions.incrementAndGet();
         try {
             return autoConnectWirelessDebuggingLocked(context);
         } finally {
@@ -672,6 +680,7 @@ public class Ops {
     @WorkerThread
     @Status
     public static int autoConnectWirelessDebuggingInBackground(@NonNull Context context) {
+        int transitions = sTransitions.get();
         try {
             sTransitionLock.lockInterruptibly();
         } catch (InterruptedException e) {
@@ -683,6 +692,13 @@ public class Ops {
                 Log.i(TAG, "The mode changed while the reconnect waited, not connecting.");
                 return STATUS_FAILURE;
             }
+            if (sTransitions.get() != transitions) {
+                // A switch or connect ran first. It left ADB connected, which is all this is for,
+                // or it went to a mode the settings screen hasn't saved yet.
+                Log.i(TAG, "Another connect ran while the reconnect waited, not connecting.");
+                return sIsAdb && LocalServices.alive() ? STATUS_SUCCESS : STATUS_FAILURE;
+            }
+            sTransitions.incrementAndGet();
             return autoConnectWirelessDebuggingLocked(context);
         } finally {
             sTransitionLock.unlock();
@@ -729,6 +745,7 @@ public class Ops {
         // -1 is a cancelled dialog
         if (!ServerConfig.isValidAdbPort(port)) return returnCodeOnFailure;
         sTransitionLock.lock();
+        sTransitions.incrementAndGet();
         try {
             return connectAdbLocked(port, returnCodeOnFailure);
         } finally {
@@ -1146,6 +1163,7 @@ public class Ops {
     public static int connectShizuku(@NonNull Context context) {
         // Sets the mode flags and closes the server, so it takes its turn like the ADB connects
         sTransitionLock.lock();
+        sTransitions.incrementAndGet();
         try {
             return initShizuku(context);
         } catch (Throwable e) {

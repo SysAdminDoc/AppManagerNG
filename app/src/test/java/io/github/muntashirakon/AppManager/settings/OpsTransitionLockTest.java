@@ -124,6 +124,46 @@ public class OpsTransitionLockTest {
         }
     }
 
+    @Test(timeout = 60_000)
+    public void aReconnectQueuedBehindASwitchThatHasNotSavedItsModeYetDoesNotConnect() throws Exception {
+        Context context = ApplicationProvider.getApplicationContext();
+        ReentrantLock lock = transitionLock();
+        String before = Ops.getMode();
+        shadowOf((Application) context).grantPermissions(Manifest.permission.INTERNET);
+        ShadowSystemProperties.override("init.svc.adbd", "stopped");
+        try {
+            Ops.setMode(Ops.MODE_ADB_WIFI);
+            AdbFailure.clear();
+            AtomicInteger status = new AtomicInteger(Integer.MIN_VALUE);
+            // The settings screen switches first and saves the new mode only once that worked
+            Thread modeSwitch = new Thread(() -> Ops.init(context, true, Ops.MODE_NO_ROOT));
+            Thread reconnect = new Thread(() -> status.set(Ops.autoConnectWirelessDebuggingInBackground(context)));
+            lock.lock();
+            try {
+                modeSwitch.start();
+                awaitQueued(lock, modeSwitch);
+                reconnect.start();
+                awaitQueued(lock, reconnect);
+            } finally {
+                lock.unlock();
+            }
+            modeSwitch.join(20_000);
+            reconnect.join(20_000);
+            assertFalse(reconnect.isAlive());
+            // Still saved as Wireless debugging, yet the reconnect left the switch alone
+            assertEquals(Ops.MODE_ADB_WIFI, Ops.getMode());
+            assertNull(AdbFailure.getLast());
+            assertEquals(Ops.STATUS_FAILURE, status.get());
+            assertFalse(Ops.isAdb());
+
+            // Positive control: with nothing queued ahead of it, the same reconnect connects
+            assertNotNull(reconnectWhileTheModeBecomes(context, lock, Ops.MODE_ADB_WIFI));
+        } finally {
+            Ops.setMode(before);
+            AdbFailure.clear();
+        }
+    }
+
     @Test
     public void aCancelledAttemptKeepsTheLastRealFailure() throws Exception {
         Context context = ApplicationProvider.getApplicationContext();
