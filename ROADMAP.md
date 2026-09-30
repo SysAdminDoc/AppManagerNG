@@ -473,13 +473,6 @@ Sources and reasoning: RESEARCH.md (2026-09-30).
   Acceptance: the default handler runs exactly once even when report building, the crash sink, or posting throws; the notification is posted on its own channel and the handler waits at most 250 ms after posting before delegating; host tests cover a throwing `DeviceInfo`, a throwing crash sink and a throwing notification manager; a forced crash on the S25 shows the notification.
   Complexity: S
 
-- [ ] P1: Grant or revoke an AppOp's linked permission from the requested mode
-  Why: `setAppOp` decides grant versus revoke from the op's current mode, so allowing an op that is currently ignored revokes its permission, and denying one that is allowed grants it.
-  Evidence: upstream `6495496ce`; `details/struct/AppDetailsAppOpItem.java:217-222` compares `getMode()` where the requested `mode` belongs.
-  Touches: `AppDetailsAppOpItem.java`, a host test with fake `AppOpsManagerCompat` and permission calls.
-  Acceptance: requesting `MODE_ALLOWED` grants the linked permission, `MODE_FOREGROUND` grants it on API 29 and later, and every other mode revokes it, whatever the current mode; a test covers each requested mode from each starting mode.
-  Complexity: S
-
 ### P2
 
 - [ ] P2: Classify ADB-mode failures and give one next step
