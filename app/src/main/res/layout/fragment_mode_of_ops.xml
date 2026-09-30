@@ -72,6 +72,18 @@
                     tools:drawableStartCompat="@drawable/ic_check_circle"
                     tools:text="Connected via ADB over TCP" />
 
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/adb_failure"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/padding_very_small"
+                    android:accessibilityLiveRegion="polite"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnPrimaryContainer"
+                    android:visibility="gone"
+                    tools:text="Wireless debugging is off. Turn it on in Developer options, then try again."
+                    tools:visibility="visible" />
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/action_settings"
                     style="@style/Widget.AppTheme.Button.TextButton"

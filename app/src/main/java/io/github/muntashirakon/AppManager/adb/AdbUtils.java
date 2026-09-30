@@ -144,6 +144,11 @@ public class AdbUtils {
     }
 
     @RequiresApi(Build.VERSION_CODES.R)
+    public static boolean isWirelessDebuggingOff(@NonNull Context context) {
+        return Settings.Global.getInt(context.getContentResolver(), SettingsHidden.Global.ADB_WIFI_ENABLED, 0) == 0;
+    }
+
+    @RequiresApi(Build.VERSION_CODES.R)
     public static boolean enableWirelessDebugging(@NonNull Context context) {
         ContentResolver resolver = context.getContentResolver();
         boolean wirelessDebuggingEnabled = Settings.Global.getInt(resolver, SettingsHidden.Global.ADB_WIFI_ENABLED, 0) != 0;

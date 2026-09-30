@@ -12,6 +12,7 @@ import android.text.TextUtils;
 import androidx.annotation.AnyThread;
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 
 import java.io.File;
@@ -54,6 +55,7 @@ public final class ServerConfig {
     private static final String ADB_LAST_PAIRING_HOST = "adb_last_pairing_host";
     private static final String ADB_LAST_PAIRING_PORT = "adb_last_pairing_port";
     private static final String ADB_LAST_PAIRING_TIME = "adb_last_pairing_time";
+    private static final String ADB_LAST_FAILURE = "adb_last_failure";
     private static final File[] SERVER_RUNNER_EXEC = new File[2];
     private static final File[] SERVER_RUNNER_JAR = new File[2];
     private static volatile boolean sInitialised = false;
@@ -220,6 +222,29 @@ public final class ServerConfig {
     @NoOps
     public static int getLastAdbPairingPort() {
         return getPreferences().getInt(ADB_LAST_PAIRING_PORT, DEFAULT_ADB_PORT);
+    }
+
+    /**
+     * {@link AdbFailure#serialize()} of the last ADB-mode connect failure, or {@code null} once a
+     * connect worked.
+     */
+    @AnyThread
+    @NoOps
+    @Nullable
+    static String getLastAdbFailure() {
+        return getPreferences().getString(ADB_LAST_FAILURE, null);
+    }
+
+    @AnyThread
+    @NoOps
+    static void setLastAdbFailure(@Nullable String failure) {
+        SharedPreferences.Editor editor = getPreferences().edit();
+        if (failure == null) {
+            editor.remove(ADB_LAST_FAILURE);
+        } else {
+            editor.putString(ADB_LAST_FAILURE, failure);
+        }
+        editor.apply();
     }
 
     @NonNull

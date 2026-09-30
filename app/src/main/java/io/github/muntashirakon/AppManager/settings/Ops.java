@@ -55,6 +55,7 @@ import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.NoOps;
 import io.github.muntashirakon.AppManager.runner.RunnerUtils;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
+import io.github.muntashirakon.AppManager.servermanager.AdbFailure;
 import io.github.muntashirakon.AppManager.servermanager.LocalServer;
 import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
 import io.github.muntashirakon.AppManager.servermanager.ServerConnectionFailure;
@@ -413,7 +414,7 @@ public class Ops {
                             return STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED;
                         }
                         if (!AdbUtils.isWifiConnected(context)) {
-                            throw new Exception("Wifi not enabled.");
+                            throw new AdbFailure.NoWifiException();
                         }
                         if (AdbUtils.enableWirelessDebugging(context)) {
                             // Wireless debugging enabled, try auto-connect
@@ -429,6 +430,7 @@ public class Ops {
                     sIsAdb = true;
                     sIsShizuku = false;
                     connectAdbFull(findAdbPort(context, 10, AdbUtils.getAdbPortOrDefault()));
+                    AdbFailure.clear();
                     return checkRootOrIncompleteUsbDebuggingInAdb();
             }
         } catch (Throwable e) {
@@ -436,9 +438,16 @@ public class Ops {
             // Fallback to no-root mode for this session, this does not modify the user preference
             ServerStatusChangeReceiver.cancelPendingServerStart();
             sIsAdb = sIsSystem = sIsRoot = sIsShizuku = false;
+            AdbFailure adbFailure = MODE_ADB_WIFI.equals(mode) || MODE_ADB_OVER_TCP.equals(mode)
+                    ? recordAdbFailure(context, e, MODE_ADB_WIFI.equals(mode)) : null;
             int status = reportServerFailure(e, STATUS_FAILURE);
             if (status == STATUS_FAILURE) {
-                ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(R.string.failed_to_use_the_current_mode_of_operation));
+                if (adbFailure != null && adbFailure.code != AdbFailure.Code.UNKNOWN) {
+                    CharSequence reason = adbFailure.explain(context);
+                    ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(reason));
+                } else {
+                    ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(R.string.failed_to_use_the_current_mode_of_operation));
+                }
             }
             return status;
         }
@@ -666,6 +675,7 @@ public class Ops {
         sIsSystem = sIsRoot = false;
         try {
             connectAdbFull(findAdbPort(context, 5, ServerConfig.getAdbPort()));
+            AdbFailure.clear();
             return checkRootOrIncompleteUsbDebuggingInAdb();
         } catch (RemoteException | IOException | AdbPairingRequiredException | RuntimeException e) {
             // RuntimeException: a port mDNS reported as 0 fails in setAdbPort, and the flags above
@@ -675,6 +685,7 @@ public class Ops {
             sIsAdb = lastAdb;
             sIsSystem = lastSystem;
             sIsRoot = lastRoot;
+            recordAdbFailure(context, e, true);
             if (e instanceof AdbPairingRequiredException) {
                 // Only pairing is required
                 return STATUS_ADB_PAIRING_REQUIRED;
@@ -708,6 +719,7 @@ public class Ops {
         sIsSystem = sIsRoot = false;
         try {
             connectAdbFull(port);
+            AdbFailure.clear();
             return checkRootOrIncompleteUsbDebuggingInAdb();
         } catch (RemoteException | IOException | AdbPairingRequiredException | RuntimeException e) {
             Log.e(TAG, "Could not connect to adbd using port " + port, e);
@@ -715,8 +727,32 @@ public class Ops {
             sIsAdb = lastAdb;
             sIsSystem = lastSystem;
             sIsRoot = lastRoot;
+            // Onboarding's ADB over TCP setup connects to the fixed TCP port, the Wireless
+            // debugging dialogs to the port Wireless debugging picked
+            recordAdbFailure(ContextUtils.getContext(), e, port != ServerConfig.DEFAULT_ADB_PORT);
             return reportServerFailure(e, returnCodeOnFailure);
         }
+    }
+
+    /**
+     * Keeps why an ADB-mode connect failed, until one works, for the Mode of operation screen and
+     * the support bundle.
+     *
+     * @param wireless The connect was for Wireless debugging, so its being switched off explains it
+     */
+    @NonNull
+    private static AdbFailure recordAdbFailure(@NonNull Context context, @NonNull Throwable failure, boolean wireless) {
+        boolean wirelessDebuggingOff = false;
+        if (wireless && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                wirelessDebuggingOff = AdbUtils.isWirelessDebuggingOff(context);
+            } catch (RuntimeException e) {
+                Log.w(TAG, "Could not read the Wireless debugging setting", e);
+            }
+        }
+        AdbFailure adbFailure = AdbFailure.classify(failure, wirelessDebuggingOff);
+        AdbFailure.record(adbFailure);
+        return adbFailure;
     }
 
     /**

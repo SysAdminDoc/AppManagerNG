@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.settings;
 
 import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.os.Build;
@@ -16,6 +17,7 @@ import android.view.ViewGroup;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.FragmentActivity;
 import androidx.core.widget.TextViewCompat;
@@ -34,6 +36,7 @@ import java.util.List;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.adb.AdbUtils;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
+import io.github.muntashirakon.AppManager.servermanager.AdbFailure;
 import io.github.muntashirakon.AppManager.servermanager.LocalServer;
 import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
 import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
@@ -58,6 +61,7 @@ public class ModeOfOpsPreference extends Fragment {
     private MaterialTextView mRemoteServerStatusView;
     private MaterialTextView mRemoteServicesStatusView;
     private MaterialTextView mModeOfOpsView;
+    private MaterialTextView mAdbFailureView;
     @Nullable
     private MaterialButton mChangeModeView;
     private MainPreferencesViewModel mModel;
@@ -125,6 +129,7 @@ public class ModeOfOpsPreference extends Fragment {
         mRemoteServerStatusView = view.findViewById(R.id.remote_server_status);
         mRemoteServicesStatusView = view.findViewById(R.id.remote_services_status);
         mModeOfOpsView = view.findViewById(R.id.op_name);
+        mAdbFailureView = view.findViewById(R.id.adb_failure);
         bindCapabilities(view);
         mChangeModeView = view.findViewById(R.id.action_settings);
         List<String> disabledItems;
@@ -418,6 +423,27 @@ public class ModeOfOpsPreference extends Fragment {
         }
         mRemoteServicesStatusView.setCompoundDrawablesRelativeWithIntrinsicBounds(servicesActive ? mIconActive : mIconInactive, 0, 0, 0);
         mRemoteServicesStatusView.setText(servicesActive ? R.string.status_remote_services_active : R.string.status_remote_services_inactive);
+        // Why the last ADB connect failed, until one works
+        CharSequence adbFailure = adbFailureText(requireContext(), mCurrentMode, mConnecting || serverActive,
+                AdbFailure.getLast());
+        mAdbFailureView.setText(adbFailure);
+        mAdbFailureView.setVisibility(adbFailure != null ? View.VISIBLE : View.GONE);
+    }
+
+    /**
+     * What to show under the mode while an ADB mode isn't connected, or {@code null} for nothing.
+     */
+    @VisibleForTesting
+    @Nullable
+    static CharSequence adbFailureText(@NonNull Context context, @NonNull String mode,
+                                       boolean connectingOrConnected, @Nullable AdbFailure failure) {
+        if (failure == null || connectingOrConnected) {
+            return null;
+        }
+        if (!Ops.MODE_ADB_WIFI.equals(mode) && !Ops.MODE_ADB_OVER_TCP.equals(mode)) {
+            return null;
+        }
+        return failure.explain(context);
     }
 
     /**

@@ -36,6 +36,7 @@ import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
 import io.github.muntashirakon.AppManager.runner.Runner;
 import io.github.muntashirakon.AppManager.self.SelfBatteryOptimization;
 import io.github.muntashirakon.AppManager.self.filecache.FileCache;
+import io.github.muntashirakon.AppManager.servermanager.AdbFailure;
 import io.github.muntashirakon.AppManager.servermanager.LocalServer;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.settings.Ops;
@@ -180,6 +181,9 @@ public final class SupportInfoBundle {
             appendLine(sb, "App UID", REDACTED);
             appendLine(sb, "Remote server alive", String.valueOf(LocalServer.alive(context)));
             appendLine(sb, "Remote services alive", String.valueOf(LocalServices.alive()));
+            AdbFailure adbFailure = AdbFailure.getLast();
+            // A code, and a class name only when there is no code for it
+            appendLine(sb, "Last ADB failure", adbFailure != null ? adbFailure.describe() : "none");
             appendRootManager(context, sb);
             appendLine(sb, "Shizuku manager", emptyToUnknown(ShizukuBridge.getInstalledVersionName(context)));
             appendLine(sb, "Shizuku binder alive", String.valueOf(ShizukuBridge.isBinderAlive()));
