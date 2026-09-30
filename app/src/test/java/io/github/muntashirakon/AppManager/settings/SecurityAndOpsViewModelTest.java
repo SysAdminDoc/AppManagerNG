@@ -216,6 +216,19 @@ public class SecurityAndOpsViewModelTest {
     }
 
     @Test
+    public void answeringADialogForgetsIt() {
+        SecurityAndOpsViewModel viewModel = newViewModel();
+        viewModel.onStatusReceived(Ops.STATUS_ADB_CONNECT_REQUIRED);
+        idleMainLooper();
+        viewModel.onStatusDialogShown();
+
+        // A rotation while the typed port is being tried must not ask for it again
+        viewModel.connectAdb(-1);
+
+        assertNull(viewModel.getLostDialogStatus());
+    }
+
+    @Test
     public void aStatusFromAWorkerThreadArrivesOnTheMainThread() throws Exception {
         SecurityAndOpsViewModel viewModel = newViewModel();
         List<Integer> received = new ArrayList<>();

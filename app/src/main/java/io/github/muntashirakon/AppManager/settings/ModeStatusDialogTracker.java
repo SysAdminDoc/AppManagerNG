@@ -9,8 +9,8 @@ import androidx.annotation.Nullable;
  * once, so a screen recreated while that dialog was open (rotation, theme change) would otherwise
  * wait forever for an answer from a dialog that went away with the old screen.
  * <p>
- * Main thread only. Not annotated, because lint's thread inference can't see that publishers only
- * reach {@link #onPublished(int)} after checking they are on the main thread.
+ * Thread-safe: statuses are published on the main thread, but the requests that answer a dialog
+ * (connect, pair, a granted permission) can come from anywhere.
  */
 final class ModeStatusDialogTracker {
     @Nullable
@@ -21,7 +21,7 @@ final class ModeStatusDialogTracker {
     /**
      * Called on the main thread right before a status is handed to observers.
      */
-    void onPublished(@Ops.Status int status) {
+    synchronized void onPublished(@Ops.Status int status) {
         mStatus = status;
         mShown = false;
     }
@@ -29,8 +29,17 @@ final class ModeStatusDialogTracker {
     /**
      * Called by the screen when it answered the last status with a dialog.
      */
-    void onDialogShown() {
+    synchronized void onDialogShown() {
         mShown = true;
+    }
+
+    /**
+     * Called when the user answered the dialog, so a recreated screen doesn't ask again while the
+     * answer is being worked on.
+     */
+    synchronized void clear() {
+        mStatus = null;
+        mShown = false;
     }
 
     /**
@@ -39,7 +48,7 @@ final class ModeStatusDialogTracker {
      */
     @Nullable
     @Ops.Status
-    Integer getLostDialogStatus() {
+    synchronized Integer getLostDialogStatus() {
         return mShown ? mStatus : null;
     }
 }
