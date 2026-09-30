@@ -66,6 +66,9 @@ public class FreezeUnfreezeService extends Service {
     @Nullable
     private ScreenLockChecker mScreenLockChecker;
     private boolean mDestroyed;
+    // Set first thing in onDestroy. A freeze pass checks it between packages, because onDestroy waits
+    // for a running pass when it closes the checker and must not wait for all of them.
+    private volatile boolean mStopping;
     private final BroadcastReceiver mScreenLockedReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -147,6 +150,7 @@ public class FreezeUnfreezeService extends Service {
 
     @Override
     public void onDestroy() {
+        mStopping = true;
         unregisterReceiver(mScreenLockedReceiver);
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
         if (mCheckLockResult != null) {
@@ -196,6 +200,10 @@ public class FreezeUnfreezeService extends Service {
     @WorkerThread
     private void freezeAllPackages() {
         for (String packageName : mPackagesToShortcut.keySet()) {
+            if (mStopping) {
+                Log.i(TAG, "The service is stopping; the rest wait for the next lock.");
+                break;
+            }
             FreezeUnfreezeShortcutInfo shortcutInfo = mPackagesToShortcut.get(packageName);
             String notificationTag = mPackagesToNotificationTag.get(packageName);
             if (shortcutInfo != null) {

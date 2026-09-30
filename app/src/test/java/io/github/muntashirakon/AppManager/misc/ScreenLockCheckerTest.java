@@ -107,6 +107,20 @@ public class ScreenLockCheckerTest {
         assertEquals(0, mCallbacks.get());
     }
 
+    @Test
+    public void aCloseBetweenTheFirstCheckAndTheLockStillStopsTheCallback() {
+        // Review finding: nothing exercised the closed check made under the lock. The seam lands
+        // close() after the check at the top of checkLock has passed.
+        setDevice(true, true, false);
+        ScreenLockChecker checker = new ScreenLockChecker(mContext, mCallbacks::incrementAndGet, new ManualClock());
+        checker.mBeforeLockForTest = checker::close;
+
+        checker.checkLock();
+
+        assertTrue(checker.isClosed());
+        assertEquals(0, mCallbacks.get());
+    }
+
     @Test(timeout = 10_000)
     public void closeWaitsForACallbackThatHasBegunAndNoneStartsAfterIt() throws InterruptedException {
         setDevice(true, true, false);
