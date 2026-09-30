@@ -148,6 +148,10 @@ public final class FmUtils {
             case ContentResolver.SCHEME_FILE: {
                 // Sanitize the path which must be an absolute URL
                 String path = uri.getPath();
+                if (path == null) {
+                    // An opaque URI such as file:x.apk has no path to sanitize, and any app can send one.
+                    return null;
+                }
                 path = Paths.relativePath(path, Paths.PATH_SEPARATOR);
                 return uri.buildUpon().path(path).build();
             }

@@ -17,6 +17,7 @@ import android.view.MenuItem;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.os.BundleCompat;
@@ -174,18 +175,11 @@ public class AppDetailsActivity extends BaseActivity {
         } else {
             Intent intent = getIntent();
             mBackToMainPage = intent.getBooleanExtra(EXTRA_BACK_TO_MAIN, mBackToMainPage);
-            UserPackagePair pair = SelfUriManager.getUserPackagePairFromUri(intent.getData());
-            if (pair != null) {
-                mPackageName = pair.getPackageName();
-                mApkSource = null;
-                mUserId = pair.getUserId();
-            } else {
-                mPackageName = getPackageNameFromExtras(intent);
-                ApkIntentSource apkIntentSource = ApkIntentSource.resolve(intent);
-                mApkSource = getApkSource(intent, apkIntentSource);
-                apkIntentError = apkIntentSource.error;
-                mUserId = intent.getIntExtra(EXTRA_USER_HANDLE, UserHandleHidden.myUserId());
-            }
+            Target target = resolveTarget(intent);
+            mPackageName = target.packageName;
+            mApkSource = target.apkSource;
+            mUserId = target.userId;
+            apkIntentError = target.error;
             mApkType = intent.getType();
         }
         model.setUserId(mUserId);
@@ -287,8 +281,49 @@ public class AppDetailsActivity extends BaseActivity {
         });
     }
 
+    /** What an intent asks App Details to show: an installed package, an APK, or an error to report. */
+    @VisibleForTesting
+    static final class Target {
+        @Nullable
+        final String packageName;
+        @Nullable
+        final ApkSource apkSource;
+        @UserIdInt
+        final int userId;
+        /** The message to show and close with, or 0 when there is something to show. */
+        @StringRes
+        final int error;
+
+        Target(@Nullable String packageName, @Nullable ApkSource apkSource, @UserIdInt int userId,
+               @StringRes int error) {
+            this.packageName = packageName;
+            this.apkSource = apkSource;
+            this.userId = userId;
+            this.error = error;
+        }
+    }
+
+    /** Deep links first, then a package name, then an opened or shared APK. */
+    @VisibleForTesting
+    @NonNull
+    static Target resolveTarget(@NonNull Intent intent) {
+        UserPackagePair pair = SelfUriManager.getUserPackagePairFromUri(intent.getData());
+        if (pair != null) {
+            return new Target(pair.getPackageName(), null, pair.getUserId(), 0);
+        }
+        String packageName = getPackageNameFromExtras(intent);
+        ApkIntentSource apkIntentSource = ApkIntentSource.resolve(intent);
+        ApkSource apkSource = getApkSource(intent, apkIntentSource);
+        int userId = intent.getIntExtra(EXTRA_USER_HANDLE, UserHandleHidden.myUserId());
+        int error = 0;
+        if (packageName == null && apkSource == null) {
+            error = apkIntentSource.error != 0 ? apkIntentSource.error : R.string.empty_package_name;
+        }
+        return new Target(packageName, apkSource, userId, error);
+    }
+
     @Nullable
-    private String getPackageNameFromExtras(@NonNull Intent intent) {
+    private static String getPackageNameFromExtras(@NonNull Intent intent) {
         String pkg = intent.getStringExtra(EXTRA_PACKAGE_NAME);
         if (pkg == null) {
             // Legacy argument, kept for compatibility
@@ -302,7 +337,7 @@ public class AppDetailsActivity extends BaseActivity {
     }
 
     @Nullable
-    private ApkSource getApkSource(@NonNull Intent intent, @NonNull ApkIntentSource apkIntentSource) {
+    private static ApkSource getApkSource(@NonNull Intent intent, @NonNull ApkIntentSource apkIntentSource) {
         if (apkIntentSource.uri != null) {
             return ApkSource.getApkSource(apkIntentSource.uri, intent.getType());
         }

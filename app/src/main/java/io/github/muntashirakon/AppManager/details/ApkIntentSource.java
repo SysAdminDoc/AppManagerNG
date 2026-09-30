@@ -14,6 +14,7 @@ import androidx.annotation.StringRes;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.fm.FmUtils;
 import io.github.muntashirakon.AppManager.intercept.IntentCompat;
+import io.github.muntashirakon.AppManager.self.SelfUriManager;
 
 /**
  * Finds the one APK an intent hands to App Details. Opening an APK puts it in the intent's data, while
@@ -79,7 +80,13 @@ final class ApkIntentSource {
 
     @NonNull
     private static ApkIntentSource accept(@NonNull Uri uri) {
-        Uri sanitized = FmUtils.sanitizeContentInput(uri);
+        String rawScheme = uri.getScheme();
+        if (SelfUriManager.APP_MANAGER_SCHEME.equals(rawScheme) || SelfUriManager.AM_SCHEME.equals(rawScheme)) {
+            // A deep link the parser rejected, such as one without a package. It always ended with
+            // "Could not fetch package info", and still does.
+            return new ApkIntentSource(null, R.string.failed_to_fetch_package_info);
+        }
+        Uri sanitized = uri.isOpaque() ? null : FmUtils.sanitizeContentInput(uri);
         String scheme = sanitized != null ? sanitized.getScheme() : null;
         if (ContentResolver.SCHEME_CONTENT.equals(scheme) || ContentResolver.SCHEME_FILE.equals(scheme)) {
             return new ApkIntentSource(sanitized, 0);
