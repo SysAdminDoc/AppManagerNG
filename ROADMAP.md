@@ -306,16 +306,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Confidence: Verified
   Effort: M
 
-- [ ] P1 — Make Full Android-test dependency locks round-trip
-  Category: Build integrity
-  Where: `build.gradle:30-32`; `app/build.gradle:317-321`; `app/gradle.lockfile:355,366`; `gradle/verification-metadata.xml:6646-6649`
-  Problem: The Full debug Android-test runtime resolves `kotlin-stdlib-common:2.3.10`, but the lock assigns it only to the FLOSS runtime, and the documented lock refresh removes rather than repairs the entry.
-  Evidence: `generateFullDebugAndroidTestLintModel` fails under strict locking; the failure reproduces with verification enabled, while FLOSS lint, Full release lint, and Full release assembly pass. Commit `c4f3dacd1` narrowed the lock assignment.
-  Fix: Make the metadata-only Kotlin module deterministic for both Android-test runtimes through an explicit constraint or safe exclusion, or use a Gradle and AGP pair whose lock writer preserves it.
-  Acceptance: Both Android-test lint models, `lintFullDebug`, and `assembleFullDebugAndroidTest` pass under strict verification and locking; refreshing locks then rerunning changes no lockfile and needs no manual repair or bypass.
-  Confidence: Verified
-  Effort: M
-
 - [ ] P1 — Reproduce and symbolicate profile creation crash on API 37
   Category: Crash triage
   Where: `app/src/main/java/io/github/muntashirakon/AppManager/profiles/ProfilesActivity.java:391-393`; `app/src/main/java/io/github/muntashirakon/AppManager/profiles/ProfileManager.java:41-53`; `app/src/main/java/io/github/muntashirakon/AppManager/profiles/AppsBaseProfileActivity.java:111-126`; `app/src/main/java/io/github/muntashirakon/AppManager/profiles/AppsProfileViewModel.java:285-310`; `RESEARCH.md:83,263-266`

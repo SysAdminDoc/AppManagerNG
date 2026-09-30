@@ -326,6 +326,17 @@ dependencies {
     androidTestImplementation "junit:junit:${junit_version}"
 }
 
+// kotlin-stdlib-common 2.x is a stub with no files that only points at kotlin-stdlib. Some Android-test
+// dependencies still ask for it, and Gradle's lock writer and lock reader disagreed about whether it
+// belongs in those graphs: the writer left it out, then strict locking failed on the Full Android-test
+// runtime and both Android-test lint-check classpaths. Leaving it out changes no classpath, because
+// kotlin-stdlib arrives directly.
+configurations.matching {
+    it.name.endsWith('AndroidTestRuntimeClasspath') || it.name.endsWith('AndroidTestLintChecksClasspath')
+}.configureEach {
+    exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-common'
+}
+
 tasks.matching { it.name == "connectedFlossDebugAndroidTest" }.configureEach {
     dependsOn ":signaltestapp:installDebug"
 }

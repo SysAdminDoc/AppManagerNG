@@ -14,6 +14,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - The privacy policy no longer lists Pithus, which AppManagerNG stopped contacting in v0.6.13. Its optional-network section now names each service the full build can reach, with its host, and a test keeps that list in step with the Network transparency screen.
+- The Full build's Android tests resolve under strict dependency locking again, and refreshing the locks no longer drops the entry they need.
 
 ### Fixed
 - Choosing No root no longer asks for superuser access. Starting in no-root mode used to probe for root before it looked at the chosen mode, which put up a superuser prompt on rooted phones, and it could stall on a privileged server another mode had left running. Shizuku and ADB modes don't probe for root any more either.
