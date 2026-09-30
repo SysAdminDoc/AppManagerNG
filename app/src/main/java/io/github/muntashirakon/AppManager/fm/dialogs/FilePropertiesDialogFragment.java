@@ -57,6 +57,7 @@ import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.users.Groups;
 import io.github.muntashirakon.AppManager.users.Owners;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
+import io.github.muntashirakon.AppManager.utils.LiveDataChanges;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -236,6 +237,12 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
             String group = formatPropertyDisplayName(groupName, String.valueOf(mFileProperties.uidGidPair.gid));
             mGroupView.setText(String.format(Locale.ROOT, "%s (%d)", group, mFileProperties.uidGidPair.gid));
         });
+        // Only root can change the SELinux context, and the mode can change while this is open
+        LiveDataChanges.observe(Ops.getWorkingUidLiveData(), getViewLifecycleOwner(), () -> {
+            if (mFileProperties != null) {
+                updateSelinuxVisibility(mFileProperties);
+            }
+        });
 
         // Load live data
         mViewModel.loadFileProperties(path);
@@ -303,7 +310,7 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
             mOwnerLayout.setEndIconVisible(isPhysicalWritable);
             mGroupLayout.setEndIconVisible(isPhysicalWritable);
             mModeLayout.setEndIconVisible(isPhysicalWritable);
-            mSelinuxContextLayout.setEndIconVisible(Ops.isWorkingUidRoot() && isPhysicalWritable);
+            updateSelinuxVisibility(fileProperties);
         }
         if (noInit || mFileProperties.mode != fileProperties.mode) {
             mModeView.setText(fileProperties.mode != 0 ? FmUtils.getFormattedMode(fileProperties.mode) : "--");
@@ -391,6 +398,11 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
     @NonNull
     static String formatPropertyDisplayText(@Nullable String text) {
         return FmUtils.getDisplayName(text, "");
+    }
+
+    private void updateSelinuxVisibility(@NonNull FileProperties fileProperties) {
+        boolean isPhysicalWritable = fileProperties.canWrite && fileProperties.isPhysicalFs;
+        mSelinuxContextLayout.setEndIconVisible(Ops.isWorkingUidRoot() && isPhysicalWritable);
     }
 
     private void updateSummary(@NonNull FileProperties fileProperties) {

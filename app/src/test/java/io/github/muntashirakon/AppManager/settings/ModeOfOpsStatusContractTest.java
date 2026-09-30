@@ -118,6 +118,23 @@ public class ModeOfOpsStatusContractTest {
                 "finishModeApply(false, false);");
     }
 
+    @Test
+    public void screensThatDependOnTheModeFollowAChange() throws IOException {
+        String base = "app/src/main/java/io/github/muntashirakon/AppManager/";
+        String uid = "LiveDataChanges.observe(Ops.getWorkingUidLiveData(), ";
+        assertTrue(read(base + "fm/dialogs/FilePropertiesDialogFragment.java").contains(uid + "getViewLifecycleOwner(), "));
+        assertTrue(read(base + "main/MainListOptions.java").contains(uid + "getViewLifecycleOwner(), this::reloadUi);"));
+        String running = read(base + "runningapps/RunningAppsActivity.java");
+        String refresh = running.substring(running.indexOf("LiveDataChanges.observe(LocalServices.state(), this, "));
+        assertTrue(refresh, refresh.indexOf("invalidateOptionsMenu();") < refresh.indexOf("});"));
+
+        String interceptor = read(base + "intercept/ActivityInterceptor.java");
+        // setupVariables() runs again on every Reset, so an observer there would pile up
+        assertFalse(body(interceptor, "private void setupVariables()").contains("observe("));
+        assertTrue(body(interceptor, "public void onAuthenticated(").contains(uid + "this, this::onWorkingUidChanged);"));
+        assertTrue(body(interceptor, "private void onWorkingUidChanged()").contains("setChecked(false)"));
+    }
+
     private static void assertFinishesQuietly(String source, String signature, String completion) {
         String handler = body(source, signature);
         int start = handler.indexOf("case Ops.STATUS_FAILURE_SERVER_START:");
