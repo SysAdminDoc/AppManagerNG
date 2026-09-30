@@ -21,6 +21,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -49,6 +50,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.StaticDataset;
@@ -673,9 +675,13 @@ public class PrivacyPreferences extends PreferenceFragment {
         });
     }
 
-    private void showImportPreview(@NonNull SnapshotBundle.ManifestSummary manifest,
-                                   @NonNull Uri source, @Nullable char[] passphrase) {
-        Context context = requireContext();
+    private void showImportPreview(@NonNull SnapshotBundle.StagedSnapshot staged) {
+        Context context = getContext();
+        if (context == null || !isAdded()) {
+            ThreadUtils.postOnBackgroundThread(staged::close);
+            return;
+        }
+        SnapshotBundle.ManifestSummary manifest = staged.manifest;
         String[] sectionLabels = {
                 getString(R.string.snapshot_section_prefs, manifest.prefsCount),
                 getString(R.string.snapshot_section_profiles, manifest.profilesCount),
@@ -706,20 +712,16 @@ public class PrivacyPreferences extends PreferenceFragment {
         }
         summary.append('\n');
         summary.append(getString(R.string.snapshot_preview_schema, manifest.schemaVersion));
+        summary.append('\n');
+        summary.append(getString(R.string.snapshot_preview_digest, formatFingerprint(staged.sha256)));
+        // The import takes over the staged copy; closing the dialog any other way deletes it.
+        AtomicBoolean handedOff = new AtomicBoolean();
 
         new MaterialAlertDialogBuilder(context)
                 .setTitle(R.string.snapshot_import_preview_title)
-                .setMessage(summary)
-                .setMultiChoiceItems(sectionLabels, checked, (dialog, which, isChecked) -> {
-                    if (!available[which]) {
-                        checked[which] = false;
-                        ((android.app.AlertDialog) dialog).getListView()
-                                .setItemChecked(which, false);
-                    } else {
-                        checked[which] = isChecked;
-                    }
-                })
+                .setView(buildImportPreviewView(context, summary, sectionLabels, available, checked))
                 .setPositiveButton(R.string.action_import, (d, w) -> {
+                    handedOff.set(true);
                     SnapshotBundle.ImportOptions options = new SnapshotBundle.ImportOptions();
                     options.restorePrefs = checked[0];
                     options.restoreProfiles = checked[1];
@@ -732,31 +734,80 @@ public class PrivacyPreferences extends PreferenceFragment {
                     Context appContext = context.getApplicationContext();
                     Toast.makeText(appContext, R.string.snapshot_import_in_progress,
                             Toast.LENGTH_SHORT).show();
-                    ThreadUtils.postOnBackgroundThread(
-                            () -> importSnapshot(appContext, source, options, passphrase));
+                    ThreadUtils.postOnBackgroundThread(() -> importSnapshot(appContext, staged, options));
                 })
                 .setNegativeButton(R.string.cancel, null)
+                .setOnDismissListener(d -> {
+                    if (!handedOff.get()) {
+                        ThreadUtils.postOnBackgroundThread(staged::close);
+                    }
+                })
                 .show();
     }
 
-    private void importSnapshot(@NonNull Context appContext, @NonNull Uri source,
-                                @NonNull SnapshotBundle.ImportOptions options,
-                                @Nullable char[] passphrase) {
+    /**
+     * The summary above one checkbox per section. An AlertDialog with a message never shows its item
+     * list, so the sections live in this view instead. A section the snapshot doesn't contain is
+     * disabled and can't be checked, and {@code checked} always matches what the boxes show.
+     */
+    @VisibleForTesting
+    @NonNull
+    static ScrollView buildImportPreviewView(@NonNull Context context, @NonNull CharSequence summary,
+                                             @NonNull String[] sectionLabels, @NonNull boolean[] available,
+                                             @NonNull boolean[] checked) {
+        LinearLayout column = new LinearLayout(context);
+        column.setOrientation(LinearLayout.VERTICAL);
+        int padding = dp(context, 24);
+        column.setPadding(padding, dp(context, 4), padding, 0);
+        TextView summaryView = new TextView(context);
+        summaryView.setText(summary);
+        summaryView.setPadding(0, 0, 0, dp(context, 8));
+        column.addView(summaryView);
+        for (int i = 0; i < sectionLabels.length; ++i) {
+            final int section = i;
+            MaterialCheckBox box = new MaterialCheckBox(context);
+            box.setText(sectionLabels[i]);
+            box.setChecked(available[i] && checked[i]);
+            box.setEnabled(available[i]);
+            checked[i] = box.isChecked();
+            box.setOnCheckedChangeListener((button, isChecked) -> {
+                if (isChecked && !available[section]) {
+                    button.setChecked(false);
+                    return;
+                }
+                checked[section] = isChecked;
+            });
+            column.addView(box);
+        }
+        ScrollView scroll = new ScrollView(context);
+        scroll.addView(column);
+        return scroll;
+    }
+
+    /** The first 64 bits of a SHA-256, in groups of four hex digits. */
+    @NonNull
+    static String formatFingerprint(@NonNull String sha256) {
+        StringBuilder fingerprint = new StringBuilder();
+        for (int i = 0; i < 16 && i < sha256.length(); i += 4) {
+            if (fingerprint.length() > 0) {
+                fingerprint.append(' ');
+            }
+            fingerprint.append(sha256, i, Math.min(i + 4, sha256.length()));
+        }
+        return fingerprint.toString();
+    }
+
+    private void importSnapshot(@NonNull Context appContext, @NonNull SnapshotBundle.StagedSnapshot staged,
+                                @NonNull SnapshotBundle.ImportOptions options) {
         SnapshotBundle.ImportResult result = null;
         String failureMessage = null;
-        try (InputStream in = appContext.getContentResolver().openInputStream(source)) {
-            if (in == null) {
-                failureMessage = "Cannot open input stream";
-            } else {
-                result = SnapshotBundle.readFrom(appContext, in, options, passphrase);
-            }
+        try (SnapshotBundle.StagedSnapshot snapshot = staged) {
+            result = SnapshotBundle.importStaged(appContext, snapshot, options);
         } catch (SnapshotImportException e) {
             failureMessage = e.getMessage();
         } catch (Exception t) {
             failureMessage = t.getClass().getSimpleName()
                     + (t.getMessage() != null ? ": " + t.getMessage() : "");
-        } finally {
-            if (passphrase != null) java.util.Arrays.fill(passphrase, '\0');
         }
         final SnapshotBundle.ImportResult finalResult = result;
         final String finalFailure = failureMessage;
@@ -854,20 +905,24 @@ public class PrivacyPreferences extends PreferenceFragment {
     private void beginImportPreview(@NonNull Uri uri, @Nullable char[] passphrase) {
         Context appContext = requireContext().getApplicationContext();
         ThreadUtils.postOnBackgroundThread(() -> {
+            // The source is read exactly once. The preview and the import both use the private,
+            // checked copy, so a provider that changes the file afterwards changes nothing.
             try (InputStream in = appContext.getContentResolver().openInputStream(uri)) {
                 if (in == null) {
                     ThreadUtils.postOnMainThread(() ->
                             UIUtils.displayLongToast(R.string.snapshot_import_failed, "Cannot open file"));
                     return;
                 }
-                SnapshotBundle.ManifestSummary manifest = SnapshotBundle.readManifestOnly(in, passphrase);
-                ThreadUtils.postOnMainThread(() -> showImportPreview(manifest, uri, passphrase));
+                SnapshotBundle.StagedSnapshot staged = SnapshotBundle.stageForImport(in, passphrase);
+                ThreadUtils.postOnMainThread(() -> showImportPreview(staged));
             } catch (SnapshotBundle.PassphraseRequiredException e) {
                 ThreadUtils.postOnMainThread(() -> showDecryptPassphraseDialog(uri));
             } catch (Exception e) {
                 String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
                 ThreadUtils.postOnMainThread(() ->
                         UIUtils.displayLongToast(R.string.snapshot_import_failed, msg));
+            } finally {
+                if (passphrase != null) java.util.Arrays.fill(passphrase, '\0');
             }
         });
     }

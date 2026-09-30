@@ -288,16 +288,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Confidence: Verified
   Effort: L
 
-- [ ] P1 — Parse and import one immutable settings snapshot
-  Category: Security
-  Where: `app/src/main/java/io/github/muntashirakon/AppManager/settings/PrivacyPreferences.java:725-755,807-818`; `app/src/main/java/io/github/muntashirakon/AppManager/snapshot/SnapshotBundle.java:394-429,548-658`
-  Problem: Snapshot preview and import open the selected URI separately, and duplicate ZIP names are interpreted with inconsistent first-wins, last-wins, and append behavior.
-  Evidence: Preview returns the first `manifest.json`; import keeps the last manifest and scalar entry while appending duplicate file-list entries, with no duplicate-name rejection.
-  Fix: Stage and hash the selected snapshot once, preview and import that staged object, reject every duplicate entry name, and reconcile manifest counts with parsed payloads before writes.
-  Acceptance: Mutable-provider and duplicate-entry fixtures cannot make the applied snapshot differ from the reviewed preview; malformed counts and repeated names fail before any preference or file mutation; one digest identifies both review and import.
-  Confidence: Verified
-  Effort: M
-
 - [ ] P1 — Install the exact APK bytes shown in review
   Category: Security
   Where: `app/src/main/AndroidManifest.xml:749-795`; `app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/ApkQueueItem.java:36-61`; `app/src/main/java/io/github/muntashirakon/AppManager/apk/UriApkSource.java:29-49`; `app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/PackageInstallerViewModel.java:86-107,211-234`; `app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/PackageInstallerService.java:248-270`
@@ -449,16 +439,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Fix: Answer these UI questions from the selected mode or from a root-manager presence check that spawns no `su`, and keep the real grant probe for the mode chooser, onboarding, and Privilege Health, where the user asked for it.
   Acceptance: In no-root mode, opening App Info, the device info dialog, and the storage fallback make no `su` attempt, pinned by a spy test like `OpsNoRootInitTest`; the mode chooser and Privilege Health still report a granted root when the user checks.
   Confidence: Verified
-  Effort: S
-
-- [ ] P2 — Stop the snapshot import preview crashing on an unavailable section
-  Category: Crash
-  Where: `app/src/main/java/io/github/muntashirakon/AppManager/settings/PrivacyPreferences.java` (`showImportPreview`, the multi-choice listener)
-  Problem: Tapping a section the snapshot does not contain runs `((android.app.AlertDialog) dialog).getListView()`, but `MaterialAlertDialogBuilder` builds an `androidx.appcompat.app.AlertDialog`, so the cast throws `ClassCastException` and the settings screen crashes.
-  Evidence: Found on 2026-09-26 while editing the export passphrase dialog in the same file; the builder and the cast are a few lines apart.
-  Fix: Cast to the AppCompat dialog, or keep unavailable rows disabled so they cannot be toggled at all.
-  Acceptance: Tapping an unavailable section leaves it unchecked without a crash; available sections still toggle; a Robolectric test clicks an unavailable row in the preview dialog.
-  Confidence: Likely
   Effort: S
 
 - [ ] P2 — Import PKCS #8 keys off the main thread

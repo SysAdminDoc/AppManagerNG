@@ -3671,6 +3671,7 @@
     <string name="snapshot_preview_source">Source: v%1$s (code %2$d)</string>
     <string name="snapshot_preview_date">Created: %1$s</string>
     <string name="snapshot_preview_schema">Schema version: %1$d</string>
+    <string name="snapshot_preview_digest">Fingerprint: <xliff:g id="fingerprint" example="3f5f 597c 7474 d90f">%1$s</xliff:g></string>
     <string name="snapshot_section_prefs">Preferences (%1$d files)</string>
     <string name="snapshot_section_profiles">Profiles (%1$d)</string>
     <string name="snapshot_section_rules">Blocking/freeze rules (%1$d)</string>
