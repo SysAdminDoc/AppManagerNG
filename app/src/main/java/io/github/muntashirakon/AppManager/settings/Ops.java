@@ -650,7 +650,8 @@ public class Ops {
     @NoOps // Although we've used Ops checks, its overall usage does not affect anything
     @Status
     public static int connectAdb(@NonNull Context context, int port, @Status int returnCodeOnFailure) {
-        if (port < 0) return returnCodeOnFailure;
+        // -1 is a cancelled dialog
+        if (!ServerConfig.isValidAdbPort(port)) return returnCodeOnFailure;
         boolean lastAdb = sIsAdb;
         boolean lastSystem = sIsSystem;
         boolean lastRoot = sIsRoot;
@@ -748,12 +749,18 @@ public class Ops {
                         callback.connectAdb(-1);
                         return;
                     }
+                    int port;
                     try {
-                        callback.connectAdb(Integer.decode(inputText.toString().trim()));
+                        port = Integer.decode(inputText.toString().trim());
                     } catch (NumberFormatException e) {
+                        port = -1;
+                    }
+                    if (!ServerConfig.isValidAdbPort(port)) {
                         UIUtils.displayShortToast(R.string.port_number_invalid);
                         callback.connectAdb(-1);
+                        return;
                     }
+                    callback.connectAdb(port);
                 })
                 .setNegativeButton(R.string.cancel, (dialog, which, inputText, isChecked) -> callback.connectAdb(-1))
                 .setCancelable(false)
