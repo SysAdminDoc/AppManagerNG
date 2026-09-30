@@ -132,6 +132,42 @@ public class MainPreferencesViewModelTest {
     }
 
     @Test
+    public void answeringADialogForgetsIt() throws Exception {
+        mViewModel.onStatusReceived(Ops.STATUS_ADB_CONNECT_REQUIRED);
+        idleMainLooper();
+        mViewModel.onModeStatusDialogShown();
+
+        // The user typed a port: a screen recreated during the connect must not ask again
+        CountDownLatch release = new CountDownLatch(1);
+        mViewModel.submitModeOperation(() -> {
+            await(release);
+            return Ops.STATUS_SUCCESS;
+        });
+        assertNull(mViewModel.getLostDialogStatus());
+        release.countDown();
+        waitForStatuses(2);
+    }
+
+    @Test
+    public void aShizukuGrantConnectsThroughTheGuard() throws Exception {
+        CountDownLatch release = new CountDownLatch(1);
+        mViewModel.submitModeOperation(() -> {
+            await(release);
+            return Ops.STATUS_SUCCESS;
+        });
+
+        // Dropped: a second connect would tear down the first one's services
+        mViewModel.connectShizuku(RuntimeEnvironment.getApplication());
+        release.countDown();
+        waitForStatuses(1);
+        idleMainLooper();
+        Thread.sleep(50);
+        idleMainLooper();
+
+        assertEquals(Collections.singletonList(Ops.STATUS_SUCCESS), mStatuses);
+    }
+
+    @Test
     public void aRecreatedScreenGetsNoReplayedStatus() {
         mViewModel.onStatusReceived(Ops.STATUS_SUCCESS);
         idleMainLooper();

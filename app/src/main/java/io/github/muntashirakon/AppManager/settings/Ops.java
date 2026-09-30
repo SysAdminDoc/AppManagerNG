@@ -1072,9 +1072,7 @@ public class Ops {
                 }
                 Shizuku.removeRequestPermissionResultListener(this);
                 if (grantResult == PackageManager.PERMISSION_GRANTED) {
-                    Context appContext = activity.getApplicationContext();
-                    ThreadUtils.postOnBackgroundThread(() ->
-                            callback.onStatusReceived(connectShizuku(appContext)));
+                    callback.connectShizuku(activity.getApplicationContext());
                 } else {
                     callback.onStatusReceived(STATUS_FAILURE);
                 }
@@ -1166,5 +1164,13 @@ public class Ops {
         void pairAdb();
 
         void onStatusReceived(@Status int status);
+
+        /**
+         * Connect through Shizuku once its permission is granted. The view models override this to
+         * run it with their other mode requests, one at a time.
+         */
+        default void connectShizuku(@NonNull Context context) {
+            ThreadUtils.postOnBackgroundThread(() -> onStatusReceived(Ops.connectShizuku(context)));
+        }
     }
 }

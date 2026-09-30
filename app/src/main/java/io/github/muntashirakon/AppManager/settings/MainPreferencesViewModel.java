@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.settings;
 
 import android.app.Application;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
@@ -419,6 +420,11 @@ public class MainPreferencesViewModel extends AndroidViewModel implements Ops.Ad
         ThreadUtils.postOnMainThread(() -> publishModeStatus(status));
     }
 
+    @Override
+    public void connectShizuku(@NonNull Context context) {
+        submitModeOperation(() -> Ops.connectShizuku(getApplication()));
+    }
+
     /**
      * Run one mode request at a time. A second request while one runs is dropped: interleaved,
      * two of them tear down each other's server and services.
@@ -429,6 +435,8 @@ public class MainPreferencesViewModel extends AndroidViewModel implements Ops.Ad
             Log.w(TAG, "Ignoring a mode request while another one is running.");
             return;
         }
+        // Any dialog on screen has been answered by now
+        mModeStatusDialogs.clear();
         try {
             mExecutor.execute(() -> {
                 int status;

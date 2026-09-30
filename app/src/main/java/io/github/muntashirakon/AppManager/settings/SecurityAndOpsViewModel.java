@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.settings;
 
 import android.app.Application;
+import android.content.Context;
 import android.os.Build;
 
 import androidx.annotation.AnyThread;
@@ -121,6 +122,8 @@ public class SecurityAndOpsViewModel extends AndroidViewModel implements Ops.Adb
 
     @AnyThread
     public void setModeOfOps() {
+        // Any dialog on screen has been answered by now
+        mStatusDialogs.clear();
         long attemptId = beginStartupInitAttempt();
         mExecutor.submit(() -> {
             // Migration
@@ -152,6 +155,8 @@ public class SecurityAndOpsViewModel extends AndroidViewModel implements Ops.Adb
     @AnyThread
     @RequiresApi(Build.VERSION_CODES.R)
     public void autoConnectWirelessDebugging() {
+        // Any dialog on screen has been answered by now
+        mStatusDialogs.clear();
         long attemptId = getOrBeginStartupInitAttempt();
         mExecutor.submit(() -> {
             postStartupInitStage(attemptId, StartupInitState.Stage.WIRELESS_ADB_PORT_DISCOVERY, null);
@@ -165,6 +170,8 @@ public class SecurityAndOpsViewModel extends AndroidViewModel implements Ops.Adb
     @Override
     @AnyThread
     public void connectAdb(int port) {
+        // Any dialog on screen has been answered by now
+        mStatusDialogs.clear();
         long attemptId = getOrBeginStartupInitAttempt();
         mExecutor.submit(() -> {
             postStartupInitStage(attemptId, StartupInitState.Stage.ADB_SERVER_RESTART, null);
@@ -179,6 +186,8 @@ public class SecurityAndOpsViewModel extends AndroidViewModel implements Ops.Adb
     @AnyThread
     @RequiresApi(Build.VERSION_CODES.R)
     public void pairAdb() {
+        // Any dialog on screen has been answered by now
+        mStatusDialogs.clear();
         long attemptId = getOrBeginStartupInitAttempt();
         mExecutor.submit(() -> {
             postStartupInitStage(attemptId, StartupInitState.Stage.ADB_PAIRING_WAIT, null);
@@ -192,6 +201,14 @@ public class SecurityAndOpsViewModel extends AndroidViewModel implements Ops.Adb
     @Override
     public void onStatusReceived(int status) {
         postStartupInitStatus(getOrBeginStartupInitAttempt(), status, null);
+    }
+
+    @Override
+    @AnyThread
+    public void connectShizuku(@NonNull Context context) {
+        mStatusDialogs.clear();
+        long attemptId = getOrBeginStartupInitAttempt();
+        mExecutor.submit(() -> postStartupInitStatus(attemptId, Ops.connectShizuku(getApplication()), null));
     }
 
     long beginStartupInitAttempt() {
