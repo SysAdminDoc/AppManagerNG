@@ -613,7 +613,9 @@ public class Ops {
     }
 
     private static void setDetectedMode(@NonNull @Mode String mode, boolean persistDetectedMode) {
-        if (persistDetectedMode) {
+        // A cancelled detection may have stopped short of the mode that works, and saving what it
+        // got to would keep Auto from ever looking again
+        if (persistDetectedMode && !Thread.currentThread().isInterrupted()) {
             setMode(mode);
         }
     }

@@ -23,10 +23,13 @@ import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.net.SocketTimeoutException;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -256,8 +259,63 @@ public class AdbLaunchShellTest {
         assertTrue(String.valueOf(thrown.get()), thrown.get() instanceof InterruptedIOException);
         assertTrue(stillInterrupted.get());
         assertFalse(retried.get());
-        // Positive control: the same failure on a thread nobody interrupted still gets its retry
-        assertTrue(LocalServerManager.isWorthRetrying(1, thrown.get()));
+        // Positive control: a failure that says nothing of a cancel still gets its retry
+        assertTrue(LocalServerManager.isWorthRetrying(1, new IOException("Stream closed.")));
+    }
+
+    @Test
+    public void aCancelWhoseWaitClearedTheInterruptIsStillACancel() throws InterruptedException {
+        AtomicReference<Throwable> thrown = new AtomicReference<>();
+        AtomicBoolean interruptedAfterWait = new AtomicBoolean(true);
+        AtomicBoolean retried = new AtomicBoolean(true);
+        AtomicReference<Throwable> ended = new AtomicReference<>();
+        AtomicBoolean interruptedAtEnd = new AtomicBoolean();
+        Thread start = new Thread(() -> {
+            // The launch shell's answer is awaited this way, and the wait clears the interrupt
+            Thread.currentThread().interrupt();
+            try {
+                new CountDownLatch(1).await();
+            } catch (InterruptedException e) {
+                thrown.set(e);
+            }
+            interruptedAfterWait.set(Thread.currentThread().isInterrupted());
+            retried.set(LocalServerManager.isWorthRetrying(1, thrown.get()));
+            try {
+                LocalServerManager.throwIfCancelled((Exception) thrown.get());
+            } catch (IOException e) {
+                ended.set(e);
+            }
+            interruptedAtEnd.set(Thread.currentThread().isInterrupted());
+        });
+        start.start();
+        start.join(10_000);
+
+        assertFalse(interruptedAfterWait.get());
+        // It used to be retried: a second full start, holding the lock the new mode waits for
+        assertFalse(retried.get());
+        // It ends as a cancel, not as a server that won't start, with the interrupt back for
+        // the callers that look for it
+        assertTrue(String.valueOf(ended.get()), ended.get() instanceof InterruptedIOException);
+        assertTrue(interruptedAtEnd.get());
+    }
+
+    @Test
+    public void everyShapeACancelComesInIsTakenForOne() throws IOException {
+        assertTrue(LocalServerManager.isCancellation(new InterruptedException()));
+        // libadb's read, which clears the interrupt
+        assertTrue(LocalServerManager.isCancellation(new IOException().initCause(new InterruptedException())));
+        assertTrue(LocalServerManager.isCancellation(new InterruptedIOException()));
+        assertTrue(LocalServerManager.isCancellation(new ClosedByInterruptException()));
+        assertTrue(LocalServerManager.isCancellation(new LocalServerManager.AdbUnreachableException(
+                new IOException(new InterruptedException()))));
+
+        // A socket timeout is an InterruptedIOException too, but nobody cancelled anything
+        SocketTimeoutException timeout = new SocketTimeoutException("connect timed out");
+        assertFalse(LocalServerManager.isCancellation(timeout));
+        assertTrue(LocalServerManager.isWorthRetrying(1, timeout));
+        LocalServerManager.throwIfCancelled(timeout);
+        assertFalse(Thread.currentThread().isInterrupted());
+        assertFalse(LocalServerManager.isCancellation(new IOException("Connection refused")));
     }
 
     @Test
