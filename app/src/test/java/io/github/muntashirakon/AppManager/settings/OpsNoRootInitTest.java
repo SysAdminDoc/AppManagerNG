@@ -122,6 +122,30 @@ public class OpsNoRootInitTest {
         assertFalse(Ops.isDirectRoot());
     }
 
+    @Test
+    public void aCancelledAutoDetectionSavesNoMode() {
+        String before = Ops.getMode();
+        try {
+            Ops.setMode(Ops.MODE_AUTO);
+            // Leaving Mode of operation cancels its work this way, and a stopped auto-freeze
+            // worker does too
+            Thread.currentThread().interrupt();
+            try {
+                Ops.init(mContext, false);
+            } finally {
+                Thread.interrupted();
+            }
+            // Saving No root here would keep Auto from ever looking again
+            assertEquals(Ops.MODE_AUTO, Ops.getMode());
+
+            // Positive control: the same detection, not cancelled, saves what it found
+            Ops.init(mContext, false);
+            assertEquals(Ops.MODE_NO_ROOT, Ops.getMode());
+        } finally {
+            Ops.setMode(before);
+        }
+    }
+
     private static void setOpsFlag(String name, boolean value) throws ReflectiveOperationException {
         Field field = Ops.class.getDeclaredField(name);
         field.setAccessible(true);

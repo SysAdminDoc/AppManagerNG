@@ -17,10 +17,12 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.nio.channels.ClosedByInterruptException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -105,6 +107,7 @@ class LocalServerManager {
                 try {
                     mSession = createSession(configuredPort);
                 } catch (Exception e) {
+                    throwIfCancelled(e);
                     if (!Ops.isDirectRoot() && !Ops.isAdb()) {
                         // Do not bother attempting to create a new session
                         throw new IOException("Could not create session", e);
@@ -115,9 +118,12 @@ class LocalServerManager {
                     try {
                         startServer(configuredPort);
                     } catch (AdbPairingRequiredException | AdbUnreachableException e) {
+                        throwIfCancelled(e);
                         // A pairing or port problem, which the pair/connect dialogs can fix
                         throw e;
                     } catch (Exception e) {
+                        // Not a failure to start, so no "could not start" either
+                        throwIfCancelled(e);
                         if (sessionFailure != null && sessionFailure.getReason()
                                 == ServerConnectionFailure.Reason.NOT_ACKNOWLEDGED) {
                             // Another server holds the port, which is why this one couldn't start
@@ -135,6 +141,7 @@ class LocalServerManager {
                     try {
                         mSession = createSession(configuredPort);
                     } catch (IOException e) {
+                        throwIfCancelled(e);
                         if (!isWorthRetrying(attempt, e)) {
                             throw e;
                         }
@@ -163,7 +170,47 @@ class LocalServerManager {
                 && !(failure instanceof LaunchRefusedException)
                 // A cancelled start stays cancelled
                 && !Thread.currentThread().isInterrupted()
+                && !isCancellation(failure)
                 && ServerConnectionFailure.find(failure) == null;
+    }
+
+    /**
+     * Whether a start failed because it was cancelled. A wait that is interrupted clears the
+     * interrupt as it throws, and libadb wraps it in a plain IOException, so the exception is the
+     * only thing left to tell. A socket timeout is an InterruptedIOException too, but no cancel.
+     */
+    @VisibleForTesting
+    static boolean isCancellation(@NonNull Throwable failure) {
+        Throwable t = failure;
+        for (int depth = 0; t != null && depth < 16; ++depth) {
+            if (t instanceof InterruptedException || t instanceof ClosedByInterruptException
+                    || (t instanceof InterruptedIOException && !(t instanceof SocketTimeoutException))) {
+                return true;
+            }
+            if (t.getCause() == t) {
+                break;
+            }
+            t = t.getCause();
+        }
+        return false;
+    }
+
+    /**
+     * Ends a start that was cancelled, with the interrupt put back for the callers, which look for
+     * it: nothing is retried, recorded as the last failure or reported as a server that won't start.
+     */
+    @VisibleForTesting
+    static void throwIfCancelled(@NonNull Exception failure) throws InterruptedIOException {
+        if (!isCancellation(failure)) {
+            return;
+        }
+        Thread.currentThread().interrupt();
+        if (failure instanceof InterruptedIOException && !(failure instanceof SocketTimeoutException)) {
+            throw (InterruptedIOException) failure;
+        }
+        InterruptedIOException cancelled = new InterruptedIOException("The server start was cancelled.");
+        cancelled.initCause(failure);
+        throw cancelled;
     }
 
     @AnyThread
