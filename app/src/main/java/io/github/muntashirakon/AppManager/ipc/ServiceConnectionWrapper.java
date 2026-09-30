@@ -175,12 +175,14 @@ class ServiceConnectionWrapper {
             mIBinder = null;
             watcher = mServiceBoundWatcher;
             mServiceBoundWatcher = null;
+            // Posted under the lock, so a bind that starts after this stop also reaches the main
+            // thread after it. Posted outside, a new bind could run first and then be stopped.
+            ThreadUtils.postOnMainThread(() -> RootService.stop(intent));
         }
         if (watcher != null) {
             // Release a bind still waiting for the service
             watcher.countDown();
         }
-        ThreadUtils.postOnMainThread(() -> RootService.stop(intent));
     }
 
     boolean isBinderActive() {
