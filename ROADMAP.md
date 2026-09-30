@@ -489,13 +489,6 @@ Sources and reasoning: RESEARCH.md (2026-09-30).
   Acceptance: when the base APK plus selected splits carry `lib/<abi>/` entries and none is in `Build.SUPPORTED_ABIS`, preflight reports an incompatible ABI naming what the APK has and what the device supports, before any session is created; APKs without native libraries are unaffected; tests cover x86_64-only, arm64 plus x86_64, no libraries, and the existing split cases.
   Complexity: S
 
-- [ ] P2: Stop the file provider proxying its own URIs
-  Why: `getContentUri` wraps a content URI of AppManagerNG's own authority in another proxy layer, which upstream fixed as infinite proxying.
-  Evidence: upstream `9345675c1`; `fm/FmProvider.java:67-68`.
-  Touches: `FmProvider.java`, a host test.
-  Acceptance: a URI with the provider's own authority comes back unchanged; `getContentUri` is idempotent; `file`, other `content` authorities and `vfs` URIs keep their current mapping.
-  Complexity: S
-
 - [ ] P2: Label the unlabeled image controls and fail lint on new ones
   Why: 12 image controls have neither a content description nor a decorative flag, so TalkBack reads nothing or "unlabeled", and lint does not escalate the check.
   Evidence: `res/layout/dialog_backup_tasks.xml` (5), `dialog_restore_tasks.xml` (3), `dialog_backup_restore.xml`, `item_icon_title_subtitle.xml`, `item_main.xml`, `item_main_v2.xml` (1 each); `app/lint.xml`; WCAG 2.2 success criterion 1.1.1. The device-gated accessibility hardening item in `Roadmap_Blocked.md` covers the rest.

@@ -31,6 +31,27 @@ public class FmProviderTest {
     }
 
     @Test
+    public void getContentUriForVfs() {
+        Uri uri = FmProvider.getContentUri(Uri.parse("vfs://12/lib/arm64-v8a/libfoo.so"));
+        assertEquals("content://" + FmProvider.AUTHORITY + "/!!12/lib/arm64-v8a/libfoo.so", uri.toString());
+    }
+
+    @Test
+    public void getContentUriLeavesItsOwnUrisAlone() {
+        // Upstream 9345675c1: these used to gain another "!<authority>" layer on every pass
+        assertEquals(cpFile, FmProvider.getContentUri(Uri.parse(cpFile)).toString());
+        assertEquals(cpContent, FmProvider.getContentUri(Uri.parse(cpContent)).toString());
+    }
+
+    @Test
+    public void getContentUriIsIdempotent() {
+        for (String source : new String[]{noFile, noContent, "vfs://12/lib/arm64-v8a/libfoo.so"}) {
+            Uri once = FmProvider.getContentUri(Uri.parse(source));
+            assertEquals(source, once, FmProvider.getContentUri(once));
+        }
+    }
+
+    @Test
     public void getFileProviderPathForFile() {
         Uri uri = FmProvider.getFileProviderPathInternal(Uri.parse(cpFile));
         assertEquals(noFile, uri.toString());
