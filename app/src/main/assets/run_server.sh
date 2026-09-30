@@ -38,7 +38,8 @@ echo "Jar path: $JAR_PATH"
 # Save jar path to environment variable
 export CLASSPATH=${EXEC_JAR_PATH}
 # Execute local server
-exec app_process /system/bin --nice-name=${SERVER_NAME} ${JAR_MAIN_CLASS} "$ARGS" $@  &
+# Only the config: a second argument would be read as an old server's pid to kill
+exec app_process /system/bin --nice-name=${SERVER_NAME} ${JAR_MAIN_CLASS} "$ARGS" &
 if [ $? -ne 0 ]; then
     # Start failed
     echo "Error! Could not start local server."

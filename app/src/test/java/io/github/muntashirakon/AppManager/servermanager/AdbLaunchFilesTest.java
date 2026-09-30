@@ -95,6 +95,22 @@ public class AdbLaunchFilesTest {
     }
 
     @Test
+    public void serverGetsItsConfigAndNothingElse() throws Exception {
+        assumeTrue("needs a POSIX sh", shAvailable());
+        File jar = tmp.newFile("am.jar");
+        Files.write(jar.toPath(), bytes(333, 7));
+
+        String calls = runLauncher(posix(jar), posix(jar));
+
+        // ServerRunner reads a second argument as an old server's pid, so the port used to be
+        // taken for a process to kill, and the token went on the command line twice
+        String[] lines = calls.split("\n");
+        assertEquals(calls, "io.github.muntashirakon.AppManager.server.ServerRunner", lines[lines.length - 2]);
+        String config = lines[lines.length - 1];
+        assertTrue(config, config.startsWith("path:62001,") && config.endsWith(",token:0123456789abcdef"));
+    }
+
+    @Test
     public void launcherCopiesAJarFromElsewhereToItsOwnName() throws Exception {
         assumeTrue("needs a POSIX sh", shAvailable());
         File jar = tmp.newFile("cached.jar");
