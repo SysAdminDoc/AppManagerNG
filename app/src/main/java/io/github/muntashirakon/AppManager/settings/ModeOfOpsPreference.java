@@ -60,7 +60,7 @@ public class ModeOfOpsPreference extends Fragment {
     @Nullable
     private MaterialButton mChangeModeView;
     private MainPreferencesViewModel mModel;
-    private final ModeOfOpsApplyState mModeApplyState = new ModeOfOpsApplyState();
+    private ModeOfOpsApplyState mModeApplyState;
     private AlertDialog mModeOfOpsAlertDialog;
     private String[] mModes;
     @Ops.Mode
@@ -83,6 +83,7 @@ public class ModeOfOpsPreference extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mModel = new ViewModelProvider(requireActivity()).get(MainPreferencesViewModel.class);
+        mModeApplyState = mModel.getModeApplyState();
     }
 
     @Nullable
@@ -112,6 +113,13 @@ public class ModeOfOpsPreference extends Fragment {
         mModeOfOpsAlertDialog = UIUtils.getProgressDialog(requireActivity(), getString(R.string.loading), true);
         mModes = getResources().getStringArray(R.array.modes);
         mCurrentMode = Ops.getMode();
+        if (mModeApplyState.isApplying()) {
+            String pendingMode = mModeApplyState.getPendingMode();
+            if (pendingMode != null) {
+                mCurrentMode = pendingMode;
+            }
+            mConnecting = true;
+        }
         mInferredModeView = view.findViewById(R.id.inferred_mode);
         mRemoteServerStatusView = view.findViewById(R.id.remote_server_status);
         mRemoteServicesStatusView = view.findViewById(R.id.remote_services_status);
@@ -123,7 +131,7 @@ public class ModeOfOpsPreference extends Fragment {
             disabledItems = Collections.singletonList(Ops.MODE_ADB_WIFI);
         } else disabledItems = null;
         mChangeModeView.setOnClickListener(v -> {
-            if (mModeApplyState.isApplying()) {
+            if (mModeApplyState.isApplying() || mModel.isModeOperationPending()) {
                 return;
             }
             new SearchableSingleChoiceDialogBuilder<>(requireActivity(), MODE_NAMES, mModes)
@@ -157,58 +165,20 @@ public class ModeOfOpsPreference extends Fragment {
         mModel.loadCustomCommands();
         updateViews();
         // Mode of ops
-        mModel.getModeOfOpsStatus().observe(getViewLifecycleOwner(), status -> {
-            if (!mModeApplyState.isApplying() || !isAdded()) {
-                return;
+        mModel.getModeOfOpsStatus().observe(getViewLifecycleOwner(), this::handleModeStatus);
+        if (mModeApplyState.isApplying()) {
+            // Recreated in the middle of a switch (rotation, theme change)
+            setModeApplyUiEnabled(false);
+            if (mModel.isModeOperationPending()) {
+                showModeProgressDialog();
+            } else {
+                // The dialog asking the user for something went away with the old screen
+                Integer lostStatus = mModel.getLostDialogStatus();
+                if (lostStatus != null) {
+                    handleModeStatus(lostStatus);
+                }
             }
-            FragmentActivity activity = requireActivity();
-            switch (status) {
-                case Ops.STATUS_AUTO_CONNECT_WIRELESS_DEBUGGING:
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        updateViews();
-                        mModel.autoConnectWirelessDebugging();
-                        return;
-                    } // fall-through
-                case Ops.STATUS_WIRELESS_DEBUGGING_CHOOSER_REQUIRED:
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        mModeOfOpsAlertDialog.dismiss();
-                        updateViews();
-                        Ops.connectWirelessDebugging(activity, mModel);
-                        return;
-                    } // fall-through
-                case Ops.STATUS_ADB_CONNECT_REQUIRED:
-                    mModeOfOpsAlertDialog.dismiss();
-                    updateViews();
-                    Ops.connectAdbInput(activity, mModel);
-                    return;
-                case Ops.STATUS_SHIZUKU_PERMISSION_REQUIRED:
-                    mModeOfOpsAlertDialog.dismiss();
-                    updateViews();
-                    Ops.requestShizukuPermission(activity, mModel);
-                    return;
-                case Ops.STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED:
-                    mModeOfOpsAlertDialog.dismiss();
-                    updateViews();
-                    Ops.displayLocalNetworkPermissionMessage(activity, mModel);
-                    return;
-                case Ops.STATUS_ADB_PAIRING_REQUIRED:
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        mModeOfOpsAlertDialog.dismiss();
-                        updateViews();
-                        Ops.pairAdbInput(activity, mModel);
-                        return;
-                    } // fall-through
-                case Ops.STATUS_FAILURE_ADB_NEED_MORE_PERMS:
-                    Ops.displayIncompleteUsbDebuggingMessage(activity);
-                    finishModeApply(false, true);
-                    return;
-                case Ops.STATUS_SUCCESS:
-                    finishModeApply(true, false);
-                    return;
-                case Ops.STATUS_FAILURE:
-                    finishModeApply(false, true);
-            }
-        });
+        }
         // Services can bind or stop after the screen opened, a mode switch or a late SERVER_STARTED
         LocalServices.state().observe(getViewLifecycleOwner(), ignored -> updateViews());
         mModel.getCustomCommand0().observe(getViewLifecycleOwner(), customCommand0::setText);
@@ -229,13 +199,87 @@ public class ModeOfOpsPreference extends Fragment {
 
     @Override
     public void onDestroyView() {
-        dismissPendingModeApply();
+        if (!requireActivity().isChangingConfigurations()) {
+            // Leaving the screen gives up on the switch. A configuration change keeps it: the
+            // recreated screen picks it up again from the ViewModel.
+            dismissPendingModeApply();
+        }
         dismissModeProgressDialog();
         mChangeModeView = null;
         super.onDestroyView();
     }
 
+    private void handleModeStatus(@Ops.Status int status) {
+        if (!mModeApplyState.isApplying() || !isAdded()) {
+            return;
+        }
+        FragmentActivity activity = requireActivity();
+        switch (status) {
+            case Ops.STATUS_AUTO_CONNECT_WIRELESS_DEBUGGING:
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    updateViews();
+                    mModel.autoConnectWirelessDebugging();
+                    return;
+                } // fall-through
+            case Ops.STATUS_WIRELESS_DEBUGGING_CHOOSER_REQUIRED:
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    dismissModeProgressDialog();
+                    updateViews();
+                    Ops.connectWirelessDebugging(activity, mModel);
+                    mModel.onModeStatusDialogShown();
+                    return;
+                } // fall-through
+            case Ops.STATUS_ADB_CONNECT_REQUIRED:
+                dismissModeProgressDialog();
+                updateViews();
+                Ops.connectAdbInput(activity, mModel);
+                mModel.onModeStatusDialogShown();
+                return;
+            case Ops.STATUS_SHIZUKU_PERMISSION_REQUIRED:
+                dismissModeProgressDialog();
+                updateViews();
+                Ops.requestShizukuPermission(activity, mModel);
+                mModel.onModeStatusDialogShown();
+                return;
+            case Ops.STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED:
+                dismissModeProgressDialog();
+                updateViews();
+                Ops.displayLocalNetworkPermissionMessage(activity, mModel);
+                mModel.onModeStatusDialogShown();
+                return;
+            case Ops.STATUS_ADB_PAIRING_REQUIRED:
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    dismissModeProgressDialog();
+                    updateViews();
+                    Ops.pairAdbInput(activity, mModel);
+                    mModel.onModeStatusDialogShown();
+                    return;
+                } // fall-through
+            case Ops.STATUS_FAILURE_ADB_NEED_MORE_PERMS:
+                dismissModeProgressDialog();
+                // The switch ends once the user has read why it failed
+                Ops.displayIncompleteUsbDebuggingMessage(activity, () -> {
+                    // Not when the dialog went away with a screen that is gone
+                    if (getView() != null) {
+                        finishModeApply(false, true);
+                    }
+                });
+                mModel.onModeStatusDialogShown();
+                return;
+            case Ops.STATUS_SUCCESS:
+                finishModeApply(true, false);
+                return;
+            case Ops.STATUS_FAILURE:
+                finishModeApply(false, true);
+        }
+    }
+
     private void beginModeApply(@NonNull @Ops.Mode String mode) {
+        if (mModel.isModeOperationPending()) {
+            // A request from a screen that was closed is still running
+            UIUtils.displayShortToast(R.string.mode_of_op_busy);
+            return;
+        }
         if (!mModeApplyState.begin(Ops.getMode(), mode)) {
             return;
         }

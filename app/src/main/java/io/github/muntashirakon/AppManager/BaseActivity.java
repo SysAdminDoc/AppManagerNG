@@ -144,56 +144,8 @@ public abstract class BaseActivity extends PerProcessActivity {
                 });
         mAlertDialog = UIUtils.getProgressDialog(this, getString(R.string.initializing), true);
         Log.d(TAG, "Waiting to be authenticated.");
-        mViewModel.authenticationStatus().observe(this, status -> {
-            switch (status) {
-                case Ops.STATUS_AUTO_CONNECT_WIRELESS_DEBUGGING:
-                    Log.d(TAG, "Try auto-connecting to wireless debugging.");
-                    mDisplayLoader = false;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        mViewModel.autoConnectWirelessDebugging();
-                        return;
-                    } // fall-through
-                case Ops.STATUS_WIRELESS_DEBUGGING_CHOOSER_REQUIRED:
-                    Log.d(TAG, "Display wireless debugging chooser (pair or connect)");
-                    mDisplayLoader = false;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        Ops.connectWirelessDebugging(this, mViewModel);
-                        return;
-                    } // fall-through
-                case Ops.STATUS_ADB_CONNECT_REQUIRED:
-                    Log.d(TAG, "Display connect dialog.");
-                    mDisplayLoader = false;
-                    Ops.connectAdbInput(this, mViewModel);
-                    return;
-                case Ops.STATUS_SHIZUKU_PERMISSION_REQUIRED:
-                    Log.d(TAG, "Request Shizuku permission.");
-                    mDisplayLoader = false;
-                    Ops.requestShizukuPermission(this, mViewModel);
-                    return;
-                case Ops.STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED:
-                    Log.d(TAG, "Local network permission required for wireless debugging.");
-                    mDisplayLoader = false;
-                    Ops.displayLocalNetworkPermissionMessage(this, mViewModel);
-                    return;
-                case Ops.STATUS_ADB_PAIRING_REQUIRED:
-                    Log.d(TAG, "Display pairing dialog.");
-                    mDisplayLoader = false;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        Ops.pairAdbInput(this, mViewModel);
-                        return;
-                    } // fall-through
-                case Ops.STATUS_FAILURE_ADB_NEED_MORE_PERMS:
-                    Ops.displayIncompleteUsbDebuggingMessage(this);
-                case Ops.STATUS_SUCCESS:
-                case Ops.STATUS_FAILURE:
-                    Log.d(TAG, "Authentication completed.");
-                    mViewModel.setAuthenticating(false);
-                    if (mAlertDialog != null) mAlertDialog.dismiss();
-                    Ops.setAuthenticated(this, true);
-                    onAuthenticated(savedInstanceState);
-                    InternalCacheCleanerService.scheduleAlarm(getApplicationContext());
-            }
-        });
+        mViewModel.authenticationStatus().observe(this, status ->
+                handleAuthenticationStatus(status, savedInstanceState));
         mViewModel.keyStorePasswordStatus().observe(this, status -> {
             if (status == null || isFinishing() || isDestroyed()) return;
             Boolean hasPassword = mViewModel.claimKeyStorePasswordStatus();
@@ -208,8 +160,79 @@ public abstract class BaseActivity extends PerProcessActivity {
         });
         if (!mViewModel.isAuthenticating()) {
             mViewModel.setAuthenticating(true);
+        } else {
+            // Recreated while a dialog waited for the user: it went away with the old activity
+            Integer lostStatus = mViewModel.getLostDialogStatus();
+            if (lostStatus != null) {
+                handleAuthenticationStatus(lostStatus, savedInstanceState);
+            }
         }
         mViewModel.checkKeyStorePassword();
+    }
+
+    private void handleAuthenticationStatus(@Ops.Status int status, @Nullable Bundle savedInstanceState) {
+        switch (status) {
+            case Ops.STATUS_AUTO_CONNECT_WIRELESS_DEBUGGING:
+                Log.d(TAG, "Try auto-connecting to wireless debugging.");
+                mDisplayLoader = false;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    mViewModel.autoConnectWirelessDebugging();
+                    return;
+                } // fall-through
+            case Ops.STATUS_WIRELESS_DEBUGGING_CHOOSER_REQUIRED:
+                Log.d(TAG, "Display wireless debugging chooser (pair or connect)");
+                mDisplayLoader = false;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    Ops.connectWirelessDebugging(this, mViewModel);
+                    mViewModel.onStatusDialogShown();
+                    return;
+                } // fall-through
+            case Ops.STATUS_ADB_CONNECT_REQUIRED:
+                Log.d(TAG, "Display connect dialog.");
+                mDisplayLoader = false;
+                Ops.connectAdbInput(this, mViewModel);
+                mViewModel.onStatusDialogShown();
+                return;
+            case Ops.STATUS_SHIZUKU_PERMISSION_REQUIRED:
+                Log.d(TAG, "Request Shizuku permission.");
+                mDisplayLoader = false;
+                Ops.requestShizukuPermission(this, mViewModel);
+                mViewModel.onStatusDialogShown();
+                return;
+            case Ops.STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED:
+                Log.d(TAG, "Local network permission required for wireless debugging.");
+                mDisplayLoader = false;
+                Ops.displayLocalNetworkPermissionMessage(this, mViewModel);
+                mViewModel.onStatusDialogShown();
+                return;
+            case Ops.STATUS_ADB_PAIRING_REQUIRED:
+                Log.d(TAG, "Display pairing dialog.");
+                mDisplayLoader = false;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    Ops.pairAdbInput(this, mViewModel);
+                    mViewModel.onStatusDialogShown();
+                    return;
+                } // fall-through
+            case Ops.STATUS_FAILURE_ADB_NEED_MORE_PERMS:
+                Ops.displayIncompleteUsbDebuggingMessage(this, () -> completeAuthentication(savedInstanceState));
+                mViewModel.onStatusDialogShown();
+                return;
+            case Ops.STATUS_SUCCESS:
+            case Ops.STATUS_FAILURE:
+                completeAuthentication(savedInstanceState);
+        }
+    }
+
+    private void completeAuthentication(@Nullable Bundle savedInstanceState) {
+        if (!mViewModel.isAuthenticating() || isFinishing() || isDestroyed()) {
+            return;
+        }
+        Log.d(TAG, "Authentication completed.");
+        mViewModel.setAuthenticating(false);
+        if (mAlertDialog != null) mAlertDialog.dismiss();
+        Ops.setAuthenticated(this, true);
+        onAuthenticated(savedInstanceState);
+        InternalCacheCleanerService.scheduleAlarm(getApplicationContext());
     }
 
     private void ensureSecurityAndModeOfOp() {
