@@ -18,12 +18,35 @@ import org.robolectric.RuntimeEnvironment;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.apk.ApkSource;
 
 @RunWith(RobolectricTestRunner.class)
 public class PackageInstallerActivityTest {
+    @Test
+    public void aBatchStopsOnAnApkWithNoNativeCodeForThisDevice() {
+        InstallDependencyChecker.Issue minSdk = new InstallDependencyChecker.Issue(
+                InstallDependencyChecker.IssueKind.MIN_SDK_TOO_HIGH, 36, 34);
+        InstallDependencyChecker.Issue abiSplit = new InstallDependencyChecker.Issue(
+                InstallDependencyChecker.IssueKind.INCOMPATIBLE_ABI_SPLIT, 0, 0, Collections.singletonList("x86"));
+        InstallDependencyChecker.Issue nativeAbi = InstallDependencyChecker.checkNativeAbis(
+                Collections.singletonList("x86_64"), Collections.singletonList("arm64-v8a"));
+        assertNotNull(nativeAbi);
+        List<InstallDependencyChecker.Issue> all = Arrays.asList(minSdk, abiSplit, nativeAbi);
+
+        // A single APK installed on its own listed these in its install confirmation
+        assertTrue(PackageInstallerActivity.selectCompatibilityWarnings(all, false, false).isEmpty());
+        // A batch only asks about a downgrade, and an x86_64-only APK went straight to the system
+        assertEquals(Collections.singletonList(nativeAbi),
+                PackageInstallerActivity.selectCompatibilityWarnings(all, false, true));
+        assertEquals(Arrays.asList(abiSplit, nativeAbi),
+                PackageInstallerActivity.selectCompatibilityWarnings(all, true, false));
+        assertEquals(Arrays.asList(abiSplit, nativeAbi),
+                PackageInstallerActivity.selectCompatibilityWarnings(all, true, true));
+    }
+
     @Test
     public void getBatchInstallInstanceCopiesUrisBeforeBuildingIntent() {
         Uri first = Uri.parse("content://example.test/apk/one.apk");

@@ -17,11 +17,13 @@ import android.os.UserHandleHidden;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -185,16 +187,28 @@ public class PackageInstallerViewModel extends AndroidViewModel {
     @WorkerThread
     private void loadBaseNativeAbis() {
         mBaseNativeAbis = null;
-        try (ZipFile zipFile = new ZipFile(mApkFile.getBaseEntry().getFile(false))) {
+        try {
+            mBaseNativeAbis = readNativeAbis(mApkFile.getBaseEntry().getFile(false));
+        } catch (IOException | RuntimeException e) {
+            // Only the native-code preflight is lost, the system installer still checks
+            Log.w("PIVM", "Couldn't list the base APK's native libraries", e);
+        }
+    }
+
+    /**
+     * The ABIs an APK carries native libraries for, read from its {@code lib/<abi>/} entries.
+     */
+    @VisibleForTesting
+    @WorkerThread
+    @NonNull
+    static Set<String> readNativeAbis(@NonNull File apk) throws IOException {
+        try (ZipFile zipFile = new ZipFile(apk)) {
             List<String> names = new ArrayList<>();
             Enumeration<? extends ZipEntry> entries = zipFile.entries();
             while (entries.hasMoreElements()) {
                 names.add(entries.nextElement().getName());
             }
-            mBaseNativeAbis = InstallDependencyChecker.nativeAbisOf(names);
-        } catch (IOException | RuntimeException e) {
-            // Only the native-code preflight is lost, the system installer still checks
-            Log.w("PIVM", "Couldn't list the base APK's native libraries", e);
+            return InstallDependencyChecker.nativeAbisOf(names);
         }
     }
 
