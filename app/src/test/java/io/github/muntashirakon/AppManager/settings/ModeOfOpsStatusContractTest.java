@@ -84,7 +84,16 @@ public class ModeOfOpsStatusContractTest {
         assertTrue(session, session.indexOf("Reason.NOT_ACKNOWLEDGED")
                 > session.indexOf("catch (DataTransmission.HandshakeRejectedException e)"));
         String getSession = body(manager, "private ClientSession getSession()");
-        assertTrue(getSession, getSession.indexOf("Reason.SERVER_START") > getSession.indexOf("startServer(configuredPort)"));
+        int start = getSession.indexOf("startServer(configuredPort)");
+        // An unreachable adbd is a port or pairing problem, so the chooser still gets its chance
+        int passThrough = getSession.indexOf("catch (AdbPairingRequiredException | AdbUnreachableException e)");
+        assertTrue(getSession, passThrough > start && getSession.indexOf("throw e;", passThrough) > passThrough);
+        int squatter = getSession.indexOf("Reason.NOT_ACKNOWLEDGED");
+        assertTrue(getSession, squatter > passThrough && getSession.indexOf("Reason.SERVER_START") > squatter);
+        String adbStart = body(manager, "private void useAdbStartServer(int localServerPort)");
+        assertTrue(adbStart, adbStart.contains("throw new AdbUnreachableException(e);"));
+        assertTrue(adbStart, adbStart.contains("throw new AdbUnreachableException(null);"));
+        assertFalse(adbStart, adbStart.contains("new IOException(\"Could not connect to ADB.\")"));
 
         String ops = read("app/src/main/java/io/github/muntashirakon/AppManager/settings/Ops.java");
         assertTrue(body(ops, "public static int connectAdb(@NonNull Context context, int port,")

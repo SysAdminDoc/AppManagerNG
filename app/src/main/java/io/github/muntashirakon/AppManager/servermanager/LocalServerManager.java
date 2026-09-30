@@ -90,6 +90,7 @@ class LocalServerManager {
                 mSession = null;
             }
             if (mSession == null) {
+                ServerConnectionFailure sessionFailure = null;
                 try {
                     mSession = createSession(configuredPort);
                 } catch (Exception e) {
@@ -97,13 +98,21 @@ class LocalServerManager {
                         // Do not bother attempting to create a new session
                         throw new IOException("Could not create session", e);
                     }
+                    sessionFailure = ServerConnectionFailure.find(e);
                 }
                 if (mSession == null) {
                     try {
                         startServer(configuredPort);
-                    } catch (AdbPairingRequiredException e) {
+                    } catch (AdbPairingRequiredException | AdbUnreachableException e) {
+                        // A pairing or port problem, which the pair/connect dialogs can fix
                         throw e;
                     } catch (Exception e) {
+                        if (sessionFailure != null && sessionFailure.getReason()
+                                == ServerConnectionFailure.Reason.NOT_ACKNOWLEDGED) {
+                            // Another server holds the port, which is why this one couldn't start
+                            sessionFailure.addSuppressed(e);
+                            throw sessionFailure;
+                        }
                         throw new ServerConnectionFailure(ServerConnectionFailure.Reason.SERVER_START,
                                 "Could not start server", e);
                     }
@@ -269,8 +278,14 @@ class LocalServerManager {
             String adbHost = ServerConfig.getAdbHost(mContext);
             int adbPort = ServerConfig.getAdbPort();
             Log.d(TAG, "useAdbStartServer: Connecting using host=%s, port=%d", adbHost, adbPort);
-            if (!manager.connect(adbHost, adbPort)) {
-                throw new IOException("Could not connect to ADB.");
+            boolean connected;
+            try {
+                connected = manager.connect(adbHost, adbPort);
+            } catch (IOException e) {
+                throw new AdbUnreachableException(e);
+            }
+            if (!connected) {
+                throw new AdbUnreachableException(null);
             }
         }
         // The shell user can't read anything in the app's data directories, so the launcher has to
@@ -476,6 +491,16 @@ class LocalServerManager {
         } catch (IOException | RuntimeException e) {
             IoUtils.closeQuietly(socket);
             throw e;
+        }
+    }
+
+    /**
+     * adbd itself couldn't be reached (wrong port, wireless debugging off), so the server was
+     * never asked to start. Kept apart from server failures: another port or pairing can fix it.
+     */
+    static final class AdbUnreachableException extends IOException {
+        AdbUnreachableException(@Nullable Throwable cause) {
+            super("Could not connect to ADB.", cause);
         }
     }
 
