@@ -24,11 +24,17 @@ import androidx.lifecycle.MutableLiveData;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.Future;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import io.github.muntashirakon.AppManager.apk.ApkFile;
 import io.github.muntashirakon.AppManager.apk.ApkSource;
@@ -54,6 +60,8 @@ public class PackageInstallerViewModel extends AndroidViewModel {
     private final MutableLiveData<PackageInfo> mPackageInfoLiveData = new MutableLiveData<>();
     private final MutableLiveData<Boolean> mPackageUninstalledLiveData = new MutableLiveData<>();
     private final Set<String> mSelectedSplits = new HashSet<>();
+    @Nullable
+    private Set<String> mBaseNativeAbis;
 
     public PackageInstallerViewModel(@NonNull Application application) {
         super(application);
@@ -156,6 +164,40 @@ public class PackageInstallerViewModel extends AndroidViewModel {
         return mSelectedSplits;
     }
 
+    /**
+     * The ABIs the base APK and the selected ABI splits carry native code for, or {@code null} when
+     * the base APK couldn't be read.
+     */
+    @Nullable
+    public Set<String> getNativeAbis(@NonNull Collection<String> selectedEntryIds) {
+        if (mBaseNativeAbis == null || mApkFile == null) {
+            return null;
+        }
+        Set<String> abis = new TreeSet<>(mBaseNativeAbis);
+        for (ApkFile.Entry entry : mApkFile.getEntries()) {
+            if (entry.type == ApkFile.APK_SPLIT_ABI && selectedEntryIds.contains(entry.id)) {
+                abis.add(entry.getAbi());
+            }
+        }
+        return abis;
+    }
+
+    @WorkerThread
+    private void loadBaseNativeAbis() {
+        mBaseNativeAbis = null;
+        try (ZipFile zipFile = new ZipFile(mApkFile.getBaseEntry().getFile(false))) {
+            List<String> names = new ArrayList<>();
+            Enumeration<? extends ZipEntry> entries = zipFile.entries();
+            while (entries.hasMoreElements()) {
+                names.add(entries.nextElement().getName());
+            }
+            mBaseNativeAbis = InstallDependencyChecker.nativeAbisOf(names);
+        } catch (IOException | RuntimeException e) {
+            // Only the native-code preflight is lost, the system installer still checks
+            Log.w("PIVM", "Couldn't list the base APK's native libraries", e);
+        }
+    }
+
     public void selectDefaultSplitsForInstallation() {
         if (!mApkFile.isSplit() || !mSelectedSplits.isEmpty()) {
             return;
@@ -228,6 +270,7 @@ public class PackageInstallerViewModel extends AndroidViewModel {
         if (ThreadUtils.isInterrupted()) {
             return;
         }
+        loadBaseNativeAbis();
         if (mNewPackageInfo != null && mInstalledPackageInfo != null) {
             mIsSignatureDifferent = PackageUtils.isSignatureDifferent(mNewPackageInfo, mInstalledPackageInfo);
         }
@@ -243,6 +286,7 @@ public class PackageInstallerViewModel extends AndroidViewModel {
         mAppLabel = mPm.getApplicationLabel(mNewPackageInfo.applicationInfo).toString();
         mAppIcon = mPm.getApplicationIcon(mNewPackageInfo.applicationInfo);
         mTrackerCount = ComponentUtils.getTrackerComponentsCountForPackage(mNewPackageInfo);
+        loadBaseNativeAbis();
         if (mNewPackageInfo != null && mInstalledPackageInfo != null) {
             mIsSignatureDifferent = PackageUtils.isSignatureDifferent(mNewPackageInfo, mInstalledPackageInfo);
         }
