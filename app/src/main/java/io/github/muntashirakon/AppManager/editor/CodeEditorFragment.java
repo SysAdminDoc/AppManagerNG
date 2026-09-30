@@ -231,11 +231,16 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             result -> {
                 try {
                     if (result.getResultCode() != Activity.RESULT_OK) {
+                        // No file was chosen, so nothing was saved and the editor stays.
+                        mViewModel.setExitAfterSave(false);
                         return;
                     }
                     Intent data = result.getData();
                     Uri uri = IntentCompat.getDataUri(data);
-                    if (uri == null) return;
+                    if (uri == null) {
+                        mViewModel.setExitAfterSave(false);
+                        return;
+                    }
                     int takeFlags = data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION
                             | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                     saveFile(mEditor.getText(), uri);
@@ -276,18 +281,11 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
                             requireActivity().getOnBackPressedDispatcher().onBackPressed();
                         })
                         .setNeutralButton(R.string.save_and_exit, (dialog, which) -> {
-                            if (mViewModel != null && mViewModel.isBackedByAFile() && mViewModel.canWrite()) {
-                                // Writable file: the save persists inline, so exiting now is safe.
-                                saveFile();
-                                setEnabled(false);
-                                requireActivity().getOnBackPressedDispatcher().onBackPressed();
-                            } else {
-                                // Save routes through a SAF picker (no backing file) or a read-only
-                                // confirmation dialog. Don't finish the activity — that would cancel
-                                // the picker/dialog and silently discard the edits. Let the user
-                                // complete the save flow and leave afterwards.
-                                saveFile();
-                            }
+                            // Leave only once the save has been written and read back. A failed save,
+                            // a cancelled picker or a declined read-only prompt keeps the editor open
+                            // with the text, so nothing is lost silently.
+                            mViewModel.setExitAfterSave(true);
+                            saveFile();
                         })
                         .show();
                 return;
@@ -517,8 +515,8 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             lineSeparatorButton.setText(mEditor.getLineSeparator().name());
             updatePositionText();
         });
-        mViewModel.getSaveFileLiveData().observe(getViewLifecycleOwner(), successful -> {
-            if (successful) {
+        mViewModel.getSaveFileLiveData().observe(getViewLifecycleOwner(), result -> {
+            if (result.success) {
                 UIUtils.displayShortToast(R.string.saved_successfully);
                 if (mEditor != null) {
                     mViewModel.updateOriginalContent(mEditor.getText().toString());
@@ -526,8 +524,14 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
                 mTextModified = false;
                 mTextModifiedBackPressedCallback.setEnabled(false);
                 getActionBar().ifPresent(actionBar -> actionBar.setSubtitle(mOptions.subtitle));
+                if (mViewModel.consumeExitAfterSave(true)) {
+                    requireActivity().getOnBackPressedDispatcher().onBackPressed();
+                }
             } else {
-                UIUtils.displayLongToast(R.string.saving_failed);
+                mViewModel.consumeExitAfterSave(false);
+                UIUtils.displayLongToast(result.originalIntact
+                        ? R.string.editor_save_failed_unchanged
+                        : R.string.editor_save_failed_damaged, result.reason);
             }
         });
         mViewModel.getJavaFileLiveData().observe(getViewLifecycleOwner(), uri -> {
@@ -951,7 +955,8 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
                     .setTitle(R.string.read_only_file)
                     .setMessage(R.string.read_only_file_warning)
                     .setPositiveButton(R.string.yes, (dialog, which) -> launchIntentSaver())
-                    .setNegativeButton(R.string.no, null)
+                    .setNegativeButton(R.string.no, (dialog, which) -> mViewModel.setExitAfterSave(false))
+                    .setOnCancelListener(dialog -> mViewModel.setExitAfterSave(false))
                     .show();
         }
     }

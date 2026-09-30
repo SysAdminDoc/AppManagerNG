@@ -54,7 +54,6 @@ import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.compat.xml.TypedXmlPullParser;
 import io.github.muntashirakon.compat.xml.TypedXmlSerializer;
 import io.github.muntashirakon.compat.xml.Xml;
-import io.github.muntashirakon.io.CharSequenceInputStream;
 import io.github.muntashirakon.io.IoUtils;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
@@ -119,7 +118,33 @@ public class CodeEditorViewModel extends AndroidViewModel {
     private final MutableLiveData<Content> mContentLiveData = new MutableLiveData<>();
     // Only for smali
     private final SingleLiveEvent<Uri> mJavaFileLiveData = new SingleLiveEvent<>();
-    private final MutableLiveData<Boolean> mSaveFileLiveData = new MutableLiveData<>();
+    private final MutableLiveData<SaveResult> mSaveFileLiveData = new MutableLiveData<>();
+    // Save and exit leaves only after a save lands, so the request outlives a configuration change.
+    private volatile boolean mExitAfterSave;
+
+    /** How a save ended. A failed save says whether the file on disk still holds its old bytes. */
+    public static final class SaveResult {
+        public final boolean success;
+        public final boolean originalIntact;
+        @Nullable
+        public final String reason;
+
+        private SaveResult(boolean success, boolean originalIntact, @Nullable String reason) {
+            this.success = success;
+            this.originalIntact = originalIntact;
+            this.reason = reason;
+        }
+
+        @NonNull
+        static SaveResult saved() {
+            return new SaveResult(true, true, null);
+        }
+
+        @NonNull
+        static SaveResult failed(@NonNull String reason, boolean originalIntact) {
+            return new SaveResult(false, originalIntact, reason);
+        }
+    }
 
     public CodeEditorViewModel(@NonNull Application application) {
         super(application);
@@ -145,7 +170,7 @@ public class CodeEditorViewModel extends AndroidViewModel {
         return mJavaFileLiveData;
     }
 
-    public LiveData<Boolean> getSaveFileLiveData() {
+    public LiveData<SaveResult> getSaveFileLiveData() {
         return mSaveFileLiveData;
     }
 
@@ -238,38 +263,62 @@ public class CodeEditorViewModel extends AndroidViewModel {
         mOriginalContent = content;
     }
 
+    /**
+     * Saves the editor's text. The text is copied on the calling thread, since the editor may change
+     * while the save runs, then encoded in full before the file is touched. See {@link EditorSaver} for
+     * how a failure keeps the original bytes.
+     */
     public void saveFile(@NonNull Content content, @Nullable Path alternativeFile) {
+        String text = content.toString();
+        int xmlType = mXmlType;
+        Path sourceFile = mSourceFile;
         ThreadUtils.postOnBackgroundThread(() -> {
-            if (mSourceFile == null && alternativeFile == null) {
-                mSaveFileLiveData.postValue(false);
+            if (sourceFile == null && alternativeFile == null) {
+                mSaveFileLiveData.postValue(SaveResult.failed("there is no file to save to", true));
                 return;
             }
             // Important: Alternative file gets the top priority
-            Path savingPath = alternativeFile != null ? alternativeFile : mSourceFile;
-            try (OutputStream os = savingPath.openOutputStream()) {
-                switch (mXmlType) {
-                    case XML_TYPE_AXML: {
-                        // ABX attributes retain types that a generic serializer would lose.
-                        byte[] realContent = AndroidBinXmlEncoder.encodeString(content.toString());
-                        os.write(realContent);
-                        break;
-                    }
-                    case XML_TYPE_ABX: {
-                        try (InputStream is = new CharSequenceInputStream(content, StandardCharsets.UTF_8)) {
-                            copyAbxFromXml(is, os);
-                        }
-                        break;
-                    }
-                    default:
-                    case XML_TYPE_NONE:
-                        ContentIO.writeTo(content, os, false);
-                }
-                mSaveFileLiveData.postValue(true);
-            } catch (IOException e) {
-                Log.e(TAG, "Could not write to file %s", e, savingPath);
-                mSaveFileLiveData.postValue(false);
+            Path savingPath = alternativeFile != null ? alternativeFile : sourceFile;
+            try {
+                EditorSaver.save(() -> encode(text, xmlType), new EditorSaver.PathTarget(savingPath), MAX_FILE_BYTES);
+                mSaveFileLiveData.postValue(SaveResult.saved());
+            } catch (EditorSaver.SaveException e) {
+                Log.e(TAG, "Could not save %s (original intact: %b)", e, savingPath, e.originalIntact);
+                mSaveFileLiveData.postValue(SaveResult.failed(String.valueOf(e.getMessage()), e.originalIntact));
             }
         });
+    }
+
+    /** Asks the editor to close after the next save, but only if that save succeeds. */
+    public void setExitAfterSave(boolean exitAfterSave) {
+        mExitAfterSave = exitAfterSave;
+    }
+
+    /** Whether to close now: true once, for a successful save that Save and exit asked for. */
+    public boolean consumeExitAfterSave(boolean saveSucceeded) {
+        boolean exit = mExitAfterSave && saveSucceeded;
+        mExitAfterSave = false;
+        return exit;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static byte[] encode(@NonNull String text, @XmlType int xmlType) throws IOException {
+        switch (xmlType) {
+            case XML_TYPE_AXML:
+                // ABX attributes retain types that a generic serializer would lose.
+                return AndroidBinXmlEncoder.encodeString(text);
+            case XML_TYPE_ABX: {
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                try (InputStream is = new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8))) {
+                    copyAbxFromXml(is, out);
+                }
+                return out.toByteArray();
+            }
+            default:
+            case XML_TYPE_NONE:
+                return text.getBytes(StandardCharsets.UTF_8);
+        }
     }
 
     public boolean isReadOnly() {
@@ -347,21 +396,14 @@ public class CodeEditorViewModel extends AndroidViewModel {
                 String baseStartWith = baseName + "$";
                 Path[] paths = parent != null ? parent.listFiles((dir, name) -> name.equals(baseSmali) || name.startsWith(baseStartWith))
                         : new Path[0];
-                smaliContents = new ArrayList<>(paths.length + 1);
-                smaliContents.add(smaliContent.toString());
-                for (Path path : paths) {
-                    if (path.equals(mSourceFile)) {
-                        // We already have this file
-                        continue;
-                    }
-                    String content = path.getContentAsString(null);
-                    if (content != null) {
-                        smaliContents.add(content);
-                    } else {
-                        mJavaFileLiveData.postValue(null);
-                        return;
-                    }
+                List<String> siblings = readSiblingSmali(paths, mSourceFile, MAX_FILE_BYTES);
+                if (siblings == null) {
+                    mJavaFileLiveData.postValue(null);
+                    return;
                 }
+                smaliContents = new ArrayList<>(siblings.size() + 1);
+                smaliContents.add(smaliContent.toString());
+                smaliContents.addAll(siblings);
             } else {
                 smaliContents = Collections.singletonList(smaliContent.toString());
             }
@@ -379,6 +421,35 @@ public class CodeEditorViewModel extends AndroidViewModel {
                 mJavaFileLiveData.postValue(null);
             }
         });
+    }
+
+    /**
+     * Reads the class's other smali files for the Java view, skipping the one open in the editor. They
+     * sit next to a file another app may have handed over, so they share the editor's limit in total.
+     *
+     * @return their contents, or {@code null} when one can't be read or together they exceed {@code limit}
+     */
+    @VisibleForTesting
+    @Nullable
+    static List<String> readSiblingSmali(@NonNull Path[] paths, @Nullable Path skip, int limit) {
+        List<String> contents = new ArrayList<>(paths.length);
+        long total = 0;
+        for (Path path : paths) {
+            if (path.equals(skip)) {
+                continue;
+            }
+            byte[] bytes = readFileBytes(path, limit);
+            if (bytes == null) {
+                return null;
+            }
+            total += bytes.length;
+            if (total > limit) {
+                Log.w(TAG, "Not generating Java: the class's smali files exceed %d bytes.", limit);
+                return null;
+            }
+            contents.add(new String(bytes, StandardCharsets.UTF_8));
+        }
+        return contents;
     }
 
     @Contract("!null -> !null")

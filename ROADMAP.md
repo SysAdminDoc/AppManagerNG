@@ -278,16 +278,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ### P1
 
-- [ ] P1 — Make Code Editor saves atomic and await Save and exit
-  Category: Data integrity
-  Where: `app/src/main/java/io/github/muntashirakon/AppManager/editor/CodeEditorViewModel.java:207-238`; `app/src/main/java/io/github/muntashirakon/AppManager/editor/CodeEditorFragment.java:266-291,520-532,944-962`; `libcore/io/src/main/java/io/github/muntashirakon/io/Path.java:553-558`; `app/src/main/java/io/github/muntashirakon/io/PathImpl.java:1240-1259`
-  Problem: Saving truncates the destination before serialization and writing finish, while Save and exit navigates away before the asynchronous result is known.
-  Evidence: Raw paths use replacement semantics and provider paths request `wt`; an encoding or write failure can leave an empty or partial file, and the destroyed view can miss the failure notice.
-  Fix: Serialize into a staged file first, replace raw files atomically where supported, use a provider-safe staged replacement elsewhere, and navigate back only after a successful result.
-  Acceptance: Injected encode, open, short-write, flush, and replace failures preserve the original bytes and keep the editor open with actionable feedback; successful Save and exit returns only after the committed bytes can be reopened and verified.
-  Confidence: Verified
-  Effort: M
-
 - [ ] P1 — Bind restore verification to the bytes that are consumed
   Category: Security
   Where: `app/src/main/java/io/github/muntashirakon/AppManager/settings/Prefs.java:1162-1182`; `app/src/main/java/io/github/muntashirakon/AppManager/backup/RestoreOp.java:369-460,609-815`; `app/src/main/java/io/github/muntashirakon/io/PathImpl.java:1263-1285`; `libcore/io/src/main/java/io/github/muntashirakon/io/SplitInputStream.java:214-231`

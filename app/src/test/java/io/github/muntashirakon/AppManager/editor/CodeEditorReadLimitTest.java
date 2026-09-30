@@ -97,6 +97,20 @@ public class CodeEditorReadLimitTest {
         assertEquals("hello\n", content.toString());
     }
 
+    @Test
+    public void theJavaViewReadsSiblingSmaliWithinOneLimit() throws IOException {
+        // Review finding: the other smali files of a class were read with the general 256 MiB limit.
+        io.github.muntashirakon.io.Path open = Paths.get(file("A.smali", 600));
+        io.github.muntashirakon.io.Path[] siblings = {
+                open, Paths.get(file("A$1.smali", 600)), Paths.get(file("A$2.smali", 600))};
+
+        assertNull(CodeEditorViewModel.readSiblingSmali(siblings, open, 1_000));
+        List<String> read = CodeEditorViewModel.readSiblingSmali(siblings, open, 2_000);
+        assertNotNull(read);
+        assertEquals(2, read.size());
+        assertEquals(600, read.get(0).length());
+    }
+
     @NonNull
     private static List<Content> loaded(@NonNull File file) throws InterruptedException {
         CodeEditorViewModel model = new CodeEditorViewModel(RuntimeEnvironment.getApplication());

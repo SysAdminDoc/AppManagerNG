@@ -383,6 +383,8 @@
     <string name="deletion_failed">Deletion failed</string>
     <string name="saved_successfully">Saved</string>
     <string name="saving_failed">Saving failed, try again.</string>
+    <string name="editor_save_failed_unchanged">Couldn\'t save the file: <xliff:g id="reason" example="the saved file did not read back as written">%1$s</xliff:g>. The file wasn\'t changed.</string>
+    <string name="editor_save_failed_damaged">Couldn\'t save the file: <xliff:g id="reason" example="the saved file did not read back as written">%1$s</xliff:g>. Putting the original back failed too, so the file may be incomplete. Your text is still in the editor.</string>
     <string name="string_value">String value</string>
     <string name="long_integer_value">Long integer value</string>
     <string name="integer_value">Integer value</string>
