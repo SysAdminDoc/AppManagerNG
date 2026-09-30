@@ -445,15 +445,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 Open GitHub issues checked against this list on 2026-09-26. Already covered: #13 (App Info subtitles clip, P1 above), #15 (permission watcher, P2 above), #17 (new-profile crash, Audit Findings above), #19 (UID in compact rows and an automation contract, both P2 above), #12 (Code Editor inflation crash, Roadmap_Blocked.md, Reporter-Evidence-Gated P1) and the second crash on #18 (Material theme inflation, Roadmap_Blocked.md P2). New below.
 
-### P2
-
-- [ ] P2: Stop re-asking for Usage Access after it has been granted (issue #16)
-  Reported: GreenMystic, 2026-09-05, v0.6.22 (30), Shizuku mode, installed from GitHub Release via Obtainium, screenshot attached.
-  Why: opening any App Info page inside AppManagerNG prompts for Usage Access even though the user already granted it in system settings, so the prompt fires on every visit.
-  Next: find where the grant check runs (likely `AppOpsManager` mode versus `PACKAGE_USAGE_STATS` permission on Android 14+ with Shizuku active) and make the check agree with what Settings shows; a Robolectric test covers granted, denied and "granted but restricted".
-  Evidence: https://github.com/SysAdminDoc/AppManagerNG/issues/16
-  Complexity: S
-
 ### P3
 
 - [ ] P3: Reply on #18 with the v0.6.24 outcome and ask for a fresh trace (issue #18)
@@ -461,3 +452,93 @@ Open GitHub issues checked against this list on 2026-09-26. Already covered: #13
   Why: the original `Service couldn't be found: isub` crash was fixed on 2026-09-26 (see Roadmap_Blocked.md), but the issue has no maintainer reply and the second reporter's trace is unreadable from a v0.6.23 build.
   Next: name the fix and the release it ships in, ask both reporters for a v0.6.24 or later trace; once the first reporter confirms, the issue is Matt's to close, never an agent's.
   Evidence: https://github.com/SysAdminDoc/AppManagerNG/issues/18
+
+## Research-Driven Additions (2026-09-30)
+
+Sources and reasoning: RESEARCH.md (2026-09-30).
+
+### P0
+
+- [ ] P0: Stage ADB-mode server launch files where the shell user can read them (issue #20)
+  Reported: Bingblop, 2026-09-28, latest release (v0.6.23): ADB over TCP and Wireless Debugging both fail although paired, Shizuku works, upstream App Manager works for the same user. Closing the issue is Matt's; reply once a release carries the fix.
+  Why: since `4be517ffd` (2026-06-12) and `9b90177d1` (2026-06-14) the ADB launch runs `sh <device-protected cache>/run_server.sh` and copies `main.jar` from the same directory, and SELinux forbids the `shell` domain from entering app data directories, so the server never starts and the app gives up after 60 seconds with "Server wasn't started".
+  Evidence: fork issue #20; `servermanager/ServerConfig.java:50-69`; `servermanager/AssetsUtils.java`; `ipc/RootServiceManager.java` ADB branch of the runner script and `prepareMainJar`; `LocalServerManager.java:209-262` (waits for `Success!` or `Error!`); AOSP `system/sepolicy/private/domain.te` neverallow on `app_data_file` and `privapp_data_file` for every domain except the app, adbd, run-as, system_server and zygote; `RootServiceManagerTest.mainJarStagingPathUsesInternalDeviceProtectedCache` asserts the broken location; upstream 3d11bcb and v4.1.1 never stage shell-executed files in app-private storage.
+  Touches: `ServerConfig.java`, `AssetsUtils.java`, `RootServiceManager.java`, `LocalServerManager.java`, the ADB launch command, `RootServiceManagerTest`, `AssetsUtilsTest`, a new launcher-path contract test.
+  Acceptance: in ADB mode no file the shell user reads or executes lives under the app's CE or DE data directories; the launcher and jars reach `/data/local/tmp` either through the existing libadb connection or from the installed APK or native library directory, never through a world-writable path, and each staged file's SHA-256 is checked against the bundled asset before it runs; a launch that fails prints an `Error!` line at once instead of timing out; root mode keeps its private copy; a Robolectric contract test fails if any ADB-mode path sits under `/data/data`, `/data/user` or `/data/user_de`; on the S22 or S25, ADB over TCP and Wireless Debugging both start the server and an App Info privileged action succeeds.
+  Complexity: M
+
+### P1
+
+- [ ] P1: Keep AppManagerNG's privileged server apart from upstream App Manager's
+  Why: the fork installs beside upstream by design, but both use port `60001+userId` and process name `am_local_server`, liveness is a bind test, and the client never waits for a handshake acknowledgement, so the fork can talk to upstream's server and its `killall am_local_server` stops upstream's too.
+  Evidence: `utils/AppPref.java:579-580`; `servermanager/LocalServer.java:112-120`; `DataTransmission.java:208-211`; `servermanager/LocalServerManager.java:337`; upstream `d0156c440` (`checkServerHealth`); fork issue #20 (a reporter who runs both apps).
+  Touches: default port preference, server process name in the launcher and `ServerRunner`, handshake acknowledgement in `DataTransmission` and `LocalServer`, restart path, tests. Related blocked items: HMAC mutual auth and secure-session hardening in `Roadmap_Blocked.md`.
+  Acceptance: the fork's default port range and process name differ from upstream's; a user-set port is kept; the client treats a server as alive only after an acknowledgement bound to its own token; the restart path kills only the fork's process; host tests cover the default differences and reject a server that accepts the connection but never acknowledges.
+  Complexity: M
+
+- [ ] P1: Port upstream's 2026-09-12 mode-of-operation fixes
+  Why: switching between no-root and ADB, recreating the activity, and binding services concurrently all have races upstream fixed on 2026-09-12, and the fork's `Ops.java` is its most re-fixed privileged file.
+  Evidence: upstream `8ba225324` (one request at a time), `4d03b737e` (no status replay on recreate), `54e2d6ec3`, `8ebd38362` (repeated no-root and ADB switching), `43e74db72` (check both services), `32d93652c` (atomic `bindServices()`), `b07e75ec3` (no-root fallback race), `bc52be1e8` (incomplete USB debugging dialog crash), `2dc8273b8` (server errors as toasts), `32ad2377d` (ANR in `ServerStatusChangeReceiver`); `settings/Ops.java` took 4 fix commits in the last 200.
+  Touches: `settings/Ops.java`, the Mode of operation preference and its view model, `ipc/LocalServices`, `ServerStatusChangeReceiver`, tests.
+  Acceptance: each listed upstream commit is either ported with a host test that fails without it or named in the commit body as not applicable with the reason; a mode change requested while another is running is rejected or queued, never interleaved; recreating the settings screen does not replay a finished status; the status receiver does no blocking work on the main thread.
+  Complexity: L
+
+- [ ] P1: Port upstream's wireless-debugging pairing and connect fixes
+  Why: the fork was cut from 3d11bcb and missed the pairing, mDNS and reconnect fixes upstream shipped through v4.1.1 and after, so Wireless Debugging stays fragile even once the launcher is fixed.
+  Evidence: upstream `a488f27a2` (pairing timeout), `355813cae` (Wi-Fi change mid-pairing), `8794070cf` (mDNS scanning leaks), `2f2b31e89` (state and concurrency), `62161f4ff` (port validity), `03298fafa` (fresh ADB stream per start), `22d439d61` (connect on boot), `d1f9c6b34` (server detaches from the shell), `0152f468f` and `9638823e9` (retry and reuse); libadb-android #34 (streams close right after a wireless connect on 3.1.1).
+  Touches: `adb/` pairing and connect code, mDNS discovery, `LocalServerManager` start path, tests.
+  Acceptance: each listed commit is ported with a host test or named as not applicable with the reason; pairing gives up after a bounded time with a clear message; a Wi-Fi change mid-pairing leaves no stuck state; the first shell stream after connect is retried once when it closes within 1 second; on the S22 or S25 Wireless Debugging connects after a Wi-Fi toggle and after a reboot.
+  Complexity: L
+
+- [ ] P1: Deliver the crash notification before the process dies
+  Why: the crash handler builds its report, writes the crash sink and posts the notification with no error handling and no pause, so on API 34 and later the notification can be lost and a failure while building the report skips the platform's default handler; crash reports are the only channel for #12, #17 and #18.
+  Evidence: upstream `edfae0b04` ("Fix displaying crash notification in API 34+"); `misc/AMExceptionHandler.java:36-77`.
+  Touches: `AMExceptionHandler.java`, `NotificationUtils` (a dedicated crash channel), a host test.
+  Acceptance: the default handler runs exactly once even when report building, the crash sink, or posting throws; the notification is posted on its own channel and the handler waits at most 250 ms after posting before delegating; host tests cover a throwing `DeviceInfo`, a throwing crash sink and a throwing notification manager; a forced crash on the S25 shows the notification.
+  Complexity: S
+
+- [ ] P1: Grant or revoke an AppOp's linked permission from the requested mode
+  Why: `setAppOp` decides grant versus revoke from the op's current mode, so allowing an op that is currently ignored revokes its permission, and denying one that is allowed grants it.
+  Evidence: upstream `6495496ce`; `details/struct/AppDetailsAppOpItem.java:217-222` compares `getMode()` where the requested `mode` belongs.
+  Touches: `AppDetailsAppOpItem.java`, a host test with fake `AppOpsManagerCompat` and permission calls.
+  Acceptance: requesting `MODE_ALLOWED` grants the linked permission, `MODE_FOREGROUND` grants it on API 29 and later, and every other mode revokes it, whatever the current mode; a test covers each requested mode from each starting mode.
+  Complexity: S
+
+### P2
+
+- [ ] P2: Classify ADB-mode failures and give one next step
+  Why: every ADB-mode failure ends in the same generic message, #20 arrived with every mode and device field blank, and Android 17 now turns wireless debugging off by itself on untrusted networks.
+  Evidence: fork issue #20; Android Developers Blog "ADB Wi-Fi 2.0" (2026-09); libadb-android #34 (stream closed after connect) and #32 (cached TLS context after a key change); ColorOS 16 permission-monitoring removal; the existing Shizuku OEM diagnostics item is the sibling for Shizuku.
+  Touches: `settings/Ops.java` connect paths, `servermanager/LocalServerManager.java`, Mode of operation UI, support bundle.
+  Acceptance: each ADB-mode failure maps to a stable code (wireless debugging off, pairing required, certificate rejected, connection refused, stream closed after connect, server launch denied, launch timeout, unknown) shown in plain words with one next step and carried in the support bundle without addresses, ports or tokens; host tests feed each exception shape and assert the code; an unknown failure keeps its exception class.
+  Complexity: M
+
+- [ ] P2: Check the base APK's native ABIs before installing
+  Why: install preflight checks only selected ABI splits, so a single APK whose `lib/` holds no ABI the device supports reaches session commit, and InstallerX Revived #838 shows that path soft-rebooting an arm64 phone inside system_server.
+  Evidence: `apk/installer/InstallDependencyChecker.java:227` (`checkAbiSplits` returns early without splits); InstallerX Revived #838 (2026-09-29, x86_64-only APK on an S23 Ultra, Android 14).
+  Touches: `InstallDependencyChecker.java`, APK native-library listing, installer preflight UI, tests.
+  Acceptance: when the base APK plus selected splits carry `lib/<abi>/` entries and none is in `Build.SUPPORTED_ABIS`, preflight reports an incompatible ABI naming what the APK has and what the device supports, before any session is created; APKs without native libraries are unaffected; tests cover x86_64-only, arm64 plus x86_64, no libraries, and the existing split cases.
+  Complexity: S
+
+- [ ] P2: Stop the file provider proxying its own URIs
+  Why: `getContentUri` wraps a content URI of AppManagerNG's own authority in another proxy layer, which upstream fixed as infinite proxying.
+  Evidence: upstream `9345675c1`; `fm/FmProvider.java:67-68`.
+  Touches: `FmProvider.java`, a host test.
+  Acceptance: a URI with the provider's own authority comes back unchanged; `getContentUri` is idempotent; `file`, other `content` authorities and `vfs` URIs keep their current mapping.
+  Complexity: S
+
+- [ ] P2: Label the unlabeled image controls and fail lint on new ones
+  Why: 12 image controls have neither a content description nor a decorative flag, so TalkBack reads nothing or "unlabeled", and lint does not escalate the check.
+  Evidence: `res/layout/dialog_backup_tasks.xml` (5), `dialog_restore_tasks.xml` (3), `dialog_backup_restore.xml`, `item_icon_title_subtitle.xml`, `item_main.xml`, `item_main_v2.xml` (1 each); `app/lint.xml`; WCAG 2.2 success criterion 1.1.1. The device-gated accessibility hardening item in `Roadmap_Blocked.md` covers the rest.
+  Touches: the six layouts, `strings.xml`, `app/lint.xml`.
+  Acceptance: each control has a meaningful label or `importantForAccessibility="no"` when decorative; `ContentDescription` is an error in `app/lint.xml`; `lintFlossDebug` passes without adding a `ContentDescription` entry to the baseline.
+  Complexity: S
+
+### P3
+
+- [ ] P3: Schedule settings snapshot export to a chosen folder
+  Why: settings, rules and profiles are lost with the device unless the user remembers to export them, and two competitor trackers ask for exactly this.
+  Evidence: Canta #377 and SD Maid SE #2807 (automatic settings backup requests); `snapshot/SnapshotBundle.java` already exports and imports; scheduled backups already use WorkManager and SAF destinations.
+  Touches: `SnapshotBundle.java`, a WorkManager worker beside `backup/schedule/`, Privacy or Backup settings, retention, tests.
+  Acceptance: a user can pick a SAF folder, an interval and a keep count; each run writes an encrypted snapshot when encryption is configured and never a plaintext one when it is; the oldest files beyond the keep count are removed only after a new snapshot is written and read back; server secrets stay excluded; host tests cover retention, a revoked folder, and encryption.
+  Complexity: M

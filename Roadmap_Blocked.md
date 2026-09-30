@@ -93,6 +93,7 @@ ROADMAP.md once the blocker is resolved.
   Complexity: M
 
 - [ ] P2 — Wireless-ADB resilience: trusted-network auto-reconnect and pairing-state surface
+  Evidence (2026-09-30): Android 17's ADB Wi-Fi 2.0 turns wireless debugging off on networks the user hasn't allowed (Android Developers Blog, 2026-09); One UI 8 kills ADB-spawned servers on wake from doze (Shizuku #2475). Land the ADB launcher fix (issue #20) and the upstream pairing ports in ROADMAP.md first.
   Blocker: requires on-device ADB connection lifecycle testing.
   Complexity: L
 
@@ -373,15 +374,6 @@ ROADMAP.md once the blocker is resolved.
   Blocker: requires maintainer/account action to create and operate the
   hosted translation service.
   Complexity: M
-
-### P3
-
-- [ ] P3 — IzzyOnDroid repository submission
-  Why: Fastlane metadata is already complete (title, descriptions, icon, 9 screenshots, changelogs); IzzyOnDroid is the fastest path to F-Droid ecosystem visibility in Neo Store and Droid-ify clients.
-  Evidence: fastlane/metadata/android/en-US/ (complete); IzzyOnDroid inclusion policy; upstream App Manager is already listed.
-  Touches: fastlane/metadata/android/en-US/ (verify currency), docs/distribution/ (submission checklist), README.md (add badge after listing)
-  Blocker: requires filing a submission request at codeberg.org/IzzyOnDroid/repo — operator action, not code.
-  Complexity: S
 
 ## Documentation-Write-Gated (2026-07-15)
 

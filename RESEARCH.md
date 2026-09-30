@@ -1,270 +1,217 @@
 # Research: AppManagerNG
 
-Date: 2026-09-25. Replaces all prior research.  
-Reviewed source: v0.6.24 at fde584ce0. Latest published release: v0.6.23, published 2026-09-05.
+Date: 2026-09-30. Replaces all prior research.
+Reviewed source: v0.6.24 tree at 4a280e767 plus the uncommitted 2026-09-26 drain work. Latest published release: v0.6.23 (2026-09-05).
 
 ## Executive Summary
 
-AppManagerNG is an offline-first Android package manager with an unusually broad evidence and control surface. Its strongest direction is not another utility module. It is a dependable loop that shows the exact state, performs a privileged change, verifies the result, and can reverse that change without overwriting newer work. The first release after this research should close four verified trust failures: hostile keystore cost, root probing in no-root mode, Usage Access identity confusion, and optional telephony service crashes. The next layer should make mutations conflict-safe, finish Android 15 through 17 compatibility, and turn existing storage, backup, and debloat data into clearer evidence.
+AppManagerNG is an offline-first Android package manager that continues upstream App Manager with root, ADB, Shizuku, Dhizuku and no-root execution, evidence-heavy inspection, backups, debloat guidance and an auditable change history. The 2026-09-25 pass's four P0 trust fixes all landed on 2026-09-26 (Bouncy Castle 1.86 with bounded keystore imports, a side-effect-free no-root start, Usage Access keyed to the app's own grant, and missing telephony binders treated as no data). The weakest area is now the privileged transport itself. Both ADB modes have been broken since 2026-06-12 by a fork-only hardening change, upstream spent 2026-09-12 rewriting the same state machine, and Android 17 changed wireless debugging underneath it. Fix the transport first, then make crash reports reliably reach the maintainer, then return to the rollback and inventory items already queued.
 
 Top opportunities, in priority order:
 
-1. **Verified, P0:** align Bouncy Castle at 1.86 and bound BKS and PKCS12 import cost. The reachable paths are `settings/crypto/ImportExportKeyStoreDialogFragment.java` and `crypto/ks/KeyStoreUtils.java`.
-2. **Verified, P0:** make explicit no-root startup bypass root and remote-server construction. The current path crosses `settings/Ops.java`, `runner/Runner.java`, and `runner/NormalShell.java`.
-3. **Verified, P0:** separate AppManagerNG's own Usage Access grant from Shizuku or root query capability. [Fork issue #16](https://github.com/SysAdminDoc/AppManagerNG/issues/16) maps to `SelfPermissions.checkUsageStatsPermission()` using `Users.getSelfOrRemoteUid()`.
-4. **Verified, P0:** treat a missing `isub` binder as unavailable subscriber metadata. [Fork issue #18](https://github.com/SysAdminDoc/AppManagerNG/issues/18) maps to `compat/SubscriptionManagerCompat.java`.
-5. **Verified, P1:** add an append-only mutation journal with exact before-state, confirmed after-state, execution identity, and conflict-aware rollback.
-6. **Verified, P1:** stop decoding every binary manifest against the newest Android framework table. [Upstream #2040](https://github.com/MuntashirAkon/AppManager/issues/2040) reproduces the wrong-name risk in `apk/parser/AndroidBinXmlDecoder.java`.
-7. **Verified, P1:** finish Android 15 package and work compatibility: archived-package enumeration, scheduled-network work, persisted SAF grant cleanup, and ACTION_SEND APK handling.
-8. **Verified, P1:** complete the read-only DocumentsProvider containment contract and test symlink and prefix escapes.
-9. **Needs live validation, P2:** add storage composition and deltas, backup footprint preflight, and evidence-qualified debloat guidance to existing surfaces.
-10. **Verified, P2:** improve diagnostics for Android 17 pre-ANR warnings, Shizuku OEM failures, and Samsung UI Tracker self-attribution.
+1. **Verified, P0 (fork #20):** ADB over TCP and Wireless Debugging cannot start the server. `4be517ffd` and `9b90177d1` stage `run_server.sh` and `main.jar` in the app's device-protected cache, which SELinux forbids the `shell` domain from entering.
+2. **Verified, P1:** keep the fork's privileged server apart from upstream's. Both use port `60001+userId` and process name `am_local_server`, and the fork is designed to install beside upstream.
+3. **Verified, P1:** port upstream's 2026-09-12 mode-of-operation and server hardening, and the pre-v4.1.1 wireless-debugging fixes the fork never took.
+4. **Verified, P1:** the crash handler can lose its own notification on API 34 and later and can skip the default handler if report building throws (upstream `edfae0b04`).
+5. **Verified, P1:** setting an AppOp decides whether to grant or revoke its linked permission from the current mode instead of the requested one (upstream `6495496ce`).
+6. **Verified, P2:** classify ADB-mode failures with a stable code and one next step, covering Android 17's untrusted-network shutoff and the two open libadb-android defects.
+7. **Verified, P2:** preflight the base APK's native ABIs, not only selected ABI splits.
+8. **Verified, P2:** stop `FmProvider` proxying its own authority (upstream `9345675c1`) and label the 12 unlabeled image controls.
+9. **Carried forward, P1:** mutation before and after images, API-correct binary XML decoding, archived-package inventory, SAF grant reconciliation, and the DocumentsProvider child contract. All five were re-checked on 2026-09-30 and remain open.
 
 ## Product Map
 
 ### Core workflows
 
-- Inventory and search apps, then inspect identity, signing, permissions, AppOps, components, native libraries, storage, usage, and install metadata.
-- Apply package, permission, component, network, profile, freeze, archive, and debloat operations through root, ADB, Shizuku, or no-root capabilities.
-- Inspect and install APKs with signer and session controls.
-- Back up, restore, convert, and manage app data through local or Storage Access Framework destinations.
-- Diagnose devices through logcat, running processes, the terminal, file manager, code editor, App Change Feed, and support bundles.
+- Inventory and search apps, then inspect identity, signing, permissions, AppOps, components, trackers, native libraries (including 16 KB alignment), storage, usage and exit reasons.
+- Apply package, permission, AppOps, component, freeze, suspend, archive and debloat operations through root, ADB, Shizuku, Dhizuku or no-root.
+- Inspect and install APKs and split bundles with signer, ABI and dependency preflight.
+- Back up, restore and convert app data to local or SAF destinations, on demand or on a schedule.
+- Diagnose with logcat, running processes, terminal, file manager, code editor, App Change Feed, crash sink and support bundle.
 
 ### User personas
 
-- Privacy-conscious Android users who want local evidence before changing permissions or AppOps.
-- Power users managing many packages, profiles, users, or work profiles.
-- Root and Shizuku users who need privileged controls without a cloud account.
-- Troubleshooters comparing APKs, signers, libraries, manifests, logs, and package state.
+- Privacy-minded users who want evidence before changing permissions or AppOps.
+- Power users managing many packages, users and profiles.
+- Root, Shizuku and wireless-debugging users without an account or cloud dependency.
+- Troubleshooters comparing APKs, signers, manifests and package state.
 
 ### Platforms and distribution
 
-- Android API 21 and later, compiled against API 37 and targeting API 36 in the reviewed source.
-- Java-first Android Views and Material components in a multi-module Gradle build.
-- FLOSS and full variants, with local release evidence and reproducibility checks.
-- Source v0.6.24 is ahead of the [published v0.6.23 release](https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.6.23). No roadmap item is warranted from that gap alone.
+- Android API 21 through 37 (compile 37, target 36), Java and Android Views, Material 1.13.
+- `floss` and `full` flavors, published as signed universal APKs on GitHub Releases with reproducibility and dependency evidence. Store listings are out of scope by owner policy.
 
 ### Key integrations and data flows
 
-- Privileged calls flow through operation selection, local or remote binder services, compatibility wrappers, then authoritative Android services.
-- Backup data flows through part planning, archive creation, SAF or local destinations, publish, retention, and restore validation.
-- Package and permission observations feed snapshots, operation history, rules, profiles, and the App Change Feed.
-- External trust inputs include user-selected APKs, manifests, DEX, archives, fonts, images, BKS, PKCS12, and DocumentsProvider URIs.
+- Privileged calls: mode selection in `settings/Ops.java`, then `servermanager/LocalServer`, the `run_server.sh` launcher, `am.jar` and `main.jar`, a loopback token handshake, and binder services.
+- On-device ADB uses libadb-android 3.1.1 against `127.0.0.1`. Shizuku uses Shizuku-API 13.1.5. Root uses libsu 6.0.0.
+- Untrusted inputs: APKs, manifests, DEX, archives, keystores, fonts, images, backups, settings snapshots, DocumentsProvider URIs and intents from other apps.
 
 ## Competitive Landscape
 
-| Product | What it does well | Learn from it | Avoid |
+| Product | Does well | Learn | Avoid |
 |---|---|---|---|
-| [Upstream App Manager](https://github.com/MuntashirAkon/AppManager) | Broad package control and fast Android compatibility work | Port narrow fixes with local contract tests | Wholesale cherry-picks across this fork's changed privilege and release model |
-| [Inure](https://github.com/Hamza417/Inure) | Dense package, signer, library, and state presentation | Compact evidence grouping and stronger visual hierarchy | Breadth that does not improve trust or rollback |
-| [Hail](https://github.com/aistra0528/Hail) and [FreezeYou](https://github.com/FreezeYou/FreezeYou) | Focused freeze workflows | Fast, legible routine execution | A separate freeze-only workspace |
-| [PermissionManagerX](https://github.com/mirfatif/PermissionManagerX) | Permission watcher and scheduled drift checks | Report-only drift built on current snapshots | Always-on enforcement claims without a durable privileged channel |
-| [InstallerX Revived](https://github.com/wxxsfxyzm/InstallerX-Revived) | Granular installer choices | Named local presets and visible option diffs | Network APK streaming and hidden defaults |
-| [Canta](https://github.com/samolego/Canta) and [UAD-NG](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation) | Accessible debloat guidance | Device-qualified provenance and recovery notes | Universal safe-to-remove labels |
-| [Neo Backup](https://github.com/NeoApplications/Neo-Backup) and [DataBackup](https://github.com/XayahSuSuSu/Android-DataBackup) | Focused backup planning and restore flows | Footprint preflight and destination evidence | Full-device backup promises Android cannot keep |
-| [LibChecker](https://github.com/LibChecker/LibChecker) | Clear library and change evidence | Storage deltas in the existing change feed | CVE claims based only on class names |
-| [AppVerifier](https://github.com/soupslurpr/AppVerifier) | User-readable signer comparison | Local signer pins and lineage-aware continuity | A central package-trust authority |
-| [Thor](https://github.com/trinadhthatakula/Thor) | Per-setting history and Changed elsewhere language | Exact before and after mutation records | Rollback that overwrites a newer external change |
-| [AppDash](https://appdash.app/) | Focused package workflows | Clear task grouping | Cloud or account coupling |
-| [Swift Backup](https://www.swiftbackup.app/) | Clear backup-part expectations | Per-part estimate and restore planning | Proprietary storage dependencies |
+| [Upstream App Manager](https://github.com/MuntashirAkon/AppManager) | Fast fixes to the privileged transport (2026-09-12 wave), new viewers | Port transport and correctness fixes with host tests | Wholesale merges; the fork's privilege model and release model differ |
+| [SD Maid SE](https://github.com/d4rken-org/sdmaid-se) | v2.2.0-rc0 (2026-09-29) adds a second ADB transport beside Shizuku, cancelable scans | Cancelable, progress-visible long scans | A second transport stack; this fork already has four |
+| [Thor](https://github.com/trinadhthatakula/Thor) | Near-daily releases, App Ops inside permission management, HyperOS Shizuku freeze hotfix (v1.96.3) | OEM-specific failure handling as a first-class concern | Release churn without evidence |
+| [PermissionManagerX](https://github.com/mirfatif/PermissionManagerX) | Permission watcher, ADB pairing helper (v1.34-pro, 2026-09-29) | Report-only drift on existing snapshots | Paywalled core features (now ships only a pro build) |
+| [ShizuWall](https://github.com/AhmetCanArslan/ShizuWall) and [De1984](https://github.com/dorumrr/de1984) | Per-app network control via system services, shared-UID verdicts, work-profile enumeration | Shared-UID aware network verdicts for the planned INTERNET revocation | A VPN fallback |
+| [Inure](https://github.com/Hamza417/Inure) | Dense package evidence; fixed an image-viewer file-access advisory (build107.2.3) | Treat every viewer as untrusted-input code | Breadth that doesn't improve trust |
+| [Canta](https://github.com/samolego/Canta) and [UAD-NG](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation) | Accessible debloat lists | Device-qualified provenance; both trackers ask for automatic settings backup | Universal safe-to-remove labels (UAD-NG #1477, #1479, #1481 are all OEM breakage) |
+| [InstallerX Revived](https://github.com/wxxsfxyzm/InstallerX-Revived) | Granular installer options | #838: an x86_64-only APK soft-rebooted an arm64 phone, so preflight ABIs | Network APK streaming |
+| [Neo Backup](https://github.com/NeoApplications/Neo-Backup) and [DataBackup](https://github.com/XayahSuSuSu/Android-DataBackup) | Focused backup flows | Footprint preflight | Neo Backup has had no commit since 2026-05-03 with 245 open issues |
+| [Blocker](https://github.com/lihenggui/blocker) | Component blocking UX | Bulk "unblock all" recovery (#1578) | IFW-only claims for providers |
+| [LibChecker](https://github.com/LibChecker/LibChecker) | Library evidence | Reproducibility is a trust claim that can regress (#1760) | CVE claims from class names |
+| [restoid](https://github.com/hddq/restoid) | restic-backed incremental root backups | Deduplication as a later storage idea | Breaking the upstream-compatible archive format |
 
-The category signal is consistent: users want inspection, debloat, freeze, backup, and permission control. AppManagerNG already has those domains. It should connect them through shared evidence rather than add more top-level tools.
+Category signal: the loudest upstream request is Shizuku support (#2050, #2057), which this fork already ships. Competitors are converging on OEM-specific privileged-op failures, multi-user targeting and backup of the app's own settings. AppManagerNG already has the domains; it needs its transports to be dependable and its failures to be legible.
 
 ## Reported Issues
 
-### Fork tracker
+### Fork tracker (8 open on 2026-09-30)
 
-| Issue | Finding | Disposition on 2026-09-25 |
+| Issue | Finding | Disposition |
 |---|---|---|
-| [#12](https://github.com/SysAdminDoc/AppManagerNG/issues/12) | Code Editor crash on API 29 armeabi-v7a | **Needs live validation.** v0.6.24 preserves first-party frames and publishes the R8 mapping. Require a fresh trace before changing code. The item remains in `Roadmap_Blocked.md`. |
-| [#13](https://github.com/SysAdminDoc/AppManagerNG/issues/13) | Russian App Info text clips | **Verified, already represented.** The active roadmap has a long-locale and font-scale gate. |
-| [#15](https://github.com/SysAdminDoc/AppManagerNG/issues/15) | Permission watcher request | **Verified, already represented.** The active roadmap covers grant-state snapshots and report-only drift. |
-| [#16](https://github.com/SysAdminDoc/AppManagerNG/issues/16) | Repeated Usage Access prompt under Shizuku | **Verified, new P0.** UI grant identity and remote query identity are mixed. |
-| [#17](https://github.com/SysAdminDoc/AppManagerNG/issues/17) | Profile creation crash on API 37 | **Needs live validation.** The v0.6.23 trace lacks a usable first-party frame. |
-| [#18](https://github.com/SysAdminDoc/AppManagerNG/issues/18) | Usage data crashes when `isub` is missing | **Verified, new P0.** Service absence escapes a path that catches only `RemoteException`. A separate Material theme comment needs its own fresh trace. |
-| [#19](https://github.com/SysAdminDoc/AppManagerNG/issues/19) | UID missing and automation requested | **Verified, split into two items.** Restore UID metadata. Add only a narrow authenticated operation contract. |
+| [#20](https://github.com/SysAdminDoc/AppManagerNG/issues/20) (2026-09-28) | ADB over TCP and Wireless Debugging fail, Shizuku works, upstream works for the same user | **Verified root cause, new P0.** `ServerConfig.java:50-69` stages the launcher under `getDeContext().getCacheDir()`; `RootServiceManager` copies `main.jar` from the same place in ADB mode. AOSP `private/domain.te` neverallows `shell` on `app_data_file` directories. `RootServiceManagerTest.mainJarStagingPathUsesInternalDeviceProtectedCache` asserts the broken location. Device reproduction still needed. |
+| [#19](https://github.com/SysAdminDoc/AppManagerNG/issues/19) | UID missing from rows, automation request | Already queued (UID rows P2, authenticated external operation contract P2). |
+| [#18](https://github.com/SysAdminDoc/AppManagerNG/issues/18) | Crash when `isub` is missing | Fixed in the tree by `8517dd357` and `0ee71bf64`; needs a release and a reporter reply. |
+| [#17](https://github.com/SysAdminDoc/AppManagerNG/issues/17) | Profile creation crash on API 37 | Still needs a symbolicated trace (existing P1 reproduce item). |
+| [#16](https://github.com/SysAdminDoc/AppManagerNG/issues/16) | Usage Access re-asked under Shizuku | Fixed in the tree by `f130ef9e3` and `cd39ab4d1`. The roadmap entry written after those commits was stale and is removed. |
+| [#15](https://github.com/SysAdminDoc/AppManagerNG/issues/15) | Permission watcher | Already queued (grant-state drift P2). |
+| [#13](https://github.com/SysAdminDoc/AppManagerNG/issues/13) | Russian text clipping | Already queued (long-locale gate P1). |
+| [#12](https://github.com/SysAdminDoc/AppManagerNG/issues/12) | Code Editor crash on API 29 armeabi-v7a | Reporter-evidence gated in `Roadmap_Blocked.md`. |
 
-### Upstream tracker
+### Upstream tracker and commits since 2026-09-20
 
-- **Verified, new roadmap items:** [#2039](https://github.com/MuntashirAkon/AppManager/issues/2039) UI Tracker self-attribution, [#2040](https://github.com/MuntashirAkon/AppManager/issues/2040) framework attribute misdecode, [#2043](https://github.com/MuntashirAkon/AppManager/issues/2043) archived packages absent, [#2047](https://github.com/MuntashirAkon/AppManager/issues/2047) ACTION_SEND APK ignored, [#2048](https://github.com/MuntashirAkon/AppManager/issues/2048) no-root probing root, and [#2054](https://github.com/MuntashirAkon/AppManager/issues/2054) shortcut targets absent from Recents.
-- **Verified, existing roadmap items strengthened:** [#2044](https://github.com/MuntashirAkon/AppManager/issues/2044) adds post-install reapplication evidence to privileged internet rules. [#2055](https://github.com/MuntashirAkon/AppManager/issues/2055) adds demand evidence to user-owned signer policy.
-- **Rejected as duplicate:** [#2049](https://github.com/MuntashirAkon/AppManager/issues/2049) asks for signer evidence already present in the relevant inspection path.
-- **Needs live validation:** [#2056](https://github.com/MuntashirAkon/AppManager/issues/2056) depends on hidden APIs and OEM behavior for default-installer selection. It is not ready for a roadmap commitment.
-- **Stale or insufficient:** vague root-mode reports without a current version, mode, and support bundle do not justify a second item beside the verified no-root root probe.
+- **Ported as new items:** `edfae0b04` crash notification, `6495496ce` AppOps linked permission, `9345675c1` file provider self-proxy, and the 2026-09-12 ModeOfOps/Server wave (`8ba225324`, `4d03b737e`, `8ebd38362`, `43e74db72`, `32d93652c`, `b07e75ec3`, `bc52be1e8`, `d1f9c6b34`, `0152f468f`, `9638823e9`, `d0156c440`, `32ad2377d`).
+- **Already handled here:** `2d9223a7a` APKs shared to App Info (fork `ae7ea0ee2`), folder-only sort (shipped in v0.6.16), the Android 17 `IPackageManager` return change carried by the Saloframes fork (fork issue #6).
+- **Still open upstream, already queued here:** #2054 Recents, #2043 archived packages, #2040 binary XML.
+- **Corroborated:** #2048 got a second reporter on 2026-09-24. This fork fixed startup probing on 2026-09-26, but `RunnerUtils.isRootAvailable()` is still called from App Info menu preparation, `DeviceInfo2.java:158` and `FileUtils.java:241` (existing P2 item).
+- **Not acted on:** #2058 per-app MTE mode (one request, no fork demand), #2049 signer search (duplicate), #2056 default-installer toggle (hidden API, no OEM matrix), and the seven stale upstream PRs.
 
 ## Security, Privacy, and Reliability
 
-### Verified risks
+### Verified defects
 
-- BKS and PKCS12 imports reach a Bouncy Castle family split across 1.85, 1.85.1, and 1.85.2. [Bouncy Castle 1.86](https://www.bouncycastle.org/resources/new-release-bouncy-castle-java-1-86/) addresses [CVE-2026-17508](https://github.com/bcgit/bc-java/discussions/2449). Align all three artifacts and enforce app-owned file, KDF, memory, and elapsed-time ceilings.
-- Explicit no-root selection does not prevent root-capable shell construction soon enough. A mode choice must be side-effect free before any probe or connection attempt.
-- Optional Android services are treated as universal in the subscription path. Absence must become classified unavailable data, not process failure.
-- `settings/BackupRestorePreferences.java` takes persistable SAF grants for replacement destinations without releasing abandoned grants. Android maintains a finite per-app grant pool.
-- `fm/AppManagerDocumentsProvider.java` lacks `isChildDocument()` and `FLAG_SUPPORTS_IS_CHILD`. Canonical containment needs sibling-prefix, encoded-separator, and symlink escape tests.
-- Current inverse rollback in `history/ops/PerAppRollbackManager.java` does not prove that current state still equals the state AppManagerNG wrote.
+- `servermanager/ServerConfig.java:50-69` and `ipc/RootServiceManager.java` (ADB branch) put shell-executed files in app-private storage. The launch waits 60 seconds for a `Success!` or `Error!` line (`LocalServerManager.java:209-262`) because a denied `sh` never prints `Error!`.
+- `AppPref.java:579-580`, `LocalServer.java:112-120`, `DataTransmission.java:208-211` and `LocalServerManager.java:337`: the fork shares port and process name with upstream, checks liveness by bind only, never waits for a handshake acknowledgement, and `killall am_local_server` kills upstream's server too.
+- `misc/AMExceptionHandler.java:36-77` builds the report, writes the crash sink and posts the notification with no try/catch and no pause before the default handler ends the process.
+- `details/struct/AppDetailsAppOpItem.java:217-222` uses `getMode()` where the requested `mode` belongs.
+- `fm/FmProvider.java:67-68` wraps a URI of its own authority in another proxy layer.
+- `apk/installer/InstallDependencyChecker.java:227` checks only selected ABI splits; a single APK whose `lib/` holds no supported ABI reaches session commit.
+
+### Platform and dependency risks
+
+- Android 17 [ADB Wi-Fi 2.0](https://android-developers.googleblog.com/2026/09/wireless-debugging-adb-wifi-2.html) turns wireless debugging off on networks the user hasn't allowed, and replaces the mDNS stack. Needs live validation against libadb-android's discovery.
+- libadb-android 3.1.1 has two open defects: [#34](https://github.com/MuntashirAkon/libadb-android/issues/34) streams close 50 to 400 ms after a successful wireless connect, and [#32](https://github.com/MuntashirAkon/libadb-android/issues/32) a static `SSLContext` keeps the old key after re-pairing.
+- A Google [feature request](https://kitsumed.github.io/blog/posts/android-may-soon-restrict-on-device-adb/) (IssueTracker 526109803, July and August 2026) proposes binding adbd to `wlan0` only. If it ships, every loopback ADB client, this one included, breaks. Assumption until Google acts.
+- One UI 8 kills ADB-spawned servers on wake from doze ([Shizuku #2475](https://github.com/RikkaApps/Shizuku/issues/2475)). Likely applies to this fork's ADB-launched server; it belongs to the blocked wireless-ADB resilience item.
+- Vendored Commons Compress is a tar plus zip-encoding subset. `TarUtils.parsePaxHeaders` bounds reads by `headerSize` (`TarUtils.java:699-708`), so the DUMP, Pack200, 7z and ZIP-reader advisories do not apply. Verified, no action.
+- Dependency currency: Gradle 9.8.0 (2026-09-24), baksmali 3.0.10 and jadx 1.5.6 exist. None carries a security fix for this app's reachable surface. Leave them to the normal refresh.
 
 ### Missing guardrails
 
-- Use one shared untrusted-input budget model for byte count, dimensions or entries, result size, elapsed time, cancellation, and classified failure.
-- Make execution identity explicit at every compatibility boundary: app UID, remote UID, target user, calling package, and capability source.
-- Preserve raw Android resource IDs when a binary XML mapping is uncertain. A confident wrong name is worse than an honest numeric ID.
-- Record Shizuku binder state, provider version, SDK, OEM, remote UID, and stable failure code without logging commands or user data.
-- Do not vendor [Shizuku API pull request #299](https://github.com/RikkaApps/Shizuku-API/pull/299) before affected device evidence identifies the exact failure.
+- A launch command that fails should fail fast: append an explicit `|| echo "Error! ..."` so the reader stops waiting.
+- Every privileged-mode failure should carry a stable code into the UI and the support bundle, as the Shizuku diagnostics item already requires for Shizuku.
+- Crash reporting is the maintainer's only channel for #12, #17 and #18; it must never be the thing that fails.
 
 ### Recovery and rollback
 
-- Store exact before value, requested value, confirmed after value, execution identity, result, and time for reversible mutations.
-- Read current state before rollback. If it differs from the recorded after value, mark the entry Changed elsewhere and perform no write.
-- Acquire and verify a replacement SAF grant before releasing the old one. Process death must leave at least one working destination.
-- A failed thumbnail, manifest, DEX, archive, keystore, or provider operation must preserve the last confirmed UI state and return a bounded error.
+- Unchanged from 2026-09-25: exact before and after images with conflict-aware rollback, grant handoff that keeps one working SAF destination, bounded untrusted-input failures that keep the last confirmed state.
 
 ## Architecture Assessment
 
-### Boundary changes
-
-- Split UI grant state from privileged execution capability in `self/SelfPermissions.java` and `compat/UsageStatsManagerCompat.java`.
-- Replace int-narrowed package match flags in `compat/PackageManagerCompat.java` with long-backed framework flag objects on supported APIs.
-- Put optional-service lookup behind nullable or result-bearing adapters instead of letting binder absence escape from feature code.
-- Add a durable mutation record beside operation history rather than encoding rollback only as a derived inverse command.
-- Keep storage deltas, backup estimates, debloat provenance, and ANR warnings in their existing domain stores. No new top-level database is needed.
-
-### Refactor candidates
-
-- `apk/parser/AndroidBinXmlDecoder.java`: framework-table selection and raw-ID fallback.
-- `runner/Runner.java`, `runner/NormalShell.java`, and `settings/Ops.java`: mode-first shell construction.
-- `details/AppDetailsActivity.java`: one input-URI resolver for data, ClipData, and ACTION_SEND.
-- `fm/AppManagerDocumentsProvider.java`: canonical document identity and containment.
-- `settings/BackupRestorePreferences.java`: reference-counted persisted-grant handoff.
-- `accessibility/activity/TrackerWindow.java`: last-external-activity state instead of one-off self filters.
-
-### Test and documentation gaps
-
-- Add contract tests for no-root side effects, long package flags, optional binder absence, remote versus local Usage Access, and ACTION_SEND URI precedence.
-- Add hostile fixtures for keystores, binary XML, DocumentsProvider paths, and backup providers. Each test needs a bounded failure assertion.
-- Keep the existing i18n clipping, permission drift, JADX reachability, signer policy, dependency reachability, and backup destination items. This pass found new evidence, not replacements.
-- Document the WorkManager Android 15 fix choice and the API 21 compatibility effect before changing the dependency.
-- Distribution and packaging already have strong local evidence checks. No hosted build system or new packaging item is justified.
-- Multi-user behavior is part of acceptance for Usage Access and archived-package enumeration. Schema migrations are part of acceptance for mutation, storage, debloat, and installer preset stores.
-- Accessibility is covered by the existing state-text and locale gates plus the new Android 16 custom-chart item. Offline resilience is covered by SAF and scheduled-work items.
-- Android 15 force-stop copy belongs with the existing blocked `ApplicationStartInfo` panel, which can establish why the process restarted. A separate in-process detection item would be naive because the app cannot run while it is stopped.
+- **Hot spots.** In the last 200 commits, `AppInfoFragment.java` (over 4,000 lines), `backup/RestoreOp.java`, `settings/Ops.java` and `main/MainViewModel.java` took 4 or 5 fix commits each. `Ops.java` is the privileged-mode state machine that upstream just rewrote. Port upstream's guard and health-check shape there before adding more fork-only branches.
+- **Tests that pin bugs.** `RootServiceManagerTest.mainJarStagingPathUsesInternalDeviceProtectedCache` encodes an assumption that was never checked against SELinux. Contract tests for the launcher must assert what the `shell` domain can reach, not only file modes.
+- **Coverage.** 933 first-party Java files (215k lines), 489 host test classes, 6 instrumentation classes. Privileged transports have no device test; the S22 and S25 are available for that.
+- **i18n.** 37 locales. `scripts/translation_quality.py` counts 3,682 translatable strings; ru misses 2,394, zh 2,363 and de 2,424, mostly NG-added strings that were never translated. The gate already blocks new regressions, and the existing blocked translation-pipeline item covers the backlog.
+- **Accessibility.** 12 image controls lack a label or a decorative flag (`dialog_backup_tasks.xml` 5, `dialog_restore_tasks.xml` 3, one each in `dialog_backup_restore.xml`, `item_icon_title_subtitle.xml`, `item_main.xml`, `item_main_v2.xml`). `app/lint.xml` does not escalate `ContentDescription`.
+- **Debt worth knowing.** `servermanager/LocalServerManager.java:417` (no per-session TLS, covered by the blocked secure-session item), `permission/PermUtils.java:337-380` (policy-fixed permission handling left commented out), `details/info/AppInfoFragment.java:2940` (no uninstall watch, covered by the authoritative readback item).
+- **Category coverage.** Security, reliability, observability, accessibility and testing have new items. Offline, multi-user, migration and upgrade strategy are covered by existing items (SAF grants, archived packages, the blocked capability matrix and AppsDb ladder, the API-21 dependency ledger). Distribution is GitHub Releases only by owner policy. Plugin ecosystems stay rejected. Mobile form factors beyond phones and tablets are not targeted.
 
 ## Rejected Ideas
 
-- Cloud backup protocols, cloud accounts, and proprietary storage SDKs: SAF is the product boundary, and provider behavior can be measured locally.
-- An Obtainium-style release scraper or alternative app store: weak fit and a large new network trust surface.
-- A VPN firewall: it duplicates the existing privileged eBPF or netd roadmap direction.
-- Cleaner, duplicate-media, media-viewer, scrcpy, fastboot, and remote ADB workspaces: separate products with weak reuse of AppManagerNG's evidence model.
-- A plugin marketplace or in-process third-party code: disproportionate execution and update risk. [Awesome Shizuku](https://github.com/timschneeb/awesome-shizuku) is discovery evidence, not a reason to host plugins.
-- Universal one-tap debloat labels: [UAD-NG #1164](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/issues/1164), [#1400](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/issues/1400), and [#1311](https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/issues/1311) show device, ROM, and region dependence.
-- CVE claims from class-name matches: confirm packaged artifact, version, and reachable call path.
-- Full-device backup and continuous privileged-monitoring promises: Android lifecycle and OEM policy make them unreliable.
-- A Compose migration or higher minSdk for fashion: neither solves a verified user problem. WorkManager must be handled without abandoning API 21.
-- A default-installer toggle before an Android and OEM matrix exists: the current proposal relies on hidden APIs and variable system handling.
+- 16 KB page-size checks: already shipped in `scanner/NativeLibReadiness.java`.
+- App lock or PIN gate (ShizuWall v4.6.4): already shipped (`misc/ScreenLockChecker.java`).
+- Exit-reason display: already shipped through `ActivityManagerCompat` and App Info.
+- IFW provider blocking gap (upstream #1218): `rules/compontents/ComponentsBlocker.java` already blocks providers through the package manager.
+- A second ADB transport like SD Maid SE's Porter: four transports already exist; make them dependable instead.
+- VirusTotal scanning (universal-installer): uploads user package data to a third party, against the offline-first model.
+- restic-style deduplicated backups (restoid): breaks the upstream-compatible archive format for a storage saving nobody has asked for here.
+- Build commit baked into the APK (De1984 v2.7.4): tags, published mappings and reproducibility receipts already bind a release to its source.
+- Obfuscation-resilient library detection (SAD, [arXiv 2504.13547](https://arxiv.org/abs/2504.13547)): promising but XL; revisit if tracker false negatives are reported.
+- Background-execution control like Thanox: needs Xposed hooks this app doesn't use.
+- IzzyOnDroid submission and any store or listing work: owner policy excludes store distribution. The blocked item was removed on 2026-09-30.
+- Carried from 2026-09-25: cloud backup accounts, a VPN firewall, a plugin runtime, universal debloat labels, class-name CVE verdicts, a Compose migration, and a default-installer toggle without an OEM matrix.
 
 ## Sources
 
 ### Project and trackers
 
-- https://github.com/SysAdminDoc/AppManagerNG
-- https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.6.23
-- https://github.com/SysAdminDoc/AppManagerNG/issues/12
-- https://github.com/SysAdminDoc/AppManagerNG/issues/13
-- https://github.com/SysAdminDoc/AppManagerNG/issues/15
-- https://github.com/SysAdminDoc/AppManagerNG/issues/16
-- https://github.com/SysAdminDoc/AppManagerNG/issues/17
-- https://github.com/SysAdminDoc/AppManagerNG/issues/18
+- https://github.com/SysAdminDoc/AppManagerNG/issues/20
 - https://github.com/SysAdminDoc/AppManagerNG/issues/19
-- https://github.com/MuntashirAkon/AppManager
-- https://github.com/MuntashirAkon/AppManager/releases/tag/v4.1.1
-- https://github.com/MuntashirAkon/AppManager/issues/1959
-- https://github.com/MuntashirAkon/AppManager/issues/2039
-- https://github.com/MuntashirAkon/AppManager/issues/2040
-- https://github.com/MuntashirAkon/AppManager/issues/2043
-- https://github.com/MuntashirAkon/AppManager/issues/2044
-- https://github.com/MuntashirAkon/AppManager/issues/2047
+- https://github.com/SysAdminDoc/AppManagerNG/issues/18
+- https://github.com/SysAdminDoc/AppManagerNG/issues/16
+- https://github.com/SysAdminDoc/AppManagerNG/discussions/5
+- https://github.com/MuntashirAkon/AppManager/commits/master
+- https://github.com/MuntashirAkon/AppManager/commit/edfae0b04
+- https://github.com/MuntashirAkon/AppManager/commit/6495496ce
+- https://github.com/MuntashirAkon/AppManager/commit/9345675c1
+- https://github.com/MuntashirAkon/AppManager/commit/d0156c440
 - https://github.com/MuntashirAkon/AppManager/issues/2048
 - https://github.com/MuntashirAkon/AppManager/issues/2054
-- https://github.com/MuntashirAkon/AppManager/issues/2055
-- https://github.com/MuntashirAkon/AppManager/issues/2056
+- https://github.com/MuntashirAkon/AppManager/issues/2057
+- https://github.com/MuntashirAkon/AppManager/issues/2058
+- https://github.com/MuntashirAkon/AppManager/milestones
+- https://github.com/Saloframes/AppManager/commit/fe6bcf7d
 
-### Platform, standards, and dependencies
+### Platform, libraries, security
 
-- https://developer.android.com/reference/android/app/usage/UsageStatsManager
-- https://developer.android.com/reference/android/app/AppOpsManager
-- https://github.com/topjohnwu/libsu/blob/master/core/src/main/java/com/topjohnwu/superuser/Shell.java
-- https://developer.android.com/reference/android/content/pm/PackageManager#MATCH_ARCHIVED_PACKAGES
-- https://developer.android.com/reference/android/content/Intent
-- https://developer.android.com/guide/components/activities/recents
-- https://developer.android.com/guide/topics/manifest/activity-element
-- https://developer.android.com/develop/ui/compose/system/shortcuts/managing-shortcuts
-- https://developer.android.com/reference/android/content/pm/PackageInstaller
-- https://developer.android.com/about/versions/17/features
+- https://android-developers.googleblog.com/2026/09/wireless-debugging-adb-wifi-2.html
+- https://kitsumed.github.io/blog/posts/android-may-soon-restrict-on-device-adb/
+- https://android.googlesource.com/platform/system/sepolicy/+/refs/heads/main/private/domain.te
 - https://developer.android.com/about/versions/17/behavior-changes-17
-- https://developer.android.com/about/versions/17/behavior-changes-all
-- https://developer.android.com/reference/android/app/ActivityManager
-- https://developer.android.com/reference/android/app/AnrWarningResult
-- https://developer.android.com/reference/android/app/ApplicationExitInfo.AnrInfo
-- https://developer.android.com/about/versions/16/features
-- https://developer.android.com/about/versions/15/behavior-changes-all
-- https://developer.android.com/reference/android/app/usage/StorageStats
-- https://developer.android.com/reference/android/provider/DocumentsProvider
-- https://developer.android.com/reference/android/provider/DocumentsContract.Root
-- https://developer.android.com/training/data-storage/shared/documents-files
-- https://android.googlesource.com/platform/frameworks/base/+/master/services/core/java/com/android/server/uri/UriGrantsManagerService.java
-- https://developer.android.com/jetpack/androidx/releases/work
-- https://developer.android.com/jetpack/androidx/versions
-- https://www.bouncycastle.org/resources/new-release-bouncy-castle-java-1-86/
-- https://github.com/bcgit/bc-java/discussions/2449
-- https://repo1.maven.org/maven2/org/bouncycastle/bcpkix-jdk15to18/1.86/bcpkix-jdk15to18-1.86.pom
-- https://repo1.maven.org/maven2/org/bouncycastle/bcutil-jdk15to18/1.86/bcutil-jdk15to18-1.86.pom
-- https://github.com/RikkaApps/Shizuku-API
-- https://github.com/RikkaApps/Shizuku-API/pull/299
+- https://developer.android.com/privacy-and-security/local-network-permission
+- https://source.android.com/docs/security/bulletin/2026/2026-09-01
+- https://source.android.com/docs/security/features/apksigning/v3-2
+- https://github.com/MuntashirAkon/libadb-android/issues/34
+- https://github.com/MuntashirAkon/libadb-android/issues/32
+- https://github.com/RikkaApps/Shizuku/issues/2475
+- https://github.com/iamr0s/Dhizuku-API
 - https://github.com/topjohnwu/libsu/releases
-- https://github.com/topjohnwu/Magisk/releases
-- https://github.com/skylot/jadx/security/advisories/GHSA-hvp5-5x4f-33fq
+- https://github.com/apache/commons-compress/releases
+- https://github.com/gradle/gradle/releases/tag/v9.8.0
+- https://github.com/google/smali/tags
+- https://github.com/skylot/jadx/releases/tag/v1.5.6
 - https://www.w3.org/TR/WCAG22/
-- https://mas.owasp.org/MASVS/
-- https://csrc.nist.gov/pubs/sp/800/218/final
-- https://arxiv.org/abs/1904.05572
-- https://www.usenix.org/conference/usenixsecurity21/presentation/lee-yu-tsung
 
 ### Competitors and community
 
-- https://github.com/Hamza417/Inure
-- https://github.com/aistra0528/Hail
-- https://github.com/FreezeYou/FreezeYou
-- https://github.com/mirfatif/PermissionManagerX
-- https://mirfatif.github.io/PermissionManagerX/help/permission-watcher/
-- https://mirfatif.github.io/PermissionManagerX/help/scheduled-check/
-- https://github.com/wxxsfxyzm/InstallerX-Revived
-- https://github.com/wxxsfxyzm/InstallerX-Revived/issues/821
-- https://github.com/samolego/Canta
-- https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation
-- https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/issues/1164
-- https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/issues/1400
-- https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/issues/1311
+- https://github.com/d4rken-org/sdmaid-se/releases/tag/v2.2.0-rc0
+- https://github.com/trinadhthatakula/Thor/releases/tag/v1.96.3
+- https://github.com/mirfatif/PermissionManagerX/releases/tag/v1.34-pro
+- https://github.com/AhmetCanArslan/ShizuWall/releases/tag/v4.6.4
+- https://github.com/dorumrr/de1984/releases/tag/v2.7.8
+- https://github.com/Hamza417/Inure/releases/tag/build107.2.3
+- https://github.com/samolego/Canta/issues/377
+- https://github.com/d4rken-org/sdmaid-se/issues/2807
+- https://github.com/Universal-Debloater-Alliance/universal-android-debloater-next-generation/issues/1481
+- https://github.com/wxxsfxyzm/InstallerX-Revived/issues/838
 - https://github.com/NeoApplications/Neo-Backup
-- https://github.com/NeoApplications/Neo-Backup/issues/906
-- https://github.com/XayahSuSuSu/Android-DataBackup
-- https://github.com/LibChecker/LibChecker/issues/1945
-- https://github.com/soupslurpr/AppVerifier
-- https://github.com/trinadhthatakula/Thor
-- https://appdash.app/
-- https://www.swiftbackup.app/
-- https://adbappcontrol.com/en/
-- https://github.com/timschneeb/awesome-shizuku
+- https://github.com/lihenggui/blocker/issues/1578
+- https://github.com/LibChecker/LibChecker/issues/1760
+- https://github.com/hddq/restoid
+- https://github.com/Tornaco/Thanox
+- https://github.com/pass-with-high-score/universal-installer
 - https://github.com/awesome-android-root/awesome-android-root
-- https://f-droid.org/en/categories/app-manager/
-- https://shizukuapps.com/
-- https://www.reddit.com/r/androidapps/comments/1oiewkh/permissions_management_app/
-- https://www.reddit.com/r/androidapps/comments/1r0s7fl/your_top_shizuku_applications_and_why/
-- https://news.ycombinator.com/item?id=39019252
+- https://github.com/timschneeb/awesome-shizuku
+- https://arxiv.org/abs/2504.13547
+- https://arxiv.org/abs/2508.02008
+- https://arxiv.org/abs/2408.01810
 
 ## Open Questions
 
-- Does fork issue #17 reproduce on v0.6.24, and what is the first AppManagerNG frame in a symbolicated API 37 trace?
-- Which Android 15 through 17 builds reproduce WorkManager 2.10.5 connectivity or periodic-work failures in the scheduled backup path?
-- Which Samsung firmware versions produce UI Tracker self-attribution, and does filtering all tracker-overlay self events hide any real target transition?
-- Do API 35 and 36 expose archived packages consistently through ADB and Shizuku for secondary users?
-- Which MediaTek and HyperOS builds require the open Shizuku compatibility change, and what binder failure appears before it?
-- What capacity and failure behavior do common network-backed DocumentsProviders expose during backup footprint preflight?
+- Does the #20 reporter also have upstream App Manager installed and running its server on port 60001? That decides whether the shared-port defect contributed.
+- Does libadb-android's mDNS discovery still find the pairing and connect services under Android 17's ADB Wi-Fi 2.0 stack?
+- Does One UI 8 kill this fork's ADB-launched server on wake the way it kills `shizuku_server`?
+- Will Google act on IssueTracker 526109803 (adbd bound to `wlan0` only)? If so, the on-device ADB modes need a LAN-address path and `ACCESS_LOCAL_NETWORK` once the target reaches API 37.
