@@ -106,8 +106,10 @@ public class ApkIntentSourceTest {
                 "https://example.com/app.apk",
                 "package:com.example.app",
                 "vfs://1/base.apk",
-                "app-manager://details",
                 "/sdcard/Download/app.apk",
+                // Opaque URIs: any app can send one, and the sanitizer used to throw on file:x.
+                "file:x.apk",
+                "content:x.apk",
         };
         for (String uri : refused) {
             assertRefused(R.string.apk_intent_unusable, ApkIntentSource.resolve(share(Uri.parse(uri))));
@@ -117,6 +119,14 @@ public class ApkIntentSourceTest {
         Uri file = Uri.parse("file:///sdcard/Download/app.apk");
         assertResolved(file, ApkIntentSource.resolve(share(file)));
         assertResolved(file, ApkIntentSource.resolve(new Intent(Intent.ACTION_VIEW, file)));
+    }
+
+    @Test
+    public void aMalformedDeepLinkEndsTheWayItAlwaysDid() {
+        for (String link : new String[]{"app-manager://details", "am://app/"}) {
+            assertRefused(R.string.failed_to_fetch_package_info,
+                    ApkIntentSource.resolve(new Intent(Intent.ACTION_VIEW, Uri.parse(link))));
+        }
     }
 
     @Test
