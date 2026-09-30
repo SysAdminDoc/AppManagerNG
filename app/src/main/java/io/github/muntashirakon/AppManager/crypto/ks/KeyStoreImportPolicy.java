@@ -86,8 +86,9 @@ public final class KeyStoreImportPolicy {
     /**
      * The total key-derivation work one file may cost, in PRF rounds: iterations times output
      * blocks for PBKDF2, iterations times hash blocks for the PKCS12 KDF, and 4 x N x r x p Salsa
-     * rounds for scrypt. A Bouncy Castle 1.86 PKCS12 file holding one key costs 4.8 million, and each
-     * further key 1.8 million, so four keys fit.
+     * rounds for scrypt. Encrypted contents count twice, once for this check to open them and once for
+     * the load. A Bouncy Castle 1.86 PKCS12 file holding one key costs 6.6 million, and each further
+     * key 1.8 million, so four keys fit.
      */
     public static final long MAX_TOTAL_KDF_WORK = 12_000_000L;
     public static final int MAX_SALT_BYTES = 1024;
@@ -348,16 +349,21 @@ public final class KeyStoreImportPolicy {
             Pfx pfx = Pfx.getInstance(readAsn1(bytes));
             MacData macData = pfx.getMacData();
             if (macData != null) {
+                // With an empty password Bouncy Castle computes the MAC a second time, with the other
+                // zero-length password conversion, when the first attempt doesn't match.
+                int macRuns = password == null || password.length == 0 ? 2 : 1;
                 AlgorithmIdentifier macAlgorithm = macData.getMac().getAlgorithmId();
                 if (PKCSObjectIdentifiers.id_PBMAC1.equals(macAlgorithm.getAlgorithm())) {
                     // RFC 9579: the MAC key comes from these parameters, not MacData's iterations.
                     AlgorithmIdentifier kdf = PBMAC1Params.getInstance(macAlgorithm.getParameters())
                             .getKeyDerivationFunc();
-                    checkKeyDerivation(kdf.getAlgorithm(), kdf.getParameters(), MAX_DERIVED_KEY_BYTES, budget,
-                            "The PBMAC1 MAC");
+                    for (int run = 0; run < macRuns; ++run) {
+                        checkKeyDerivation(kdf.getAlgorithm(), kdf.getParameters(), MAX_DERIVED_KEY_BYTES, 0, budget,
+                                "The PBMAC1 MAC");
+                    }
                 } else {
                     checkIterations(macData.getIterationCount(), MAX_PKCS12_ITERATIONS);
-                    budget.add(macData.getIterationCount(), PKCS12_MAC_ROUNDS, "The PKCS12 MAC");
+                    budget.add(macData.getIterationCount(), (long) PKCS12_MAC_ROUNDS * macRuns, "The PKCS12 MAC");
                 }
                 checkSaltLength(macData.getSalt().length);
             }
@@ -374,8 +380,9 @@ public final class KeyStoreImportPolicy {
             for (ContentInfo info : contents) {
                 if (PKCSObjectIdentifiers.encryptedData.equals(info.getContentType())) {
                     EncryptedData encryptedData = EncryptedData.getInstance(info.getContent());
+                    // The load's own decryption of these contents.
                     checkEncryption(encryptedData.getEncryptionAlgorithm(), budget);
-                    byte[] decrypted = decrypt(encryptedData, password, macData == null);
+                    byte[] decrypted = decrypt(encryptedData, password, macData == null, budget);
                     if (decrypted != null) {
                         // The bags inside cost their own derivations once the load opens them.
                         checkSafeBags(ASN1Sequence.getInstance(readAsn1(decrypted)), 0, budget);
@@ -393,37 +400,51 @@ public final class KeyStoreImportPolicy {
     }
 
     /**
-     * Opens encrypted safe contents the way the load will, so their bags can be priced first. Its own
-     * derivation was counted before this runs.
+     * Opens encrypted safe contents the way the load will, so their bags can be priced first. Every
+     * attempt derives a key as costly as the load's, so each one is paid for before it runs.
+     * <p>
+     * Bouncy Castle reads a missing password as an empty one, and an empty password can be converted
+     * two ways, so an empty or missing password gets both tries here.
      *
-     * @return the decrypted safe contents, or {@code null} when there is no password to open them
-     * with, or when a MAC protects the file and the password doesn't open them. The load then checks
-     * that MAC before it decrypts anything and fails on the wrong password with its usual error.
+     * @return the decrypted safe contents, or {@code null} when a MAC protects the file and the
+     * password doesn't open them. The load then checks that MAC before it decrypts anything and fails
+     * on the wrong password with its usual error.
      */
     @Nullable
-    private static byte[] decrypt(@NonNull EncryptedData encryptedData, @Nullable char[] password, boolean noMac)
-            throws RejectedKeyStoreException {
+    private static byte[] decrypt(@NonNull EncryptedData encryptedData, @Nullable char[] password, boolean noMac,
+                                  @NonNull WorkBudget budget) throws RejectedKeyStoreException {
         ASN1OctetString content = encryptedData.getContent();
-        if (password == null || content == null) {
+        if (content == null) {
             return null;
         }
-        try {
-            InputDecryptor decryptor = new JcePKCSPBEInputDecryptorProviderBuilder()
-                    .setProvider(BouncyCastleHolder.PROVIDER)
-                    .setTryWrongPKCS12Zero(true)
-                    .build(password)
-                    .get(encryptedData.getEncryptionAlgorithm());
-            try (InputStream in = decryptor.getInputStream(new ByteArrayInputStream(content.getOctets()))) {
-                return IoUtils.readFully(in, MAX_FILE_BYTES, false);
+        char[] effective = password != null ? password : new char[0];
+        boolean[] conversions = effective.length == 0 ? new boolean[]{false, true} : new boolean[]{false};
+        Exception failure = null;
+        for (boolean wrongPkcs12Zero : conversions) {
+            checkEncryption(encryptedData.getEncryptionAlgorithm(), budget);
+            try {
+                InputDecryptor decryptor = new JcePKCSPBEInputDecryptorProviderBuilder()
+                        .setProvider(BouncyCastleHolder.PROVIDER)
+                        .setTryWrongPKCS12Zero(wrongPkcs12Zero)
+                        .build(effective)
+                        .get(encryptedData.getEncryptionAlgorithm());
+                byte[] plain;
+                try (InputStream in = decryptor.getInputStream(new ByteArrayInputStream(content.getOctets()))) {
+                    plain = IoUtils.readFully(in, MAX_FILE_BYTES, false);
+                }
+                // A wrong key can still leave valid padding; only real safe contents count.
+                ASN1Sequence.getInstance(readAsn1(plain));
+                return plain;
+            } catch (Exception e) {
+                failure = e;
             }
-        } catch (Exception e) {
-            if (noMac) {
-                // Without a MAC nothing stops the load from decrypting these contents in a way this
-                // check could not, and then running derivations nobody priced.
-                throw malformed("Encrypted contents could not be opened for checking", e);
-            }
-            return null;
         }
+        if (noMac) {
+            // Without a MAC nothing stops the load from decrypting these contents in a way this check
+            // could not, and then running derivations nobody priced.
+            throw malformed("Encrypted contents could not be opened for checking", failure);
+        }
+        return null;
     }
 
     private static final class BouncyCastleHolder {
@@ -455,8 +476,10 @@ public final class KeyStoreImportPolicy {
         if (PKCSObjectIdentifiers.id_PBES2.equals(oid)) {
             PBES2Parameters params = PBES2Parameters.getInstance(algorithm.getParameters());
             KeyDerivationFunc kdf = params.getKeyDerivationFunc();
-            checkKeyDerivation(kdf.getAlgorithm(), kdf.getParameters(), impliedKeyBytes(params.getEncryptionScheme()),
-                    budget, "PBES2 encryption");
+            // Bouncy Castle sizes a PBES2 key by its cipher and ignores a shorter declared length.
+            int cipherKeyBytes = impliedKeyBytes(params.getEncryptionScheme());
+            checkKeyDerivation(kdf.getAlgorithm(), kdf.getParameters(), cipherKeyBytes, cipherKeyBytes, budget,
+                    "PBES2 encryption");
         } else if (oid.on(PKCSObjectIdentifiers.pkcs_12PbeIds)) {
             PKCS12PBEParams params = PKCS12PBEParams.getInstance(algorithm.getParameters());
             checkIterations(params.getIterations(), MAX_PKCS12_ITERATIONS);
@@ -476,9 +499,11 @@ public final class KeyStoreImportPolicy {
      * Prices one PBKDF2 or scrypt derivation.
      *
      * @param defaultKeyBytes the key length the scheme implies when the parameters don't state one
+     * @param minimumKeyBytes the key length the derivation produces whatever the parameters state
      */
     private static void checkKeyDerivation(@NonNull ASN1ObjectIdentifier kdfOid, @Nullable ASN1Encodable parameters,
-                                           int defaultKeyBytes, @NonNull WorkBudget budget, @NonNull String what)
+                                           int defaultKeyBytes, int minimumKeyBytes, @NonNull WorkBudget budget,
+                                           @NonNull String what)
             throws RejectedKeyStoreException {
         if (PKCSObjectIdentifiers.id_PBKDF2.equals(kdfOid)) {
             PBKDF2Params params = PBKDF2Params.getInstance(parameters);
@@ -494,7 +519,8 @@ public final class KeyStoreImportPolicy {
                         "Derived key of " + keyBytes + " bytes exceeds " + MAX_DERIVED_KEY_BYTES);
             }
             // PBKDF2 runs every iteration once for each PRF-sized block of the key.
-            long blocks = (keyBytes.longValue() + prfBytes - 1) / prfBytes;
+            long derivedBytes = Math.max(keyBytes.longValue(), minimumKeyBytes);
+            long blocks = (derivedBytes + prfBytes - 1) / prfBytes;
             budget.add(params.getIterationCount(), blocks, what);
         } else if (MiscObjectIdentifiers.id_scrypt.equals(kdfOid)) {
             ScryptParams params = ScryptParams.getInstance(parameters);
