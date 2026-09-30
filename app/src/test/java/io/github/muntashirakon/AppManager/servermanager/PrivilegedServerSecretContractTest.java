@@ -29,6 +29,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import io.github.muntashirakon.AppManager.server.common.ConfigParams;
+import io.github.muntashirakon.AppManager.server.common.DataTransmission;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 
 @RunWith(RobolectricTestRunner.class)
@@ -63,6 +64,18 @@ public class PrivilegedServerSecretContractTest {
         assertFalse(legacyPreferences.contains(TOKEN_KEY));
         assertEquals(token, secretPreferences.getString(TOKEN_KEY, null));
         assertEquals(64, token.length());
+    }
+
+    @Test
+    public void aTokenFromAnOlderProtocolIsReplacedOnce() {
+        // Protocols up to 1.3.0 sent the token to whatever listened on the port
+        secretPreferences.edit().putString(TOKEN_KEY, LEGACY_TOKEN).commit();
+
+        String token = ServerConfig.getLocalToken();
+
+        assertNotEquals(LEGACY_TOKEN, token);
+        assertEquals(DataTransmission.PROTOCOL_VERSION, secretPreferences.getString("l_token_protocol", null));
+        assertEquals(token, ServerConfig.getLocalToken());
     }
 
     @Test

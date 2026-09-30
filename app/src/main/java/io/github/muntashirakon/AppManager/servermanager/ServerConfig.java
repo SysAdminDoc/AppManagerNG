@@ -22,6 +22,7 @@ import java.security.SecureRandom;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.NoOps;
 import io.github.muntashirakon.AppManager.server.common.Constants;
+import io.github.muntashirakon.AppManager.server.common.DataTransmission;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
@@ -45,6 +46,11 @@ public final class ServerConfig {
      */
     static final String ROOT_EXEC_JAR = "/data/local/tmp/" + Constants.SERVER_NAME + ".jar";
     private static final String LOCAL_TOKEN = "l_token";
+    /**
+     * The handshake protocol the token was made for. Protocols up to 1.3.0 sent the token to
+     * whatever listened on the port, so a token from before 1.4.0 may be known to another app.
+     */
+    private static final String LOCAL_TOKEN_PROTOCOL = "l_token_protocol";
     private static final String ADB_LAST_PAIRING_HOST = "adb_last_pairing_host";
     private static final String ADB_LAST_PAIRING_PORT = "adb_last_pairing_port";
     private static final String ADB_LAST_PAIRING_TIME = "adb_last_pairing_time";
@@ -142,9 +148,15 @@ public final class ServerConfig {
             }
         }
         String token = secretPreferences.getString(LOCAL_TOKEN, null);
-        if (TextUtils.isEmpty(token)) {
+        boolean madeForThisProtocol = DataTransmission.PROTOCOL_VERSION.equals(
+                secretPreferences.getString(LOCAL_TOKEN_PROTOCOL, null));
+        if (TextUtils.isEmpty(token) || !madeForThisProtocol) {
+            // A server still running with the old token can't talk to this protocol anyway
             token = generateToken();
-            if (!secretPreferences.edit().putString(LOCAL_TOKEN, token).commit()) {
+            if (!secretPreferences.edit()
+                    .putString(LOCAL_TOKEN, token)
+                    .putString(LOCAL_TOKEN_PROTOCOL, DataTransmission.PROTOCOL_VERSION)
+                    .commit()) {
                 Log.w(TAG, "Could not persist the local-server token.");
             }
         }
