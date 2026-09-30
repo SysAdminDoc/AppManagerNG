@@ -39,6 +39,7 @@ import io.github.muntashirakon.AppManager.settings.Prefs;
 
 public final class NotificationUtils {
     private static final String HIGH_PRIORITY_CHANNEL_ID = BuildConfig.APPLICATION_ID + ".channel.HIGH_PRIORITY";
+    public static final String CRASH_CHANNEL_ID = BuildConfig.APPLICATION_ID + ".channel.CRASH";
     private static final String INSTALL_CONFIRM_CHANNEL_ID = BuildConfig.APPLICATION_ID + ".channel.INSTALL_CONFIRM";
     private static final String FREEZE_UNFREEZE_CHANNEL_ID = BuildConfig.APPLICATION_ID + ".channel.FREEZE_UNFREEZE";
     private static final String POST_NOTIFICATION_REQUEST_KEY =
@@ -94,6 +95,28 @@ public final class NotificationUtils {
         return new NotificationCompat.Builder(context, NotificationUtils.HIGH_PRIORITY_CHANNEL_ID)
                 .setLocalOnly(!Prefs.Misc.sendNotificationsToConnectedDevices())
                 .setPriority(NotificationCompat.PRIORITY_HIGH);
+    }
+
+    @NonNull
+    public static NotificationCompat.Builder getCrashNotificationBuilder(@NonNull Context context) {
+        return new NotificationCompat.Builder(context, CRASH_CHANNEL_ID)
+                .setLocalOnly(!Prefs.Misc.sendNotificationsToConnectedDevices())
+                .setPriority(NotificationCompat.PRIORITY_HIGH);
+    }
+
+    /**
+     * Posts the crash notification on its own channel, so it can't be lost among other alerts.
+     *
+     * @return whether the notification was handed to the system
+     */
+    public static boolean displayCrashNotification(@NonNull Context context, @NonNull Notification notification) {
+        NotificationManagerCompat manager = getNewNotificationManager(context, CRASH_CHANNEL_ID,
+                "Crash reports", NotificationManagerCompat.IMPORTANCE_HIGH);
+        if (!SelfPermissions.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)) {
+            return false;
+        }
+        manager.notify("crash", 1, notification);
+        return true;
     }
 
     public static void displayHighPriorityNotification(@NonNull Context context, Notification notification) {
