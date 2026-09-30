@@ -466,13 +466,6 @@ Sources and reasoning: RESEARCH.md (2026-09-30).
   Acceptance: each listed commit is ported with a host test or named as not applicable with the reason; pairing gives up after a bounded time with a clear message; a Wi-Fi change mid-pairing leaves no stuck state; the first shell stream after connect is retried once when it closes within 1 second; on the S22 or S25 Wireless Debugging connects after a Wi-Fi toggle and after a reboot.
   Complexity: L
 
-- [ ] P1: Deliver the crash notification before the process dies
-  Why: the crash handler builds its report, writes the crash sink and posts the notification with no error handling and no pause, so on API 34 and later the notification can be lost and a failure while building the report skips the platform's default handler; crash reports are the only channel for #12, #17 and #18.
-  Evidence: upstream `edfae0b04` ("Fix displaying crash notification in API 34+"); `misc/AMExceptionHandler.java:36-77`.
-  Touches: `AMExceptionHandler.java`, `NotificationUtils` (a dedicated crash channel), a host test.
-  Acceptance: the default handler runs exactly once even when report building, the crash sink, or posting throws; the notification is posted on its own channel and the handler waits at most 250 ms after posting before delegating; host tests cover a throwing `DeviceInfo`, a throwing crash sink and a throwing notification manager; a forced crash on the S25 shows the notification.
-  Complexity: S
-
 ### P2
 
 - [ ] P2: Classify ADB-mode failures and give one next step
