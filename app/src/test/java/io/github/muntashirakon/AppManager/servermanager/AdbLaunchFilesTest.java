@@ -70,13 +70,76 @@ public class AdbLaunchFilesTest {
     @Test
     public void stagedLauncherPointsAtTheStagedJar() throws IOException {
         Context context = ApplicationProvider.getApplicationContext();
-        String script = AssetsUtils.buildServerExecScript(context, AdbLaunchFiles.SERVER_JAR);
+        String script = AssetsUtils.buildServerExecScript(context, AdbLaunchFiles.SERVER_JAR, AdbLaunchFiles.SERVER_JAR);
 
         assertTrue(script.contains("\nJAR_PATH=" + AdbLaunchFiles.SERVER_JAR + "\n"));
-        assertTrue(script.contains("\nJAR_NAME=" + Constants.JAR_NAME + "\n"));
+        assertTrue(script.contains("\nEXEC_JAR_PATH=" + AdbLaunchFiles.SERVER_JAR + "\n"));
+        assertTrue(script.contains("\nSERVER_NAME=" + Constants.SERVER_NAME + "\n"));
         assertFalse(script.contains("%ENV_VARS%"));
         assertFalse(script.contains("\r"));
         assertTrue(script.startsWith("#!/system/bin/sh\n"));
+    }
+
+    @Test
+    public void launcherRunsTheStagedJarWhereItIs() throws Exception {
+        assumeTrue("needs a POSIX sh", shAvailable());
+        File jar = tmp.newFile("am.jar");
+        Files.write(jar.toPath(), bytes(333, 7));
+
+        String calls = runLauncher(posix(jar), posix(jar));
+
+        assertTrue(calls, calls.contains("CLASSPATH=" + posix(jar) + "\n"));
+        assertTrue(calls, calls.contains("--nice-name=" + Constants.SERVER_NAME + "\n"));
+        assertTrue(calls, calls.contains("path:62001,"));
+        assertEquals(Arrays.asList("am.jar", "app_process", "calls.txt", "run_server.sh"), sortedNames(tmp.getRoot()));
+    }
+
+    @Test
+    public void launcherCopiesAJarFromElsewhereToItsOwnName() throws Exception {
+        assumeTrue("needs a POSIX sh", shAvailable());
+        File jar = tmp.newFile("cached.jar");
+        Files.write(jar.toPath(), bytes(333, 7));
+        File exec = new File(tmp.getRoot(), Constants.SERVER_NAME + ".jar");
+
+        String calls = runLauncher(posix(jar), posix(exec));
+
+        assertTrue(calls, calls.contains("CLASSPATH=" + posix(exec) + "\n"));
+        assertArrayEquals(Files.readAllBytes(jar.toPath()), Files.readAllBytes(exec.toPath()));
+    }
+
+    /**
+     * Runs the real launcher with a stand-in app_process that records how it was called.
+     */
+    private String runLauncher(String jarPath, String execJarPath) throws Exception {
+        Context context = ApplicationProvider.getApplicationContext();
+        File root = tmp.getRoot();
+        File script = new File(root, "run_server.sh");
+        Files.write(script.toPath(), AssetsUtils.buildServerExecScript(context, jarPath, execJarPath)
+                .getBytes(StandardCharsets.UTF_8));
+        File calls = new File(root, "calls.txt");
+        File stub = new File(root, "app_process");
+        Files.write(stub.toPath(), ("#!/bin/sh\nprintf '%s\\n' \"CLASSPATH=$CLASSPATH\" \"$@\" > '"
+                + posix(calls) + ".part' && mv '" + posix(calls) + ".part' '" + posix(calls) + "'\n")
+                .getBytes(StandardCharsets.UTF_8));
+
+        // $PWD rather than the Java path: a C:/ drive letter would split PATH at its colon
+        String output = sh("cd '" + posix(root) + "' && chmod 755 app_process && PATH=\"$PWD:$PATH\" sh run_server.sh"
+                + " 62001 0123456789abcdef");
+
+        assertTrue(output, output.contains("Local server has started."));
+        // The launcher starts app_process in the background
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(20);
+        while (!calls.exists() && System.nanoTime() < deadline) {
+            Thread.sleep(50);
+        }
+        assertTrue(output, calls.exists());
+        return new String(Files.readAllBytes(calls.toPath()), StandardCharsets.UTF_8);
+    }
+
+    private static java.util.List<String> sortedNames(File dir) {
+        String[] names = dir.list();
+        Arrays.sort(names);
+        return Arrays.asList(names);
     }
 
     @Test

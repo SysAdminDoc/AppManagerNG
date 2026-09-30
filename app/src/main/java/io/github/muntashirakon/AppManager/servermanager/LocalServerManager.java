@@ -42,6 +42,7 @@ import io.github.muntashirakon.io.IoUtils;
 // Copyright 2016 Zheng Li
 class LocalServerManager {
     private static final String TAG = "LocalServerManager";
+    private static final int HANDSHAKE_TIMEOUT_MS = 10_000;
 
     @SuppressLint("StaticFieldLeak")
     private static LocalServerManager sLocalServerManager;
@@ -196,7 +197,7 @@ class LocalServerManager {
         // Check if the server is still active
         closeSession();
         if (LocalServer.alive(mContext, port) && !waitForServerStopped(port)) {
-            // Server still active, need to run killall am_local_server
+            // Server still active, need to run killall on the server's process name
             try {
                 stopServer(port);
             } catch (Exception e) {
@@ -449,15 +450,23 @@ class LocalServerManager {
     private ClientSession createSession(int port) throws IOException {
         String host = ServerConfig.getLocalServerHost(mContext);
         Socket socket = new Socket(host, port);
-        socket.setSoTimeout(30_000);
-        // NOTE: (CWE-319) No need for SSL since it only runs on a random port in localhost with specific authorization.
-        // TODO: 5/8/23 We could use an SSL server with a randomly generated certificate per session without requiring
-        //  any other authorization methods. This session is independent of the application.
-        OutputStream os = socket.getOutputStream();
-        InputStream is = socket.getInputStream();
-        DataTransmission transfer = new DataTransmission(os, is, false);
-        transfer.shakeHands(ServerConfig.getLocalToken(), DataTransmission.Role.Client);
-        return new ClientSession(port, socket, transfer);
+        try {
+            // A listener that takes the connection and never acknowledges the token isn't this
+            // app's server, so it gets less time than a real request does.
+            socket.setSoTimeout(HANDSHAKE_TIMEOUT_MS);
+            // NOTE: (CWE-319) No need for SSL since it only runs on a random port in localhost with specific authorization.
+            // TODO: 5/8/23 We could use an SSL server with a randomly generated certificate per session without requiring
+            //  any other authorization methods. This session is independent of the application.
+            OutputStream os = socket.getOutputStream();
+            InputStream is = socket.getInputStream();
+            DataTransmission transfer = new DataTransmission(os, is, false);
+            transfer.shakeHands(ServerConfig.getLocalToken(), DataTransmission.Role.Client);
+            socket.setSoTimeout(30_000);
+            return new ClientSession(port, socket, transfer);
+        } catch (IOException | RuntimeException e) {
+            IoUtils.closeQuietly(socket);
+            throw e;
+        }
     }
 
     /**

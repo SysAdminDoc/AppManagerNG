@@ -107,6 +107,13 @@ public class LocalServer {
         return alive(context, ServerConfig.getLocalServerPort());
     }
 
+    /**
+     * Whether something is listening on the port. That's all it says: it may not be this app's
+     * server. Every session still has to get the server's acknowledgement of this app's token in
+     * {@link io.github.muntashirakon.AppManager.server.common.DataTransmission#shakeHands} before
+     * anything is sent over it. A real handshake here would queue behind the one client the
+     * server serves at a time.
+     */
     @WorkerThread
     @NoOps
     public static boolean alive(Context context, @IntRange(from = 1, to = 65535) int port) {

@@ -31,8 +31,19 @@ public final class ServerConfig {
     public static final String TAG = ServerConfig.class.getSimpleName();
 
     public static final int DEFAULT_ADB_PORT = 5555;
+    /**
+     * The local server listens on this plus the user id unless the user picked a port. Upstream
+     * App Manager, which installs beside this app, uses 60001 plus the user id, and this range also
+     * stays above Linux's default ephemeral ports (32768 to 60999).
+     */
+    public static final int DEFAULT_LOCAL_SERVER_PORT_BASE = 62001;
     public static final String SECRET_PREFS_NAME = "server_secrets";
     static final String SERVER_RUNNER_EXEC_NAME = "run_server.sh";
+    /**
+     * Where root runs am.jar from. Upstream's server runs /data/local/tmp/am.jar, which a shared
+     * name would overwrite under it.
+     */
+    static final String ROOT_EXEC_JAR = "/data/local/tmp/" + Constants.SERVER_NAME + ".jar";
     private static final String LOCAL_TOKEN = "l_token";
     private static final String ADB_LAST_PAIRING_HOST = "adb_last_pairing_host";
     private static final String ADB_LAST_PAIRING_PORT = "adb_last_pairing_port";
@@ -59,7 +70,7 @@ public final class ServerConfig {
         // Copy JAR
         AssetsUtils.copyFile(context, Constants.JAR_NAME, serverRunnerJar, true);
         // Write script
-        AssetsUtils.writeServerExecScript(context, serverRunnerExec, serverRunnerJar.getAbsolutePath());
+        AssetsUtils.writeServerExecScript(context, serverRunnerExec, serverRunnerJar.getAbsolutePath(), ROOT_EXEC_JAR);
         // Update permission
         File deStorageRoot = deStorage.getParentFile();
         if (deStorageRoot != null) {

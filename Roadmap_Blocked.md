@@ -82,6 +82,10 @@ ROADMAP.md once the blocker is resolved.
   Acceptance: unauthenticated server connections are rejected by negative
   tests; root mode still works on a rooted Android 16 runtime; ported commits
   are attributed.
+  Partly done (2026-09-30, protocol 1.3.0): the server now answers each
+  handshake with HMAC-SHA256(token, client nonce) and the client refuses a
+  server that can't. The client still sends the token itself, so the
+  client-side challenge-response and the native run_server are what's left.
   Blocker: requires rooted device/emulator privileged-mode verification and
   overlaps the broader secure-session trust-model decision below.
   Complexity: M
