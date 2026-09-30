@@ -161,6 +161,8 @@ class LocalServerManager {
                 && !(failure instanceof ShellClosedEarlyException)
                 // A shell that refused the launch refuses it again
                 && !(failure instanceof LaunchRefusedException)
+                // A cancelled start stays cancelled
+                && !Thread.currentThread().isInterrupted()
                 && ServerConnectionFailure.find(failure) == null;
     }
 
