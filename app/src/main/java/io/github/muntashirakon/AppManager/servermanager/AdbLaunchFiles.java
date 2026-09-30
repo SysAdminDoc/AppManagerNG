@@ -12,9 +12,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.adb.AdbSync;
@@ -23,6 +26,7 @@ import io.github.muntashirakon.AppManager.server.common.Constants;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.adb.AbsAdbConnectionManager;
 import io.github.muntashirakon.adb.AdbStream;
+import io.github.muntashirakon.io.IoUtils;
 
 /**
  * Where ADB mode keeps the files the shell user runs. SELinux denies the shell domain every app
@@ -40,6 +44,8 @@ public final class AdbLaunchFiles {
     public static final String MAIN_JAR = STAGING_DIR + "/" + MAIN_JAR_NAME;
     @VisibleForTesting
     static final String LOCKED_MARKER = "AMNG_STAGING_LOCKED";
+    // A mkdir and a chmod. A shell still quiet after this closed without libadb noticing.
+    private static final long LOCK_DIR_TIMEOUT_MILLIS = 10_000;
     /**
      * What run_server.sh starts, spelled the same way.
      */
@@ -72,25 +78,61 @@ public final class AdbLaunchFiles {
      */
     @WorkerThread
     private static void lockStagingDir(@NonNull AbsAdbConnectionManager manager) throws IOException {
-        byte[] output = new byte[256];
-        int length = 0;
+        String output;
         long openedAt;
         try {
             AdbStream opened = manager.openStream("shell:" + lockDirCommand(STAGING_DIR));
             // Counted from when adbd accepted the shell, so a slow open doesn't eat the early-close window
             openedAt = SystemClock.elapsedRealtime();
             try (AdbStream stream = opened; InputStream in = stream.openInputStream()) {
-                int read;
-                while (length < output.length && (read = in.read(output, length, output.length - length)) != -1) {
-                    length += read;
-                }
+                output = readShellAnswer(in, stream, LOCKED_MARKER, LOCK_DIR_TIMEOUT_MILLIS);
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IOException("Interrupted while preparing " + STAGING_DIR, e);
         }
-        checkLocked(new String(output, 0, length, StandardCharsets.UTF_8),
-                SystemClock.elapsedRealtime() - openedAt);
+        checkLocked(output, SystemClock.elapsedRealtime() - openedAt);
+    }
+
+    /**
+     * Reads what a short shell command printed. libadb-android 3.1.1 never ends a shell's output
+     * with -1: once adbd closes the shell, the next read throws "Stream closed.", and when the
+     * close arrives before the output has been read, the read after the output waits for good.
+     * So reading stops at the marker, a read that throws ends the output, and at the deadline the
+     * stream is closed, which frees a read stuck that way.
+     */
+    @VisibleForTesting
+    @WorkerThread
+    @NonNull
+    static String readShellAnswer(@NonNull InputStream in, @NonNull Closeable stream, @NonNull String marker,
+                                  long timeoutMillis) {
+        CountDownLatch done = new CountDownLatch(1);
+        Thread watchdog = new Thread(() -> {
+            try {
+                if (!done.await(timeoutMillis, TimeUnit.MILLISECONDS)) {
+                    IoUtils.closeQuietly(stream);
+                }
+            } catch (InterruptedException ignore) {
+            }
+        }, "adb-shell-deadline");
+        watchdog.setDaemon(true);
+        watchdog.start();
+        byte[] output = new byte[256];
+        int length = 0;
+        try {
+            int read;
+            while (length < output.length && (read = in.read(output, length, output.length - length)) != -1) {
+                length += read;
+                if (new String(output, 0, length, StandardCharsets.UTF_8).contains(marker)) {
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            Log.d(TAG, "The shell ended: %s", e.toString());
+        } finally {
+            done.countDown();
+        }
+        return new String(output, 0, length, StandardCharsets.UTF_8);
     }
 
     /**
