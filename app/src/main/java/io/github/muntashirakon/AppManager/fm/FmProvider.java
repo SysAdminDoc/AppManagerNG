@@ -65,6 +65,10 @@ public class FmProvider extends ContentProvider {
         // 2. content:// Use ! + authority followed by path
         // 3. vfs:// Use !! + authority (vfs ID) followed by path
         if (ContentResolver.SCHEME_CONTENT.equals(uri.getScheme())) {
+            if (AUTHORITY.equals(uri.getAuthority())) {
+                // Already one of ours. Wrapping it again would proxy the provider through itself.
+                return uri;
+            }
             builder.appendPath("!" + uri.getAuthority());
         } else if (VirtualFileSystem.SCHEME.equals(uri.getScheme())) {
             builder.appendPath("!!" + uri.getAuthority());
