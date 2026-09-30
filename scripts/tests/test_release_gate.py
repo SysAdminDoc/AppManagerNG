@@ -176,8 +176,134 @@ class LintExecutionTest(unittest.TestCase):
             ], repo)
 
 
+class DependencyResolutionStageTest(unittest.TestCase):
+    """The dependencies stage: a cold, strict resolution that must leave no report and no metadata change."""
+
+    RESOLVED = (
+        "resolveAllConfigurations :app: 3 configuration(s) resolved, 2 skipped because no variant matches "
+        "their attributes: debugApiElements, lintChecks\n"
+        "resolveAllConfigurations :libcore:io: 2 configuration(s) resolved, 0 skipped because no variant "
+        "matches their attributes\n"
+    )
+
+    def _repo(self, raw: str) -> Path:
+        repo = Path(raw)
+        (repo / "gradle").mkdir()
+        (repo / "gradle" / "verification-metadata.xml").write_text("<verification-metadata/>\n", encoding="utf-8")
+        (repo / "scripts" / "gradle").mkdir(parents=True)
+        (repo / "scripts" / "gradle" / "resolve-all-configurations.gradle").write_text("", encoding="utf-8")
+        return repo
+
+    def test_resolution_is_strict_and_starts_from_an_empty_gradle_home(self) -> None:
+        seen = {}
+        with tempfile.TemporaryDirectory() as raw:
+            repo = self._repo(raw)
+
+            def resolve(command, cwd):
+                self.assertEqual(repo, cwd)
+                home = Path(command[command.index("--gradle-user-home") + 1])
+                seen["home"] = home
+                seen["empty"] = home.is_dir() and not any(home.iterdir())
+                (home / "caches").mkdir()
+                seen["command"] = command
+                return mock.Mock(returncode=0, stdout=self.RESOLVED)
+
+            with mock.patch.object(gate, "run", side_effect=resolve):
+                result = gate.stage_dependencies(repo, "gradlew")
+
+        command = seen["command"]
+        self.assertTrue(seen["empty"], "the Gradle home must be empty when resolution starts")
+        self.assertFalse(seen["home"].exists(), "the throwaway Gradle home must be removed afterwards")
+        self.assertFalse(seen["home"].is_relative_to(repo), "the throwaway Gradle home must live outside the repo")
+        self.assertEqual("gradlew", command[0])
+        self.assertEqual("resolveAllConfigurations", command[-1])
+        self.assertIn("--dependency-verification=strict", command)
+        self.assertIn("--no-configuration-cache", command)
+        self.assertEqual(repo / "scripts" / "gradle" / "resolve-all-configurations.gradle",
+                         Path(command[command.index("--init-script") + 1]))
+        self.assertFalse(any("write-verification-metadata" in arg for arg in command))
+        self.assertFalse(any(arg.startswith("--dependency-verification=") and arg.endswith(("lenient", "off"))
+                             for arg in command))
+        self.assertEqual(5, result.data["configurations"])
+        self.assertEqual({":app": 3, ":libcore:io": 2}, result.data["projects"])
+        self.assertEqual({":app": 2}, result.data["skipped"])
+
+    def test_a_verification_report_blocks_the_release_even_when_gradle_exits_zero(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            repo = self._repo(raw)
+
+            def resolve(command, cwd):
+                (repo / "build" / "reports" / "dependency-verification" / "at-1").mkdir(parents=True)
+                return mock.Mock(returncode=0, stdout=self.RESOLVED)
+
+            with mock.patch.object(gate, "run", side_effect=resolve):
+                with self.assertRaises(gate.GateError) as caught:
+                    gate.stage_dependencies(repo, "gradlew")
+        self.assertIn("dependency-verification/at-1", str(caught.exception))
+
+    def test_an_older_report_does_not_block_a_clean_run(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            repo = self._repo(raw)
+            (repo / "build" / "reports" / "dependency-verification" / "at-0").mkdir(parents=True)
+            with mock.patch.object(gate, "run", return_value=mock.Mock(returncode=0, stdout=self.RESOLVED)):
+                result = gate.stage_dependencies(repo, "gradlew")
+        self.assertTrue(result.passed)
+
+    def test_a_failed_resolution_blocks_the_release(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            repo = self._repo(raw)
+            failed = mock.Mock(returncode=1, stdout="Dependency verification failed for configuration ':app:x'")
+            with mock.patch.object(gate, "run", return_value=failed):
+                with self.assertRaises(gate.GateError) as caught:
+                    gate.stage_dependencies(repo, "gradlew")
+        self.assertIn("Dependency verification failed", str(caught.exception))
+
+    def test_metadata_changed_by_the_run_blocks_the_release(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            repo = self._repo(raw)
+
+            def resolve(command, cwd):
+                (repo / "gradle" / "verification-metadata.xml").write_text("<changed/>\n", encoding="utf-8")
+                return mock.Mock(returncode=0, stdout=self.RESOLVED)
+
+            with mock.patch.object(gate, "run", side_effect=resolve):
+                with self.assertRaises(gate.GateError) as caught:
+                    gate.stage_dependencies(repo, "gradlew")
+        self.assertIn("changed during strict resolution", str(caught.exception))
+
+    def test_success_without_any_resolved_configuration_is_not_a_pass(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            repo = self._repo(raw)
+            with mock.patch.object(gate, "run", return_value=mock.Mock(returncode=0, stdout="BUILD SUCCESSFUL")):
+                with self.assertRaises(gate.GateError):
+                    gate.stage_dependencies(repo, "gradlew")
+
+    def test_missing_metadata_refuses_to_resolve(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            repo = self._repo(raw)
+            (repo / "gradle" / "verification-metadata.xml").unlink()
+            with mock.patch.object(gate, "run") as run_mock:
+                with self.assertRaises(gate.GateError):
+                    gate.stage_dependencies(repo, "gradlew")
+            run_mock.assert_not_called()
+
+    def test_the_committed_init_script_only_skips_pure_variant_mismatches(self) -> None:
+        script = (REPO_ROOT / "scripts" / "gradle" / "resolve-all-configurations.gradle").read_text(encoding="utf-8")
+        self.assertIn("tasks.register('resolveAllConfigurations')", script)
+        self.assertIn("throw new GradleException", script)
+        # A verification failure is never skipped, and neither is a release classpath.
+        self.assertIn("variantMismatch && !verification && !releaseClasspath", script)
+        self.assertIn("contains('verification')", script)
+        self.assertIn("elease(Compile|Runtime)Classpath", script)
+
+    def test_cold_resolution_runs_before_the_stages_that_build(self) -> None:
+        order = list(gate.ALL_STAGES)
+        for later in ("tests", "lint", "reproducible"):
+            self.assertLess(order.index("dependencies"), order.index(later))
+
+
 class TranslationOutputTest(unittest.TestCase):
-    GOOD = "Source strings: 100\n\n=== Coverage Report (bottom 5) ===\n  values-fr: 80 / 100 (80%)\n"
+    GOOD ="Source strings: 100\n\n=== Coverage Report (bottom 5) ===\n  values-fr: 80 / 100 (80%)\n"
 
     def test_a_consistent_report_passes(self) -> None:
         self.assertEqual([], gate.validate_translation_output(self.GOOD))

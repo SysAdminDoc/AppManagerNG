@@ -1,0 +1,79 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+//
+// Init script for the release gate's dependencies stage (scripts/release_gate.py).
+//
+// Registers resolveAllConfigurations in every project. It resolves every resolvable configuration,
+// so a run against an empty Gradle user home downloads, and under strict verification checks, every
+// POM, parent POM, BOM and Gradle module file any configuration reads, plus every external artifact.
+// A warm cache hides a missing checksum for those metadata files, because Gradle reuses what it
+// parsed earlier instead of reading them again.
+//
+// Two passes per configuration:
+// - the dependency graph, which reads all the metadata and applies dependency locking;
+// - the artifacts of external modules, through a lenient view so one failure doesn't hide the rest.
+//   Project artifacts are built, not downloaded, and without the attributes AGP adds when it asks
+//   for them they are ambiguous by design, so they are left out.
+// A verification failure, a locking failure or anything unexpected fails the task. A configuration
+// whose attributes no variant matches is skipped and listed: AGP creates some that no task resolves.
+// The release classpaths are never skipped; they must resolve completely.
+allprojects {
+    def projectPath = path
+    def projectConfigurations = configurations
+    tasks.register('resolveAllConfigurations') {
+        notCompatibleWithConfigurationCache('walks every configuration of the project when it runs')
+        doLast {
+            def failures = []
+            def unmatched = []
+            def resolved = 0
+            projectConfigurations.findAll { it.canBeResolved }.each { configuration ->
+                def problems = []
+                try {
+                    configuration.incoming.resolutionResult.allDependencies.each { dependency ->
+                        if (dependency instanceof org.gradle.api.artifacts.result.UnresolvedDependencyResult) {
+                            problems << dependency.failure
+                        }
+                    }
+                } catch (Exception e) {
+                    problems << e
+                }
+                def view = configuration.incoming.artifactView {
+                    lenient(true)
+                    componentFilter { it instanceof org.gradle.api.artifacts.component.ModuleComponentIdentifier }
+                }
+                view.artifacts.artifacts
+                problems.addAll(view.artifacts.failures)
+                if (problems.isEmpty()) {
+                    resolved++
+                    return
+                }
+                def releaseClasspath = configuration.name ==~ /(|floss|full)(R|r)elease(Compile|Runtime)Classpath/
+                problems.each { failure ->
+                    def messages = []
+                    for (Throwable cause = failure; cause != null; cause = cause.cause) {
+                        if (cause.message) {
+                            messages << cause.message
+                        }
+                    }
+                    def verification = messages.any { it.toLowerCase().contains('verification') }
+                    def variantMismatch = messages.any {
+                        it.contains('No matching variant') || it.contains('annot choose between')
+                                || it.contains('The consumer was configured to find')
+                    }
+                    if (variantMismatch && !verification && !releaseClasspath) {
+                        unmatched << configuration.name
+                    } else {
+                        def summary = messages.collect { it.readLines().first() }.unique().join(' <- ')
+                        failures << "${projectPath}:${configuration.name}: ${summary}"
+                    }
+                }
+            }
+            unmatched = unmatched.unique()
+            logger.lifecycle("resolveAllConfigurations ${projectPath}: ${resolved} configuration(s) resolved, "
+                    + "${unmatched.size()} skipped because no variant matches their attributes"
+                    + (unmatched ? ": ${unmatched.join(', ')}" : ''))
+            if (!failures.isEmpty()) {
+                throw new GradleException("${failures.size()} configuration failure(s):\n" + failures.unique().join('\n'))
+            }
+        }
+    }
+}
