@@ -30,8 +30,10 @@ public class ModeOfOpsStatusContractTest {
                 "displayIncompleteUsbDebuggingMessage(this, () -> completeAuthentication(savedInstanceState))");
         assertCompletesOnDismiss(read(SPLASH_ACTIVITY), "private void handleAuthenticationStatus(",
                 "displayIncompleteUsbDebuggingMessage(this, this::completeAuthentication)");
-        assertCompletesOnDismiss(read(MODE_OF_OPS), "private void handleModeStatus(",
-                "finishModeApply(false, true)");
+        String screen = read(MODE_OF_OPS);
+        assertCompletesOnDismiss(screen, "private void handleModeStatus(",
+                "displayIncompleteUsbDebuggingMessage(activity, this::onIncompleteUsbDebuggingDismissed)");
+        assertTrue(body(screen, "private void onIncompleteUsbDebuggingDismissed()").contains("finishModeApply(false, true)"));
     }
 
     @Test

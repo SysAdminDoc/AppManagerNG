@@ -101,7 +101,7 @@ public class LocalServer {
         }
     }
 
-    @WorkerThread
+    @AnyThread
     @NoOps
     public static boolean alive(Context context) {
         return alive(context, ServerConfig.getLocalServerPort());
@@ -113,8 +113,11 @@ public class LocalServer {
      * {@link io.github.muntashirakon.AppManager.server.common.DataTransmission#shakeHands} before
      * anything is sent over it. A real handshake here would queue behind the one client the
      * server serves at a time.
+     * <p>
+     * Safe on the main thread: it only binds a loopback socket, with no connection or lookup, and
+     * the Mode of operation screen calls it there on every refresh.
      */
-    @WorkerThread
+    @AnyThread
     @NoOps
     public static boolean alive(Context context, @IntRange(from = 1, to = 65535) int port) {
         try (ServerSocket socket = new ServerSocket()) {

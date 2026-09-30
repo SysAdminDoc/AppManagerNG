@@ -459,14 +459,6 @@ Sources and reasoning: RESEARCH.md (2026-09-30).
 
 ### P1
 
-- [ ] P1: Port upstream's 2026-09-12 mode-of-operation fixes
-  Why: switching between no-root and ADB, recreating the activity, and binding services concurrently all have races upstream fixed on 2026-09-12, and the fork's `Ops.java` is its most re-fixed privileged file.
-  Evidence: upstream `8ba225324` (one request at a time), `4d03b737e` (no status replay on recreate), `54e2d6ec3`, `8ebd38362` (repeated no-root and ADB switching), `43e74db72` (check both services), `32d93652c` (atomic `bindServices()`), `b07e75ec3` (no-root fallback race), `bc52be1e8` (incomplete USB debugging dialog crash), `2dc8273b8` (server errors as toasts), `32ad2377d` (ANR in `ServerStatusChangeReceiver`); `settings/Ops.java` took 4 fix commits in the last 200.
-  Touches: `settings/Ops.java`, the Mode of operation preference and its view model, `ipc/LocalServices`, `ServerStatusChangeReceiver`, tests.
-  Already done: `LocalServices.bindServicesIfNotAlready()` checks and binds under `sBindLock` since the issue #20 fix (the first switch to ADB mode hit it on the S22), which covers the race at the heart of `32d93652c`. Diff that commit for anything else it changed.
-  Acceptance: each listed upstream commit is either ported with a host test that fails without it or named in the commit body as not applicable with the reason; a mode change requested while another is running is rejected or queued, never interleaved; recreating the settings screen does not replay a finished status; the status receiver does no blocking work on the main thread.
-  Complexity: L
-
 - [ ] P1: Port upstream's wireless-debugging pairing and connect fixes
   Why: the fork was cut from 3d11bcb and missed the pairing, mDNS and reconnect fixes upstream shipped through v4.1.1 and after, so Wireless Debugging stays fragile even once the launcher is fixed.
   Evidence: upstream `a488f27a2` (pairing timeout), `355813cae` (Wi-Fi change mid-pairing), `8794070cf` (mDNS scanning leaks), `2f2b31e89` (state and concurrency), `62161f4ff` (port validity), `03298fafa` (fresh ADB stream per start), `22d439d61` (connect on boot), `d1f9c6b34` (server detaches from the shell), `0152f468f` and `9638823e9` (retry and reuse); libadb-android #34 (streams close right after a wireless connect on 3.1.1).
