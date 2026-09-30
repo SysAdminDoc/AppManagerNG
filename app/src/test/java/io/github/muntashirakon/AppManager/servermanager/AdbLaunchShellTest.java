@@ -117,8 +117,10 @@ public class AdbLaunchShellTest {
         IOException refused = new IOException("Connection refused");
 
         assertTrue(LocalServerManager.isWorthRetrying(1, refused));
-        assertTrue(LocalServerManager.isWorthRetrying(1, new LocalServerManager.ShellClosedEarlyException(null)));
         assertFalse(LocalServerManager.isWorthRetrying(2, refused));
+        // useAdbStartServer already opened a second shell for this, and a start retried on top of
+        // that made up to four
+        assertFalse(LocalServerManager.isWorthRetrying(1, new LocalServerManager.ShellClosedEarlyException(null)));
         // A minute's wait isn't doubled
         assertFalse(LocalServerManager.isWorthRetrying(1, new TimeoutException()));
         // Another server on the port, or one that doesn't answer, won't change in 150 ms
@@ -139,6 +141,30 @@ public class AdbLaunchShellTest {
                 AdbLaunchFiles.checkLocked("chmod: Operation not permitted\n", 20));
         assertFalse(refused instanceof LocalServerManager.ShellClosedEarlyException);
         assertTrue(refused.getMessage(), refused.getMessage().endsWith("chmod: Operation not permitted"));
+    }
+
+    @Test
+    public void theEarlyCloseClockStartsOnceAdbdHasTheShellOpen() throws IOException {
+        // Started before openStream, a slow open used up the window and a shell libadb closed at
+        // once read as a real failure
+        assertClockAfterOpen(read("LocalServerManager.java"), "manager.openStream(\"shell:\")");
+        assertClockAfterOpen(read("AdbLaunchFiles.java"), "manager.openStream(\"shell:\" + lockDirCommand(STAGING_DIR))");
+    }
+
+    private static void assertClockAfterOpen(String source, String open) {
+        int opened = source.indexOf(open);
+        int clock = source.indexOf("openedAt = SystemClock.elapsedRealtime()");
+        assertTrue(open, opened != -1 && clock > opened);
+        assertEquals(clock, source.lastIndexOf("openedAt = SystemClock.elapsedRealtime()"));
+    }
+
+    private static String read(String name) throws IOException {
+        java.nio.file.Path cursor = java.nio.file.Paths.get("").toAbsolutePath();
+        while (cursor != null && !java.nio.file.Files.isDirectory(cursor.resolve("app/src/main/java"))) {
+            cursor = cursor.getParent();
+        }
+        return new String(java.nio.file.Files.readAllBytes(cursor.resolve(
+                "app/src/main/java/io/github/muntashirakon/AppManager/servermanager/" + name)), StandardCharsets.UTF_8);
     }
 
     /**

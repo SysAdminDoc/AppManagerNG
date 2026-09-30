@@ -78,7 +78,7 @@ public class LocalServicesBindContractTest {
         String ops = read("app/src/main/java/io/github/muntashirakon/AppManager/settings/Ops.java");
 
         assertTrue(body(ops, "private static int initNoRoot()").contains("cancelPendingServerStart()"));
-        String init = body(ops, "private static int init(@NonNull Context context, boolean force, @NonNull @Mode String mode,");
+        String init = body(ops, "private static int initLocked(@NonNull Context context, boolean force, @NonNull @Mode String mode,");
         int rootBranch = init.indexOf("case MODE_ROOT:");
         int fallback = init.indexOf("catch (Throwable e)");
         assertTrue(init.indexOf("cancelPendingServerStart()", rootBranch) > rootBranch);

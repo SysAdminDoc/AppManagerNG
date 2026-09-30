@@ -490,3 +490,10 @@ Sources and reasoning: RESEARCH.md (2026-09-30).
   Touches: `SnapshotBundle.java`, a WorkManager worker beside `backup/schedule/`, Privacy or Backup settings, retention, tests.
   Acceptance: a user can pick a SAF folder, an interval and a keep count; each run writes an encrypted snapshot when encryption is configured and never a plaintext one when it is; the oldest files beyond the keep count are removed only after a new snapshot is written and read back; server secrets stay excluded; host tests cover retention, a revoked folder, and encryption.
   Complexity: M
+
+- [ ] P3: Let a hung wireless pairing attempt be closed
+  Why: libadb-android 3.1.1 opens the pairing socket with no connect or read timeout and keeps it private, so when an attempt hangs, AppManagerNG's 30-second limit can only walk away from it. The thread stays blocked, and the replaced connection manager keeps whatever ADB connection it had, until TCP gives up.
+  Evidence: `adb/AdbConnectionManager.java` (`pairLiveData`, `discardInstance`); libadb-android 3.1.1 `PairingConnectionCtx.setupTlsConnection` (`new Socket(host, port)`, no `setSoTimeout`); `AbsAdbConnectionManager.pair` holds the manager's lock for the whole attempt, so closing the old manager would wait on the stuck attempt.
+  Touches: libadb-android (a socket timeout, or a pairing context the caller can close), `AdbConnectionManager`, tests.
+  Acceptance: a pairing attempt against a port that accepts TCP and never answers ends within its limit with no thread left blocked in the pairing code, shown by a host test with a silent local server socket; the replaced manager's connection is closed without waiting on the stuck attempt.
+  Complexity: M

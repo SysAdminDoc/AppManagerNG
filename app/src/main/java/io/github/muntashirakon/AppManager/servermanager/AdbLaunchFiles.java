@@ -74,12 +74,16 @@ public final class AdbLaunchFiles {
     private static void lockStagingDir(@NonNull AbsAdbConnectionManager manager) throws IOException {
         byte[] output = new byte[256];
         int length = 0;
-        long openedAt = SystemClock.elapsedRealtime();
-        try (AdbStream stream = manager.openStream("shell:" + lockDirCommand(STAGING_DIR));
-             InputStream in = stream.openInputStream()) {
-            int read;
-            while (length < output.length && (read = in.read(output, length, output.length - length)) != -1) {
-                length += read;
+        long openedAt;
+        try {
+            AdbStream opened = manager.openStream("shell:" + lockDirCommand(STAGING_DIR));
+            // Counted from when adbd accepted the shell, so a slow open doesn't eat the early-close window
+            openedAt = SystemClock.elapsedRealtime();
+            try (AdbStream stream = opened; InputStream in = stream.openInputStream()) {
+                int read;
+                while (length < output.length && (read = in.read(output, length, output.length - length)) != -1) {
+                    length += read;
+                }
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

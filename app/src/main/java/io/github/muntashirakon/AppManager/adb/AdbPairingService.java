@@ -12,22 +12,24 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.app.NotificationChannelCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.PendingIntentCompat;
 import androidx.core.app.RemoteInput;
 import androidx.core.app.ServiceCompat;
-import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.Observer;
 
 import java.net.SocketTimeoutException;
+import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
@@ -55,13 +57,22 @@ public class AdbPairingService extends Service {
     public static final String EXTRA_PAIRING_CODE = "pairing_code";
     public static final String INPUT_CODE = "code";
 
+    /**
+     * Port of upstream 2f2b31e89: a search nobody finishes stops on its own instead of keeping the
+     * notification and the mDNS search going.
+     */
+    private static final long SEARCH_TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(10);
+
     private NotificationCompat.Builder mNotificationBuilder;
     private boolean mStartedSearching = false;
     private AdbMdns mAdbMdnsPairing;
-    private final MutableLiveData<Integer> mAdbPairingPort = new MutableLiveData<>();
-    private final Observer<Integer> mAdbPairingPortObserver = port -> {
-        Log.i(TAG, "Found port %d", port);
-        inputPairingCode(port);
+    // Each search has its number, so a port found by an earlier one can't come back. The LiveData
+    // this replaces handed a new search the last port at once, from the pairing dialog before.
+    private volatile int mSearchGeneration;
+    private final Handler mHandler = new Handler(Looper.getMainLooper());
+    private final Runnable mSearchTimeout = () -> {
+        Log.w(TAG, "Pairing timed out.");
+        stopPairingService();
     };
 
     @NonNull
@@ -109,9 +120,11 @@ public class AdbPairingService extends Service {
             return START_NOT_STICKY;
         }
         switch (intent.getAction()) {
+            // Not redelivered: a restarted process has no one waiting on the pairing, and the
+            // pairing code in the intent is only good for the dialog it came from
             case ACTION_START_SEARCHING:
                 startSearching();
-                return START_REDELIVER_INTENT;
+                return START_NOT_STICKY;
             case ACTION_START_PAIRING:
                 int port = intent.getIntExtra(EXTRA_PORT, -1);
                 String code = intent.getStringExtra(EXTRA_PAIRING_CODE);
@@ -128,12 +141,9 @@ public class AdbPairingService extends Service {
                     // Wrong inputs, continue searching
                     startSearching();
                 }
-                return START_REDELIVER_INTENT;
+                return START_NOT_STICKY;
             case ACTION_STOP_SEARCHING:
-                cancelPairing();
-                stopSearching();
-                ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
-                stopSelf();
+                stopPairingService();
             default:
                 return START_NOT_STICKY;
         }
@@ -148,6 +158,7 @@ public class AdbPairingService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        mHandler.removeCallbacks(mSearchTimeout);
         if (mStartedSearching) {
             // Still looking for a port, hence the pairing wasn't successful
             // Fail intentionally to avoid looping forever
@@ -163,15 +174,18 @@ public class AdbPairingService extends Service {
             return;
         }
         mStartedSearching = true;
+        ++mSearchGeneration;
+        mHandler.removeCallbacks(mSearchTimeout);
+        mHandler.postDelayed(mSearchTimeout, SEARCH_TIMEOUT_MILLIS);
         AdbPairingSession.searching();
         if (mAdbMdnsPairing == null) {
             mAdbMdnsPairing = new AdbMdns(getApplication(), AdbMdns.SERVICE_TYPE_TLS_PAIRING, (hostAddress, port) -> {
                 if (port != -1) {
-                    mAdbPairingPort.postValue(port);
+                    int generation = mSearchGeneration;
+                    ThreadUtils.postOnMainThread(() -> onPairingPortFound(generation, port));
                 }
             });
         }
-        mAdbPairingPort.observeForever(mAdbPairingPortObserver);
         PendingIntent stopPendingIntent = getStopIntent();
         NotificationCompat.Action stopAction = new NotificationCompat.Action.Builder(null, getString(R.string.adb_pairing_stop_searching), stopPendingIntent).build();
         mNotificationBuilder.setContentText(getText(R.string.adb_pairing_searching_for_port))
@@ -180,6 +194,25 @@ public class AdbPairingService extends Service {
         ServiceCompat.startForeground(this, NOTIFICATION_ID, mNotificationBuilder.build(),
                 FOREGROUND_SERVICE_TYPE_DATA_SYNC);
         mAdbMdnsPairing.start();
+    }
+
+    /**
+     * A port only counts for the search that found it and while that search is still running.
+     */
+    @MainThread
+    @VisibleForTesting
+    void onPairingPortFound(int generation, int port) {
+        if (!mStartedSearching || generation != mSearchGeneration) {
+            Log.d(TAG, "Ignoring port %d from an earlier search", port);
+            return;
+        }
+        Log.i(TAG, "Found port %d", port);
+        inputPairingCode(port);
+    }
+
+    @VisibleForTesting
+    int getSearchGeneration() {
+        return mSearchGeneration;
     }
 
     @MainThread
@@ -265,7 +298,15 @@ public class AdbPairingService extends Service {
         }
         mStartedSearching = false;
         mAdbMdnsPairing.stop();
-        mAdbPairingPort.removeObserver(mAdbPairingPortObserver);
+    }
+
+    @MainThread
+    private void stopPairingService() {
+        mHandler.removeCallbacks(mSearchTimeout);
+        cancelPairing();
+        stopSearching();
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
+        stopSelf();
     }
 
     @NonNull

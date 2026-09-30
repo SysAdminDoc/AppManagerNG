@@ -65,6 +65,45 @@ public class WifiWaitServiceTest {
     }
 
     @Test
+    public void eachOutcomeLeadsToOneNextStep() {
+        Network attempted = ShadowNetwork.newInstance(100);
+        Network replacement = ShadowNetwork.newInstance(101);
+        WifiWaitService.ConnectionResult retry = WifiWaitService.ConnectionResult.RETRY;
+
+        for (WifiWaitService.ConnectionResult done : new WifiWaitService.ConnectionResult[]{
+                WifiWaitService.ConnectionResult.SUCCESS, WifiWaitService.ConnectionResult.TERMINAL_FAILURE,
+                WifiWaitService.ConnectionResult.MODE_CHANGED}) {
+            assertEquals(WifiWaitService.NextStep.FINISH,
+                    WifiWaitService.nextStep(attempted, attempted, done, 0, true));
+        }
+        assertEquals(WifiWaitService.NextStep.FINISH, WifiWaitService.nextStep(attempted, attempted, retry, 0, false));
+        assertEquals(WifiWaitService.NextStep.TRY_REPLACEMENT,
+                WifiWaitService.nextStep(attempted, replacement, retry, 0, true));
+        // Wi-Fi went away during the attempt. The service used to stop here for good.
+        assertEquals(WifiWaitService.NextStep.WAIT_FOR_NETWORK, WifiWaitService.nextStep(attempted, null, retry, 3, true));
+
+        assertEquals(WifiWaitService.NextStep.RETRY_LATER, WifiWaitService.nextStep(attempted, attempted, retry, 0, true));
+        assertEquals(WifiWaitService.NextStep.RETRY_LATER, WifiWaitService.nextStep(attempted, attempted, retry,
+                WifiWaitService.MAX_RETRY_ATTEMPTS - 1, true));
+        assertEquals(WifiWaitService.NextStep.FINISH, WifiWaitService.nextStep(attempted, attempted, retry,
+                WifiWaitService.MAX_RETRY_ATTEMPTS, true));
+    }
+
+    @Test
+    public void anAttemptThatThrowsStillReportsBack() {
+        assertEquals(WifiWaitService.ConnectionResult.RETRY,
+                WifiWaitService.runConnectionAttempt(() -> WifiWaitService.ConnectionResult.RETRY));
+        // What setAdbPort throws for a port mDNS reported as 0. Left uncaught, the service thought
+        // the attempt still ran and ignored every network after it.
+        assertEquals(WifiWaitService.ConnectionResult.TERMINAL_FAILURE, WifiWaitService.runConnectionAttempt(() -> {
+            throw new IllegalArgumentException("Invalid ADB port: 0");
+        }));
+        assertEquals(WifiWaitService.ConnectionResult.TERMINAL_FAILURE, WifiWaitService.runConnectionAttempt(() -> {
+            throw new NoClassDefFoundError("hidden API");
+        }));
+    }
+
+    @Test
     public void onlyWifiNetworksCount() {
         NetworkCapabilities wifi = ShadowNetworkCapabilities.newInstance();
         shadowOf(wifi).addTransportType(NetworkCapabilities.TRANSPORT_WIFI);

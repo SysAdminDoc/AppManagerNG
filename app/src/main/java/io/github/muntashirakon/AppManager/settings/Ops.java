@@ -40,6 +40,7 @@ import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.adb.AdbConnectionManager;
@@ -147,6 +148,11 @@ public class Ops {
     private static boolean sIsSystem = false; // UID = 1000
     private static boolean sIsRoot = false; // UID = 0
     private static boolean sIsShizuku = false; // Privileged binder is backed by Shizuku/Sui UserService
+    /**
+     * Port of upstream 2f2b31e89: a mode change, a connect and the boot-time reconnect each set the
+     * mode flags and restart the server, so one at a time, in the order they came in.
+     */
+    private static final ReentrantLock sTransitionLock = new ReentrantLock(true);
 
     // Security
     private static final Object sSecurityLock = new Object();
@@ -330,9 +336,10 @@ public class Ops {
     public static void setMode(@NonNull String newMode) {
         AppPref.set(AppPref.PrefKey.PREF_MODE_OF_OPS_STR, newMode);
         if (!MODE_ADB_WIFI.equals(newMode) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // A boot-time reconnect for the old mode must not bring wireless ADB back
+            // A boot-time reconnect or a pairing for the old mode must not bring wireless ADB back
             Context context = ContextUtils.getContext();
             context.stopService(new Intent(context, WifiWaitService.class));
+            context.stopService(new Intent(context, AdbPairingService.class));
         }
     }
 
@@ -355,6 +362,18 @@ public class Ops {
     @Status
     private static int init(@NonNull Context context, boolean force, @NonNull @Mode String mode,
                             boolean persistAutoDetectedMode) {
+        sTransitionLock.lock();
+        try {
+            return initLocked(context, force, mode, persistAutoDetectedMode);
+        } finally {
+            sTransitionLock.unlock();
+        }
+    }
+
+    @WorkerThread
+    @Status
+    private static int initLocked(@NonNull Context context, boolean force, @NonNull @Mode String mode,
+                                  boolean persistAutoDetectedMode) {
         if (MODE_NO_ROOT.equals(mode)) {
             return initNoRoot();
         }
@@ -626,6 +645,17 @@ public class Ops {
     @NoOps // Although we've used Ops checks, its overall usage does not affect anything
     @Status
     public static int autoConnectWirelessDebugging(@NonNull Context context) {
+        sTransitionLock.lock();
+        try {
+            return autoConnectWirelessDebuggingLocked(context);
+        } finally {
+            sTransitionLock.unlock();
+        }
+    }
+
+    @WorkerThread
+    @Status
+    private static int autoConnectWirelessDebuggingLocked(@NonNull Context context) {
         if (isLocalNetworkPermissionMissing(context)) {
             return STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED;
         }
@@ -637,7 +667,9 @@ public class Ops {
         try {
             connectAdbFull(findAdbPort(context, 5, ServerConfig.getAdbPort()));
             return checkRootOrIncompleteUsbDebuggingInAdb();
-        } catch (RemoteException | IOException | AdbPairingRequiredException e) {
+        } catch (RemoteException | IOException | AdbPairingRequiredException | RuntimeException e) {
+            // RuntimeException: a port mDNS reported as 0 fails in setAdbPort, and the flags above
+            // must still go back
             Log.e(TAG, "Could not auto-connect to adbd", e);
             // Go back to the last mode
             sIsAdb = lastAdb;
@@ -658,6 +690,17 @@ public class Ops {
     public static int connectAdb(@NonNull Context context, int port, @Status int returnCodeOnFailure) {
         // -1 is a cancelled dialog
         if (!ServerConfig.isValidAdbPort(port)) return returnCodeOnFailure;
+        sTransitionLock.lock();
+        try {
+            return connectAdbLocked(port, returnCodeOnFailure);
+        } finally {
+            sTransitionLock.unlock();
+        }
+    }
+
+    @WorkerThread
+    @Status
+    private static int connectAdbLocked(int port, @Status int returnCodeOnFailure) {
         boolean lastAdb = sIsAdb;
         boolean lastSystem = sIsSystem;
         boolean lastRoot = sIsRoot;
@@ -666,7 +709,7 @@ public class Ops {
         try {
             connectAdbFull(port);
             return checkRootOrIncompleteUsbDebuggingInAdb();
-        } catch (RemoteException | IOException | AdbPairingRequiredException e) {
+        } catch (RemoteException | IOException | AdbPairingRequiredException | RuntimeException e) {
             Log.e(TAG, "Could not connect to adbd using port " + port, e);
             // Go back to the last mode
             sIsAdb = lastAdb;
@@ -820,6 +863,8 @@ public class Ops {
         if (isLocalNetworkPermissionMissing(context)) {
             return STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED;
         }
+        // Unlike upstream, no mode lock while the user types the code, which can take minutes and
+        // would hold up the boot-time reconnect. connectAdb takes it for the connect.
         try {
             int status = pairAdbInternal(context);
             if (status == STATUS_ADB_CONNECT_REQUIRED) {
@@ -938,7 +983,7 @@ public class Ops {
             try {
                 LocalServer.getInstance();
                 LocalServices.bindServicesIfNotAlready();
-            } catch (RemoteException | IOException | AdbPairingRequiredException e) {
+            } catch (RemoteException | IOException | AdbPairingRequiredException | RuntimeException e) {
                 Log.e(TAG, e);
                 // fall-through, because the remote service may still be alive
             }
