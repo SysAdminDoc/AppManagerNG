@@ -212,7 +212,8 @@ public final class ServerConfig {
         return getHostIpAddress(context);
     }
 
-    @WorkerThread
+    // Reads the loopback address only, no lookup
+    @AnyThread
     @NonNull
     public static String getLocalServerHost(Context context) {
         String ipAddress = Inet4Address.getLoopbackAddress().getHostAddress();

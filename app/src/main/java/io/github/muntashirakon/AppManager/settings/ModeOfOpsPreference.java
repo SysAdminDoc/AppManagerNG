@@ -258,12 +258,7 @@ public class ModeOfOpsPreference extends Fragment {
             case Ops.STATUS_FAILURE_ADB_NEED_MORE_PERMS:
                 dismissModeProgressDialog();
                 // The switch ends once the user has read why it failed
-                Ops.displayIncompleteUsbDebuggingMessage(activity, () -> {
-                    // Not when the dialog went away with a screen that is gone
-                    if (getView() != null) {
-                        finishModeApply(false, true);
-                    }
-                });
+                Ops.displayIncompleteUsbDebuggingMessage(activity, this::onIncompleteUsbDebuggingDismissed);
                 mModel.onModeStatusDialogShown();
                 return;
             case Ops.STATUS_FAILURE_SERVER_START:
@@ -277,6 +272,13 @@ public class ModeOfOpsPreference extends Fragment {
                 return;
             case Ops.STATUS_FAILURE:
                 finishModeApply(false, true);
+        }
+    }
+
+    private void onIncompleteUsbDebuggingDismissed() {
+        // Not when the dialog went away with a screen that is gone
+        if (getView() != null) {
+            finishModeApply(false, true);
         }
     }
 
