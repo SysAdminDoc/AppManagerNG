@@ -297,6 +297,36 @@ class LocalServerManager {
         return sb.append(line, end, line.length()).toString();
     }
 
+    // How much of the command on each side of the token marks a line as its echo
+    private static final int ECHO_CONTEXT = 8;
+    @VisibleForTesting
+    static final String ECHO_NOT_LOGGED = "(echo of the launch command, not logged)";
+
+    /**
+     * The launch shell has a terminal, so it echoes the launch command back, and mksh redraws a
+     * line longer than the terminal in scrolled pieces cut wherever its width falls. A piece can
+     * hold a few of the token's characters with nothing around them to recognize. So an echoed
+     * line isn't logged at all. mksh's redraws carry backspaces, and the rest of the echo carries
+     * the command's text right before or after the token.
+     */
+    @VisibleForTesting
+    static boolean isEcho(@NonNull String line, @NonNull String command, @NonNull String token) {
+        for (int i = 0; i < line.length(); ++i) {
+            char c = line.charAt(i);
+            if ((c < 0x20 && c != '\t') || c == 0x7f) {
+                return true;
+            }
+        }
+        int at = command.indexOf(token);
+        if (at == -1) {
+            return false;
+        }
+        int end = at + token.length();
+        String before = command.substring(Math.max(0, at - ECHO_CONTEXT), at);
+        String after = command.substring(end, Math.min(command.length(), end + ECHO_CONTEXT));
+        return (!before.isEmpty() && line.contains(before)) || (!after.isEmpty() && line.contains(after));
+    }
+
     /**
      * Reads a launch shell for as long as it stays open, so the server, which writes to it, never
      * backs up. Keeps the launcher's answer and when the shell closed.
@@ -306,14 +336,17 @@ class LocalServerManager {
         @NonNull
         private final InputStream mIn;
         @NonNull
+        private final String mCommand;
+        @NonNull
         private final String mToken;
         private final CountDownLatch mAnswered = new CountDownLatch(1);
         private volatile boolean mStarted;
         private volatile boolean mFailed;
         private volatile long mClosedAt = -1;
 
-        ShellReader(@NonNull InputStream in, @NonNull String token) {
+        ShellReader(@NonNull InputStream in, @NonNull String command, @NonNull String token) {
             mIn = in;
+            mCommand = command;
             mToken = token;
         }
 
@@ -322,6 +355,11 @@ class LocalServerManager {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(mIn))) {
                 String s;
                 while ((s = reader.readLine()) != null) {
+                    if (isEcho(s, mCommand, mToken)) {
+                        // A redrawn piece can start anywhere in the command, "Error!" included
+                        Log.d(TAG, "RESPONSE: %s", ECHO_NOT_LOGGED);
+                        continue;
+                    }
                     Log.d(TAG, "RESPONSE: %s", redactToken(s, mToken));
                     if (s.startsWith("Success!")) {
                         mStarted = true;
@@ -355,7 +393,7 @@ class LocalServerManager {
     static void launchInShell(@NonNull InputStream in, @NonNull OutputStream out, @NonNull String command,
                               @NonNull String token, long openedAt, long timeout, @NonNull TimeUnit unit)
             throws IOException, InterruptedException, TimeoutException {
-        ShellReader reader = new ShellReader(in, token);
+        ShellReader reader = new ShellReader(in, command, token);
         Thread t = new Thread(reader, "adb-output-reader");
         t.setDaemon(true);
         t.start();
