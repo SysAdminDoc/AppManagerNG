@@ -42,6 +42,7 @@
                     android:id="@+id/attention_badge"
                     android:layout_width="10dp"
                     android:layout_height="10dp"
+                    android:importantForAccessibility="no"
                     android:layout_gravity="end|top"
                     android:src="@drawable/bg_attention_dot"
                     android:visibility="gone"

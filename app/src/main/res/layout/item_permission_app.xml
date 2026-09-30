@@ -23,6 +23,7 @@
             android:id="@+id/app_icon"
             android:layout_width="@dimen/main_list_icon_size"
             android:layout_height="@dimen/main_list_icon_size"
+            android:importantForAccessibility="no"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.AppTheme.CircleComponent"
             tools:src="@mipmap/ic_launcher" />
 

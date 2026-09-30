@@ -15,9 +15,9 @@
         android:id="@+id/item_icon"
         android:layout_width="@dimen/icon_size"
         android:layout_height="match_parent"
+        android:importantForAccessibility="no"
         android:layout_marginEnd="@dimen/padding_medium"
         android:layout_weight="0"
-        tools:ignore="ContentDescription"
         tools:srcCompat="@tools:sample/avatars" />
 
     <androidx.appcompat.widget.LinearLayoutCompat
