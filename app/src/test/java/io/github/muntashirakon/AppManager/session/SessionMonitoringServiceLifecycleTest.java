@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.session;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -36,5 +37,30 @@ public class SessionMonitoringServiceLifecycleTest {
 
         assertTrue(checker.isClosed());
         assertNull("a screen event during teardown must not start a new checker", service.getScreenLockChecker());
+    }
+
+    @Test(timeout = 20_000)
+    public void repeatedStartAndStopLeavesNoTimerThreads() throws InterruptedException {
+        for (int i = 0; i < 20; ++i) {
+            ServiceController<SessionMonitoringService> controller = Robolectric.buildService(
+                    SessionMonitoringService.class, new Intent()).create().startCommand(0, i);
+            assertNotNull(controller.get().getScreenLockChecker());
+            controller.destroy();
+        }
+
+        long deadline = System.currentTimeMillis() + 5_000;
+        int count;
+        do {
+            count = 0;
+            for (Thread thread : Thread.getAllStackTraces().keySet()) {
+                if (ScreenLockChecker.TIMER_THREAD_NAME.equals(thread.getName()) && thread.isAlive()) {
+                    ++count;
+                }
+            }
+            if (count > 0) {
+                Thread.sleep(20);
+            }
+        } while (count > 0 && System.currentTimeMillis() < deadline);
+        assertEquals(0, count);
     }
 }

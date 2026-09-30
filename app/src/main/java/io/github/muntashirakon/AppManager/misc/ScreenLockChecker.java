@@ -84,6 +84,10 @@ public final class ScreenLockChecker implements Closeable {
     private Runnable mCancelPendingCheck;
     @GuardedBy("mLock")
     private boolean mClosed;
+    /** Runs between the first closed check and taking the lock, so a test can land close() there. */
+    @VisibleForTesting
+    @Nullable
+    Runnable mBeforeLockForTest;
 
     public ScreenLockChecker(@NonNull Context context, @Nullable Runnable runnable) {
         this(context, runnable, new TimerScheduler());
@@ -141,6 +145,10 @@ public final class ScreenLockChecker implements Closeable {
         Log.i(TAG, "checkLock: isProtected=%b, isLocked=%b, isInteractive=%b, delay=%d",
                 isProtected, isLocked, isInteractive, sCheckLockDelays[safeDelayIndex]);
 
+        Runnable beforeLock = mBeforeLockForTest;
+        if (beforeLock != null) {
+            beforeLock.run();
+        }
         synchronized (mLock) {
             if (mClosed) {
                 return;
