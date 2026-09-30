@@ -482,13 +482,6 @@ Sources and reasoning: RESEARCH.md (2026-09-30).
   Acceptance: each ADB-mode failure maps to a stable code (wireless debugging off, pairing required, certificate rejected, connection refused, stream closed after connect, server launch denied, launch timeout, unknown) shown in plain words with one next step and carried in the support bundle without addresses, ports or tokens; host tests feed each exception shape and assert the code; an unknown failure keeps its exception class.
   Complexity: M
 
-- [ ] P2: Make the Mode of operation custom command something `adb shell` can run
-  Why: the custom command box shows the same `sh /data/user_de/<user>/<package>/cache/run_server.sh <port> <token>` line twice, because both `SERVER_RUNNER_EXEC` slots point at the DE cache copy. SELinux keeps `adb shell` out of that folder, so a user who pastes it on a PC gets a permission error (found on the S22 while checking issue #20).
-  Evidence: `settings/MainPreferencesViewModel.java:156-157`; `servermanager/ServerConfig.java:55-56,84-95`; `servermanager/AdbLaunchFiles.java` (the staged `/data/local/tmp/<applicationId>` launcher ADB mode uses now).
-  Touches: `ServerConfig`, `MainPreferencesViewModel`, the custom command layout and strings, `AdbLaunchFiles`, tests.
-  Acceptance: the box shows one ADB command and, on rooted devices only, one root command; the ADB command copies am.jar and the launcher out of the installed APK into `/data/local/tmp/<applicationId>` (checked against their SHA-256) and starts the server from there, so it works from `adb shell` on a fresh install; the token still isn't logged; a host test runs the command under `sh` against a fake APK; on the S22 or S25 the pasted command starts the server and the app connects.
-  Complexity: M
-
 ### P3
 
 - [ ] P3: Schedule settings snapshot export to a chosen folder
