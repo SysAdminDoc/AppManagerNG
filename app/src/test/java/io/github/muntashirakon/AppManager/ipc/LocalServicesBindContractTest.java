@@ -85,6 +85,16 @@ public class LocalServicesBindContractTest {
         assertTrue(init.indexOf("cancelPendingServerStart()", fallback) > fallback);
     }
 
+    @Test
+    public void aStopIsQueuedBeforeAnyBindThatFollowsIt() throws IOException {
+        // Queued outside the lock, a bind posted in the gap ran first and was then stopped
+        String wrapper = read("app/src/main/java/io/github/muntashirakon/AppManager/ipc/ServiceConnectionWrapper.java");
+        String stop = body(wrapper, "public void stopDaemon()");
+        int lock = stop.indexOf("synchronized (mServiceConnection)");
+        String locked = body(stop.substring(lock), "synchronized (mServiceConnection)");
+        assertTrue(stop, locked.contains("RootService.stop(intent)"));
+    }
+
     private static String body(String source, String signature) {
         int start = source.indexOf(signature);
         assertTrue(signature, start != -1);
