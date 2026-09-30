@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.adb.AdbUtils;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.servermanager.LocalServer;
 import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
@@ -510,7 +511,7 @@ public class ModeOfOpsPreference extends Fragment {
     private void switchShizukuToAdbMode() {
         String nextMode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
                 && !Utils.isTv(requireContext())
-                && Utils.isWifiActive(requireContext().getApplicationContext())
+                && AdbUtils.isWifiConnected(requireContext())
                 ? Ops.MODE_ADB_WIFI
                 : Ops.MODE_ADB_OVER_TCP;
         beginModeApply(nextMode);
