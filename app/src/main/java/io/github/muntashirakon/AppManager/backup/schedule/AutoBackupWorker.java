@@ -16,6 +16,7 @@ import android.text.format.Formatter;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.PendingIntentCompat;
@@ -71,6 +72,25 @@ public class AutoBackupWorker extends Worker {
     }
 
     /**
+     * Takes the single run slot and records who started the run. A run that finds the slot taken
+     * records nothing, so it can't relabel the run that holds it.
+     */
+    @VisibleForTesting
+    static boolean claimRun(@NonNull String origin) {
+        if (!sRunning.compareAndSet(false, true)) {
+            return false;
+        }
+        Log.i(TAG, "Auto-backup run started from " + (origin.isEmpty() ? "an unknown origin" : origin));
+        AutoBackupScheduler.recordRunOrigin(origin);
+        return true;
+    }
+
+    @VisibleForTesting
+    static void releaseRun() {
+        sRunning.set(false);
+    }
+
+    /**
      * The origin a run records: the schedule for periodic work, otherwise the origin its request
      * named. A manual run queued before origins were recorded, or with an origin this version
      * doesn't know, records none rather than a guess.
@@ -93,14 +113,13 @@ public class AutoBackupWorker extends Worker {
         Context context = getApplicationContext();
         boolean manual = getInputData().getBoolean(KEY_MANUAL, false);
         String origin = originOf(getInputData());
-        Log.i(TAG, "Auto-backup run started from " + (origin.isEmpty() ? "an unknown origin" : origin));
-        AutoBackupScheduler.recordRunOrigin(origin);
         if (!manual && !Prefs.BackupRestore.isScheduledAutoBackupEnabled()) {
+            AutoBackupScheduler.recordRunOrigin(origin);
             AutoBackupScheduler.recordRunResult(context.getString(R.string.auto_backup_result_disabled));
             AutoBackupScheduler.refreshDiagnostics(context);
             return Result.success();
         }
-        if (!sRunning.compareAndSet(false, true)) {
+        if (!claimRun(origin)) {
             // Another auto-backup run is already in flight. Skip the manual one; reschedule the
             // periodic one so its due packages still get backed up once the current run finishes.
             Log.w(TAG, "Auto-backup already running; skipping this run (manual=" + manual + ")");
