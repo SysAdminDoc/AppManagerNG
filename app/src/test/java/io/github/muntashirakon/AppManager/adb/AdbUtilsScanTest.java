@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.adb;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -11,6 +12,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -47,11 +49,36 @@ public class AdbUtilsScanTest {
 
     @Test
     public void aScannerThatFailsToStopDoesNotKeepTheOtherRunning() {
-        assertThrows(InterruptedException.class, () -> AdbUtils.scan(
+        assertThrows(IOException.class, () -> AdbUtils.scan(
                 Arrays.asList(scanner("tcp", false, true), scanner("tls", false, false)),
                 new CountDownLatch(1), 10, TimeUnit.MILLISECONDS));
 
         assertEquals(Arrays.asList("start tcp", "start tls", "stop tcp", "stop tls"), mCalls);
+    }
+
+    @Test
+    public void aScanThatFindsNothingIsNotACancel() {
+        // The port lookup takes an InterruptedException for a cancel and stops. A scan that only
+        // timed out has to let it fall back to the saved port.
+        IOException e = assertThrows(IOException.class, () -> AdbUtils.scan(
+                Arrays.asList(scanner("tcp", false, false), scanner("tls", false, false)),
+                new CountDownLatch(1), 10, TimeUnit.MILLISECONDS));
+
+        assertFalse(e instanceof InterruptedIOException);
+        assertFalse(Thread.currentThread().isInterrupted());
+    }
+
+    @Test
+    public void aScanThatIsInterruptedSaysSo() {
+        Thread.currentThread().interrupt();
+        try {
+            assertThrows(InterruptedException.class, () -> AdbUtils.scan(
+                    Arrays.asList(scanner("tcp", false, false), scanner("tls", false, false)),
+                    new CountDownLatch(1), 1, TimeUnit.SECONDS));
+            assertEquals(Arrays.asList("start tcp", "start tls", "stop tcp", "stop tls"), mCalls);
+        } finally {
+            Thread.interrupted();
+        }
     }
 
     private AdbUtils.Scanner scanner(String name, boolean failStart, boolean failStop) {
