@@ -166,49 +166,7 @@ public class SplashActivity extends AppCompatActivity {
                 });
         Log.d(TAG, "Waiting to be authenticated.");
         mViewModel.startupInitState().observe(this, this::bindStartupInitState);
-        mViewModel.authenticationStatus().observe(this, status -> {
-            switch (status) {
-                case Ops.STATUS_AUTO_CONNECT_WIRELESS_DEBUGGING:
-                    Log.d(TAG, "Try auto-connecting to wireless debugging.");
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        mViewModel.autoConnectWirelessDebugging();
-                        return;
-                    } // fall-through
-                case Ops.STATUS_WIRELESS_DEBUGGING_CHOOSER_REQUIRED:
-                    Log.d(TAG, "Display wireless debugging chooser (pair or connect)");
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        Ops.connectWirelessDebugging(this, mViewModel);
-                        return;
-                    } // fall-through
-                case Ops.STATUS_ADB_CONNECT_REQUIRED:
-                    Log.d(TAG, "Display connect dialog.");
-                    Ops.connectAdbInput(this, mViewModel);
-                    return;
-                case Ops.STATUS_SHIZUKU_PERMISSION_REQUIRED:
-                    Log.d(TAG, "Request Shizuku permission.");
-                    Ops.requestShizukuPermission(this, mViewModel);
-                    return;
-                case Ops.STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED:
-                    Log.d(TAG, "Local network permission required for wireless debugging.");
-                    Ops.displayLocalNetworkPermissionMessage(this, mViewModel);
-                    return;
-                case Ops.STATUS_ADB_PAIRING_REQUIRED:
-                    Log.d(TAG, "Display pairing dialog.");
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        Ops.pairAdbInput(this, mViewModel);
-                        return;
-                    } // fall-through
-                case Ops.STATUS_FAILURE_ADB_NEED_MORE_PERMS:
-                    Ops.displayIncompleteUsbDebuggingMessage(this);
-                case Ops.STATUS_SUCCESS:
-                case Ops.STATUS_FAILURE:
-                    Log.d(TAG, "Authentication completed.");
-                    mViewModel.setAuthenticating(false);
-                    Ops.setAuthenticated(this, true);
-                    startActivity(new Intent(this, MainActivity.class));
-                    finish();
-            }
-        });
+        mViewModel.authenticationStatus().observe(this, this::handleAuthenticationStatus);
         // The keystore check must survive activity recreation. Posting the result straight back to
         // this instance loses it whenever the splash is relaunched mid-check (theme/locale config
         // change during startup): the destroyed instance drops the continuation, and the recreated
@@ -229,8 +187,72 @@ public class SplashActivity extends AppCompatActivity {
         });
         if (!mViewModel.isAuthenticating()) {
             mViewModel.setAuthenticating(true);
+        } else {
+            // Recreated while a dialog waited for the user: it went away with the old activity
+            Integer lostStatus = mViewModel.getLostDialogStatus();
+            if (lostStatus != null) {
+                handleAuthenticationStatus(lostStatus);
+            }
         }
         mViewModel.checkKeyStorePassword();
+    }
+
+    private void handleAuthenticationStatus(@Ops.Status int status) {
+        switch (status) {
+            case Ops.STATUS_AUTO_CONNECT_WIRELESS_DEBUGGING:
+                Log.d(TAG, "Try auto-connecting to wireless debugging.");
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    mViewModel.autoConnectWirelessDebugging();
+                    return;
+                } // fall-through
+            case Ops.STATUS_WIRELESS_DEBUGGING_CHOOSER_REQUIRED:
+                Log.d(TAG, "Display wireless debugging chooser (pair or connect)");
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    Ops.connectWirelessDebugging(this, mViewModel);
+                    mViewModel.onStatusDialogShown();
+                    return;
+                } // fall-through
+            case Ops.STATUS_ADB_CONNECT_REQUIRED:
+                Log.d(TAG, "Display connect dialog.");
+                Ops.connectAdbInput(this, mViewModel);
+                mViewModel.onStatusDialogShown();
+                return;
+            case Ops.STATUS_SHIZUKU_PERMISSION_REQUIRED:
+                Log.d(TAG, "Request Shizuku permission.");
+                Ops.requestShizukuPermission(this, mViewModel);
+                mViewModel.onStatusDialogShown();
+                return;
+            case Ops.STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED:
+                Log.d(TAG, "Local network permission required for wireless debugging.");
+                Ops.displayLocalNetworkPermissionMessage(this, mViewModel);
+                mViewModel.onStatusDialogShown();
+                return;
+            case Ops.STATUS_ADB_PAIRING_REQUIRED:
+                Log.d(TAG, "Display pairing dialog.");
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    Ops.pairAdbInput(this, mViewModel);
+                    mViewModel.onStatusDialogShown();
+                    return;
+                } // fall-through
+            case Ops.STATUS_FAILURE_ADB_NEED_MORE_PERMS:
+                Ops.displayIncompleteUsbDebuggingMessage(this, this::completeAuthentication);
+                mViewModel.onStatusDialogShown();
+                return;
+            case Ops.STATUS_SUCCESS:
+            case Ops.STATUS_FAILURE:
+                completeAuthentication();
+        }
+    }
+
+    private void completeAuthentication() {
+        if (!mViewModel.isAuthenticating() || isFinishing() || isDestroyed()) {
+            return;
+        }
+        Log.d(TAG, "Authentication completed.");
+        mViewModel.setAuthenticating(false);
+        Ops.setAuthenticated(this, true);
+        startActivity(new Intent(this, MainActivity.class));
+        finish();
     }
 
     private void ensureSecurityAndModeOfOp() {

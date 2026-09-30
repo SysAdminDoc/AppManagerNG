@@ -6,6 +6,7 @@ import android.app.Application;
 import android.os.Build;
 
 import androidx.annotation.AnyThread;
+import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
@@ -22,13 +23,17 @@ import io.github.muntashirakon.AppManager.self.Migrations;
 import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.MultithreadedExecutor;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
+import io.github.muntashirakon.lifecycle.SingleLiveEvent;
 
 public class SecurityAndOpsViewModel extends AndroidViewModel implements Ops.AdbConnectionInterface {
     public static final String TAG = SecurityAndOpsViewModel.class.getSimpleName();
     private static final long STARTUP_INIT_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(45);
 
     private boolean mIsAuthenticating = false;
-    private final MutableLiveData<Integer> mAuthenticationStatus = new MutableLiveData<>();
+    // Delivered once. A recreated screen replaying the last status would reopen a dialog, retry
+    // the ADB connection or run the terminal step a second time.
+    private final MutableLiveData<Integer> mAuthenticationStatus = new SingleLiveEvent<>();
+    private final ModeStatusDialogTracker mStatusDialogs = new ModeStatusDialogTracker();
     private final MutableLiveData<Boolean> mKeyStorePasswordStatus = new MutableLiveData<>();
     private final Object mKeyStorePasswordLock = new Object();
     private final MutableLiveData<StartupInitState> mStartupInitState = new MutableLiveData<>(StartupInitState.idle());
@@ -68,6 +73,22 @@ public class SecurityAndOpsViewModel extends AndroidViewModel implements Ops.Adb
 
     public LiveData<Integer> authenticationStatus() {
         return mAuthenticationStatus;
+    }
+
+    /**
+     * The status whose dialog (a port, pairing, a permission) the screen showed and the user
+     * hasn't answered, or {@code null}. A screen recreated during authentication shows it again,
+     * since that dialog went away with the old screen.
+     */
+    @MainThread
+    @Nullable
+    public Integer getLostDialogStatus() {
+        return mStatusDialogs.getLostDialogStatus();
+    }
+
+    @MainThread
+    public void onStatusDialogShown() {
+        mStatusDialogs.onDialogShown();
     }
 
     public LiveData<Boolean> keyStorePasswordStatus() {
@@ -204,7 +225,7 @@ public class SecurityAndOpsViewModel extends AndroidViewModel implements Ops.Adb
             }
             publishStartupInitStateLocked(mStartupInitSnapshot.statusReceived(attemptId, status, detail));
         }
-        publishLiveData(mAuthenticationStatus, status);
+        publishAuthenticationStatus(status);
     }
 
     public void timeoutStartupInitAttempt(long attemptId, @Nullable String detail) {
@@ -258,6 +279,15 @@ public class SecurityAndOpsViewModel extends AndroidViewModel implements Ops.Adb
     private void publishStartupInitStateLocked(@NonNull StartupInitState state) {
         mStartupInitSnapshot = state;
         publishLiveData(mStartupInitState, state);
+    }
+
+    private void publishAuthenticationStatus(@Ops.Status int status) {
+        if (ThreadUtils.isMainThread()) {
+            mStatusDialogs.onPublished(status);
+            mAuthenticationStatus.setValue(status);
+        } else {
+            ThreadUtils.postOnMainThread(() -> publishAuthenticationStatus(status));
+        }
     }
 
     private static <T> void publishLiveData(@NonNull MutableLiveData<T> liveData, @Nullable T value) {

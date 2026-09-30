@@ -349,13 +349,28 @@ public class LocalServer {
     @WorkerThread
     @NoOps(used = true)
     public static void restart() throws IOException, AdbPairingRequiredException {
-        if (sLocalServer != null) {
-            LocalServerManager manager = sLocalServer.mLocalServerManager;
-            manager.closeBgServer();
-            manager.stop();
-            manager.start();
-        } else {
-            getInstance();
+        // Same lock as a port change: both stop and start the one server
+        synchronized (sPortRebindLock) {
+            if (sLocalServer != null) {
+                LocalServerManager manager = sLocalServer.mLocalServerManager;
+                try {
+                    manager.closeBgServer();
+                } catch (Exception e) {
+                    // Usually the old server is already gone (no-root in between, reboot, killed).
+                    // Giving up here made every later switch back to ADB fail the same way.
+                    Log.w(TAG, "Could not stop the previous local server.", e);
+                } finally {
+                    manager.stop();
+                }
+                try {
+                    manager.start();
+                } catch (IOException | AdbPairingRequiredException e) {
+                    manager.stop();
+                    throw e;
+                }
+            } else {
+                getInstance();
+            }
         }
     }
 

@@ -840,7 +840,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
                 Ops.displayLocalNetworkPermissionMessage(activity, callback);
                 return;
             case Ops.STATUS_FAILURE_ADB_NEED_MORE_PERMS:
-                Ops.displayIncompleteUsbDebuggingMessage(activity);
+                Ops.displayIncompleteUsbDebuggingMessage(activity, null);
                 return;
             case Ops.STATUS_SUCCESS:
                 UIUtils.displayShortToast(R.string.adb_pairing_connected);
@@ -858,7 +858,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
                 UIUtils.displayShortToast(R.string.adb_tcpip_connected);
                 return;
             case Ops.STATUS_FAILURE_ADB_NEED_MORE_PERMS:
-                Ops.displayIncompleteUsbDebuggingMessage(activity);
+                Ops.displayIncompleteUsbDebuggingMessage(activity, null);
                 return;
             case Ops.STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED:
                 Ops.displayLocalNetworkPermissionMessage(activity, getWirelessSetupCallback(activity));

@@ -18,6 +18,7 @@ import androidx.annotation.GuardedBy;
 import androidx.annotation.IntDef;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.StringDef;
 import androidx.annotation.UiThread;
@@ -394,9 +395,7 @@ public class Ops {
                     sIsRoot = sIsSystem = false;
                     sIsAdb = true;
                     sIsShizuku = false;
-                    ServerConfig.setAdbPort(findAdbPort(context, 10, AdbUtils.getAdbPortOrDefault()));
-                    LocalServer.restart();
-                    LocalServices.bindServicesIfNotAlready();
+                    connectAdbFull(findAdbPort(context, 10, AdbUtils.getAdbPortOrDefault()));
                     return checkRootOrIncompleteUsbDebuggingInAdb();
             }
         } catch (Throwable e) {
@@ -552,9 +551,7 @@ public class Ops {
         }
         sIsAdb = true; // First enable ADB if not already
         try {
-            ServerConfig.setAdbPort(findAdbPort(context, 7, ServerConfig.getAdbPort()));
-            LocalServer.restart();
-            LocalServices.bindServicesIfNotAlready();
+            connectAdbFull(findAdbPort(context, 7, ServerConfig.getAdbPort()));
         } catch (Throwable e) {
             Log.e(TAG, e);
         }
@@ -620,9 +617,7 @@ public class Ops {
         sIsAdb = true;
         sIsSystem = sIsRoot = false;
         try {
-            ServerConfig.setAdbPort(findAdbPort(context, 5, ServerConfig.getAdbPort()));
-            LocalServer.restart();
-            LocalServices.bindServicesIfNotAlready();
+            connectAdbFull(findAdbPort(context, 5, ServerConfig.getAdbPort()));
             return checkRootOrIncompleteUsbDebuggingInAdb();
         } catch (RemoteException | IOException | AdbPairingRequiredException e) {
             Log.e(TAG, "Could not auto-connect to adbd", e);
@@ -648,9 +643,7 @@ public class Ops {
         sIsAdb = true;
         sIsSystem = sIsRoot = false;
         try {
-            ServerConfig.setAdbPort(port);
-            LocalServer.restart();
-            LocalServices.bindServicesIfNotAlready();
+            connectAdbFull(port);
             return checkRootOrIncompleteUsbDebuggingInAdb();
         } catch (RemoteException | IOException | AdbPairingRequiredException e) {
             Log.e(TAG, "Could not connect to adbd using port " + port, e);
@@ -660,6 +653,17 @@ public class Ops {
             sIsRoot = lastRoot;
             return returnCodeOnFailure;
         }
+    }
+
+    /**
+     * Restart the local server against this adbd port, then bind both remote services.
+     */
+    @WorkerThread
+    private static void connectAdbFull(int adbPort)
+            throws IOException, AdbPairingRequiredException, RemoteException {
+        ServerConfig.setAdbPort(adbPort);
+        LocalServer.restart();
+        LocalServices.bindServicesIfNotAlready();
     }
 
     @UiThread
@@ -791,7 +795,8 @@ public class Ops {
     }
 
     @UiThread
-    public static void displayIncompleteUsbDebuggingMessage(@NonNull FragmentActivity activity) {
+    public static void displayIncompleteUsbDebuggingMessage(@NonNull FragmentActivity activity,
+                                                            @Nullable Runnable onDismiss) {
         new ScrollableDialogBuilder(activity)
                 .setTitle(R.string.adb_incomplete_usb_debugging_title)
                 .setMessage(R.string.adb_incomplete_usb_debugging_message)
@@ -805,6 +810,10 @@ public class Ops {
                     } catch (Exception e) {
                         Log.w(TAG, "Could not open the developer settings.", e);
                     }
+                })
+                // Finishing the mode request waits for the user to read this
+                .setOnDismissListener(dialog -> {
+                    if (onDismiss != null) onDismiss.run();
                 })
                 .show();
     }

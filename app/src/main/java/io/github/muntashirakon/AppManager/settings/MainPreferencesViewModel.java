@@ -11,9 +11,11 @@ import android.os.PowerManager;
 import android.os.UserHandleHidden;
 import android.text.TextUtils;
 
+import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import androidx.annotation.VisibleForTesting;
 import androidx.collection.ArrayMap;
 import androidx.core.util.Pair;
 import androidx.documentfile.provider.DocumentFileUtils;
@@ -34,6 +36,7 @@ import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.muntashirakon.AppManager.R;
@@ -80,6 +83,9 @@ public class MainPreferencesViewModel extends AndroidViewModel implements Ops.Ad
     private final MutableLiveData<List<Pair<String, CharSequence>>> mPackageNameLabelPairLiveData = new SingleLiveEvent<>();
     private final ExecutorService mExecutor = Executors.newFixedThreadPool(1);
     private final AtomicBoolean mRuleResetCancelled = new AtomicBoolean();
+    private final AtomicBoolean mModeOperationPending = new AtomicBoolean(false);
+    private final ModeOfOpsApplyState mModeApplyState = new ModeOfOpsApplyState();
+    private final ModeStatusDialogTracker mModeStatusDialogs = new ModeStatusDialogTracker();
     private final Object mRuleResetLock = new Object();
     private Future<?> mRuleResetFuture;
     @NonNull
@@ -167,18 +173,45 @@ public class MainPreferencesViewModel extends AndroidViewModel implements Ops.Ad
         return mModeOfOpsStatus;
     }
 
+    /**
+     * The mode switch in progress. It lives here rather than in the screen so that rotating the
+     * screen mid-switch neither loses the switch nor rolls the saved mode back.
+     */
+    @NonNull
+    ModeOfOpsApplyState getModeApplyState() {
+        return mModeApplyState;
+    }
+
+    /**
+     * Whether a mode request is still running. Another one is refused until it finishes.
+     */
+    @MainThread
+    public boolean isModeOperationPending() {
+        return mModeOperationPending.get();
+    }
+
+    /**
+     * The status whose dialog (a port, pairing, a permission) the screen showed and the user
+     * hasn't answered, or {@code null}. A recreated screen shows it again.
+     */
+    @MainThread
+    @Nullable
+    @Ops.Status
+    Integer getLostDialogStatus() {
+        return mModeStatusDialogs.getLostDialogStatus();
+    }
+
+    @MainThread
+    void onModeStatusDialogShown() {
+        mModeStatusDialogs.onDialogShown();
+    }
+
     public void setModeOfOps() {
-        mExecutor.submit(() -> {
-            int status = Ops.init(getApplication(), true);
-            mModeOfOpsStatus.postValue(status);
-        });
+        submitModeOperation(() -> Ops.init(getApplication(), true));
     }
 
     public void setModeOfOps(@NonNull @Ops.Mode String mode) {
-        mExecutor.submit(() -> {
-            int status = Ops.init(getApplication(), true, mode);
-            mModeOfOpsStatus.postValue(status);
-        });
+        submitModeOperation(() -> Ops.init(getApplication(), true, mode));
     }
 
     public LiveData<LocalServer.PortRebindResult> getLocalServerPortRebindResult() {
@@ -367,32 +400,69 @@ public class MainPreferencesViewModel extends AndroidViewModel implements Ops.Ad
 
     @RequiresApi(Build.VERSION_CODES.R)
     public void autoConnectWirelessDebugging() {
-        mExecutor.submit(() -> {
-            int status = Ops.autoConnectWirelessDebugging(getApplication());
-            mModeOfOpsStatus.postValue(status);
-        });
+        submitModeOperation(() -> Ops.autoConnectWirelessDebugging(getApplication()));
     }
 
     @Override
     public void connectAdb(int port) {
-        mExecutor.submit(() -> {
-            int status = Ops.connectAdb(getApplication(), port, Ops.STATUS_FAILURE);
-            mModeOfOpsStatus.postValue(status);
-        });
+        submitModeOperation(() -> Ops.connectAdb(getApplication(), port, Ops.STATUS_FAILURE));
     }
 
     @Override
     @RequiresApi(Build.VERSION_CODES.R)
     public void pairAdb() {
-        mExecutor.submit(() -> {
-            int status = Ops.pairAdb(getApplication());
-            mModeOfOpsStatus.postValue(status);
-        });
+        submitModeOperation(() -> Ops.pairAdb(getApplication()));
     }
 
     @Override
     public void onStatusReceived(int status) {
-        mModeOfOpsStatus.postValue(status);
+        ThreadUtils.postOnMainThread(() -> publishModeStatus(status));
+    }
+
+    /**
+     * Run one mode request at a time. A second request while one runs is dropped: interleaved,
+     * two of them tear down each other's server and services.
+     */
+    @VisibleForTesting
+    void submitModeOperation(@NonNull ModeOperation operation) {
+        if (!mModeOperationPending.compareAndSet(false, true)) {
+            Log.w(TAG, "Ignoring a mode request while another one is running.");
+            return;
+        }
+        try {
+            mExecutor.execute(() -> {
+                int status;
+                try {
+                    status = operation.run();
+                } catch (Throwable e) {
+                    // Without this the screen waits forever for a status that never comes
+                    Log.e(TAG, "Mode request failed.", e);
+                    status = Ops.STATUS_FAILURE;
+                }
+                int finalStatus = status;
+                ThreadUtils.postOnMainThread(() -> {
+                    // Cleared in the same main-thread step that delivers the status, so the screen
+                    // can send the follow-up request (connect, pair) straight from its observer.
+                    mModeOperationPending.set(false);
+                    publishModeStatus(finalStatus);
+                });
+            });
+        } catch (RejectedExecutionException e) {
+            mModeOperationPending.set(false);
+            ThreadUtils.postOnMainThread(() -> publishModeStatus(Ops.STATUS_FAILURE));
+        }
+    }
+
+    @MainThread
+    private void publishModeStatus(@Ops.Status int status) {
+        mModeStatusDialogs.onPublished(status);
+        mModeOfOpsStatus.setValue(status);
+    }
+
+    @VisibleForTesting
+    interface ModeOperation {
+        @Ops.Status
+        int run();
     }
 
     @Override

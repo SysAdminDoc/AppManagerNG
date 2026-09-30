@@ -160,6 +160,12 @@ public class ScrollableDialogBuilder {
     }
 
     @NonNull
+    public ScrollableDialogBuilder setOnDismissListener(@Nullable DialogInterface.OnDismissListener listener) {
+        mBuilder.setOnDismissListener(listener);
+        return this;
+    }
+
+    @NonNull
     public AlertDialog create() {
         return mBuilder.create();
     }

@@ -10,12 +10,20 @@ import static org.junit.Assert.assertTrue;
 import android.app.Application;
 import android.os.Looper;
 
+import androidx.annotation.NonNull;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.LifecycleRegistry;
+
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -138,6 +146,116 @@ public class SecurityAndOpsViewModelTest {
         assertEquals(Boolean.TRUE, mViewModel.claimKeyStorePasswordStatus());
         assertNull(mViewModel.claimKeyStorePasswordStatus());
         assertEquals(1, probeCount.get());
+    }
+
+    @Test
+    public void statusesAreNotReplayedToARecreatedActivity() {
+        SecurityAndOpsViewModel viewModel = newViewModel();
+        List<Integer> statuses = Arrays.asList(
+                Ops.STATUS_AUTO_CONNECT_WIRELESS_DEBUGGING,
+                Ops.STATUS_WIRELESS_DEBUGGING_CHOOSER_REQUIRED,
+                Ops.STATUS_ADB_PAIRING_REQUIRED,
+                Ops.STATUS_ADB_CONNECT_REQUIRED,
+                Ops.STATUS_FAILURE_ADB_NEED_MORE_PERMS,
+                Ops.STATUS_FAILURE,
+                Ops.STATUS_SUCCESS);
+        List<Integer> first = new ArrayList<>();
+        TestLifecycleOwner firstOwner = new TestLifecycleOwner();
+        firstOwner.start();
+        viewModel.authenticationStatus().observe(firstOwner, first::add);
+        for (int status : statuses) {
+            viewModel.onStatusReceived(status);
+            idleMainLooper();
+        }
+        firstOwner.destroy();
+
+        // A replay would reopen a dialog, retry ADB or run the terminal step twice
+        List<Integer> recreated = new ArrayList<>();
+        TestLifecycleOwner recreatedOwner = new TestLifecycleOwner();
+        recreatedOwner.start();
+        viewModel.authenticationStatus().observe(recreatedOwner, recreated::add);
+        idleMainLooper();
+
+        assertEquals(statuses, first);
+        assertTrue(recreated.isEmpty());
+        recreatedOwner.destroy();
+    }
+
+    @Test
+    public void aStatusPublishedWithNoActivityIsDeliveredOnce() {
+        SecurityAndOpsViewModel viewModel = newViewModel();
+        viewModel.onStatusReceived(Ops.STATUS_SUCCESS);
+        idleMainLooper();
+
+        List<Integer> recreated = new ArrayList<>();
+        TestLifecycleOwner owner = new TestLifecycleOwner();
+        owner.start();
+        viewModel.authenticationStatus().observe(owner, recreated::add);
+        owner.destroy();
+        TestLifecycleOwner again = new TestLifecycleOwner();
+        again.start();
+        viewModel.authenticationStatus().observe(again, recreated::add);
+        again.destroy();
+
+        assertEquals(Arrays.asList(Ops.STATUS_SUCCESS), recreated);
+    }
+
+    @Test
+    public void aShownDialogStatusIsKeptForARecreatedActivityUntilAnswered() {
+        SecurityAndOpsViewModel viewModel = newViewModel();
+        viewModel.onStatusReceived(Ops.STATUS_ADB_PAIRING_REQUIRED);
+        idleMainLooper();
+        assertNull(viewModel.getLostDialogStatus());
+
+        viewModel.onStatusDialogShown();
+        assertEquals(Integer.valueOf(Ops.STATUS_ADB_PAIRING_REQUIRED), viewModel.getLostDialogStatus());
+
+        viewModel.onStatusReceived(Ops.STATUS_SUCCESS);
+        idleMainLooper();
+        assertNull(viewModel.getLostDialogStatus());
+    }
+
+    @Test
+    public void aStatusFromAWorkerThreadArrivesOnTheMainThread() throws Exception {
+        SecurityAndOpsViewModel viewModel = newViewModel();
+        List<Integer> received = new ArrayList<>();
+        TestLifecycleOwner owner = new TestLifecycleOwner();
+        owner.start();
+        viewModel.authenticationStatus().observe(owner, received::add);
+
+        Thread worker = new Thread(() -> {
+            viewModel.onStatusReceived(Ops.STATUS_ADB_CONNECT_REQUIRED);
+            viewModel.onStatusReceived(Ops.STATUS_FAILURE);
+        });
+        worker.start();
+        worker.join(5_000);
+        idleMainLooper();
+
+        // Posting both keeps the dialog request; postValue() used to drop all but the last one
+        assertEquals(Arrays.asList(Ops.STATUS_ADB_CONNECT_REQUIRED, Ops.STATUS_FAILURE), received);
+        owner.destroy();
+    }
+
+    private static void idleMainLooper() {
+        org.robolectric.Shadows.shadowOf(Looper.getMainLooper()).idle();
+    }
+
+    private static class TestLifecycleOwner implements LifecycleOwner {
+        private final LifecycleRegistry mLifecycle = new LifecycleRegistry(this);
+
+        @NonNull
+        @Override
+        public Lifecycle getLifecycle() {
+            return mLifecycle;
+        }
+
+        void start() {
+            mLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_START);
+        }
+
+        void destroy() {
+            mLifecycle.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY);
+        }
     }
 
     private SecurityAndOpsViewModel newViewModel() {
