@@ -183,8 +183,7 @@ public class AdbLaunchFilesTest {
         Files.write(apk.toPath(), concat(prefix, jar, bytes(517, 11)));
         File stage = new File(tmp.getRoot(), "stage");
         File dest = new File(stage, "main.jar");
-        String command = AdbLaunchFiles.buildExtractCommand(posix(apk), prefix.length, jar.length,
-                DigestUtils.getHexDigest(DigestUtils.SHA_256, jar), posix(dest));
+        String command = AdbLaunchFiles.buildExtractCommand(posix(apk), prefix.length, jar, posix(dest));
 
         String output = sh(command + "echo launched");
 
@@ -203,8 +202,7 @@ public class AdbLaunchFilesTest {
         File dest = new File(stage, "main.jar");
         byte[] other = jar.clone();
         other[0] ^= 1;
-        String command = AdbLaunchFiles.buildExtractCommand(posix(apk), 64, jar.length,
-                DigestUtils.getHexDigest(DigestUtils.SHA_256, other), posix(dest));
+        String command = AdbLaunchFiles.buildExtractCommand(posix(apk), 64, other, posix(dest));
 
         String output = sh(command + "echo launched");
 
@@ -212,6 +210,47 @@ public class AdbLaunchFilesTest {
         assertFalse(dest.exists());
         String[] left = stage.list();
         assertEquals(0, left == null ? 0 : left.length);
+    }
+
+    @Test
+    public void shellsWithoutSha256sumCheckWithTheToolsTheyHave() throws Exception {
+        assumeTrue("needs a POSIX sh", shAvailable());
+        byte[] jar = bytes(4096, 3);
+        byte[] other = jar.clone();
+        other[4095] ^= 1;
+        // Android 6 and 7: toybox has sha1sum and md5sum but not sha256sum
+        for (String tool : new String[]{"sha1sum", "md5sum"}) {
+            assertEquals(tool, "launched", extractWithOnly(jar, jar, tool));
+            assertEquals(tool, "", extractWithOnly(jar, other, tool));
+        }
+        // Android 5 has none of them and goes by the byte count
+        assertEquals("launched", extractWithOnly(jar, other));
+    }
+
+    /**
+     * Runs the extract command in a shell whose PATH holds the basic tools plus the named hash
+     * tools. Returns what it printed, and checks that a stopped launch leaves nothing behind.
+     */
+    private String extractWithOnly(byte[] jar, byte[] expected, String... hashTools) throws Exception {
+        File root = tmp.newFolder();
+        File apk = new File(root, "base.apk");
+        Files.write(apk.toPath(), concat(bytes(64, 5), jar));
+        File dest = new File(new File(root, "stage"), "main.jar");
+        StringBuilder tools = new StringBuilder("mkdir chmod dd mv rm");
+        for (String tool : hashTools) {
+            tools.append(' ').append(tool);
+        }
+        // $PWD rather than the Java path: a C:/ drive letter would split PATH at its colon
+        String output = sh("cd '" + posix(root) + "' && mkdir bin && for t in " + tools
+                + "; do p=$(command -v $t) && printf '#!/bin/sh\\nexec \"%s\" \"$@\"\\n' \"$p\" > bin/$t"
+                + " && chmod 755 bin/$t || exit 1; done; PATH=\"$PWD/bin\"; "
+                + AdbLaunchFiles.buildExtractCommand(posix(apk), 64, expected, posix(dest)) + "echo launched").trim();
+        if (output.equals("launched")) {
+            assertArrayEquals(jar, Files.readAllBytes(dest.toPath()));
+        } else {
+            assertEquals(Arrays.asList(), Arrays.asList(dest.getParentFile().list()));
+        }
+        return output;
     }
 
     @Test
