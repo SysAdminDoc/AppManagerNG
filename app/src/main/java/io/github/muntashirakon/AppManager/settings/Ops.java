@@ -34,6 +34,7 @@ import androidx.lifecycle.Observer;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Locale;
@@ -662,6 +663,30 @@ public class Ops {
         }
     }
 
+    /**
+     * The reconnect the Wi-Fi wait service runs. The mode can change while it waits for the lock,
+     * so it checks again once it holds it, and stopping the service (an interrupt) ends the wait.
+     */
+    @WorkerThread
+    @Status
+    public static int autoConnectWirelessDebuggingInBackground(@NonNull Context context) {
+        try {
+            sTransitionLock.lockInterruptibly();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return STATUS_FAILURE;
+        }
+        try {
+            if (!MODE_ADB_WIFI.equals(getMode())) {
+                Log.i(TAG, "The mode changed while the reconnect waited, not connecting.");
+                return STATUS_FAILURE;
+            }
+            return autoConnectWirelessDebuggingLocked(context);
+        } finally {
+            sTransitionLock.unlock();
+        }
+    }
+
     @WorkerThread
     @Status
     private static int autoConnectWirelessDebuggingLocked(@NonNull Context context) {
@@ -751,6 +776,10 @@ public class Ops {
             }
         }
         AdbFailure adbFailure = AdbFailure.classify(failure, wirelessDebuggingOff);
+        if (Thread.currentThread().isInterrupted()) {
+            // A cancelled attempt says nothing about the connection, so the last real failure stays
+            return adbFailure;
+        }
         AdbFailure.record(adbFailure);
         return adbFailure;
     }
@@ -1113,12 +1142,16 @@ public class Ops {
     @WorkerThread
     @Status
     public static int connectShizuku(@NonNull Context context) {
+        // Sets the mode flags and closes the server, so it takes its turn like the ADB connects
+        sTransitionLock.lock();
         try {
             return initShizuku(context);
         } catch (Throwable e) {
             Log.e(TAG, "Could not connect to Shizuku", e);
             sIsAdb = sIsSystem = sIsRoot = sIsShizuku = false;
             return STATUS_FAILURE;
+        } finally {
+            sTransitionLock.unlock();
         }
     }
 
@@ -1211,7 +1244,11 @@ public class Ops {
             // Find ADB port only in Android 11 (R) or later
             try {
                 return findAdbPort(context, timeoutInSeconds);
-            } catch (IOException | InterruptedException e) {
+            } catch (InterruptedException e) {
+                // The attempt was cancelled, so it ends here instead of trying the default port
+                Thread.currentThread().interrupt();
+                throw new InterruptedIOException("Cancelled while looking for the ADB port.");
+            } catch (IOException e) {
                 Log.w(TAG, "Could not find ADB port", e);
             }
         }
