@@ -516,6 +516,7 @@
     <string name="running_apps_system_process_summary">System or native process</string>
     <string name="running_apps_process_content_description"><xliff:g id="process_name" example="App Manager">%1$s</xliff:g>, <xliff:g id="package_name" example="io.github.muntashirakon.AppManager">%2$s</xliff:g>. <xliff:g id="process_ids" example="Process ID: 10000, Parent process ID: 1000">%3$s</xliff:g>. <xliff:g id="memory_usage" example="Memory: 162 MB, Virtual memory: 14.72 GB">%4$s</xliff:g>. <xliff:g id="user_state" example="User: u0_a167 (10167), State: Sleeping">%5$s</xliff:g>.</string>
     <string name="running_apps_select_process">Select <xliff:g id="process_name" example="App Manager">%1$s</xliff:g></string>
+    <string name="running_apps_select_this_process">Select this process</string>
     <string name="running_apps_more_actions_for_process">More actions for <xliff:g id="process_name" example="App Manager">%1$s</xliff:g></string>
     <string name="running_apps_process_details_title">Process details</string>
     <string name="running_apps_process_details_subtitle">Live process telemetry from the current snapshot.</string>

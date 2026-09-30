@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.accessibility;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -55,8 +56,10 @@ public class ImageLabelContractTest {
                 Element element = (Element) all.item(i);
                 if (!isImageControl(element.getTagName())) continue;
                 ++images;
-                if (element.hasAttributeNS(ANDROID, "contentDescription")
-                        || element.hasAttributeNS(ANDROID, "importantForAccessibility")) {
+                // "@null" or an empty label reads as unlabeled, and only "no" and
+                // "noHideDescendants" keep TalkBack off an image
+                if (isDecorative(element.getAttributeNS(ANDROID, "importantForAccessibility"))
+                        || isLabel(element.getAttributeNS(ANDROID, "contentDescription"))) {
                     continue;
                 }
                 // A suppression hides the control from TalkBack users just the same
@@ -69,6 +72,29 @@ public class ImageLabelContractTest {
         assertTrue(images > 50);
         assertEquals("Add android:contentDescription, or android:importantForAccessibility=\"no\" when "
                 + "the image is decorative", new ArrayList<String>(), unlabeled);
+    }
+
+    @Test
+    public void onlyARealLabelOrAnOptOutCounts() {
+        assertTrue(isLabel("@string/symbolic_link"));
+        assertTrue(isLabel("Profile picture"));
+        assertFalse(isLabel("@null"));
+        assertFalse(isLabel(""));
+        assertFalse(isLabel("  "));
+        assertTrue(isDecorative("no"));
+        assertTrue(isDecorative("noHideDescendants"));
+        assertFalse(isDecorative("yes"));
+        assertFalse(isDecorative("auto"));
+        assertFalse(isDecorative(""));
+    }
+
+    private static boolean isLabel(String contentDescription) {
+        String value = contentDescription.trim();
+        return !value.isEmpty() && !value.equals("@null");
+    }
+
+    private static boolean isDecorative(String importantForAccessibility) {
+        return importantForAccessibility.equals("no") || importantForAccessibility.equals("noHideDescendants");
     }
 
     private static boolean isImageControl(String tagName) {

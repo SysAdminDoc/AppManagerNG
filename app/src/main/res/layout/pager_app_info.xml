@@ -134,7 +134,7 @@
                             android:layout_width="32dp"
                             android:layout_height="32dp"
                             android:layout_marginEnd="@dimen/padding_small"
-                            android:contentDescription="@null"
+                            android:importantForAccessibility="no"
                             android:padding="@dimen/premium_space_4"
                             app:srcCompat="@drawable/ic_cctv_off"
                             app:tint="?attr/colorPrimary" />
@@ -210,7 +210,7 @@
                             android:layout_width="32dp"
                             android:layout_height="32dp"
                             android:layout_marginEnd="@dimen/padding_small"
-                            android:contentDescription="@null"
+                            android:importantForAccessibility="no"
                             android:padding="@dimen/premium_space_4"
                             app:srcCompat="@drawable/ic_shield_key"
                             app:tint="?attr/colorPrimary" />
@@ -286,7 +286,7 @@
                             android:layout_width="32dp"
                             android:layout_height="32dp"
                             android:layout_marginEnd="@dimen/padding_small"
-                            android:contentDescription="@null"
+                            android:importantForAccessibility="no"
                             android:padding="@dimen/premium_space_4"
                             app:srcCompat="@drawable/ic_edit"
                             app:tint="?attr/colorPrimary" />
