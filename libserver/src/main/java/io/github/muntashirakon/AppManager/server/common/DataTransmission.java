@@ -28,12 +28,17 @@ import javax.crypto.spec.SecretKeySpec;
 // Copyright 2017 Zheng Li
 public final class DataTransmission implements Closeable {
     /**
-     * Protocol version. The client opens with <code>protocol-version,token,nonce</code> and the
-     * server answers <code>ack,HMAC-SHA256(token, "amng-server-ack," + nonce)</code> in hex.
+     * Protocol version. Neither side ever sends the token: each proves it holds it with an HMAC
+     * over both nonces (see {@link #shakeHands(String, Role)}). Up to 1.3.0 the client sent the
+     * token first, so whatever listened on the port got it.
      */
-    public static final String PROTOCOL_VERSION = "1.3.0";
+    public static final String PROTOCOL_VERSION = "1.4.0";
 
-    private static final String ACK_PREFIX = "ack,";
+    private static final String CHALLENGE = "challenge";
+    private static final String AUTH = "auth";
+    private static final String OK = "ok";
+    private static final String SERVER_PROOF = "amng-server-proof";
+    private static final String CLIENT_PROOF = "amng-client-proof";
     private static final int NONCE_BYTES = 16;
     private static final int MAX_NONCE_LENGTH = 64;
 
@@ -174,85 +179,115 @@ public final class DataTransmission implements Closeable {
     }
 
     /**
-     * Handshake: verify tokens
+     * Handshake: each side proves it holds the token without sending it.
+     * <ol>
+     * <li>Client: <code>version,client-nonce</code></li>
+     * <li>Server: <code>challenge,server-nonce,proof(server, client-nonce, server-nonce)</code></li>
+     * <li>Client: <code>auth,proof(client, server-nonce, client-nonce)</code></li>
+     * <li>Server: <code>ok</code></li>
+     * </ol>
+     * A proof is HMAC-SHA256 keyed with the token, in hex. The two sides use different labels, so
+     * one side's proof can never be replayed as the other's, and fresh nonces on both sides keep an
+     * old exchange from being replayed. Whatever listens on the port before this app's server
+     * learns nothing it can use.
      *
-     * @param token Token supplied by server or client based
-     * @param role  Whether the supplied token is from server or client
-     * @throws IOException              When it fails to verify the token
-     * @throws ProtocolVersionException When the {@link #PROTOCOL_VERSION} mismatch occurs
+     * @param token The shared token
+     * @param role  Which side of the handshake this is
+     * @throws IOException                 When the peer can't prove it holds the token
+     * @throws ProtocolVersionException    When the client speaks another {@link #PROTOCOL_VERSION}
+     * @throws HandshakeRejectedException  (client) When the server didn't prove it holds the
+     *                                     token, or refused this client's proof
      */
     public void shakeHands(@NonNull String token, Role role) throws IOException {
         Objects.requireNonNull(token);
+        if (token.isEmpty()) {
+            // An empty key would make every proof computable by anyone
+            throw new IOException("Empty token");
+        }
         if (role == Role.Server) {
             FLog.log("DataTransmission#shakeHands: Server protocol: " + PROTOCOL_VERSION);
-            String auth = new String(readMessage());  // <protocol-version>,<token>
-            String[] split = auth.split(",");
-            // The first packet is fully attacker-controlled (readMessage reads a
-            // length-prefixed buffer from the socket). A payload with no comma
-            // produces a 1-element array, so the old split[1] threw an
-            // ArrayIndexOutOfBoundsException — an uncaught RuntimeException that
-            // unwound Server.run() and tore down the privileged listener
-            // (single malformed packet = DoS). Guard the length first.
-            if (split.length < 2) {
+            // The first packet is fully attacker-controlled, so check its shape before using it
+            String[] hello = new String(readMessage(), StandardCharsets.UTF_8).split(",", -1);
+            if (hello.length != 2) {
                 FLog.log("DataTransmission#shakeHands: Malformed handshake.");
                 throw new IOException("Malformed handshake");
             }
-            String clientToken = split[1];
-            // Match tokens. Compared in constant time: String.equals returns as soon as it finds
-            // a differing character, and the peer controls this string and can time the reply.
-            if (constantTimeEquals(token, clientToken)) {
-                // Connection is authorised
-                FLog.log("DataTransmission#shakeHands: Authentication successful.");
-            } else {
-                FLog.log("DataTransmission#shakeHands: Authentication failed.");
-                // Never echo the token: this exception propagates to FLog, which
-                // writes to a world-readable tmp file and is surfaced by the
-                // diagnostic-dump feature — logging the server's own secret here
-                // disclosed the auth credential for the privileged channel.
-                throw new IOException("Unauthorized client");
-            }
-            // Check protocol version
-            String protocolVersion = split[0];
-            if (!PROTOCOL_VERSION.equals(protocolVersion)) {
-                throw new ProtocolVersionException("Client protocol version: " + protocolVersion + ", " +
+            if (!PROTOCOL_VERSION.equals(hello[0])) {
+                throw new ProtocolVersionException("Client protocol version: " + hello[0] + ", " +
                         "Server protocol version: " + PROTOCOL_VERSION);
             }
-            if (split.length < 3 || split[2].isEmpty() || split[2].length() > MAX_NONCE_LENGTH) {
+            String clientNonce = hello[1];
+            if (!isNonce(clientNonce)) {
                 FLog.log("DataTransmission#shakeHands: Handshake has no usable nonce.");
                 throw new IOException("Malformed handshake");
             }
-            // Prove to the client that this server holds its token. Accepting the connection
-            // proves nothing: any server on the port, upstream App Manager's included, does that.
-            sendMessage(ACK_PREFIX + acknowledgement(token, split[2]));
-        } else if (role == Role.Client) {
-            Log.e("DataTransmission", "shakeHands: Client protocol: " + PROTOCOL_VERSION);
-            String nonce = newNonce();
-            sendMessage(PROTOCOL_VERSION + "," + token + "," + nonce);
-            byte[] reply;
-            try {
-                reply = readMessage();
-            } catch (EOFException e) {
-                throw new HandshakeRejectedException("The server closed the connection without acknowledging this app's token.", e);
+            String serverNonce = newNonce();
+            sendMessage(CHALLENGE + "," + serverNonce + "," + proof(token, SERVER_PROOF, clientNonce, serverNonce));
+            String auth = new String(readMessage(), StandardCharsets.UTF_8);
+            if (!constantTimeEquals(AUTH + "," + proof(token, CLIENT_PROOF, serverNonce, clientNonce), auth)) {
+                // Never log what the client sent: nothing in it is worth keeping, and FLog lands in
+                // a file the diagnostic dump reads.
+                FLog.log("DataTransmission#shakeHands: Authentication failed.");
+                throw new IOException("Unauthorized client");
             }
-            if (!constantTimeEquals(ACK_PREFIX + acknowledgement(token, nonce),
-                    new String(reply, StandardCharsets.UTF_8))) {
+            FLog.log("DataTransmission#shakeHands: Authentication successful.");
+            sendMessage(OK);
+        } else if (role == Role.Client) {
+            Log.d("DataTransmission", "shakeHands: Client protocol: " + PROTOCOL_VERSION);
+            String clientNonce = newNonce();
+            sendMessage(PROTOCOL_VERSION + "," + clientNonce);
+            String[] challenge = readHandshakeReply().split(",", -1);
+            if (challenge.length != 3 || !CHALLENGE.equals(challenge[0]) || !isNonce(challenge[1])
+                    || !constantTimeEquals(proof(token, SERVER_PROOF, clientNonce, challenge[1]), challenge[2])) {
+                // Checked before this side proves anything, so a server that can't prove it holds
+                // the token gets no proof it could relay
                 throw new HandshakeRejectedException("The server didn't acknowledge this app's token.", null);
+            }
+            String serverNonce = challenge[1];
+            sendMessage(AUTH + "," + proof(token, CLIENT_PROOF, serverNonce, clientNonce));
+            if (!OK.equals(readHandshakeReply())) {
+                throw new HandshakeRejectedException("The server refused this app's token.", null);
             }
         }
     }
 
+    @NonNull
+    private String readHandshakeReply() throws IOException {
+        try {
+            return new String(readMessage(), StandardCharsets.UTF_8);
+        } catch (EOFException e) {
+            throw new HandshakeRejectedException("The server closed the connection without acknowledging this app's token.", e);
+        }
+    }
+
     /**
-     * The server's answer to a nonce, which only a holder of the token can compute.
+     * HMAC-SHA256 keyed with the token over <code>label,first,second</code>, in hex. Nonces are hex
+     * only, so the commas can't be shifted to make two different inputs read the same.
      */
     @NonNull
-    static String acknowledgement(@NonNull String token, @NonNull String nonce) throws IOException {
+    static String proof(@NonNull String token, @NonNull String label, @NonNull String first,
+                        @NonNull String second) throws IOException {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
             mac.init(new SecretKeySpec(token.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-            return toHex(mac.doFinal(("amng-server-ack," + nonce).getBytes(StandardCharsets.UTF_8)));
+            return toHex(mac.doFinal((label + "," + first + "," + second).getBytes(StandardCharsets.UTF_8)));
         } catch (GeneralSecurityException e) {
             throw new IOException("HMAC-SHA256 is unavailable.", e);
         }
+    }
+
+    static boolean isNonce(@Nullable String nonce) {
+        if (nonce == null || nonce.isEmpty() || nonce.length() > MAX_NONCE_LENGTH) {
+            return false;
+        }
+        for (int i = 0; i < nonce.length(); ++i) {
+            char c = nonce.charAt(i);
+            // ASCII only: Character.digit() also takes other scripts' digits
+            if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @NonNull
