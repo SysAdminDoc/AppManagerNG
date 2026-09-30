@@ -156,6 +156,14 @@ public class WifiWaitServiceTest {
         assertFalse(source.contains("FOREGROUND_SERVICE_TYPE_DATA_SYNC"));
     }
 
+    @Test
+    public void theReconnectUsesTheEntryThatStopsWhenTheServiceDoes() throws IOException {
+        String source = read("app/src/main/java/io/github/muntashirakon/AppManager/servermanager/WifiWaitService.java");
+        // The plain entry can't be interrupted and doesn't look at the mode once it has the lock
+        assertTrue(source.contains("Ops.autoConnectWirelessDebuggingInBackground(context)"));
+        assertFalse(source.contains("Ops.autoConnectWirelessDebugging(context)"));
+    }
+
     private static String read(String path) throws IOException {
         Path cursor = Paths.get("").toAbsolutePath();
         while (cursor != null && !Files.isDirectory(cursor.resolve("app/src/main/java"))) {

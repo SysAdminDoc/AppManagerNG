@@ -232,7 +232,7 @@ public class WifiWaitService extends Service {
             return ConnectionResult.MODE_CHANGED;
         }
 
-        int status = Ops.autoConnectWirelessDebugging(context);
+        int status = Ops.autoConnectWirelessDebuggingInBackground(context);
         if (status == Ops.STATUS_SUCCESS) {
             Log.i(TAG, "Autoconnect success!");
             return ConnectionResult.SUCCESS;
