@@ -128,7 +128,9 @@ public class AdbUtils {
                 scanner.start();
             }
             if (!found.await(timeout, unit)) {
-                throw new InterruptedException("Timed out while trying to find a valid host address and port");
+                // Not an InterruptedException: callers take that for a cancel, and a scan that
+                // found nothing should fall back to the saved port instead
+                throw new IOException("Timed out while trying to find a valid host address and port");
             }
         } catch (RuntimeException e) {
             throw new IOException("Could not start ADB service discovery", e);
