@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -62,7 +63,7 @@ public class DataTransmissionHandshakeTest {
         serve(peer -> transmission(peer).shakeHands(OTHER_TOKEN, DataTransmission.Role.Server));
 
         try (Socket client = connect(5_000)) {
-            IOException e = assertThrows(IOException.class,
+            IOException e = assertThrows(DataTransmission.HandshakeRejectedException.class,
                     () -> transmission(client).shakeHands(TOKEN, DataTransmission.Role.Client));
             assertTrue(e.getMessage(), e.getMessage().contains("without acknowledging"));
         }
@@ -77,7 +78,8 @@ public class DataTransmissionHandshakeTest {
 
         long start = System.nanoTime();
         try (Socket client = connect(500)) {
-            assertThrows(IOException.class,
+            // Told apart from a rejection: the app reports it as a server that isn't answering
+            assertThrows(SocketTimeoutException.class,
                     () -> transmission(client).shakeHands(TOKEN, DataTransmission.Role.Client));
         }
         assertTrue(TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 10);
@@ -93,7 +95,7 @@ public class DataTransmissionHandshakeTest {
         });
 
         try (Socket client = connect(5_000)) {
-            IOException e = assertThrows(IOException.class,
+            IOException e = assertThrows(DataTransmission.HandshakeRejectedException.class,
                     () -> transmission(client).shakeHands(TOKEN, DataTransmission.Role.Client));
             assertTrue(e.getMessage(), e.getMessage().contains("didn't acknowledge"));
         }
@@ -108,7 +110,7 @@ public class DataTransmissionHandshakeTest {
         });
 
         try (Socket client = connect(5_000)) {
-            assertThrows(IOException.class,
+            assertThrows(DataTransmission.HandshakeRejectedException.class,
                     () -> transmission(client).shakeHands(TOKEN, DataTransmission.Role.Client));
         }
     }

@@ -845,6 +845,11 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
             case Ops.STATUS_SUCCESS:
                 UIUtils.displayShortToast(R.string.adb_pairing_connected);
                 return;
+            case Ops.STATUS_FAILURE_SERVER_START:
+            case Ops.STATUS_FAILURE_SERVER_UNRESPONSIVE:
+            case Ops.STATUS_FAILURE_SERVER_NOT_ACKNOWLEDGED:
+                // Ops already told the user what went wrong
+                return;
             case Ops.STATUS_FAILURE:
             default:
                 UIUtils.displayShortToast(R.string.adb_pairing_not_finished);
@@ -862,6 +867,11 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
                 return;
             case Ops.STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED:
                 Ops.displayLocalNetworkPermissionMessage(activity, getWirelessSetupCallback(activity));
+                return;
+            case Ops.STATUS_FAILURE_SERVER_START:
+            case Ops.STATUS_FAILURE_SERVER_UNRESPONSIVE:
+            case Ops.STATUS_FAILURE_SERVER_NOT_ACKNOWLEDGED:
+                // Ops already told the user what went wrong
                 return;
             case Ops.STATUS_FAILURE:
             default:

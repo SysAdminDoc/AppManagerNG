@@ -74,6 +74,50 @@ public class ModeOfOpsStatusContractTest {
         assertTrue(restart, restart.indexOf("manager.stop();", start) > start);
     }
 
+    @Test
+    public void serverFailuresAreClassifiedWhereTheyHappen() throws IOException {
+        String manager = read("app/src/main/java/io/github/muntashirakon/AppManager/servermanager/LocalServerManager.java");
+        String session = body(manager, "private ClientSession createSession(int port)");
+        assertTrue(session, session.indexOf("Reason.UNRESPONSIVE") > session.indexOf("catch (SocketTimeoutException e)"));
+        assertTrue(session, session.indexOf("Reason.NOT_ACKNOWLEDGED")
+                > session.indexOf("catch (DataTransmission.HandshakeRejectedException e)"));
+        String getSession = body(manager, "private ClientSession getSession()");
+        assertTrue(getSession, getSession.indexOf("Reason.SERVER_START") > getSession.indexOf("startServer(configuredPort)"));
+
+        String ops = read("app/src/main/java/io/github/muntashirakon/AppManager/settings/Ops.java");
+        assertTrue(body(ops, "public static int connectAdb(@NonNull Context context, int port,")
+                .contains("return reportServerFailure(e, returnCodeOnFailure);"));
+        assertTrue(body(ops, "public static int autoConnectWirelessDebugging(@NonNull Context context)")
+                .contains("return reportServerFailure(e, STATUS_WIRELESS_DEBUGGING_CHOOSER_REQUIRED);"));
+        // Exactly one message: the specific one, or the generic one
+        String init = body(ops, "private static int init(@NonNull Context context, boolean force, @NonNull @Mode String mode,");
+        String fallback = init.substring(init.indexOf("catch (Throwable e)"));
+        assertTrue(fallback, fallback.contains("int status = reportServerFailure(e, STATUS_FAILURE);"));
+        assertTrue(fallback, fallback.indexOf("failed_to_use_the_current_mode_of_operation")
+                > fallback.indexOf("if (status == STATUS_FAILURE)"));
+    }
+
+    @Test
+    public void screensFinishOnAServerFailureWithoutASecondMessage() throws IOException {
+        assertFinishesQuietly(read(BASE_ACTIVITY), "private void handleAuthenticationStatus(",
+                "completeAuthentication(savedInstanceState);");
+        assertFinishesQuietly(read(SPLASH_ACTIVITY), "private void handleAuthenticationStatus(",
+                "completeAuthentication();");
+        assertFinishesQuietly(read(MODE_OF_OPS), "private void handleModeStatus(",
+                "finishModeApply(false, false);");
+    }
+
+    private static void assertFinishesQuietly(String source, String signature, String completion) {
+        String handler = body(source, signature);
+        int start = handler.indexOf("case Ops.STATUS_FAILURE_SERVER_START:");
+        assertTrue(handler, start != -1);
+        String branch = handler.substring(start, handler.indexOf("return;", start));
+        assertTrue(branch, branch.contains("case Ops.STATUS_FAILURE_SERVER_UNRESPONSIVE:"));
+        assertTrue(branch, branch.contains("case Ops.STATUS_FAILURE_SERVER_NOT_ACKNOWLEDGED:"));
+        assertTrue(branch, branch.contains(completion));
+        assertFalse(branch, branch.contains("Toast"));
+    }
+
     private static void assertCompletesOnDismiss(String source, String signature, String completion) {
         String handler = body(source, signature);
         int needMorePerms = handler.indexOf("case Ops.STATUS_FAILURE_ADB_NEED_MORE_PERMS:");

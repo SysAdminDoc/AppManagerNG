@@ -238,6 +238,12 @@ public class SplashActivity extends AppCompatActivity {
                 Ops.displayIncompleteUsbDebuggingMessage(this, this::completeAuthentication);
                 mViewModel.onStatusDialogShown();
                 return;
+            case Ops.STATUS_FAILURE_SERVER_START:
+            case Ops.STATUS_FAILURE_SERVER_UNRESPONSIVE:
+            case Ops.STATUS_FAILURE_SERVER_NOT_ACKNOWLEDGED:
+                // Ops already told the user what went wrong
+                completeAuthentication();
+                return;
             case Ops.STATUS_SUCCESS:
             case Ops.STATUS_FAILURE:
                 completeAuthentication();

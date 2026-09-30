@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -103,7 +104,8 @@ class LocalServerManager {
                     } catch (AdbPairingRequiredException e) {
                         throw e;
                     } catch (Exception e) {
-                        throw new IOException("Could not start server", e);
+                        throw new ServerConnectionFailure(ServerConnectionFailure.Reason.SERVER_START,
+                                "Could not start server", e);
                     }
                     mSession = createSession(configuredPort);
                 }
@@ -460,7 +462,15 @@ class LocalServerManager {
             OutputStream os = socket.getOutputStream();
             InputStream is = socket.getInputStream();
             DataTransmission transfer = new DataTransmission(os, is, false);
-            transfer.shakeHands(ServerConfig.getLocalToken(), DataTransmission.Role.Client);
+            try {
+                transfer.shakeHands(ServerConfig.getLocalToken(), DataTransmission.Role.Client);
+            } catch (SocketTimeoutException e) {
+                throw new ServerConnectionFailure(ServerConnectionFailure.Reason.UNRESPONSIVE,
+                        "The server didn't answer the handshake.", e);
+            } catch (DataTransmission.HandshakeRejectedException e) {
+                throw new ServerConnectionFailure(ServerConnectionFailure.Reason.NOT_ACKNOWLEDGED,
+                        e.getMessage(), e);
+            }
             socket.setSoTimeout(30_000);
             return new ClientSession(port, socket, transfer);
         } catch (IOException | RuntimeException e) {
