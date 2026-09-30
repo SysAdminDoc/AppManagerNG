@@ -468,13 +468,6 @@ Sources and reasoning: RESEARCH.md (2026-09-30).
 
 ### P2
 
-- [ ] P2: Classify ADB-mode failures and give one next step
-  Why: every ADB-mode failure ends in the same generic message, #20 arrived with every mode and device field blank, and Android 17 now turns wireless debugging off by itself on untrusted networks.
-  Evidence: fork issue #20; Android Developers Blog "ADB Wi-Fi 2.0" (2026-09); libadb-android #34 (stream closed after connect) and #32 (cached TLS context after a key change); ColorOS 16 permission-monitoring removal; the existing Shizuku OEM diagnostics item is the sibling for Shizuku.
-  Touches: `settings/Ops.java` connect paths, `servermanager/LocalServerManager.java`, Mode of operation UI, support bundle.
-  Acceptance: each ADB-mode failure maps to a stable code (wireless debugging off, pairing required, certificate rejected, connection refused, stream closed after connect, server launch denied, launch timeout, unknown) shown in plain words with one next step and carried in the support bundle without addresses, ports or tokens; host tests feed each exception shape and assert the code; an unknown failure keeps its exception class.
-  Complexity: M
-
 - [ ] P2: Tell the user when Android wants Wireless debugging allowed on the network
   Why: Android trusts Wireless debugging per access point. On the S22 on 2026-09-30, Wi-Fi came back on the same network's other access point, so Android asked again and switched Wireless debugging back off each time the reconnect turned it on. Every retry put up another prompt, and the reconnect gave up after about 40 seconds with nothing saying why.
   Evidence: S22 log 2026-09-30 05:10 (`AdbDebuggingManager: startConfirmationForNetwork` after each switch-on, then `WifiWaitService: Autoconnect failed: retry limit reached`); `adb/AdbUtils.java` (switches Wireless debugging on with WRITE_SECURE_SETTINGS).

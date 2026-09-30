@@ -159,6 +159,8 @@ class LocalServerManager {
                 && !(failure instanceof TimeoutException)
                 // The ADB start already gave a shell that closed at once its one more try
                 && !(failure instanceof ShellClosedEarlyException)
+                // A shell that refused the launch refuses it again
+                && !(failure instanceof LaunchRefusedException)
                 && ServerConnectionFailure.find(failure) == null;
     }
 
@@ -378,7 +380,8 @@ class LocalServerManager {
             // It used to wait out the whole minute for an answer that could no longer come
             throw new IOException("The ADB shell closed before the server started.");
         }
-        throw new IOException("Server wasn't started.");
+        // The launcher said "Error!"
+        throw new LaunchRefusedException("Server wasn't started.");
     }
 
     @WorkerThread
@@ -637,6 +640,16 @@ class LocalServerManager {
     static final class ShellClosedEarlyException extends IOException {
         ShellClosedEarlyException(@Nullable Throwable cause) {
             super("The ADB shell closed as soon as it opened.", cause);
+        }
+    }
+
+    /**
+     * The shell ran the launch steps and said no, such as a chmod or the launcher failing. Some
+     * OEM builds refuse these to ADB.
+     */
+    static final class LaunchRefusedException extends IOException {
+        LaunchRefusedException(@NonNull String message) {
+            super(message);
         }
     }
 

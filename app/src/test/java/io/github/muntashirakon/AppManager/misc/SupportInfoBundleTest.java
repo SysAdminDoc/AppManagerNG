@@ -18,6 +18,7 @@ import org.robolectric.RobolectricTestRunner;
 import java.util.Date;
 
 import io.github.muntashirakon.AppManager.compat.SubscriptionManagerCompat;
+import io.github.muntashirakon.AppManager.servermanager.AdbFailure;
 
 @RunWith(RobolectricTestRunner.class)
 public class SupportInfoBundleTest {
@@ -169,6 +170,26 @@ public class SupportInfoBundleTest {
         assertTrue(text.contains("Local crash sink"));
         assertTrue(text.contains("Scrubbed logcat tail"));
         assertTrue(text.contains("test logcat line"));
+    }
+
+    @Test
+    public void privilegeStateNamesTheLastAdbFailureAndNothingAboutTheNetwork() {
+        android.content.Context ctx = androidx.test.core.app.ApplicationProvider.getApplicationContext();
+        SupportInfoBundle.SectionOptions options = new SupportInfoBundle.SectionOptions();
+        options.includeLogcat = false;
+        assertTrue(SupportInfoBundle.buildText(ctx, "2026-09-30T00:00:00Z", null, options)
+                .contains("Last ADB failure: none\n"));
+
+        AdbFailure.record(AdbFailure.classify(new java.io.IOException("adb 192.168.1.20:37123",
+                new java.io.EOFException("192.168.1.20")), false));
+        try {
+            String text = SupportInfoBundle.buildText(ctx, "2026-09-30T00:00:00Z", null, options);
+            assertTrue(text, text.contains("Last ADB failure: UNKNOWN (java.io.EOFException)\n"));
+            assertFalse(text.contains("192.168.1.20"));
+            assertFalse(text.contains("37123"));
+        } finally {
+            AdbFailure.clear();
+        }
     }
 
     @Test

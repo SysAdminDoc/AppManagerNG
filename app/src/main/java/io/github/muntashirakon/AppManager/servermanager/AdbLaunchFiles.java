@@ -147,7 +147,11 @@ public final class AdbLaunchFiles {
         if (output.isEmpty() && elapsedMillis < LocalServerManager.EARLY_CLOSE_MILLIS) {
             throw new LocalServerManager.ShellClosedEarlyException(null);
         }
-        throw new IOException("Could not prepare " + STAGING_DIR + ": " + output.trim());
+        if (!output.trim().isEmpty()) {
+            // The shell ran the commands and they failed
+            throw new LocalServerManager.LaunchRefusedException("Could not prepare " + STAGING_DIR + ": " + output.trim());
+        }
+        throw new IOException("Could not prepare " + STAGING_DIR + ": the shell closed without answering.");
     }
 
     @VisibleForTesting

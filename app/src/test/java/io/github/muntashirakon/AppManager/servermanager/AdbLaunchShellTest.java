@@ -105,6 +105,7 @@ public class AdbLaunchShellTest {
                 new ByteArrayOutputStream(), COMMAND, TOKEN, SystemClock.elapsedRealtime(), 1, TimeUnit.MINUTES));
 
         assertFalse(e instanceof LocalServerManager.ShellClosedEarlyException);
+        assertTrue(e instanceof LocalServerManager.LaunchRefusedException);
         assertEquals("Server wasn't started.", e.getMessage());
     }
 
@@ -123,6 +124,8 @@ public class AdbLaunchShellTest {
         // useAdbStartServer already opened a second shell for this, and a start retried on top of
         // that made up to four
         assertFalse(LocalServerManager.isWorthRetrying(1, new LocalServerManager.ShellClosedEarlyException(null)));
+        // A shell that refused the launch refuses it again
+        assertFalse(LocalServerManager.isWorthRetrying(1, new LocalServerManager.LaunchRefusedException("Server wasn't started.")));
         // A minute's wait isn't doubled
         assertFalse(LocalServerManager.isWorthRetrying(1, new TimeoutException()));
         // Another server on the port, or one that doesn't answer, won't change in 150 ms
@@ -139,9 +142,11 @@ public class AdbLaunchShellTest {
         assertThrows(LocalServerManager.ShellClosedEarlyException.class, () -> AdbLaunchFiles.checkLocked("", 20));
         IOException late = assertThrows(IOException.class, () -> AdbLaunchFiles.checkLocked("", 5_000));
         assertFalse(late instanceof LocalServerManager.ShellClosedEarlyException);
+        assertFalse(late instanceof LocalServerManager.LaunchRefusedException);
         IOException refused = assertThrows(IOException.class, () ->
                 AdbLaunchFiles.checkLocked("chmod: Operation not permitted\n", 20));
         assertFalse(refused instanceof LocalServerManager.ShellClosedEarlyException);
+        assertTrue(refused instanceof LocalServerManager.LaunchRefusedException);
         assertTrue(refused.getMessage(), refused.getMessage().endsWith("chmod: Operation not permitted"));
     }
 

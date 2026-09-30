@@ -14,6 +14,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Importing a settings snapshot now reads the file once. The preview and the import both use that private copy, so a file that changes after you review it can't change what gets imported. A snapshot with two entries of the same name, or with counts in its manifest that its contents don't match, is refused before anything is written. The preview shows the snapshot's fingerprint.
 
 ### Changed
+- When ADB mode can't connect, AppManagerNG now says why and what to try next (issue #20). Wireless debugging being off, Wi-Fi being down, a phone that isn't paired yet and ADB refusing to start the privileged server each get their own message in place of the general one. The reason stays under Mode of operation until a connect works, and the support info file names it without any address, port or token.
 - The privacy policy no longer lists Pithus, which AppManagerNG stopped contacting in v0.6.13. Its optional-network section now names each service the full build can reach, with its host, and a test keeps that list in step with the Network transparency screen.
 - The Full build's Android tests resolve under strict dependency locking again, and refreshing the locks no longer drops the entry they need.
 
