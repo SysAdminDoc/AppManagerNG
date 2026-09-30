@@ -41,6 +41,7 @@ import io.github.muntashirakon.AppManager.servermanager.LocalServer;
 import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
 import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.users.Users;
+import io.github.muntashirakon.AppManager.utils.ClipboardUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.dialog.SearchableSingleChoiceDialogBuilder;
@@ -154,20 +155,10 @@ public class ModeOfOpsPreference extends Fragment {
         });
         TextInputTextView customCommand0 = view.findViewById(android.R.id.text1);
         TextInputLayout customCommand0Layout = TextInputLayoutCompat.fromTextInputEditText(customCommand0);
-        customCommand0Layout.setEndIconOnClickListener(v -> {
-            CharSequence command = customCommand0.getText();
-            if (!TextUtils.isEmpty(command)) {
-                Utils.copyToClipboard(requireContext(), "command", command);
-            }
-        });
+        customCommand0Layout.setEndIconOnClickListener(v -> copyCommand(requireContext(), customCommand0.getText()));
         TextInputTextView customCommand1 = view.findViewById(android.R.id.text2);
         TextInputLayout customCommand1Layout = TextInputLayoutCompat.fromTextInputEditText(customCommand1);
-        customCommand1Layout.setEndIconOnClickListener(v -> {
-            CharSequence command = customCommand1.getText();
-            if (!TextUtils.isEmpty(command)) {
-                Utils.copyToClipboard(requireContext(), "command", command);
-            }
-        });
+        customCommand1Layout.setEndIconOnClickListener(v -> copyCommand(requireContext(), customCommand1.getText()));
         mModel.loadCustomCommands();
         updateViews();
         // Mode of ops
@@ -428,6 +419,18 @@ public class ModeOfOpsPreference extends Fragment {
                 AdbFailure.getLast());
         mAdbFailureView.setText(adbFailure);
         mAdbFailureView.setVisibility(adbFailure != null ? View.VISIBLE : View.GONE);
+    }
+
+    /**
+     * Both commands carry the server's token, so Android is asked to keep it out of the clipboard
+     * preview.
+     */
+    @VisibleForTesting
+    static void copyCommand(@NonNull Context context, @Nullable CharSequence command) {
+        if (!TextUtils.isEmpty(command)) {
+            ClipboardUtils.copySensitiveText(context, "command", command.toString());
+            UIUtils.displayShortToast(R.string.copied_to_clipboard);
+        }
     }
 
     /**

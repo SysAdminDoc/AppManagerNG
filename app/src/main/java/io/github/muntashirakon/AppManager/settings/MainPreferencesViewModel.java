@@ -159,16 +159,27 @@ public class MainPreferencesViewModel extends AndroidViewModel implements Ops.Ad
 
     public void loadCustomCommands() {
         mExecutor.submit(() -> {
+            // Each command stands on its own: the ADB one can fail on an APK that stores am.jar
+            // compressed, and that says nothing about the root one
+            String adbCommand = null;
             try {
                 ServerConfig.init(getApplication());
-                mCustomCommand0.postValue(ServerConfig.getManualAdbCommand(getApplication()));
-                // Root can read the launcher in the app's cache. Without su there's nothing to show.
-                mCustomCommand1.postValue(RunnerUtils.isSuOnPath() ? ServerConfig.getServerRunnerCommand(0) : null);
+                adbCommand = ServerConfig.getManualAdbCommand(getApplication());
             } catch (Exception e) {
                 Log.w(TAG, e);
-                mCustomCommand0.postValue(null);
-                mCustomCommand1.postValue(null);
             }
+            mCustomCommand0.postValue(adbCommand);
+            String rootCommand = null;
+            try {
+                // Root can read the launcher in the app's cache. Without su there's nothing to show.
+                if (RunnerUtils.isSuOnPath()) {
+                    ServerConfig.init(getApplication());
+                    rootCommand = ServerConfig.getServerRunnerCommand(0);
+                }
+            } catch (Exception e) {
+                Log.w(TAG, e);
+            }
+            mCustomCommand1.postValue(rootCommand);
         });
     }
 
