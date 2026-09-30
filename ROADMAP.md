@@ -463,17 +463,10 @@ Sources and reasoning: RESEARCH.md (2026-09-30).
   Why: the upstream wireless fixes are ported, and on the S22 on 2026-09-30 AppManagerNG paired, connected over Wireless debugging and came back on its own after Wi-Fi went off and on. The start at boot, which Android 15 only allows as a special use service, has host tests but hasn't run on a phone yet.
   Evidence: `self/BootReceiver.java`, `servermanager/WifiWaitService.java`; upstream `22d439d61` (connect on boot).
   Touches: nothing unless it fails.
-  Acceptance: with Wireless debugging as the mode, the network always allowed for Wireless debugging and the server stopped, `adb reboot` the S22 or S25 and unlock it; the server is running within two minutes of the unlock without the app being opened. On the same run, a debug build's `LocalServerManager` log shows the launch shell's echo only as "(echo of the launch command, not logged)" and still reaches "Success!", which checks on a phone that leaving the echo out didn't hide the launcher's answer.
+  Acceptance: with Wireless debugging as the mode, the network always allowed for Wireless debugging and the server stopped, `adb reboot` the S22 or S25 and unlock it; the server is running within two minutes of the unlock without the app being opened. On the same run, a debug build's `LocalServerManager` log shows the launch shell's echo only as "(echo of the launch command, not logged)" and still reaches "Success!", which checks on a phone that leaving the echo out didn't hide the launcher's answer. Then join an access point Wireless debugging isn't allowed on yet: one system prompt and one AppManagerNG notification come up, not one per retry, and the server starts once the network is allowed.
   Complexity: S
 
 ### P2
-
-- [ ] P2: Tell the user when Android wants Wireless debugging allowed on the network
-  Why: Android trusts Wireless debugging per access point. On the S22 on 2026-09-30, Wi-Fi came back on the same network's other access point, so Android asked again and switched Wireless debugging back off each time the reconnect turned it on. Every retry put up another prompt, and the reconnect gave up after about 40 seconds with nothing saying why.
-  Evidence: S22 log 2026-09-30 05:10 (`AdbDebuggingManager: startConfirmationForNetwork` after each switch-on, then `WifiWaitService: Autoconnect failed: retry limit reached`); `adb/AdbUtils.java` (switches Wireless debugging on with WRITE_SECURE_SETTINGS).
-  Touches: `WifiWaitService`, `AdbUtils`, a notification, tests.
-  Acceptance: when Wireless debugging turns itself off within a few seconds of the app switching it on, the reconnect stops switching it on, posts one notification that opens Wireless debugging settings and asks to allow it on this network, and connects by itself if the setting comes on while it still waits; a host test drives the setting through a fake; on the S22 a new access point raises one prompt, not one per retry.
-  Complexity: M
 
 ### P3
 

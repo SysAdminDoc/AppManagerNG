@@ -131,6 +131,20 @@ public final class NotificationUtils {
                 NotificationManagerCompat.IMPORTANCE_HIGH, notificationTag , notificationId, notification);
     }
 
+    /**
+     * An alert that stands for one ongoing state: posting it again replaces it, and
+     * {@link #cancelHighPriorityNotification(Context, String)} takes it back.
+     */
+    public static void displayHighPriorityNotification(@NonNull Context context, @NonNull String notificationTag,
+                                                       @NonNull NotificationBuilder notification) {
+        displayNotification(context, HIGH_PRIORITY_CHANNEL_ID, "Alerts",
+                NotificationManagerCompat.IMPORTANCE_HIGH, notificationTag, 1, notification);
+    }
+
+    public static void cancelHighPriorityNotification(@NonNull Context context, @NonNull String notificationTag) {
+        NotificationManagerCompat.from(context).cancel(notificationTag, 1);
+    }
+
     @MainThread
     public static void requestPostNotificationsForWorkflow(@NonNull FragmentActivity activity,
                                                            @StringRes int titleRes,

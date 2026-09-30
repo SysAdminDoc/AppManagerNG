@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.servermanager;
 
 import android.app.Notification;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -14,8 +15,11 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.SystemClock;
+import android.provider.Settings;
 import android.util.Log;
 
+import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
@@ -23,14 +27,15 @@ import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.app.PendingIntentCompat;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
-import io.github.muntashirakon.AppManager.adb.AdbUtils;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.types.ForegroundService;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
@@ -54,6 +59,16 @@ public class WifiWaitService extends Service {
      */
     @VisibleForTesting
     static final int MAX_TOTAL_ATTEMPTS = 30;
+    /**
+     * On a network Wireless debugging hasn't been allowed on, Android asks the user and switches it
+     * back off right after it was switched on.
+     */
+    private static final long TURNED_BACK_OFF_WINDOW_MILLIS = 3_000;
+    private static final long TURNED_BACK_OFF_POLL_MILLIS = 250;
+    @VisibleForTesting
+    static final long APPROVAL_WAIT_MILLIS = TimeUnit.MINUTES.toMillis(10);
+    @VisibleForTesting
+    static final String APPROVAL_NOTIFICATION_TAG = "wireless_debugging_approval";
     public static final String CHANNEL_ID = BuildConfig.APPLICATION_ID + ".channel.WIFI_WAIT_SERVICE";
 
     @VisibleForTesting
@@ -61,7 +76,9 @@ public class WifiWaitService extends Service {
         SUCCESS,
         RETRY,
         TERMINAL_FAILURE,
-        MODE_CHANGED
+        MODE_CHANGED,
+        // Android wants Wireless debugging allowed on this network first
+        NEEDS_APPROVAL
     }
 
     private final Object mStateLock = new Object();
@@ -70,6 +87,10 @@ public class WifiWaitService extends Service {
     private Network mWifiNetwork;
     private final Runnable mNetworkWaitTimeout = () -> {
         Log.w(TAG, "Autoconnect failed: Wi-Fi didn't come back");
+        finishService();
+    };
+    private final Runnable mApprovalTimeout = () -> {
+        Log.w(TAG, "Autoconnect failed: Wireless debugging wasn't allowed on this network");
         finishService();
     };
     private final Runnable mRetryRunnable = () -> {
@@ -95,6 +116,7 @@ public class WifiWaitService extends Service {
                 if (network.equals(mWifiNetwork)) {
                     mWifiNetwork = null;
                     mRetryCount = 0;
+                    mSwitchedOn = false;
                     mHandler.removeCallbacks(mRetryRunnable);
                     // Wi-Fi was up once, so the boot is behind us. Wait a while for it to come
                     // back, not for as long as the notification can stay up.
@@ -118,6 +140,8 @@ public class WifiWaitService extends Service {
                 }
                 mWifiNetwork = network;
                 mRetryCount = 0;
+                // Android trusts Wireless debugging per access point, so a new network may ask again
+                mSwitchedOn = false;
                 mHandler.removeCallbacks(mNetworkWaitTimeout);
             }
             connectAdbWifi(network);
@@ -132,6 +156,11 @@ public class WifiWaitService extends Service {
     private int mRetryCount;
     private int mAttempts;
     private int mLastStartId;
+    private WirelessDebuggingSwitch mSwitch;
+    // This run switched Wireless debugging on for the current network
+    private volatile boolean mSwitchedOn;
+    // Main thread only
+    private boolean mAwaitingApproval;
 
     @Override
     public void onCreate() {
@@ -139,6 +168,12 @@ public class WifiWaitService extends Service {
         NotificationUtils.getNewNotificationManager(this, CHANNEL_ID, "Wi-Fi Wait Service",
                 NotificationManagerCompat.IMPORTANCE_LOW);
         mConnectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        mSwitch = new WirelessDebuggingSwitch.SystemSetting(this, mHandler);
+    }
+
+    @VisibleForTesting
+    void setWirelessDebuggingSwitch(@NonNull WirelessDebuggingSwitch wirelessDebuggingSwitch) {
+        mSwitch = wirelessDebuggingSwitch;
     }
 
     @Override
@@ -241,9 +276,22 @@ public class WifiWaitService extends Service {
             return ConnectionResult.MODE_CHANGED;
         }
 
-        if (!AdbUtils.enableWirelessDebugging(context)) {
+        boolean wasOn = mSwitch.isOn();
+        if (!wasOn && mSwitchedOn) {
+            // Switched on earlier on this network and off again: Android wants the network allowed,
+            // and switching it on again would only ask again
+            return ConnectionResult.NEEDS_APPROVAL;
+        }
+        if (!mSwitch.switchOn()) {
             Log.w(TAG, "Autoconnect deferred: Could not enable wireless debugging.");
             return ConnectionResult.RETRY;
+        }
+        if (!wasOn) {
+            mSwitchedOn = true;
+            if (turnedBackOff()) {
+                Log.w(TAG, "Autoconnect paused: Wireless debugging has to be allowed on this network");
+                return ConnectionResult.NEEDS_APPROVAL;
+            }
         }
         if (!isWirelessAdbMode()) {
             return ConnectionResult.MODE_CHANGED;
@@ -259,6 +307,70 @@ public class WifiWaitService extends Service {
         }
         Log.w(TAG, "Autoconnect failed: status " + status);
         return ConnectionResult.TERMINAL_FAILURE;
+    }
+
+    @WorkerThread
+    private boolean turnedBackOff() {
+        long deadline = SystemClock.elapsedRealtime() + TURNED_BACK_OFF_WINDOW_MILLIS;
+        while (SystemClock.elapsedRealtime() < deadline) {
+            if (!mSwitch.isOn()) {
+                return true;
+            }
+            SystemClock.sleep(TURNED_BACK_OFF_POLL_MILLIS);
+        }
+        return !mSwitch.isOn();
+    }
+
+    /**
+     * Android is asking the user to allow Wireless debugging on this network. One notification
+     * says so, and the reconnect goes on by itself once the setting comes on.
+     */
+    @MainThread
+    private void waitForApproval() {
+        mHandler.removeCallbacks(mApprovalTimeout);
+        mHandler.postDelayed(mApprovalTimeout, APPROVAL_WAIT_MILLIS);
+        if (mAwaitingApproval) {
+            return;
+        }
+        mAwaitingApproval = true;
+        mSwitch.observe(this::onWirelessDebuggingChanged);
+        postApprovalNotification();
+        // It may have been allowed before the observer was in place
+        onWirelessDebuggingChanged();
+    }
+
+    @MainThread
+    private void onWirelessDebuggingChanged() {
+        if (!mAwaitingApproval || !mSwitch.isOn()) {
+            return;
+        }
+        mAwaitingApproval = false;
+        mHandler.removeCallbacks(mApprovalTimeout);
+        NotificationUtils.cancelHighPriorityNotification(this, APPROVAL_NOTIFICATION_TAG);
+        Network network;
+        synchronized (mStateLock) {
+            network = mWifiNetwork;
+        }
+        if (network != null) {
+            connectAdbWifi(network);
+        }
+    }
+
+    private void postApprovalNotification() {
+        Intent settings = new Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+                .putExtra(":settings:fragment_args_key", "toggle_adb_wireless")
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        PendingIntent openSettings = PendingIntentCompat.getActivity(this, 0, settings,
+                PendingIntent.FLAG_UPDATE_CURRENT, false);
+        CharSequence text = getText(R.string.wireless_debugging_allow_network_text);
+        NotificationUtils.displayHighPriorityNotification(this, APPROVAL_NOTIFICATION_TAG, builder -> builder
+                .setSmallIcon(R.drawable.ic_default_notification)
+                .setContentTitle(getText(R.string.wireless_debugging_allow_network_title))
+                .setContentText(text)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
+                .setContentIntent(openSettings)
+                .setAutoCancel(true)
+                .build());
     }
 
     @VisibleForTesting
@@ -305,6 +417,9 @@ public class WifiWaitService extends Service {
             case WAIT_FOR_NETWORK:
                 Log.d(TAG, "Wi-Fi went away during the attempt, waiting for it to come back");
                 break;
+            case WAIT_FOR_APPROVAL:
+                waitForApproval();
+                break;
             case FINISH:
             default:
                 if (wirelessAdbMode && result == ConnectionResult.RETRY) {
@@ -320,7 +435,8 @@ public class WifiWaitService extends Service {
         FINISH,
         TRY_REPLACEMENT,
         RETRY_LATER,
-        WAIT_FOR_NETWORK
+        WAIT_FOR_NETWORK,
+        WAIT_FOR_APPROVAL
     }
 
     /**
@@ -331,7 +447,13 @@ public class WifiWaitService extends Service {
     @NonNull
     static NextStep nextStep(@NonNull Network attemptedNetwork, @Nullable Network currentNetwork,
                              @NonNull ConnectionResult result, int retryCount, boolean wirelessAdbMode) {
-        if (!wirelessAdbMode || result != ConnectionResult.RETRY) {
+        if (!wirelessAdbMode) {
+            return NextStep.FINISH;
+        }
+        if (result == ConnectionResult.NEEDS_APPROVAL) {
+            return NextStep.WAIT_FOR_APPROVAL;
+        }
+        if (result != ConnectionResult.RETRY) {
             return NextStep.FINISH;
         }
         if (currentNetwork == null) {
@@ -392,6 +514,12 @@ public class WifiWaitService extends Service {
         }
         mHandler.removeCallbacks(mRetryRunnable);
         mHandler.removeCallbacks(mNetworkWaitTimeout);
+        mHandler.removeCallbacks(mApprovalTimeout);
+        mSwitch.stopObserving();
+        if (mAwaitingApproval) {
+            mAwaitingApproval = false;
+            NotificationUtils.cancelHighPriorityNotification(this, APPROVAL_NOTIFICATION_TAG);
+        }
         if (connectionTask != null) {
             connectionTask.cancel(true);
         }

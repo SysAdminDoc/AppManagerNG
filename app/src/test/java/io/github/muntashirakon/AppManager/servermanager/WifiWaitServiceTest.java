@@ -11,11 +11,18 @@ import static org.robolectric.Shadows.shadowOf;
 
 import android.Manifest;
 import android.app.Application;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
+import android.os.Looper;
+import android.provider.Settings;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.Test;
@@ -26,6 +33,7 @@ import org.robolectric.android.controller.ServiceController;
 import org.robolectric.shadows.ShadowLooper;
 import org.robolectric.shadows.ShadowNetwork;
 import org.robolectric.shadows.ShadowNetworkCapabilities;
+import org.robolectric.shadows.ShadowSystemProperties;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -34,6 +42,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.muntashirakon.AppManager.adb.AdbPairingService;
 import io.github.muntashirakon.AppManager.settings.Ops;
@@ -220,6 +229,152 @@ public class WifiWaitServiceTest {
         // The plain entry can't be interrupted and doesn't look at the mode once it has the lock
         assertTrue(source.contains("Ops.autoConnectWirelessDebuggingInBackground(context)"));
         assertFalse(source.contains("Ops.autoConnectWirelessDebugging(context)"));
+    }
+
+    @Test
+    public void aNetworkWaitingForApprovalIsWaitedOnWhileTheModeLasts() {
+        Network network = ShadowNetwork.newInstance(100);
+        WifiWaitService.ConnectionResult approval = WifiWaitService.ConnectionResult.NEEDS_APPROVAL;
+
+        assertEquals(WifiWaitService.NextStep.WAIT_FOR_APPROVAL, WifiWaitService.nextStep(network, network, approval, 0, true));
+        assertEquals(WifiWaitService.NextStep.FINISH, WifiWaitService.nextStep(network, network, approval, 0, false));
+    }
+
+    @Test(timeout = 60_000)
+    public void whenAndroidAsksToAllowTheNetworkTheReconnectAsksOnceAndGoesOnWhenAllowed() throws Exception {
+        Application app = ApplicationProvider.getApplicationContext();
+        shadowOf(app).grantPermissions(Manifest.permission.INTERNET, Manifest.permission.POST_NOTIFICATIONS);
+        // The connect after the approval then fails at once, with nothing on the network
+        ShadowSystemProperties.override("init.svc.adbd", "stopped");
+        String before = Ops.getMode();
+        ServiceController<WifiWaitService> controller = Robolectric.buildService(WifiWaitService.class).create();
+        WifiWaitService service = controller.get();
+        FakeWirelessDebugging wirelessDebugging = new FakeWirelessDebugging();
+        service.setWirelessDebuggingSwitch(wirelessDebugging);
+        try {
+            Ops.setMode(Ops.MODE_ADB_WIFI);
+            setField(service, "mWifiNetwork", ShadowNetwork.newInstance(100));
+            Runnable retry = (Runnable) getField(service, "mRetryRunnable");
+
+            retry.run();
+            awaitAttemptEnd(service);
+            assertEquals(1, wirelessDebugging.mSwitchedOnWhileOff.get());
+            Notification asked = approvalNotification(app);
+            assertNotNull(asked);
+            Intent opens = shadowOf(asked.contentIntent).getSavedIntent();
+            assertEquals(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS, opens.getAction());
+            assertEquals("toggle_adb_wireless", opens.getStringExtra(":settings:fragment_args_key"));
+
+            // Another try on the same network doesn't switch it on again, which would ask again
+            retry.run();
+            awaitAttemptEnd(service);
+            assertEquals(1, wirelessDebugging.mSwitchedOnWhileOff.get());
+            assertFalse(shadowOf(service).isStoppedBySelf());
+
+            // A new access point is a new question, asked once
+            ConnectivityManager.NetworkCallback callback = (ConnectivityManager.NetworkCallback) getField(service, "mNetworkCallback");
+            NetworkCapabilities wifi = ShadowNetworkCapabilities.newInstance();
+            shadowOf(wifi).addTransportType(NetworkCapabilities.TRANSPORT_WIFI);
+            callback.onCapabilitiesChanged(ShadowNetwork.newInstance(101), wifi);
+            awaitAttemptEnd(service);
+            retry.run();
+            awaitAttemptEnd(service);
+            assertEquals(2, wirelessDebugging.mSwitchedOnWhileOff.get());
+
+            // Allowed: the notification goes and the reconnect carries on by itself
+            wirelessDebugging.userAllows();
+            assertNull(approvalNotification(app));
+            awaitAttemptEnd(service);
+            assertEquals(5, getField(service, "mAttempts"));
+            assertEquals(2, wirelessDebugging.mSwitchedOnWhileOff.get());
+        } finally {
+            controller.destroy();
+            Ops.setMode(before);
+            AdbFailure.clear();
+        }
+    }
+
+    @Test(timeout = 60_000)
+    public void anApprovalNobodyGivesEndsTheWaitAfterTenMinutes() throws Exception {
+        Application app = ApplicationProvider.getApplicationContext();
+        shadowOf(app).grantPermissions(Manifest.permission.INTERNET, Manifest.permission.POST_NOTIFICATIONS);
+        String before = Ops.getMode();
+        ServiceController<WifiWaitService> controller = Robolectric.buildService(WifiWaitService.class).create();
+        WifiWaitService service = controller.get();
+        service.setWirelessDebuggingSwitch(new FakeWirelessDebugging());
+        try {
+            Ops.setMode(Ops.MODE_ADB_WIFI);
+            setField(service, "mWifiNetwork", ShadowNetwork.newInstance(100));
+            ((Runnable) getField(service, "mRetryRunnable")).run();
+            awaitAttemptEnd(service);
+            assertNotNull(approvalNotification(app));
+
+            ShadowLooper.idleMainLooper(WifiWaitService.APPROVAL_WAIT_MILLIS - 1_000, TimeUnit.MILLISECONDS);
+            assertFalse(shadowOf(service).isStoppedBySelf());
+            ShadowLooper.idleMainLooper(2, TimeUnit.SECONDS);
+            assertTrue(shadowOf(service).isStoppedBySelf());
+
+            controller.destroy();
+            assertNull(approvalNotification(app));
+        } finally {
+            Ops.setMode(before);
+        }
+    }
+
+    @Nullable
+    private static Notification approvalNotification(Context context) {
+        return shadowOf(context.getSystemService(NotificationManager.class))
+                .getNotification(WifiWaitService.APPROVAL_NOTIFICATION_TAG, 1);
+    }
+
+    private static void awaitAttemptEnd(WifiWaitService service) throws Exception {
+        long deadline = System.currentTimeMillis() + 20_000;
+        while (getField(service, "mConnectionTask") != null && System.currentTimeMillis() < deadline) {
+            Thread.sleep(20);
+            shadowOf(Looper.getMainLooper()).idle();
+        }
+        assertNull(getField(service, "mConnectionTask"));
+    }
+
+    /**
+     * Wireless debugging on a network it hasn't been allowed on: Android asks the user and switches
+     * it straight back off.
+     */
+    private static final class FakeWirelessDebugging implements WirelessDebuggingSwitch {
+        final AtomicInteger mSwitchedOnWhileOff = new AtomicInteger();
+        private volatile boolean mOn;
+        @Nullable
+        private Runnable mObserver;
+
+        @Override
+        public boolean isOn() {
+            return mOn;
+        }
+
+        @Override
+        public boolean switchOn() {
+            if (!mOn) {
+                mSwitchedOnWhileOff.incrementAndGet();
+            }
+            return true;
+        }
+
+        @Override
+        public void observe(@NonNull Runnable onChange) {
+            mObserver = onChange;
+        }
+
+        @Override
+        public void stopObserving() {
+            mObserver = null;
+        }
+
+        void userAllows() {
+            mOn = true;
+            if (mObserver != null) {
+                mObserver.run();
+            }
+        }
     }
 
     private static void setField(Object target, String name, Object value) throws ReflectiveOperationException {
