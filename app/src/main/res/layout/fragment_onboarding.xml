@@ -67,7 +67,7 @@
                     android:layout_height="36dp"
                     android:layout_marginEnd="@dimen/premium_space_12"
                     android:background="@drawable/onboarding_mode_icon_background"
-                    android:contentDescription="@null"
+                    android:importantForAccessibility="no"
                     android:padding="@dimen/padding_small"
                     app:srcCompat="@drawable/ic_run_fast"
                     app:tint="?attr/colorOnSecondaryContainer" />
@@ -130,7 +130,7 @@
                     android:layout_height="36dp"
                     android:layout_marginEnd="@dimen/premium_space_12"
                     android:background="@drawable/onboarding_mode_icon_background"
-                    android:contentDescription="@null"
+                    android:importantForAccessibility="no"
                     android:padding="@dimen/padding_small"
                     app:srcCompat="@drawable/ic_security"
                     app:tint="?attr/colorOnSecondaryContainer" />
@@ -202,7 +202,7 @@
                     android:layout_height="36dp"
                     android:layout_marginEnd="@dimen/premium_space_12"
                     android:background="@drawable/onboarding_mode_icon_background"
-                    android:contentDescription="@null"
+                    android:importantForAccessibility="no"
                     android:padding="@dimen/padding_small"
                     app:srcCompat="@drawable/ic_shield_key"
                     app:tint="?attr/colorOnSecondaryContainer" />
@@ -324,7 +324,7 @@
                     android:layout_height="36dp"
                     android:layout_marginEnd="@dimen/premium_space_12"
                     android:background="@drawable/onboarding_mode_icon_background"
-                    android:contentDescription="@null"
+                    android:importantForAccessibility="no"
                     android:padding="@dimen/padding_small"
                     app:srcCompat="@drawable/ic_wifi"
                     app:tint="?attr/colorOnSecondaryContainer" />
@@ -406,7 +406,7 @@
                     android:layout_height="36dp"
                     android:layout_marginEnd="@dimen/premium_space_12"
                     android:background="@drawable/onboarding_mode_icon_background"
-                    android:contentDescription="@null"
+                    android:importantForAccessibility="no"
                     android:padding="@dimen/padding_small"
                     app:srcCompat="@drawable/ic_settings"
                     app:tint="?attr/colorOnSecondaryContainer" />
@@ -490,7 +490,7 @@
                     android:layout_height="36dp"
                     android:layout_marginEnd="@dimen/premium_space_12"
                     android:background="@drawable/onboarding_mode_icon_background"
-                    android:contentDescription="@null"
+                    android:importantForAccessibility="no"
                     android:padding="@dimen/padding_small"
                     app:srcCompat="@drawable/ic_phone_android"
                     app:tint="?attr/colorOnSecondaryContainer" />

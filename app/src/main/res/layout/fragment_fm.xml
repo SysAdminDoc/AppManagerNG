@@ -118,7 +118,7 @@
                             android:layout_height="72dp"
                             android:alpha="0.86"
                             android:background="@drawable/main_empty_icon_background"
-                            android:contentDescription="@null"
+                            android:importantForAccessibility="no"
                             android:padding="@dimen/padding_large"
                             app:srcCompat="@drawable/ic_caution"
                             app:tint="?attr/colorOnSecondaryContainer" />
