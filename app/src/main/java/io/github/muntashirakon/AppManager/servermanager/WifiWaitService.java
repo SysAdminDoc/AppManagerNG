@@ -24,7 +24,9 @@ import androidx.annotation.WorkerThread;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
@@ -43,11 +45,13 @@ import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 public class WifiWaitService extends Service {
     private static final String TAG = WifiWaitService.class.getSimpleName();
     private static final long RETRY_DELAY_MILLIS = 2_000;
+    private static final long NETWORK_WAIT_MILLIS = 120_000;
     @VisibleForTesting
     static final int MAX_RETRY_ATTEMPTS = 5;
     public static final String CHANNEL_ID = BuildConfig.APPLICATION_ID + ".channel.WIFI_WAIT_SERVICE";
 
-    private enum ConnectionResult {
+    @VisibleForTesting
+    enum ConnectionResult {
         SUCCESS,
         RETRY,
         TERMINAL_FAILURE,
@@ -58,6 +62,10 @@ public class WifiWaitService extends Service {
     private final Handler mHandler = new Handler(Looper.getMainLooper());
     @Nullable
     private Network mWifiNetwork;
+    private final Runnable mNetworkWaitTimeout = () -> {
+        Log.w(TAG, "Autoconnect failed: Wi-Fi didn't come back");
+        finishService();
+    };
     private final Runnable mRetryRunnable = () -> {
         Network network;
         synchronized (mStateLock) {
@@ -82,6 +90,10 @@ public class WifiWaitService extends Service {
                     mWifiNetwork = null;
                     mRetryCount = 0;
                     mHandler.removeCallbacks(mRetryRunnable);
+                    // Wi-Fi was up once, so the boot is behind us. Wait a while for it to come
+                    // back, not for as long as the notification can stay up.
+                    mHandler.removeCallbacks(mNetworkWaitTimeout);
+                    mHandler.postDelayed(mNetworkWaitTimeout, NETWORK_WAIT_MILLIS);
                 }
             }
         }
@@ -89,15 +101,20 @@ public class WifiWaitService extends Service {
         @Override
         public void onCapabilitiesChanged(@NonNull Network network,
                                           @NonNull NetworkCapabilities networkCapabilities) {
-            if (isWifiNetwork(networkCapabilities)) {
-                synchronized (mStateLock) {
-                    if (!network.equals(mWifiNetwork)) {
-                        mRetryCount = 0;
-                    }
-                    mWifiNetwork = network;
-                }
-                connectAdbWifi(network);
+            if (!isWifiNetwork(networkCapabilities)) {
+                return;
             }
+            synchronized (mStateLock) {
+                if (network.equals(mWifiNetwork)) {
+                    // Signal strength and the like change all the time. The network already has an
+                    // attempt running or a retry waiting, and starting over would skip the delay.
+                    return;
+                }
+                mWifiNetwork = network;
+                mRetryCount = 0;
+                mHandler.removeCallbacks(mNetworkWaitTimeout);
+            }
+            connectAdbWifi(network);
         }
     };
     private ConnectivityManager mConnectivityManager;
@@ -166,18 +183,37 @@ public class WifiWaitService extends Service {
             finishService();
             return;
         }
+        FutureTask<Void> task = new FutureTask<>(() -> {
+            ConnectionResult result = runConnectionAttempt(this::doConnectAdbWifi);
+            mHandler.post(() -> handleConnectionResult(network, result));
+        }, null);
         synchronized (mStateLock) {
             if (mDestroyed || mConnecting || !network.equals(mWifiNetwork)) {
                 return;
             }
             mConnecting = true;
+            // Network callbacks come on another thread than the results, so the task is recorded
+            // together with the flag
+            mConnectionTask = task;
             mHandler.removeCallbacks(mRetryRunnable);
         }
+        ThreadUtils.postOnBackgroundThread(task);
+    }
 
-        mConnectionTask = ThreadUtils.postOnBackgroundThread(() -> {
-            ConnectionResult result = doConnectAdbWifi();
-            mHandler.post(() -> handleConnectionResult(network, result));
-        });
+    /**
+     * An attempt that throws still reports back, or the service would count it as running forever
+     * and ignore every network after it.
+     */
+    @VisibleForTesting
+    @WorkerThread
+    @NonNull
+    static ConnectionResult runConnectionAttempt(@NonNull Callable<ConnectionResult> attempt) {
+        try {
+            return attempt.call();
+        } catch (Throwable th) {
+            Log.e(TAG, "Autoconnect failed", th);
+            return ConnectionResult.TERMINAL_FAILURE;
+        }
     }
 
     @WorkerThread
@@ -225,33 +261,70 @@ public class WifiWaitService extends Service {
     }
 
     private void handleConnectionResult(@NonNull Network network, @NonNull ConnectionResult result) {
-        boolean retry;
-        Network replacementNetwork;
+        boolean wirelessAdbMode = isWirelessAdbMode();
+        NextStep step;
+        Network currentNetwork;
         synchronized (mStateLock) {
             if (mDestroyed) {
                 return;
             }
             mConnecting = false;
             mConnectionTask = null;
-            replacementNetwork = shouldTryReplacementNetwork(network, mWifiNetwork,
-                    result == ConnectionResult.RETRY) ? mWifiNetwork : null;
-            retry = result == ConnectionResult.RETRY && network.equals(mWifiNetwork)
-                    && ++mRetryCount <= MAX_RETRY_ATTEMPTS;
-        }
-        if (!isWirelessAdbMode() || result == ConnectionResult.MODE_CHANGED) {
-            finishService();
-        } else if (replacementNetwork != null) {
-            // Wi-Fi changed while the last attempt ran. Try the new network now instead of
-            // stopping on the stale attempt's result.
-            connectAdbWifi(replacementNetwork);
-        } else if (retry) {
-            mHandler.postDelayed(mRetryRunnable, RETRY_DELAY_MILLIS);
-        } else {
-            if (result == ConnectionResult.RETRY) {
-                Log.w(TAG, "Autoconnect failed: retry limit reached");
+            currentNetwork = mWifiNetwork;
+            step = nextStep(network, currentNetwork, result, mRetryCount, wirelessAdbMode);
+            if (step == NextStep.RETRY_LATER) {
+                ++mRetryCount;
             }
-            finishService();
         }
+        switch (step) {
+            case TRY_REPLACEMENT:
+                // Wi-Fi changed while the last attempt ran. Try the new network now instead of
+                // stopping on the stale attempt's result.
+                connectAdbWifi(currentNetwork);
+                break;
+            case RETRY_LATER:
+                mHandler.postDelayed(mRetryRunnable, RETRY_DELAY_MILLIS);
+                break;
+            case WAIT_FOR_NETWORK:
+                Log.d(TAG, "Wi-Fi went away during the attempt, waiting for it to come back");
+                break;
+            case FINISH:
+            default:
+                if (wirelessAdbMode && result == ConnectionResult.RETRY) {
+                    Log.w(TAG, "Autoconnect failed: retry limit reached");
+                }
+                finishService();
+                break;
+        }
+    }
+
+    @VisibleForTesting
+    enum NextStep {
+        FINISH,
+        TRY_REPLACEMENT,
+        RETRY_LATER,
+        WAIT_FOR_NETWORK
+    }
+
+    /**
+     * What to do once an attempt on {@code attemptedNetwork} has ended, {@code currentNetwork} being
+     * the Wi-Fi network now, if any, and {@code retryCount} the retries it has had so far.
+     */
+    @VisibleForTesting
+    @NonNull
+    static NextStep nextStep(@NonNull Network attemptedNetwork, @Nullable Network currentNetwork,
+                             @NonNull ConnectionResult result, int retryCount, boolean wirelessAdbMode) {
+        if (!wirelessAdbMode || result != ConnectionResult.RETRY) {
+            return NextStep.FINISH;
+        }
+        if (currentNetwork == null) {
+            // The network went away during the attempt, and losing it started the clock on its return
+            return NextStep.WAIT_FOR_NETWORK;
+        }
+        if (shouldTryReplacementNetwork(attemptedNetwork, currentNetwork, true)) {
+            return NextStep.TRY_REPLACEMENT;
+        }
+        return retryCount < MAX_RETRY_ATTEMPTS ? NextStep.RETRY_LATER : NextStep.FINISH;
     }
 
     @VisibleForTesting
@@ -301,6 +374,7 @@ public class WifiWaitService extends Service {
             mConnectionTask = null;
         }
         mHandler.removeCallbacks(mRetryRunnable);
+        mHandler.removeCallbacks(mNetworkWaitTimeout);
         if (connectionTask != null) {
             connectionTask.cancel(true);
         }

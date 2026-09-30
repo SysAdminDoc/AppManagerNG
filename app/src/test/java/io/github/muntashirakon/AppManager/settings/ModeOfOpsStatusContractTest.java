@@ -97,12 +97,12 @@ public class ModeOfOpsStatusContractTest {
         assertFalse(body(manager, "private void useAdbStartServer(int localServerPort)").contains("manager.connect("));
 
         String ops = read("app/src/main/java/io/github/muntashirakon/AppManager/settings/Ops.java");
-        assertTrue(body(ops, "public static int connectAdb(@NonNull Context context, int port,")
+        assertTrue(body(ops, "private static int connectAdbLocked(int port,")
                 .contains("return reportServerFailure(e, returnCodeOnFailure);"));
-        assertTrue(body(ops, "public static int autoConnectWirelessDebugging(@NonNull Context context)")
+        assertTrue(body(ops, "private static int autoConnectWirelessDebuggingLocked(@NonNull Context context)")
                 .contains("return reportServerFailure(e, STATUS_WIRELESS_DEBUGGING_CHOOSER_REQUIRED);"));
         // Exactly one message: the specific one, or the generic one
-        String init = body(ops, "private static int init(@NonNull Context context, boolean force, @NonNull @Mode String mode,");
+        String init = body(ops, "private static int initLocked(@NonNull Context context, boolean force, @NonNull @Mode String mode,");
         String fallback = init.substring(init.indexOf("catch (Throwable e)"));
         assertTrue(fallback, fallback.contains("int status = reportServerFailure(e, STATUS_FAILURE);"));
         assertTrue(fallback, fallback.indexOf("failed_to_use_the_current_mode_of_operation")

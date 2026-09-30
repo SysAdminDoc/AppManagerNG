@@ -157,6 +157,8 @@ class LocalServerManager {
     static boolean isWorthRetrying(int attempt, @NonNull Throwable failure) {
         return attempt < MAX_SERVER_START_ATTEMPTS
                 && !(failure instanceof TimeoutException)
+                // The ADB start already gave a shell that closed at once its one more try
+                && !(failure instanceof ShellClosedEarlyException)
                 && ServerConnectionFailure.find(failure) == null;
     }
 
@@ -425,8 +427,9 @@ class LocalServerManager {
         // be where the shell user can find it before the shell is asked to run it.
         AdbLaunchFiles.stageServer(mContext, manager);
         Log.d(TAG, "useAdbStartServer: Opening shell...");
-        long openedAt = SystemClock.elapsedRealtime();
         AdbStream stream = manager.openStream("shell:");
+        // Counted from when adbd accepted the shell, so a slow open doesn't eat the early-close window
+        long openedAt = SystemClock.elapsedRealtime();
         mAdbStream = stream;
         Log.d(TAG, "useAdbStartServer: Launching privileged server.");
         try {
