@@ -79,9 +79,9 @@ DEX contents whenever a suppression is justified by non-reachability.
 
 ## Configurations that only the CVE gate resolves
 
-`dependencyCheckAggregate` resolves configurations no ordinary build touches —
-`:app:androidLintTool`, `:app:kotlinBuildToolsApiClasspath`, the UTP test-plugin
-host configurations, and others. Their POMs are not covered by the refresh
+`dependencyCheckAggregate` resolves configurations no ordinary build touches,
+such as `:app:androidLintTool`, `:app:kotlinBuildToolsApiClasspath` and the UTP
+test-plugin host configurations. Their POMs are not covered by the refresh
 commands above, because those drive `:<project>:dependencies`, which never
 resolves them. Strict verification then aborts the task before the scanner
 starts, and the gate correctly refuses to write a receipt for a build that was
@@ -100,7 +100,7 @@ the entries from the repository's own published checksums instead:
 2. For each one, download the artifact from that repository
    (`https://repo1.maven.org/maven2` for `MavenRepo`,
    `https://dl.google.com/dl/android/maven2` for `Google`) together with the
-   checksum file published beside it — `.sha256` where available, otherwise
+   checksum file published beside it: `.sha256` where available, otherwise
    `.sha1`. Maven Central publishes `.sha256` only for newer uploads.
 3. Compare the downloaded bytes against the published checksum. A mismatch is a
    supply-chain event, not a refresh problem: stop and investigate.
@@ -109,8 +109,38 @@ the entries from the repository's own published checksums instead:
    upstream repository"` and a `reason` naming which published checksum was
    compared. Those attributes are how a reviewer tells a verified entry from a
    trust-on-first-use one.
-5. Re-run the gate. It reports the next configuration it reaches; repeat until
+5. Re-run the gate. It reports the next configuration it reaches. Repeat until
    the scan starts.
+
+## Cold-cache check in the release gate
+
+A warm Gradle cache hides missing checksums. Once Gradle has parsed a parent
+POM, a BOM, or a Gradle module file, later builds reuse what it parsed and
+never read the file again, so a build on the maintainer's machine can pass
+while a fresh machine stops on the first unverified parent. That's how the
+Guava parent, Jackson parent, JUnit BOM and OpenTelemetry BOM gaps fixed in
+v0.6.25 went unnoticed.
+
+The release gate's `dependencies` stage closes that gap. It runs
+`scripts/gradle/resolve-all-configurations.gradle` against a throwaway, empty
+Gradle user home with `--dependency-verification=strict`, which resolves every
+resolvable configuration in every project, FLOSS and Full release variants
+included. The stage refuses the release when any configuration fails to
+resolve, when Gradle writes a report under
+`build/reports/dependency-verification/`, or when
+`gradle/verification-metadata.xml` changes during the run. It deletes the
+throwaway home afterwards. The wrapper downloads the Gradle distribution into
+that home again and checks it against `distributionSha256Sum`, so the stage
+needs network access and takes a minute or two.
+
+Run it on its own with:
+
+```powershell
+py -3 scripts/release_gate.py --only dependencies
+```
+
+When it stops on a missing checksum, add the entry with the published-checksum
+steps above. Never with `--write-verification-metadata`.
 
 Review rules:
 

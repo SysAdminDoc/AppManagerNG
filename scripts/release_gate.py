@@ -8,6 +8,8 @@ is blocked unless all of them pass:
   source        the working tree is clean and HEAD is the exact commit being released
   consistency   every version-bearing surface agrees (scripts/verify-release-consistency.sh)
   floor         pinned dependencies have not drifted past their ceiling
+  dependencies  every configuration resolves from an empty Gradle cache under strict
+                dependency verification, with no verification report and no metadata change
   translation   no source-string regressions, and the reported counts are internally sane
   tests         the host unit-test suite passes
   lint          no lint issue outside the baseline, and the baseline carries no stale entries
@@ -34,6 +36,8 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
+import time
 import xml.etree.ElementTree as ElementTree
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -42,6 +46,11 @@ from typing import Iterable, Sequence
 RECEIPT_SCHEMA_VERSION = 3
 DEFAULT_OUT_DIR = Path("build") / "release-gate"
 LINT_VARIANT = "flossRelease"
+VERIFICATION_METADATA = Path("gradle") / "verification-metadata.xml"
+VERIFICATION_REPORTS = Path("build") / "reports" / "dependency-verification"
+RESOLVE_ALL_INIT_SCRIPT = Path("scripts") / "gradle" / "resolve-all-configurations.gradle"
+RESOLVED_CONFIGURATIONS = re.compile(
+    r"^resolveAllConfigurations (\S+): (\d+) configuration\(s\) resolved, (\d+) skipped", re.M)
 
 
 class GateError(RuntimeError):
@@ -546,6 +555,84 @@ def stage_translation(repo_root: Path) -> StageResult:
     )
 
 
+def remove_tree(path: Path, attempts: int = 20, pause: float = 0.5) -> bool:
+    """Deletes a directory tree, retrying while a JVM that just exited still holds its files."""
+    for attempt in range(attempts):
+        shutil.rmtree(path, ignore_errors=True)
+        if not path.exists():
+            return True
+        if attempt + 1 < attempts:
+            time.sleep(pause)
+    print(f"warning: could not remove {path}", file=sys.stderr)
+    return False
+
+
+def cold_resolution_command(gradle_cmd: str, gradle_user_home: Path, init_script: Path) -> list[str]:
+    return [
+        gradle_cmd,
+        "--no-daemon",
+        "--no-configuration-cache",
+        "--no-build-cache",
+        "--dependency-verification=strict",
+        "--gradle-user-home",
+        str(gradle_user_home),
+        "--init-script",
+        str(init_script),
+        "resolveAllConfigurations",
+    ]
+
+
+def stage_dependencies(repo_root: Path, gradle_cmd: str) -> StageResult:
+    """Resolves every configuration of every project from an empty dependency cache, strictly.
+
+    A warm cache hides a missing checksum for parent POMs, BOMs and Gradle module files, because
+    Gradle reuses the metadata it parsed on an earlier run instead of reading those files again.
+    Only a cold resolution reads them all, so this stage uses a throwaway Gradle user home. It
+    refuses the release when resolution fails, when Gradle writes a dependency-verification
+    report, or when the verification metadata changes underneath the run.
+    """
+    metadata = repo_root / VERIFICATION_METADATA
+    if not metadata.is_file():
+        raise GateError(f"{VERIFICATION_METADATA.as_posix()} is missing; refusing to resolve unverified")
+    init_script = repo_root / RESOLVE_ALL_INIT_SCRIPT
+    if not init_script.is_file():
+        raise GateError(f"{RESOLVE_ALL_INIT_SCRIPT.as_posix()} is missing")
+    reports = repo_root / VERIFICATION_REPORTS
+    reports_before = {entry.name for entry in reports.iterdir()} if reports.is_dir() else set()
+    metadata_before = sha256_file(metadata)
+    gradle_user_home = Path(tempfile.mkdtemp(prefix="appmanagerng-cold-gradle-"))
+    try:
+        result = run(cold_resolution_command(gradle_cmd, gradle_user_home, init_script), repo_root)
+    finally:
+        remove_tree(gradle_user_home)
+    new_reports = sorted({entry.name for entry in reports.iterdir()} - reports_before) if reports.is_dir() else []
+    if new_reports:
+        raise GateError(
+            "strict resolution wrote a dependency-verification report ("
+            + ", ".join(f"{VERIFICATION_REPORTS.as_posix()}/{name}" for name in new_reports)
+            + "), so something resolved without a verified checksum:\n"
+            + result.stdout[-8000:]
+        )
+    if result.returncode != 0:
+        raise GateError(f"strict resolution from an empty dependency cache failed:\n{result.stdout[-8000:]}")
+    if sha256_file(metadata) != metadata_before:
+        raise GateError(f"{VERIFICATION_METADATA.as_posix()} changed during strict resolution")
+    reports = RESOLVED_CONFIGURATIONS.findall(result.stdout)
+    counts = {project: int(count) for project, count, _ in reports}
+    skipped = {project: int(count) for project, _, count in reports if int(count)}
+    if not counts:
+        raise GateError("strict resolution reported success but resolved no configurations")
+    total = sum(counts.values())
+    return StageResult(
+        "dependencies",
+        True,
+        f"{total} configuration(s) across {len(counts)} project(s) resolved from an empty cache under strict "
+        f"verification; {sum(skipped.values())} skipped because no variant matches their attributes",
+        {"configurations": total, "projects": counts, "skipped": skipped,
+         "verificationMetadataSha256": metadata_before},
+    )
+
+
 def stage_tests(repo_root: Path, gradle_cmd: str) -> StageResult:
     result = run([gradle_cmd, ":app:testFlossDebugUnitTest", ":app:testFullDebugUnitTest"], repo_root)
     if result.returncode != 0:
@@ -717,7 +804,9 @@ def stage_artifact(repo_root: Path, apk_paths: Sequence[Path], expected: dict,
 # --------------------------------------------------------------------------------------
 
 
-ALL_STAGES = ("source", "consistency", "floor", "translation", "tests", "lint", "reproducible", "artifact")
+ALL_STAGES = (
+    "source", "consistency", "floor", "dependencies", "translation", "tests", "lint", "reproducible", "artifact",
+)
 
 
 def collect_release_apks(repo_root: Path, explicit: Sequence[str] | None) -> list[Path]:
@@ -817,6 +906,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 result = stage_script("consistency", repo_root, "scripts/verify-release-consistency.sh")
             elif stage == "floor":
                 result = stage_script("floor", repo_root, "scripts/verify-dependency-floor.sh")
+            elif stage == "dependencies":
+                result = stage_dependencies(repo_root, args.gradle_cmd)
             elif stage == "translation":
                 result = stage_translation(repo_root)
             elif stage == "tests":

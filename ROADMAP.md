@@ -264,18 +264,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 ## Audit Findings — 2026-09-25
 
-### P0
-
-- [ ] P0 — Restore the strict dependency-verification baseline
-  Category: Build integrity
-  Where: `build.gradle:6-33`; `gradle/verification-metadata.xml:4-5,3935-3938,5083-5086,8085-8193`; `scripts/release_gate.py:571-606`
-  Problem: A clean strict build cannot resolve every release-gate dependency, so the trusted build path is not reproducible from the committed verification metadata.
-  Evidence: Two fresh strict runs stopped on missing checksums for Guava parent metadata, Jackson parents, JUnit BOM module metadata, and OpenTelemetry BOM module metadata before lint and CVE checks could complete.
-  Fix: Add publisher-verified hashes for every resolved artifact and parent descriptor, then make a cold-cache strict resolution part of the local release gate. Do not use lenient verification or trust-on-first-use.
-  Acceptance: On an empty Gradle dependency cache, the documented JDK 21 release gate resolves FLOSS and Full release configurations with strict verification, produces no dependency-verification report, and leaves `verification-metadata.xml` unchanged on a second run.
-  Confidence: Verified
-  Effort: M
-
 ### P1
 
 - [ ] P1 — Bind restore verification to the bytes that are consumed
