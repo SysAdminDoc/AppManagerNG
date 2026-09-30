@@ -93,18 +93,24 @@ public class SnapshotBundleTest {
                 + "\"source_version_name\":\"0.5.0\","
                 + "\"source_version_code\":7,"
                 + "\"contents\":[\"prefs\",\"profiles\",\"rules\",\"tags\",\"op_history\"],"
-                + "\"counts\":{\"prefs_files\":10,\"profiles\":2,\"rules\":4,\"op_history\":100}"
+                + "\"counts\":{\"prefs_files\":1,\"profiles\":2,\"rules\":1,\"op_history\":1}"
                 + "}";
-        byte[] bundle = SnapshotBundle.writeMinimalBundleForTest(
-                manifestJson, "{\"entries\":[]}", Collections.emptyMap());
+        byte[] bundle = zipAllowingDuplicates(new String[][]{
+                {"manifest.json", manifestJson},
+                {"prefs/preferences.xml", "<map />"},
+                {"profiles/a.am.json", "{}"},
+                {"profiles/b.am.json", "{}"},
+                {"rules/com.example.tsv", ""},
+                {"op_history.json", "{\"entries\":[{\"type\":\"batch\"}]}"},
+        });
         SnapshotBundle.ManifestSummary preview = SnapshotBundle.readManifestOnly(
                 new ByteArrayInputStream(bundle));
         assertEquals(2, preview.schemaVersion);
         assertEquals("0.5.0", preview.sourceVersionName);
-        assertEquals(10, preview.prefsCount);
+        assertEquals(1, preview.prefsCount);
         assertEquals(2, preview.profilesCount);
-        assertEquals(4, preview.rulesCount);
-        assertEquals(100, preview.opHistoryCount);
+        assertEquals(1, preview.rulesCount);
+        assertEquals(1, preview.opHistoryCount);
         assertTrue(preview.hasPrefs());
         assertTrue(preview.hasProfiles());
         assertTrue(preview.hasRules());
@@ -568,6 +574,212 @@ public class SnapshotBundleTest {
     }
 
     @NonNull
+    // -----------------------------------------------------------------------
+    // One staged snapshot for both the preview and the import
+    // -----------------------------------------------------------------------
+
+    private static final String SHOW_DEFAULT_TRUE =
+            "<map><boolean name=\"app_op_show_default\" value=\"true\" /></map>";
+    private static final String SHOW_DEFAULT_FALSE =
+            "<map><boolean name=\"app_op_show_default\" value=\"false\" /></map>";
+
+    @Test
+    public void theImportAppliesTheReviewedCopyAndNeverReadsTheSourceAgain() throws Exception {
+        SharedPreferences sp = clearedPreferences();
+        byte[] reviewed = bundleWithPrefEntry("preferences.xml", SHOW_DEFAULT_TRUE);
+        byte[] swapped = bundleWithPrefEntry("preferences.xml", SHOW_DEFAULT_FALSE);
+        // A provider that serves different bytes each time it is opened.
+        int[] opens = {0};
+        java.util.function.Supplier<InputStream> source = () ->
+                new ByteArrayInputStream(opens[0]++ == 0 ? reviewed : swapped);
+
+        try (SnapshotBundle.StagedSnapshot staged = SnapshotBundle.stageForImport(source.get(), null)) {
+            SnapshotBundle.importStaged(ApplicationProvider.getApplicationContext(), staged, prefsOnlyOptions(false));
+        }
+
+        assertEquals(1, opens[0]);
+        assertTrue(sp.getBoolean("app_op_show_default", false));
+    }
+
+    @Test
+    public void aStagedCopyThatChangedAfterReviewIsNotImported() throws Exception {
+        SharedPreferences sp = clearedPreferences();
+        byte[] reviewed = bundleWithPrefEntry("preferences.xml", SHOW_DEFAULT_TRUE);
+
+        try (SnapshotBundle.StagedSnapshot staged = SnapshotBundle.stageForImport(
+                new ByteArrayInputStream(reviewed), null)) {
+            java.nio.file.Files.write(staged.file.toPath(), bundleWithPrefEntry("preferences.xml", SHOW_DEFAULT_FALSE));
+            SnapshotImportException refused = assertThrows(SnapshotImportException.class,
+                    () -> SnapshotBundle.importStaged(ApplicationProvider.getApplicationContext(), staged,
+                            prefsOnlyOptions(false)));
+            assertTrue(refused.getMessage(), refused.getMessage().contains("changed after it was reviewed"));
+        }
+
+        assertFalse(sp.contains("app_op_show_default"));
+    }
+
+    @Test
+    public void oneDigestIdentifiesTheReviewAndTheImport() throws Exception {
+        clearedPreferences();
+        byte[] bundle = bundleWithPrefEntry("preferences.xml", SHOW_DEFAULT_TRUE);
+
+        try (SnapshotBundle.StagedSnapshot staged = SnapshotBundle.stageForImport(
+                new ByteArrayInputStream(bundle), null)) {
+            assertEquals(sha256Hex(bundle), staged.sha256);
+            SnapshotBundle.ImportResult result = SnapshotBundle.importStaged(
+                    ApplicationProvider.getApplicationContext(), staged, prefsOnlyOptions(false));
+            assertEquals(staged.sha256, result.sha256);
+        }
+    }
+
+    @Test
+    public void closingAStagedSnapshotDeletesItsCopy() throws Exception {
+        SnapshotBundle.StagedSnapshot staged = SnapshotBundle.stageForImport(
+                new ByteArrayInputStream(bundleWithPrefEntry("preferences.xml", SHOW_DEFAULT_TRUE)), null);
+        assertTrue(staged.file.isFile());
+
+        staged.close();
+
+        assertFalse(staged.file.exists());
+    }
+
+    @Test
+    public void repeatedEntryNamesAreRefusedBeforeAnyPreferenceChanges() throws Exception {
+        SharedPreferences sp = clearedPreferences();
+        sp.edit().putBoolean("app_op_show_default", false).commit();
+        String manifest = new JSONObject()
+                .put("schema_version", SnapshotBundle.SCHEMA_VERSION)
+                .put("format", SnapshotBundle.FORMAT_ID)
+                .toString();
+        // A first-wins reader and a last-wins reader would disagree about this preference.
+        byte[] bundle = zipAllowingDuplicates(new String[][]{
+                {"manifest.json", manifest},
+                {"prefs/preferences.xml", SHOW_DEFAULT_TRUE},
+                {"prefs/preferences.xml", SHOW_DEFAULT_FALSE},
+        });
+
+        SnapshotImportException preview = assertThrows(SnapshotImportException.class,
+                () -> SnapshotBundle.readManifestOnly(new ByteArrayInputStream(bundle)));
+        SnapshotImportException imported = assertThrows(SnapshotImportException.class,
+                () -> SnapshotBundle.readFrom(ApplicationProvider.getApplicationContext(),
+                        new ByteArrayInputStream(bundle), prefsOnlyOptions(false)));
+
+        assertTrue(preview.getMessage(), preview.getMessage().contains("more than one entry named prefs/preferences.xml"));
+        assertTrue(imported.getMessage(), imported.getMessage().contains("more than one entry named"));
+        assertFalse(sp.getBoolean("app_op_show_default", true));
+    }
+
+    @Test
+    public void aRepeatedManifestIsRefused() throws Exception {
+        String first = new JSONObject().put("schema_version", 1).put("format", SnapshotBundle.FORMAT_ID).toString();
+        String second = new JSONObject().put("schema_version", 1).put("format", "some-other-tool").toString();
+        byte[] bundle = zipAllowingDuplicates(new String[][]{{"manifest.json", first}, {"manifest.json", second}});
+
+        SnapshotImportException refused = assertThrows(SnapshotImportException.class,
+                () -> SnapshotBundle.readManifestOnly(new ByteArrayInputStream(bundle)));
+
+        assertTrue(refused.getMessage(), refused.getMessage().contains("more than one entry named manifest.json"));
+    }
+
+    @Test
+    public void aCountTheManifestDeclaresMustMatchThePayloadBeforeAnyWrite() throws Exception {
+        SharedPreferences sp = clearedPreferences();
+        String manifest = new JSONObject()
+                .put("schema_version", SnapshotBundle.SCHEMA_VERSION)
+                .put("format", SnapshotBundle.FORMAT_ID)
+                .put("contents", new JSONArray().put("prefs"))
+                .put("counts", new JSONObject().put("prefs_files", 1))
+                .toString();
+        byte[] bundle = zipAllowingDuplicates(new String[][]{
+                {"manifest.json", manifest},
+                {"prefs/preferences.xml", SHOW_DEFAULT_TRUE},
+                {"prefs/app_notes.xml", "<map />"},
+        });
+
+        SnapshotImportException refused = assertThrows(SnapshotImportException.class,
+                () -> SnapshotBundle.readFrom(ApplicationProvider.getApplicationContext(),
+                        new ByteArrayInputStream(bundle), prefsOnlyOptions(false)));
+
+        assertTrue(refused.getMessage(), refused.getMessage().contains("lists 1 prefs_files but the snapshot holds 2"));
+        assertFalse(sp.contains("app_op_show_default"));
+    }
+
+    @Test
+    public void opHistoryMayHoldFewerEntriesThanDeclaredButNeverMore() throws Exception {
+        String twoEntries = "{\"entries\":[{\"type\":\"batch\"},{\"type\":\"batch\"}]}";
+        String oneEntry = "{\"entries\":[{\"type\":\"batch\"}]}";
+        String declaresTwo = new JSONObject().put("schema_version", 2).put("format", SnapshotBundle.FORMAT_ID)
+                .put("counts", new JSONObject().put("op_history", 2)).toString();
+        String declaresOne = new JSONObject().put("schema_version", 2).put("format", SnapshotBundle.FORMAT_ID)
+                .put("counts", new JSONObject().put("op_history", 1)).toString();
+
+        // Older exports counted rows the serializer then skipped for having no data.
+        assertEquals(2, SnapshotBundle.readManifestOnly(new ByteArrayInputStream(
+                zipAllowingDuplicates(new String[][]{{"manifest.json", declaresTwo}, {"op_history.json", oneEntry}})))
+                .opHistoryCount);
+        SnapshotImportException refused = assertThrows(SnapshotImportException.class,
+                () -> SnapshotBundle.readManifestOnly(new ByteArrayInputStream(zipAllowingDuplicates(
+                        new String[][]{{"manifest.json", declaresOne}, {"op_history.json", twoEntries}}))));
+        assertTrue(refused.getMessage(), refused.getMessage().contains("lists 1 op_history but the snapshot holds 2"));
+    }
+
+    @Test
+    public void countEntriesReadsTheEntriesArray() {
+        assertEquals(0, SnapshotBundle.countEntries(null));
+        assertEquals(2, SnapshotBundle.countEntries("{\"entries\":[1,2]}".getBytes(StandardCharsets.UTF_8)));
+        assertEquals(-1, SnapshotBundle.countEntries("{\"rows\":[]}".getBytes(StandardCharsets.UTF_8)));
+        assertEquals(-1, SnapshotBundle.countEntries("not json".getBytes(StandardCharsets.UTF_8)));
+    }
+
+    private static SharedPreferences clearedPreferences() {
+        Context context = ApplicationProvider.getApplicationContext();
+        SharedPreferences sp = context.getSharedPreferences(AppPref.getSharedPreferencesName(), Context.MODE_PRIVATE);
+        sp.edit().clear().commit();
+        return sp;
+    }
+
+    private static String sha256Hex(byte[] bytes) throws Exception {
+        StringBuilder hex = new StringBuilder();
+        for (byte b : java.security.MessageDigest.getInstance("SHA-256").digest(bytes)) {
+            hex.append(String.format("%02x", b));
+        }
+        return hex.toString();
+    }
+
+    /**
+     * A ZIP whose entries may repeat a name. ZipOutputStream refuses to write one, so a repeat is
+     * written under a same-length placeholder that is then patched back to the real name.
+     */
+    private static byte[] zipAllowingDuplicates(String[][] entries) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        List<String[]> renames = new java.util.ArrayList<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            for (String[] entry : entries) {
+                String name = entry[0];
+                if (!seen.add(name)) {
+                    String placeholder = name.substring(0, name.length() - 1) + (char) ('0' + renames.size());
+                    renames.add(new String[]{placeholder, name});
+                    name = placeholder;
+                }
+                zos.putNextEntry(new ZipEntry(name));
+                zos.write(entry[1].getBytes(StandardCharsets.UTF_8));
+                zos.closeEntry();
+            }
+        }
+        byte[] bytes = baos.toByteArray();
+        for (String[] rename : renames) {
+            byte[] from = rename[0].getBytes(StandardCharsets.UTF_8);
+            byte[] to = rename[1].getBytes(StandardCharsets.UTF_8);
+            for (int i = 0; i + from.length <= bytes.length; ++i) {
+                if (Arrays.equals(Arrays.copyOfRange(bytes, i, i + from.length), from)) {
+                    System.arraycopy(to, 0, bytes, i, to.length);
+                }
+            }
+        }
+        return bytes;
+    }
+
     private static SnapshotBundle.ImportOptions prefsOnlyOptions(boolean merge) {
         SnapshotBundle.ImportOptions options = new SnapshotBundle.ImportOptions();
         options.restoreProfiles = false;

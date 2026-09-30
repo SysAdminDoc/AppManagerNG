@@ -29,12 +29,18 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FilterInputStream;
+import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PushbackInputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.DigestInputStream;
+import java.security.DigestOutputStream;
 import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -62,6 +68,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import aosp.libcore.util.HexEncoding;
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.db.AppsDb;
 import io.github.muntashirakon.AppManager.db.dao.FmFavoriteDao;
@@ -289,7 +296,8 @@ public final class SnapshotBundle {
             try {
                 List<OpHistory> rows = AppsDb.getInstance().opHistoryDao().getAll();
                 opHistoryJson = serializeOpHistory(rows);
-                opHistoryCount = rows.size();
+                // Rows without data are skipped, so count what was written.
+                opHistoryCount = Math.max(0, countEntries(opHistoryJson.getBytes(StandardCharsets.UTF_8)));
             } catch (Exception t) {
                 Log.w(TAG, "Failed to serialize op history; bundling empty history.", t);
                 opHistoryJson = serializeOpHistory(Collections.emptyList());
@@ -386,46 +394,19 @@ public final class SnapshotBundle {
     // -----------------------------------------------------------------------
 
     /**
-     * Read only the manifest entry from a snapshot bundle for preview purposes.
-     * No data is restored; the stream is closed after the manifest is found.
+     * Read the manifest of a plaintext snapshot bundle for preview purposes. The bundle is staged
+     * and checked in full, exactly as an import would check it; nothing is restored.
      */
     @WorkerThread
     @NonNull
     public static ManifestSummary readManifestOnly(@NonNull InputStream rawIn)
             throws IOException, SnapshotImportException {
-        ArchiveExtractionGuard guard = createImportGuard();
-        try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(rawIn))) {
-            ZipEntry entry;
-            int entryCount = 0;
-            while ((entry = zis.getNextEntry()) != null) {
-                assertReasonableEntryCount(++entryCount);
-                guard.onNewEntry();
-                guard.assertEntrySize(entry.getSize());
-                if (entry.isDirectory()) {
-                    zis.closeEntry();
-                    continue;
-                }
-                if (ENTRY_MANIFEST.equals(entry.getName())) {
-                    byte[] bytes = readEntryBounded(zis, MAX_ENTRY_BYTES, entry.getName(), guard);
-                    ManifestSummary manifest = ManifestSummary.parse(
-                            new String(bytes, StandardCharsets.UTF_8));
-                    if (!FORMAT_ID.equals(manifest.format)) {
-                        throw new SnapshotImportException(
-                                "Unexpected bundle format: " + manifest.format);
-                    }
-                    if (manifest.schemaVersion > SCHEMA_VERSION) {
-                        throw new SnapshotImportException(
-                                "Bundle was written by a newer AppManagerNG (schema "
-                                        + manifest.schemaVersion + " > " + SCHEMA_VERSION + ").");
-                    }
-                    return manifest;
-                }
-                guard.drain(zis);
-                zis.closeEntry();
-            }
+        try {
+            return readManifestOnly(rawIn, null);
+        } catch (GeneralSecurityException e) {
+            // Only decryption throws this, and a bundle staged without a passphrase is never decrypted.
+            throw new IOException(e);
         }
-        throw new SnapshotImportException("Bundle is missing " + ENTRY_MANIFEST
-                + "; refusing to import as AppManagerNG snapshot.");
     }
 
     /**
@@ -438,8 +419,8 @@ public final class SnapshotBundle {
     public static ManifestSummary readManifestOnly(@NonNull InputStream rawIn,
                                                    @Nullable char[] passphrase)
             throws IOException, SnapshotImportException, GeneralSecurityException {
-        try (StagedInput staged = stage(rawIn, passphrase)) {
-            return readManifestOnly(staged.stream);
+        try (StagedSnapshot staged = stageForImport(rawIn, passphrase)) {
+            return staged.manifest;
         }
     }
 
@@ -457,18 +438,63 @@ public final class SnapshotBundle {
     public static ImportResult readFrom(@NonNull Context context, @NonNull InputStream rawIn,
                                         @NonNull ImportOptions options, @Nullable char[] passphrase)
             throws IOException, SnapshotImportException, GeneralSecurityException {
-        try (StagedInput staged = stage(rawIn, passphrase)) {
-            return readFrom(context, staged.stream, options);
+        try (StagedSnapshot staged = stageForImport(rawIn, passphrase)) {
+            return importStaged(context, staged, options);
+        }
+    }
+
+    @WorkerThread
+    @NonNull
+    public static ImportResult readFrom(@NonNull Context context, @NonNull InputStream rawIn,
+                                        @NonNull ImportOptions options)
+            throws IOException, SnapshotImportException {
+        try {
+            return readFrom(context, rawIn, options, null);
+        } catch (GeneralSecurityException e) {
+            // Only decryption throws this, and a bundle staged without a passphrase is never decrypted.
+            throw new IOException(e);
         }
     }
 
     /**
-     * Presents the bundle as a plaintext stream, decrypting through bounded private staging when
-     * it is an envelope. GCM only authenticates at the end, so nothing is parsed — let alone
-     * applied — until {@link SnapshotCrypto#decryptTo} has returned without throwing.
+     * A snapshot copied once into private storage. The preview and the import both read this copy,
+     * never the source again, and the import refuses to run unless the copy still hashes to
+     * {@link #sha256}. Whatever the source provider does after the copy, the import applies exactly
+     * the bundle that was reviewed.
      */
+    public static final class StagedSnapshot implements Closeable {
+        @NonNull
+        final File file;
+        /** SHA-256 of the staged plaintext bundle, in lower-case hex. */
+        @NonNull
+        public final String sha256;
+        /** The manifest of the staged bundle, which passed every check an import makes. */
+        @NonNull
+        public final ManifestSummary manifest;
+
+        StagedSnapshot(@NonNull File file, @NonNull String sha256, @NonNull ManifestSummary manifest) {
+            this.file = file;
+            this.sha256 = sha256;
+            this.manifest = manifest;
+        }
+
+        /** Deletes the staged copy. */
+        @Override
+        public void close() {
+            //noinspection ResultOfMethodCallIgnored
+            file.delete();
+        }
+    }
+
+    /**
+     * Copies the bundle into private staging, decrypting it first when it is an envelope, hashes the
+     * plaintext, and checks it the way an import will: entry names, duplicates, format, schema and
+     * the manifest's counts. GCM only authenticates at the end, so nothing is parsed until
+     * {@link SnapshotCrypto#decryptTo} has returned without throwing.
+     */
+    @WorkerThread
     @NonNull
-    private static StagedInput stage(@NonNull InputStream rawIn, @Nullable char[] passphrase)
+    public static StagedSnapshot stageForImport(@NonNull InputStream rawIn, @Nullable char[] passphrase)
             throws IOException, SnapshotImportException, GeneralSecurityException {
         // Peek just far enough to tell an envelope from a plain ZIP without buffering the bundle.
         PushbackInputStream in = new PushbackInputStream(rawIn, SnapshotCrypto.MAGIC.length);
@@ -476,21 +502,28 @@ public final class SnapshotBundle {
         int prefixLength = readAtMost(in, prefix);
         boolean encrypted = prefixLength == prefix.length && SnapshotCrypto.looksEncrypted(prefix);
         in.unread(prefix, 0, prefixLength);
-        if (!encrypted) {
-            return new StagedInput(in, null);
-        }
-        if (passphrase == null || passphrase.length == 0) {
+        if (encrypted && (passphrase == null || passphrase.length == 0)) {
             throw new PassphraseRequiredException("This snapshot is encrypted; a passphrase is required.");
         }
         File staging = createStagingFile("snapshot-import");
         try {
-            try (OutputStream out = new BufferedOutputStream(new FileOutputStream(staging))) {
-                SnapshotCrypto.decryptTo(in, out, passphrase);
-            }
-            if (staging.length() > MAX_BUNDLE_BYTES) {
+            MessageDigest digest = newSha256();
+            try (OutputStream out = new DigestOutputStream(new CappedOutputStream(
+                    new BufferedOutputStream(new FileOutputStream(staging)), MAX_BUNDLE_BYTES), digest)) {
+                if (encrypted) {
+                    SnapshotCrypto.decryptTo(in, out, passphrase);
+                } else {
+                    IoUtils.copy(in, out);
+                }
+            } catch (CappedOutputStream.CapExceededException e) {
                 throw new SnapshotImportException("Snapshot bundle is too large.");
             }
-            return new StagedInput(new BufferedInputStream(new FileInputStream(staging)), staging);
+            String sha256 = HexEncoding.encodeToString(digest.digest(), false);
+            ParsedBundle parsed;
+            try (InputStream staged = new BufferedInputStream(new FileInputStream(staging))) {
+                parsed = parse(staged);
+            }
+            return new StagedSnapshot(staging, sha256, parsed.manifest);
         } catch (Throwable t) {
             //noinspection ResultOfMethodCallIgnored
             staging.delete();
@@ -498,25 +531,79 @@ public final class SnapshotBundle {
         }
     }
 
-    /** A plaintext bundle stream plus the staging file backing it, if any. */
-    private static final class StagedInput implements Closeable {
-        @NonNull
-        final InputStream stream;
-        @Nullable
-        final File staging;
+    /**
+     * Imports a staged snapshot. The copy is read once, hashed while it is parsed, and nothing is
+     * written unless it still matches the digest it had when it was staged and passes every check.
+     */
+    @WorkerThread
+    @NonNull
+    public static ImportResult importStaged(@NonNull Context context, @NonNull StagedSnapshot snapshot,
+                                            @NonNull ImportOptions options)
+            throws IOException, SnapshotImportException {
+        MessageDigest digest = newSha256();
+        ParsedBundle parsed;
+        try (DigestInputStream in = new DigestInputStream(new FileInputStream(snapshot.file), digest)) {
+            // The ZIP reader stops before the central directory, so read the rest for the digest.
+            parsed = parse(new FilterInputStream(in) {
+                @Override
+                public void close() {
+                }
+            });
+            byte[] rest = new byte[8192];
+            //noinspection StatementWithEmptyBody
+            while (in.read(rest) >= 0) {
+            }
+        }
+        String actual = HexEncoding.encodeToString(digest.digest(), false);
+        if (!actual.equals(snapshot.sha256)) {
+            throw new SnapshotImportException("The snapshot changed after it was reviewed; nothing was imported.");
+        }
+        Log.i(TAG, "Importing snapshot %s", snapshot.sha256);
+        return apply(context, parsed, options, snapshot.sha256);
+    }
 
-        StagedInput(@NonNull InputStream stream, @Nullable File staging) {
-            this.stream = stream;
-            this.staging = staging;
+    @NonNull
+    private static MessageDigest newSha256() {
+        try {
+            return MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is unavailable", e);
+        }
+    }
+
+    /** Fails a write that would take the output past {@code cap} bytes. */
+    private static final class CappedOutputStream extends FilterOutputStream {
+        static final class CapExceededException extends IOException {
+            CapExceededException() {
+                super("Snapshot bundle is too large.");
+            }
+        }
+
+        private final long mCap;
+        private long mWritten;
+
+        CappedOutputStream(@NonNull OutputStream out, long cap) {
+            super(out);
+            mCap = cap;
         }
 
         @Override
-        public void close() {
-            IoUtils.closeQuietly(stream);
-            if (staging != null) {
-                //noinspection ResultOfMethodCallIgnored
-                staging.delete();
+        public void write(int b) throws IOException {
+            reserve(1);
+            out.write(b);
+        }
+
+        @Override
+        public void write(@NonNull byte[] b, int off, int len) throws IOException {
+            reserve(len);
+            out.write(b, off, len);
+        }
+
+        private void reserve(int len) throws CapExceededException {
+            if (mWritten + len > mCap) {
+                throw new CapExceededException();
             }
+            mWritten += len;
         }
     }
 
@@ -543,22 +630,33 @@ public final class SnapshotBundle {
         return File.createTempFile(prefix, ".tmp", dir);
     }
 
-    @WorkerThread
-    @NonNull
-    public static ImportResult readFrom(@NonNull Context context, @NonNull InputStream rawIn,
-                                        @NonNull ImportOptions options)
-            throws IOException, SnapshotImportException {
-        ManifestSummary manifest = null;
-        byte[] opHistoryBytes = null;
-        byte[] logFiltersBytes = null;
-        byte[] fmFavoritesBytes = null;
-        byte[] freezeTypesBytes = null;
-        List<PendingFile> pendingPrefs = new ArrayList<>();
-        List<PendingFile> pendingProfiles = new ArrayList<>();
-        List<PendingFile> pendingRules = new ArrayList<>();
-        List<PendingFile> pendingTags = new ArrayList<>();
+    /** Everything an import can apply, read from one pass over one bundle and checked as a whole. */
+    private static final class ParsedBundle {
+        ManifestSummary manifest;
+        byte[] opHistoryBytes;
+        byte[] logFiltersBytes;
+        byte[] fmFavoritesBytes;
+        byte[] freezeTypesBytes;
+        final List<PendingFile> pendingPrefs = new ArrayList<>();
+        final List<PendingFile> pendingProfiles = new ArrayList<>();
+        final List<PendingFile> pendingRules = new ArrayList<>();
+        final List<PendingFile> pendingTags = new ArrayList<>();
+        // What the archive holds before any file is skipped, for comparison with the manifest.
+        int prefEntries;
+        int profileEntries;
+        int ruleEntries;
+    }
 
+    /**
+     * Reads a plaintext bundle into memory and checks it. Refuses suspicious or repeated entry
+     * names, an unknown format, a newer schema, and counts the manifest declares that the payload
+     * doesn't match. No preference or file is touched here.
+     */
+    @NonNull
+    private static ParsedBundle parse(@NonNull InputStream rawIn) throws IOException, SnapshotImportException {
+        ParsedBundle bundle = new ParsedBundle();
         ArchiveExtractionGuard guard = createImportGuard();
+        Set<String> names = new HashSet<>();
         try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(rawIn))) {
             ZipEntry entry;
             int entryCount = 0;
@@ -573,51 +671,60 @@ public final class SnapshotBundle {
                     throw new SnapshotImportException(
                             "Refusing zip entry with suspicious name: " + name);
                 }
+                if (!names.add(name)) {
+                    // A reader that keeps the first copy and one that keeps the last would disagree
+                    // about what this bundle says, so it says nothing.
+                    throw new SnapshotImportException("Snapshot has more than one entry named " + name);
+                }
                 if (entry.isDirectory()) {
                     zis.closeEntry();
                     continue;
                 }
                 byte[] bytes = readEntryBounded(zis, MAX_ENTRY_BYTES, name, guard);
                 if (ENTRY_MANIFEST.equals(name)) {
-                    manifest = ManifestSummary.parse(new String(bytes, StandardCharsets.UTF_8));
+                    bundle.manifest = ManifestSummary.parse(new String(bytes, StandardCharsets.UTF_8));
                 } else if (name.startsWith(ENTRY_PREFS_DIR) && name.endsWith(".xml")) {
+                    ++bundle.prefEntries;
                     String leaf = name.substring(ENTRY_PREFS_DIR.length());
                     String prefName = stripXmlSuffix(leaf);
                     if (!isSafeLeaf(leaf) || EXCLUDED_PREF_NAMES.contains(prefName)
                             || !ALLOWED_PREF_NAMES.contains(prefName)) {
                         continue;
                     }
-                    pendingPrefs.add(new PendingFile(leaf, bytes));
+                    bundle.pendingPrefs.add(new PendingFile(leaf, bytes));
                 } else if (name.startsWith(ENTRY_PROFILES_DIR)) {
+                    ++bundle.profileEntries;
                     String leaf = name.substring(ENTRY_PROFILES_DIR.length());
                     if (!isSafeLeaf(leaf) || !leaf.endsWith(ProfileManager.PROFILE_EXT)) {
                         continue;
                     }
-                    pendingProfiles.add(new PendingFile(leaf, bytes));
+                    bundle.pendingProfiles.add(new PendingFile(leaf, bytes));
                 } else if (name.startsWith(ENTRY_RULES_DIR)) {
+                    ++bundle.ruleEntries;
                     String leaf = name.substring(ENTRY_RULES_DIR.length());
                     if (!isSafeLeaf(leaf) || !leaf.endsWith(".tsv")) {
                         continue;
                     }
-                    pendingRules.add(new PendingFile(leaf, bytes));
+                    bundle.pendingRules.add(new PendingFile(leaf, bytes));
                 } else if (name.startsWith(ENTRY_TAGS_DIR)) {
                     String leaf = name.substring(ENTRY_TAGS_DIR.length());
                     if (!isSafeLeaf(leaf)) {
                         continue;
                     }
-                    pendingTags.add(new PendingFile(leaf, bytes));
+                    bundle.pendingTags.add(new PendingFile(leaf, bytes));
                 } else if (ENTRY_OP_HISTORY.equals(name)) {
-                    opHistoryBytes = bytes;
+                    bundle.opHistoryBytes = bytes;
                 } else if (ENTRY_LOG_FILTERS.equals(name)) {
-                    logFiltersBytes = bytes;
+                    bundle.logFiltersBytes = bytes;
                 } else if (ENTRY_FM_FAVORITES.equals(name)) {
-                    fmFavoritesBytes = bytes;
+                    bundle.fmFavoritesBytes = bytes;
                 } else if (ENTRY_FREEZE_TYPES.equals(name)) {
-                    freezeTypesBytes = bytes;
+                    bundle.freezeTypesBytes = bytes;
                 }
                 zis.closeEntry();
             }
         }
+        ManifestSummary manifest = bundle.manifest;
         if (manifest == null) {
             throw new SnapshotImportException("Bundle is missing " + ENTRY_MANIFEST
                     + "; refusing to import as AppManagerNG snapshot.");
@@ -630,6 +737,60 @@ public final class SnapshotBundle {
                     "Bundle was written by a newer AppManagerNG (schema "
                             + manifest.schemaVersion + " > " + SCHEMA_VERSION + ").");
         }
+        reconcile(manifest, "prefs_files", manifest.prefsCount, bundle.prefEntries, false);
+        reconcile(manifest, "profiles", manifest.profilesCount, bundle.profileEntries, false);
+        reconcile(manifest, "rules", manifest.rulesCount, bundle.ruleEntries, false);
+        // Exports before v0.6.25 counted op history rows the serializer then skipped for having no
+        // data, so an older bundle can hold fewer entries than it declares, never more.
+        reconcile(manifest, "op_history", manifest.opHistoryCount, countEntries(bundle.opHistoryBytes), true);
+        reconcile(manifest, "log_filters", manifest.logFiltersCount, countEntries(bundle.logFiltersBytes), false);
+        reconcile(manifest, "fm_favorites", manifest.fmFavoritesCount, countEntries(bundle.fmFavoritesBytes), false);
+        reconcile(manifest, "freeze_types", manifest.freezeTypesCount, countEntries(bundle.freezeTypesBytes), false);
+        return bundle;
+    }
+
+    /** Refuses a bundle whose payload doesn't match a count its manifest declares. */
+    private static void reconcile(@NonNull ManifestSummary manifest, @NonNull String key, int declared, int found,
+                                  boolean mayHoldFewer) throws SnapshotImportException {
+        if (!manifest.declaredCounts.contains(key)) {
+            return;
+        }
+        if (found == declared || (mayHoldFewer && found >= 0 && found < declared)) {
+            return;
+        }
+        throw new SnapshotImportException("The manifest lists " + declared + " " + key
+                + " but the snapshot holds " + (found < 0 ? "an unreadable list" : String.valueOf(found))
+                + "; refusing to import it.");
+    }
+
+    /** The length of a section's {@code entries} array, 0 for a missing section, -1 if unreadable. */
+    @VisibleForTesting
+    static int countEntries(@Nullable byte[] section) {
+        if (section == null) {
+            return 0;
+        }
+        try {
+            JSONArray entries = new JSONObject(new String(section, StandardCharsets.UTF_8)).optJSONArray("entries");
+            return entries != null ? entries.length() : -1;
+        } catch (JSONException e) {
+            return -1;
+        }
+    }
+
+    @WorkerThread
+    @NonNull
+    private static ImportResult apply(@NonNull Context context, @NonNull ParsedBundle bundle,
+                                      @NonNull ImportOptions options, @NonNull String sha256)
+            throws IOException {
+        ManifestSummary manifest = bundle.manifest;
+        List<PendingFile> pendingPrefs = bundle.pendingPrefs;
+        List<PendingFile> pendingProfiles = bundle.pendingProfiles;
+        List<PendingFile> pendingRules = bundle.pendingRules;
+        List<PendingFile> pendingTags = bundle.pendingTags;
+        byte[] opHistoryBytes = bundle.opHistoryBytes;
+        byte[] logFiltersBytes = bundle.logFiltersBytes;
+        byte[] fmFavoritesBytes = bundle.fmFavoritesBytes;
+        byte[] freezeTypesBytes = bundle.freezeTypesBytes;
         Context appContext = context.getApplicationContext();
 
         int prefsRestored = 0;
@@ -717,7 +878,7 @@ public final class SnapshotBundle {
         fmFavoritesRestored = dbCounts[2];
         freezeTypesRestored = dbCounts[3];
 
-        return new ImportResult(manifest, prefsRestored, profilesRestored, tagsRestored,
+        return new ImportResult(manifest, sha256, prefsRestored, profilesRestored, tagsRestored,
                 rulesRestored, opHistoryRestored, logFiltersRestored, fmFavoritesRestored,
                 freezeTypesRestored);
     }
@@ -1592,6 +1753,9 @@ public final class SnapshotBundle {
     public static final class ImportResult {
         @NonNull
         public final ManifestSummary manifest;
+        /** SHA-256 of the bundle that was imported, the same one its preview showed. */
+        @NonNull
+        public final String sha256;
         public final int prefsRestored;
         public final int profilesRestored;
         public final int tagsRestored;
@@ -1601,10 +1765,11 @@ public final class SnapshotBundle {
         public final int fmFavoritesRestored;
         public final int freezeTypesRestored;
 
-        ImportResult(@NonNull ManifestSummary manifest, int prefsRestored, int profilesRestored,
-                     int tagsRestored, int rulesRestored, int opHistoryRestored,
+        ImportResult(@NonNull ManifestSummary manifest, @NonNull String sha256, int prefsRestored,
+                     int profilesRestored, int tagsRestored, int rulesRestored, int opHistoryRestored,
                      int logFiltersRestored, int fmFavoritesRestored, int freezeTypesRestored) {
             this.manifest = manifest;
+            this.sha256 = sha256;
             this.prefsRestored = prefsRestored;
             this.profilesRestored = profilesRestored;
             this.tagsRestored = tagsRestored;
@@ -1635,12 +1800,16 @@ public final class SnapshotBundle {
         public final int logFiltersCount;
         public final int fmFavoritesCount;
         public final int freezeTypesCount;
+        /** The keys of the manifest's counts object; only these are checked against the payload. */
+        @NonNull
+        final Set<String> declaredCounts;
 
         ManifestSummary(int schemaVersion, @NonNull String format, long generatedAt,
                         @Nullable String sourcePackage, @Nullable String sourceVersionName,
                         int sourceVersionCode, @NonNull List<String> contents,
                         int prefsCount, int profilesCount, int rulesCount, int opHistoryCount,
-                        int logFiltersCount, int fmFavoritesCount, int freezeTypesCount) {
+                        int logFiltersCount, int fmFavoritesCount, int freezeTypesCount,
+                        @NonNull Set<String> declaredCounts) {
             this.schemaVersion = schemaVersion;
             this.format = format;
             this.generatedAt = generatedAt;
@@ -1655,6 +1824,7 @@ public final class SnapshotBundle {
             this.logFiltersCount = logFiltersCount;
             this.fmFavoritesCount = fmFavoritesCount;
             this.freezeTypesCount = freezeTypesCount;
+            this.declaredCounts = declaredCounts;
         }
 
         public boolean hasPrefs() {
@@ -1712,7 +1882,11 @@ public final class SnapshotBundle {
                 int prefsCount = 0, profilesCount = 0, rulesCount = 0, opHistoryCount = 0;
                 int logFiltersCount = 0, fmFavoritesCount = 0, freezeTypesCount = 0;
                 JSONObject counts = obj.optJSONObject("counts");
+                Set<String> declaredCounts = new HashSet<>();
                 if (counts != null) {
+                    for (java.util.Iterator<String> keys = counts.keys(); keys.hasNext(); ) {
+                        declaredCounts.add(keys.next());
+                    }
                     prefsCount = counts.optInt("prefs_files", 0);
                     profilesCount = counts.optInt("profiles", 0);
                     rulesCount = counts.optInt("rules", 0);
@@ -1723,7 +1897,8 @@ public final class SnapshotBundle {
                 }
                 return new ManifestSummary(schema, format, ts, pkg, ver, code,
                         contents, prefsCount, profilesCount, rulesCount, opHistoryCount,
-                        logFiltersCount, fmFavoritesCount, freezeTypesCount);
+                        logFiltersCount, fmFavoritesCount, freezeTypesCount,
+                        Collections.unmodifiableSet(declaredCounts));
             } catch (JSONException e) {
                 throw new SnapshotImportException("Manifest is not valid JSON: " + e.getMessage());
             }
