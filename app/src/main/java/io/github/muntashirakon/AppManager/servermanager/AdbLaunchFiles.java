@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.servermanager;
 
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
+import android.os.SystemClock;
 import android.system.ErrnoException;
 import android.system.Os;
 
@@ -68,6 +69,7 @@ public final class AdbLaunchFiles {
     private static void lockStagingDir(@NonNull AbsAdbConnectionManager manager) throws IOException {
         byte[] output = new byte[256];
         int length = 0;
+        long openedAt = SystemClock.elapsedRealtime();
         try (AdbStream stream = manager.openStream("shell:" + lockDirCommand(STAGING_DIR));
              InputStream in = stream.openInputStream()) {
             int read;
@@ -78,10 +80,23 @@ public final class AdbLaunchFiles {
             Thread.currentThread().interrupt();
             throw new IOException("Interrupted while preparing " + STAGING_DIR, e);
         }
-        String result = new String(output, 0, length, StandardCharsets.UTF_8);
-        if (!result.contains(LOCKED_MARKER)) {
-            throw new IOException("Could not prepare " + STAGING_DIR + ": " + result.trim());
+        checkLocked(new String(output, 0, length, StandardCharsets.UTF_8),
+                SystemClock.elapsedRealtime() - openedAt);
+    }
+
+    /**
+     * This is the first shell after a connect, the one libadb-android #34 can close at once. Said
+     * apart from a real failure so the start is tried once more.
+     */
+    @VisibleForTesting
+    static void checkLocked(@NonNull String output, long elapsedMillis) throws IOException {
+        if (output.contains(LOCKED_MARKER)) {
+            return;
         }
+        if (output.isEmpty() && elapsedMillis < LocalServerManager.EARLY_CLOSE_MILLIS) {
+            throw new LocalServerManager.ShellClosedEarlyException(null);
+        }
+        throw new IOException("Could not prepare " + STAGING_DIR + ": " + output.trim());
     }
 
     @VisibleForTesting

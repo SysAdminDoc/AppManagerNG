@@ -13,15 +13,17 @@ import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import java.io.BufferedReader;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -44,6 +46,15 @@ import io.github.muntashirakon.io.IoUtils;
 class LocalServerManager {
     private static final String TAG = "LocalServerManager";
     private static final int HANDSHAKE_TIMEOUT_MS = 10_000;
+    private static final int MAX_SERVER_START_ATTEMPTS = 2;
+    private static final long SERVER_RETRY_DELAY_MILLIS = 150;
+    /**
+     * A shell that closes this soon after it opened, before any answer, was closed by libadb, not
+     * by the device (libadb-android #34: on 3.1.1 the first streams after a wireless connect can
+     * close at once). It's worth one more try.
+     */
+    @VisibleForTesting
+    static final long EARLY_CLOSE_MILLIS = 1000;
 
     @SuppressLint("StaticFieldLeak")
     private static LocalServerManager sLocalServerManager;
@@ -100,7 +111,7 @@ class LocalServerManager {
                     }
                     sessionFailure = ServerConnectionFailure.find(e);
                 }
-                if (mSession == null) {
+                for (int attempt = 1; mSession == null; ++attempt) {
                     try {
                         startServer(configuredPort);
                     } catch (AdbPairingRequiredException | AdbUnreachableException e) {
@@ -113,14 +124,40 @@ class LocalServerManager {
                             sessionFailure.addSuppressed(e);
                             throw sessionFailure;
                         }
+                        if (isWorthRetrying(attempt, e)) {
+                            Log.w(TAG, "Could not start the server, trying once more.", e);
+                            SystemClock.sleep(SERVER_RETRY_DELAY_MILLIS);
+                            continue;
+                        }
                         throw new ServerConnectionFailure(ServerConnectionFailure.Reason.SERVER_START,
                                 "Could not start server", e);
                     }
-                    mSession = createSession(configuredPort);
+                    try {
+                        mSession = createSession(configuredPort);
+                    } catch (IOException e) {
+                        if (!isWorthRetrying(attempt, e)) {
+                            throw e;
+                        }
+                        // The new server went away right after it started
+                        Log.w(TAG, "Could not reach the server that just started, trying once more.", e);
+                        SystemClock.sleep(SERVER_RETRY_DELAY_MILLIS);
+                    }
                 }
             }
             return mSession;
         }
+    }
+
+    /**
+     * Port of upstream 0152f468f: one more try for a start that failed quickly. A server that
+     * never answered, or a known failure (another server on the port, an unresponsive one), would
+     * only fail the same way again, and a timeout would double the wait.
+     */
+    @VisibleForTesting
+    static boolean isWorthRetrying(int attempt, @NonNull Throwable failure) {
+        return attempt < MAX_SERVER_START_ATTEMPTS
+                && !(failure instanceof TimeoutException)
+                && ServerConnectionFailure.find(failure) == null;
     }
 
     @AnyThread
@@ -202,8 +239,12 @@ class LocalServerManager {
             }
             session.getDataTransmission().sendAndReceiveMessage(ParcelableUtil.marshall(baseCaller));
         } catch (Exception e) {
-            // Since the server is closed abruptly, this should always produce error
-            Log.w(TAG, "closeBgServer: Error", e);
+            // The server exits without answering, so this is expected (upstream 0152f468f)
+            if (isExpectedDisconnect(e)) {
+                Log.d(TAG, "closeBgServer: The server closed the session.");
+            } else {
+                Log.w(TAG, "closeBgServer: Error", e);
+            }
         }
         // Check if the server is still active
         closeSession();
@@ -217,10 +258,15 @@ class LocalServerManager {
         }
     }
 
+    private static boolean isExpectedDisconnect(@NonNull Throwable error) {
+        return error instanceof EOFException
+                || error instanceof SocketTimeoutException
+                || (error instanceof SocketException && (error.getMessage() == null
+                || error.getMessage().contains("closed") || error.getMessage().contains("Broken pipe")));
+    }
+
     @Nullable
     private volatile AdbStream mAdbStream;
-    private volatile CountDownLatch mAdbConnectionWatcher = new CountDownLatch(1);
-    private volatile boolean mAdbServerStarted;
 
     private static final Pattern HEX_RUN = Pattern.compile("[0-9a-f]{4,}");
 
@@ -246,28 +292,91 @@ class LocalServerManager {
     }
 
     /**
-     * Reads the shell for as long as it stays open, so every launch sent to it gets its answer and
-     * the server's own output never backs up.
+     * Reads a launch shell for as long as it stays open, so the server, which writes to it, never
+     * backs up. Keeps the launcher's answer and when the shell closed.
      */
-    private void readAdbShell(@NonNull AdbStream stream) {
-        String token = ServerConfig.getLocalToken();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream.openInputStream()))) {
-            String s;
-            while ((s = reader.readLine()) != null) {
-                Log.d(TAG, "RESPONSE: %s", redactToken(s, token));
-                if (s.startsWith("Success!")) {
-                    mAdbServerStarted = true;
-                    mAdbConnectionWatcher.countDown();
-                } else if (s.startsWith("Error!")) {
-                    mAdbServerStarted = false;
-                    mAdbConnectionWatcher.countDown();
+    @VisibleForTesting
+    static final class ShellReader implements Runnable {
+        @NonNull
+        private final InputStream mIn;
+        @NonNull
+        private final String mToken;
+        private final CountDownLatch mAnswered = new CountDownLatch(1);
+        private volatile boolean mStarted;
+        private volatile boolean mFailed;
+        private volatile long mClosedAt = -1;
+
+        ShellReader(@NonNull InputStream in, @NonNull String token) {
+            mIn = in;
+            mToken = token;
+        }
+
+        @Override
+        public void run() {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(mIn))) {
+                String s;
+                while ((s = reader.readLine()) != null) {
+                    Log.d(TAG, "RESPONSE: %s", redactToken(s, mToken));
+                    if (s.startsWith("Success!")) {
+                        mStarted = true;
+                        mAnswered.countDown();
+                    } else if (s.startsWith("Error!")) {
+                        mFailed = true;
+                        mAnswered.countDown();
+                    }
                 }
-            }
-        } catch (Throwable e) {
-            if (!stream.isClosed()) {
-                Log.e(TAG, "useAdbStartServer: unable to read from shell.", e);
+            } catch (Throwable e) {
+                Log.d(TAG, "The ADB shell stopped: %s", e.toString());
+            } finally {
+                mClosedAt = SystemClock.elapsedRealtime();
+                // A closed shell won't answer, so don't wait for it
+                mAnswered.countDown();
             }
         }
+    }
+
+    /**
+     * Sends the launch command to a shell that was just opened and waits for the launcher's
+     * answer. The shell has to stay open while the server runs.
+     *
+     * @param openedAt When the shell was opened, in {@link SystemClock#elapsedRealtime()} time
+     * @throws ShellClosedEarlyException The shell closed within {@link #EARLY_CLOSE_MILLIS} of
+     *                                   opening, before any answer
+     * @throws TimeoutException          The launcher didn't answer in time
+     */
+    @VisibleForTesting
+    @WorkerThread
+    static void launchInShell(@NonNull InputStream in, @NonNull OutputStream out, @NonNull String command,
+                              @NonNull String token, long openedAt, long timeout, @NonNull TimeUnit unit)
+            throws IOException, InterruptedException, TimeoutException {
+        ShellReader reader = new ShellReader(in, token);
+        Thread t = new Thread(reader, "adb-output-reader");
+        t.setDaemon(true);
+        t.start();
+        try (OutputStream os = out) {
+            os.write("id\n".getBytes());
+            os.write((command + "\n").getBytes());
+        } catch (IOException e) {
+            if (SystemClock.elapsedRealtime() - openedAt < EARLY_CLOSE_MILLIS) {
+                throw new ShellClosedEarlyException(e);
+            }
+            throw e;
+        }
+        if (!reader.mAnswered.await(timeout, unit)) {
+            throw new TimeoutException("The server launcher didn't answer.");
+        }
+        if (reader.mStarted) {
+            return;
+        }
+        long closedAt = reader.mClosedAt;
+        if (!reader.mFailed && closedAt >= 0) {
+            if (closedAt - openedAt < EARLY_CLOSE_MILLIS) {
+                throw new ShellClosedEarlyException(null);
+            }
+            // It used to wait out the whole minute for an answer that could no longer come
+            throw new IOException("The ADB shell closed before the server started.");
+        }
+        throw new IOException("Server wasn't started.");
     }
 
     @WorkerThread
@@ -275,47 +384,62 @@ class LocalServerManager {
         AdbConnectionManager manager = AdbConnectionManager.getInstance();
         manager.setTimeout(10, TimeUnit.SECONDS);
         if (!manager.isConnected()) {
-            String adbHost = ServerConfig.getAdbHost(mContext);
-            int adbPort = ServerConfig.getAdbPort();
-            Log.d(TAG, "useAdbStartServer: Connecting using host=%s, port=%d", adbHost, adbPort);
-            boolean connected;
-            try {
-                connected = manager.connect(adbHost, adbPort);
-            } catch (IOException e) {
-                throw new AdbUnreachableException(e);
-            }
-            if (!connected) {
-                throw new AdbUnreachableException(null);
-            }
+            connectToAdbd(manager);
         }
+        try {
+            stageAndLaunch(manager, localServerPort);
+        } catch (ShellClosedEarlyException e) {
+            Log.w(TAG, "useAdbStartServer: The ADB shell closed as soon as it opened, trying once more.", e);
+            if (!manager.isConnected()) {
+                connectToAdbd(manager);
+            }
+            stageAndLaunch(manager, localServerPort);
+        }
+        Log.d(TAG, "useAdbStartServer: Server has started.");
+    }
+
+    @WorkerThread
+    private void connectToAdbd(@NonNull AdbConnectionManager manager) throws Exception {
+        String adbHost = ServerConfig.getAdbHost(mContext);
+        int adbPort = ServerConfig.getAdbPort();
+        Log.d(TAG, "useAdbStartServer: Connecting using host=%s, port=%d", adbHost, adbPort);
+        boolean connected;
+        try {
+            connected = manager.connect(adbHost, adbPort);
+        } catch (IOException e) {
+            throw new AdbUnreachableException(e);
+        }
+        if (!connected) {
+            throw new AdbUnreachableException(null);
+        }
+    }
+
+    @WorkerThread
+    private void stageAndLaunch(@NonNull AdbConnectionManager manager, int localServerPort) throws Exception {
+        // Port of upstream 03298fafa: a shell kept from an earlier start can sit on a connection
+        // that's gone, and a launch written to it waited a minute for nothing. Every start gets a
+        // fresh one.
+        IoUtils.closeQuietly(mAdbStream);
+        mAdbStream = null;
         // The shell user can't read anything in the app's data directories, so the launcher has to
         // be where the shell user can find it before the shell is asked to run it.
         AdbLaunchFiles.stageServer(mContext, manager);
-
-        mAdbConnectionWatcher = new CountDownLatch(1);
-        mAdbServerStarted = false;
-        if (mAdbStream == null || Objects.requireNonNull(mAdbStream).isClosed()) {
-            // ADB shell not running
-            Log.d(TAG, "useAdbStartServer: Opening shell...");
-            AdbStream stream = manager.openStream("shell:");
-            mAdbStream = stream;
-            Thread t = new Thread(() -> readAdbShell(stream), "adb-output-reader");
-            t.setDaemon(true);
-            t.start();
+        Log.d(TAG, "useAdbStartServer: Opening shell...");
+        long openedAt = SystemClock.elapsedRealtime();
+        AdbStream stream = manager.openStream("shell:");
+        mAdbStream = stream;
+        Log.d(TAG, "useAdbStartServer: Launching privileged server.");
+        try {
+            launchInShell(stream.openInputStream(), stream.openOutputStream(),
+                    ServerConfig.getServerRunnerAdbCommand(localServerPort), ServerConfig.getLocalToken(),
+                    openedAt, 1, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            IoUtils.closeQuietly(stream);
+            if (mAdbStream == stream) {
+                mAdbStream = null;
+            }
+            throw e;
         }
-        Log.d(TAG, "useAdbStartServer: Shell opened.");
-
-        try (OutputStream os = Objects.requireNonNull(mAdbStream).openOutputStream()) {
-            os.write("id\n".getBytes());
-            String command = ServerConfig.getServerRunnerAdbCommand(localServerPort);
-            Log.d(TAG, "useAdbStartServer: Launching privileged server.");
-            os.write((command + "\n").getBytes());
-        }
-
-        if (!mAdbConnectionWatcher.await(1, TimeUnit.MINUTES) || !mAdbServerStarted) {
-            throw new Exception("Server wasn't started.");
-        }
-        Log.d(TAG, "useAdbStartServer: Server has started.");
     }
 
     @WorkerThread
@@ -351,7 +475,7 @@ class LocalServerManager {
             }
             SystemClock.sleep(200);
         }
-        throw new Exception("Server did not become ready within 10 seconds.");
+        throw new TimeoutException("Server did not become ready within 10 seconds.");
     }
 
     private boolean waitForServerStopped(int port) {
@@ -501,6 +625,15 @@ class LocalServerManager {
     static final class AdbUnreachableException extends IOException {
         AdbUnreachableException(@Nullable Throwable cause) {
             super("Could not connect to ADB.", cause);
+        }
+    }
+
+    /**
+     * A shell closed within {@link #EARLY_CLOSE_MILLIS} of opening, before it answered.
+     */
+    static final class ShellClosedEarlyException extends IOException {
+        ShellClosedEarlyException(@Nullable Throwable cause) {
+            super("The ADB shell closed as soon as it opened.", cause);
         }
     }
 
