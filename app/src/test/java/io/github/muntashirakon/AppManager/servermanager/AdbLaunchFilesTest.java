@@ -43,6 +43,7 @@ public class AdbLaunchFilesTest {
 
     @Rule
     public final TemporaryFolder tmp = new TemporaryFolder();
+    private static final String TERMINAL_LEAK = "SERVER_WROTE_TO_THE_TERMINAL";
     private String mLastManualOutput = "";
 
     @Test
@@ -174,6 +175,23 @@ public class AdbLaunchFilesTest {
     }
 
     @Test
+    public void manualCommandOutlivesTheAdbShell() throws Exception {
+        assumeTrue("needs a POSIX sh", shAvailable());
+        byte[] bundled = bytes(4111, 3);
+        File apk = tmp.newFile("base.apk");
+        Files.write(apk.toPath(), concat(bytes(97, 5), bundled));
+        File staged = new File(new File(tmp.getRoot(), "stage"), "am.jar");
+
+        // On a phone the server started, but closing the adb shell killed it, and the shell's
+        // first exit only said "You have running jobs"
+        String manual = runManual(AdbLaunchFiles.buildManualShellCommand(posix(apk), 97, bundled, posix(staged),
+                "path:62001,token:0123456789abcdef"));
+
+        assertTrue(mLastManualOutput, manual.startsWith("CLASSPATH="));
+        assertFalse(mLastManualOutput, mLastManualOutput.contains(TERMINAL_LEAK));
+    }
+
+    @Test
     public void manualCommandStartsNothingWhenTheCopyDiffers() throws Exception {
         assumeTrue("needs a POSIX sh", shAvailable());
         byte[] bundled = bytes(4111, 3);
@@ -202,10 +220,11 @@ public class AdbLaunchFilesTest {
                 + AdbLaunchFiles.STAGING_DIR + "' && dd "));
         assertTrue(command.contains(" count=" + jar.length + " "));
         assertTrue(command.contains(DigestUtils.getHexDigest(DigestUtils.SHA_256, jar)));
-        assertTrue(command, command.contains("{ CLASSPATH='" + AdbLaunchFiles.SERVER_JAR + "' app_process /system/bin"
-                + " --nice-name=" + Constants.SERVER_NAME + " " + AdbLaunchFiles.SERVER_MAIN_CLASS + " 'path:60001,"));
-        assertTrue(command, command.endsWith(",token:0123456789abcdef' & } || echo \"Error! Could not copy "
-                + Constants.JAR_NAME + " out of the APK.\""));
+        assertTrue(command, command.contains("( ( trap '' HUP; CLASSPATH='" + AdbLaunchFiles.SERVER_JAR
+                + "' exec app_process /system/bin --nice-name=" + Constants.SERVER_NAME + " "
+                + AdbLaunchFiles.SERVER_MAIN_CLASS + " 'path:60001,"));
+        assertTrue(command, command.endsWith(",token:0123456789abcdef' </dev/null >/dev/null 2>&1 ) & )"
+                + " || echo \"Error! Could not copy " + Constants.JAR_NAME + " out of the APK.\""));
         assertOutsideAppData(command.replace(context.getApplicationInfo().sourceDir, ""));
     }
 
@@ -227,7 +246,10 @@ public class AdbLaunchFilesTest {
         File root = tmp.newFolder();
         File calls = new File(root, "calls.txt");
         File stub = new File(root, "app_process");
-        Files.write(stub.toPath(), ("#!/bin/sh\nprintf '%s\\n' \"CLASSPATH=$CLASSPATH\" \"$@\" > '"
+        // The hangup is what closing the adb shell sends. A server that doesn't ignore it never
+        // records its call, and one still writing to the terminal shows up in the output.
+        Files.write(stub.toPath(), ("#!/bin/sh\nkill -HUP $$\necho " + TERMINAL_LEAK + "\n"
+                + "printf '%s\\n' \"CLASSPATH=$CLASSPATH\" \"$@\" > '"
                 + posix(calls) + ".part' && mv '" + posix(calls) + ".part' '" + posix(calls) + "'\n")
                 .getBytes(StandardCharsets.UTF_8));
         // $PWD rather than the Java path: a C:/ drive letter would split PATH at its colon

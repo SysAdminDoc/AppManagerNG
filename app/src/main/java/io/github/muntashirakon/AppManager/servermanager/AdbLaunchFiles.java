@@ -155,10 +155,14 @@ public final class AdbLaunchFiles {
     @NonNull
     static String buildManualShellCommand(@NonNull String apkPath, long offset, @NonNull byte[] jar,
                                           @NonNull String dest, @NonNull String config) {
-        // Only the server goes in the background, so the shell waits for the copy and can say it failed
+        // Only the server goes in the background, so the shell waits for the copy and can say it
+        // failed. It starts from a subshell that exits at once, so the adb shell has no job to hold
+        // exit up with "You have running jobs", and with hangups ignored and no hold on the
+        // terminal, so closing the adb shell doesn't take the server down with it.
         return buildExtractCommand(apkPath, offset, jar, dest)
-                + "{ CLASSPATH=" + quote(dest) + " app_process /system/bin --nice-name=" + Constants.SERVER_NAME
-                + " " + SERVER_MAIN_CLASS + " " + quote(config) + " & }"
+                + "( ( trap '' HUP; CLASSPATH=" + quote(dest) + " exec app_process /system/bin --nice-name="
+                + Constants.SERVER_NAME + " " + SERVER_MAIN_CLASS + " " + quote(config)
+                + " </dev/null >/dev/null 2>&1 ) & )"
                 + " || echo \"Error! Could not copy " + Constants.JAR_NAME + " out of the APK.\"";
     }
 
