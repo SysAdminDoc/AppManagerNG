@@ -1,0 +1,149 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package io.github.muntashirakon.AppManager.servermanager;
+
+import android.content.Context;
+import android.content.res.AssetFileDescriptor;
+import android.system.ErrnoException;
+import android.system.Os;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
+import androidx.annotation.WorkerThread;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+
+import io.github.muntashirakon.AppManager.BuildConfig;
+import io.github.muntashirakon.AppManager.adb.AdbSync;
+import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.server.common.Constants;
+import io.github.muntashirakon.AppManager.utils.DigestUtils;
+import io.github.muntashirakon.adb.AbsAdbConnectionManager;
+import io.github.muntashirakon.adb.AdbStream;
+
+/**
+ * Where ADB mode keeps the files the shell user runs. SELinux denies the shell domain every app
+ * data directory whatever the file modes, so the launcher script, am.jar and main.jar live in a
+ * directory of their own under /data/local/tmp. They get there over the ADB connection or straight
+ * out of the installed APK, never by way of the app's own storage.
+ */
+public final class AdbLaunchFiles {
+    public static final String TAG = AdbLaunchFiles.class.getSimpleName();
+
+    public static final String STAGING_DIR = "/data/local/tmp/" + BuildConfig.APPLICATION_ID;
+    static final String SERVER_SCRIPT = STAGING_DIR + "/" + ServerConfig.SERVER_RUNNER_EXEC_NAME;
+    static final String SERVER_JAR = STAGING_DIR + "/" + Constants.JAR_NAME;
+    public static final String MAIN_JAR_NAME = "main.jar";
+    public static final String MAIN_JAR = STAGING_DIR + "/" + MAIN_JAR_NAME;
+    @VisibleForTesting
+    static final String LOCKED_MARKER = "AMNG_STAGING_LOCKED";
+
+    private AdbLaunchFiles() {
+    }
+
+    /**
+     * Push am.jar and the launcher script over the ADB connection, reading each back to check it
+     * matches the copy bundled in the APK.
+     */
+    @WorkerThread
+    static void stageServer(@NonNull Context context, @NonNull AbsAdbConnectionManager manager) throws IOException {
+        byte[] jar = AssetsUtils.readAsset(context, Constants.JAR_NAME);
+        byte[] script = AssetsUtils.buildServerExecScript(context, SERVER_JAR).getBytes(StandardCharsets.UTF_8);
+        long mtime = System.currentTimeMillis() / 1000;
+        lockStagingDir(manager);
+        try (AdbSync sync = AdbSync.open(manager)) {
+            sync.pushVerified(jar, SERVER_JAR, 0644, mtime);
+            sync.pushVerified(script, SERVER_SCRIPT, 0644, mtime);
+        }
+    }
+
+    /**
+     * adbd hands group and others whatever the owner may do on every file it writes, so 0644
+     * lands as 0666. Shutting the directory to everyone but the shell user comes first.
+     */
+    @WorkerThread
+    private static void lockStagingDir(@NonNull AbsAdbConnectionManager manager) throws IOException {
+        byte[] output = new byte[256];
+        int length = 0;
+        try (AdbStream stream = manager.openStream("shell:" + lockDirCommand(STAGING_DIR));
+             InputStream in = stream.openInputStream()) {
+            int read;
+            while (length < output.length && (read = in.read(output, length, output.length - length)) != -1) {
+                length += read;
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted while preparing " + STAGING_DIR, e);
+        }
+        String result = new String(output, 0, length, StandardCharsets.UTF_8);
+        if (!result.contains(LOCKED_MARKER)) {
+            throw new IOException("Could not prepare " + STAGING_DIR + ": " + result.trim());
+        }
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String lockDirCommand(@NonNull String dir) {
+        // The empty quotes keep the marker out of the command text, so only a finished run prints it
+        return "mkdir -p " + quote(dir) + " && chmod 700 " + quote(dir)
+                + " && echo " + LOCKED_MARKER.replace("_LOCKED", "_''LOCKED");
+    }
+
+    /**
+     * Shell commands, ending in {@code &&}, that copy main.jar out of the installed APK into
+     * {@link #MAIN_JAR}. The local server runs them as the shell user, so they work after the app
+     * restarts and the ADB connection that started the server is gone, and they always copy the
+     * main.jar of the installed version. The APK stores main.jar uncompressed, which is what makes
+     * a byte-range copy possible.
+     */
+    @WorkerThread
+    @NonNull
+    public static String stageMainJarCommand(@NonNull Context context) throws IOException {
+        byte[] jar = AssetsUtils.readAsset(context, MAIN_JAR_NAME);
+        try (AssetFileDescriptor afd = context.getAssets().openFd(MAIN_JAR_NAME)) {
+            if (afd.getLength() != jar.length) {
+                throw new IOException("main.jar isn't stored uncompressed in the APK.");
+            }
+            return buildExtractCommand(getApkPath(context, afd), afd.getStartOffset(), jar.length,
+                    DigestUtils.getHexDigest(DigestUtils.SHA_256, jar), MAIN_JAR);
+        }
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String buildExtractCommand(@NonNull String apkPath, long offset, long length,
+                                      @NonNull String sha256, @NonNull String dest) {
+        String dir = dest.substring(0, dest.lastIndexOf('/'));
+        // Write under a per-shell name and rename, so a service still running the old copy keeps
+        // its file and two launches at once can't interleave their writes.
+        String tmp = "\"" + dest + ".$$\"";
+        return "{ mkdir -p " + quote(dir) + " && chmod 700 " + quote(dir)
+                + " && dd if=" + quote(apkPath) + " of=" + tmp + " bs=1 skip=" + offset + " count=" + length
+                + " 2>/dev/null"
+                // Toybox has sha256sum from Android 8 on. Older shells go by dd's exact byte count.
+                + " && { ! command -v sha256sum >/dev/null || { h=$(sha256sum " + tmp + ") && [ \"${h%% *}\" = "
+                + sha256 + " ]; }; }"
+                + " && chmod 644 " + tmp + " && mv " + tmp + " " + quote(dest)
+                + " || { rm -f " + tmp + "; false; }; } && ";
+    }
+
+    @NonNull
+    private static String getApkPath(@NonNull Context context, @NonNull AssetFileDescriptor afd) {
+        try {
+            String path = Os.readlink("/proc/self/fd/" + afd.getParcelFileDescriptor().getFd());
+            if (path != null && path.startsWith("/")) {
+                return path;
+            }
+        } catch (ErrnoException e) {
+            Log.w(TAG, "Could not resolve the file holding main.jar, using the base APK.", e);
+        }
+        return context.getApplicationInfo().sourceDir;
+    }
+
+    @NonNull
+    private static String quote(@NonNull String value) {
+        return "'" + value.replace("'", "'\\''") + "'";
+    }
+}

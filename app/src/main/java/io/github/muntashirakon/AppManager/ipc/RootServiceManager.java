@@ -6,7 +6,6 @@ import static io.github.muntashirakon.AppManager.ipc.RootService.CATEGORY_DAEMON
 import static io.github.muntashirakon.AppManager.server.common.ServerUtils.CMDLINE_START_DAEMON;
 import static io.github.muntashirakon.AppManager.server.common.ServerUtils.CMDLINE_START_SERVICE;
 import static io.github.muntashirakon.AppManager.server.common.ServerUtils.CMDLINE_STOP_SERVICE;
-import static io.github.muntashirakon.AppManager.utils.PackageUtils.PACKAGE_STAGING_DIRECTORY;
 
 import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
@@ -54,10 +53,10 @@ import java.util.concurrent.Executor;
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.server.common.IRootServiceManager;
+import io.github.muntashirakon.AppManager.servermanager.AdbLaunchFiles;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
-import io.github.muntashirakon.AppManager.utils.PackageUtils;
 
 /**
  * Runs in the non-root (client) process.
@@ -169,18 +168,26 @@ public class RootServiceManager implements Handler.Callback {
                 Log.e(TAG, JVMTI_ERROR);
             }
 
-            File mainJar;
+            String classPath;
+            String stagingCommand;
             try {
-                mainJar = prepareMainJar(context);
+                if (Ops.hasRoot() || Ops.isSystem()) {
+                    // Root and system can read the app's own cache
+                    classPath = prepareMainJar(context).getAbsolutePath();
+                    stagingCommand = "";
+                } else {
+                    // The shell user can't, so it copies main.jar out of the APK itself
+                    classPath = AdbLaunchFiles.MAIN_JAR;
+                    stagingCommand = AdbLaunchFiles.stageMainJarCommand(context);
+                }
             } catch (IOException e) {
                 throw new IllegalStateException("Could not stage main.jar.", e);
             }
-            File stagingMainJar = new File(PACKAGE_STAGING_DIRECTORY, MAIN_JAR_NAME);
 
             StringBuilder env = new StringBuilder();
             String params = getParams(env);
 
-            String cmd = getRunnerScript(env, mainJar, stagingMainJar, name, action, params);
+            String cmd = stagingCommand + getRunnerScript(env, classPath, name, action, params);
             Log.d(TAG, cmd);
             // Write command to stdin
             byte[] bytes = cmd.getBytes(StandardCharsets.UTF_8);
@@ -254,36 +261,15 @@ public class RootServiceManager implements Handler.Callback {
 
     @NonNull
     private String getRunnerScript(@NonNull StringBuilder env,
-                                   @NonNull File mainJar,
-                                   @NonNull File stagingMainJar,
+                                   @NonNull String classPath,
                                    @NonNull ComponentName serviceName,
                                    @NonNull String action,
                                    @NonNull String debugParams) {
         // We cannot readlink /proc/self/exe on old kernels
         @SuppressLint("RestrictedApi")
         String execFile = "/system/bin/app_process" + (Utils.isProcess64Bit() ? "64" : "32");
-        String packageStagingCommand;
-        env.append(CLASSPATH_ENV).append("=");
-        if (Ops.hasRoot()) {
-            // Avoid using the package staging directory
-            env.append(mainJar);
-            packageStagingCommand = "";
-        } else if (!Ops.isSystem()) {
-            // Use package staging directory
-            env.append(stagingMainJar);
-            packageStagingCommand = PackageUtils.ensurePackageStagingDirectoryCommand() +
-                    // Copy to main.jar to package staging directory
-                    String.format(Locale.ROOT, " && cp %s %s && ", mainJar, PACKAGE_STAGING_DIRECTORY) +
-                    // Change permission of the main.jar
-                    String.format(Locale.ROOT, "chmod 755 %s && chown shell:shell %s && ", stagingMainJar, stagingMainJar);
-        } else {
-            // System can't use package staging directory
-            env.append(mainJar);
-            packageStagingCommand = "";
-        }
-        env.append(" ");
-        return (packageStagingCommand +
-                String.format(Locale.ROOT, "(%s %s %s /system/bin %s %s '%s' %d %s 2>&1)&",
+        env.append(CLASSPATH_ENV).append("=").append(classPath).append(" ");
+        return (String.format(Locale.ROOT, "(%s %s %s /system/bin %s %s '%s' %d %s 2>&1)&",
                         env,                            // Environments
                         execFile,                       // Executable
                         debugParams,                    // Debug parameters

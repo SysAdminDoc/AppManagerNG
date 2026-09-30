@@ -9,6 +9,7 @@ import android.os.SystemClock;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import java.io.BufferedReader;
@@ -20,6 +21,8 @@ import java.net.Socket;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import io.github.muntashirakon.AppManager.adb.AdbConnectionManager;
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -206,44 +209,79 @@ class LocalServerManager {
     private volatile AdbStream mAdbStream;
     private volatile CountDownLatch mAdbConnectionWatcher = new CountDownLatch(1);
     private volatile boolean mAdbServerStarted;
-    private final Runnable mAdbOutputThread = () -> {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(Objects.requireNonNull(mAdbStream).openInputStream()))) {
+
+    private static final Pattern HEX_RUN = Pattern.compile("[0-9a-f]{4,}");
+
+    /**
+     * The shell echoes what it's sent, launch token included, on a terminal that wraps or scrolls
+     * long input, so the token can come back split across lines. Every run of four or more hex
+     * digits that is part of the token is masked.
+     */
+    @VisibleForTesting
+    @NonNull
+    static String redactToken(@NonNull String line, @NonNull String token) {
+        Matcher matcher = HEX_RUN.matcher(line);
+        StringBuilder sb = new StringBuilder(line.length());
+        int end = 0;
+        while (matcher.find()) {
+            String run = matcher.group();
+            if (token.contains(run) || run.contains(token)) {
+                sb.append(line, end, matcher.start()).append("<redacted>");
+                end = matcher.end();
+            }
+        }
+        return sb.append(line, end, line.length()).toString();
+    }
+
+    /**
+     * Reads the shell for as long as it stays open, so every launch sent to it gets its answer and
+     * the server's own output never backs up.
+     */
+    private void readAdbShell(@NonNull AdbStream stream) {
+        String token = ServerConfig.getLocalToken();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream.openInputStream()))) {
             String s;
             while ((s = reader.readLine()) != null) {
-                Log.d(TAG, "RESPONSE: %s", s);
+                Log.d(TAG, "RESPONSE: %s", redactToken(s, token));
                 if (s.startsWith("Success!")) {
                     mAdbServerStarted = true;
                     mAdbConnectionWatcher.countDown();
-                    break;
                 } else if (s.startsWith("Error!")) {
                     mAdbServerStarted = false;
                     mAdbConnectionWatcher.countDown();
-                    break;
                 }
             }
         } catch (Throwable e) {
-            Log.e(TAG, "useAdbStartServer: unable to read from shell.", e);
+            if (!stream.isClosed()) {
+                Log.e(TAG, "useAdbStartServer: unable to read from shell.", e);
+            }
         }
-    };
+    }
 
     @WorkerThread
     private void useAdbStartServer(int localServerPort) throws Exception {
-        if (mAdbStream == null || Objects.requireNonNull(mAdbStream).isClosed()) {
-            // ADB shell not running
+        AdbConnectionManager manager = AdbConnectionManager.getInstance();
+        manager.setTimeout(10, TimeUnit.SECONDS);
+        if (!manager.isConnected()) {
             String adbHost = ServerConfig.getAdbHost(mContext);
             int adbPort = ServerConfig.getAdbPort();
-            AdbConnectionManager manager = AdbConnectionManager.getInstance();
             Log.d(TAG, "useAdbStartServer: Connecting using host=%s, port=%d", adbHost, adbPort);
-            manager.setTimeout(10, TimeUnit.SECONDS);
-            if (!manager.isConnected() && !manager.connect(adbHost, adbPort)) {
+            if (!manager.connect(adbHost, adbPort)) {
                 throw new IOException("Could not connect to ADB.");
             }
+        }
+        // The shell user can't read anything in the app's data directories, so the launcher has to
+        // be where the shell user can find it before the shell is asked to run it.
+        AdbLaunchFiles.stageServer(mContext, manager);
 
+        mAdbConnectionWatcher = new CountDownLatch(1);
+        mAdbServerStarted = false;
+        if (mAdbStream == null || Objects.requireNonNull(mAdbStream).isClosed()) {
+            // ADB shell not running
             Log.d(TAG, "useAdbStartServer: Opening shell...");
-            mAdbStream = manager.openStream("shell:");
-            mAdbConnectionWatcher = new CountDownLatch(1);
-            mAdbServerStarted = false;
-            Thread t = new Thread(mAdbOutputThread, "adb-output-reader");
+            AdbStream stream = manager.openStream("shell:");
+            mAdbStream = stream;
+            Thread t = new Thread(() -> readAdbShell(stream), "adb-output-reader");
             t.setDaemon(true);
             t.start();
         }
@@ -251,7 +289,6 @@ class LocalServerManager {
 
         try (OutputStream os = Objects.requireNonNull(mAdbStream).openOutputStream()) {
             os.write("id\n".getBytes());
-            // ADB may require a fallback method
             String command = ServerConfig.getServerRunnerAdbCommand(localServerPort);
             Log.d(TAG, "useAdbStartServer: Launching privileged server.");
             os.write((command + "\n").getBytes());

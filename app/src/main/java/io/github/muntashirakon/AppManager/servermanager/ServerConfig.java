@@ -97,15 +97,20 @@ public final class ServerConfig {
 
     @AnyThread
     @NonNull
-    public static String getServerRunnerAdbCommand() throws IndexOutOfBoundsException {
+    public static String getServerRunnerAdbCommand() {
         return getServerRunnerAdbCommand(getLocalServerPort());
     }
 
+    /**
+     * The command ADB mode sends to the shell. It runs the launcher {@link AdbLaunchFiles} staged
+     * in /data/local/tmp, since the shell user can't read the copy in the app's own cache. The
+     * fallback echo ends the wait at once when the launcher can't run at all.
+     */
     @AnyThread
     @NonNull
-    public static String getServerRunnerAdbCommand(@IntRange(from = 1, to = 65535) int localServerPort)
-            throws IndexOutOfBoundsException {
-        return getServerRunnerCommand(1, localServerPort);
+    public static String getServerRunnerAdbCommand(@IntRange(from = 1, to = 65535) int localServerPort) {
+        return "sh " + AdbLaunchFiles.SERVER_SCRIPT + " " + localServerPort + " " + getLocalToken()
+                + " || echo \"Error! Could not run the server launcher.\"";
     }
 
     /**

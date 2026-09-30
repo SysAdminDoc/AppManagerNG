@@ -457,16 +457,6 @@ Open GitHub issues checked against this list on 2026-09-26. Already covered: #13
 
 Sources and reasoning: RESEARCH.md (2026-09-30).
 
-### P0
-
-- [ ] P0: Stage ADB-mode server launch files where the shell user can read them (issue #20)
-  Reported: Bingblop, 2026-09-28, latest release (v0.6.23): ADB over TCP and Wireless Debugging both fail although paired, Shizuku works, upstream App Manager works for the same user. Closing the issue is Matt's; reply once a release carries the fix.
-  Why: since `4be517ffd` (2026-06-12) and `9b90177d1` (2026-06-14) the ADB launch runs `sh <device-protected cache>/run_server.sh` and copies `main.jar` from the same directory, and SELinux forbids the `shell` domain from entering app data directories, so the server never starts and the app gives up after 60 seconds with "Server wasn't started".
-  Evidence: fork issue #20; `servermanager/ServerConfig.java:50-69`; `servermanager/AssetsUtils.java`; `ipc/RootServiceManager.java` ADB branch of the runner script and `prepareMainJar`; `LocalServerManager.java:209-262` (waits for `Success!` or `Error!`); AOSP `system/sepolicy/private/domain.te` neverallow on `app_data_file` and `privapp_data_file` for every domain except the app, adbd, run-as, system_server and zygote; `RootServiceManagerTest.mainJarStagingPathUsesInternalDeviceProtectedCache` asserts the broken location; upstream 3d11bcb and v4.1.1 never stage shell-executed files in app-private storage.
-  Touches: `ServerConfig.java`, `AssetsUtils.java`, `RootServiceManager.java`, `LocalServerManager.java`, the ADB launch command, `RootServiceManagerTest`, `AssetsUtilsTest`, a new launcher-path contract test.
-  Acceptance: in ADB mode no file the shell user reads or executes lives under the app's CE or DE data directories; the launcher and jars reach `/data/local/tmp` either through the existing libadb connection or from the installed APK or native library directory, never through a world-writable path, and each staged file's SHA-256 is checked against the bundled asset before it runs; a launch that fails prints an `Error!` line at once instead of timing out; root mode keeps its private copy; a Robolectric contract test fails if any ADB-mode path sits under `/data/data`, `/data/user` or `/data/user_de`; on the S22 or S25, ADB over TCP and Wireless Debugging both start the server and an App Info privileged action succeeds.
-  Complexity: M
-
 ### P1
 
 - [ ] P1: Keep AppManagerNG's privileged server apart from upstream App Manager's
@@ -480,6 +470,7 @@ Sources and reasoning: RESEARCH.md (2026-09-30).
   Why: switching between no-root and ADB, recreating the activity, and binding services concurrently all have races upstream fixed on 2026-09-12, and the fork's `Ops.java` is its most re-fixed privileged file.
   Evidence: upstream `8ba225324` (one request at a time), `4d03b737e` (no status replay on recreate), `54e2d6ec3`, `8ebd38362` (repeated no-root and ADB switching), `43e74db72` (check both services), `32d93652c` (atomic `bindServices()`), `b07e75ec3` (no-root fallback race), `bc52be1e8` (incomplete USB debugging dialog crash), `2dc8273b8` (server errors as toasts), `32ad2377d` (ANR in `ServerStatusChangeReceiver`); `settings/Ops.java` took 4 fix commits in the last 200.
   Touches: `settings/Ops.java`, the Mode of operation preference and its view model, `ipc/LocalServices`, `ServerStatusChangeReceiver`, tests.
+  Already done: `LocalServices.bindServicesIfNotAlready()` checks and binds under `sBindLock` since the issue #20 fix (the first switch to ADB mode hit it on the S22), which covers the race at the heart of `32d93652c`. Diff that commit for anything else it changed.
   Acceptance: each listed upstream commit is either ported with a host test that fails without it or named in the commit body as not applicable with the reason; a mode change requested while another is running is rejected or queued, never interleaved; recreating the settings screen does not replay a finished status; the status receiver does no blocking work on the main thread.
   Complexity: L
 
@@ -533,6 +524,13 @@ Sources and reasoning: RESEARCH.md (2026-09-30).
   Touches: the six layouts, `strings.xml`, `app/lint.xml`.
   Acceptance: each control has a meaningful label or `importantForAccessibility="no"` when decorative; `ContentDescription` is an error in `app/lint.xml`; `lintFlossDebug` passes without adding a `ContentDescription` entry to the baseline.
   Complexity: S
+
+- [ ] P2: Make the Mode of operation custom command something `adb shell` can run
+  Why: the custom command box shows the same `sh /data/user_de/<user>/<package>/cache/run_server.sh <port> <token>` line twice, because both `SERVER_RUNNER_EXEC` slots point at the DE cache copy. SELinux keeps `adb shell` out of that folder, so a user who pastes it on a PC gets a permission error (found on the S22 while checking issue #20).
+  Evidence: `settings/MainPreferencesViewModel.java:156-157`; `servermanager/ServerConfig.java:55-56,84-95`; `servermanager/AdbLaunchFiles.java` (the staged `/data/local/tmp/<applicationId>` launcher ADB mode uses now).
+  Touches: `ServerConfig`, `MainPreferencesViewModel`, the custom command layout and strings, `AdbLaunchFiles`, tests.
+  Acceptance: the box shows one ADB command and, on rooted devices only, one root command; the ADB command copies am.jar and the launcher out of the installed APK into `/data/local/tmp/<applicationId>` (checked against their SHA-256) and starts the server from there, so it works from `adb shell` on a fresh install; the token still isn't logged; a host test runs the command under `sh` against a fake APK; on the S22 or S25 the pasted command starts the server and the app connects.
+  Complexity: M
 
 ### P3
 
