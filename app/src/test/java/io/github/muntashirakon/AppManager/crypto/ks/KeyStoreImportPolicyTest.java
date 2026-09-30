@@ -300,9 +300,51 @@ public class KeyStoreImportPolicyTest {
     public void aBouncyCastlePkcs12LeavesRoomForThreeMoreKeys() throws Exception {
         long work = KeyStoreImportPolicy.check(pkcs12WithPrivateKey(), "PKCS12", PASSWORD);
 
-        // MAC 1,200,000 x 1, shrouded key 600,000 x 3, encrypted certificates 600,000 x 3.
-        assertEquals(4_800_000L, work);
+        // MAC 1,200,000 x 1, shrouded key 600,000 x 3, and the encrypted certificates 600,000 x 3
+        // twice: once for this check to open them and once for the load.
+        assertEquals(6_600_000L, work);
         assertTrue(work + 3 * 1_800_000L <= KeyStoreImportPolicy.MAX_TOTAL_KDF_WORK);
+    }
+
+    @Test(timeout = 30_000)
+    public void aMissingPasswordStillPricesEncryptedContents() throws Exception {
+        // Review finding: a blank password field arrives as null, and Bouncy Castle opens a file
+        // without a MAC with an empty password, running every derivation inside.
+        byte[] keyStore = pfx(encryptedWithPkcs12Pbe(new char[0], shroudedKey(4_000_000), shroudedKey(4_000_000)), null);
+
+        try {
+            KeyStoreImportPolicy.load(keyStore, "PKCS12", BC, null, BUDGET);
+            fail("Expected " + Rejection.KDF_TOO_EXPENSIVE);
+        } catch (RejectedKeyStoreException e) {
+            assertEquals(e.getMessage(), Rejection.KDF_TOO_EXPENSIVE, e.reason);
+        }
+    }
+
+    @Test(timeout = 10_000)
+    public void anEmptyPasswordPaysForBothMacAttempts() throws Exception {
+        // Bouncy Castle retries the MAC with the other zero-length conversion when the first fails.
+        MacData mac = new MacData(new DigestInfo(new AlgorithmIdentifier(OIWObjectIdentifiers.idSHA1), new byte[20]),
+                new byte[8], 3_000_000);
+        byte[] keyStore = pfx(new ContentInfo[0], mac);
+
+        assertEquals(3_000_000L, KeyStoreImportPolicy.check(keyStore, "PKCS12", PASSWORD));
+        assertEquals(6_000_000L, KeyStoreImportPolicy.check(keyStore, "PKCS12", new char[0]));
+        assertEquals(6_000_000L, KeyStoreImportPolicy.check(keyStore, "PKCS12", null));
+    }
+
+    @Test(timeout = 10_000)
+    public void pbes2IsPricedByItsCipherWhateverKeyLengthItDeclares() throws Exception {
+        // Review finding: Bouncy Castle sizes a PBES2 key by the cipher, so declaring a 1-byte key for
+        // AES-256 over SHA-1 still costs two blocks per iteration.
+        KeyDerivationFunc declaredShort = new KeyDerivationFunc(PKCSObjectIdentifiers.id_PBKDF2,
+                new PBKDF2Params(new byte[16], 2_000_000, 1, new AlgorithmIdentifier(PKCSObjectIdentifiers.id_hmacWithSHA1)));
+
+        // The load's 2 x 2,000,000 plus this check's own attempt at the same price is 8,000,000; the
+        // garbage ciphertext then fails to open, and without a MAC that is a malformed file.
+        assertRejected(Rejection.MALFORMED, pfx(encryptedWith(declaredShort), null), "PKCS12");
+        KeyDerivationFunc longer = new KeyDerivationFunc(PKCSObjectIdentifiers.id_PBKDF2,
+                new PBKDF2Params(new byte[16], 4_000_000, 1, new AlgorithmIdentifier(PKCSObjectIdentifiers.id_hmacWithSHA1)));
+        assertRejected(Rejection.KDF_TOO_EXPENSIVE, pfx(encryptedWith(longer), null), "PKCS12");
     }
 
     @Test(timeout = 10_000)
@@ -468,6 +510,20 @@ public class KeyStoreImportPolicyTest {
     private static ContentInfo[] encrypted(char[] password, SafeBag... bags) throws Exception {
         OutputEncryptor encryptor = new JcePKCSPBEOutputEncryptorBuilder(NISTObjectIdentifiers.id_aes256_CBC)
                 .setProvider(BC).setIterationCount(1000).build(password);
+        ByteArrayOutputStream ciphertext = new ByteArrayOutputStream();
+        try (OutputStream out = encryptor.getOutputStream(ciphertext)) {
+            out.write(new DERSequence(bags).getEncoded());
+        }
+        EncryptedData data = new EncryptedData(PKCSObjectIdentifiers.data, encryptor.getAlgorithmIdentifier(),
+                new DEROctetString(ciphertext.toByteArray()));
+        return new ContentInfo[]{new ContentInfo(PKCSObjectIdentifiers.encryptedData, data)};
+    }
+
+    /** Encrypted safe contents holding {@code bags}, opened by {@code password} with PKCS12 triple DES. */
+    private static ContentInfo[] encryptedWithPkcs12Pbe(char[] password, SafeBag... bags) throws Exception {
+        OutputEncryptor encryptor = new JcePKCSPBEOutputEncryptorBuilder(
+                PKCSObjectIdentifiers.pbeWithSHAAnd3_KeyTripleDES_CBC).setProvider(BC).setIterationCount(1000)
+                .build(password);
         ByteArrayOutputStream ciphertext = new ByteArrayOutputStream();
         try (OutputStream out = encryptor.getOutputStream(ciphertext)) {
             out.write(new DERSequence(bags).getEncoded());
