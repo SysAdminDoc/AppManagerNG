@@ -90,10 +90,11 @@ public class ModeOfOpsStatusContractTest {
         assertTrue(getSession, passThrough > start && getSession.indexOf("throw e;", passThrough) > passThrough);
         int squatter = getSession.indexOf("Reason.NOT_ACKNOWLEDGED");
         assertTrue(getSession, squatter > passThrough && getSession.indexOf("Reason.SERVER_START") > squatter);
-        String adbStart = body(manager, "private void useAdbStartServer(int localServerPort)");
-        assertTrue(adbStart, adbStart.contains("throw new AdbUnreachableException(e);"));
-        assertTrue(adbStart, adbStart.contains("throw new AdbUnreachableException(null);"));
-        assertFalse(adbStart, adbStart.contains("new IOException(\"Could not connect to ADB.\")"));
+        String adbConnect = body(manager, "private void connectToAdbd(@NonNull AdbConnectionManager manager)");
+        assertTrue(adbConnect, adbConnect.contains("throw new AdbUnreachableException(e);"));
+        assertTrue(adbConnect, adbConnect.contains("throw new AdbUnreachableException(null);"));
+        assertFalse(adbConnect, adbConnect.contains("new IOException(\"Could not connect to ADB.\")"));
+        assertFalse(body(manager, "private void useAdbStartServer(int localServerPort)").contains("manager.connect("));
 
         String ops = read("app/src/main/java/io/github/muntashirakon/AppManager/settings/Ops.java");
         assertTrue(body(ops, "public static int connectAdb(@NonNull Context context, int port,")
@@ -116,6 +117,25 @@ public class ModeOfOpsStatusContractTest {
                 "completeAuthentication();");
         assertFinishesQuietly(read(MODE_OF_OPS), "private void handleModeStatus(",
                 "finishModeApply(false, false);");
+    }
+
+    @Test
+    public void everyAdbStartGetsAFreshShellAndOneMoreTryWhenItClosesAtOnce() throws IOException {
+        String manager = read("app/src/main/java/io/github/muntashirakon/AppManager/servermanager/LocalServerManager.java");
+        String start = body(manager, "private void useAdbStartServer(int localServerPort)");
+        int retry = start.indexOf("catch (ShellClosedEarlyException e)");
+        assertTrue(start, retry > start.indexOf("stageAndLaunch(manager, localServerPort);"));
+        assertTrue(start, start.indexOf("stageAndLaunch(manager, localServerPort);", retry) > retry);
+
+        String launch = body(manager, "private void stageAndLaunch(@NonNull AdbConnectionManager manager, int localServerPort)");
+        // Upstream 03298fafa: a shell kept from an earlier start was reused while it looked open
+        assertTrue(launch, launch.indexOf("IoUtils.closeQuietly(mAdbStream);") < launch.indexOf("manager.openStream(\"shell:\")"));
+        assertFalse(launch, launch.contains("isClosed()"));
+
+        // Upstream 0152f468f: a start that failed quickly, or a server gone right after it started
+        String session = body(manager, "private ClientSession getSession()");
+        assertTrue(session, session.contains("for (int attempt = 1; mSession == null; ++attempt)"));
+        assertTrue(session, session.indexOf("isWorthRetrying(attempt, e)") < session.indexOf("Reason.SERVER_START"));
     }
 
     @Test
