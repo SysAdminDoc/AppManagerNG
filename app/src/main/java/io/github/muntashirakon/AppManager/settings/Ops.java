@@ -54,6 +54,7 @@ import io.github.muntashirakon.AppManager.runner.RunnerUtils;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.servermanager.LocalServer;
 import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
+import io.github.muntashirakon.AppManager.servermanager.ServerStatusChangeReceiver;
 import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.session.SessionMonitoringService;
 import io.github.muntashirakon.AppManager.users.Owners;
@@ -359,7 +360,8 @@ public class Ops {
                     if (!sDirectRoot) {
                         throw new Exception("Root is unavailable.");
                     }
-                    // Disable server first
+                    // Disable server first, along with anything a late SERVER_STARTED would still bind
+                    ServerStatusChangeReceiver.cancelPendingServerStart();
                     ExUtils.exceptionAsIgnored(() -> {
                         if (LocalServer.alive(context)) {
                             LocalServer.getInstance().closeBgServer();
@@ -400,6 +402,7 @@ public class Ops {
         } catch (Throwable e) {
             Log.e(TAG, e);
             // Fallback to no-root mode for this session, this does not modify the user preference
+            ServerStatusChangeReceiver.cancelPendingServerStart();
             sIsAdb = sIsSystem = sIsRoot = sIsShizuku = false;
             ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(R.string.failed_to_use_the_current_mode_of_operation));
         }
@@ -416,6 +419,7 @@ public class Ops {
     @WorkerThread
     @Status
     private static int initNoRoot() {
+        ServerStatusChangeReceiver.cancelPendingServerStart();
         if (LocalServices.alive()) {
             LocalServices.stopServices();
         }
@@ -444,6 +448,7 @@ public class Ops {
             // Root permission was granted
             setDetectedMode(MODE_ROOT, persistDetectedMode);
             // Disable remote server
+            ServerStatusChangeReceiver.cancelPendingServerStart();
             ExUtils.exceptionAsIgnored(() -> {
                 if (LocalServer.alive(context)) {
                     LocalServer.getInstance().closeBgServer();

@@ -13,7 +13,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 
-import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -30,12 +29,25 @@ class ServiceConnectionWrapper {
     private volatile IBinder mIBinder;
     @Nullable
     private volatile CountDownLatch mServiceBoundWatcher;
+    // Set by stopDaemon(): a connection that arrives after it belongs to a bind nobody wants
+    private boolean mStopped;
 
     private class ServiceConnectionImpl implements ServiceConnection {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             Log.d(TAG, "service onServiceConnected: %s", name);
-            mIBinder = service;
+            boolean stopped;
+            synchronized (this) {
+                stopped = mStopped;
+                if (!stopped) {
+                    mIBinder = service;
+                }
+            }
+            if (stopped) {
+                Intent intent = new Intent().setComponent(mComponentName);
+                ThreadUtils.postOnMainThread(() -> RootService.stop(intent));
+                return;
+            }
             onResponseReceived();
         }
 
@@ -90,21 +102,20 @@ class ServiceConnectionWrapper {
 
     @NonNull
     public IBinder getService() throws RemoteException {
-        if (!isBinderActive()) {
+        IBinder binder = mIBinder;
+        if (binder == null || !binder.pingBinder()) {
             throw new RemoteException("Binder not running.");
         }
-        return Objects.requireNonNull(mIBinder);
+        return binder;
     }
 
     @NonNull
     @NoOps(used = true)
     public IBinder bindService() throws RemoteException {
-        synchronized (mServiceConnection) {
-            if (!isBinderActive()) {
-                startDaemon();
-            }
-            return getService();
+        if (!isBinderActive()) {
+            startDaemon();
         }
+        return getService();
     }
 
     @MainThread
@@ -116,41 +127,64 @@ class ServiceConnectionWrapper {
 
     @WorkerThread
     private void startDaemon() {
+        CountDownLatch watcher;
         synchronized (mServiceConnection) {
             if (isBinderActive()) {
                 Log.d(TAG, "Binder is already active?");
                 return;
             }
-            mServiceBoundWatcher = new CountDownLatch(1);
-            Log.d(TAG, "Launching service...");
-            Intent intent = new Intent();
-            intent.setComponent(mComponentName);
-            ThreadUtils.postOnMainThread(() -> {
-                if (mIBinder != null) {
-                    RootService.stop(intent);
+            watcher = mServiceBoundWatcher;
+            if (watcher == null) {
+                // Nobody is binding yet. A second caller waits for this bind instead of starting its own.
+                watcher = new CountDownLatch(1);
+                mServiceBoundWatcher = watcher;
+                mStopped = false;
+                Log.d(TAG, "Launching service...");
+                Intent intent = new Intent();
+                intent.setComponent(mComponentName);
+                ThreadUtils.postOnMainThread(() -> {
+                    if (mIBinder != null) {
+                        RootService.stop(intent);
+                    }
+                    RootService.bind(intent, mServiceConnection);
+                });
+            }
+        }
+        // Wait without the lock: unbindService() takes it on the main thread, and stopDaemon()
+        // takes it to cancel a bind that never gets an answer.
+        try {
+            watcher.await(45, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Log.e(TAG, "Service watcher interrupted.");
+        } finally {
+            synchronized (mServiceConnection) {
+                if (mServiceBoundWatcher == watcher) {
+                    mServiceBoundWatcher = null;
                 }
-                RootService.bind(intent, mServiceConnection);
-            });
-            // Wait for service to be bound
-            try {
-                mServiceBoundWatcher.await(45, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                Log.e(TAG, "Service watcher interrupted.");
             }
         }
     }
 
     @WorkerThread
     public void stopDaemon() {
+        Intent intent = new Intent();
+        intent.setComponent(mComponentName);
+        CountDownLatch watcher;
         synchronized (mServiceConnection) {
-            Intent intent = new Intent();
-            intent.setComponent(mComponentName);
-            ThreadUtils.postOnMainThread(() -> RootService.stop(intent));
+            mStopped = true;
             mIBinder = null;
+            watcher = mServiceBoundWatcher;
+            mServiceBoundWatcher = null;
         }
+        if (watcher != null) {
+            // Release a bind still waiting for the service
+            watcher.countDown();
+        }
+        ThreadUtils.postOnMainThread(() -> RootService.stop(intent));
     }
 
     boolean isBinderActive() {
-        return mIBinder != null && mIBinder.pingBinder();
+        IBinder binder = mIBinder;
+        return binder != null && binder.pingBinder();
     }
 }

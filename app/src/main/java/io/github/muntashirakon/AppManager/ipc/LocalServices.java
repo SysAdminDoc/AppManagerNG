@@ -9,6 +9,8 @@ import androidx.annotation.AnyThread;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.WorkerThread;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -23,6 +25,7 @@ import io.github.muntashirakon.io.ShizukuFileSystemService;
 
 public class LocalServices {
     private static final Object sBindLock = new Object();
+    private static final MutableLiveData<Boolean> sState = new MutableLiveData<>(false);
 
     @NonNull
     private static final ServiceConnectionWrapper sFileSystemServiceConnectionWrapper
@@ -48,67 +51,64 @@ public class LocalServices {
     public static void bindServices() throws RemoteException {
         synchronized (sBindLock) {
             unbindServicesIfRunning();
-            if (Ops.isShizuku()) {
-                bindShizukuAmService();
-                bindShizukuFileSystemManager();
-            } else {
-                bindAmService();
-                bindFileSystemManager();
+            try {
+                if (Ops.isShizuku()) {
+                    bindShizukuAmService();
+                    bindShizukuFileSystemManager();
+                } else {
+                    bindAmService();
+                    bindFileSystemManager();
+                }
+                // Both binders have to be up before anything relies on either
+                if (!getAmService().asBinder().pingBinder() || !activeServicesAlive()) {
+                    throw new RemoteException("A required service binder is not running.");
+                }
+                getFileSystemManager();
+                // Update UID
+                Ops.setWorkingUid(getAmService().getUid());
+                sState.postValue(true);
+            } catch (RemoteException | RuntimeException e) {
+                // Don't leave one service running on its own
+                stopServices();
+                throw e;
             }
-            // Verify binding
-            if (!getAmService().asBinder().pingBinder()) {
-                throw new RemoteException("IAmService not running.");
-            }
-            getFileSystemManager();
-            // Update UID
-            Ops.setWorkingUid(getAmService().getUid());
         }
     }
 
+    /**
+     * Whether the privileged services are bound, updated when they bind, stop or unbind.
+     */
+    @NonNull
+    public static LiveData<Boolean> state() {
+        return sState;
+    }
+
     public static boolean alive() {
-        synchronized (sAMServiceConnectionWrapper) {
-            if (sAMServiceConnectionWrapper.isBinderActive()) {
-                return true;
-            }
-        }
-        synchronized (sShizukuAMServiceConnectionWrapper) {
-            return sShizukuAMServiceConnectionWrapper.isBinderActive();
-        }
+        return (sAMServiceConnectionWrapper.isBinderActive() && sFileSystemServiceConnectionWrapper.isBinderActive())
+                || (sShizukuAMServiceConnectionWrapper.isBinderActive()
+                && sShizukuFileSystemServiceConnectionWrapper.isBinderActive());
     }
 
     private static boolean activeServicesAlive() {
         if (Ops.isShizuku()) {
-            synchronized (sShizukuAMServiceConnectionWrapper) {
-                return sShizukuAMServiceConnectionWrapper.isBinderActive();
-            }
+            return sShizukuAMServiceConnectionWrapper.isBinderActive()
+                    && sShizukuFileSystemServiceConnectionWrapper.isBinderActive();
         }
-        synchronized (sAMServiceConnectionWrapper) {
-            return sAMServiceConnectionWrapper.isBinderActive();
-        }
+        return sAMServiceConnectionWrapper.isBinderActive() && sFileSystemServiceConnectionWrapper.isBinderActive();
     }
 
+    // The bind methods wait up to 45 seconds for a service and must not hold the wrapper's monitor
+    // while they do: unbindServices() takes the same monitors on the main thread.
     @WorkerThread
     @NoOps(used = true)
     private static void bindFileSystemManager() throws RemoteException {
-        synchronized (sFileSystemServiceConnectionWrapper) {
-            try {
-                sFileSystemServiceConnectionWrapper.bindService();
-            } finally {
-                sFileSystemServiceConnectionWrapper.notifyAll();
-            }
-        }
+        sFileSystemServiceConnectionWrapper.bindService();
     }
 
     @WorkerThread
     @NoOps(used = true)
     private static void bindShizukuFileSystemManager() throws RemoteException {
-        synchronized (sShizukuFileSystemServiceConnectionWrapper) {
-            try {
-                sShizukuFileSystemServiceConnectionWrapper.bindService();
-            } finally {
-                sShizukuFileSystemServiceConnectionWrapper.notifyAll();
-            }
-        }
+        sShizukuFileSystemServiceConnectionWrapper.bindService();
     }
 
     @AnyThread
@@ -144,25 +144,13 @@ public class LocalServices {
     @WorkerThread
     @NoOps(used = true)
     private static void bindAmService() throws RemoteException {
-        synchronized (sAMServiceConnectionWrapper) {
-            try {
-                sAMServiceConnectionWrapper.bindService();
-            } finally {
-                sAMServiceConnectionWrapper.notifyAll();
-            }
-        }
+        sAMServiceConnectionWrapper.bindService();
     }
 
     @WorkerThread
     @NoOps(used = true)
     private static void bindShizukuAmService() throws RemoteException {
-        synchronized (sShizukuAMServiceConnectionWrapper) {
-            try {
-                sShizukuAMServiceConnectionWrapper.bindService();
-            } finally {
-                sShizukuAMServiceConnectionWrapper.notifyAll();
-            }
-        }
+        sShizukuAMServiceConnectionWrapper.bindService();
     }
 
     @AnyThread
@@ -203,6 +191,7 @@ public class LocalServices {
             sShizukuFileSystemServiceConnectionWrapper.stopDaemon();
         }
         Ops.setWorkingUid(Process.myUid());
+        sState.postValue(false);
     }
 
     @MainThread
@@ -220,6 +209,7 @@ public class LocalServices {
             sShizukuFileSystemServiceConnectionWrapper.unbindService();
         }
         Ops.setWorkingUid(Process.myUid());
+        sState.postValue(false);
     }
 
     @WorkerThread

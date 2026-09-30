@@ -23,6 +23,13 @@ public class LocalServerPortRebindContractTest {
     }
 
     @Test
+    public void serverStartWaitGivesUpAfterThirtySeconds() {
+        // The wait for a SERVER_STARTED server to listen used to loop forever on a background thread
+        assertFalse(ServerStatusChangeReceiver.hasServerStartTimedOut(1_000, 30_999));
+        assertTrue(ServerStatusChangeReceiver.hasServerStartTimedOut(1_000, 31_000));
+    }
+
+    @Test
     public void rebindStopsOldEndpointBeforeSavingAndRollsBackOnFailure() throws IOException {
         String localServer = read("app/src/main/java/io/github/muntashirakon/AppManager/servermanager/LocalServer.java");
         int stopOld = localServer.indexOf("manager.closeBgServer(oldPort)");
