@@ -11,14 +11,14 @@ import androidx.annotation.WorkerThread;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -85,30 +85,58 @@ class AssetsUtils {
     }
 
     @WorkerThread
+    @NonNull
+    static byte[] readAsset(@NonNull Context context, @NonNull String fileName) throws IOException {
+        try (InputStream in = context.getAssets().open(fileName);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            byte[] buff = new byte[IoUtils.DEFAULT_BUFFER_SIZE];
+            int len;
+            while ((len = in.read(buff)) != -1) {
+                out.write(buff, 0, len);
+            }
+            return out.toByteArray();
+        }
+    }
+
+    @WorkerThread
     static void writeServerExecScript(@NonNull Context context, @NonNull File destFile, @NonNull String classPath) throws IOException {
+        String script = buildServerExecScript(context, classPath);
+        if (destFile.exists()) {
+            destFile.delete();
+        }
+        try (FileOutputStream fos = new FileOutputStream(destFile, false)) {
+            fos.write(script.getBytes(StandardCharsets.UTF_8));
+            fos.flush();
+        }
+    }
+
+    /**
+     * The launcher script with its variables filled in. Lines end in {@code \n} whatever the host,
+     * since the result also gets pushed to the device as is.
+     */
+    @WorkerThread
+    @NonNull
+    static String buildServerExecScript(@NonNull Context context, @NonNull String classPath) throws IOException {
         try (AssetFileDescriptor openFd = context.getAssets().openFd(ServerConfig.SERVER_RUNNER_EXEC_NAME);
-             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(openFd.createInputStream()))) {
-            if (destFile.exists()) {
-                destFile.delete();
-            }
-            try (BufferedWriter bw = new BufferedWriter(new FileWriter(destFile, false))) {
-                // Set variables
-                StringBuilder script = new StringBuilder();
-                script.append("SERVER_NAME=").append(Constants.SERVER_NAME).append("\n")
-                        .append("JAR_NAME=").append(Constants.JAR_NAME).append("\n")
-                        .append("JAR_PATH=").append(classPath).append("\n")
-                        .append("ARGS=").append(getServerArgs()).append("\n");
-                String line;
-                while ((line = bufferedReader.readLine()) != null) {
-                    String wl;
-                    if ("%ENV_VARS%".equals(line.trim())) {
-                        wl = script.toString();
-                    } else wl = line;
-                    bw.write(wl);
-                    bw.newLine();
+             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(openFd.createInputStream(),
+                     StandardCharsets.UTF_8))) {
+            // Set variables
+            StringBuilder vars = new StringBuilder();
+            vars.append("SERVER_NAME=").append(Constants.SERVER_NAME).append("\n")
+                    .append("JAR_NAME=").append(Constants.JAR_NAME).append("\n")
+                    .append("JAR_PATH=").append(classPath).append("\n")
+                    .append("ARGS=").append(getServerArgs()).append("\n");
+            StringBuilder script = new StringBuilder();
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                if ("%ENV_VARS%".equals(line.trim())) {
+                    script.append(vars);
+                } else {
+                    script.append(line);
                 }
-                bw.flush();
+                script.append("\n");
             }
+            return script.toString();
         }
     }
 

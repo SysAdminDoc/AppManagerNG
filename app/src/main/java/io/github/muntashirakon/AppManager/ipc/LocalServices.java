@@ -34,8 +34,13 @@ public class LocalServices {
 
     @WorkerThread
     public static void bindServicesIfNotAlready() throws RemoteException {
-        if (!activeServicesAlive()) {
-            bindServices();
+        // Checked under the bind lock: a caller that sees the services down while another thread
+        // is still binding them would otherwise unbind that fresh binding and start over, and
+        // whoever was using it gets a DeadObjectException.
+        synchronized (sBindLock) {
+            if (!activeServicesAlive()) {
+                bindServices();
+            }
         }
     }
 
