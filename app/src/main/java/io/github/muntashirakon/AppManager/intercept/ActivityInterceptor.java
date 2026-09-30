@@ -68,6 +68,7 @@ import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.shortcut.CreateShortcutDialogFragment;
 import io.github.muntashirakon.AppManager.utils.ClipboardUtils;
 import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
+import io.github.muntashirakon.AppManager.utils.LiveDataChanges;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.util.AdapterUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
@@ -389,6 +390,18 @@ public class ActivityInterceptor extends BaseActivity {
         // Whether the Intent was edited
         final boolean isVisible = savedInstanceState != null && savedInstanceState.getBoolean(INTENT_EDITED);
         init(intent, isVisible);
+        // Once here: init() runs again on every Reset
+        LiveDataChanges.observe(Ops.getWorkingUidLiveData(), this, this::onWorkingUidChanged);
+    }
+
+    private void onWorkingUidChanged() {
+        MaterialCheckBox useRootCheckBox = findViewById(R.id.use_root);
+        boolean root = Ops.isWorkingUidRoot();
+        useRootCheckBox.setVisibility(root ? View.VISIBLE : View.GONE);
+        if (!root) {
+            // A hidden box must not keep launching as root
+            useRootCheckBox.setChecked(false);
+        }
     }
 
     private void init(@NonNull Intent intent, boolean isEdited) {

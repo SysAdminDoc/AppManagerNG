@@ -41,6 +41,7 @@ import io.github.muntashirakon.AppManager.users.UserInfo;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
+import io.github.muntashirakon.AppManager.utils.LiveDataChanges;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.adapters.SelectedArrayAdapter;
 import io.github.muntashirakon.dialog.SearchableMultiChoiceDialogBuilder;
@@ -232,6 +233,8 @@ public class MainListOptions extends ListOptions {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         MainActivity activity = (MainActivity) requireActivity();
+        // The keystore, SAF and SSAID filters are only offered in root mode
+        LiveDataChanges.observe(Ops.getWorkingUidLiveData(), getViewLifecycleOwner(), this::reloadUi);
         LinearLayoutCompat installDateRow = view.findViewById(R.id.install_date_filter_row);
         MaterialButton installDateButton = view.findViewById(R.id.install_date_filter);
         MaterialButton clearInstallDateButton = view.findViewById(R.id.clear_install_date_filter);
