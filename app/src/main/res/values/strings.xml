@@ -4155,6 +4155,8 @@ Components removed: %8$s</string>
     <string name="adb_local_server_port_configured">Port %1$d saved for the next local-server connection.</string>
     <string name="adb_local_server_port_rebind_failed">Could not move the local server. Port %1$d was restored; reconnect the privileged mode if needed.</string>
     <string name="waiting_for_wifi">Waiting for Wi-Fi</string>
+    <string name="wireless_debugging_allow_network_title">Allow Wireless debugging on this Wi-Fi</string>
+    <string name="wireless_debugging_allow_network_text">Android switched Wireless debugging back off because it hasn\'t been allowed on this network yet. Tap here, turn Wireless debugging on and choose Always allow on this network. AppManagerNG connects as soon as it\'s on.</string>
     <string name="adb_pairing_title">Pair AppManagerNG using Wi-Fi</string>
     <string name="manual_wireless_debugging_title">Connect using Wireless Debugging</string>
     <string name="manual_wireless_debugging_instructions">AppManagerNG couldn\'t connect automatically using wireless debugging. Click <b>Pair</b> if you haven\'t paired AppManagerNG over Wi-Fi yet or the authorization was revoked. Otherwise click <b>Connect</b> to enter the port number manually. You can also use the button at the top to open the Wireless debugging setting.</string>
