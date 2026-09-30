@@ -37,6 +37,7 @@
                 <androidx.appcompat.widget.AppCompatImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
+                    android:importantForAccessibility="no"
                     android:layout_gravity="center"
                     android:src="@drawable/ic_restore"
                     app:tint="?attr/colorPrimary" />
@@ -93,6 +94,7 @@
                 <androidx.appcompat.widget.AppCompatImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
+                    android:importantForAccessibility="no"
                     android:layout_gravity="center"
                     android:src="@drawable/ic_archive"
                     app:tint="?attr/colorPrimary" />
@@ -148,6 +150,7 @@
                 <androidx.appcompat.widget.AppCompatImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
+                    android:importantForAccessibility="no"
                     android:layout_gravity="center"
                     android:src="@drawable/ic_history"
                     app:tint="?attr/colorPrimary" />

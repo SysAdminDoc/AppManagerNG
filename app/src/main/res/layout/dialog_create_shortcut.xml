@@ -61,6 +61,7 @@
                 android:id="@+id/icon"
                 android:layout_width="200dp"
                 android:layout_height="200dp"
+                android:contentDescription="@string/shortcut_icon"
                 android:layout_gravity="center"
                 android:scaleType="fitCenter"
                 android:adjustViewBounds="true"

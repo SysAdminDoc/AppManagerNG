@@ -482,13 +482,6 @@ Sources and reasoning: RESEARCH.md (2026-09-30).
   Acceptance: each ADB-mode failure maps to a stable code (wireless debugging off, pairing required, certificate rejected, connection refused, stream closed after connect, server launch denied, launch timeout, unknown) shown in plain words with one next step and carried in the support bundle without addresses, ports or tokens; host tests feed each exception shape and assert the code; an unknown failure keeps its exception class.
   Complexity: M
 
-- [ ] P2: Label the unlabeled image controls and fail lint on new ones
-  Why: 12 image controls have neither a content description nor a decorative flag, so TalkBack reads nothing or "unlabeled", and lint does not escalate the check.
-  Evidence: `res/layout/dialog_backup_tasks.xml` (5), `dialog_restore_tasks.xml` (3), `dialog_backup_restore.xml`, `item_icon_title_subtitle.xml`, `item_main.xml`, `item_main_v2.xml` (1 each); `app/lint.xml`; WCAG 2.2 success criterion 1.1.1. The device-gated accessibility hardening item in `Roadmap_Blocked.md` covers the rest.
-  Touches: the six layouts, `strings.xml`, `app/lint.xml`.
-  Acceptance: each control has a meaningful label or `importantForAccessibility="no"` when decorative; `ContentDescription` is an error in `app/lint.xml`; `lintFlossDebug` passes without adding a `ContentDescription` entry to the baseline.
-  Complexity: S
-
 - [ ] P2: Make the Mode of operation custom command something `adb shell` can run
   Why: the custom command box shows the same `sh /data/user_de/<user>/<package>/cache/run_server.sh <port> <token>` line twice, because both `SERVER_RUNNER_EXEC` slots point at the DE cache copy. SELinux keeps `adb shell` out of that folder, so a user who pastes it on a PC gets a permission error (found on the S22 while checking issue #20).
   Evidence: `settings/MainPreferencesViewModel.java:156-157`; `servermanager/ServerConfig.java:55-56,84-95`; `servermanager/AdbLaunchFiles.java` (the staged `/data/local/tmp/<applicationId>` launcher ADB mode uses now).

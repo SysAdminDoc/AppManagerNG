@@ -1054,6 +1054,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         if (badge.isNone()) {
             holder.attentionBadge.setVisibility(View.GONE);
             holder.attentionBadge.setContentDescription(null);
+            holder.attentionBadge.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             return;
         }
         int colorAttr = badge.severity == AttentionBadgeCalculator.Severity.WARN
@@ -1080,6 +1081,8 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         }
         holder.attentionBadge.setContentDescription(ctx.getString(R.string.attention_badge_content_description,
                 AttentionBadgeCalculator.formatCount(badge.count), ctx.getString(reasonRes)));
+        // The layout leaves the badge out of TalkBack until it has something to say
+        holder.attentionBadge.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
     }
 
     private static void installBadgeTouchDelegate(@NonNull ViewHolder holder) {
