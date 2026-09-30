@@ -824,7 +824,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                     .show();
             return;
         }
-        if (maybeShowSplitCompatibilityWarning()) {
+        if (maybeShowCompatibilityWarning()) {
             return;
         }
         if (maybeShowSplitCertMismatchDialog()) {
@@ -894,6 +894,8 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                             @Override
                             public void triggerInstall() {
                                 mBatchDowngradeWarningShown = true;
+                                // This dialog listed every issue already
+                                mSplitCompatibilityWarningShown = true;
                                 PackageInstallerActivity.this.triggerInstall();
                             }
 
@@ -1255,10 +1257,13 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     }
 
     @UiThread
-    private boolean maybeShowSplitCompatibilityWarning() {
-        if (mSplitCompatibilityWarningShown
-                || mModel.getApkFile() == null
-                || !mModel.getApkFile().isSplit()) {
+    private boolean maybeShowCompatibilityWarning() {
+        if (mSplitCompatibilityWarningShown || mModel.getApkFile() == null) {
+            return false;
+        }
+        boolean split = mModel.getApkFile().isSplit();
+        if (!split && !mBatchInstall) {
+            // A single APK's issues were in its install confirmation
             return false;
         }
         try {
@@ -1270,12 +1275,8 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             return true;
         }
         List<CharSequence> splitWarnings = new ArrayList<>();
-        for (InstallDependencyChecker.Issue issue : mPendingDependencyIssues) {
-            if (issue.kind != InstallDependencyChecker.IssueKind.INCOMPATIBLE_ABI_SPLIT
-                    && issue.kind != InstallDependencyChecker.IssueKind.MISMATCHED_DENSITY_SPLIT
-                    && issue.kind != InstallDependencyChecker.IssueKind.INCOMPATIBLE_NATIVE_ABI) {
-                continue;
-            }
+        for (InstallDependencyChecker.Issue issue : selectCompatibilityWarnings(mPendingDependencyIssues,
+                split, mBatchInstall)) {
             CharSequence line = formatDependencyIssue(issue);
             if (line != null) {
                 splitWarnings.add(line);
@@ -1303,6 +1304,29 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                 })
                 .show();
         return true;
+    }
+
+    /**
+     * The issues to stop on before the install goes ahead. A single APK's issues were in its install
+     * confirmation, but a batch only asks about a downgrade, so there an APK with no native code for
+     * this device has to be caught here.
+     */
+    @VisibleForTesting
+    @NonNull
+    static List<InstallDependencyChecker.Issue> selectCompatibilityWarnings(
+            @NonNull List<InstallDependencyChecker.Issue> issues, boolean split, boolean batch) {
+        List<InstallDependencyChecker.Issue> warnings = new ArrayList<>();
+        if (!split && !batch) {
+            return warnings;
+        }
+        for (InstallDependencyChecker.Issue issue : issues) {
+            boolean splitIssue = issue.kind == InstallDependencyChecker.IssueKind.INCOMPATIBLE_ABI_SPLIT
+                    || issue.kind == InstallDependencyChecker.IssueKind.MISMATCHED_DENSITY_SPLIT;
+            if (issue.kind == InstallDependencyChecker.IssueKind.INCOMPATIBLE_NATIVE_ABI || (split && splitIssue)) {
+                warnings.add(issue);
+            }
+        }
+        return warnings;
     }
 
     @NonNull
