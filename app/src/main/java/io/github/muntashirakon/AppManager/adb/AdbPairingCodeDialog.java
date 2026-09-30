@@ -120,6 +120,9 @@ public final class AdbPairingCodeDialog {
             case FAILED:
                 statusView.setText(R.string.adb_pairing_failed_retry_in_app);
                 break;
+            case TIMED_OUT:
+                statusView.setText(R.string.adb_pairing_timed_out);
+                break;
             case SUCCEEDED:
                 statusView.setText(R.string.paired_successfully);
                 dismissedFromState.set(true);
