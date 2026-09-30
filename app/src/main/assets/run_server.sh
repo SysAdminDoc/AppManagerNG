@@ -7,32 +7,32 @@ if [ $# -lt 2 ]; then
 fi
 
 SERVER_NAME=
-JAR_NAME=
 JAR_PATH=
+EXEC_JAR_PATH=
 %ENV_VARS%
 PORT="path:$1"
 TOKEN=",token:$2"
 ARGS="${PORT}${ARGS}${TOKEN}"
 JAR_PACKAGE_NAME="io.github.muntashirakon.AppManager"
 JAR_MAIN_CLASS="${JAR_PACKAGE_NAME}.server.ServerRunner"
-TMP_PATH="/data/local/tmp"
-EXEC_JAR_PATH=${TMP_PATH}/${JAR_NAME}
 # Ideally, id -u could be used, but it's not supported on older platforms
 # neither are commands like awk or sed, we're only left with grep.
-UID=$(id | grep -oE "uid=[0-9]+" | grep -oE "[0-9]+")
-GID=$(id | grep -oE "gid=[0-9]+" | grep -oE "[0-9]+")
+SELF_UID=$(id | grep -oE "uid=[0-9]+" | grep -oE "[0-9]+")
+SELF_GID=$(id | grep -oE "gid=[0-9]+" | grep -oE "[0-9]+")
 
-echo "Starting $SERVER_NAME as $UID:$GID..."
-# Copy am.jar to executable directory
-cp -f ${JAR_PATH} ${EXEC_JAR_PATH}
-if [ $? -ne 0 ]; then
-    # Copy failed
-    echo "Error! Could not copy jar file to the executable directory."
-    exit 1
+echo "Starting $SERVER_NAME as $SELF_UID:$SELF_GID..."
+if [ "${JAR_PATH}" != "${EXEC_JAR_PATH}" ]; then
+    # Copy am.jar to executable directory
+    cp -f ${JAR_PATH} ${EXEC_JAR_PATH}
+    if [ $? -ne 0 ]; then
+        # Copy failed
+        echo "Error! Could not copy jar file to the executable directory."
+        exit 1
+    fi
+    # Fix permission
+    chmod 755 ${EXEC_JAR_PATH}
+    chown $SELF_UID:$SELF_GID ${EXEC_JAR_PATH}
 fi
-# Fix permission
-chmod 755 ${EXEC_JAR_PATH}
-chown $UID:$GID ${EXEC_JAR_PATH}
 # Debug log
 echo "Jar path: $JAR_PATH"
 # Save jar path to environment variable

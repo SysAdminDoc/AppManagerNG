@@ -10,7 +10,7 @@ import org.junit.Test;
 
 public class LocalServerManagerTokenRedactionTest {
     private static final String TOKEN = "9b3e7d41c2a85f06e1d4b7a39c58f20e6ad13b7c48e5f92a07c6d3e8b1f45a92";
-    private static final String LAUNCH = "sh /data/local/tmp/io.github.sysadmindoc.AppManagerNG.debug/run_server.sh 60001 "
+    private static final String LAUNCH = "sh /data/local/tmp/io.github.sysadmindoc.AppManagerNG.debug/run_server.sh 62001 "
             + TOKEN + " || echo \"Error! Could not run the server launcher.\"";
 
     @Test
@@ -36,7 +36,7 @@ public class LocalServerManagerTokenRedactionTest {
     @Test
     public void serverOutputIsLeftAlone() {
         String[] lines = {
-                "Starting am_local_server as 2000:2000",
+                "Starting amng_server as 2000:2000",
                 "Jar path: /data/local/tmp/io.github.sysadmindoc.AppManagerNG.debug/am.jar",
                 "uid=2000(shell) gid=2000(shell) groups=2000(shell),1004(input),1007(log)",
                 "Success! Server has started.",
@@ -51,7 +51,7 @@ public class LocalServerManagerTokenRedactionTest {
     public void launchCommandKeepsItsNonSecretParts() {
         String line = LocalServerManager.redactToken(LAUNCH, TOKEN);
 
-        assertTrue(line, line.contains("/run_server.sh 60001 <redacted> || echo"));
+        assertTrue(line, line.contains("/run_server.sh 62001 <redacted> || echo"));
     }
 
     private static void assertNoTokenPiece(String line) {

@@ -73,7 +73,7 @@ public class FLog {
     private static void openFile() {
         try {
             if (writeLog && fos == null && sErrorCount.get() < 5) {
-                File file = new File("/data/local/tmp/am.txt");
+                File file = new File(Constants.SERVER_LOG);
                 fos = new FileOutputStream(file);
 
                 fos.write("\n\n\n--------------------".getBytes());

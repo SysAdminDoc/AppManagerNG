@@ -47,6 +47,7 @@ import io.github.muntashirakon.AppManager.logcat.helper.LogcatHelper;
 import io.github.muntashirakon.AppManager.main.MainListOptions;
 import io.github.muntashirakon.AppManager.rules.struct.ComponentRule;
 import io.github.muntashirakon.AppManager.runningapps.RunningAppsActivity;
+import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
 import io.github.muntashirakon.AppManager.settings.Ops;
 
 public class AppPref {
@@ -577,7 +578,7 @@ public class AppPref {
     public Object getDefaultValue(@NonNull PrefKey key) {
         switch (key) {
             case PREF_ADB_LOCAL_SERVER_PORT_INT:
-                return (UserHandleHidden.myUserId() + 60001);
+                return (UserHandleHidden.myUserId() + ServerConfig.DEFAULT_LOCAL_SERVER_PORT_BASE);
             case PREF_BACKUP_FLAGS_INT:
                 return BackupFlags.BACKUP_INT_DATA | BackupFlags.BACKUP_RULES
                         | BackupFlags.BACKUP_APK_FILES | BackupFlags.BACKUP_EXTRAS;

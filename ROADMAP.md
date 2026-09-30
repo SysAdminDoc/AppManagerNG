@@ -459,13 +459,6 @@ Sources and reasoning: RESEARCH.md (2026-09-30).
 
 ### P1
 
-- [ ] P1: Keep AppManagerNG's privileged server apart from upstream App Manager's
-  Why: the fork installs beside upstream by design, but both use port `60001+userId` and process name `am_local_server`, liveness is a bind test, and the client never waits for a handshake acknowledgement, so the fork can talk to upstream's server and its `killall am_local_server` stops upstream's too.
-  Evidence: `utils/AppPref.java:579-580`; `servermanager/LocalServer.java:112-120`; `DataTransmission.java:208-211`; `servermanager/LocalServerManager.java:337`; upstream `d0156c440` (`checkServerHealth`); fork issue #20 (a reporter who runs both apps).
-  Touches: default port preference, server process name in the launcher and `ServerRunner`, handshake acknowledgement in `DataTransmission` and `LocalServer`, restart path, tests. Related blocked items: HMAC mutual auth and secure-session hardening in `Roadmap_Blocked.md`.
-  Acceptance: the fork's default port range and process name differ from upstream's; a user-set port is kept; the client treats a server as alive only after an acknowledgement bound to its own token; the restart path kills only the fork's process; host tests cover the default differences and reject a server that accepts the connection but never acknowledges.
-  Complexity: M
-
 - [ ] P1: Port upstream's 2026-09-12 mode-of-operation fixes
   Why: switching between no-root and ADB, recreating the activity, and binding services concurrently all have races upstream fixed on 2026-09-12, and the fork's `Ops.java` is its most re-fixed privileged file.
   Evidence: upstream `8ba225324` (one request at a time), `4d03b737e` (no status replay on recreate), `54e2d6ec3`, `8ebd38362` (repeated no-root and ADB switching), `43e74db72` (check both services), `32d93652c` (atomic `bindServices()`), `b07e75ec3` (no-root fallback race), `bc52be1e8` (incomplete USB debugging dialog crash), `2dc8273b8` (server errors as toasts), `32ad2377d` (ANR in `ServerStatusChangeReceiver`); `settings/Ops.java` took 4 fix commits in the last 200.

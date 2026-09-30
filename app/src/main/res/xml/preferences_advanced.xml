@@ -22,7 +22,7 @@
     <Preference
         app:key="adb_local_server_port"
         app:title="@string/adb_local_server_port"
-        tools:summary="60001"
+        tools:summary="62001"
         app:iconSpaceReserved="false" />
 
     <Preference

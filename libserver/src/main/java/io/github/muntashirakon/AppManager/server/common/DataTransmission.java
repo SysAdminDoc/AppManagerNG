@@ -10,10 +10,17 @@ import androidx.annotation.Nullable;
 import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.SecureRandom;
 import java.util.Objects;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * <code>DataTransmission</code> class handles the data sent and received by server or client.
@@ -21,9 +28,14 @@ import java.util.Objects;
 // Copyright 2017 Zheng Li
 public final class DataTransmission implements Closeable {
     /**
-     * Protocol version. Specification: <code>protocol-version,token</code>
+     * Protocol version. The client opens with <code>protocol-version,token,nonce</code> and the
+     * server answers <code>ack,HMAC-SHA256(token, "amng-server-ack," + nonce)</code> in hex.
      */
-    public static final String PROTOCOL_VERSION = "1.2.4";
+    public static final String PROTOCOL_VERSION = "1.3.0";
+
+    private static final String ACK_PREFIX = "ack,";
+    private static final int NONCE_BYTES = 16;
+    private static final int MAX_NONCE_LENGTH = 64;
 
     /**
      * Hard cap on a single length-prefixed message. The length is read straight off the
@@ -205,10 +217,59 @@ public final class DataTransmission implements Closeable {
                 throw new ProtocolVersionException("Client protocol version: " + protocolVersion + ", " +
                         "Server protocol version: " + PROTOCOL_VERSION);
             }
+            if (split.length < 3 || split[2].isEmpty() || split[2].length() > MAX_NONCE_LENGTH) {
+                FLog.log("DataTransmission#shakeHands: Handshake has no usable nonce.");
+                throw new IOException("Malformed handshake");
+            }
+            // Prove to the client that this server holds its token. Accepting the connection
+            // proves nothing: any server on the port, upstream App Manager's included, does that.
+            sendMessage(ACK_PREFIX + acknowledgement(token, split[2]));
         } else if (role == Role.Client) {
             Log.e("DataTransmission", "shakeHands: Client protocol: " + PROTOCOL_VERSION);
-            sendMessage(PROTOCOL_VERSION + "," + token);
+            String nonce = newNonce();
+            sendMessage(PROTOCOL_VERSION + "," + token + "," + nonce);
+            byte[] reply;
+            try {
+                reply = readMessage();
+            } catch (EOFException e) {
+                throw new IOException("The server closed the connection without acknowledging this app's token.", e);
+            }
+            if (!constantTimeEquals(ACK_PREFIX + acknowledgement(token, nonce),
+                    new String(reply, StandardCharsets.UTF_8))) {
+                throw new IOException("The server didn't acknowledge this app's token.");
+            }
         }
+    }
+
+    /**
+     * The server's answer to a nonce, which only a holder of the token can compute.
+     */
+    @NonNull
+    static String acknowledgement(@NonNull String token, @NonNull String nonce) throws IOException {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(token.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            return toHex(mac.doFinal(("amng-server-ack," + nonce).getBytes(StandardCharsets.UTF_8)));
+        } catch (GeneralSecurityException e) {
+            throw new IOException("HMAC-SHA256 is unavailable.", e);
+        }
+    }
+
+    @NonNull
+    private static String newNonce() {
+        byte[] bytes = new byte[NONCE_BYTES];
+        new SecureRandom().nextBytes(bytes);
+        return toHex(bytes);
+    }
+
+    @NonNull
+    private static String toHex(@NonNull byte[] bytes) {
+        StringBuilder sb = new StringBuilder(bytes.length * 2);
+        for (byte b : bytes) {
+            sb.append(Character.forDigit((b >> 4) & 0xF, 16));
+            sb.append(Character.forDigit(b & 0xF, 16));
+        }
+        return sb.toString();
     }
 
     /**
