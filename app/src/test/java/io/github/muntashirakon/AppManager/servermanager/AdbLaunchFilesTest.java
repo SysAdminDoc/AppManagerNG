@@ -231,8 +231,11 @@ public class AdbLaunchFilesTest {
     @Test
     public void modeOfOpsOffersTheManualCommandAndRootOnlyWithSu() throws IOException {
         String model = read("app/src/main/java/io/github/muntashirakon/AppManager/settings/MainPreferencesViewModel.java");
-        assertTrue(model.contains("mCustomCommand0.postValue(ServerConfig.getManualAdbCommand(getApplication()));"));
-        assertTrue(model.contains("mCustomCommand1.postValue(RunnerUtils.isSuOnPath() ? ServerConfig.getServerRunnerCommand(0) : null);"));
+        int adb = model.indexOf("adbCommand = ServerConfig.getManualAdbCommand(getApplication());");
+        assertTrue(adb != -1 && model.indexOf("mCustomCommand0.postValue(adbCommand);", adb) != -1);
+        int su = model.indexOf("if (RunnerUtils.isSuOnPath()) {");
+        int root = model.indexOf("rootCommand = ServerConfig.getServerRunnerCommand(0);");
+        assertTrue(su != -1 && root > su && model.indexOf("mCustomCommand1.postValue(rootCommand);", root) != -1);
         // A root check that opens a root shell would put up a superuser prompt on this screen
         assertFalse(model.contains("isAppGrantedRoot()"));
         assertFalse(model.contains("isRootAvailable()"));
