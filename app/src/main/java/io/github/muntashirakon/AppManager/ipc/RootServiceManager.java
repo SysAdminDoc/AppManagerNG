@@ -171,8 +171,11 @@ public class RootServiceManager implements Handler.Callback {
             String classPath;
             String stagingCommand;
             try {
-                if (Ops.hasRoot() || Ops.isSystem()) {
-                    // Root and system can read the app's own cache
+                // Root mode runs this through su, which can read the app's own cache. Every other
+                // mode runs it through the local server, usually as the shell user, which can't.
+                // Not hasRoot(): a rooted phone in ADB mode still launches through the shell, and
+                // asking can put up a superuser prompt.
+                if (Ops.isDirectRoot() || Ops.isSystem()) {
                     classPath = prepareMainJar(context).getAbsolutePath();
                     stagingCommand = "";
                 } else {
