@@ -107,27 +107,35 @@ public final class AdbLaunchFiles {
             if (afd.getLength() != jar.length) {
                 throw new IOException("main.jar isn't stored uncompressed in the APK.");
             }
-            return buildExtractCommand(getApkPath(context, afd), afd.getStartOffset(), jar.length,
-                    DigestUtils.getHexDigest(DigestUtils.SHA_256, jar), MAIN_JAR);
+            return buildExtractCommand(getApkPath(context, afd), afd.getStartOffset(), jar, MAIN_JAR);
         }
     }
 
     @VisibleForTesting
     @NonNull
-    static String buildExtractCommand(@NonNull String apkPath, long offset, long length,
-                                      @NonNull String sha256, @NonNull String dest) {
+    static String buildExtractCommand(@NonNull String apkPath, long offset, @NonNull byte[] expected,
+                                      @NonNull String dest) {
         String dir = dest.substring(0, dest.lastIndexOf('/'));
         // Write under a per-shell name and rename, so a service still running the old copy keeps
         // its file and two launches at once can't interleave their writes.
         String tmp = "\"" + dest + ".$$\"";
         return "{ mkdir -p " + quote(dir) + " && chmod 700 " + quote(dir)
-                + " && dd if=" + quote(apkPath) + " of=" + tmp + " bs=1 skip=" + offset + " count=" + length
+                + " && dd if=" + quote(apkPath) + " of=" + tmp + " bs=1 skip=" + offset + " count=" + expected.length
                 + " 2>/dev/null"
-                // Toybox has sha256sum from Android 8 on. Older shells go by dd's exact byte count.
-                + " && { ! command -v sha256sum >/dev/null || { h=$(sha256sum " + tmp + ") && [ \"${h%% *}\" = "
-                + sha256 + " ]; }; }"
+                // Toybox has sha256sum from Android 8 on, and sha1sum and md5sum from Android 6.
+                // Android 5 has none of them and goes by dd's byte count.
+                + " && { if " + hashCheck("sha256sum", tmp, DigestUtils.getHexDigest(DigestUtils.SHA_256, expected))
+                + "; elif " + hashCheck("sha1sum", tmp, DigestUtils.getHexDigest(DigestUtils.SHA_1, expected))
+                + "; elif " + hashCheck("md5sum", tmp, DigestUtils.getHexDigest(DigestUtils.MD5, expected))
+                + "; fi; }"
                 + " && chmod 644 " + tmp + " && mv " + tmp + " " + quote(dest)
                 + " || { rm -f " + tmp + "; false; }; } && ";
+    }
+
+    @NonNull
+    private static String hashCheck(@NonNull String tool, @NonNull String file, @NonNull String digest) {
+        return "command -v " + tool + " >/dev/null; then h=$(" + tool + " " + file + ") && [ \"${h%% *}\" = "
+                + digest + " ]";
     }
 
     @NonNull
