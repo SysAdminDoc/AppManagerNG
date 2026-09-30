@@ -15,10 +15,13 @@ import android.provider.SettingsHidden;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.core.util.Pair;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,37 +45,19 @@ public class AdbUtils {
         AtomicReference<String> atomicHostAddress = new AtomicReference<>(null);
         CountDownLatch resolveHostAndPort = new CountDownLatch(1);
 
-        AdbMdns adbMdnsTcp = new AdbMdns(context, AdbMdns.SERVICE_TYPE_ADB, (hostAddress, port) -> {
+        AdbMdns.OnAdbDaemonDiscoveredListener listener = (hostAddress, port) -> {
             if (hostAddress != null) {
                 atomicHostAddress.set(hostAddress.getHostAddress());
                 atomicPort.set(port);
             }
             resolveHostAndPort.countDown();
-        });
-        adbMdnsTcp.start();
-
-        AdbMdns adbMdnsTls;
+        };
+        List<Scanner> scanners = new ArrayList<>(2);
+        scanners.add(scanner(new AdbMdns(context, AdbMdns.SERVICE_TYPE_ADB, listener)));
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            adbMdnsTls = new AdbMdns(context, AdbMdns.SERVICE_TYPE_TLS_CONNECT, (hostAddress, port) -> {
-                if (hostAddress != null) {
-                    atomicHostAddress.set(hostAddress.getHostAddress());
-                    atomicPort.set(port);
-                }
-                resolveHostAndPort.countDown();
-            });
-            adbMdnsTls.start();
-        } else adbMdnsTls = null;
-
-        try {
-            if (!resolveHostAndPort.await(timeout, unit)) {
-                throw new InterruptedException("Timed out while trying to find a valid host address and port");
-            }
-        } finally {
-            adbMdnsTcp.stop();
-            if (adbMdnsTls != null) {
-                adbMdnsTls.stop();
-            }
+            scanners.add(scanner(new AdbMdns(context, AdbMdns.SERVICE_TYPE_TLS_CONNECT, listener)));
         }
+        scan(scanners, resolveHostAndPort, timeout, unit);
 
         String host = atomicHostAddress.get();
         int port = atomicPort.get();
@@ -80,6 +65,59 @@ public class AdbUtils {
             throw new IOException("Could not find any valid host address or port");
         }
         return new Pair<>(host, port);
+    }
+
+    @VisibleForTesting
+    interface Scanner {
+        void start();
+
+        void stop();
+    }
+
+    @NonNull
+    private static Scanner scanner(@NonNull AdbMdns adbMdns) {
+        return new Scanner() {
+            @Override
+            public void start() {
+                adbMdns.start();
+            }
+
+            @Override
+            public void stop() {
+                adbMdns.stop();
+            }
+        };
+    }
+
+    /**
+     * Starts every scanner and waits for a result. Each scanner that was asked to start is stopped
+     * afterwards whatever happened, even when another one failed to start or to stop: a scanner
+     * left running holds a multicast lock and can make later scans fail at once.
+     */
+    @VisibleForTesting
+    @WorkerThread
+    static void scan(@NonNull List<Scanner> scanners, @NonNull CountDownLatch found, long timeout,
+                     @NonNull TimeUnit unit) throws IOException, InterruptedException {
+        List<Scanner> started = new ArrayList<>(scanners.size());
+        try {
+            for (Scanner scanner : scanners) {
+                started.add(scanner);
+                scanner.start();
+            }
+            if (!found.await(timeout, unit)) {
+                throw new InterruptedException("Timed out while trying to find a valid host address and port");
+            }
+        } catch (RuntimeException e) {
+            throw new IOException("Could not start ADB service discovery", e);
+        } finally {
+            for (Scanner scanner : started) {
+                try {
+                    scanner.stop();
+                } catch (RuntimeException e) {
+                    Log.w("AdbUtils", "Could not stop ADB service discovery", e);
+                }
+            }
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.R)
