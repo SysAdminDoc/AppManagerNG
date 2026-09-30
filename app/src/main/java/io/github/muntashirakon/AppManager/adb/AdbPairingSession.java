@@ -43,6 +43,10 @@ public final class AdbPairingSession {
         publish(AdbPairingState.failed(port));
     }
 
+    static void timedOut(int port) {
+        publish(AdbPairingState.timedOut(port));
+    }
+
     static void succeeded(int port) {
         publish(AdbPairingState.succeeded(port));
     }

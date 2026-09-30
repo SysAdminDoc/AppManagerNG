@@ -815,8 +815,7 @@ public class Ops {
             return STATUS_LOCAL_NETWORK_PERMISSION_REQUIRED;
         }
         try {
-            AdbConnectionManager conn = AdbConnectionManager.getInstance();
-            int status = pairAdbInternal(context, conn);
+            int status = pairAdbInternal(context);
             if (status == STATUS_ADB_CONNECT_REQUIRED) {
                 return connectAdb(context, findAdbPort(context, 7, ServerConfig.getAdbPort()),
                         STATUS_ADB_CONNECT_REQUIRED);
@@ -834,14 +833,19 @@ public class Ops {
     @NoOps
     @RequiresApi(Build.VERSION_CODES.R)
     @Status
-    private static int pairAdbInternal(@NonNull Context context, @NonNull AdbConnectionManager conn) {
+    private static int pairAdbInternal(@NonNull Context context) {
         AtomicReference<CountDownLatch> observerObserver = new AtomicReference<>(new CountDownLatch(1));
         AtomicReference<Exception> pairingError = new AtomicReference<>();
-        Observer<Exception> observer = e -> {
-            pairingError.set(e);
+        // The observer is handed the last outcome at once, which may be from an earlier pairing
+        long since = AdbConnectionManager.getLastPairingResultNumber();
+        Observer<AdbConnectionManager.PairingResult> observer = result -> {
+            if (result.number <= since) {
+                return;
+            }
+            pairingError.set(result.error);
             observerObserver.get().countDown();
         };
-        ThreadUtils.postOnMainThread(() -> conn.getPairingObserver().observeForever(observer));
+        ThreadUtils.postOnMainThread(() -> AdbConnectionManager.getPairingObserver().observeForever(observer));
         while (true) {
             boolean success;
             try {
@@ -859,7 +863,7 @@ public class Ops {
                     success = false;
                 }
             }
-            ThreadUtils.postOnMainThread(() -> conn.getPairingObserver().removeObserver(observer));
+            ThreadUtils.postOnMainThread(() -> AdbConnectionManager.getPairingObserver().removeObserver(observer));
             if (success) {
                 return STATUS_ADB_CONNECT_REQUIRED;
             } else {

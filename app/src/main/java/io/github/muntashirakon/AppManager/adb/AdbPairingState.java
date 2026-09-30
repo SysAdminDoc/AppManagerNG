@@ -11,6 +11,7 @@ public final class AdbPairingState {
         PORT_FOUND,
         PAIRING,
         FAILED,
+        TIMED_OUT,
         SUCCEEDED,
         CANCELLED
     }
@@ -47,6 +48,14 @@ public final class AdbPairingState {
     @NonNull
     public static AdbPairingState failed(int port) {
         return new AdbPairingState(Status.FAILED, port);
+    }
+
+    /**
+     * The attempt gave up after {@link AdbConnectionManager#PAIRING_ATTEMPT_TIMEOUT_MILLIS}.
+     */
+    @NonNull
+    public static AdbPairingState timedOut(int port) {
+        return new AdbPairingState(Status.TIMED_OUT, port);
     }
 
     @NonNull

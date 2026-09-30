@@ -27,6 +27,8 @@ import androidx.core.app.ServiceCompat;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
 
+import java.net.SocketTimeoutException;
+
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -221,12 +223,14 @@ public class AdbPairingService extends Service {
                 FOREGROUND_SERVICE_TYPE_DATA_SYNC);
         ThreadUtils.postOnBackgroundThread(() -> {
             boolean isSuccess;
+            boolean timedOut = false;
             try {
                 AdbConnectionManager.getInstance().pairLiveData(ServerConfig.getAdbHost(this), port, code);
                 isSuccess = true;
             } catch (Exception e) {
                 Log.w(TAG, "Pairing failed.", e);
                 isSuccess = false;
+                timedOut = e instanceof SocketTimeoutException;
             }
             ThreadUtils.postOnMainThread(this::stopSearching);
             if (isSuccess) {
@@ -234,12 +238,16 @@ public class AdbPairingService extends Service {
                 mNotificationBuilder.setContentText(getString(R.string.paired_successfully)).clearActions();
                 stopSelf();
             } else {
-                AdbPairingSession.failed(port);
+                if (timedOut) {
+                    AdbPairingSession.timedOut(port);
+                } else {
+                    AdbPairingSession.failed(port);
+                }
                 PendingIntent deleteIntent = getStopIntent();
                 Intent retryIntent = new Intent(this, getClass()).setAction(ACTION_START_SEARCHING);
                 PendingIntent retryPendingIntent = PendingIntentCompat.getForegroundService(this, 3, retryIntent, 0, false);
                 NotificationCompat.Action retryAction = new NotificationCompat.Action.Builder(null, getString(R.string.adb_pairing_retry_pairing), retryPendingIntent).build();
-                mNotificationBuilder.setContentText(getString(R.string.failed))
+                mNotificationBuilder.setContentText(getString(timedOut ? R.string.adb_pairing_timed_out : R.string.failed))
                         .clearActions()
                         .setDeleteIntent(deleteIntent)
                         .addAction(retryAction);
