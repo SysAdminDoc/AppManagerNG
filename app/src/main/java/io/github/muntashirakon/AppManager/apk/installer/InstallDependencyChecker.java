@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Static helpers that detect install-blocking dependencies before AppManagerNG hands the package to
@@ -38,6 +39,7 @@ public final class InstallDependencyChecker {
         MISSING_SHARED_LIBRARY,
         INCOMPATIBLE_ABI_SPLIT,
         MISMATCHED_DENSITY_SPLIT,
+        INCOMPATIBLE_NATIVE_ABI,
     }
 
     private static final int SPLIT_TYPE_ABI = 1;
@@ -99,6 +101,12 @@ public final class InstallDependencyChecker {
         public final int actualVersion;
         @NonNull
         public final List<String> missingNames;
+        /**
+         * What the device offers instead, where the kind has it (the device's ABIs for
+         * {@link IssueKind#INCOMPATIBLE_NATIVE_ABI}).
+         */
+        @NonNull
+        public final List<String> availableNames;
 
         Issue(@NonNull IssueKind kind, int requiredVersion, int actualVersion) {
             this(kind, requiredVersion, actualVersion, Collections.emptyList());
@@ -106,10 +114,16 @@ public final class InstallDependencyChecker {
 
         Issue(@NonNull IssueKind kind, int requiredVersion, int actualVersion,
               @NonNull List<String> missingNames) {
+            this(kind, requiredVersion, actualVersion, missingNames, Collections.emptyList());
+        }
+
+        Issue(@NonNull IssueKind kind, int requiredVersion, int actualVersion,
+              @NonNull List<String> missingNames, @NonNull List<String> availableNames) {
             this.kind = kind;
             this.requiredVersion = requiredVersion;
             this.actualVersion = actualVersion;
             this.missingNames = Collections.unmodifiableList(new ArrayList<>(missingNames));
+            this.availableNames = Collections.unmodifiableList(new ArrayList<>(availableNames));
         }
     }
 
@@ -131,7 +145,10 @@ public final class InstallDependencyChecker {
      * @param supportedAbis       {@link android.os.Build#SUPPORTED_ABIS}; {@code null} skips ABI
      *                            compatibility checks.
      * @param deviceDensity       current display density DPI; non-positive skips density matching.
-     * @return zero or more {@link Issue}s ordered minSdk → missing-libraries → split warnings.
+     * @param apkNativeAbis       the ABIs under {@code lib/} in the base APK and the selected
+     *                            splits; {@code null} skips the native-code check.
+     * @return zero or more {@link Issue}s ordered minSdk → missing-libraries → native code →
+     *         split warnings.
      */
     @NonNull
     public static List<Issue> check(int apkMinSdk, int deviceApi,
@@ -139,7 +156,8 @@ public final class InstallDependencyChecker {
                                     @Nullable Collection<String> installedLibraries,
                                     @Nullable Collection<SplitInfo> splitInfos,
                                     @Nullable Collection<String> supportedAbis,
-                                    int deviceDensity) {
+                                    int deviceDensity,
+                                    @Nullable Collection<String> apkNativeAbis) {
         List<Issue> issues = new ArrayList<>(4);
         Issue minSdkIssue = checkMinSdk(apkMinSdk, deviceApi);
         if (minSdkIssue != null) {
@@ -150,6 +168,11 @@ public final class InstallDependencyChecker {
             issues.add(libraryIssue);
         }
         Issue abiIssue = checkAbiSplits(splitInfos, supportedAbis);
+        // A selected ABI split that doesn't fit already names what to change
+        Issue nativeAbiIssue = abiIssue == null ? checkNativeAbis(apkNativeAbis, supportedAbis) : null;
+        if (nativeAbiIssue != null) {
+            issues.add(nativeAbiIssue);
+        }
         if (abiIssue != null) {
             issues.add(abiIssue);
         }
@@ -163,9 +186,20 @@ public final class InstallDependencyChecker {
     @NonNull
     public static List<Issue> check(int apkMinSdk, int deviceApi,
                                     @Nullable Collection<String> requiredLibraries,
+                                    @Nullable Collection<String> installedLibraries,
+                                    @Nullable Collection<SplitInfo> splitInfos,
+                                    @Nullable Collection<String> supportedAbis,
+                                    int deviceDensity) {
+        return check(apkMinSdk, deviceApi, requiredLibraries, installedLibraries, splitInfos,
+                supportedAbis, deviceDensity, null);
+    }
+
+    @NonNull
+    public static List<Issue> check(int apkMinSdk, int deviceApi,
+                                    @Nullable Collection<String> requiredLibraries,
                                     @Nullable Collection<String> installedLibraries) {
         return check(apkMinSdk, deviceApi, requiredLibraries, installedLibraries,
-                null, null, 0);
+                null, null, 0, null);
     }
 
     /**
@@ -260,6 +294,62 @@ public final class InstallDependencyChecker {
             return null;
         }
         return new Issue(IssueKind.INCOMPATIBLE_ABI_SPLIT, 0, 0, incompatible);
+    }
+
+    /**
+     * The ABIs an APK carries native code for, from its zip entry names ({@code lib/<abi>/<file>}).
+     */
+    @NonNull
+    public static Set<String> nativeAbisOf(@NonNull Iterable<String> zipEntryNames) {
+        Set<String> abis = new TreeSet<>();
+        for (String name : zipEntryNames) {
+            if (name == null || !name.startsWith("lib/")) continue;
+            int slash = name.indexOf('/', 4);
+            // A bare lib/<abi>/ directory entry carries no code
+            if (slash > 4 && slash < name.length() - 1) {
+                abis.add(name.substring(4, slash));
+            }
+        }
+        return abis;
+    }
+
+    /**
+     * @return an {@link Issue} when the APK has native code and none of it is for an ABI the device
+     *         supports. The system rejects such an APK at commit time, and InstallerX Revived #838
+     *         shows that path soft-rebooting a phone. {@code null} when the APK has no native code,
+     *         when one of its ABIs is supported, or when either input is unavailable.
+     */
+    @Nullable
+    public static Issue checkNativeAbis(@Nullable Collection<String> apkNativeAbis,
+                                        @Nullable Collection<String> supportedAbis) {
+        if (apkNativeAbis == null || apkNativeAbis.isEmpty() || supportedAbis == null) {
+            return null;
+        }
+        List<String> supported = new ArrayList<>();
+        for (String supportedAbi : supportedAbis) {
+            if (supportedAbi == null) continue;
+            String trimmed = supportedAbi.trim();
+            if (!trimmed.isEmpty() && !supported.contains(trimmed)) {
+                supported.add(trimmed);
+            }
+        }
+        if (supported.isEmpty()) {
+            return null;
+        }
+        Set<String> apkAbis = new TreeSet<>();
+        for (String abi : apkNativeAbis) {
+            if (abi == null) continue;
+            String trimmed = abi.trim();
+            if (trimmed.isEmpty()) continue;
+            if (supported.contains(trimmed)) {
+                return null;
+            }
+            apkAbis.add(trimmed);
+        }
+        if (apkAbis.isEmpty()) {
+            return null;
+        }
+        return new Issue(IssueKind.INCOMPATIBLE_NATIVE_ABI, 0, 0, new ArrayList<>(apkAbis), supported);
     }
 
     @Nullable

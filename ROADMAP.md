@@ -482,13 +482,6 @@ Sources and reasoning: RESEARCH.md (2026-09-30).
   Acceptance: each ADB-mode failure maps to a stable code (wireless debugging off, pairing required, certificate rejected, connection refused, stream closed after connect, server launch denied, launch timeout, unknown) shown in plain words with one next step and carried in the support bundle without addresses, ports or tokens; host tests feed each exception shape and assert the code; an unknown failure keeps its exception class.
   Complexity: M
 
-- [ ] P2: Check the base APK's native ABIs before installing
-  Why: install preflight checks only selected ABI splits, so a single APK whose `lib/` holds no ABI the device supports reaches session commit, and InstallerX Revived #838 shows that path soft-rebooting an arm64 phone inside system_server.
-  Evidence: `apk/installer/InstallDependencyChecker.java:227` (`checkAbiSplits` returns early without splits); InstallerX Revived #838 (2026-09-29, x86_64-only APK on an S23 Ultra, Android 14).
-  Touches: `InstallDependencyChecker.java`, APK native-library listing, installer preflight UI, tests.
-  Acceptance: when the base APK plus selected splits carry `lib/<abi>/` entries and none is in `Build.SUPPORTED_ABIS`, preflight reports an incompatible ABI naming what the APK has and what the device supports, before any session is created; APKs without native libraries are unaffected; tests cover x86_64-only, arm64 plus x86_64, no libraries, and the existing split cases.
-  Complexity: S
-
 - [ ] P2: Label the unlabeled image controls and fail lint on new ones
   Why: 12 image controls have neither a content description nor a decorative flag, so TalkBack reads nothing or "unlabeled", and lint does not escalate the check.
   Evidence: `res/layout/dialog_backup_tasks.xml` (5), `dialog_restore_tasks.xml` (3), `dialog_backup_restore.xml`, `item_icon_title_subtitle.xml`, `item_main.xml`, `item_main_v2.xml` (1 each); `app/lint.xml`; WCAG 2.2 success criterion 1.1.1. The device-gated accessibility hardening item in `Roadmap_Blocked.md` covers the rest.

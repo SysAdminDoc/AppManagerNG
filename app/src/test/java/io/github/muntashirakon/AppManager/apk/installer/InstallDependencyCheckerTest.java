@@ -190,4 +190,85 @@ public class InstallDependencyCheckerTest {
         assertEquals("foo, bar, baz", InstallDependencyChecker.joinMissingNames(
                 InstallDependencyChecker.namesList("foo", "bar", "baz")));
     }
+
+    private static final List<String> ARM64_PHONE = InstallDependencyChecker.namesList(
+            "arm64-v8a", "armeabi-v7a", "armeabi");
+
+    @Test
+    public void nativeAbisComeFromLibFoldersWithFilesInThem() {
+        assertEquals(new java.util.TreeSet<>(Arrays.asList("arm64-v8a", "x86_64")),
+                InstallDependencyChecker.nativeAbisOf(Arrays.asList(
+                        "AndroidManifest.xml",
+                        "classes.dex",
+                        "lib/x86_64/libfoo.so",
+                        "lib/x86_64/libbar.so",
+                        "lib/arm64-v8a/libfoo.so",
+                        // A bare folder and look-alikes carry no code
+                        "lib/x86/",
+                        "lib/",
+                        "libs/armeabi/libold.so",
+                        "assets/lib/mips/libfake.so")));
+    }
+
+    @Test
+    public void anX8664OnlyApkIsReportedOnAnArm64Phone() {
+        // InstallerX Revived #838: this APK reached session commit and soft-rebooted the phone
+        InstallDependencyChecker.Issue issue = InstallDependencyChecker.checkNativeAbis(
+                InstallDependencyChecker.namesList("x86_64"), ARM64_PHONE);
+
+        assertNotNull(issue);
+        assertEquals(InstallDependencyChecker.IssueKind.INCOMPATIBLE_NATIVE_ABI, issue.kind);
+        assertEquals(InstallDependencyChecker.namesList("x86_64"), issue.missingNames);
+        assertEquals(ARM64_PHONE, issue.availableNames);
+    }
+
+    @Test
+    public void anApkWithOneSupportedAbiIsFine() {
+        assertNull(InstallDependencyChecker.checkNativeAbis(
+                InstallDependencyChecker.namesList("x86_64", "arm64-v8a"), ARM64_PHONE));
+        assertNull(InstallDependencyChecker.checkNativeAbis(
+                InstallDependencyChecker.namesList("armeabi-v7a"), ARM64_PHONE));
+    }
+
+    @Test
+    public void anApkWithoutNativeCodeIsFine() {
+        assertNull(InstallDependencyChecker.checkNativeAbis(
+                InstallDependencyChecker.namesList(), ARM64_PHONE));
+        assertNull(InstallDependencyChecker.checkNativeAbis(null, ARM64_PHONE));
+        assertNull(InstallDependencyChecker.checkNativeAbis(
+                InstallDependencyChecker.namesList("x86_64"), null));
+    }
+
+    @Test
+    public void theNativeCodeIssueComesAfterLibrariesAndBeforeSplitWarnings() {
+        List<InstallDependencyChecker.Issue> issues = InstallDependencyChecker.check(
+                34, 30,
+                InstallDependencyChecker.namesList("androidx.window.extensions"),
+                InstallDependencyChecker.namesList("org.apache.http.legacy"),
+                Arrays.asList(
+                        InstallDependencyChecker.SplitInfo.density("hdpi", "config.hdpi",
+                                null, false, 240),
+                        InstallDependencyChecker.SplitInfo.density("xxhdpi", "config.xxhdpi",
+                                null, true, 480)),
+                ARM64_PHONE, 260, InstallDependencyChecker.namesList("x86_64"));
+
+        assertEquals(4, issues.size());
+        assertEquals(InstallDependencyChecker.IssueKind.MIN_SDK_TOO_HIGH, issues.get(0).kind);
+        assertEquals(InstallDependencyChecker.IssueKind.MISSING_SHARED_LIBRARY, issues.get(1).kind);
+        assertEquals(InstallDependencyChecker.IssueKind.INCOMPATIBLE_NATIVE_ABI, issues.get(2).kind);
+        assertEquals(InstallDependencyChecker.IssueKind.MISMATCHED_DENSITY_SPLIT, issues.get(3).kind);
+    }
+
+    @Test
+    public void aBadAbiSplitIsReportedOnceAsTheSplitToChange() {
+        // The selected x86 split is also the only native code, so both checks would fire
+        List<InstallDependencyChecker.Issue> issues = InstallDependencyChecker.check(
+                21, 30, null, null,
+                Arrays.asList(InstallDependencyChecker.SplitInfo.abi("x86", "config.x86",
+                        null, true, "x86")),
+                ARM64_PHONE, 0, InstallDependencyChecker.namesList("x86"));
+
+        assertEquals(1, issues.size());
+        assertEquals(InstallDependencyChecker.IssueKind.INCOMPATIBLE_ABI_SPLIT, issues.get(0).kind);
+    }
 }

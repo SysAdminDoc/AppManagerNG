@@ -1101,7 +1101,18 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         }
         return InstallDependencyChecker.check(apkMinSdk, Build.VERSION.SDK_INT,
                 requiredLibraries, installedLibraries, collectSplitInfos(prepareSelectedSplits),
-                java.util.Arrays.asList(Build.SUPPORTED_ABIS), StaticDataset.DEVICE_DENSITY);
+                java.util.Arrays.asList(Build.SUPPORTED_ABIS), StaticDataset.DEVICE_DENSITY,
+                collectNativeAbis(prepareSelectedSplits));
+    }
+
+    @Nullable
+    private Set<String> collectNativeAbis(boolean prepareSelectedSplits) {
+        if (mModel == null || mModel.getApkFile() == null) {
+            return null;
+        }
+        return mModel.getNativeAbis(prepareSelectedSplits
+                ? mModel.getSelectedSplitsForInstallation()
+                : mModel.getSelectedSplits());
     }
 
     @Nullable
@@ -1234,6 +1245,10 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             case MISMATCHED_DENSITY_SPLIT:
                 return getString(R.string.installer_dependency_mismatched_density_split,
                         InstallDependencyChecker.joinMissingNames(issue.missingNames));
+            case INCOMPATIBLE_NATIVE_ABI:
+                return getString(R.string.installer_dependency_incompatible_native_abi,
+                        InstallDependencyChecker.joinMissingNames(issue.missingNames),
+                        InstallDependencyChecker.joinMissingNames(issue.availableNames));
             default:
                 return null;
         }
@@ -1257,7 +1272,8 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         List<CharSequence> splitWarnings = new ArrayList<>();
         for (InstallDependencyChecker.Issue issue : mPendingDependencyIssues) {
             if (issue.kind != InstallDependencyChecker.IssueKind.INCOMPATIBLE_ABI_SPLIT
-                    && issue.kind != InstallDependencyChecker.IssueKind.MISMATCHED_DENSITY_SPLIT) {
+                    && issue.kind != InstallDependencyChecker.IssueKind.MISMATCHED_DENSITY_SPLIT
+                    && issue.kind != InstallDependencyChecker.IssueKind.INCOMPATIBLE_NATIVE_ABI) {
                 continue;
             }
             CharSequence line = formatDependencyIssue(issue);

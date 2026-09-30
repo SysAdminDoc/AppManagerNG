@@ -2201,6 +2201,7 @@
     <string name="installer_dependency_missing_shared_library">Required shared libraries are not installed on this device: %1$s. The system installer may refuse to install this APK.</string>
     <string name="installer_dependency_incompatible_abi_split">Selected ABI splits are not supported by this device: %1$s. The system installer will refuse this split set.</string>
     <string name="installer_dependency_mismatched_density_split">Selected density splits do not match this device as closely as another available split: %1$s. The app may install with the wrong resources.</string>
+    <string name="installer_dependency_incompatible_native_abi">This APK only has native code for %1$s, and this device runs %2$s. The system installer will refuse it.</string>
     <string name="installer_split_dependency_warning_title">Split compatibility warning</string>
     <string name="installer_developer_verification_warning">Android Developer Verification is active on this device. In Brazil, Indonesia, Singapore, and Thailand, Android may block installs or updates when the package name and signing key are not registered to a verified developer. If Android shows an advanced flow, continue only when you trust the source.</string>
     <string name="installer_developer_verification_failure_reason">Developer verification: %1$s (%2$s)</string>
