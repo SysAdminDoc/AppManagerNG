@@ -15,6 +15,7 @@ import androidx.annotation.WorkerThread;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -105,7 +106,7 @@ public final class AdbLaunchFiles {
     @WorkerThread
     @NonNull
     static String readShellAnswer(@NonNull InputStream in, @NonNull Closeable stream, @NonNull String marker,
-                                  long timeoutMillis) {
+                                  long timeoutMillis) throws InterruptedIOException {
         CountDownLatch done = new CountDownLatch(1);
         Thread watchdog = new Thread(() -> {
             try {
@@ -128,6 +129,12 @@ public final class AdbLaunchFiles {
                 }
             }
         } catch (IOException e) {
+            if (e.getCause() instanceof InterruptedException) {
+                // libadb-android wraps the interrupt and clears it. The start was cancelled, which
+                // is no closed shell to try again.
+                Thread.currentThread().interrupt();
+                throw new InterruptedIOException("Interrupted while reading the shell's answer.");
+            }
             Log.d(TAG, "The shell ended: %s", e.toString());
         } finally {
             done.countDown();

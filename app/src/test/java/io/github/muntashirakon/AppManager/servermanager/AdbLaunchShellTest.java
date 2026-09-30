@@ -26,6 +26,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Launching the privileged server over an ADB shell: a shell libadb closed at once gets one more
@@ -150,7 +152,7 @@ public class AdbLaunchShellTest {
         assertTrue(refused.getMessage(), refused.getMessage().endsWith("chmod: Operation not permitted"));
     }
 
-    @Test
+    @Test(timeout = 30_000)
     public void theStagingShellsAnswerIsKeptWhenLibadbEndsItWithStreamClosed() throws IOException {
         // What the S22 did over Wireless debugging: every ADB start failed with "Stream closed."
         // because the read after the output threw instead of returning -1
@@ -170,8 +172,8 @@ public class AdbLaunchShellTest {
                 "AMNG_STAGING_LOCKED\n".getBytes(StandardCharsets.UTF_8)), () -> {}, AdbLaunchFiles.LOCKED_MARKER, 60_000));
     }
 
-    @Test
-    public void aStagingShellWhoseCloseCameBeforeItsOutputWasReadDoesNotHang() {
+    @Test(timeout = 30_000)
+    public void aStagingShellWhoseCloseCameBeforeItsOutputWasReadDoesNotHang() throws IOException {
         // libadb leaves such a stream waiting after the output. The marker is enough to stop at.
         long start = System.nanoTime();
         LibadbShell locked = new LibadbShell("AMNG_STAGING_LOCKED\n", true);
@@ -187,6 +189,37 @@ public class AdbLaunchShellTest {
         long tookMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
         assertTrue(String.valueOf(tookMillis), tookMillis >= 250 && tookMillis < 10_000);
         assertTrue(refused.mClosed);
+    }
+
+    @Test(timeout = 30_000)
+    public void aCancelledStartEndsTheReadInsteadOfPassingForAClosedShell() throws InterruptedException {
+        LibadbShell waiting = new LibadbShell("", true);
+        AtomicReference<Throwable> thrown = new AtomicReference<>();
+        AtomicBoolean stillInterrupted = new AtomicBoolean();
+        AtomicBoolean retried = new AtomicBoolean(true);
+        Thread start = new Thread(() -> {
+            try {
+                AdbLaunchFiles.readShellAnswer(waiting, waiting, AdbLaunchFiles.LOCKED_MARKER, 60_000);
+            } catch (Throwable t) {
+                thrown.set(t);
+                retried.set(LocalServerManager.isWorthRetrying(1, t));
+            }
+            stillInterrupted.set(Thread.currentThread().isInterrupted());
+        });
+        start.start();
+        long deadline = System.currentTimeMillis() + 5_000;
+        while (start.getState() != Thread.State.WAITING && System.currentTimeMillis() < deadline) {
+            Thread.sleep(10);
+        }
+        start.interrupt();
+        start.join(10_000);
+
+        assertFalse(start.isAlive());
+        assertTrue(String.valueOf(thrown.get()), thrown.get() instanceof InterruptedIOException);
+        assertTrue(stillInterrupted.get());
+        assertFalse(retried.get());
+        // Positive control: the same failure on a thread nobody interrupted still gets its retry
+        assertTrue(LocalServerManager.isWorthRetrying(1, thrown.get()));
     }
 
     @Test
@@ -246,7 +279,8 @@ public class AdbLaunchShellTest {
                 try {
                     wait();
                 } catch (InterruptedException e) {
-                    throw new InterruptedIOException();
+                    // As libadb's AdbStream.read does it: a plain IOException, the flag cleared
+                    throw (IOException) new IOException().initCause(e);
                 }
             }
             throw new IOException("Stream closed.");
