@@ -463,7 +463,7 @@ Sources and reasoning: RESEARCH.md (2026-09-30).
   Why: the upstream wireless fixes are ported, and on the S22 on 2026-09-30 AppManagerNG paired, connected over Wireless debugging and came back on its own after Wi-Fi went off and on. The start at boot, which Android 15 only allows as a special use service, has host tests but hasn't run on a phone yet.
   Evidence: `self/BootReceiver.java`, `servermanager/WifiWaitService.java`; upstream `22d439d61` (connect on boot).
   Touches: nothing unless it fails.
-  Acceptance: with Wireless debugging as the mode, the network always allowed for Wireless debugging and the server stopped, `adb reboot` the S22 or S25 and unlock it; the server is running within two minutes of the unlock without the app being opened.
+  Acceptance: with Wireless debugging as the mode, the network always allowed for Wireless debugging and the server stopped, `adb reboot` the S22 or S25 and unlock it; the server is running within two minutes of the unlock without the app being opened. On the same run, a debug build's `LocalServerManager` log shows the launch shell's echo only as "(echo of the launch command, not logged)" and still reaches "Success!", which checks on a phone that leaving the echo out didn't hide the launcher's answer.
   Complexity: S
 
 ### P2
@@ -474,13 +474,6 @@ Sources and reasoning: RESEARCH.md (2026-09-30).
   Touches: `WifiWaitService`, `AdbUtils`, a notification, tests.
   Acceptance: when Wireless debugging turns itself off within a few seconds of the app switching it on, the reconnect stops switching it on, posts one notification that opens Wireless debugging settings and asks to allow it on this network, and connects by itself if the setting comes on while it still waits; a host test drives the setting through a fake; on the S22 a new access point raises one prompt, not one per retry.
   Complexity: M
-
-- [ ] P2: Keep pieces of the server token out of the ADB launch log
-  Why: the launch shell has a terminal, so it echoes the launch command, and mksh's line editor redraws a long line in overlapping pieces. The log masks the token only where it appears whole, so a piece can get through. On the S22 on 2026-09-30 a debug build logged `RESPONSE: 92 || echo "Error! ...`, which looks like the token's last characters.
-  Evidence: `servermanager/LocalServerManager.java` (`ShellReader.run` masks each line with `redactToken`); S22 log 2026-09-30 05:08.
-  Touches: `LocalServerManager` launch path, tests.
-  Acceptance: no run of two or more of the token's characters reaches the log from the launch shell, shown by a host test fed the wrapped echo mksh produces; the server still starts from the shell on the S22; the fix doesn't depend on the terminal width.
-  Complexity: S
 
 ### P3
 

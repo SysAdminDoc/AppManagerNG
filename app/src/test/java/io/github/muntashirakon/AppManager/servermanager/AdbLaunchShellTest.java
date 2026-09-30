@@ -13,6 +13,7 @@ import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.shadows.ShadowLog;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -23,7 +24,9 @@ import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -57,6 +60,41 @@ public class AdbLaunchShellTest {
         assertEquals("id\n" + COMMAND + "\n", sent.toString(StandardCharsets.UTF_8.name()));
         // The shell stays open: the server writes to it for as long as it runs
         mShellOutput.write("Process: amng_server, PID: 20596\n".getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Test(timeout = 30_000)
+    public void theLaunchShellsEchoIsNeitherLoggedNorTakenForAnAnswer() throws Exception {
+        String launch = COMMAND + " || echo \"Error! Could not run the server launcher.\"";
+        // As the S22 answered on 2026-09-30, with this test's token: the terminal's echo, mksh's
+        // first draw ending three characters into the token, and scrolled redraws, one of them
+        // starting at the fallback's "Error!"
+        String transcript = "id\n"
+                + launch + "\n"
+                + "r0q:/ $ id\n"
+                + "uid=2000(shell) gid=2000(shell)\n"
+                + "r0q:/ $ sh run_server.sh 62001 012\n"
+                + "3456789abcdef || echo \"Error! Could not        <\b\b\b\b\b\b\b\b\b run the server launcher.\n"
+                + "Error! Could not run the server launcher.       <\b\b\b\b\b\b\b\b\"\n"
+                + "\n"
+                + "Starting amng_server as 2000:2000...\n"
+                + "Local server has started.\n"
+                + "r0q:/ $ Arguments: [path:62001,token:" + TOKEN + "]\n"
+                + "Success! Server has started.\n";
+        ShadowLog.clear();
+
+        LocalServerManager.launchInShell(openShell(transcript), new ByteArrayOutputStream(), launch, TOKEN,
+                SystemClock.elapsedRealtime(), 5, TimeUnit.SECONDS);
+
+        List<String> logged = new ArrayList<>();
+        for (ShadowLog.LogItem item : ShadowLog.getLogsForTag("LocalServerManager")) {
+            if (item.msg.startsWith("RESPONSE: ")) {
+                logged.add(item.msg.substring("RESPONSE: ".length()));
+            }
+        }
+        String echo = LocalServerManager.ECHO_NOT_LOGGED;
+        assertEquals(Arrays.asList("id", echo, "r0q:/ $ id", "uid=2000(shell) gid=2000(shell)", echo, echo, echo, "",
+                "Starting amng_server as 2000:2000...", "Local server has started.",
+                "r0q:/ $ Arguments: [path:62001,token:<redacted>]", "Success! Server has started."), logged);
     }
 
     @Test
