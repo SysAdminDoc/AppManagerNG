@@ -10,6 +10,7 @@ import android.os.Build;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresPermission;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.core.content.pm.PermissionInfoCompat;
 
@@ -215,19 +216,46 @@ public class AppDetailsAppOpItem extends AppDetailsItem<Integer> {
     public void setAppOp(@NonNull PackageInfo packageInfo, @NonNull AppOpsManagerCompat appOpsManager,
                          @AppOpsManagerCompat.Mode int mode) throws PermissionException {
         if (hasModifiablePermission && permission != null) {
-            boolean isAllowed = false;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                isAllowed = getMode() == AppOpsManager.MODE_FOREGROUND;
-            }
-            isAllowed |= getMode() == AppOpsManager.MODE_ALLOWED;
-            if (isAllowed) {
-                PermUtils.grantPermission(packageInfo, permission, appOpsManager, true, true);
-            } else {
-                PermUtils.revokePermission(packageInfo, permission, appOpsManager, true);
-            }
+            setLinkedPermission(packageInfo, permission, appOpsManager, grantsLinkedPermission(mode));
         }
-        PermUtils.setAppOpMode(appOpsManager, getOp(), packageInfo.packageName, packageInfo.applicationInfo.uid, mode);
+        setMode(packageInfo, appOpsManager, mode);
         invalidate(appOpsManager, packageInfo);
+    }
+
+    /**
+     * Whether setting an op to {@code requestedMode} grants its linked permission, or revokes it.
+     * Upstream 6495496ce: this went by the op's current mode, so allowing an ignored op revoked
+     * the permission and denying an allowed one granted it.
+     */
+    @VisibleForTesting
+    static boolean grantsLinkedPermission(@AppOpsManagerCompat.Mode int requestedMode) {
+        if (requestedMode == AppOpsManager.MODE_ALLOWED) {
+            return true;
+        }
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && requestedMode == AppOpsManager.MODE_FOREGROUND;
+    }
+
+    @RequiresPermission(allOf = {
+            "android.permission.MANAGE_APP_OPS_MODES",
+            ManifestCompat.permission.GRANT_RUNTIME_PERMISSIONS,
+            ManifestCompat.permission.REVOKE_RUNTIME_PERMISSIONS,
+    })
+    @VisibleForTesting
+    void setLinkedPermission(@NonNull PackageInfo packageInfo, @NonNull Permission permission,
+                             @NonNull AppOpsManagerCompat appOpsManager, boolean grant)
+            throws PermissionException {
+        if (grant) {
+            PermUtils.grantPermission(packageInfo, permission, appOpsManager, true, true);
+        } else {
+            PermUtils.revokePermission(packageInfo, permission, appOpsManager, true);
+        }
+    }
+
+    @RequiresPermission("android.permission.MANAGE_APP_OPS_MODES")
+    @VisibleForTesting
+    void setMode(@NonNull PackageInfo packageInfo, @NonNull AppOpsManagerCompat appOpsManager,
+                 @AppOpsManagerCompat.Mode int mode) throws PermissionException {
+        PermUtils.setAppOpMode(appOpsManager, getOp(), packageInfo.packageName, packageInfo.applicationInfo.uid, mode);
     }
 
     @RequiresPermission("android.permission.MANAGE_APP_OPS_MODES")
