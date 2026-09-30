@@ -3613,8 +3613,8 @@
     <string name="adb_pairing_timed_out">Pairing timed out. Keep the pairing code showing, stay on the same Wi-Fi and try again.</string>
     <string name="adb_pairing_retry_pairing">Retry</string>
     <string name="mode_of_op_custom_command_title">Custom command</string>
-    <string name="mode_of_op_custom_command">If you are unable to use any of the modes, you can run the following command in any supported shell to run AppManagerNG in privileged mode:</string>
-    <string name="mode_of_op_alternative_custom_command">If you get a “permission denied” error with the above command, run the following command instead:</string>
+    <string name="mode_of_op_adb_shell_command">If none of the modes work, connect the device to a computer and run this command in adb shell. It starts AppManagerNG\'s privileged server, and the app connects to it on its own:</string>
+    <string name="mode_of_op_root_command">On a rooted device you can run this one as root instead:</string>
     <string name="sensors">Sensors</string>
     <string name="tag_sensors_disabled">Sensors disabled</string>
     <string name="pref_use_system_font">Use system font</string>

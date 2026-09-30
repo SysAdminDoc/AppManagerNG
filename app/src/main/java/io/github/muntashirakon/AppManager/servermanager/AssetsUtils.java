@@ -146,8 +146,11 @@ class AssetsUtils {
         }
     }
 
+    /**
+     * The server's config after the port, starting with a comma. The token goes last.
+     */
     @NotNull
-    private static String getServerArgs() {
+    static String getServerArgs() {
         StringBuilder argsBuilder = new StringBuilder();
         argsBuilder.append(',').append(ConfigParams.PARAM_APP).append(':').append(BuildConfig.APPLICATION_ID);
         if (ServerConfig.getAllowBgRunning()) {

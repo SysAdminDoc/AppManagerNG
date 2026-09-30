@@ -131,6 +131,15 @@ public final class ServerConfig {
     }
 
     /**
+     * The command a user can paste into {@code adb shell} on a computer to start the server by hand.
+     */
+    @WorkerThread
+    @NonNull
+    public static String getManualAdbCommand(@NonNull Context context) throws IOException {
+        return AdbLaunchFiles.manualShellCommand(context, getLocalServerPort(), getLocalToken());
+    }
+
+    /**
      * Get the existing device-local token or generate a new 256-bit token for the client session.
      *
      * @return Existing or new token

@@ -1604,9 +1604,7 @@
     <string name="adb_pairing_found_pairing_service_with_port">تم العثور على خدمة بالمنفذ %d</string>
     <string name="adb_pairing_pairing_in_progress">قيد الإقتران…</string>
     <string name="mode_of_op_custom_command_title">أمر مخصص</string>
-    <string name="mode_of_op_custom_command">إذا لم تتمكن من استخدام أي من الأوضاع، فيمكنك تشغيل الأمر التالي باستخدام أي طرفية مدعومة لتشغيل App Manager في الوضع المصرح:</string>
     <string name="adb_pairing_retry_pairing">حاول مرَّةً أخرى</string>
-    <string name="mode_of_op_alternative_custom_command">إذا تلقيت خطأ \"تم رفض الإذن\" في الأمر أعلاه، فقم بتشغيل الأمر التالي بدلاً من ذلك:</string>
     <string name="sensors">المستشعرات</string>
     <string name="tag_sensors_disabled">المستشعرات معطلة</string>
     <string name="backup_cache">الملفات المؤقتة</string>

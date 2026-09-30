@@ -43,6 +43,7 @@ public class AdbLaunchFilesTest {
 
     @Rule
     public final TemporaryFolder tmp = new TemporaryFolder();
+    private String mLastManualOutput = "";
 
     @Test
     public void adbLaunchFilesLiveInTheAppsOwnShellDirectory() {
@@ -150,6 +151,94 @@ public class AdbLaunchFilesTest {
         }
         assertTrue(output, calls.exists());
         return new String(Files.readAllBytes(calls.toPath()), StandardCharsets.UTF_8);
+    }
+
+    @Test
+    public void manualCommandStartsTheServerTheWayTheLauncherDoes() throws Exception {
+        assumeTrue("needs a POSIX sh", shAvailable());
+        File jar = tmp.newFile("am.jar");
+        Files.write(jar.toPath(), bytes(333, 7));
+        String launcher = runLauncher(posix(jar), posix(jar));
+
+        byte[] bundled = bytes(4111, 3);
+        File apk = tmp.newFile("base.apk");
+        Files.write(apk.toPath(), concat(bytes(97, 5), bundled, bytes(33, 9)));
+        File staged = new File(new File(tmp.getRoot(), "stage"), "am.jar");
+        String manual = runManual(AdbLaunchFiles.buildManualShellCommand(posix(apk), 97, bundled, posix(staged),
+                "path:62001" + AssetsUtils.getServerArgs() + ",token:0123456789abcdef"));
+
+        assertArrayEquals(bundled, Files.readAllBytes(staged.toPath()));
+        assertTrue(manual, manual.startsWith("CLASSPATH=" + posix(staged) + "\n"));
+        // Same process name, main class and config as run_server.sh gives it
+        assertEquals(launcher.substring(launcher.indexOf('\n')), manual.substring(manual.indexOf('\n')));
+    }
+
+    @Test
+    public void manualCommandStartsNothingWhenTheCopyDiffers() throws Exception {
+        assumeTrue("needs a POSIX sh", shAvailable());
+        byte[] bundled = bytes(4111, 3);
+        byte[] other = bundled.clone();
+        other[17] ^= 1;
+        File apk = tmp.newFile("base.apk");
+        Files.write(apk.toPath(), concat(bytes(97, 5), bundled));
+        File staged = new File(new File(tmp.getRoot(), "stage"), "am.jar");
+
+        String manual = runManual(AdbLaunchFiles.buildManualShellCommand(posix(apk), 97, other, posix(staged),
+                "path:62001,token:0123456789abcdef"));
+
+        assertEquals("", manual);
+        assertFalse(staged.exists());
+        assertTrue(mLastManualOutput, mLastManualOutput.contains("Error! Could not copy " + Constants.JAR_NAME));
+    }
+
+    @Test
+    public void manualCommandCopiesTheBundledJarAndStaysOutOfAppData() throws IOException {
+        Context context = ApplicationProvider.getApplicationContext();
+        byte[] jar = readAsset(context, Constants.JAR_NAME);
+
+        String command = AdbLaunchFiles.manualShellCommand(context, 60001, "0123456789abcdef");
+
+        assertTrue(command, command.startsWith("{ mkdir -p '" + AdbLaunchFiles.STAGING_DIR + "' && chmod 700 '"
+                + AdbLaunchFiles.STAGING_DIR + "' && dd "));
+        assertTrue(command.contains(" count=" + jar.length + " "));
+        assertTrue(command.contains(DigestUtils.getHexDigest(DigestUtils.SHA_256, jar)));
+        assertTrue(command, command.contains("{ CLASSPATH='" + AdbLaunchFiles.SERVER_JAR + "' app_process /system/bin"
+                + " --nice-name=" + Constants.SERVER_NAME + " " + AdbLaunchFiles.SERVER_MAIN_CLASS + " 'path:60001,"));
+        assertTrue(command, command.endsWith(",token:0123456789abcdef' & } || echo \"Error! Could not copy "
+                + Constants.JAR_NAME + " out of the APK.\""));
+        assertOutsideAppData(command.replace(context.getApplicationInfo().sourceDir, ""));
+    }
+
+    @Test
+    public void modeOfOpsOffersTheManualCommandAndRootOnlyWithSu() throws IOException {
+        String model = read("app/src/main/java/io/github/muntashirakon/AppManager/settings/MainPreferencesViewModel.java");
+        assertTrue(model.contains("mCustomCommand0.postValue(ServerConfig.getManualAdbCommand(getApplication()));"));
+        assertTrue(model.contains("mCustomCommand1.postValue(RunnerUtils.isSuOnPath() ? ServerConfig.getServerRunnerCommand(0) : null);"));
+        // A root check that opens a root shell would put up a superuser prompt on this screen
+        assertFalse(model.contains("isAppGrantedRoot()"));
+        assertFalse(model.contains("isRootAvailable()"));
+    }
+
+    /**
+     * Runs a pasted command with a stand-in app_process. Returns what app_process was called with,
+     * or an empty string when it never ran.
+     */
+    private String runManual(String command) throws Exception {
+        File root = tmp.newFolder();
+        File calls = new File(root, "calls.txt");
+        File stub = new File(root, "app_process");
+        Files.write(stub.toPath(), ("#!/bin/sh\nprintf '%s\\n' \"CLASSPATH=$CLASSPATH\" \"$@\" > '"
+                + posix(calls) + ".part' && mv '" + posix(calls) + ".part' '" + posix(calls) + "'\n")
+                .getBytes(StandardCharsets.UTF_8));
+        // $PWD rather than the Java path: a C:/ drive letter would split PATH at its colon
+        String output = sh("cd '" + posix(root) + "' && chmod 755 app_process && PATH=\"$PWD:$PATH\"; "
+                + command + "; wait");
+        mLastManualOutput = output;
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (!calls.exists() && System.nanoTime() < deadline) {
+            Thread.sleep(50);
+        }
+        return calls.exists() ? new String(Files.readAllBytes(calls.toPath()), StandardCharsets.UTF_8) : "";
     }
 
     private static java.util.List<String> sortedNames(File dir) {

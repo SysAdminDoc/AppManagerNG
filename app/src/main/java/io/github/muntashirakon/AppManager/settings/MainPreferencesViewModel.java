@@ -54,6 +54,7 @@ import io.github.muntashirakon.AppManager.db.entity.App;
 import io.github.muntashirakon.AppManager.db.utils.AppDb;
 import io.github.muntashirakon.AppManager.misc.DeviceInfo2;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
+import io.github.muntashirakon.AppManager.runner.RunnerUtils;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentRuleResetPlan;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentRuleResetResult;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
@@ -160,8 +161,9 @@ public class MainPreferencesViewModel extends AndroidViewModel implements Ops.Ad
         mExecutor.submit(() -> {
             try {
                 ServerConfig.init(getApplication());
-                mCustomCommand0.postValue(ServerConfig.getServerRunnerCommand(0));
-                mCustomCommand1.postValue(ServerConfig.getServerRunnerCommand(1));
+                mCustomCommand0.postValue(ServerConfig.getManualAdbCommand(getApplication()));
+                // Root can read the launcher in the app's cache. Without su there's nothing to show.
+                mCustomCommand1.postValue(RunnerUtils.isSuOnPath() ? ServerConfig.getServerRunnerCommand(0) : null);
             } catch (Exception e) {
                 Log.w(TAG, e);
                 mCustomCommand0.postValue(null);
