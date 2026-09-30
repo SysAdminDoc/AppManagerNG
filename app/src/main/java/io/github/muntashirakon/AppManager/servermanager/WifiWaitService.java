@@ -48,6 +48,12 @@ public class WifiWaitService extends Service {
     private static final long NETWORK_WAIT_MILLIS = 120_000;
     @VisibleForTesting
     static final int MAX_RETRY_ATTEMPTS = 5;
+    /**
+     * Retries start over on each new network, so a Wi-Fi that keeps dropping and coming back
+     * would keep the service trying for good without a limit across networks too.
+     */
+    @VisibleForTesting
+    static final int MAX_TOTAL_ATTEMPTS = 30;
     public static final String CHANNEL_ID = BuildConfig.APPLICATION_ID + ".channel.WIFI_WAIT_SERVICE";
 
     @VisibleForTesting
@@ -124,6 +130,7 @@ public class WifiWaitService extends Service {
     private boolean mCallbackRegistered;
     private boolean mDestroyed;
     private int mRetryCount;
+    private int mAttempts;
     private int mLastStartId;
 
     @Override
@@ -187,15 +194,25 @@ public class WifiWaitService extends Service {
             ConnectionResult result = runConnectionAttempt(this::doConnectAdbWifi);
             mHandler.post(() -> handleConnectionResult(network, result));
         }, null);
+        boolean outOfAttempts;
         synchronized (mStateLock) {
             if (mDestroyed || mConnecting || !network.equals(mWifiNetwork)) {
                 return;
             }
-            mConnecting = true;
-            // Network callbacks come on another thread than the results, so the task is recorded
-            // together with the flag
-            mConnectionTask = task;
-            mHandler.removeCallbacks(mRetryRunnable);
+            outOfAttempts = mAttempts >= MAX_TOTAL_ATTEMPTS;
+            if (!outOfAttempts) {
+                ++mAttempts;
+                mConnecting = true;
+                // Network callbacks come on another thread than the results, so the task is
+                // recorded together with the flag
+                mConnectionTask = task;
+                mHandler.removeCallbacks(mRetryRunnable);
+            }
+        }
+        if (outOfAttempts) {
+            Log.w(TAG, "Autoconnect failed: gave up after " + MAX_TOTAL_ATTEMPTS + " attempts");
+            finishService();
+            return;
         }
         ThreadUtils.postOnBackgroundThread(task);
     }

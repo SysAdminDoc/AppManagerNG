@@ -9,8 +9,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
+import android.Manifest;
 import android.app.Application;
 import android.content.Intent;
+import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 
@@ -18,16 +20,22 @@ import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.android.controller.ServiceController;
+import org.robolectric.shadows.ShadowLooper;
 import org.robolectric.shadows.ShadowNetwork;
 import org.robolectric.shadows.ShadowNetworkCapabilities;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.TimeUnit;
 
+import io.github.muntashirakon.AppManager.adb.AdbPairingService;
 import io.github.muntashirakon.AppManager.settings.Ops;
 
 /**
@@ -135,7 +143,57 @@ public class WifiWaitServiceTest {
             Intent stopped = shadowOf(app).getNextStoppedService();
             assertNotNull(stopped);
             assertEquals(WifiWaitService.class.getName(), stopped.getComponent().getClassName());
+            Intent stoppedPairing = shadowOf(app).getNextStoppedService();
+            assertNotNull(stoppedPairing);
+            assertEquals(AdbPairingService.class.getName(), stoppedPairing.getComponent().getClassName());
         } finally {
+            Ops.setMode(before);
+        }
+    }
+
+    @Test
+    public void wifiThatDoesNotComeBackEndsTheWaitAfterTwoMinutes() throws ReflectiveOperationException {
+        ServiceController<WifiWaitService> controller = Robolectric.buildService(WifiWaitService.class).create();
+        WifiWaitService service = controller.get();
+        try {
+            Network wifi = ShadowNetwork.newInstance(100);
+            setField(service, "mWifiNetwork", wifi);
+            ConnectivityManager.NetworkCallback callback = (ConnectivityManager.NetworkCallback) getField(service, "mNetworkCallback");
+
+            // Another network going away starts no clock
+            callback.onLost(ShadowNetwork.newInstance(101));
+            ShadowLooper.idleMainLooper(3, TimeUnit.MINUTES);
+            assertFalse(shadowOf(service).isStoppedBySelf());
+
+            callback.onLost(wifi);
+            ShadowLooper.idleMainLooper(119, TimeUnit.SECONDS);
+            assertFalse(shadowOf(service).isStoppedBySelf());
+            ShadowLooper.idleMainLooper(2, TimeUnit.SECONDS);
+            assertTrue(shadowOf(service).isStoppedBySelf());
+        } finally {
+            controller.destroy();
+        }
+    }
+
+    @Test
+    public void aWifiThatKeepsComingBackIsNotTriedForever() throws ReflectiveOperationException {
+        Application app = ApplicationProvider.getApplicationContext();
+        shadowOf(app).grantPermissions(Manifest.permission.INTERNET);
+        String before = Ops.getMode();
+        ServiceController<WifiWaitService> controller = Robolectric.buildService(WifiWaitService.class).create();
+        WifiWaitService service = controller.get();
+        try {
+            Ops.setMode(Ops.MODE_ADB_WIFI);
+            setField(service, "mWifiNetwork", ShadowNetwork.newInstance(100));
+            // A new network resets the retries for it, not this count
+            setField(service, "mAttempts", WifiWaitService.MAX_TOTAL_ATTEMPTS);
+
+            ((Runnable) getField(service, "mRetryRunnable")).run();
+
+            assertTrue(shadowOf(service).isStoppedBySelf());
+            assertNull(getField(service, "mConnectionTask"));
+        } finally {
+            controller.destroy();
             Ops.setMode(before);
         }
     }
@@ -162,6 +220,18 @@ public class WifiWaitServiceTest {
         // The plain entry can't be interrupted and doesn't look at the mode once it has the lock
         assertTrue(source.contains("Ops.autoConnectWirelessDebuggingInBackground(context)"));
         assertFalse(source.contains("Ops.autoConnectWirelessDebugging(context)"));
+    }
+
+    private static void setField(Object target, String name, Object value) throws ReflectiveOperationException {
+        Field field = target.getClass().getDeclaredField(name);
+        field.setAccessible(true);
+        field.set(target, value);
+    }
+
+    private static Object getField(Object target, String name) throws ReflectiveOperationException {
+        Field field = target.getClass().getDeclaredField(name);
+        field.setAccessible(true);
+        return field.get(target);
     }
 
     private static String read(String path) throws IOException {
