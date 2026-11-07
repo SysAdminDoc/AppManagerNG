@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.shortcut;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -103,8 +104,10 @@ public abstract class QuickOpenTileService extends TileService {
 
     /**
      * Starts an activity from a tile and closes the panel. {@link #startActivityAndCollapse(Intent)} throws for apps
-     * targeting API 34 or later, where only the {@link PendingIntent} form works.
+     * targeting API 34 or later, where only the {@link PendingIntent} form works. Below API 34 that form doesn't exist,
+     * so the deprecated call stays, behind the version check that lint can't see.
      */
+    @SuppressLint("StartActivityAndCollapseDeprecated")
     @SuppressWarnings("deprecation")
     public static void startAndCollapse(@NonNull TileService service, @NonNull Intent intent) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
