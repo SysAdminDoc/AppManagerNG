@@ -27,6 +27,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The Full build's Android tests resolve under strict dependency locking again, and refreshing the locks no longer drops the entry they need.
 
 ### Fixed
+- Installing or uninstalling in No root mode brings up Android's prompt again instead of spinning forever (issue #21). Since v0.6.7 the installer told Android to report back to a part of the app that Android never delivers those reports to, so the prompt and the result went nowhere and the install waited until it timed out. The fix in v0.6.24 was real but couldn't help while that was broken.
 - The Code Editor opens again (issue #12). Every published build crashed on it, whatever the Android version, because the release build renamed a private field the editor looked up by name. If the editor still can't be built, its screen now closes with a message and the app stays up.
 - Creating a profile no longer crashes (issues #17 and #28). The apps page assumed its empty state was a plain text view.
 - Reviewing a profile before applying it no longer crashes. The transparent themes that screen uses were missing colors the app's dialogs need.

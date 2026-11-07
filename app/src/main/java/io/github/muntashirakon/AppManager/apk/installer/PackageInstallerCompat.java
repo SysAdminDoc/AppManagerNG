@@ -933,11 +933,7 @@ public final class PackageInstallerCompat {
         } else {
             Log.d(TAG, "Commit: Calling activity to request permission...");
             intentReceiver = null;
-            // Explicit component, not just our package: this PendingIntent has to stay mutable so
-            // the platform installer can fill in its status extras, and a package-scoped base
-            // intent would let a holder redirect the broadcast to any receiver we export.
-            Intent callbackIntent = new Intent(PackageInstallerBroadcastReceiver.ACTION_PI_RECEIVER)
-                    .setClass(mContext, PackageInstallerBroadcastReceiver.class);
+            Intent callbackIntent = newInstallerCallbackIntent(mContext);
             PendingIntent pendingIntent = PendingIntentCompat.getBroadcast(mContext, 0, callbackIntent, 0, true);
             sender = pendingIntent.getIntentSender();
         }
@@ -1401,10 +1397,7 @@ public final class PackageInstallerCompat {
             } else {
                 Log.d(TAG, "Uninstall: Calling activity to request permission...");
                 intentReceiver = null;
-                // Explicit component: see the note in commit(). Mutability is required by the
-                // platform installer, so the target must not be left resolvable.
-                Intent callbackIntent = new Intent(PackageInstallerBroadcastReceiver.ACTION_PI_RECEIVER)
-                        .setClass(mContext, PackageInstallerBroadcastReceiver.class);
+                Intent callbackIntent = newInstallerCallbackIntent(mContext);
                 PendingIntent pendingIntent = PendingIntentCompat.getBroadcast(mContext, 0, callbackIntent, 0, true);
                 sender = pendingIntent.getIntentSender();
             }
@@ -1615,6 +1608,26 @@ public final class PackageInstallerCompat {
         broadcastIntent.putExtra(PackageInstaller.EXTRA_PACKAGE_NAME, packageName);
         broadcastIntent.putExtra(PackageInstaller.EXTRA_SESSION_ID, sessionId);
         mContext.sendBroadcast(broadcastIntent);
+    }
+
+    /**
+     * The base intent of the PendingIntent the platform installer reports back through when this
+     * app has to ask the user (no-root mode).
+     *
+     * <p>{@link PackageInstallerBroadcastReceiver} is registered at runtime, and Android only looks
+     * at runtime receivers for a broadcast that names no component (ActivityManagerService resolves
+     * registered receivers only when {@code intent.getComponent() == null}). Naming the receiver
+     * class, as this did from v0.6.7, meant the prompt and the result reached nobody and the
+     * installer waited until it timed out. So the intent is scoped by action and package instead.
+     *
+     * <p>The PendingIntent has to be mutable for the status extras, and that stays safe: it's
+     * created without fill-in flags, so whoever sends it can't replace the action or package, or
+     * add a component or selector.
+     */
+    @NonNull
+    static Intent newInstallerCallbackIntent(@NonNull Context context) {
+        return new Intent(PackageInstallerBroadcastReceiver.ACTION_PI_RECEIVER)
+                .setPackage(context.getPackageName());
     }
 
     static void sendCompletedBroadcast(@NonNull Context context, @NonNull String packageName, @Status int status,
