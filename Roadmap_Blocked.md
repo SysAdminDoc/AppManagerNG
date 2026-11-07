@@ -497,25 +497,3 @@ ROADMAP.md once the blocker is resolved.
   Acceptance: after maintainer policy changes, no tracked file contains an unintended signing password while shared debug builds retain their intended install-over-install behavior; release signing behavior and certificate metadata remain unchanged.
   Blocker: explicit repository policy conflicts with the research recommendation; changing the shared debug-signing contract requires maintainer direction.
   Complexity: S
-
-## Reporter-Evidence-Gated (2026-09-05)
-
-### P1
-
-- [ ] P1 — Fix the Code Editor inflation crash and stop it taking the process down
-  Why: opening the Code Editor from Labs crashes and restarts the app on Android 10, and one third-party view failing to inflate should not end the process.
-  Evidence: fork issue #12, `Binary XML file line #51 in layout/fragment_code_editor: Error inflating class` followed by a null-pointer dereference, on a Redmi 9C running API 29, armeabi-v7a only, MIUI 12.0.16, AppManagerNG v0.6.22; `app/src/main/res/layout/fragment_code_editor.xml:41-51` is the `CodeEditorWidget` element; `editor/CodeEditorWidget.java:28-30` only delegates to the pinned sora-editor; `editor/Languages.java` and `LanguagesAssetTest` cover asset presence but never widget construction.
-  Touches: `editor/CodeEditorFragment.java`, `editor/CodeEditorWidget.java`, `app/src/main/res/layout/fragment_code_editor.xml`, `editor/EditorThemes.java`, editor host tests.
-  Acceptance: the reported trace is retraced against the published mapping and the failing constructor path is named in the fix; the editor screen catches an inflation or initialisation failure, shows a dismissible error naming what failed, and returns to Labs rather than terminating; a Robolectric test inflates `fragment_code_editor` at API 21, API 29, and the current target and fails when inflation throws; the underlying cause is fixed rather than only caught, and a regression test pins it.
-  Blocker: the reported trace cannot be resolved. v0.6.22 shipped minified with no R8 mapping, so the mapping that would decode `nf0.<init>` does not exist and never will for that build. The surviving frames name no class. Identifying the cause needs either a repro on an API 29 armeabi-v7a device, or a fresh report from a build that ships the mapping added in 3e05ca07e. Catching the inflation failure without finding the cause would satisfy only half the acceptance and would hide the defect from the next reporter.
-  Complexity: M
-
-### P2
-
-- [ ] P2 — Find the view that inflates a Material component under a non-Material theme
-  Why: a second reporter on fork issue #18 hit `The style on this component requires your app theme to be Theme.MaterialComponents (or a descendant)` in Shizuku mode, a different crash from the missing `isub` service fixed on 2026-09-26.
-  Evidence: fork issue #18 comment by GreenMystic, vivo V2342, Android 15 (API 35), AppManagerNG v0.6.23, Shizuku (shell). Every frame was masked by the pre-v0.6.24 support-bundle scrubber, so only line numbers survive. The message is the one Material's `ThemeEnforcement` throws from a widget constructor.
-  Touches: whichever component inflates a Material widget from a context without a Material theme (application context, service, overlay, or widget), plus an inflation regression test for it.
-  Acceptance: the crashing constructor is named from a v0.6.24 or later trace and the published R8 mapping; the context that inflates it carries a Material theme; a Robolectric test inflates that view with the same context type and fails without the fix.
-  Blocker: the v0.6.23 report is unreadable. It needs a fresh trace from v0.6.24 or later, which keeps first-party frames and publishes the mapping, or a repro on a vivo Android 15 device in Shizuku mode.
-  Complexity: S

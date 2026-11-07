@@ -2,6 +2,19 @@
 
 Actionable work only. Historical and completed roadmap material is archived in CHANGELOG.md; blocked work is kept in Roadmap_Blocked.md.
 
+## Issue Drain Left Open (2026-11-06)
+
+The drain stopped here on the owner's word. These reports are still waiting.
+
+- [ ] P1: Finish the toast history (issue #27). Part of it is written but it isn't on main yet.
+- [ ] P1: Build the permission watcher with enforcement and a scheduled check (issue #15). The reporter says a monitor alone isn't enough, so it has to revoke, allow or ignore per policy when a privileged mode is live.
+- [ ] P1: Build LAN discovery, version compare and APK pull between devices (issue #22). Plan: NSD discovery, a one-time pairing code shown on the host, an AES-GCM session keyed from it, compare versionCode and signer SHA-256, pull base and split APKs, check the signature, install through the existing installer.
+- [ ] P1: Reproduce the endless spinner on "Open with AppManagerNG" for an APK in no-root mode (issue #21), starting from the earlier installer confirm guard fix.
+- [ ] P2: Land search and sort on the profile app list (PR #24). Sorting there must not change the main list's sort, and the search regex shouldn't be recompiled per item.
+- [ ] P2: Check on a real phone: wireless debugging and ADB over TCP (issue #20), and that usage access isn't asked for again once granted (issue #16). The fixes for #12, #13, #17, #18, #23 and #28 have only run on an API 29 emulator. The features for #19, #25 and #26 have only run in tests.
+- [ ] P2: Reply on #12, #13, #16, #17, #18, #19, #20, #23, #24, #25, #26 and #28 once their device checks pass.
+- [ ] P2: Re-test every entry in Roadmap_Blocked.md. Only the #12 and #18 entries were cleared in this pass.
+
 ## Research-Driven Additions (2026-08-23)
 
 ### P1
@@ -90,13 +103,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
 ## Research-Driven Additions (2026-09-05)
 
 ### P1
-
-- [ ] P1: Stop App Info subtitles clipping, and gate long locales and large fonts
-  Why: two App Info subtitles cap at one line with no ellipsize, so longer translations are cut mid-glyph with nothing signalling truncation, and nothing automated checks translated string length or font scale.
-  Evidence: fork issue #13, Russian locale, Android 10, App Info tab, v0.6.22, with a screenshot; `app/src/main/res/layout/pager_app_info.xml:160` `tracker_cta_subtitle` and `:236` `perms_cta_subtitle` set `android:maxLines="1"` with no `android:ellipsize`, while `:59`, `:73`, `:88` and `:313` all pair the two; the 2026-08-22 visual density pass was verified in English on a single API 35 emulator.
-  Touches: `app/src/main/res/layout/pager_app_info.xml`, any further layouts the new gate finds, `app/src/main/res/values/dimens-v2.xml`, a new layout-clipping host test.
-  Acceptance: no layout under `app/src/main/res/layout/` caps a text view with `maxLines` or `singleLine` without an `ellipsize`, and a host test enumerating that directory fails when one does; both App Info subtitles render their longest shipped translation without a mid-glyph cut; a Robolectric measurement test renders the App Info header and both CTA cards using the longest translated value of each string at font scales 1.0 and 1.3 and fails when measured text is truncated or a row overflows its container; the fix is checked against `values-ru`, the reported locale.
-  Complexity: M
 
 - [ ] P1: Warn on an untested Android version and log hidden-API fallbacks
   Why: nothing tells a user that the running Android version is above what this build was tested against, and a hidden-API accessor that silently returns nothing writes no log line, which is how the Android 17 enumeration break reached users undiagnosed.
@@ -189,20 +195,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Complexity: M
 
 ### P2
-
-- [ ] P2: Restore UID and AppId in compact app rows
-  Why: `ApplicationItem` still computes UID and AppId and the adapter still binds them, but the compact row hides their containing view, removing useful identity evidence.
-  Evidence: fork issue #19; `main/ApplicationItem.java`; `main/MainRecyclerAdapter.java`; `res/layout/item_main_v2.xml`.
-  Touches: compact row layout, metadata formatter, adapter visibility rules, content descriptions, long-locale and font-scale snapshots.
-  Acceptance: installed rows show concise `UID 10123` or shared-user context in the existing metadata line, not a pill; archived and uninstalled rows never display a stale UID; the same value is available to accessibility services; API, locale, 1.3 font scale, and narrow-width snapshots retain package-name readability and current row density.
-  Complexity: S
-
-- [ ] P2: Add an authenticated external operation contract
-  Why: automation users need targeted package actions, but a general exported broadcast would create an unauthenticated privileged-operation surface.
-  Evidence: the automation half of fork issue #19; existing Tasker integration and signature-protected components; InstallerX's explicit option model; Android exported-component guidance.
-  Touches: signed Tasker or signature-permission integration, explicit operation schema, validation, audit history, result callback, security tests and documentation.
-  Acceptance: callers must hold the existing signature-level trust or complete the existing Tasker authorization path; each request names one supported operation, package, user, and immutable options; ambiguous, wildcard, stale, replayed, or unauthorized requests are rejected before privilege use; accepted operations enter the same confirmation-free executor and audit journal as UI actions; no general shell command or arbitrary intent field is exposed.
-  Complexity: M
 
 - [ ] P2: Show storage composition and deltas in the App Change Feed
   Why: a single current total cannot explain growth after an update, cache clear, restore, or package event, even though Android 15 exposes detailed app data types.
@@ -306,18 +298,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Confidence: Verified
   Effort: M
 
-- [ ] P1 — Reproduce and symbolicate profile creation crash on API 37
-  Category: Crash triage
-  Where: `app/src/main/java/io/github/muntashirakon/AppManager/profiles/ProfilesActivity.java:391-393`; `app/src/main/java/io/github/muntashirakon/AppManager/profiles/ProfileManager.java:41-53`; `app/src/main/java/io/github/muntashirakon/AppManager/profiles/AppsBaseProfileActivity.java:111-126`; `app/src/main/java/io/github/muntashirakon/AppManager/profiles/AppsProfileViewModel.java:285-310`; `RESEARCH.md:83,263-266`
-  Problem: Issue #17 reports a crash on every new-profile attempt, but its v0.6.23 Android 17 trace redacts the exception and every frame, so the current defect location is unknown.
-  Evidence: The report is repeatable on a Pixel 6a with Shizuku, but there is no v0.6.24 reproduction, symbolicated AppManagerNG frame, attachment, or follow-up comment.
-  Fix: Supply a current debug or mapping-backed build, reproduce the exact create flow on API 37, capture the first app frame and inputs, then add the smallest failing test before choosing a code fix.
-  Acceptance: The issue contains a current-build result and symbolicated first-party frame; a deterministic test reproduces the failure if present, or three clean creation runs across empty, app, and component profiles document closure evidence.
-  Confidence: Needs-repro
-  Effort: M
-  Reported: #17
-
-### P2
 
 - [ ] P2 — Represent complete routes in Settings search
   Category: Navigation
@@ -440,18 +420,6 @@ Actionable work only. Historical and completed roadmap material is archived in C
   Acceptance: About and first-run What’s New show 0.6.24 first; a version bump without a matching first record fails the local release gate; historic entries keep their order and content.
   Confidence: Verified
   Effort: S
-
-## Issue Intake (2026-09-26)
-
-Open GitHub issues checked against this list on 2026-09-26. Already covered: #13 (App Info subtitles clip, P1 above), #15 (permission watcher, P2 above), #17 (new-profile crash, Audit Findings above), #19 (UID in compact rows and an automation contract, both P2 above), #12 (Code Editor inflation crash, Roadmap_Blocked.md, Reporter-Evidence-Gated P1) and the second crash on #18 (Material theme inflation, Roadmap_Blocked.md P2). New below.
-
-### P3
-
-- [ ] P3: Reply on #18 with the v0.6.24 outcome and ask for a fresh trace (issue #18)
-  Reported: Veratian, 2026-09-08, v0.6.23 on a Samsung SM-A156U (Android 16), Shizuku shell mode; GreenMystic added a different Material-theme crash on 2026-09-15.
-  Why: the original `Service couldn't be found: isub` crash was fixed on 2026-09-26 (see Roadmap_Blocked.md), but the issue has no maintainer reply and the second reporter's trace is unreadable from a v0.6.23 build.
-  Next: name the fix and the release it ships in, ask both reporters for a v0.6.24 or later trace; once the first reporter confirms, the issue is Matt's to close, never an agent's.
-  Evidence: https://github.com/SysAdminDoc/AppManagerNG/issues/18
 
 ## Research-Driven Additions (2026-09-30)
 
