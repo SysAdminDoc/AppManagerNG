@@ -15,6 +15,7 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
+import android.os.Looper;
 
 import androidx.test.core.app.ApplicationProvider;
 
@@ -25,7 +26,16 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ServiceController;
 import org.robolectric.shadows.ShadowLooper;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import io.github.muntashirakon.AppManager.R;
 
 /**
  * Port of upstream 2f2b31e89. The pairing port used to travel through a LiveData, which handed a
@@ -83,25 +93,101 @@ public class AdbPairingServiceTest {
         }
     }
 
-    @Test
-    public void thePairingItselfIsNotCutOffByTheSearchTimeout() {
+    @Test(timeout = 60_000)
+    public void thePairingItselfIsNotCutOffByTheSearchTimeoutButAFailedOneStillEnds() throws Exception {
         Application app = ApplicationProvider.getApplicationContext();
         shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
         ServiceController<AdbPairingService> controller = Robolectric.buildService(AdbPairingService.class).create();
         AdbPairingService service = controller.get();
+        CountDownLatch pairingEnds = new CountDownLatch(1);
+        AtomicBoolean pairingDone = new AtomicBoolean();
+        service.setPairer((host, port, code) -> {
+            try {
+                pairingEnds.await();
+                throw new IOException("Connection refused");
+            } finally {
+                pairingDone.set(true);
+            }
+        });
         try {
             service.onStartCommand(AdbPairingService.getStartSearchingIntent(app), 0, 1);
             ShadowLooper.idleMainLooper(9, TimeUnit.MINUTES);
-            // Port 9 refuses at once, so the pairing fails and leaves its Retry notification up
-            AdbPairingRequest request = AdbPairingRequest.create(9, "123456");
+            AdbPairingRequest request = AdbPairingRequest.create(37004, "123456");
             assertNotNull(request);
             service.onStartCommand(AdbPairingService.getStartPairingIntent(app, request), 0, 2);
 
+            // Still pairing well past the search's 10 minutes
             ShadowLooper.idleMainLooper(11, TimeUnit.MINUTES);
             assertFalse(shadowOf(service).isStoppedBySelf());
+
+            // It fails and leaves its Retry notification up, which used to stay until the hour-long
+            // pairing wait ran out
+            pairingEnds.countDown();
+            long deadline = System.currentTimeMillis() + 20_000;
+            while (!(pairingDone.get() && retryOffered(app)) && System.currentTimeMillis() < deadline) {
+                Thread.sleep(20);
+                shadowOf(Looper.getMainLooper()).idle();
+            }
+            assertTrue(retryOffered(app));
+            ShadowLooper.idleMainLooper(9, TimeUnit.MINUTES);
+            assertFalse(shadowOf(service).isStoppedBySelf());
+            ShadowLooper.idleMainLooper(2, TimeUnit.MINUTES);
+            assertTrue(shadowOf(service).isStoppedBySelf());
+        } finally {
+            pairingEnds.countDown();
+            controller.destroy();
+        }
+    }
+
+    @Test
+    public void aSearchStoppedTheMomentItStartedIsStoppedOnceItIsUnderWay() {
+        Application app = ApplicationProvider.getApplicationContext();
+        shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
+        ServiceController<AdbPairingService> controller = Robolectric.buildService(AdbPairingService.class).create();
+        AdbPairingService service = controller.get();
+        List<String> calls = new ArrayList<>();
+        service.setPortSearchFactory(listener -> new AdbUtils.Scanner() {
+            @Override
+            public void start() {
+                calls.add("start");
+            }
+
+            @Override
+            public void stop() {
+                calls.add("stop");
+            }
+        });
+        try {
+            // libadb skips the stop before Android says the discovery started, and it then runs on
+            service.onStartCommand(AdbPairingService.getStartSearchingIntent(app), 0, 1);
+            service.onStartCommand(AdbPairingService.getStopSearchingIntent(app), 0, 2);
+            assertEquals(Collections.singletonList("start"), calls);
+            ShadowLooper.idleMainLooper(AdbPairingService.SEARCH_SETTLE_MILLIS, TimeUnit.MILLISECONDS);
+            assertEquals(Arrays.asList("start", "stop"), calls);
+
+            // A search that has been running a while stops at once
+            calls.clear();
+            service.onStartCommand(AdbPairingService.getStartSearchingIntent(app), 0, 3);
+            ShadowLooper.idleMainLooper(5, TimeUnit.SECONDS);
+            service.onStartCommand(AdbPairingService.getStopSearchingIntent(app), 0, 4);
+            assertEquals(Arrays.asList("start", "stop"), calls);
         } finally {
             controller.destroy();
         }
+    }
+
+    private static boolean retryOffered(Context context) {
+        NotificationManager manager = context.getSystemService(NotificationManager.class);
+        Notification notification = shadowOf(manager).getNotification(NOTIFICATION_ID);
+        if (notification == null || notification.actions == null) {
+            return false;
+        }
+        for (Notification.Action action : notification.actions) {
+            if (context.getString(R.string.adb_pairing_retry_pairing).contentEquals(action.title)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String pairingPortText(Context context, int port) {

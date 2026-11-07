@@ -15,6 +15,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.SystemClock;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.MainThread;
@@ -63,10 +64,43 @@ public class AdbPairingService extends Service {
      * notification and the mDNS search going.
      */
     private static final long SEARCH_TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(10);
+    /**
+     * libadb only stops a discovery once Android has said it's under way. A search stopped sooner
+     * would run on for good, so its stop waits this long after the start.
+     */
+    @VisibleForTesting
+    static final long SEARCH_SETTLE_MILLIS = 2_000;
+
+    @VisibleForTesting
+    interface PortSearchFactory {
+        @NonNull
+        AdbUtils.Scanner create(@NonNull AdbMdns.OnAdbDaemonDiscoveredListener listener);
+    }
+
+    @VisibleForTesting
+    interface Pairer {
+        void pair(@NonNull String host, int port, @NonNull String code) throws Exception;
+    }
 
     private NotificationCompat.Builder mNotificationBuilder;
     private boolean mStartedSearching = false;
-    private AdbMdns mAdbMdnsPairing;
+    private AdbUtils.Scanner mAdbMdnsPairing;
+    private long mSearchStartedAt;
+    private PortSearchFactory mPortSearchFactory = listener -> {
+        AdbMdns adbMdns = new AdbMdns(getApplication(), AdbMdns.SERVICE_TYPE_TLS_PAIRING, listener);
+        return new AdbUtils.Scanner() {
+            @Override
+            public void start() {
+                adbMdns.start();
+            }
+
+            @Override
+            public void stop() {
+                adbMdns.stop();
+            }
+        };
+    };
+    private Pairer mPairer = (host, port, code) -> AdbConnectionManager.getInstance().pairLiveData(host, port, code);
     // Each search has its number, so a port found by an earlier one can't come back. The LiveData
     // this replaces handed a new search the last port at once, from the pairing dialog before.
     private volatile int mSearchGeneration;
@@ -150,6 +184,16 @@ public class AdbPairingService extends Service {
         }
     }
 
+    @VisibleForTesting
+    void setPortSearchFactory(@NonNull PortSearchFactory portSearchFactory) {
+        mPortSearchFactory = portSearchFactory;
+    }
+
+    @VisibleForTesting
+    void setPairer(@NonNull Pairer pairer) {
+        mPairer = pairer;
+    }
+
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -180,7 +224,7 @@ public class AdbPairingService extends Service {
         AdbPairingSession.searching();
         // Each search gets its own listener, so a port an earlier one reports late still carries
         // that search's number and is ignored
-        mAdbMdnsPairing = new AdbMdns(getApplication(), AdbMdns.SERVICE_TYPE_TLS_PAIRING, (hostAddress, port) -> {
+        mAdbMdnsPairing = mPortSearchFactory.create((hostAddress, port) -> {
             if (port != -1) {
                 ThreadUtils.postOnMainThread(() -> onPairingPortFound(generation, port));
             }
@@ -192,6 +236,7 @@ public class AdbPairingService extends Service {
                 .addAction(stopAction);
         ServiceCompat.startForeground(this, NOTIFICATION_ID, mNotificationBuilder.build(),
                 FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+        mSearchStartedAt = SystemClock.elapsedRealtime();
         mAdbMdnsPairing.start();
     }
 
@@ -267,7 +312,7 @@ public class AdbPairingService extends Service {
             boolean isSuccess;
             boolean timedOut = false;
             try {
-                AdbConnectionManager.getInstance().pairLiveData(ServerConfig.getAdbHost(this), port, code);
+                mPairer.pair(ServerConfig.getAdbHost(this), port, code);
                 isSuccess = true;
             } catch (Exception e) {
                 Log.w(TAG, "Pairing failed.", e);
@@ -285,6 +330,9 @@ public class AdbPairingService extends Service {
                 } else {
                     AdbPairingSession.failed(port);
                 }
+                // Its Retry notification, and the service it keeps up, go after the same 10 minutes
+                // as a search nobody finishes
+                restartSearchTimeout();
                 PendingIntent deleteIntent = getStopIntent();
                 Intent retryIntent = new Intent(this, getClass()).setAction(ACTION_START_SEARCHING);
                 PendingIntent retryPendingIntent = PendingIntentCompat.getForegroundService(this, 3, retryIntent, 0, false);
@@ -306,7 +354,14 @@ public class AdbPairingService extends Service {
             return;
         }
         mStartedSearching = false;
-        mAdbMdnsPairing.stop();
+        AdbUtils.Scanner search = mAdbMdnsPairing;
+        long sinceStart = SystemClock.elapsedRealtime() - mSearchStartedAt;
+        if (sinceStart < SEARCH_SETTLE_MILLIS) {
+            // A port it reports meanwhile carries an old search's number and is ignored
+            mHandler.postDelayed(search::stop, SEARCH_SETTLE_MILLIS - sinceStart);
+        } else {
+            search.stop();
+        }
     }
 
     @MainThread

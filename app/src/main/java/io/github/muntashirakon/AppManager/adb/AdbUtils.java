@@ -90,7 +90,9 @@ public class AdbUtils {
         return new Pair<>(host, port);
     }
 
-    @VisibleForTesting
+    /**
+     * An mDNS search, which tests can stand in for.
+     */
     interface Scanner {
         void start();
 
