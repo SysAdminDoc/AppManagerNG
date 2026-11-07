@@ -400,6 +400,7 @@
                 android:layout_margin="@dimen/padding_small"
                 android:layout_weight="1"
                 android:singleLine="true"
+                android:ellipsize="end"
                 android:text="@string/reset_to_default"
                 android:visibility="gone" />
 
@@ -412,6 +413,7 @@
                 android:layout_margin="@dimen/padding_small"
                 android:layout_weight="1"
                 android:singleLine="true"
+                android:ellipsize="end"
                 android:text="@string/resend_intent" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>

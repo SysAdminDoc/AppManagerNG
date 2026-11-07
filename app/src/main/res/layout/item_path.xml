@@ -12,6 +12,7 @@
         android:paddingHorizontal="@dimen/padding_small"
         android:paddingVertical="@dimen/padding_small"
         android:singleLine="true"
+        android:ellipsize="end"
         tools:text="» Path" />
 
 </com.google.android.material.card.MaterialCardView>

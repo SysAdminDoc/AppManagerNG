@@ -4,7 +4,6 @@ package io.github.muntashirakon.AppManager.fm.hex;
 
 import android.content.Context;
 import android.graphics.Typeface;
-import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.ViewGroup;
 
@@ -94,8 +93,6 @@ public class HexLineAdapter extends RecyclerView.Adapter<HexLineAdapter.ViewHold
             int paddingVertical = dp(context, 5);
             textView.setPadding(paddingHorizontal, paddingVertical, paddingHorizontal, paddingVertical);
             textView.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
-            textView.setEllipsize(TextUtils.TruncateAt.END);
-            textView.setMaxLines(1);
             textView.setTextIsSelectable(true);
             textView.setText(value);
             if (header) {

@@ -40,6 +40,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:singleLine="true"
+                    android:ellipsize="end"
                     android:textAppearance="?attr/textAppearanceListItemSecondary"
                     android:textSize="9sp"
                     tools:text="1/12"

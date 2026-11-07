@@ -87,6 +87,9 @@ class AppInfoRecyclerAdapter extends RecyclerView.Adapter<AppInfoRecyclerAdapter
         // Set common properties
         holder.subtitle.setText(listItem.getSubtitle());
         holder.subtitle.setTextIsSelectable(listItem.isSelectable());
+        // The value is what the row is for, and a selectable TextView clips a line cap mid-glyph
+        holder.subtitle.setMaxLines(Integer.MAX_VALUE);
+        holder.subtitle.setEllipsize(null);
         holder.subtitle.setTypeface(listItem.isMonospace() ? Typeface.MONOSPACE : Typeface.DEFAULT);
         if (listItem.type == LIST_ITEM_INLINE) {
             return;

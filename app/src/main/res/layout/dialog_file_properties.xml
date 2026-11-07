@@ -212,7 +212,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="none"
-                    android:maxLines="2"
                     android:text="@string/calculating_file_size"
                     android:textIsSelectable="true"
                     tools:text="14.1 MB (13,831,425 bytes)" />
@@ -234,7 +233,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="none"
-                    android:maxLines="2"
                     android:textIsSelectable="true"
                     tools:text="4/11/22 15:24" />
 
@@ -266,7 +264,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="none"
-                    android:maxLines="2"
                     android:textIsSelectable="true"
                     tools:text="4/11/22 15:28" />
 
@@ -291,7 +288,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="none"
-                    android:maxLines="2"
                     android:textIsSelectable="true"
                     tools:text="16/11/22 12:53" />
 
@@ -312,7 +308,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="none"
-                android:maxLines="2"
                 android:textIsSelectable="true"
                 tools:text="@tools:sample/lorem/random" />
 
@@ -342,7 +337,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="none"
-                    android:maxLines="2"
                     android:textIsSelectable="true"
                     tools:text="root (0)" />
 
@@ -367,7 +361,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="none"
-                    android:maxLines="2"
                     android:textIsSelectable="true"
                     tools:text="everybody (9997)" />
 
@@ -399,7 +392,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="none"
-                    android:maxLines="2"
                     android:textIsSelectable="true"
                     tools:text="rw-rw---- (660)" />
 
@@ -424,7 +416,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="none"
-                    android:maxLines="2"
                     android:textIsSelectable="true"
                     tools:text="u:object_r:fuse:s0" />
 

@@ -51,6 +51,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/premium_space_4"
                 android:maxLines="2"
+                android:ellipsize="end"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 tools:text="Apps that can take photos and record video." />
