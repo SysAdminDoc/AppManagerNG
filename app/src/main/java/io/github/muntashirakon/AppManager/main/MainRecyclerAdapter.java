@@ -561,16 +561,18 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             holder.backupInfo.setVisibility(View.GONE);
             holder.backupInfoExt.setVisibility(View.GONE);
         }
-        String versionSummary = TextUtils.isEmpty(item.versionTag) ? "-" : item.versionTag;
-        String appTypeSummary = holder.isSystemApp.getText().toString();
-        String sdkSummary = item.sdkString != null ? item.sdkString : "-";
-        holder.metadata.setText(versionSummary + " \u00b7 " + appTypeSummary + " \u00b7 " + sdkSummary);
+        holder.metadata.setText(MainListUidFormatter.metadataLine(context, item, holder.isSystemApp.getText(),
+                getBadgeWarningContentColor(context)));
         limitVisibleStatuses(holder, MAX_INLINE_STATUSES);
         String installedState = context.getString(item.isInstalled
                 ? R.string.main_list_installed_state : R.string.main_list_uninstalled_state);
         String sdkState = item.sdkString != null ? item.sdkString : "-";
         String contentDescription = context.getString(R.string.main_list_app_content_description,
                 item.label, installedState, item.packageName, item.versionTag, sdkState);
+        String uidDescription = MainListUidFormatter.contentDescription(context, item);
+        if (!uidDescription.isEmpty()) {
+            contentDescription += " " + uidDescription;
+        }
         if (!item.userTags.isEmpty()) {
             contentDescription += " " + context.getString(R.string.main_list_tag_badge_a11y,
                     MainListTagChipFormatter.summaryFor(item.userTags));
