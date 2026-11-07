@@ -165,8 +165,9 @@ android {
 
 tasks.withType(Test).configureEach {
     // SDK 36's instrumented framework is large enough to make Gradle's default
-    // 512 MiB test-worker heap spend most of a full-suite run in GC.
-    maxHeapSize = "1024m"
+    // 512 MiB test-worker heap spend most of a full-suite run in GC. Each SDK and graphics
+    // mode the suite uses holds its own sandbox, and at 1 GiB the last classes ran out of heap.
+    maxHeapSize = "1536m"
     doFirst {
         if (!JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
             throw new GradleException("${path} runs Robolectric against Android SDK 36 and requires JDK 21 or newer. "
