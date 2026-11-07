@@ -10,12 +10,14 @@ import static io.github.muntashirakon.AppManager.utils.PackageUtils.getAppOpName
 import android.annotation.SuppressLint;
 import android.app.Application;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.RemoteException;
 import android.os.UserHandleHidden;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.GuardedBy;
+import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -24,6 +26,7 @@ import androidx.annotation.WorkerThread;
 import androidx.core.util.Pair;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import org.json.JSONException;
@@ -50,6 +53,9 @@ import io.github.muntashirakon.AppManager.filters.FilterItem;
 import io.github.muntashirakon.AppManager.filters.FilterableAppInfo;
 import io.github.muntashirakon.AppManager.filters.FilteringUtils;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.main.MainListOptions;
+import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
+import io.github.muntashirakon.AppManager.misc.ListOptions;
 import io.github.muntashirakon.AppManager.profiles.struct.AppsBaseProfile;
 import io.github.muntashirakon.AppManager.profiles.struct.AppsFilterProfile;
 import io.github.muntashirakon.AppManager.profiles.struct.AppsProfile;
@@ -61,7 +67,7 @@ import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.io.Path;
 
-public class AppsProfileViewModel extends AndroidViewModel {
+public class AppsProfileViewModel extends AndroidViewModel implements ListOptions.ListOptionActions {
     private static final String TAG = AppsProfileViewModel.class.getSimpleName();
 
     private final Object mProfileLock = new Object();
@@ -73,6 +79,15 @@ public class AppsProfileViewModel extends AndroidViewModel {
     private final MutableLiveData<String> mLogs = new MutableLiveData<>();
 
     private MutableLiveData<ArrayList<AppsFragment.AppsFragmentItem>> packagesLiveData;
+    private MediatorLiveData<List<AppsFragment.AppsFragmentItem>> mDisplayedPackages;
+    // The Apps tab's search and sort. Kept here rather than in Prefs.MainPage so sorting a
+    // profile's list leaves the main list's order alone.
+    private int mAppsSortBy = MainListOptions.SORT_BY_APP_LABEL;
+    private boolean mAppsReverseSort;
+    @NonNull
+    private String mAppsQuery = "";
+    @AdvancedSearchView.SearchType
+    private int mAppsQueryType = AdvancedSearchView.SEARCH_TYPE_CONTAINS;
     @GuardedBy("profileLock")
     @Nullable
     private AppsBaseProfile mProfile;
@@ -447,6 +462,74 @@ public class AppsProfileViewModel extends AndroidViewModel {
         return packagesLiveData;
     }
 
+    /**
+     * The profile's apps after the Apps tab's search and sort.
+     */
+    @NonNull
+    public LiveData<List<AppsFragment.AppsFragmentItem>> getDisplayedPackages() {
+        if (mDisplayedPackages == null) {
+            mDisplayedPackages = new MediatorLiveData<>();
+            mDisplayedPackages.addSource(getPackages(), packages -> refreshDisplayedPackages());
+        }
+        return mDisplayedPackages;
+    }
+
+    @NonNull
+    public String getAppsQuery() {
+        return mAppsQuery;
+    }
+
+    @MainThread
+    public void setAppsQuery(@Nullable String query, @AdvancedSearchView.SearchType int type) {
+        String newQuery = query != null ? query : "";
+        if (newQuery.equals(mAppsQuery) && type == mAppsQueryType) {
+            return;
+        }
+        mAppsQuery = newQuery;
+        mAppsQueryType = type;
+        refreshDisplayedPackages();
+    }
+
+    @Override
+    public int getSortBy() {
+        return mAppsSortBy;
+    }
+
+    @MainThread
+    @Override
+    public void setSortBy(int sortBy) {
+        if (mAppsSortBy != sortBy) {
+            mAppsSortBy = sortBy;
+            refreshDisplayedPackages();
+        }
+    }
+
+    @Override
+    public boolean isReverseSort() {
+        return mAppsReverseSort;
+    }
+
+    @MainThread
+    @Override
+    public void setReverseSort(boolean reverseSort) {
+        if (mAppsReverseSort != reverseSort) {
+            mAppsReverseSort = reverseSort;
+            refreshDisplayedPackages();
+        }
+    }
+
+    @MainThread
+    private void refreshDisplayedPackages() {
+        if (mDisplayedPackages == null || packagesLiveData == null) {
+            return;
+        }
+        ArrayList<AppsFragment.AppsFragmentItem> packages = packagesLiveData.getValue();
+        if (packages != null) {
+            mDisplayedPackages.setValue(ProfileAppsListFilter.apply(packages, mAppsQuery, mAppsQueryType,
+                    mAppsSortBy, mAppsReverseSort));
+        }
+    }
+
     public List<String> getCurrentPackages() {
         if (mProfile == null) {
             return Collections.emptyList();
@@ -504,14 +587,20 @@ public class AppsProfileViewModel extends AndroidViewModel {
                     if (oldItem.applicationInfo != null) {
                         item.applicationInfo = oldItem.applicationInfo;
                         item.label = oldItem.label;
+                        item.firstInstallTime = oldItem.firstInstallTime;
+                        item.lastUpdateTime = oldItem.lastUpdateTime;
                     }
                 }
             }
             if (item.applicationInfo == null) {
                 try {
-                    item.applicationInfo = PackageManagerCompat.getApplicationInfo(packageName,
+                    // The package info, not just the app info, so the list can sort by install and update dates
+                    PackageInfo packageInfo = PackageManagerCompat.getPackageInfo(packageName,
                             MATCH_UNINSTALLED_PACKAGES | MATCH_DISABLED_COMPONENTS
                                     | MATCH_STATIC_SHARED_AND_SDK_LIBRARIES, userId);
+                    item.applicationInfo = packageInfo.applicationInfo;
+                    item.firstInstallTime = packageInfo.firstInstallTime;
+                    item.lastUpdateTime = packageInfo.lastUpdateTime;
                 } catch (RemoteException | PackageManager.NameNotFoundException ignore) {
                 }
                 if (item.applicationInfo != null) {

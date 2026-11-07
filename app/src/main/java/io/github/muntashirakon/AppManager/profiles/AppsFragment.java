@@ -5,7 +5,11 @@ package io.github.muntashirakon.AppManager.profiles;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -14,7 +18,9 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.PopupMenu;
+import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Lifecycle;
 
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 
@@ -24,13 +30,15 @@ import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.filters.IFilterableAppInfo;
+import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.util.AdapterUtils;
 import io.github.muntashirakon.widget.RecyclerView;
 import io.github.muntashirakon.widget.SwipeRefreshLayout;
 
-public class AppsFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener {
+public class AppsFragment extends Fragment implements SwipeRefreshLayout.OnRefreshListener, MenuProvider,
+        AdvancedSearchView.OnQueryTextListener {
     public static class AppsFragmentItem {
         @NonNull
         public final String packageName;
@@ -38,6 +46,8 @@ public class AppsFragment extends Fragment implements SwipeRefreshLayout.OnRefre
         public CharSequence label;
         public ApplicationInfo applicationInfo;
         public IFilterableAppInfo filterableAppInfo;
+        public long firstInstallTime;
+        public long lastUpdateTime;
 
         public AppsFragmentItem(@NonNull String packageName) {
             this.packageName = packageName;
@@ -64,6 +74,7 @@ public class AppsFragment extends Fragment implements SwipeRefreshLayout.OnRefre
     private SwipeRefreshLayout mSwipeRefresh;
     private LinearProgressIndicator mProgressIndicator;
     private AppsProfileViewModel mModel;
+    private TextView mEmptyTitle;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -86,8 +97,8 @@ public class AppsFragment extends Fragment implements SwipeRefreshLayout.OnRefre
         RecyclerView recyclerView = view.findViewById(R.id.scrollView);
         recyclerView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(mActivity));
         View emptyView = view.findViewById(android.R.id.empty);
-        TextView emptyTitle = emptyView.findViewById(R.id.empty_state_title);
-        emptyTitle.setText(R.string.no_apps);
+        mEmptyTitle = emptyView.findViewById(R.id.empty_state_title);
+        mEmptyTitle.setText(R.string.no_apps);
         emptyView.findViewById(R.id.empty_state_summary).setVisibility(View.GONE);
         emptyView.findViewById(R.id.empty_state_action).setVisibility(View.GONE);
         recyclerView.setEmptyView(emptyView);
@@ -99,10 +110,65 @@ public class AppsFragment extends Fragment implements SwipeRefreshLayout.OnRefre
         mModel = mActivity.model;
         AppsRecyclerAdapter adapter = new AppsRecyclerAdapter();
         recyclerView.setAdapter(adapter);
-        mModel.getPackages().observe(getViewLifecycleOwner(), packages -> {
+        mModel.getDisplayedPackages().observe(getViewLifecycleOwner(), packages -> {
             mProgressIndicator.hide();
+            mEmptyTitle.setText(TextUtils.isEmpty(mModel.getAppsQuery()) ? R.string.no_apps
+                    : R.string.no_matching_package_found);
             adapter.setList(packages);
         });
+        // Only while this tab is the one showing, so the other tabs keep their own toolbar
+        requireActivity().addMenuProvider(this, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
+    }
+
+    @Override
+    public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
+        menuInflater.inflate(R.menu.fragment_apps_profile_actions, menu);
+        MenuItem searchItem = menu.findItem(R.id.action_search);
+        AdvancedSearchView searchView = (AdvancedSearchView) searchItem.getActionView();
+        if (searchView == null) {
+            return;
+        }
+        searchItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener() {
+            @Override
+            public boolean onMenuItemActionExpand(@NonNull MenuItem item) {
+                return true;
+            }
+
+            @Override
+            public boolean onMenuItemActionCollapse(@NonNull MenuItem item) {
+                mModel.setAppsQuery(null, AdvancedSearchView.SEARCH_TYPE_CONTAINS);
+                return true;
+            }
+        });
+        String query = mModel.getAppsQuery();
+        if (!TextUtils.isEmpty(query)) {
+            // Back on this tab or after a rotation: show the search that's still filtering the list
+            searchItem.expandActionView();
+            searchView.setQuery(query, false);
+        }
+        searchView.setOnQueryTextListener(this);
+    }
+
+    @Override
+    public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
+        if (menuItem.getItemId() == R.id.action_sort) {
+            ProfileAppsListOptions listOptions = new ProfileAppsListOptions();
+            listOptions.setListOptionActions(mModel);
+            listOptions.show(getChildFragmentManager(), ProfileAppsListOptions.TAG);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean onQueryTextChange(String newText, @AdvancedSearchView.SearchType int type) {
+        mModel.setAppsQuery(newText, type);
+        return true;
+    }
+
+    @Override
+    public boolean onQueryTextSubmit(String query, @AdvancedSearchView.SearchType int type) {
+        return false;
     }
 
     @Override
