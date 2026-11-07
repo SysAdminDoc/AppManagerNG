@@ -1,4 +1,5 @@
 /build
 *.apk
+!src/test/resources/**/*.apk
 .cxx
 *~
