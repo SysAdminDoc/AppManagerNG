@@ -96,7 +96,7 @@ public class WatchedPermissionsActivity extends BaseActivity {
     @Override
     public boolean onCreateOptionsMenu(@NonNull Menu menu) {
         getMenuInflater().inflate(R.menu.activity_watched_permissions_actions, menu);
-        return true;
+        return super.onCreateOptionsMenu(menu);
     }
 
     @Override

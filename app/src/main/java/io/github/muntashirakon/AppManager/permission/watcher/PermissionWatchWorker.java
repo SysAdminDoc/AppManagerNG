@@ -6,7 +6,6 @@ import android.content.Context;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.work.Data;
 import androidx.work.Worker;
@@ -65,7 +64,6 @@ public class PermissionWatchWorker extends Worker {
     /**
      * @param packageName {@code null} to walk every rule, as the scheduled check does
      */
-    @VisibleForTesting
     @WorkerThread
     @NonNull
     public static PermissionWatcher.Report runCheck(@NonNull WatchRuleDao dao,
