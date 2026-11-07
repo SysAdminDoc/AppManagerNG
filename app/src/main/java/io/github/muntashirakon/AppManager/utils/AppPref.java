@@ -67,6 +67,7 @@ public class AppPref {
     @Keep
     public enum PrefKey {
         PREF_ADB_LOCAL_SERVER_PORT_INT,
+        PREF_ADB_MANUAL_STAGING_PARENT_STR,
         PREF_APP_INFO_ACTION_RAIL_PRIORITY_STR,
         PREF_APP_OP_SHOW_DEFAULT_BOOL,
         PREF_APP_OP_SORT_ORDER_INT,
@@ -685,6 +686,7 @@ public class AppPref {
                 return CryptoUtils.MODE_NO_ENCRYPTION;
             case PREF_OPEN_PGP_PACKAGE_STR:
             case PREF_OPEN_PGP_USER_ID_STR:
+            case PREF_ADB_MANUAL_STAGING_PARENT_STR:
             case PREF_APP_INFO_ACTION_RAIL_PRIORITY_STR:
             case PREF_MAIN_WINDOW_FILTER_PROFILE_STR:
             case PREF_MAIN_WINDOW_FILTER_USERS_STR:
