@@ -38,6 +38,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -51,6 +52,9 @@ import io.github.muntashirakon.AppManager.details.struct.AppDetailsDefinedPermis
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsPermissionItem;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.permission.watcher.PermissionWatcher;
+import io.github.muntashirakon.AppManager.permission.watcher.WatchRule;
+import io.github.muntashirakon.AppManager.permission.watcher.WatchRuleMenu;
 import io.github.muntashirakon.AppManager.safety.AppOpsUidGuard;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
@@ -758,19 +762,61 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                     viewModel.setAppOpModeAsync(mNeededProperty, item, nextMode);
                 }
             });
+            // Long-press: the full mode picker, plus the watcher rules for this op.
+            List<WatchRuleMenu.Extra> extras = Collections.singletonList(
+                    new WatchRuleMenu.Extra(R.string.set_app_op_mode, () -> showAppOpModePicker(item)));
             holder.itemView.setOnLongClickListener(v -> {
-                List<Integer> modes = AppOpsManagerCompat.getModeConstants();
-                new SearchableSingleChoiceDialogBuilder<>(activity, modes, getAppOpModeNames(modes))
-                        .setTitle(R.string.set_app_op_mode)
-                        .setSelection(item.getMode())
-                        .setOnSingleChoiceClickListener((dialog, which, item1, isChecked) -> {
-                            int opMode = modes.get(which);
-                            if (viewModel != null) viewModel.setAppOpModeAsync(mNeededProperty, item, opMode);
-                            dialog.dismiss();
-                        })
-                        .show();
+                showWatchMenu(v, WatchRule.TYPE_APP_OP, item.name, item.getOp(), extras, true, rule -> {
+                    if (rule == null || !mCanModifyAppOpMode || viewModel == null
+                            || PermissionWatcher.evaluate(rule.state, item.isAllowed()) == PermissionWatcher.ACTION_NONE) {
+                        return;
+                    }
+                    // The rule disagrees with the op right now, so it takes effect at once.
+                    ProgressIndicatorCompat.setVisibility(progressIndicator, true);
+                    viewModel.setAppOpModeAsync(mNeededProperty, item, rule.state == WatchRule.STATE_ALLOW
+                            ? AppOpsManager.MODE_ALLOWED : AppOpsManager.MODE_IGNORED);
+                });
                 return true;
             });
+        }
+
+        private void showAppOpModePicker(@NonNull AppDetailsAppOpItem item) {
+            List<Integer> modes = AppOpsManagerCompat.getModeConstants();
+            new SearchableSingleChoiceDialogBuilder<>(activity, modes, getAppOpModeNames(modes))
+                    .setTitle(R.string.set_app_op_mode)
+                    .setSelection(item.getMode())
+                    .setOnSingleChoiceClickListener((dialog, which, item1, isChecked) -> {
+                        int opMode = modes.get(which);
+                        if (viewModel != null) viewModel.setAppOpModeAsync(mNeededProperty, item, opMode);
+                        dialog.dismiss();
+                    })
+                    .show();
+        }
+
+        private void showPermissionFlags(int flags) {
+            SparseArray<String> permissionFlags = PermissionCompat.getPermissionFlagsWithString(flags);
+            String[] flagStrings = new String[permissionFlags.size()];
+            for (int i = 0; i < flagStrings.length; ++i) {
+                flagStrings[i] = permissionFlags.valueAt(i);
+            }
+            new SearchableItemsDialogBuilder<>(activity, flagStrings)
+                    .setTitle(R.string.permission_flags)
+                    .setNegativeButton(R.string.close, null)
+                    .show();
+        }
+
+        /**
+         * Shows the row's long-press menu. Without an installed app behind the screen, only the row's own items
+         * are offered, since a rule needs a package and a user to apply to.
+         */
+        private void showWatchMenu(@NonNull View anchor, @WatchRule.Type int type, @NonNull String name, int op,
+                                   @NonNull List<WatchRuleMenu.Extra> extras, boolean watchable,
+                                   @NonNull WatchRuleMenu.OnRuleChanged listener) {
+            String packageName = viewModel != null ? viewModel.getPackageName() : null;
+            int userId = viewModel != null ? viewModel.getUserId() : 0;
+            boolean canWatch = watchable && !mIsExternalApk && packageName != null;
+            WatchRuleMenu.show(anchor, packageName != null ? packageName : "", userId, type, name, op, extras,
+                    canWatch, listener);
         }
 
         private void getUsesPermissionsView(@NonNull Context context, @NonNull ViewHolder holder, int index) {
@@ -849,20 +895,28 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                     holder.settingButton.setVisibility(View.GONE);
                 }
             }
+            // Long-press: the permission flags, plus the watcher rules when the permission can change at all.
             int flags = permissionItem.permission.getFlags();
-            holder.itemView.setOnLongClickListener(flags == 0 ? null : v -> {
-                SparseArray<String> permissionFlags = PermissionCompat.getPermissionFlagsWithString(flags);
-                String[] flagStrings = new String[permissionFlags.size()];
-                for (int i = 0; i < flagStrings.length; ++i) {
-                    flagStrings[i] = permissionFlags.valueAt(i);
-                }
-                new SearchableItemsDialogBuilder<>(activity, flagStrings)
-                        .setTitle(R.string.permission_flags)
-                        .setNegativeButton(R.string.close, null)
-                        .show();
+            List<WatchRuleMenu.Extra> extras = flags == 0 ? Collections.emptyList()
+                    : Collections.singletonList(new WatchRuleMenu.Extra(R.string.permission_flags,
+                    () -> showPermissionFlags(flags)));
+            boolean watchable = !mIsExternalApk && (!permissionItem.permission.isReadOnly()
+                    || permissionItem.permission.affectsAppOp());
+            boolean longPressable = watchable || !extras.isEmpty();
+            holder.itemView.setOnLongClickListener(!longPressable ? null : v -> {
+                showWatchMenu(v, WatchRule.TYPE_PERMISSION, permName, AppOpsManagerCompat.OP_NONE, extras, watchable,
+                        rule -> {
+                            if (rule == null || !canGrantOrRevokePermission || viewModel == null
+                                    || PermissionWatcher.evaluate(rule.state, permissionItem.isGranted())
+                                    == PermissionWatcher.ACTION_NONE) {
+                                return;
+                            }
+                            // The rule disagrees with the permission right now, so it takes effect at once.
+                            viewModel.togglePermissionAsync(mNeededProperty, permissionItem);
+                        });
                 return true;
             });
-            holder.itemView.setLongClickable(flags != 0);
+            holder.itemView.setLongClickable(longPressable);
         }
 
         private void bindReferenceButton(@NonNull MaterialButton button, boolean drifted, boolean enabled,

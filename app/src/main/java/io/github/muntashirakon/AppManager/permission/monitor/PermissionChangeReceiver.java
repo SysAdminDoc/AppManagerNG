@@ -6,11 +6,14 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.UserHandleHidden;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.permission.watcher.PermissionWatchDb;
+import io.github.muntashirakon.AppManager.permission.watcher.PermissionWatchScheduler;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 
@@ -36,8 +39,12 @@ public class PermissionChangeReceiver extends BroadcastReceiver {
         boolean certMonitorOn = Prefs.Privacy.isSigningCertChangeMonitorEnabled();
         boolean componentMonitorOn = Prefs.Privacy.isAppChangeAuditorEnabled();
         boolean updateReportOn = Prefs.Privacy.isAppUpdateChangeReportEnabled();
-        if (!permMonitorOn && !certMonitorOn && !componentMonitorOn && !updateReportOn) return;
         final Context appContext = context.getApplicationContext();
+        // An update can reset what the user set, so watched permissions are checked whatever the monitors say.
+        if (PermissionWatchDb.mightHaveRules(appContext)) {
+            PermissionWatchScheduler.checkSoon(appContext, packageName, userIdOf(intent));
+        }
+        if (!permMonitorOn && !certMonitorOn && !componentMonitorOn && !updateReportOn) return;
         final String pkg = packageName;
         // Use goAsync() so the broadcast result stays alive across the
         // off-main-thread snapshot + notification work.
@@ -80,6 +87,11 @@ public class PermissionChangeReceiver extends BroadcastReceiver {
                 pending.finish();
             }
         });
+    }
+
+    private static int userIdOf(@NonNull Intent intent) {
+        int uid = intent.getIntExtra(Intent.EXTRA_UID, -1);
+        return uid >= 0 ? UserHandleHidden.getUserId(uid) : UserHandleHidden.myUserId();
     }
 
     @Nullable

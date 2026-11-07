@@ -1069,6 +1069,24 @@ public final class Prefs {
             AppPref.set(AppPref.PrefKey.PREF_ENABLE_TOAST_HISTORY_BOOL, enabled);
         }
 
+        /** Whether a watched permission that changed gets put back when root or ADB mode allows it. */
+        public static boolean isPermissionWatcherEnforceEnabled() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_ENABLE_PERMISSION_WATCHER_ENFORCE_BOOL);
+        }
+
+        public static void setPermissionWatcherEnforceEnabled(boolean enabled) {
+            AppPref.set(AppPref.PrefKey.PREF_ENABLE_PERMISSION_WATCHER_ENFORCE_BOOL, enabled);
+        }
+
+        /** Minutes between scheduled checks of every watched permission. 0 turns the schedule off. */
+        public static int getPermissionWatcherIntervalMinutes() {
+            return AppPref.getInt(AppPref.PrefKey.PREF_PERMISSION_WATCHER_INTERVAL_MINUTES_INT);
+        }
+
+        public static void setPermissionWatcherIntervalMinutes(int minutes) {
+            AppPref.set(AppPref.PrefKey.PREF_PERMISSION_WATCHER_INTERVAL_MINUTES_INT, minutes);
+        }
+
         public static boolean isAppUpdateChangeReportEnabled() {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_ENABLE_APP_UPDATE_CHANGE_REPORT_BOOL);
         }
