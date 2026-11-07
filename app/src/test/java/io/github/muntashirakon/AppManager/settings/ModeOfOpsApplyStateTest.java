@@ -11,6 +11,32 @@ import org.junit.Test;
 
 public class ModeOfOpsApplyStateTest {
     @Test
+    public void anOpenApplyShowsAcrossInstancesUntilEveryWayOfEndingIt() {
+        ModeOfOpsApplyState first = new ModeOfOpsApplyState();
+        ModeOfOpsApplyState second = new ModeOfOpsApplyState();
+        assertFalse(ModeOfOpsApplyState.isAnyApplying());
+
+        assertTrue(first.begin(Ops.MODE_ROOT, Ops.MODE_NO_ROOT));
+        // A refused begin isn't a second open apply
+        assertFalse(first.begin(Ops.MODE_ROOT, Ops.MODE_SHIZUKU));
+        assertTrue(second.begin(Ops.MODE_ROOT, Ops.MODE_AUTO));
+        assertTrue(ModeOfOpsApplyState.isAnyApplying());
+
+        first.finishSuccess();
+        // Ending one twice doesn't take the other's count with it
+        first.finishSuccess();
+        first.dismiss();
+        assertTrue(ModeOfOpsApplyState.isAnyApplying());
+
+        second.finishFailure();
+        assertFalse(ModeOfOpsApplyState.isAnyApplying());
+
+        assertTrue(first.begin(Ops.MODE_ROOT, Ops.MODE_NO_ROOT));
+        first.dismiss();
+        assertFalse(ModeOfOpsApplyState.isAnyApplying());
+    }
+
+    @Test
     public void beginRejectsDoubleApplyUntilTerminalStatus() {
         ModeOfOpsApplyState state = new ModeOfOpsApplyState();
 

@@ -949,6 +949,14 @@ public final class Prefs {
         public static void setTaskerPluginSigningSecret(@Nullable String secret) {
             AppPref.set(AppPref.PrefKey.PREF_TASKER_PLUGIN_SIGNING_SECRET_STR, secret == null ? "" : secret);
         }
+
+        public static boolean isServerControlBroadcastsEnabled() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_SERVER_CONTROL_BROADCASTS_BOOL);
+        }
+
+        public static void setServerControlBroadcastsEnabled(boolean enabled) {
+            AppPref.set(AppPref.PrefKey.PREF_SERVER_CONTROL_BROADCASTS_BOOL, enabled);
+        }
     }
 
     public static final class RunningApps {

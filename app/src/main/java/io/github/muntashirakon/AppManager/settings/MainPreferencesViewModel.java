@@ -489,6 +489,9 @@ public class MainPreferencesViewModel extends AndroidViewModel implements Ops.Ad
     @Override
     protected void onCleared() {
         super.onCleared();
+        // The screen rolls back an unfinished apply as it closes. This is for when it never got to,
+        // since a mode switch from outside the app waits for no apply to be open.
+        mModeApplyState.dismiss();
         mRuleResetCancelled.set(true);
         synchronized (mRuleResetLock) {
             if (mRuleResetFuture != null) {
