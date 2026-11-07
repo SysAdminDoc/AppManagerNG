@@ -41,6 +41,20 @@ public class CachedApkSource extends ApkSource {
         mMimeType = mimeType;
     }
 
+    /**
+     * A file this app wrote into its own cache and hands over to the installer, which deletes it
+     * once the install finishes or is cancelled.
+     */
+    CachedApkSource(@NonNull File ownedFile, @Nullable String mimeType) {
+        this(Uri.fromFile(ownedFile), mimeType);
+        mCachedFile = ownedFile;
+    }
+
+    @Nullable
+    public File getCachedFile() {
+        return mCachedFile;
+    }
+
     @NonNull
     @Override
     public ApkFile resolve() throws ApkFile.ApkFileException {

@@ -12,6 +12,8 @@ import androidx.annotation.Nullable;
 
 import org.json.JSONException;
 
+import java.io.File;
+
 import io.github.muntashirakon.AppManager.history.IJsonSerializer;
 import io.github.muntashirakon.AppManager.history.JsonDeserializer;
 import io.github.muntashirakon.AppManager.utils.JSONUtils;
@@ -25,6 +27,15 @@ public abstract class ApkSource implements Parcelable, IJsonSerializer {
     @NonNull
     public static ApkSource getCachedApkSource(@NonNull Uri uri, @Nullable String mimeType) {
         return new CachedApkSource(uri, mimeType);
+    }
+
+    /**
+     * Hands a file in this app's cache to the installer, which deletes it after the install
+     * finishes or is cancelled.
+     */
+    @NonNull
+    public static CachedApkSource getOwnedCachedApkSource(@NonNull File file, @Nullable String mimeType) {
+        return new CachedApkSource(file, mimeType);
     }
 
     @NonNull

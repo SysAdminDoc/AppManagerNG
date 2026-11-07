@@ -671,6 +671,26 @@ public final class PackageUtils {
         }
     }
 
+    /**
+     * Signers of an APK file whose signature fully verifies, or {@code null} when it does not
+     * verify or cannot be read.
+     */
+    @WorkerThread
+    @Nullable
+    public static SignerInfo getVerifiedSignerInfo(@NonNull File apkFile) {
+        ApkVerifier apkVerifier = new ApkVerifier.Builder(apkFile)
+                .setMaxCheckedPlatformVersion(Build.VERSION.SDK_INT)
+                .build();
+        try {
+            ApkVerifier.Result result = apkVerifier.verify();
+            return result.isVerified() ? new SignerInfo(result) : null;
+        } catch (IOException | ApkFormatException | NoSuchAlgorithmException | RuntimeException e) {
+            // A malformed file from elsewhere counts as unsigned rather than crashing the caller
+            Log.w(TAG, e);
+            return null;
+        }
+    }
+
     @NonNull
     public static String[] getSigningCertSha256Checksum(@NonNull PackageInfo packageInfo) {
         return getSigningCertSha256Checksum(packageInfo, false);
