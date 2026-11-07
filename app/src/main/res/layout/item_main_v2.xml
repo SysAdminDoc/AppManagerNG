@@ -104,7 +104,7 @@
                     android:maxLines="1"
                     android:textAppearance="@style/TextAppearance.AppTheme.V2.BodySmall"
                     android:textColor="?attr/colorOnSurfaceVariant"
-                    tools:text="v4.7.3 · User · SDK 35" />
+                    tools:text="UID 10123 · v4.7.3 · User · SDK 35" />
 
                 <io.github.muntashirakon.widget.FlowLayout
                     android:id="@+id/status_badge_row"

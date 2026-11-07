@@ -125,6 +125,13 @@
     <string name="main_list_installed_state">Installed</string>
     <string name="main_list_uninstalled_state">Not installed</string>
     <string name="main_list_app_content_description">%1$s, %2$s, package %3$s, %4$s, %5$s. Double tap for app details.</string>
+    <string name="main_list_uid_label">UID <xliff:g id="uid" example="10123">%1$s</xliff:g></string>
+    <string name="main_list_uid_a11y">UID <xliff:g id="uid" example="10123">%1$s</xliff:g>.</string>
+    <plurals name="main_list_app_id_multi_user_a11y">
+        <item quantity="one">App ID <xliff:g id="app_id" example="10123">%1$s</xliff:g>, installed for <xliff:g id="users" example="1">%2$d</xliff:g> user.</item>
+        <item quantity="other">App ID <xliff:g id="app_id" example="10123">%1$s</xliff:g>, installed for <xliff:g id="users" example="2">%2$d</xliff:g> users.</item>
+    </plurals>
+    <string name="main_list_shared_user_a11y">Shared user <xliff:g id="shared_user" example="android.uid.system">%1$s</xliff:g>.</string>
     <string name="package_state_enabled">enabled</string>
     <string name="package_state_disabled">disabled</string>
     <string name="package_state_not_installed">not installed</string>
