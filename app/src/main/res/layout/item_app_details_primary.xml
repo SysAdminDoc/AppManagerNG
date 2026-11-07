@@ -44,9 +44,7 @@
                     android:id="@+id/label"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:ellipsize="end"
                     android:gravity="start"
-                    android:maxLines="2"
                     android:textAlignment="viewStart"
                     android:textIsSelectable="true"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
@@ -73,8 +71,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/padding_very_small"
-                    android:ellipsize="end"
-                    android:maxLines="2"
                     android:textIsSelectable="true"
                     android:textAppearance="?attr/textAppearanceBodySmall"
                     tools:text="@tools:sample/lorem" />
@@ -105,8 +101,6 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:ellipsize="end"
-                android:maxLines="2"
                 android:textIsSelectable="true"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 tools:text="@tools:sample/lorem" />
@@ -119,6 +113,7 @@
                 android:minWidth="52dp"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:maxLines="1"
+                android:ellipsize="end"
                 android:textAlignment="center"
                 android:visibility="gone"
                 tools:visibility="visible"
@@ -167,9 +162,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:ellipsize="middle"
                 android:fontFamily="monospace"
-                android:maxLines="1"
                 android:textIsSelectable="true"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 tools:text="@tools:sample/lorem" />
@@ -200,6 +193,7 @@
                 android:minHeight="@dimen/premium_button_min_height"
                 android:text="@string/launch"
                 android:maxLines="1"
+                android:ellipsize="end"
                 app:icon="@drawable/ic_play_arrow"
                 app:iconGravity="textStart"
                 app:iconPadding="@dimen/padding_very_small" />
@@ -213,6 +207,7 @@
                 android:minHeight="@dimen/premium_button_min_height"
                 android:text="@string/create_shortcut"
                 android:maxLines="1"
+                android:ellipsize="end"
                 app:icon="@drawable/ic_shortcut_record"
                 app:iconGravity="textStart"
                 app:iconPadding="@dimen/padding_very_small" />

@@ -90,6 +90,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:singleLine="true"
+                android:ellipsize="end"
                 android:textColor="?attr/colorOnSurface"
                 android:textAppearance="?attr/textAppearanceTitleMedium"
                 tools:text="@string/app_name" />
@@ -99,6 +100,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:singleLine="true"
+                android:ellipsize="end"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 tools:text="io.github.muntashirakon.AppManager.debug" />
@@ -120,6 +122,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:singleLine="true"
+                        android:ellipsize="end"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         tools:text="@tools:sample/date/mmddyy" />
@@ -129,6 +132,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:singleLine="true"
+                        android:ellipsize="end"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         tools:text="@tools:sample/lorem" />
@@ -146,6 +150,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:singleLine="true"
+                        android:ellipsize="end"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         tools:text="@tools:sample/us_zipcodes[0]" />
@@ -155,6 +160,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:singleLine="true"
+                        android:ellipsize="end"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         tools:text="@tools:sample/us_zipcodes[1]" />
@@ -169,6 +175,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/padding_very_small"
                 android:singleLine="true"
+                android:ellipsize="end"
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:textColor="?attr/colorPrimary"
                 android:visibility="gone"

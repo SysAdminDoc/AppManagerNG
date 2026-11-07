@@ -48,8 +48,6 @@
                         android:id="@+id/name"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:ellipsize="end"
-                        android:maxLines="2"
                         android:textAppearance="?attr/textAppearanceTitleMedium"
                         android:textColor="?attr/colorOnSurface"
                         android:textIsSelectable="true"
@@ -60,8 +58,6 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/premium_space_4"
-                        android:ellipsize="middle"
-                        android:maxLines="1"
                         android:textAppearance="?attr/textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:textIsSelectable="true"
@@ -124,7 +120,6 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="none"
-                        android:maxLines="2"
                         android:textIsSelectable="true"
                         tools:text="@string/app_name" />
 
@@ -438,7 +433,6 @@
                         android:layout_height="wrap_content"
                         android:fontFamily="monospace"
                         android:inputType="none"
-                        android:maxLines="2"
                         android:textIsSelectable="true"
                         tools:text="u:r:untrusted_app:s0:c110,c257" />
 
@@ -458,7 +452,6 @@
                         android:layout_height="wrap_content"
                         android:fontFamily="monospace"
                         android:inputType="none"
-                        android:maxLines="4"
                         android:textIsSelectable="true"
                         tools:text="/system/bin/app_process64 --zygote" />
 

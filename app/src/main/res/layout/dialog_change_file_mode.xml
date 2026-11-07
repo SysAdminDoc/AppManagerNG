@@ -20,13 +20,15 @@
             <com.google.android.material.textview.MaterialTextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:singleLine="true" />
+                android:singleLine="true"
+                android:ellipsize="end" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:layout_width="match_parent"
                 android:layout_height="32dp"
                 android:gravity="center_vertical"
                 android:singleLine="true"
+                android:ellipsize="end"
                 android:text="@string/file_mode_owner" />
 
             <com.google.android.material.textview.MaterialTextView
@@ -34,6 +36,7 @@
                 android:layout_height="32dp"
                 android:gravity="center_vertical"
                 android:singleLine="true"
+                android:ellipsize="end"
                 android:text="@string/file_mode_group" />
 
             <com.google.android.material.textview.MaterialTextView
@@ -41,6 +44,7 @@
                 android:layout_height="32dp"
                 android:gravity="center_vertical"
                 android:singleLine="true"
+                android:ellipsize="end"
                 android:text="@string/file_mode_others" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
@@ -57,6 +61,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:singleLine="true"
+                android:ellipsize="end"
                 android:text="@string/file_mode_read" />
 
             <com.google.android.material.checkbox.MaterialCheckBox
@@ -88,6 +93,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:singleLine="true"
+                android:ellipsize="end"
                 android:text="@string/file_mode_write" />
 
             <com.google.android.material.checkbox.MaterialCheckBox
@@ -119,6 +125,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:singleLine="true"
+                android:ellipsize="end"
                 android:text="@string/file_mode_execute" />
 
             <com.google.android.material.checkbox.MaterialCheckBox

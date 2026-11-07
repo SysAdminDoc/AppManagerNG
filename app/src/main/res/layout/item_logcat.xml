@@ -29,6 +29,7 @@
             android:gravity="center"
             android:importantForAccessibility="no"
             android:maxLines="1"
+            android:ellipsize="end"
             android:paddingHorizontal="@dimen/padding_very_small"
             android:paddingVertical="@dimen/premium_space_4"
             android:textAppearance="?attr/textAppearanceLabelMedium"

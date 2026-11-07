@@ -14,6 +14,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.PatternMatcher;
 import android.os.UserHandleHidden;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -28,6 +29,7 @@ import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.widget.PopupMenu;
 import androidx.appcompat.widget.TooltipCompat;
 
@@ -89,6 +91,19 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
     })
     @Retention(RetentionPolicy.SOURCE)
     public @interface ComponentProperty {
+    }
+
+    /**
+     * A selectable TextView lays out with DynamicLayout, which ignores maxLines: the text wraps
+     * anyway, the view stays one line tall, and the top of the second line shows cut in half. A
+     * collapsed row gets one real line with an ellipsis, and a tap on it opens the whole name, which
+     * can be selected there.
+     */
+    @VisibleForTesting
+    static void bindNameExpansion(@NonNull TextView nameView, boolean expanded) {
+        nameView.setTextIsSelectable(expanded);
+        nameView.setMaxLines(expanded ? Integer.MAX_VALUE : 1);
+        nameView.setEllipsize(expanded ? null : TextUtils.TruncateAt.MIDDLE);
     }
 
     private String mPackageName;
@@ -665,6 +680,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                 item = mAdapterList.get(position);
             }
             boolean expanded = mExpandedComponents.contains(item.name);
+            bindNameExpansion(holder.nameView, expanded);
             holder.detailsContainer.setVisibility(expanded ? View.VISIBLE : View.GONE);
             boolean supportsActivityMetadata = mRequestedProperty != SERVICES;
             holder.launchModeView.setVisibility(expanded && supportsActivityMetadata ? View.VISIBLE : View.GONE);
