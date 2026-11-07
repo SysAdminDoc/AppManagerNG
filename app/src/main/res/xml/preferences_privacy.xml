@@ -101,6 +101,12 @@
         app:summary="@string/app_change_feed_summary"
         app:iconSpaceReserved="false" />
 
+    <Preference
+        app:key="toast_history"
+        app:title="@string/toast_history_title"
+        app:summary="@string/toast_history_settings_summary"
+        app:iconSpaceReserved="false" />
+
     <SwitchPreferenceCompat
         app:key="enable_app_change_auditor"
         app:title="@string/pref_app_change_auditor"

@@ -891,6 +891,12 @@
             android:icon="@drawable/ic_history"
             android:label="@string/op_history" />
         <activity
+            android:name=".accessibility.toast.ToastHistoryActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:icon="@drawable/ic_history"
+            android:label="@string/toast_history_title" />
+        <activity
             android:name=".intercept.ActivityInterceptor"
             android:enableOnBackInvokedCallback="true"
             android:enabled="true"
