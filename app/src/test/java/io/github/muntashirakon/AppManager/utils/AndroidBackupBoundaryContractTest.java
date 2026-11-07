@@ -19,7 +19,8 @@ public class AndroidBackupBoundaryContractTest {
             "keystore.xml",
             "io.github.sysadmindoc.AppManagerNG.batch_ops_journal.xml",
             "installer_state.xml",
-            "server_secrets.xml"
+            "server_secrets.xml",
+            "lan_sync_trust.xml"
     };
 
     @Test

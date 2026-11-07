@@ -3,28 +3,37 @@
 package io.github.muntashirakon.AppManager.apk.installer;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.net.Uri;
+import android.os.Parcel;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.apk.ApkSource;
+import io.github.muntashirakon.AppManager.apk.CachedApkSource;
 
 @RunWith(RobolectricTestRunner.class)
 public class PackageInstallerActivityTest {
+    private static final String MIME_APK = "application/vnd.android.package-archive";
+
     @Test
     public void aBatchStopsOnAnApkWithNoNativeCodeForThisDevice() {
         InstallDependencyChecker.Issue minSdk = new InstallDependencyChecker.Issue(
@@ -76,6 +85,55 @@ public class PackageInstallerActivityTest {
 
         assertThrows(IllegalArgumentException.class,
                 () -> PackageInstallerActivity.getBatchInstallInstance(RuntimeEnvironment.getApplication(), input));
+    }
+
+    @Test
+    public void batchInstanceForASourceCarriesThatSource() throws IOException {
+        File apk = newCacheFile();
+        CachedApkSource source = ApkSource.getOwnedCachedApkSource(apk, MIME_APK);
+
+        Intent intent = PackageInstallerActivity.getBatchInstallInstance(RuntimeEnvironment.getApplication(), source);
+
+        assertTrue(intent.getBooleanExtra(PackageInstallerActivity.EXTRA_BATCH_INSTALL, false));
+        List<ApkQueueItem> items = PackageInstallerActivity.queueItemsFrom(intent, null);
+        assertEquals(1, items.size());
+        ApkSource queued = items.get(0).getApkSource();
+        assertTrue(queued instanceof CachedApkSource);
+        assertEquals(Uri.fromFile(apk), queued.getUri());
+        assertEquals(apk, ((CachedApkSource) queued).getCachedFile());
+    }
+
+    @Test
+    public void aSourceSentToARunningInstallerIsQueued() throws IOException {
+        Intent intent = PackageInstallerActivity.getBatchInstallInstance(RuntimeEnvironment.getApplication(),
+                ApkSource.getOwnedCachedApkSource(newCacheFile(), MIME_APK));
+        PackageInstallerActivity activity = Robolectric.buildActivity(PackageInstallerActivity.class).get();
+        assertFalse(activity.hasNext());
+
+        activity.onNewIntent(intent);
+
+        assertTrue("A second app sent while the installer is open must not be dropped", activity.hasNext());
+    }
+
+    @Test
+    public void ownedCacheFileSurvivesParcelingAndIsDeletedOnCleanup() throws IOException {
+        File apk = newCacheFile();
+        CachedApkSource source = ApkSource.getOwnedCachedApkSource(apk, MIME_APK);
+        Parcel parcel = Parcel.obtain();
+        CachedApkSource copy;
+        try {
+            source.writeToParcel(parcel, 0);
+            parcel.setDataPosition(0);
+            copy = CachedApkSource.CREATOR.createFromParcel(parcel);
+        } finally {
+            parcel.recycle();
+        }
+        assertEquals(apk.getAbsoluteFile(), copy.getCachedFile());
+
+        copy.cleanup();
+
+        assertFalse(apk.exists());
+        assertNull(copy.getCachedFile());
     }
 
     @Test
@@ -131,6 +189,12 @@ public class PackageInstallerActivityTest {
         assertEquals(false, PackageInstallerActivity.isDowngrade(packageInfo(12), packageInfo(13)));
         assertEquals(false, PackageInstallerActivity.isDowngrade(null, packageInfo(7)));
         assertEquals(false, PackageInstallerActivity.isDowngrade(packageInfo(12), null));
+    }
+
+    private static File newCacheFile() throws IOException {
+        File file = File.createTempFile("sync-", ".apk", RuntimeEnvironment.getApplication().getCacheDir());
+        assertTrue(file.isFile());
+        return file;
     }
 
     private static PackageInfo packageInfo(int versionCode) {

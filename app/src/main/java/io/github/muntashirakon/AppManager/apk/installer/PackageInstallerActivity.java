@@ -168,6 +168,29 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         return intent;
     }
 
+    /**
+     * Queues one source for installing without the per-app prompt, like the multi-URI batch
+     * instance. Sending several of these in a row queues them all.
+     */
+    @NonNull
+    public static Intent getBatchInstallInstance(@NonNull Context context, @NonNull ApkSource apkSource) {
+        return getLaunchableInstance(context, apkSource).putExtra(EXTRA_BATCH_INSTALL, true);
+    }
+
+    /**
+     * Everything an intent asks to install: its data URIs plus a wrapped {@link ApkSource}.
+     */
+    @VisibleForTesting
+    @NonNull
+    static List<ApkQueueItem> queueItemsFrom(@NonNull Intent intent, @Nullable String originatingPackage) {
+        List<ApkQueueItem> items = new ArrayList<>(ApkQueueItem.fromIntent(intent, originatingPackage));
+        ApkSource apkSource = IntentCompat.getUnwrappedParcelableExtra(intent, EXTRA_APK_FILE_LINK, ApkSource.class);
+        if (apkSource != null) {
+            items.add(ApkQueueItem.fromApkSource(apkSource));
+        }
+        return items;
+    }
+
     private int mSessionId = -1;
     @Nullable
     private ApkQueueItem mCurrentItem;
@@ -268,14 +291,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             throw new RuntimeException("Unable to bind PackageInstallerService");
         }
         synchronized (mApkQueue) {
-            mApkQueue.addAll(ApkQueueItem.fromIntent(intent, Utils.getRealReferrer(this)));
-
-        }
-        ApkSource apkSource = IntentCompat.getUnwrappedParcelableExtra(intent, EXTRA_APK_FILE_LINK, ApkSource.class);
-        if (apkSource != null) {
-            synchronized (mApkQueue) {
-                mApkQueue.add(ApkQueueItem.fromApkSource(apkSource));
-            }
+            mApkQueue.addAll(queueItemsFrom(intent, Utils.getRealReferrer(this)));
         }
         mModel.packageInfoLiveData().observe(this, newPackageInfo -> {
             if (newPackageInfo == null) {
@@ -603,7 +619,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         // New APK files added
         mBatchInstall = mBatchInstall || intent.getBooleanExtra(EXTRA_BATCH_INSTALL, false);
         synchronized (mApkQueue) {
-            mApkQueue.addAll(ApkQueueItem.fromIntent(intent, Utils.getRealReferrer(this)));
+            mApkQueue.addAll(queueItemsFrom(intent, Utils.getRealReferrer(this)));
         }
         UIUtils.displayShortToast(R.string.added_to_queue);
     }
@@ -967,7 +983,8 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         }
     }
 
-    private boolean hasNext() {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    boolean hasNext() {
         synchronized (mApkQueue) {
             return !mApkQueue.isEmpty();
         }
