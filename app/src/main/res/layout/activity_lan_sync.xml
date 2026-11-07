@@ -1,0 +1,499 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/coordinator_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".sync.lan.LanSyncActivity">
+
+    <io.github.muntashirakon.widget.AppBarLayout
+        android:id="@+id/appbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurface"
+        android:fitsSystemWindows="true">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            style="@style/Widget.AppTheme.V2.Toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/premium_app_bar_height"
+            android:minHeight="@dimen/premium_app_bar_height"
+            app:navigationIcon="@null" />
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/progress_linear"
+            style="@style/Widget.AppTheme.LinearProgressIndicator"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:indeterminate="true" />
+
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tab_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="44dp"
+            app:tabIndicatorColor="?attr/colorPrimary"
+            app:tabIndicatorFullWidth="false"
+            app:tabMode="fixed"
+            app:tabRippleColor="?attr/colorSecondaryContainer"
+            app:tabSelectedTextColor="?attr/colorOnSurface"
+            app:tabTextAppearance="@style/TextAppearance.AppTheme.V2.LabelMedium"
+            app:tabTextColor="?attr/colorOnSurfaceVariant" />
+
+    </io.github.muntashirakon.widget.AppBarLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
+
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/devices_pane"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="@dimen/premium_space_32">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="@dimen/premium_space_16"
+                android:paddingTop="@dimen/premium_space_8">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/permission_card"
+                    style="@style/Widget.AppTheme.V2.Card.Header"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/premium_space_8"
+                    android:visibility="gone"
+                    app:contentPadding="@dimen/premium_space_16"
+                    tools:visibility="visible">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/lan_sync_permission_title"
+                            android:textAppearance="?attr/textAppearanceTitleMedium"
+                            android:textColor="?attr/colorOnSurface" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/premium_space_4"
+                            android:text="@string/lan_sync_permission_summary"
+                            android:textAppearance="?attr/textAppearanceBodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/permission_allow"
+                            style="@style/Widget.AppTheme.Button.FilledTonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end"
+                            android:layout_marginTop="@dimen/premium_space_8"
+                            android:text="@string/lan_sync_allow" />
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/share_card"
+                    style="@style/Widget.AppTheme.V2.Card.Header"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/premium_space_8"
+                    app:contentPadding="@dimen/premium_space_16">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/share_switch"
+                            style="@style/Widget.AppTheme.MaterialSwitch"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:saveEnabled="false"
+                            android:text="@string/lan_sync_share_this_device"
+                            android:textAppearance="?attr/textAppearanceTitleMedium" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/share_status"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/premium_space_4"
+                            android:text="@string/lan_sync_share_summary"
+                            android:textAppearance="?attr/textAppearanceBodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <LinearLayout
+                            android:id="@+id/approval_panel"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/premium_space_12"
+                            android:background="@drawable/main_status_background"
+                            android:orientation="vertical"
+                            android:padding="@dimen/premium_space_12"
+                            android:visibility="gone"
+                            tools:visibility="visible">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/approval_title"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:textAppearance="?attr/textAppearanceTitleSmall"
+                                android:textColor="?attr/colorOnSurface"
+                                tools:text="Pixel 8 wants to connect" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/premium_space_4"
+                                android:text="@string/lan_sync_approval_hint"
+                                android:textAppearance="?attr/textAppearanceBodySmall"
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/approval_code"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/premium_space_8"
+                                android:gravity="center"
+                                android:textAppearance="?attr/textAppearanceDisplaySmall"
+                                android:textColor="?attr/colorOnSurface"
+                                android:textIsSelectable="false"
+                                tools:text="123 456" />
+
+                            <com.google.android.material.checkbox.MaterialCheckBox
+                                android:id="@+id/approval_remember"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/premium_space_4"
+                                android:text="@string/lan_sync_remember_device" />
+
+                            <LinearLayout
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="end"
+                                android:orientation="horizontal">
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/approval_deny"
+                                    style="@style/Widget.AppTheme.Button.TextButton"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/lan_sync_deny" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/approval_allow"
+                                    style="@style/Widget.AppTheme.Button.FilledTonalButton"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="@dimen/premium_space_8"
+                                    android:text="@string/lan_sync_allow" />
+
+                            </LinearLayout>
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/connect_card"
+                    style="@style/Widget.AppTheme.V2.Card.Header"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/premium_space_8"
+                    app:contentPadding="@dimen/premium_space_16">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/lan_sync_connect_title"
+                            android:textAppearance="?attr/textAppearanceTitleMedium"
+                            android:textColor="?attr/colorOnSurface" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/connection_status"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/premium_space_4"
+                            android:text="@string/lan_sync_connect_summary"
+                            android:textAppearance="?attr/textAppearanceBodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/connection_code"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/premium_space_8"
+                            android:gravity="center"
+                            android:textAppearance="?attr/textAppearanceDisplaySmall"
+                            android:textColor="?attr/colorOnSurface"
+                            android:visibility="gone"
+                            tools:text="123 456"
+                            tools:visibility="visible" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/disconnect"
+                            style="@style/Widget.AppTheme.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end"
+                            android:text="@string/lan_sync_disconnect"
+                            android:visibility="gone" />
+
+                        <LinearLayout
+                            android:id="@+id/peers_container"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/premium_space_8"
+                            android:orientation="vertical" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/peers_empty"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/premium_space_8"
+                            android:text="@string/lan_sync_peers_empty"
+                            android:textAppearance="?attr/textAppearanceBodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/premium_space_12"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:id="@+id/manual_address_layout"
+                                style="@style/Widget.AppTheme.TextInputLayout.Small"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:hint="@string/lan_sync_manual_hint">
+
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/manual_address"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:imeOptions="actionGo"
+                                    android:importantForAutofill="no"
+                                    android:inputType="textUri|textNoSuggestions"
+                                    android:maxLength="64"
+                                    android:singleLine="true" />
+
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/manual_connect"
+                                style="@style/Widget.AppTheme.Button.FilledTonalButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="@dimen/premium_space_8"
+                                android:text="@string/lan_sync_connect" />
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/trusted_card"
+                    style="@style/Widget.AppTheme.V2.Card.Header"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:contentPadding="@dimen/premium_space_16">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/lan_sync_trusted_title"
+                            android:textAppearance="?attr/textAppearanceTitleMedium"
+                            android:textColor="?attr/colorOnSurface" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/premium_space_4"
+                            android:text="@string/lan_sync_trusted_summary"
+                            android:textAppearance="?attr/textAppearanceBodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <LinearLayout
+                            android:id="@+id/trusted_container"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/premium_space_8"
+                            android:orientation="vertical" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/trusted_empty"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/premium_space_8"
+                            android:text="@string/lan_sync_trusted_empty"
+                            android:textAppearance="?attr/textAppearanceBodySmall"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+        </androidx.core.widget.NestedScrollView>
+
+        <LinearLayout
+            android:id="@+id/apps_pane"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="@dimen/premium_space_16"
+                android:paddingTop="@dimen/premium_space_8">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/apps_summary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/main_status_background"
+                    android:gravity="center"
+                    android:paddingHorizontal="@dimen/premium_space_12"
+                    android:paddingVertical="@dimen/premium_space_8"
+                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    tools:text="42 apps on Pixel 8" />
+
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/show_system"
+                    style="@style/Widget.AppTheme.MaterialSwitch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/premium_space_4"
+                    android:saveEnabled="false"
+                    android:text="@string/lan_sync_show_system" />
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scrollbars="none">
+
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/bucket_chips"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:selectionRequired="true"
+                        app:singleLine="true"
+                        app:singleSelection="true">
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chip_newer"
+                            style="@style/Widget.AppTheme.Chip.MainFilter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:checked="true"
+                            tools:text="@string/lan_sync_bucket_newer" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chip_not_installed"
+                            style="@style/Widget.AppTheme.Chip.MainFilter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            tools:text="@string/lan_sync_bucket_not_installed" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chip_signature"
+                            style="@style/Widget.AppTheme.Chip.MainFilter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            tools:text="@string/lan_sync_bucket_signature" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chip_same"
+                            style="@style/Widget.AppTheme.Chip.MainFilter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            tools:text="@string/lan_sync_bucket_same" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chip_older"
+                            style="@style/Widget.AppTheme.Chip.MainFilter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            tools:text="@string/lan_sync_bucket_older" />
+
+                    </com.google.android.material.chip.ChipGroup>
+
+                </HorizontalScrollView>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/update_all"
+                    style="@style/Widget.AppTheme.Button.FilledTonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/premium_space_4"
+                    android:visibility="gone"
+                    tools:text="Update all newer (3)"
+                    tools:visibility="visible" />
+
+            </LinearLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1">
+
+                <io.github.muntashirakon.widget.RecyclerView
+                    android:id="@+id/recycler_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:paddingTop="@dimen/premium_space_8"
+                    android:paddingBottom="@dimen/premium_space_32"
+                    android:scrollbars="none"
+                    tools:listitem="@layout/item_lan_sync_app" />
+
+                <include
+                    android:id="@android:id/empty"
+                    layout="@layout/view_list_empty_state"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+
+            </FrameLayout>
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

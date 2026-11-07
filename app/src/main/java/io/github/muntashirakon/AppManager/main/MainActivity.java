@@ -547,6 +547,10 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             Intent intent = new Intent(getApplicationContext(),
                     io.github.muntashirakon.AppManager.permissions.PermissionInspectorActivity.class);
             startActivity(intent);
+        } else if (id == R.id.action_local_sync) {
+            Intent intent = new Intent(getApplicationContext(),
+                    io.github.muntashirakon.AppManager.sync.lan.LanSyncActivity.class);
+            startActivity(intent);
         } else return super.onOptionsItemSelected(item);
         return true;
     }
