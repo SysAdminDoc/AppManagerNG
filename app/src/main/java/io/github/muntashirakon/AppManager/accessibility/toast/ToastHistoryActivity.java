@@ -112,7 +112,7 @@ public class ToastHistoryActivity extends BaseActivity {
     @Override
     public boolean onCreateOptionsMenu(@NonNull Menu menu) {
         getMenuInflater().inflate(R.menu.activity_toast_history_actions, menu);
-        return true;
+        return super.onCreateOptionsMenu(menu);
     }
 
     @Override
