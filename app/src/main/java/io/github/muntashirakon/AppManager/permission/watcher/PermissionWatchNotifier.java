@@ -81,8 +81,9 @@ public final class PermissionWatchNotifier {
         int shown = 0;
         for (PermissionWatcher.Drift drift : report.drifts) {
             if (shown == MAX_LINES) {
-                body.append('\n').append(context.getString(R.string.permission_watcher_more,
-                        report.drifts.size() - shown));
+                int rest = report.drifts.size() - shown;
+                body.append('\n').append(context.getResources().getQuantityString(
+                        R.plurals.permission_watcher_more, rest, rest));
                 break;
             }
             if (body.length() > 0) {

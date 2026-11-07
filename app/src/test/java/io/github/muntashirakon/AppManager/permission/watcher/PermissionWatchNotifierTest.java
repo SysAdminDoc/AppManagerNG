@@ -113,7 +113,7 @@ public class PermissionWatchNotifierTest {
 
         String[] lines = body.split("\n");
         assertEquals(PermissionWatchNotifier.MAX_LINES + 1, lines.length);
-        assertEquals(mApp.getString(R.string.permission_watcher_more, 2), lines[lines.length - 1]);
+        assertEquals("and 2 more", lines[lines.length - 1]);
     }
 
     @Test

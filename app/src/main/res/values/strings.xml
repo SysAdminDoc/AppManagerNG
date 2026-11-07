@@ -3974,7 +3974,10 @@
     </plurals>
     <string name="permission_watcher_critical_app">The phone needs this app to work, so it\'s left alone.</string>
     <string name="permission_watcher_change_refused">Android didn\'t accept the change.</string>
-    <string name="permission_watcher_more">and %1$d more</string>
+    <plurals name="permission_watcher_more">
+        <item quantity="one">and %1$d more</item>
+        <item quantity="other">and %1$d more</item>
+    </plurals>
     <string name="permission_watcher_reason_no_privilege">Root or ADB mode isn\'t running, so nothing was changed.</string>
     <string name="permission_watcher_reason_enforce_off">Put watched permissions back is off, so nothing was changed.</string>
     <string name="permission_watcher_line_allowed_again">%1$s: %2$s allowed again</string>
