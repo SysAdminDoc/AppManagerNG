@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.permission.monitor;
 
+import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -10,25 +11,32 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PermissionInfo;
 import android.net.Uri;
+import android.os.UserHandleHidden;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.PendingIntentCompat;
 import androidx.core.content.pm.PackageInfoCompat;
 import androidx.core.content.pm.PermissionInfoCompat;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.permission.watcher.PermissionWatchDb;
+import io.github.muntashirakon.AppManager.permission.watcher.WatchRule;
+import io.github.muntashirakon.AppManager.permission.watcher.WatchRuleActionReceiver;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 
 /**
@@ -124,7 +132,17 @@ public final class PermissionChangeMonitor {
             new AppChangeFeedStore(appContext).append(AppChangeFeedEntry.now("permissions", packageName, title, body));
             if (notify) {
                 try {
-                    postNotification(appContext, packageName, title, body);
+                    int userId = UserHandleHidden.myUserId();
+                    // The feed keeps everything, but a permission the user chose to ignore doesn't interrupt.
+                    Set<String> alerting = withoutIgnored(diff.added, PermissionWatchDb.mightHaveRules(appContext)
+                            ? PermissionWatchDb.ignoredPermissions(appContext, packageName, userId)
+                            : Collections.emptySet());
+                    if (!alerting.isEmpty()) {
+                        String alertBody = alerting.size() == diff.added.size() ? body
+                                : appContext.getResources().getQuantityString(R.plurals.permission_change_monitor_body,
+                                alerting.size(), alerting.size(), shortJoin(alerting));
+                        postNotification(appContext, packageName, userId, title, alertBody, alerting);
+                    }
                 } catch (Exception t) {
                     Log.w(TAG, "Could not post permission-change notification for " + packageName, t);
                 }
@@ -276,12 +294,46 @@ public final class PermissionChangeMonitor {
         return out;
     }
 
+    /** The added permissions minus the ones the user told the watcher to ignore. */
+    @VisibleForTesting
+    @NonNull
+    static Set<String> withoutIgnored(@NonNull Set<String> added, @NonNull Set<String> ignored) {
+        Set<String> out = new TreeSet<>(added);
+        out.removeAll(ignored);
+        return out;
+    }
+
+    /** One alert per app, so the buttons on it can dismiss it by tag once a rule is saved. */
+    @VisibleForTesting
+    @NonNull
+    static String notificationTag(@NonNull String packageName) {
+        return "permission_change:" + packageName;
+    }
+
     @WorkerThread
     private static void postNotification(@NonNull Context appContext,
                                          @NonNull String packageName,
+                                         int userId,
                                          @NonNull String title,
-                                         @NonNull String body) {
-        Intent contentIntent = AppDetailsActivity.getIntent(appContext, packageName, 0, true);
+                                         @NonNull String body,
+                                         @NonNull Set<String> permissions) {
+        NotificationUtils.displayHighPriorityNotification(appContext, notificationTag(packageName),
+                builder -> buildNotification(appContext, builder, packageName, userId, title, body, permissions));
+    }
+
+    /**
+     * The alert, with Always deny and Always allow buttons that save a watch rule for each permission it names.
+     */
+    @VisibleForTesting
+    @NonNull
+    static Notification buildNotification(@NonNull Context appContext,
+                                          @NonNull NotificationCompat.Builder builder,
+                                          @NonNull String packageName,
+                                          int userId,
+                                          @NonNull String title,
+                                          @NonNull String body,
+                                          @NonNull Set<String> permissions) {
+        Intent contentIntent = AppDetailsActivity.getIntent(appContext, packageName, userId, true);
         // A unique request code per notification: AppDetailsActivity.getIntent
         // produces intents that differ only in their extras, and PendingIntent
         // matching ignores extras, so two packages sharing a request code (e.g.
@@ -289,15 +341,21 @@ public final class PermissionChangeMonitor {
         // tapping one alert could open the other package's details.
         PendingIntent pi = PendingIntentCompat.getActivity(appContext, sRequestCode.incrementAndGet(),
                 contentIntent, PendingIntent.FLAG_UPDATE_CURRENT, false);
-        NotificationCompat.Builder builder = NotificationUtils.getHighPriorityNotificationBuilder(appContext)
-                .setSmallIcon(R.drawable.ic_security)
+        String tag = notificationTag(packageName);
+        return builder.setSmallIcon(R.drawable.ic_security)
                 .setAutoCancel(true)
                 .setWhen(System.currentTimeMillis())
                 .setContentTitle(title)
                 .setContentText(body)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
-                .setContentIntent(pi);
-        NotificationUtils.displayHighPriorityNotification(appContext, builder.build());
+                .setContentIntent(pi)
+                .addAction(0, appContext.getString(R.string.permission_watcher_always_deny),
+                        WatchRuleActionReceiver.buildPendingIntent(appContext, packageName, userId, permissions,
+                                WatchRule.STATE_DENY, tag))
+                .addAction(0, appContext.getString(R.string.permission_watcher_always_allow),
+                        WatchRuleActionReceiver.buildPendingIntent(appContext, packageName, userId, permissions,
+                                WatchRule.STATE_ALLOW, tag))
+                .build();
     }
 
     @NonNull

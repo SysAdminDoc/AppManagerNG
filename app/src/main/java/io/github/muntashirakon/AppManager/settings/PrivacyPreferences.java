@@ -29,6 +29,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
@@ -62,6 +63,8 @@ import io.github.muntashirakon.AppManager.permission.monitor.AppChangeFeedEntry;
 import io.github.muntashirakon.AppManager.permission.monitor.AppChangeFeedStore;
 import io.github.muntashirakon.AppManager.permission.monitor.AppChangeFeedTransfer;
 import io.github.muntashirakon.AppManager.permission.monitor.AppUpdateChangeReportFormatter;
+import io.github.muntashirakon.AppManager.permission.watcher.PermissionWatchScheduler;
+import io.github.muntashirakon.AppManager.permission.watcher.WatchedPermissionsActivity;
 import io.github.muntashirakon.AppManager.utils.ClipboardUtils;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
@@ -280,6 +283,42 @@ public class PrivacyPreferences extends PreferenceFragment {
                         io.github.muntashirakon.AppManager.permission.monitor.PermissionChangeMonitor
                                 .primeSnapshotsForAllPackages(appContext));
             }
+            return true;
+        });
+        // Permission watcher: the rules screen, whether a change gets put back, and the scheduled check.
+        requirePreference("watched_permissions").setOnPreferenceClickListener(preference -> {
+            startActivity(new Intent(requireContext(), WatchedPermissionsActivity.class));
+            return true;
+        });
+        SwitchPreferenceCompat watcherEnforce = requirePreference("enable_permission_watcher_enforce");
+        watcherEnforce.setChecked(Prefs.Privacy.isPermissionWatcherEnforceEnabled());
+        watcherEnforce.setOnPreferenceChangeListener((preference, newValue) -> {
+            Prefs.Privacy.setPermissionWatcherEnforceEnabled((boolean) newValue);
+            return true;
+        });
+        Preference watcherInterval = requirePreference("permission_watcher_interval_minutes");
+        updatePermissionWatcherIntervalSummary(watcherInterval);
+        watcherInterval.setOnPreferenceClickListener(preference -> {
+            int[] values = PermissionWatchScheduler.INTERVAL_CHOICES_MINUTES;
+            CharSequence[] labels = new CharSequence[values.length];
+            int currentValue = Prefs.Privacy.getPermissionWatcherIntervalMinutes();
+            int checkedItem = 0;
+            for (int i = 0; i < values.length; ++i) {
+                labels[i] = getString(permissionWatcherIntervalLabel(values[i]));
+                if (values[i] == currentValue) {
+                    checkedItem = i;
+                }
+            }
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.permission_watcher_interval_title)
+                    .setSingleChoiceItems(labels, checkedItem, (dialog, which) -> {
+                        Prefs.Privacy.setPermissionWatcherIntervalMinutes(values[which]);
+                        PermissionWatchScheduler.scheduleOrCancel(requireContext(), values[which]);
+                        updatePermissionWatcherIntervalSummary(watcherInterval);
+                        dialog.dismiss();
+                    })
+                    .setNegativeButton(R.string.cancel, null)
+                    .show();
             return true;
         });
         // Signing-cert change monitor (T9 sibling). Same toggle-then-prime pattern.
@@ -995,6 +1034,26 @@ public class PrivacyPreferences extends PreferenceFragment {
     @Override
     public int getTitle() {
         return R.string.pref_privacy;
+    }
+
+    private void updatePermissionWatcherIntervalSummary(@NonNull Preference preference) {
+        int minutes = Prefs.Privacy.getPermissionWatcherIntervalMinutes();
+        preference.setSummary(minutes > 0
+                ? getString(R.string.permission_watcher_interval_summary,
+                getString(permissionWatcherIntervalLabel(minutes)))
+                : getString(R.string.permission_watcher_interval_summary_off));
+    }
+
+    @StringRes
+    private static int permissionWatcherIntervalLabel(int minutes) {
+        if (minutes <= 0) {
+            return R.string.permission_watcher_interval_off;
+        } else if (minutes < 60) {
+            return R.string.permission_watcher_interval_15m;
+        } else if (minutes < 24 * 60) {
+            return R.string.permission_watcher_interval_hourly;
+        }
+        return R.string.permission_watcher_interval_daily;
     }
 
     private void updateOpHistoryRetentionSummary(@NonNull Preference preference) {

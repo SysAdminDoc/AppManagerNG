@@ -3938,6 +3938,59 @@
         <item quantity="one">%1$d new dangerous permission: %2$s</item>
         <item quantity="other">%1$d new dangerous permissions: %2$s</item>
     </plurals>
+    <!-- Permission watcher -->
+    <string name="permission_watcher_title">Watched permissions</string>
+    <string name="permission_watcher_settings_summary">Keep chosen permissions and app ops allowed or denied, and see which ones you watch</string>
+    <string name="pref_permission_watcher_enforce">Put watched permissions back</string>
+    <string name="pref_permission_watcher_enforce_msg">When a watched permission changes, set it back the way its rule says. This needs root or ADB mode. Without it you get a notification instead.</string>
+    <string name="permission_watcher_interval_title">Scheduled check</string>
+    <string name="permission_watcher_interval_off">Off</string>
+    <string name="permission_watcher_interval_15m">Every 15 minutes</string>
+    <string name="permission_watcher_interval_hourly">Every hour</string>
+    <string name="permission_watcher_interval_daily">Every day</string>
+    <string name="permission_watcher_interval_summary">%1$s, and after every restart</string>
+    <string name="permission_watcher_interval_summary_off">Off. Watched permissions are still checked when an app updates.</string>
+    <string name="permission_watcher_always_allow">Always allow</string>
+    <string name="permission_watcher_always_deny">Always deny</string>
+    <string name="permission_watcher_ignore">Ignore changes</string>
+    <string name="permission_watcher_stop">Stop watching</string>
+    <string name="permission_watcher_state_allow">Always allowed</string>
+    <string name="permission_watcher_state_deny">Always denied</string>
+    <string name="permission_watcher_state_ignore">Changes ignored</string>
+    <string name="permission_watcher_app_op">App op: %1$s</string>
+    <string name="permission_watcher_rule_saved">Watch rule saved</string>
+    <string name="permission_watcher_rule_save_failed">Couldn\'t save the watch rule.</string>
+    <string name="permission_watcher_rule_removed">Stopped watching %1$s</string>
+    <string name="permission_watcher_empty_title">Nothing watched yet</string>
+    <string name="permission_watcher_empty_summary">Long-press a permission or app op in App Details, or tap Always allow or Always deny on a permission change alert. It shows up here.</string>
+    <string name="permission_watcher_needs_privilege">Changes can only be reported right now. Putting them back needs root or ADB mode.</string>
+    <string name="permission_watcher_enforce_off_banner">Put watched permissions back is off in Settings, so changes are only reported.</string>
+    <string name="permission_watcher_check_now">Check now</string>
+    <string name="permission_watcher_check_all_match">Every watched permission matches its rule.</string>
+    <string name="permission_watcher_check_failed">Couldn\'t check the watched permissions.</string>
+    <plurals name="permission_watcher_check_drift">
+        <item quantity="one">%1$d watched permission didn\'t match. See the notification.</item>
+        <item quantity="other">%1$d watched permissions didn\'t match. See the notification.</item>
+    </plurals>
+    <string name="permission_watcher_critical_app">The phone needs this app to work, so it\'s left alone.</string>
+    <string name="permission_watcher_change_refused">Android didn\'t accept the change.</string>
+    <string name="permission_watcher_more">and %1$d more</string>
+    <string name="permission_watcher_reason_no_privilege">Root or ADB mode isn\'t running, so nothing was changed.</string>
+    <string name="permission_watcher_reason_enforce_off">Put watched permissions back is off, so nothing was changed.</string>
+    <string name="permission_watcher_line_allowed_again">%1$s: %2$s allowed again</string>
+    <string name="permission_watcher_line_denied_again">%1$s: %2$s denied again</string>
+    <string name="permission_watcher_line_allow_failed">%1$s: couldn\'t allow %2$s (%3$s)</string>
+    <string name="permission_watcher_line_deny_failed">%1$s: couldn\'t deny %2$s (%3$s)</string>
+    <string name="permission_watcher_line_should_be_allowed">%1$s: %2$s is denied but should be allowed</string>
+    <string name="permission_watcher_line_should_be_denied">%1$s: %2$s is allowed but should be denied</string>
+    <plurals name="permission_watcher_notification_title">
+        <item quantity="one">%1$d watched permission changed</item>
+        <item quantity="other">%1$d watched permissions changed</item>
+    </plurals>
+    <plurals name="permission_watcher_notification_enforced">
+        <item quantity="one">Put back %1$d watched permission</item>
+        <item quantity="other">Put back %1$d watched permissions</item>
+    </plurals>
     <string name="app_change_feed_title">App change feed</string>
     <string name="app_change_feed_summary">Review local app update audit events from permission, signing-key, component, and tracker monitors.</string>
     <string name="app_change_feed_empty">No app change events recorded yet.</string>

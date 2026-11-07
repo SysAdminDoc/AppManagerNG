@@ -897,6 +897,12 @@
             android:icon="@drawable/ic_history"
             android:label="@string/toast_history_title" />
         <activity
+            android:name=".permission.watcher.WatchedPermissionsActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:icon="@drawable/ic_security"
+            android:label="@string/permission_watcher_title" />
+        <activity
             android:name=".intercept.ActivityInterceptor"
             android:enableOnBackInvokedCallback="true"
             android:enabled="true"
@@ -1839,6 +1845,9 @@
             android:permission="android.permission.UPDATE_APP_OPS_STATS" />
         <receiver
             android:name=".profiles.ProfileApplierReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".permission.watcher.WatchRuleActionReceiver"
             android:exported="false" />
         <receiver
             android:name=".automation.AutomationReceiver"
