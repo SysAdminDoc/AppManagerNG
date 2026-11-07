@@ -348,7 +348,8 @@ public class PrivacyPreferences extends PreferenceFragment {
             List<AppChangeFeedEntry> finalEntries = Collections.unmodifiableList(entries);
             ThreadUtils.postOnMainThread(() -> {
                 if (!isAdded()) return;
-                showAppChangeFeedDialog(appContext, finalEntries);
+                // Material widgets refuse the application context: it has no Material theme.
+                showAppChangeFeedDialog(requireContext(), finalEntries);
             });
         });
     }
