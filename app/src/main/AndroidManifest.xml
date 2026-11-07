@@ -1762,6 +1762,30 @@
                 android:value="false" />
         </service>
         <service
+            android:name=".accessibility.topapp.TopAppOverlayTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_eye"
+            android:label="@string/top_app_overlay_title"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            tools:targetApi="24">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
+        </service>
+        <service
+            android:name=".accessibility.topapp.TopAppOverlayService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse"
+            tools:targetApi="30">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Keep a user-started floating bubble on screen that names the current top app so the user can find which app shows ads" />
+        </service>
+        <service
             android:name=".logcat.LogcatRecordingService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />

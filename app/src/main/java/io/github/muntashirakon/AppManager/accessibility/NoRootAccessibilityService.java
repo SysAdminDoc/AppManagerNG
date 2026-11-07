@@ -6,15 +6,23 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.WorkerThread;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.muntashirakon.AppManager.accessibility.activity.TrackerWindow;
+import io.github.muntashirakon.AppManager.accessibility.topapp.TopAppWindowReader;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.ResourceUtil;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 
 public class NoRootAccessibilityService extends BaseAccessibilityService {
@@ -22,8 +30,19 @@ public class NoRootAccessibilityService extends BaseAccessibilityService {
     private static final CharSequence INSTALLER_PACKAGE = "com.android.packageinstaller";
     private static final int MAX_SETTINGS_CHECKS = 18;
     private static final long SETTINGS_CHECK_DELAY_MILLIS = 500;
+    private static final String TAG = NoRootAccessibilityService.class.getSimpleName();
+    private static final long WINDOW_WALK_DELAY_MILLIS = 300;
 
     private final AccessibilityMultiplexer mMultiplexer = AccessibilityMultiplexer.getInstance();
+    private final Handler mWindowWalkHandler = new Handler(Looper.getMainLooper());
+    private final AtomicBoolean mWindowWalkQueued = new AtomicBoolean();
+    private final AtomicBoolean mWindowWalkRunning = new AtomicBoolean();
+    private volatile boolean mWindowWalkAgain;
+    private final Runnable mWindowWalk = () -> {
+        // Cleared before the walk, so that a change arriving during it asks for another one.
+        mWindowWalkQueued.set(false);
+        ThreadUtils.postOnBackgroundThread(this::walkWindows);
+    };
     private PackageManager mPm;
     private int mTries = 1;
     private boolean mSettingsNavigationPending;
@@ -39,7 +58,14 @@ public class NoRootAccessibilityService extends BaseAccessibilityService {
     }
 
     @Override
+    protected void onServiceConnected() {
+        super.onServiceConnected();
+        mMultiplexer.setServiceConnected(true);
+    }
+
+    @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
+        dispatchTopApp(event);
         if (mMultiplexer.isLeadingActivityTracker()) {
             if (mTrackerWindow == null) {
                 mTrackerWindow = new TrackerWindow(this);
@@ -84,7 +110,48 @@ public class NoRootAccessibilityService extends BaseAccessibilityService {
             mTrackerWindow.dismiss();
             mTrackerWindow = null;
         }
+        mMultiplexer.setServiceConnected(false);
+        mWindowWalkHandler.removeCallbacks(mWindowWalk);
+        mWindowWalkQueued.set(false);
         return super.onUnbind(intent);
+    }
+
+    private void dispatchTopApp(@NonNull AccessibilityEvent event) {
+        AccessibilityMultiplexer.TopAppListener listener = mMultiplexer.getTopAppListener();
+        if (listener == null) {
+            return;
+        }
+        int eventType = event.getEventType();
+        if (eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            CharSequence packageName = event.getPackageName();
+            if (packageName != null) {
+                listener.onWindowStateChanged(packageName.toString());
+            }
+        } else if (eventType == AccessibilityEvent.TYPE_WINDOWS_CHANGED
+                && mWindowWalkQueued.compareAndSet(false, true)) {
+            // These arrive in bursts while anything animates, so one walk stands for the whole burst.
+            mWindowWalkHandler.postDelayed(mWindowWalk, WINDOW_WALK_DELAY_MILLIS);
+        }
+    }
+
+    /** One walk at a time, however slow, so a hung app can't pile up threads. A request during a walk runs after it. */
+    @WorkerThread
+    private void walkWindows() {
+        mWindowWalkAgain = true;
+        while (mWindowWalkAgain && mWindowWalkRunning.compareAndSet(false, true)) {
+            try {
+                mWindowWalkAgain = false;
+                AccessibilityMultiplexer.TopAppListener listener = mMultiplexer.getTopAppListener();
+                if (listener != null) {
+                    listener.onWindowsChanged(TopAppWindowReader.read(this));
+                }
+            } catch (RuntimeException e) {
+                // A window can vanish mid-read. The next change walks again, and focus events keep arriving meanwhile.
+                Log.w(TAG, "Could not read the on-screen windows.", e);
+            } finally {
+                mWindowWalkRunning.set(false);
+            }
+        }
     }
 
     private void automateInstallationUninstallation(@NonNull AccessibilityEvent event) {
