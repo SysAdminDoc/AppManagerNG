@@ -208,7 +208,11 @@ public class IntentFilterManifestAuditTest {
     public void quickSettingsTilesArePermissionProtected() {
         String[] tileNames = {
                 SOURCE_PKG + ".profiles.QuickFreezeTileService",
-                SOURCE_PKG + ".shortcut.ForceStopTileService"
+                SOURCE_PKG + ".shortcut.ForceStopTileService",
+                SOURCE_PKG + ".shortcut.QuickOpenTileService$RunningApps",
+                SOURCE_PKG + ".shortcut.QuickOpenTileService$AppUsage",
+                SOURCE_PKG + ".shortcut.QuickOpenTileService$Profiles",
+                SOURCE_PKG + ".shortcut.QuickOpenTileService$LogViewer"
         };
         for (String name : tileNames) {
             ExportedComponent comp = sComponents.get(name);

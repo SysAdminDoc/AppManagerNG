@@ -1374,6 +1374,8 @@
     <string name="force_stop_tile_app_set">Quick Settings force-stop tile will stop %1$s.</string>
     <string name="force_stop_tile_no_app">Choose an app before using this tile.</string>
     <string name="force_stop_tile_done">Force-stopped %1$s.</string>
+    <string name="quick_open_tile_feature_off">Turned off in settings</string>
+    <string name="quick_open_tile_failed">Could not open %1$s.</string>
     <string name="quick_assist_title">Quick assist</string>
     <string name="quick_assist_title_for_app">Quick assist: <xliff:g id="app_label" example="Slack">%1$s</xliff:g></string>
     <string name="quick_assist_target_message">Target package: <xliff:g id="package_name" example="com.example.app">%1$s</xliff:g></string>

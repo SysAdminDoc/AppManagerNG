@@ -1702,6 +1702,66 @@
                 android:value="false" />
         </service>
         <service
+            android:name=".shortcut.QuickOpenTileService$RunningApps"
+            android:exported="true"
+            android:icon="@drawable/ic_pulse"
+            android:label="@string/running_apps"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            tools:targetApi="24">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="false" />
+        </service>
+        <service
+            android:name=".shortcut.QuickOpenTileService$AppUsage"
+            android:exported="true"
+            android:icon="@drawable/ic_data_usage"
+            android:label="@string/app_usage"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            tools:targetApi="24">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="false" />
+        </service>
+        <service
+            android:name=".shortcut.QuickOpenTileService$Profiles"
+            android:exported="true"
+            android:icon="@drawable/ic_file_document_multiple"
+            android:label="@string/profiles"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            tools:targetApi="24">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="false" />
+        </service>
+        <service
+            android:name=".shortcut.QuickOpenTileService$LogViewer"
+            android:exported="true"
+            android:icon="@drawable/ic_view_list"
+            android:label="@string/log_viewer"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            tools:targetApi="24">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="false" />
+        </service>
+        <service
             android:name=".logcat.LogcatRecordingService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
