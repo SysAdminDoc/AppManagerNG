@@ -379,6 +379,107 @@ public class Ops {
         }
     }
 
+    /**
+     * Starts the server in the saved mode for a caller with nobody there to answer a dialog, an
+     * automation broadcast. A status that wants a person comes back as it is.
+     */
+    @WorkerThread
+    @NoOps // Although we've used Ops checks, its overall usage does not affect anything
+    @Status
+    public static int startUnattended(@NonNull Context context) {
+        sTransitionLock.lock();
+        sTransitions.incrementAndGet();
+        try {
+            return connectUnattendedLocked(context, false, getMode(), true);
+        } finally {
+            sTransitionLock.unlock();
+        }
+    }
+
+    /**
+     * Switches to a mode and saves it once the switch worked, like the settings screen does. The
+     * save is inside the lock here, so a connect queued behind this one sees the new mode.
+     */
+    @WorkerThread
+    @NoOps // Although we've used Ops checks, its overall usage does not affect anything
+    @Status
+    public static int switchModeUnattended(@NonNull Context context, @NonNull @Mode String mode) {
+        sTransitionLock.lock();
+        sTransitions.incrementAndGet();
+        try {
+            if (MODE_ADB_OVER_TCP.equals(mode)) {
+                ServerConfig.setAdbPort(ServerConfig.DEFAULT_ADB_PORT);
+            }
+            int status = connectUnattendedLocked(context, true, mode, false);
+            if (status == STATUS_SUCCESS) {
+                setMode(mode);
+            }
+            return status;
+        } finally {
+            sTransitionLock.unlock();
+        }
+    }
+
+    /**
+     * Stops the privileged server and leaves the saved mode alone. A process woken just for this
+     * holds no connection, so {@link #initNoRoot()} alone would report success over a server a
+     * previous run left listening: that one gets connected to, so it can be told to close.
+     */
+    @WorkerThread
+    @NoOps // Although we've used Ops checks, its overall usage does not affect anything
+    @Status
+    public static int stopServerUnattended(@NonNull Context context) {
+        sTransitionLock.lock();
+        sTransitions.incrementAndGet();
+        try {
+            return stopServerLocked(context);
+        } finally {
+            sTransitionLock.unlock();
+        }
+    }
+
+    /**
+     * Whether a settings screen is partway through applying a mode. It saves that mode outside the
+     * transition lock, so a switch from elsewhere has to wait until it's done.
+     */
+    @AnyThread
+    public static boolean isModeApplyInProgress() {
+        return ModeOfOpsApplyState.isAnyApplying();
+    }
+
+    @WorkerThread
+    @Status
+    private static int connectUnattendedLocked(@NonNull Context context, boolean force, @NonNull @Mode String mode,
+                                               boolean persistAutoDetectedMode) {
+        int status = initLocked(context, force, mode, persistAutoDetectedMode);
+        if (status == STATUS_AUTO_CONNECT_WIRELESS_DEBUGGING) {
+            return autoConnectWirelessDebuggingLocked(context);
+        }
+        return status;
+    }
+
+    @WorkerThread
+    @Status
+    private static int stopServerLocked(@NonNull Context context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // The saved mode stays, so a queued reconnect for it must not bring the server back
+            context.stopService(new Intent(context, WifiWaitService.class));
+            context.stopService(new Intent(context, AdbPairingService.class));
+        }
+        initNoRoot();
+        if (!LocalServer.alive(context)) {
+            return STATUS_SUCCESS;
+        }
+        try {
+            LocalServer.getInstance();
+            LocalServer.closeIfConnected();
+        } catch (IOException | AdbPairingRequiredException | RuntimeException e) {
+            Log.w(TAG, "Could not reach the privileged server to stop it.", e);
+            return reportServerFailure(e, STATUS_FAILURE);
+        }
+        return LocalServer.alive(context) ? STATUS_FAILURE : STATUS_SUCCESS;
+    }
+
     @WorkerThread
     @Status
     private static int initLocked(@NonNull Context context, boolean force, @NonNull @Mode String mode,

@@ -202,6 +202,7 @@ public class AppPref {
         PREF_SAVED_APK_FORMAT_STR,
         PREF_SELECTED_USERS_STR,
         PREF_SEND_NOTIFICATIONS_TO_CONNECTED_DEVICES_BOOL,
+        PREF_SERVER_CONTROL_BROADCASTS_BOOL,
         PREF_SIGNATURE_SCHEMES_INT,
         PREF_SHOW_DISCLAIMER_BOOL,
 
@@ -284,13 +285,15 @@ public class AppPref {
     public static final int TYPE_STRING = 4;
 
     /**
-     * Persisted keys in {@link #PREF_NAME} that hold live secrets. They must never
+     * Persisted keys in {@link #PREF_NAME} that hold live secrets, or that would open this device
+     * to other apps if a bundle from somewhere else could turn them on. They must never
      * leave the device inside a snapshot bundle, and an imported bundle must never
      * be allowed to set or clear them. Derived from the enum so this denylist cannot
      * drift from the key names.
      */
     public static final Set<String> SENSITIVE_PREF_KEYS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             PrefKey.getKey(PrefKey.PREF_AUTHORIZATION_KEY_STR),
+            PrefKey.getKey(PrefKey.PREF_SERVER_CONTROL_BROADCASTS_BOOL),
             PrefKey.getKey(PrefKey.PREF_TASKER_PLUGIN_SIGNING_SECRET_STR),
             PrefKey.getKey(PrefKey.PREF_VIRUS_TOTAL_API_KEY_STR))));
 
@@ -585,6 +588,7 @@ public class AppPref {
             case PREF_BACKUP_COMPRESSION_METHOD_STR:
                 return TarUtils.TAR_GZIP;
             case PREF_ENABLE_KILL_FOR_SYSTEM_BOOL:
+            case PREF_SERVER_CONTROL_BROADCASTS_BOOL:
             case PREF_GLOBAL_BLOCKING_ENABLED_BOOL:
             case PREF_INSTALLER_ALWAYS_ON_BACKGROUND_BOOL:
             case PREF_INSTALLER_BLOCK_TRACKERS_BOOL:

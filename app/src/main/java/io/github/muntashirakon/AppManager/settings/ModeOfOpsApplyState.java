@@ -5,11 +5,22 @@ package io.github.muntashirakon.AppManager.settings;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 final class ModeOfOpsApplyState {
+    /**
+     * Screens partway through an apply, across all of them. See {@link Ops#isModeApplyInProgress()}.
+     */
+    private static final AtomicInteger sApplying = new AtomicInteger();
+
     @Nullable
     private String mPreviousMode;
     @Nullable
     private String mPendingMode;
+
+    static boolean isAnyApplying() {
+        return sApplying.get() > 0;
+    }
 
     boolean begin(@NonNull @Ops.Mode String previousMode, @NonNull @Ops.Mode String pendingMode) {
         if (isApplying()) {
@@ -17,6 +28,7 @@ final class ModeOfOpsApplyState {
         }
         mPreviousMode = previousMode;
         mPendingMode = pendingMode;
+        sApplying.incrementAndGet();
         return true;
     }
 
@@ -66,5 +78,6 @@ final class ModeOfOpsApplyState {
     private void clear() {
         mPreviousMode = null;
         mPendingMode = null;
+        sApplying.decrementAndGet();
     }
 }

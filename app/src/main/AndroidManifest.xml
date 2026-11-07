@@ -1770,6 +1770,17 @@
                 <action android:name="${applicationId}.action.SCAN_TRACKERS" />
             </intent-filter>
         </receiver>
+        <!-- Exported with no permission on purpose: the authorization key in the auth extra is the
+             gate, and a setting that is off by default turns the whole receiver off. -->
+        <receiver
+            android:name=".automation.ServerControlReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="${applicationId}.action.SERVER_START" />
+                <action android:name="${applicationId}.action.SERVER_STOP" />
+                <action android:name="${applicationId}.action.SERVER_SET_MODE" />
+            </intent-filter>
+        </receiver>
         <receiver
             android:name=".automation.TaskerPluginFireReceiver"
             android:exported="true"

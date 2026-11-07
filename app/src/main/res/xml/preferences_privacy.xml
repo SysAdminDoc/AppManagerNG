@@ -72,6 +72,18 @@
         app:iconSpaceReserved="false" />
 
     <SwitchPreferenceCompat
+        app:key="server_control_broadcasts"
+        app:title="@string/pref_server_control_broadcasts"
+        app:summary="@string/pref_server_control_broadcasts_msg"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        app:key="server_control_reference"
+        app:title="@string/pref_server_control_reference"
+        app:summary="@string/pref_server_control_reference_msg"
+        app:iconSpaceReserved="false" />
+
+    <SwitchPreferenceCompat
         app:key="enable_permission_change_monitor"
         app:title="@string/pref_permission_change_monitor"
         app:summary="@string/pref_permission_change_monitor_msg"

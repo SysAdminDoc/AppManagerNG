@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -149,6 +150,20 @@ public class IntentFilterManifestAuditTest {
                         action.startsWith("${applicationId}.action.") || action.startsWith("io.github."));
             }
         }
+    }
+
+    @Test
+    public void serverControlReceiverAcceptsOnlyItsThreeCommands() {
+        ExportedComponent comp = sComponents.get(SOURCE_PKG + ".automation.ServerControlReceiver");
+        assertNotNull("ServerControlReceiver must be exported, the auth extra is its gate", comp);
+
+        List<String> actions = new ArrayList<>();
+        for (IntentFilter filter : comp.filters) {
+            actions.addAll(filter.actions);
+        }
+        Collections.sort(actions);
+        assertEquals(Arrays.asList("${applicationId}.action.SERVER_SET_MODE",
+                "${applicationId}.action.SERVER_START", "${applicationId}.action.SERVER_STOP"), actions);
     }
 
     @Test
