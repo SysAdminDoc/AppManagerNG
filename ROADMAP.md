@@ -9,10 +9,8 @@ The drain stopped here on the owner's word. These reports are still waiting.
 - [ ] P1: Finish the toast history (issue #27). Part of it is written but it isn't on main yet.
 - [ ] P1: Build the permission watcher with enforcement and a scheduled check (issue #15). The reporter says a monitor alone isn't enough, so it has to revoke, allow or ignore per policy when a privileged mode is live.
 - [ ] P1: Build LAN discovery, version compare and APK pull between devices (issue #22). Plan: NSD discovery, a one-time pairing code shown on the host, an AES-GCM session keyed from it, compare versionCode and signer SHA-256, pull base and split APKs, check the signature, install through the existing installer.
-- [ ] P1: Reproduce the endless spinner on "Open with AppManagerNG" for an APK in no-root mode (issue #21), starting from the earlier installer confirm guard fix.
-- [ ] P2: Land search and sort on the profile app list (PR #24). Sorting there must not change the main list's sort, and the search regex shouldn't be recompiled per item.
-- [ ] P2: Check on a real phone: wireless debugging and ADB over TCP (issue #20), and that usage access isn't asked for again once granted (issue #16). The fixes for #12, #13, #17, #18, #23 and #28 have only run on an API 29 emulator. The features for #19, #25 and #26 have only run in tests.
-- [ ] P2: Reply on #12, #13, #16, #17, #18, #19, #20, #23, #24, #25, #26 and #28 once their device checks pass.
+- [ ] P2: Check on a real phone: wireless debugging and ADB over TCP (issue #20), and that usage access isn't asked for again once granted (issue #16). The fixes for #12, #13, #17, #18, #23 and #28 have only run on an API 29 emulator. The features for #19, #25 and #26 and the profile search and sort from PR #24 have only run in tests. For #21, install an APK through Open with in no-root mode and confirm the system prompt shows instead of the spinner, then uninstall an app the same way.
+- [ ] P2: Reply on #12, #13, #16, #17, #18, #19, #20, #21, #23, #24, #25, #26 and #28 once their device checks pass.
 - [ ] P2: Re-test every entry in Roadmap_Blocked.md. Only the #12 and #18 entries were cleared in this pass.
 
 ## Research-Driven Additions (2026-08-23)
