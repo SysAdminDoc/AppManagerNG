@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -152,7 +153,14 @@ public class TopAppOverlayService extends Service implements AccessibilityMultip
             Log.w(TAG, "Could not go foreground.", e);
         }
         mBubble = new TopAppBubble(this, this::openAppDetails);
-        TopAppOverlayTileService.requestTileStateUpdate(this);
+        updateTile();
+    }
+
+    /** Quick Settings tiles start at API 24, and below that even loading the tile's class would throw. */
+    private void updateTile() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            TopAppOverlayTileService.requestTileStateUpdate(this);
+        }
     }
 
     @Override
@@ -195,7 +203,7 @@ public class TopAppOverlayService extends Service implements AccessibilityMultip
         if (mBubble != null) {
             mBubble.dismiss();
         }
-        TopAppOverlayTileService.requestTileStateUpdate(this);
+        updateTile();
         super.onDestroy();
     }
 
