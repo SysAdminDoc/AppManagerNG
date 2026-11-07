@@ -22,7 +22,6 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 
-import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerActivity;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
@@ -85,7 +84,7 @@ public class FmBatchApkInstallUtilsTest {
         assertEquals(Intent.ACTION_SEND_MULTIPLE, intent.getAction());
         assertNotNull(intent.getComponent());
         assertEquals(PackageInstallerActivity.class.getName(), intent.getComponent().getClassName());
-        assertTrue(intent.getBooleanExtra(BuildConfig.APPLICATION_ID + ".extra.BATCH_INSTALL", false));
+        assertTrue(PackageInstallerActivity.isBatchRequest(intent));
         assertTrue((intent.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION) != 0);
         List<Uri> uris = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
         assertNotNull(uris);

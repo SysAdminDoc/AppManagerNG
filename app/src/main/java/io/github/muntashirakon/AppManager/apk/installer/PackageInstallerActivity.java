@@ -56,6 +56,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -63,6 +64,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.UUID;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.BuildConfig;
@@ -141,6 +143,10 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
 
     private static final String EXTRA_APK_FILE_LINK = "link";
     static final String EXTRA_BATCH_INSTALL = BuildConfig.APPLICATION_ID + ".extra.BATCH_INSTALL";
+    // Batch mode skips this app's own install prompt, and the activity is exported, so only an
+    // intent built in this process may ask for it. The token never leaves the process; an intent
+    // redelivered after a restart carries a stale one and simply gets the usual prompt.
+    private static final String BATCH_INSTALL_TOKEN = UUID.randomUUID().toString();
     public static final String ACTION_PACKAGE_INSTALLED = BuildConfig.APPLICATION_ID + ".action.PACKAGE_INSTALLED";
 
     @NonNull
@@ -158,7 +164,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         Intent intent = new Intent(context, PackageInstallerActivity.class)
                 .setAction(Intent.ACTION_SEND_MULTIPLE)
                 .putParcelableArrayListExtra(Intent.EXTRA_STREAM, safeUris)
-                .putExtra(EXTRA_BATCH_INSTALL, true)
+                .putExtra(EXTRA_BATCH_INSTALL, BATCH_INSTALL_TOKEN)
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         ClipData clipData = ClipData.newRawUri("", safeUris.get(0));
         for (int i = 1; i < safeUris.size(); ++i) {
@@ -174,7 +180,41 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
      */
     @NonNull
     public static Intent getBatchInstallInstance(@NonNull Context context, @NonNull ApkSource apkSource) {
-        return getLaunchableInstance(context, apkSource).putExtra(EXTRA_BATCH_INSTALL, true);
+        return getLaunchableInstance(context, apkSource).putExtra(EXTRA_BATCH_INSTALL, BATCH_INSTALL_TOKEN);
+    }
+
+    /**
+     * Whether an intent asks to install without the per-app prompt. Only the batch instances
+     * built above can.
+     */
+    @VisibleForTesting
+    public static boolean isBatchRequest(@NonNull Intent intent) {
+        return BATCH_INSTALL_TOKEN.equals(intent.getStringExtra(EXTRA_BATCH_INSTALL));
+    }
+
+    /**
+     * For each queued item in order, whether it'll install without the per-app prompt.
+     */
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    @NonNull
+    List<Boolean> queuedItemsSkippingPrompt() {
+        synchronized (mApkQueue) {
+            List<Boolean> skips = new ArrayList<>(mApkQueue.size());
+            for (ApkQueueItem item : mApkQueue) {
+                skips.add(mBatchItems.contains(item));
+            }
+            return skips;
+        }
+    }
+
+    private void enqueue(@NonNull Intent intent) {
+        List<ApkQueueItem> items = queueItemsFrom(intent, Utils.getRealReferrer(this));
+        synchronized (mApkQueue) {
+            mApkQueue.addAll(items);
+            if (isBatchRequest(intent)) {
+                mBatchItems.addAll(items);
+            }
+        }
     }
 
     /**
@@ -238,6 +278,9 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     };
     private final InstallerOptions mInstallerOptions = InstallerOptions.getDefault();
     private final Queue<ApkQueueItem> mApkQueue = new LinkedList<>();
+    // Queued items that came in a batch built by this app. Batch mode follows the item, so an APK
+    // another app sends while a batch is running still gets the prompt. Guarded by mApkQueue.
+    private final Set<ApkQueueItem> mBatchItems = Collections.newSetFromMap(new IdentityHashMap<>());
     private final ActivityResultLauncher<Intent> mConfirmIntentLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
                 // User did some interaction and the installer screen is closed now
@@ -283,16 +326,13 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             onNewIntent(intent);
             return;
         }
-        mBatchInstall = intent.getBooleanExtra(EXTRA_BATCH_INSTALL, false);
         mCallerWantsResult = intent.getBooleanExtra(Intent.EXTRA_RETURN_RESULT, false);
         mModel = new ViewModelProvider(this).get(PackageInstallerViewModel.class);
         if (!bindService(
                 new Intent(this, PackageInstallerService.class), mServiceConnection, BIND_AUTO_CREATE)) {
             throw new RuntimeException("Unable to bind PackageInstallerService");
         }
-        synchronized (mApkQueue) {
-            mApkQueue.addAll(queueItemsFrom(intent, Utils.getRealReferrer(this)));
-        }
+        enqueue(intent);
         mModel.packageInfoLiveData().observe(this, newPackageInfo -> {
             if (newPackageInfo == null) {
                 if (mBatchInstall) {
@@ -617,10 +657,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             return;
         }
         // New APK files added
-        mBatchInstall = mBatchInstall || intent.getBooleanExtra(EXTRA_BATCH_INSTALL, false);
-        synchronized (mApkQueue) {
-            mApkQueue.addAll(queueItemsFrom(intent, Utils.getRealReferrer(this)));
-        }
+        enqueue(intent);
         UIUtils.displayShortToast(R.string.added_to_queue);
     }
 
@@ -965,6 +1002,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             mDialogHelper.initProgress(v -> goToNext());
             synchronized (mApkQueue) {
                 mCurrentItem = Objects.requireNonNull(mApkQueue.poll());
+                mBatchInstall = mBatchItems.remove(mCurrentItem);
                 mModel.getPackageInfo(mCurrentItem);
             }
         } else {

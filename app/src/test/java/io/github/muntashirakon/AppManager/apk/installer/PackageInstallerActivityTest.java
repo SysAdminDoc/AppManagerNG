@@ -75,7 +75,7 @@ public class PackageInstallerActivityTest {
         assertEquals(first, intent.getClipData().getItemAt(0).getUri());
         assertEquals(second, intent.getClipData().getItemAt(1).getUri());
         assertTrue((intent.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION) != 0);
-        assertTrue(intent.getBooleanExtra(PackageInstallerActivity.EXTRA_BATCH_INSTALL, false));
+        assertTrue(PackageInstallerActivity.isBatchRequest(intent));
     }
 
     @Test
@@ -94,7 +94,7 @@ public class PackageInstallerActivityTest {
 
         Intent intent = PackageInstallerActivity.getBatchInstallInstance(RuntimeEnvironment.getApplication(), source);
 
-        assertTrue(intent.getBooleanExtra(PackageInstallerActivity.EXTRA_BATCH_INSTALL, false));
+        assertTrue(PackageInstallerActivity.isBatchRequest(intent));
         List<ApkQueueItem> items = PackageInstallerActivity.queueItemsFrom(intent, null);
         assertEquals(1, items.size());
         ApkSource queued = items.get(0).getApkSource();
@@ -113,6 +113,36 @@ public class PackageInstallerActivityTest {
         activity.onNewIntent(intent);
 
         assertTrue("A second app sent while the installer is open must not be dropped", activity.hasNext());
+    }
+
+    @Test
+    public void onlyTheAppItselfCanSkipTheInstallPrompt() throws IOException {
+        // The installer is exported, so any app can send it an APK along with the batch flag.
+        // In root or ADB mode that installed the APK with no prompt at all.
+        Intent fromAnotherApp = new Intent(Intent.ACTION_VIEW)
+                .setDataAndType(Uri.parse("content://other.test/apk/payload.apk"), MIME_APK)
+                .putExtra(PackageInstallerActivity.EXTRA_BATCH_INSTALL, true);
+        assertFalse(PackageInstallerActivity.isBatchRequest(fromAnotherApp));
+        fromAnotherApp.putExtra(PackageInstallerActivity.EXTRA_BATCH_INSTALL, "a guess");
+        assertFalse(PackageInstallerActivity.isBatchRequest(fromAnotherApp));
+        assertFalse(PackageInstallerActivity.isBatchRequest(PackageInstallerActivity.getLaunchableInstance(
+                RuntimeEnvironment.getApplication(), ApkSource.getOwnedCachedApkSource(newCacheFile(), MIME_APK))));
+
+        // The file manager and Local sync build their batches here and still skip it
+        ArrayList<Uri> uris = new ArrayList<>(Collections.singletonList(Uri.parse("content://example.test/a.apk")));
+        assertTrue(PackageInstallerActivity.isBatchRequest(
+                PackageInstallerActivity.getBatchInstallInstance(RuntimeEnvironment.getApplication(), uris)));
+        Intent fromLocalSync = PackageInstallerActivity.getBatchInstallInstance(RuntimeEnvironment.getApplication(),
+                ApkSource.getOwnedCachedApkSource(newCacheFile(), MIME_APK));
+        assertTrue(PackageInstallerActivity.isBatchRequest(fromLocalSync));
+
+        // Batch mode also stuck to the activity, so an APK another app sent while a batch was
+        // running went in without a prompt too
+        PackageInstallerActivity activity = Robolectric.buildActivity(PackageInstallerActivity.class).get();
+        activity.onNewIntent(fromLocalSync);
+        activity.onNewIntent(fromAnotherApp);
+        assertEquals("An APK from another app must get the usual prompt",
+                Arrays.asList(true, false), activity.queuedItemsSkippingPrompt());
     }
 
     @Test
