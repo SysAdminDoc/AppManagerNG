@@ -11,7 +11,297 @@ The drain stopped here on the owner's word. These reports are still waiting.
 - [ ] P1: Build LAN discovery, version compare and APK pull between devices (issue #22). Plan: NSD discovery, a one-time pairing code shown on the host, an AES-GCM session keyed from it, compare versionCode and signer SHA-256, pull base and split APKs, check the signature, install through the existing installer.
 - [ ] P2: Check on a real phone: wireless debugging and ADB over TCP (issue #20), and that usage access isn't asked for again once granted (issue #16). The fixes for #12, #13, #17, #18, #23 and #28 have only run on an API 29 emulator. The features for #19, #25 and #26 and the profile search and sort from PR #24 have only run in tests. For #21, install an APK through Open with in no-root mode and confirm the system prompt shows instead of the spinner, then uninstall an app the same way.
 - [ ] P2: Reply on #12, #13, #16, #17, #18, #19, #20, #21, #23, #24, #25, #26 and #28 once their device checks pass.
-- [ ] P2: Re-test every entry in Roadmap_Blocked.md. Only the #12 and #18 entries were cleared in this pass.
+
+## Unblocked from Roadmap_Blocked.md (2026-11-07)
+
+- [ ] P0: Replace destructive AppsDb fallback with a complete, preservation-tested migration ladder
+  Why: schema 12 still has no 1→2 migration and still enables destructive forward and downgrade fallbacks, though the database holds filters, history, favorites, freeze choices and backup state that can't all be rebuilt.
+  Evidence: `db/AppsDb.java` (version 12, `.addMigrations(M_2_3 ... M_11_12)` at line 144, both destructive fallbacks at lines 151 and 152), exported schemas `1.json` through `12.json`, `app/src/androidTest/java/io/github/muntashirakon/AppManager/db/AppsDbMigrationTest.java`.
+  Touches: `db/AppsDb.java` (add 1→2 and remove unrestricted destructive fallbacks), `app/src/androidTest/java/io/github/muntashirakon/AppManager/db/AppsDbMigrationTest.java` (every start version through current plus downgrade/failure cases), exported Room schemas, database-open recovery UI/logging.
+  Acceptance: fixtures from every schema version 1 through 12 open at the current schema and keep representative rows from every durable table. An unknown or missing path, or a downgrade, fails closed with the original DB copied intact to a recoverable location and never recreates tables silently.
+  Unblocked 2026-11-07: `MigrationTestHelper` runs on the API 23 to 37.1 emulator images on disk and on the S22 and S25, so the upgrade and fail-closed checks can run now.
+  Complexity: M
+
+- [ ] P1: Validate privileged-mode binding on Android 17
+  Why: app-list enumeration on API 37 is verified and pinned by `PackageEnumerationInstrumentedTest`. What remains is whether Shizuku, Dhizuku, and root bind on API 37, or fail with a surfaced, actionable reason.
+  Evidence: servermanager/ privileged-mode binding; settings/Ops.java.
+  Acceptance: on API 37, each privileged mode either binds or reports why in the UI rather than failing silently.
+  Today: Shizuku's newest release is still v13.6.0 (2025-05-25) and its Android 17 reports #1965 and #1988 are open, so a Shizuku failure on API 37 that shows its reason in the UI meets the bar.
+  Unblocked 2026-11-07: the API 37.0 and 37.1 images are on disk and should root with Magisk 31.1 the way the API 36 image did (not tried yet), Shizuku 13.6.0 sideloads and starts over ADB, and Dhizuku 2.13.0 (2026-10-30) gets device owner through `dpm set-device-owner` on an emulator with no accounts.
+  Complexity: S
+
+- [ ] P1: Root-detection retune for 2026 root managers
+  Why: upstream #1967 reports root not detected on Android 16, while Magisk 30.7 now preserves capabilities by default and KernelSU-Next moved probe paths again.
+  Evidence: upstream MuntashirAkon/AppManager#1967; Magisk 30.7 release notes; runner/RootManagerInfo.java.
+  Acceptance: root is detected on Android 16 with current Magisk and KernelSU-Next; drop-cap diagnostics give correct guidance for Magisk 30.7+; probe matrix is documented.
+  Today: #1967 closed with upstream v4.1.1, and NG already carries the KernelSU re-grant recovery from it (CHANGELOG, 2026-06-04). Magisk is now at v31.1 (2026-10-25), so the probe matrix should cover 31.1 too.
+  Unblocked 2026-11-07: the rooted API 36 Magisk AVD on disk gives a real Android 16 root runtime for the Magisk half today. The KernelSU-Next half needs a kernel it can load into, which is setup work, not a missing resource.
+  Complexity: M
+
+- [ ] P1: Backup/restore round-trip integration tests
+  Why: backup/restore has the highest reliability risk and still lacks end-to-end runtime coverage for no-crypto and AES paths.
+  Evidence: backup/adb/AndroidBackupHeader.java; backup/RestoreOp.java; test coverage gaps in backup round-trip behavior.
+  Acceptance: a local emulator suite installs a fixture app, backs it up with no-crypto and AES modes, uninstalls it, restores it, and asserts data equality.
+  Today: `app/src/androidTest` has seven classes and none of them runs a backup round trip. This also covers INIT-D5 (backup round-trip emulator coverage).
+  Unblocked 2026-11-07: every emulator image on disk has room for a fixture-app backup and restore, so this is test work with nothing missing.
+  Complexity: M
+
+- [ ] P1: Port upstream restore fixes from v4.1.0 milestone
+  Why: upstream v4.1.0 planning includes restore fixes such as non-root restore SecurityException handling on Samsung/API 34; NG's restore path predates those fixes.
+  Evidence: upstream MuntashirAkon/AppManager#1286; backup/RestoreOp.java; apk/installer/; compat/PackageManagerCompat.java.
+  Acceptance: the #1286 reproduction succeeds; ported fixes are listed in CHANGELOG.md with upstream attribution.
+  Today: upstream v4.1.0 (2026-06-29) and v4.1.1 (2026-09-04) are both out, and the `backup/RestoreOp.java` history shows no upstream restore port yet.
+  Unblocked 2026-11-07: the fixes are public to port, the S22 and S25 are Samsung phones on current One UI, and the API 34 emulator image covers the API 34 half of the reproduction.
+  Complexity: M
+
+- [ ] P1: Port upstream's native run_server for the local privileged channel
+  Why: the HMAC half is done. Protocol 1.4.0 (fcbb19030) proves the token both ways without sending it, and `DataTransmissionHandshakeTest` covers the negative cases. Upstream's native run_server executable is what's left.
+  Evidence: upstream commits 07c7199 (run_server as a native executable, 2026-05-28) and b42efbb (main.jar copied through run_server). NG still launches through `app/src/main/assets/run_server.sh` and `servermanager/AdbLaunchFiles.java`, and its server has run apart from upstream's since 6e8f45d31 (port 62001 plus user ID, process `amng_server`).
+  Touches: libserver/, server/, adb/, servermanager/.
+  Acceptance: root mode still starts the server on a rooted Android 16 runtime through the native launcher, ADB mode still starts it, and the ported commits are attributed.
+  Merged: INIT-D3 (HMAC mutual auth and native run_server port).
+  Unblocked 2026-11-07: the upstream commits are public, and the rooted API 36 Magisk AVD on disk is the Android 16 root runtime the acceptance asks for.
+  Complexity: M
+
+- [ ] P1: Privileged local-server secure-session hardening
+  Why: the server channel is still a cleartext loopback socket. Protocol 1.4.0 added mutual HMAC proof of the session token, but no doc states the trust model and no test pins the loopback bind.
+  Evidence: `server/src/main/java/io/github/muntashirakon/AppManager/server/Server.java:262` binds `127.0.0.1`. `DataTransmissionHandshakeTest` already rejects a wrong token, a squatting server, a replayed nonce and old handshakes. No trust-model doc exists under `docs/`.
+  Touches: security docs, server connection tests.
+  Acceptance: a security doc states the trust model (loopback only, mutual HMAC, no TLS, and why), and a host test fails if the server binds anything other than loopback.
+  Unblocked 2026-11-07: the design call is already made in the code (loopback bind plus mutual HMAC), so what's left is writing it down and pinning the bind with a test.
+  Complexity: S
+
+- [ ] P2: Dhizuku freeze/suspend executor parity
+  Why: freeze and suspend should run through Dhizuku's device-owner delegation on devices where ADB permissions are restricted.
+  Evidence: `dhizuku/DhizukuBridge.java` is a detection probe only, and `settings/Ops.java` declares no Dhizuku mode.
+  Order: do it after the ROADMAP item "Make the Dhizuku capability copy match what Dhizuku can actually do", which settles the API 26 module question.
+  Unblocked 2026-11-07: Dhizuku 2.13.0 (2026-10-30) is out, and `dpm set-device-owner` hands it device owner on any emulator with no accounts.
+  Complexity: M
+
+- [ ] P2: Wireless-ADB resilience: recover after the One UI 8 doze kill
+  Why: One UI 8 kills ADB-spawned servers on wake from doze (Shizuku #2475, reported on an S22 with Android 16).
+  Evidence: the trusted-network half landed. 658ef6e38 asks once per network when Wireless debugging must be allowed, 14e8c1277 reconnects after a reboot on Android 15+, and 4cc5254b6 says why ADB mode failed. Nothing in `servermanager/` or `adb/` handles the server dying on wake from doze, and Shizuku #2475 is still open.
+  Acceptance: on the S22, after the phone sits in doze and wakes, NG notices the dead server and reconnects or says why it can't.
+  Unblocked 2026-11-07: the S22 from the Shizuku report is here, and doze can be forced with `dumpsys deviceidle force-idle`. Pair it with the ROADMAP P1 reboot reconnect check.
+  Complexity: M
+
+- [ ] P2: SAF DocumentsProvider exposure of app-private directories
+  Why: let a SAF file manager browse an app's private data through NG's privileged mode.
+  Evidence: `fm/AppManagerDocumentsProvider.java` exposes only the read-only Backups and Profiles roots.
+  Order: land the ROADMAP P1 "Complete the read-only DocumentsProvider child contract" first.
+  Acceptance: with root or ADB mode on, a sideloaded SAF file manager opens an app's data directory through the system picker, and with no privileged mode the root isn't offered.
+  Unblocked 2026-11-07: root, ADB and Shizuku all run on the emulators and phones, and any SAF file manager can be sideloaded for the check.
+  Complexity: M
+
+- [ ] P2: Backup overwrite option for custom-name collisions
+  Why: move-aside and rollback semantics differ between file-backed and SAF-backed Path implementations.
+  Evidence: `backup/dialog/BackupFragment.java:246` still has `// TODO(18/9/20): Add overwrite option`.
+  Touches: the overwrite-option UI and move-aside for custom-name collisions (merged from INIT-2b).
+  Unblocked 2026-11-07: both Path kinds run on any emulator image, with a SAF tree picked through the system picker for the SAF half.
+  Complexity: M
+
+- [ ] P2: ApplicationStartInfo "why did this app start" panel
+  Evidence: nothing calls `getHistoricalProcessStartReasons` yet. Exit info already lives in `compat/ActivityManagerCompat.java`, which is the natural home for it.
+  Unblocked 2026-11-07: the API arrived in Android 15, and the API 35, 36 and 37 images are on disk.
+  Complexity: M
+
+- [ ] P2: Form-factor-aware permission prompt gate (TV)
+  Why: TV sideload users hit permission prompts they can't reach or that keep coming back (upstream #1823, PermissionManagerX #61). Wear OS isn't a target, so this covers TV only.
+  Evidence: `utils/Utils.java:619` `isTv()` checks FEATURE_LEANBACK, but no permission prompt consults it.
+  Unblocked 2026-11-07: the SDK offers Android TV images for API 34 and 36 and a Google TV image for API 34.
+  Complexity: M
+
+- [ ] P2: Accessibility, keyboard, and touch-target hardening
+  Why: dense expert tools still need predictable focus, visible labels, 48dp controls, and non-color-only status meaning across dialogs, lists, chips, menus, and result screens.
+  Where: app/src/main/res/layout/, app/src/main/java/io/github/muntashirakon/AppManager/
+  Today: the main-list badge composite TouchDelegate and `MainRecyclerAdapterBadgeStyleTest` landed, and so did the 2026-09-30 label commits (ebc4008ea, 19b27d3a4). Include the badge row in the scanner run.
+  Unblocked 2026-11-07: Accessibility Scanner, TalkBack and keyboard input all work on the emulators and phones, so finding the violations is the first step of the work.
+  Complexity: M
+
+- [ ] P2: Degraded, empty, error, loading, and success state system
+  Why: secondary screens should never fail silently or show blank states; every unavailable, partial, or failed workflow needs calm actionable copy and an obvious next step.
+  Where: app/src/main/java/io/github/muntashirakon/AppManager/, app/src/main/res/layout/
+  Unblocked 2026-11-07: walking each screen's empty, error and loading paths is a device check, and the emulators and phones are available.
+  Complexity: L
+
+- [ ] P2: Settings information architecture cleanup
+  Why: settings should group risk, privileges, appearance, backup, rules, notifications, and advanced/debug controls so users can find decisions without memorizing implementation boundaries.
+  Where: app/src/main/java/io/github/muntashirakon/AppManager/settings/
+  Unblocked 2026-11-07: the regrouping is a design call an experienced Android engineer can make from the settings code, then check on an emulator.
+  Complexity: M
+
+- [ ] P2: Multi-user/work-profile/private-space capability matrix
+  Why: AppManagerNG has broad userId plumbing and hidden-profile permission support, but users need one visible source of truth for which operations work in main, work, hidden, and private profiles under each privilege mode.
+  Evidence: app/src/main/AndroidManifest.xml; docs/policy/permissions.md; Canta work-profile issue; Neo Backup multi-profile issue.
+  Unblocked 2026-11-07: `pm create-user` makes secondary users and work profiles on any emulator, and the API 35+ images support private space.
+  Complexity: L
+
+- [ ] P2: File-manager operations service with cancellation and recovery
+  Why: Copy, move, delete, and archive work is still tied to fragment/background-thread flows even though the code calls out a bound service and cancellable thread ownership as needed.
+  Evidence: fm/FmFragment.java; fm/FmAdapter.java.
+  Unblocked 2026-11-07: rotation, service survival and an interrupted move can all be tested on an emulator, and a large change in the FM core is ordinary work.
+  Complexity: L
+
+- [ ] P2: Screenshot regression testing (Paparazzi)
+  Why: 143 layouts, 3 themes (AMOLED/dark/light), ongoing V2 design token work create continuous visual regression risk with no automated catching.
+  Touches: app/build.gradle, app/src/test/ (screenshot test classes)
+  Today: Paparazzi 2.0.0-alpha05.1 (2026-09-28) is the newest on Maven Central and its notes list Android Gradle Plugin 9.0.0 support (#2198). PR #2318 closed without merging.
+  Unblocked 2026-11-07: a Paparazzi release with AGP 9 support now exists. Confirm it builds against the repo's AGP 9.3.1 and compileSdk 37 before writing tests.
+  Complexity: M
+
+- [ ] P2: Publish a concrete coordinated-disclosure policy
+  Why: the public repository has no `SECURITY.md`, and `CONTRIBUTING.md:61` still sends reporters to "the maintainer contact listed" for a root-capable app that handles credentials and backups.
+  Evidence: `.github/` holds only `ISSUE_TEMPLATE`. GitHub private vulnerability reporting is now enabled on the repo.
+  Touches: `.github/SECURITY.md`, `CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/bug_report.yml`.
+  Acceptance: the Security tab exposes supported versions, an explicit non-public reporting route, requested report fields, acknowledgment/disclosure expectations, and a warning against public exploit details; CONTRIBUTING and the bug template link to the same policy without conflicting instructions.
+  Unblocked 2026-11-07: the old blocker was one past pass's rule about which Markdown it could stage. Nothing outside the repo is missing, and private reporting is already on for the policy to point at.
+  Complexity: S
+
+- [ ] P2: Fix tracked documentation truth and links
+  Why: canonical docs refer to removed files/workflows and describe shipped features/tests as future or disabled, so a clean clone gives maintainers contradictory architecture and release guidance.
+  Evidence: `docs/architecture/README.md`, `launcher-icon-aliases.md`, `04-filter-finder.md`, `docs/roadmap/COMPLETED.md` (line 18 still names `PROJECT_CONTEXT.md`), `docs/policy/2026-05-26-minsdk-23-decision.md`, `design/README.md`.
+  Acceptance: no tracked doc names the absent `PROJECT_CONTEXT.md` or deleted workflows, the architecture indexes list the tracked topics, shipped launcher, tag and test status matches the source, and every relative link resolves in a clean clone.
+  Unblocked 2026-11-07: the old blocker was a past pass's staging rule. The doc contract test half is dropped, because the project tests the app and not its docs.
+  Complexity: M
+
+- [ ] P2: Conditional auto-freeze predicates (skip charging / foreground / active notifications)
+  Why: Hail's loudest 2026 complaint is that unconditional auto-freeze kills apps users still want alive; conditional guards (skip while charging, skip the foreground app, skip apps with active notifications) are the requested fix and fit NG's routine-ops model.
+  Evidence: Hail issues #186/#222 (auto-freeze reliability + skip guards); NG routine/scheduler executor.
+  Touches: routines/ (new predicate types), freeze/ (guard evaluation), settings/ (defaults).
+  Acceptance: a routine can freeze a package set except while charging, except when foreground, or except when it holds an active notification; each guard verified against the real system state.
+  Unblocked 2026-11-07: charging, foreground and notification state can all be set on an emulator (`dumpsys battery set ac 1`, an app in front, a posted notification), and freeze runs there in root, ADB or Shizuku mode.
+  Complexity: M
+
+- [ ] P2: Event-driven leftover sweep after any uninstall (CorpseFinder pattern)
+  Why: NG's LeftoverScanner is manual; SD Maid SE's CorpseFinder offers to sweep orphaned data dirs immediately after any uninstall (including uninstalls by other apps), which is when the mistake cost is highest.
+  Touches: a new PACKAGE_FULLY_REMOVED receiver, `oneclickops/LeftoverScanner.java` reuse, a notification and review flow.
+  Acceptance: uninstalling an app (or observing another app's uninstall) surfaces an actionable "found N orphaned dirs, review" prompt that routes into the existing leftover UI.
+  Unblocked 2026-11-07: PACKAGE_FULLY_REMOVED is exempt from the implicit-broadcast limits, so a manifest receiver gets it, and root and ADB modes on an emulator cover the directory scan.
+  Complexity: M
+
+- [ ] P3: Full main-list ListAdapter/DiffUtil migration (INIT-D1)
+  Evidence: `main/MainRecyclerAdapter.java:81` extends `MultiSelectionView.Adapter`, and `setDefaultList` calls `AdapterUtils.notifyDataSetChanged` with no ListAdapter or DiffUtil.
+  Acceptance: list updates go through DiffUtil, and selection, scroll position and row View IDs survive a refresh.
+  Unblocked 2026-11-07: View-ID preservation can be checked on any emulator. The item had no priority, so it's set to P3 here.
+  Complexity: M
+
+- [ ] P3: Complete the unaudited device, native, locale, and no-test-module pass
+  Why: the 2026-08-02 audit was static and host-only, so the remaining runtime and coverage-sensitive areas must not be assumed clean.
+  Scope: device/emulator UI rendering and motion/focus/touch/contrast checks; native C/C++ under `app/src/main/cpp/` and the JNI boundary; non-English locale pseudolocale overflow and truncation; Room schema and migration behavior; the `benchmark/` module; packages `viewer/`, `types/`, `magisk/`, and `progress/`; and privileged root/ADB runtime behavior.
+  Acceptance: each scoped area has either findings logged with fixes or an explicit review result showing it clean, with runtime evidence preserved in the appropriate tracked report.
+  Unblocked 2026-11-07: the emulators at every API level, the rooted API 36 image and the two phones cover the runtime parts, and the native and JNI review is code reading.
+  Complexity: M
+
+- [ ] P3: D-pad/TV navigation pass
+  Why: Upstream #107 (keyboard/remote navigation, "Partly Fixed") plus SD Maid SE's Android TV launcher support show the box-tinkerer segment is real (FireOS/Firestick issues already appear upstream: #1835, #1854); NG's M3 dashboard was not audited for focus traversal.
+  Today: the banner, the leanback launcher entry and the optional leanback and touchscreen features are already in the manifest (bc36d78de). Focus traversal is what's left, and upstream #107 is still open.
+  Acceptance: main list -> app details -> batch ops are fully operable with a D-pad on an Android TV emulator.
+  Unblocked 2026-11-07: the SDK offers Android TV images for API 34 and 36.
+  Complexity: M
+
+- [ ] P3: Transparent launch-through frozen apps
+  Why: Hail's killer UX pattern: tap a frozen app's launcher icon → auto-unfreeze → launch → auto-refreeze when the app closes or screen locks. NG has freeze/unfreeze plumbing and auto-freeze-on-screen-lock, but no transparent launch-through.
+  Today: `apk/behavior/FreezeUnfreeze.java` has FLAG_ON_UNFREEZE_OPEN_APP, FLAG_ON_OPEN_APP_NO_TASK and FLAG_FREEZE_ON_PHONE_LOCKED. `ActivityLauncherShortcutActivity.unfreezeAndLaunchActivity` still shows a confirm dialog, and `FreezeUnfreezeService` only refreezes on SCREEN_OFF.
+  Acceptance: a launch-through shortcut opens a frozen app without a dialog and refreezes it after it leaves the foreground.
+  Unblocked 2026-11-07: root, ADB and Shizuku modes all run on the emulators, and UsageStatsManager foreground events can be watched there.
+  Complexity: M
+
+- [ ] P3: Samsung "Clear Compiler Artifacts" batch operation
+  Why: Upstream #1989 requests batch dexopt/ART profile clearing on Samsung devices. Samsung One UI shows this option per-app but no package manager exposes it as a batch operation.
+  Today: batch ops already has `OP_DEXOPT` (21), and `DexOptimizer` has `clearApplicationProfileData` and `forceDexOpt`. Upstream #1989 is still open.
+  Touches: batchops/BatchOpsManager.java, compat/ (Samsung dexopt clearing API)
+  Unblocked 2026-11-07: the S22 and S25 are Samsung phones, so the One UI commands can be checked over ADB.
+  Complexity: S
+
+- [ ] P3: Visual token and component polish pass
+  Why: cards, banners, list rows, dialogs, badges, chips, toasts, and nested surfaces should feel like one product in light, dark, and AMOLED modes without one-off colors or spacing.
+  Where: app/src/main/res/{layout,values,drawable}/
+  Merged: the theme and a11y coherence pass. Give NG-added screens one dark palette token set and replace misused drawables with purpose-named assets. Its badge touch-target part is done.
+  Unblocked 2026-11-07: comparing the three themes is a screenshot job on an emulator, and the one-off colors can be found by searching `res/` for literal values.
+  Complexity: M
+
+- [ ] P3: Tooltips and microcopy consistency pass
+  Why: expert controls need concise labels, explainers, and warnings that are useful without being robotic, vague, or inconsistent between screens.
+  Where: app/src/main/res/values/strings.xml, app/src/main/java/io/github/muntashirakon/AppManager/
+  Unblocked 2026-11-07: the walkthrough runs on an emulator, and most of the copy can be reviewed straight from `strings.xml`.
+  Complexity: M
+
+- [ ] P3: Device-wide analytics dashboard (install-source / SDK / signing distributions)
+  Why: Inure's analytics panel and AppDash's insight cards ("unused apps", "storage-heavy") are the category's stickiest discovery surfaces; NG already computes every datapoint (installer source, target SDK, signing info, usage) but offers no aggregate view with tap-through to a filtered list.
+  Today: `analytics/DeviceAnalyticsAggregator.java` (INIT-4a) already computes the data, and `usage/BarChartView.java` is an in-house chart view to reuse, so no chart library is needed. This also covers INIT-4b.
+  Acceptance: a dashboard screen shows at least installer-source, targetSdk, and signing distributions plus an "unused 30/60/90 days" card; tapping any segment opens the main list pre-filtered to it.
+  Unblocked 2026-11-07: the chart and tap-through can be checked on an emulator.
+  Complexity: M
+
+- [ ] P3: Dedicated freeze surface with home-screen widget
+  Why: Freeze/unfreeze works via app details or batch ops, but there is no dedicated screen listing all frozen apps with one-tap toggle, so the feature is buried. Hail's frozen-apps grid with one-tap toggle and home-screen widget is the competitive standard for daily freeze/unfreeze workflows. NG ships a QS freeze tile but no in-app freeze surface or widget.
+  Today: the only widgets are ScreenTime, DataUsage, ClearCache and Recording.
+  Acceptance: a main-menu entry opens a grid of all frozen/suspended apps; each row has a one-tap toggle that freezes or unfreezes immediately; a home-screen widget shows frozen-app count and opens the freeze surface on tap; works in root, ADB, and Shizuku modes.
+  Unblocked 2026-11-07: freeze runs in root, ADB and Shizuku modes on the emulators, and every emulator launcher can place a widget.
+  Complexity: M
+
+- [ ] P3: Profile sharing via QR code or deep link
+  Why: Profiles serialize to JSON but there's no QR code or `am://profile/import/<encoded>` deep link for mobile-to-mobile sharing. Users must export to file, transfer, and import manually.
+  Touches: profiles/ (QR encoder/decoder, deep-link handler in manifest)
+  Acceptance: a "Share" action in the profile editor generates a QR code or copyable deep link; scanning/tapping it on another device opens the import flow.
+  Unblocked 2026-11-07: ZXing core is Apache-2.0 and only needs adding, and the deep link can be fired on an emulator with `am start -d`.
+  Complexity: M
+
+- [ ] P3: Boot-component manager view
+  Why: A dedicated "what starts at boot" surface (BOOT_COMPLETED receivers across all apps, batch-blockable) is a classic MyAndroidTools/Inure feature NG can build almost entirely from existing component-blocking plumbing.
+  Touches: new BootManagerActivity (reuse component list UI), rules/compontents/ (existing IFW/disable paths), filters/, main menu entry
+  Acceptance: a screen lists every app with BOOT_COMPLETED/LOCKED_BOOT_COMPLETED receivers and their enable state; per-row and batch block/unblock work through the existing rule store with undo.
+  Unblocked 2026-11-07: IFW rules and component disabling run in root and ADB modes on the emulators, and a multi-file feature is ordinary work.
+  Complexity: M
+
+- [ ] P3: File-manager trash bin (staged deletion)
+  Why: NG's FM hard-deletes; Files-by-Google's staged trash with 30-day retention is the established data-safety pattern and FM batch ops magnify mistake cost.
+  Touches: fm/ (delete paths, trash root, restore UI), settings/ (retention pref)
+  Acceptance: FM delete moves to a trash location with restore; trash auto-empties after the configured retention; "delete permanently" remains available.
+  Unblocked 2026-11-07: delete, restore and auto-empty can be tested on any emulator, with the clock moved forward for the retention check.
+  Complexity: M
+
+- [ ] P3: Installer preflight: show the initiating package and select-all splits
+  Why: InstallerX-Revived surfaces which app requested an install and offers select-all in the split chooser; both are transparency/UX wins NG's SplitApkChooser lacks.
+  Today: `apk/splitapk/SplitApkChooser.java:78` sets `.showSelectAll(false)`, and there's no initiator lookup.
+  Acceptance: the install preflight shows the originating/installer package where available and offers a select-all toggle for split sets.
+  Unblocked 2026-11-07: `InstallSourceInfo` gives the initiating package from API 30, and the API 23 to 37.1 images cover the older and newer paths.
+  Complexity: S
+
+- [ ] P3: Weak-signature Finder filter and App Details chip
+  Why: the host-verifiable classifier (`PackageUtils.isV1SchemeOnlySigning`) and the App Details signature-schemes warning text have shipped; a dedicated Finder predicate ("weak / v1-only signing") and a compact at-a-glance chip on the app row remain, so users can filter the whole device for weakly-signed apps.
+  Today: `filters/options/` has no scheme predicate, so `IFilterableAppInfo` needs a scheme flag first.
+  Acceptance: a Finder filter lists only v1-only-signed apps; the app row shows a weak-signature badge.
+  Unblocked 2026-11-07: adding a scheme flag is an internal API choice, and the chip can be checked on an emulator in each theme.
+  Complexity: M
+
+- [ ] P3: Health-permission granular mapping (Android 16 android.permissions.health)
+  Why: Android 16 splits several BODY_SENSORS capabilities into the granular `android.permissions.health` group; the permission views should map and label these so health-sensor access is legible instead of showing raw permission names.
+  Today: `permissions/PermissionGroupCatalog.java` exists now, but its body_sensors group holds only BODY_SENSORS and BODY_SENSORS_BACKGROUND. `details/info/HealthConnectInfo.java` already knows the `android.permission.health.` prefix.
+  Acceptance: apps requesting the split health permissions show them grouped/labelled under a health category; a host test covers the mapping table.
+  Unblocked 2026-11-07: the catalog the old blocker asked for exists, and the API 36 image has the runtime permission data.
+  Complexity: M
+
+- [ ] P3: LibChecker-class static inspection signals (modern Xposed API, live-update capability, themed-icon/alias)
+  Why: LibChecker surfaces cheap static signals AppManagerNG already has the data for (modern vs legacy Xposed API usage, Android 16 live-update-notification capability, themed-icon and launcher alias detection) as App Details and Finder rows.
+  Today: `misc/XposedModuleInfo.java` already tells modern modules from legacy ones (`META-INF/xposed/module.prop`). There's no live-update or themed-icon signal, and no Finder filter for any of them.
+  Acceptance: at least one new signal appears in App Details and is filterable in the Finder, over fixture package data.
+  Unblocked 2026-11-07: the Xposed signal only needs a row and a Finder filter, and the rows can be checked on an emulator.
+  Complexity: M
+
+- [ ] P3: Persistent removal/debloat ledger surface
+  Why: Canta keeps a durable record of what the user removed that survives across reinstalls of the manager; NG has op_history but no dedicated "what I removed and when" audit view users can revisit or restore from.
+  Touches: new removal-ledger fragment (reuse op_history), db/ (query), main menu entry.
+  Acceptance: a screen lists removed/debloated packages with timestamp and mode, and offers reinstall/restore where data allows.
+  Unblocked 2026-11-07: op_history already stores the data, and reinstall or restore runs in root or ADB mode on an emulator.
+  Complexity: M
+
+- [ ] P3: Version-watch panel (full flavor): installed vs latest from static indexes
+  Why: APKUpdater (3.8k stars, active) proves demand for multi-source update awareness without being a store; AppDash paywalls it; checking F-Droid/IzzyOnDroid index-v2 + GitHub releases against installed versions fits the full flavor's opt-in network doctrine and NG stays a manager (notify, don't install).
+  Today: there's no flavor source set yet (`app/src` has only androidTest, debug, main and test), so the full-only code needs one.
+  Acceptance: with the toggle on, a scheduled check lists apps whose installed version trails the chosen indexes, with a signing-cert mismatch warning where the index cert differs; floss flavor compiles the feature out entirely.
+  Unblocked 2026-11-07: the F-Droid and IzzyOnDroid index hosts and the GitHub releases API all answered with HTTP 200 today, so the network access the old blocker named is there.
+  Complexity: L
 
 ## Research-Driven Additions (2026-08-23)
 
