@@ -9,6 +9,7 @@ import android.system.ErrnoException;
 import android.system.Os;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
@@ -19,6 +20,7 @@ import java.io.InterruptedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.adb.AdbSync;
@@ -38,7 +40,9 @@ import io.github.muntashirakon.io.IoUtils;
 public final class AdbLaunchFiles {
     public static final String TAG = AdbLaunchFiles.class.getSimpleName();
 
-    public static final String STAGING_DIR = "/data/local/tmp/" + BuildConfig.APPLICATION_ID;
+    public static final String DEFAULT_STAGING_PARENT = "/data/local/tmp";
+    public static final String STAGING_DIR = DEFAULT_STAGING_PARENT + "/" + BuildConfig.APPLICATION_ID;
+    private static final Pattern PLAIN_PATH_SEGMENT = Pattern.compile("[A-Za-z0-9._+@-]+");
     static final String SERVER_SCRIPT = STAGING_DIR + "/" + ServerConfig.SERVER_RUNNER_EXEC_NAME;
     static final String SERVER_JAR = STAGING_DIR + "/" + Constants.JAR_NAME;
     public static final String MAIN_JAR_NAME = "main.jar";
@@ -189,22 +193,57 @@ public final class AdbLaunchFiles {
     }
 
     /**
+     * The folder the pasted command copies am.jar into when the user picked {@code parent} for it,
+     * or {@code null} when the command can't use that parent. Blank means /data/local/tmp. A shell
+     * running as system can't write there, so it needs a parent of its own (issue #19).
+     * <p>
+     * The folder is always the app's own, inside the parent, because the command shuts it to
+     * everyone but its owner. Shutting /data/local/tmp itself would keep the system out of the APKs
+     * adb install leaves there. Only plain path characters are taken, so nothing in the path means
+     * anything to the shell.
+     */
+    @Nullable
+    public static String stagingDirIn(@Nullable String parent) {
+        String path = parent == null ? "" : parent.trim();
+        if (path.isEmpty()) {
+            return STAGING_DIR;
+        }
+        if (!path.startsWith("/")) {
+            return null;
+        }
+        StringBuilder dir = new StringBuilder();
+        for (String segment : path.split("/")) {
+            if (segment.isEmpty()) {
+                // A doubled or trailing slash
+                continue;
+            }
+            if (segment.equals(".") || segment.equals("..") || !PLAIN_PATH_SEGMENT.matcher(segment).matches()) {
+                return null;
+            }
+            dir.append('/').append(segment);
+        }
+        return dir.append('/').append(BuildConfig.APPLICATION_ID).toString();
+    }
+
+    /**
      * A command to paste into {@code adb shell} that starts the server by hand. It copies am.jar
-     * out of the installed APK into {@link #STAGING_DIR}, checks it, and starts the server from
+     * out of the installed APK into {@code stagingDir}, checks it, and starts the server from
      * there, which is all run_server.sh does for this case. Nothing in it reads the app's data
      * directory, which SELinux keeps the shell out of.
+     *
+     * @param stagingDir {@link #STAGING_DIR}, or what {@link #stagingDirIn(String)} gave
      */
     @WorkerThread
     @NonNull
-    public static String manualShellCommand(@NonNull Context context, int port, @NonNull String token)
-            throws IOException {
+    public static String manualShellCommand(@NonNull Context context, int port, @NonNull String token,
+                                            @NonNull String stagingDir) throws IOException {
         byte[] jar = AssetsUtils.readAsset(context, Constants.JAR_NAME);
         try (AssetFileDescriptor afd = context.getAssets().openFd(Constants.JAR_NAME)) {
             if (afd.getLength() != jar.length) {
                 throw new IOException(Constants.JAR_NAME + " isn't stored uncompressed in the APK.");
             }
-            return buildManualShellCommand(getApkPath(context, afd), afd.getStartOffset(), jar, SERVER_JAR,
-                    "path:" + port + AssetsUtils.getServerArgs() + ",token:" + token);
+            return buildManualShellCommand(getApkPath(context, afd), afd.getStartOffset(), jar,
+                    stagingDir + "/" + Constants.JAR_NAME, "path:" + port + AssetsUtils.getServerArgs() + ",token:" + token);
         }
     }
 

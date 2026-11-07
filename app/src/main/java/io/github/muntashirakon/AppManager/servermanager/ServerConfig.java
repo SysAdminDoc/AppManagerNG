@@ -134,11 +134,15 @@ public final class ServerConfig {
 
     /**
      * The command a user can paste into {@code adb shell} on a computer to start the server by hand.
+     * It copies the server into the folder picked under Mode of operation.
      */
     @WorkerThread
     @NonNull
     public static String getManualAdbCommand(@NonNull Context context) throws IOException {
-        return AdbLaunchFiles.manualShellCommand(context, getLocalServerPort(), getLocalToken());
+        String stagingDir = AdbLaunchFiles.stagingDirIn(Prefs.Misc.getAdbManualStagingParent());
+        // The screen never saves a folder the command can't use, but an imported setting might
+        return AdbLaunchFiles.manualShellCommand(context, getLocalServerPort(), getLocalToken(),
+                stagingDir != null ? stagingDir : AdbLaunchFiles.STAGING_DIR);
     }
 
     /**

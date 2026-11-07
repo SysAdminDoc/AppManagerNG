@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.server.common.Constants;
+import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
 
@@ -214,7 +215,8 @@ public class AdbLaunchFilesTest {
         Context context = ApplicationProvider.getApplicationContext();
         byte[] jar = readAsset(context, Constants.JAR_NAME);
 
-        String command = AdbLaunchFiles.manualShellCommand(context, 60001, "0123456789abcdef");
+        String command = AdbLaunchFiles.manualShellCommand(context, 60001, "0123456789abcdef",
+                AdbLaunchFiles.STAGING_DIR);
 
         assertTrue(command, command.startsWith("{ mkdir -p '" + AdbLaunchFiles.STAGING_DIR + "' && chmod 700 '"
                 + AdbLaunchFiles.STAGING_DIR + "' && dd "));
@@ -226,6 +228,70 @@ public class AdbLaunchFilesTest {
         assertTrue(command, command.endsWith(",token:0123456789abcdef' </dev/null >/dev/null 2>&1 ) & )"
                 + " || echo \"Error! Could not copy " + Constants.JAR_NAME + " out of the APK.\""));
         assertOutsideAppData(command.replace(context.getApplicationInfo().sourceDir, ""));
+    }
+
+    @Test
+    public void aShellThatCantWriteTmpGetsACommandForTheFolderItPicked() throws IOException {
+        // A shell running as system can't make a folder in /data/local/tmp (issue #19)
+        Context context = ApplicationProvider.getApplicationContext();
+        String dir = "/data/system/amng/" + BuildConfig.APPLICATION_ID;
+        Prefs.Misc.setAdbManualStagingParent("/data/system/amng");
+        try {
+            String command = ServerConfig.getManualAdbCommand(context);
+
+            assertTrue(command, command.startsWith("{ mkdir -p '" + dir + "' && chmod 700 '" + dir + "' && dd "));
+            assertTrue(command, command.contains(" of=\"" + dir + "/" + Constants.JAR_NAME + ".$$\" "));
+            assertTrue(command, command.contains("( ( trap '' HUP; CLASSPATH='" + dir + "/" + Constants.JAR_NAME
+                    + "' exec app_process "));
+            assertFalse(command, command.contains(AdbLaunchFiles.DEFAULT_STAGING_PARENT));
+
+            // A folder the command can't use, say from an imported setting, falls back to the usual one
+            Prefs.Misc.setAdbManualStagingParent("relative/path");
+            assertTrue(ServerConfig.getManualAdbCommand(context).startsWith("{ mkdir -p '" + AdbLaunchFiles.STAGING_DIR + "' "));
+        } finally {
+            Prefs.Misc.setAdbManualStagingParent("");
+        }
+        assertTrue(ServerConfig.getManualAdbCommand(context).startsWith("{ mkdir -p '" + AdbLaunchFiles.STAGING_DIR + "' "));
+    }
+
+    @Test
+    public void thePickedFolderIsNeverShutItselfAndNeverReadByTheShell() {
+        String own = "/" + BuildConfig.APPLICATION_ID;
+        assertEquals(AdbLaunchFiles.STAGING_DIR, AdbLaunchFiles.stagingDirIn(null));
+        assertEquals(AdbLaunchFiles.STAGING_DIR, AdbLaunchFiles.stagingDirIn(" "));
+        // The command shuts its folder to everyone else, and shut, /data/local/tmp would keep the
+        // system out of what adb install leaves there
+        assertEquals(AdbLaunchFiles.STAGING_DIR, AdbLaunchFiles.stagingDirIn("/data/local/tmp"));
+        assertEquals("/data/system/amng" + own, AdbLaunchFiles.stagingDirIn(" /data//system/amng/ "));
+        assertEquals("/mnt/vendor/my_dir-2.0+x@y" + own, AdbLaunchFiles.stagingDirIn("/mnt/vendor/my_dir-2.0+x@y"));
+        for (String bad : new String[]{"data/system", "~/amng", "/data/sys tem", "/data/$HOME", "/data/`id`",
+                "/data/$(id)", "/data/\"x\"", "/data/'x'", "/data/a\\b", "/data/x\ny", "/data/x;reboot",
+                "/data/x&&reboot", "/data/x|sh", "/data/../x", "/data/./x", "/data/x*"}) {
+            assertEquals(bad, null, AdbLaunchFiles.stagingDirIn(bad));
+        }
+    }
+
+    @Test
+    public void theCommandRunsInThePickedFolderAndLeavesItsParentAlone() throws Exception {
+        assumeTrue("needs a POSIX sh", shAvailable());
+        byte[] bundled = bytes(4111, 3);
+        File apk = tmp.newFile("base.apk");
+        Files.write(apk.toPath(), concat(bytes(97, 5), bundled));
+        File parent = tmp.newFolder("picked");
+        File marker = new File(parent, "someone-elses-file");
+        Files.write(marker.toPath(), bytes(9, 1));
+        // Git for Windows' sh also takes /c/ paths, which are the only kind the folder check passes
+        String parentPath = posix(parent).replaceFirst("^([A-Za-z]):/", "/$1/");
+        String dir = AdbLaunchFiles.stagingDirIn(parentPath);
+        assertEquals(parentPath + "/" + BuildConfig.APPLICATION_ID, dir);
+
+        String manual = runManual(AdbLaunchFiles.buildManualShellCommand(posix(apk), 97, bundled,
+                dir + "/" + Constants.JAR_NAME, "path:62001,token:0123456789abcdef"));
+
+        assertTrue(mLastManualOutput, manual.startsWith("CLASSPATH=" + dir + "/" + Constants.JAR_NAME + "\n"));
+        File staged = new File(new File(parent, BuildConfig.APPLICATION_ID), Constants.JAR_NAME);
+        assertArrayEquals(bundled, Files.readAllBytes(staged.toPath()));
+        assertEquals(Arrays.asList(BuildConfig.APPLICATION_ID, "someone-elses-file"), sortedNames(parent));
     }
 
     @Test

@@ -921,6 +921,18 @@ public final class Prefs {
         public static int getAdbLocalServerPort() {
             return AppPref.getInt(AppPref.PrefKey.PREF_ADB_LOCAL_SERVER_PORT_INT);
         }
+
+        /**
+         * Where the pasted ADB command makes its folder, blank for /data/local/tmp.
+         */
+        @NonNull
+        public static String getAdbManualStagingParent() {
+            return AppPref.getString(AppPref.PrefKey.PREF_ADB_MANUAL_STAGING_PARENT_STR);
+        }
+
+        public static void setAdbManualStagingParent(@NonNull String parent) {
+            AppPref.set(AppPref.PrefKey.PREF_ADB_MANUAL_STAGING_PARENT_STR, parent);
+        }
     }
 
     public static final class AppActions {

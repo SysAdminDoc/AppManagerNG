@@ -3672,6 +3672,9 @@
     <string name="mode_of_op_custom_command_title">Custom command</string>
     <string name="mode_of_op_adb_shell_command">If none of the modes work, connect the device to a computer and run this command in adb shell. It starts AppManagerNG\'s privileged server, and the app connects to it on its own:</string>
     <string name="mode_of_op_root_command">On a rooted device you can run this one as root instead:</string>
+    <string name="mode_of_op_staging_folder">Folder for the server\'s copy</string>
+    <string name="mode_of_op_staging_folder_helper">The command makes a folder of its own in here. Leave it blank for /data/local/tmp. A shell that can\'t write there, like one running as system (UID 1000), needs a folder it can write to.</string>
+    <string name="mode_of_op_staging_folder_invalid">Use a full path made of letters, numbers and . _ - + @, like /data/system/amng</string>
     <string name="sensors">Sensors</string>
     <string name="tag_sensors_disabled">Sensors disabled</string>
     <string name="pref_use_system_font">Use system font</string>

@@ -9,7 +9,9 @@ import android.content.res.ColorStateList;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Process;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,6 +28,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.color.MaterialColors;
+import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.android.material.textview.MaterialTextView;
 
@@ -37,6 +40,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.adb.AdbUtils;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.servermanager.AdbFailure;
+import io.github.muntashirakon.AppManager.servermanager.AdbLaunchFiles;
 import io.github.muntashirakon.AppManager.servermanager.LocalServer;
 import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
 import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
@@ -159,6 +163,7 @@ public class ModeOfOpsPreference extends Fragment {
         TextInputTextView customCommand1 = view.findViewById(android.R.id.text2);
         TextInputLayout customCommand1Layout = TextInputLayoutCompat.fromTextInputEditText(customCommand1);
         customCommand1Layout.setEndIconOnClickListener(v -> copyCommand(requireContext(), customCommand1.getText()));
+        bindStagingFolder(view);
         mModel.loadCustomCommands();
         updateViews();
         // Mode of ops
@@ -419,6 +424,40 @@ public class ModeOfOpsPreference extends Fragment {
                 AdbFailure.getLast());
         mAdbFailureView.setText(adbFailure);
         mAdbFailureView.setVisibility(adbFailure != null ? View.VISIBLE : View.GONE);
+    }
+
+    /**
+     * The folder the ADB command copies the server into. The command follows as the user types, and
+     * a folder it can't use is flagged and never saved.
+     */
+    private void bindStagingFolder(@NonNull View view) {
+        TextInputLayout layout = view.findViewById(R.id.staging_folder_layout);
+        TextInputEditText folder = view.findViewById(R.id.staging_folder);
+        layout.setPlaceholderText(AdbLaunchFiles.DEFAULT_STAGING_PARENT);
+        folder.setText(Prefs.Misc.getAdbManualStagingParent());
+        folder.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String parent = s.toString().trim();
+                if (AdbLaunchFiles.stagingDirIn(parent) == null) {
+                    layout.setError(getString(R.string.mode_of_op_staging_folder_invalid));
+                    return;
+                }
+                layout.setError(null);
+                if (!parent.equals(Prefs.Misc.getAdbManualStagingParent())) {
+                    Prefs.Misc.setAdbManualStagingParent(parent);
+                    mModel.loadCustomCommands();
+                }
+            }
+        });
     }
 
     /**
