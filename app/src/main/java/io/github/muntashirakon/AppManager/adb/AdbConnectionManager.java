@@ -12,6 +12,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
@@ -30,6 +31,7 @@ import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.adb.AbsAdbConnectionManager;
+import io.github.muntashirakon.adb.AdbPairingRequiredException;
 
 public class AdbConnectionManager extends AbsAdbConnectionManager {
     public static final String TAG = AdbConnectionManager.class.getSimpleName();
@@ -42,6 +44,7 @@ public class AdbConnectionManager extends AbsAdbConnectionManager {
      */
     @VisibleForTesting
     static final long PAIRING_ATTEMPT_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(30);
+    private static final int ADB_REACH_TIMEOUT_MILLIS = 3000;
     private static final ExecutorService sPairingExecutor = Executors.newCachedThreadPool(runnable -> {
         Thread thread = new Thread(runnable, "ADB pairing");
         // A pairing stuck in the platform's TLS code must not keep the process alive
@@ -93,6 +96,27 @@ public class AdbConnectionManager extends AbsAdbConnectionManager {
             keyStoreManager.addKeyPair(ADB_KEY_ALIAS, keyPair, true);
         }
         mKeyPair = keyPair;
+    }
+
+    /**
+     * libadb opens a plain Socket with no timeout. A host that drops the connection instead of
+     * refusing it (10.0.2.2 on an emulator with nothing listening) held the first launch on
+     * "Initializing..." for about two and a half minutes.
+     */
+    @Override
+    public boolean connect(@NonNull String host, int port)
+            throws IOException, InterruptedException, AdbPairingRequiredException {
+        if (!isConnected()) {
+            ensureReachable(host, port);
+        }
+        return super.connect(host, port);
+    }
+
+    @VisibleForTesting
+    static void ensureReachable(@NonNull String host, int port) throws ConnectException {
+        if (!AdbTcpipProbe.isPortReachable(host, port, ADB_REACH_TIMEOUT_MILLIS)) {
+            throw new ConnectException("Nothing answered at " + host + ":" + port);
+        }
     }
 
     @NonNull
