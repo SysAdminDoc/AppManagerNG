@@ -5,12 +5,29 @@ package io.github.muntashirakon.AppManager.accessibility;
 import android.os.Bundle;
 
 import androidx.annotation.IntDef;
+import androidx.annotation.MainThread;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.WorkerThread;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.List;
+
+import io.github.muntashirakon.AppManager.accessibility.topapp.TopAppTracker;
 
 public class AccessibilityMultiplexer {
+    /** Receives top-app sightings for as long as it's registered. */
+    public interface TopAppListener {
+        /** A window of this package took focus. Called on the main thread. */
+        @MainThread
+        void onWindowStateChanged(@NonNull String packageName);
+
+        /** The windows on screen changed. Called on a worker thread, topmost window first. */
+        @WorkerThread
+        void onWindowsChanged(@NonNull List<TopAppTracker.Window> windowsTopFirst);
+    }
+
     private static final int M_INSTALL = 1;
     private static final int M_UNINSTALL = 1 << 1;
     private static final int M_CLEAR_CACHE = 1 << 2;
@@ -41,6 +58,28 @@ public class AccessibilityMultiplexer {
     @Flags
     private int mFlags = 0;
     private final Bundle mArgs = new Bundle();
+    // Not a flag: clearFlags() runs after each automated operation and mustn't turn the bubble's source off.
+    @Nullable
+    private volatile TopAppListener mTopAppListener;
+    private volatile boolean mServiceConnected;
+
+    @Nullable
+    public TopAppListener getTopAppListener() {
+        return mTopAppListener;
+    }
+
+    public void setTopAppListener(@Nullable TopAppListener listener) {
+        mTopAppListener = listener;
+    }
+
+    /** Whether the accessibility service is really bound, as opposed to merely switched on in settings. */
+    public boolean isServiceConnected() {
+        return mServiceConnected;
+    }
+
+    public void setServiceConnected(boolean connected) {
+        mServiceConnected = connected;
+    }
 
     public boolean isInstallEnabled() {
         return (mFlags & M_INSTALL) != 0;
