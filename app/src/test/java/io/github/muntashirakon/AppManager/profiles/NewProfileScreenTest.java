@@ -4,11 +4,15 @@ package io.github.muntashirakon.AppManager.profiles;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.robolectric.Shadows.shadowOf;
 
 import android.content.Context;
+import android.os.Looper;
+import android.view.Menu;
 import android.view.View;
 import android.widget.TextView;
 
+import androidx.appcompat.widget.Toolbar;
 import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.After;
@@ -59,5 +63,19 @@ public class NewProfileScreenTest {
         assertEquals(activity.getString(R.string.no_apps), title.getText().toString());
         assertEquals(View.GONE, emptyView.findViewById(R.id.empty_state_summary).getVisibility());
         assertEquals(View.GONE, emptyView.findViewById(R.id.empty_state_action).getVisibility());
+    }
+
+    @Test
+    public void theAppsTabOffersSearchAndSortInTheToolbar() {
+        AppsProfileActivity activity = mController.setup().get();
+        activity.getSupportFragmentManager().beginTransaction()
+                .add(android.R.id.content, new AppsFragment())
+                .commitNow();
+        activity.invalidateMenu();
+        shadowOf(Looper.getMainLooper()).idle();
+
+        Menu menu = ((Toolbar) activity.findViewById(R.id.toolbar)).getMenu();
+        assertNotNull(menu.findItem(R.id.action_search));
+        assertNotNull(menu.findItem(R.id.action_sort));
     }
 }
