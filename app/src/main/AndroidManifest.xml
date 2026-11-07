@@ -712,6 +712,11 @@
             android:exported="false"
             android:label="@string/title_permission_inspector" />
         <activity
+            android:name=".sync.lan.LanSyncActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:label="@string/lan_sync_title" />
+        <activity
             android:name=".permissions.PermissionAppsActivity"
             android:enableOnBackInvokedCallback="true"
             android:exported="false"
