@@ -1061,6 +1061,14 @@ public final class Prefs {
             AppPref.set(AppPref.PrefKey.PREF_ENABLE_APP_CHANGE_AUDITOR_BOOL, enabled);
         }
 
+        public static boolean isToastHistoryEnabled() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_ENABLE_TOAST_HISTORY_BOOL);
+        }
+
+        public static void setToastHistoryEnabled(boolean enabled) {
+            AppPref.set(AppPref.PrefKey.PREF_ENABLE_TOAST_HISTORY_BOOL, enabled);
+        }
+
         public static boolean isAppUpdateChangeReportEnabled() {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_ENABLE_APP_UPDATE_CHANGE_REPORT_BOOL);
         }

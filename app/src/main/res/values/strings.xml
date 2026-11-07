@@ -2069,6 +2069,27 @@
     <string name="text_filter_text">Filter text</string>
     <string name="text_include_device_info">Include device information</string>
     <string name="pref_display_limit_hint" tools:ignore="PluralsCandidate">Please enter a valid number between %1$d and %2$d.</string>
+    <string name="toast_history_title">Toast history</string>
+    <string name="toast_history_settings_summary">Review toasts from other apps, with the time and the app that showed each one</string>
+    <string name="toast_history_record">Record toasts</string>
+    <string name="toast_history_empty_title">No toasts yet</string>
+    <string name="toast_history_empty_on">New toasts from other apps show up here as they appear.</string>
+    <string name="toast_history_empty_off">Turn on Record toasts to keep up to 2,000 toasts from the last 30 days on this device, with the app that showed each one. Nothing leaves your phone.</string>
+    <string name="toast_history_turn_on">Turn on</string>
+    <string name="toast_history_service_off">The accessibility service is off, so nothing is being recorded.</string>
+    <string name="toast_history_open_accessibility">Open accessibility settings</string>
+    <string name="toast_history_needs_accessibility">Turn on the accessibility service so toasts can be recorded.</string>
+    <string name="toast_history_open_settings_failed">Couldn\'t open the accessibility settings.</string>
+    <string name="toast_history_filter_hint">App</string>
+    <string name="toast_history_filter_all">All apps (%1$d)</string>
+    <string name="toast_history_filter_item">%1$s (%2$d)</string>
+    <string name="toast_history_no_text">This toast had no text</string>
+    <string name="toast_history_copy_all">Copy all</string>
+    <string name="toast_history_copy_failed">Couldn\'t copy the toasts.</string>
+    <string name="toast_history_nothing_to_copy">There\'s nothing to copy.</string>
+    <string name="toast_history_cleared">Toast history cleared.</string>
+    <string name="toast_history_clear_failed">Couldn\'t clear the toast history.</string>
+    <string name="toast_history_save_failed">Couldn\'t save a toast to the history.</string>
     <string name="toast_invalid_level">Invalid level name: %s</string>
     <string name="toast_invalid_selection">Invalid selection. Please try again.</string>
     <plurals name="toast_log_truncated">

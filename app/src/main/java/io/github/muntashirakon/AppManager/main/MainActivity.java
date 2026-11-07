@@ -51,6 +51,7 @@ import java.util.List;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.accessibility.toast.ToastHistoryActivity;
 import io.github.muntashirakon.AppManager.apk.behavior.FreezeUnfreeze;
 import io.github.muntashirakon.AppManager.apk.dexopt.DexOptDialog;
 import io.github.muntashirakon.AppManager.apk.installer.AppArchiveManager;
@@ -501,6 +502,8 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         } else if (id == R.id.action_app_change_feed) {
             Intent settingsIntent = SettingsActivity.getSettingsIntent(this, "privacy_prefs", "app_change_feed");
             startActivity(settingsIntent);
+        } else if (id == R.id.action_toast_history) {
+            startActivity(new Intent(this, ToastHistoryActivity.class));
         } else if (id == R.id.action_app_usage) {
             Intent usageIntent = new Intent(this, AppUsageActivity.class);
             startActivity(usageIntent);

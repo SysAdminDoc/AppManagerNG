@@ -8,6 +8,7 @@ import android.content.res.Resources;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.text.TextUtils;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -19,8 +20,11 @@ import androidx.annotation.WorkerThread;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.muntashirakon.AppManager.accessibility.activity.TrackerWindow;
+import io.github.muntashirakon.AppManager.accessibility.toast.ToastEventFilter;
+import io.github.muntashirakon.AppManager.accessibility.toast.ToastHistory;
 import io.github.muntashirakon.AppManager.accessibility.topapp.TopAppWindowReader;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.ResourceUtil;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
@@ -66,6 +70,7 @@ public class NoRootAccessibilityService extends BaseAccessibilityService {
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         dispatchTopApp(event);
+        recordToast(event);
         if (mMultiplexer.isLeadingActivityTracker()) {
             if (mTrackerWindow == null) {
                 mTrackerWindow = new TrackerWindow(this);
@@ -114,6 +119,19 @@ public class NoRootAccessibilityService extends BaseAccessibilityService {
         mWindowWalkHandler.removeCallbacks(mWindowWalk);
         mWindowWalkQueued.set(false);
         return super.onUnbind(intent);
+    }
+
+    private void recordToast(@NonNull AccessibilityEvent event) {
+        // Every event comes through here, so the cheap type check goes first.
+        if (event.getEventType() != AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED
+                || !Prefs.Privacy.isToastHistoryEnabled()) {
+            return;
+        }
+        ToastEventFilter.CapturedToast toast = ToastEventFilter.read(event, getPackageName());
+        if (toast != null) {
+            ToastHistory.getInstance(this).record(ToastEventFilter.wallClockMillis(event.getEventTime(),
+                    SystemClock.uptimeMillis(), System.currentTimeMillis()), toast.packageName, toast.text);
+        }
     }
 
     private void dispatchTopApp(@NonNull AccessibilityEvent event) {
