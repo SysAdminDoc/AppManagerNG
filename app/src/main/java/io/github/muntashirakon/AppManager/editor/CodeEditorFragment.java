@@ -18,6 +18,7 @@ import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.ForegroundColorSpan;
+import android.view.InflateException;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -62,6 +63,7 @@ import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.MimeTypeUtils;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.dialog.TextInputDialogBuilder;
 import io.github.muntashirakon.io.Path;
@@ -83,6 +85,8 @@ import io.github.rosemoe.sora.widget.SymbolInputView;
 import io.github.rosemoe.sora.widget.schemes.EditorColorScheme;
 
 public class CodeEditorFragment extends AndroidFragment implements MenuProvider {
+    private static final String TAG = CodeEditorFragment.class.getSimpleName();
+
     public static final String ARG_OPTIONS = "options";
 
     public static class Options implements Parcelable {
@@ -298,7 +302,18 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_code_editor, container, false);
+        try {
+            return inflater.inflate(R.layout.fragment_code_editor, container, false);
+        } catch (InflateException e) {
+            // One third-party view failing to build closes this screen, not the whole app.
+            Throwable cause = e;
+            while (cause.getCause() != null) cause = cause.getCause();
+            Log.e(TAG, "Could not build the code editor", e);
+            UIUtils.displayLongToast(R.string.code_editor_unavailable,
+                    cause.getMessage() != null ? cause.getMessage() : cause.getClass().getSimpleName());
+            requireActivity().finish();
+            return null;
+        }
     }
 
     @Override
@@ -582,6 +597,10 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
     @Override
     public void onResume() {
         super.onResume();
+        if (mOptions == null) {
+            // The editor couldn't be built and the screen is closing.
+            return;
+        }
         getActionBar().ifPresent(actionBar -> {
             actionBar.setTitle(mOptions.title);
             actionBar.setSubtitle((mTextModified ? "* " : "") + mOptions.subtitle);

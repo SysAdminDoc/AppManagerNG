@@ -381,6 +381,7 @@
     <string name="delete">Delete</string>
     <string name="deleted_successfully">Deleted</string>
     <string name="deletion_failed">Deletion failed</string>
+    <string name="code_editor_unavailable">Couldn\'t open the code editor: <xliff:g id="reason" example="no such font">%1$s</xliff:g></string>
     <string name="saved_successfully">Saved</string>
     <string name="saving_failed">Saving failed, try again.</string>
     <string name="editor_save_failed_unchanged">Couldn\'t save the file: <xliff:g id="reason" example="the saved file did not read back as written">%1$s</xliff:g>. The file wasn\'t changed.</string>
