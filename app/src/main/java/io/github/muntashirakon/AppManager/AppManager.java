@@ -33,6 +33,7 @@ import io.github.muntashirakon.AppManager.misc.AMExceptionHandler;
 import io.github.muntashirakon.AppManager.misc.ProfilingTriggerHelper;
 import io.github.muntashirakon.AppManager.oneclickops.ClearCacheAppWidget;
 import io.github.muntashirakon.AppManager.scanner.TrackerDatabaseFreshnessChecker;
+import io.github.muntashirakon.AppManager.self.PackageEventSync;
 import io.github.muntashirakon.AppManager.usage.DataUsageAppWidget;
 import io.github.muntashirakon.AppManager.usage.ScreenTimeAppWidget;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
@@ -77,6 +78,9 @@ public class AppManager extends Application {
         TrackerDatabaseFreshnessChecker.scheduleCheckIfAllowed(this);
         OpHistoryPruneScheduler.scheduleOrCancel(this);
         ThreadUtils.postOnBackgroundThread(() -> PackageInstallerService.cleanupStaleInstallSessions(this));
+        if (!Utils.isRoboUnitTest()) {
+            PackageEventSync.start(this);
+        }
     }
 
     private void configureActivityEmbeddingSplits() {

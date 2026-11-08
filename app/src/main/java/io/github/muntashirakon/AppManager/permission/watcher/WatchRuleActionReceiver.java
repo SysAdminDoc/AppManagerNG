@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.self.PackageEventSync;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -95,6 +96,7 @@ public class WatchRuleActionReceiver extends BroadcastReceiver {
         }
         WatchRule first = rules.get(0);
         PermissionWatchScheduler.checkSoon(context, first.packageName, first.userId);
+        PackageEventSync.scheduleOrCancel(context);
         return true;
     }
 

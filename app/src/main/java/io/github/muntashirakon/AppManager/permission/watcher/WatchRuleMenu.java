@@ -19,6 +19,7 @@ import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.self.PackageEventSync;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 
@@ -183,6 +184,10 @@ public final class WatchRuleMenu {
             } catch (RuntimeException e) {
                 Log.e(TAG, "Couldn't save the watch rule.", e);
                 saved = false;
+            }
+            if (saved) {
+                // So an app update is noticed, and the rule checked, while the app isn't running.
+                PackageEventSync.scheduleOrCancel(context);
             }
             boolean ok = saved;
             ThreadUtils.postOnMainThread(() -> {

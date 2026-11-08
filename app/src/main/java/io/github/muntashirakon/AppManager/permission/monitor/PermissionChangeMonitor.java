@@ -41,7 +41,7 @@ import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 
 /**
  * Engine for the Permission Change Monitor (T9). Public surface used both by
- * the {@link PermissionChangeReceiver} (live `PACKAGE_REPLACED` broadcasts)
+ * {@link io.github.muntashirakon.AppManager.self.PackageEventSync} (app updates)
  * and by unit tests / one-shot rescans.
  *
  * <p>Behaviour on each replace:
@@ -92,9 +92,9 @@ public final class PermissionChangeMonitor {
      */
     @WorkerThread
     @Nullable
-    static PermissionChangeDiff.Result onPackageReplaced(@NonNull Context appContext,
-                                                         @NonNull String packageName,
-                                                         boolean notify) {
+    public static PermissionChangeDiff.Result onPackageReplaced(@NonNull Context appContext,
+                                                                @NonNull String packageName,
+                                                                boolean notify) {
         if (appContext.getPackageName().equals(packageName)) {
             // Self-update — don't alarm the user about NG's own perms.
             return null;
