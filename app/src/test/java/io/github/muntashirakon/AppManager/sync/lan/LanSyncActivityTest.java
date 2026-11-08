@@ -56,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.R;
@@ -289,6 +290,65 @@ public class LanSyncActivityTest {
         assertTrue(listensForInstalls(added));
         mController.pause().stop();
         assertFalse(listensForInstalls(added));
+    }
+
+    @Test
+    public void disconnectSaysGoodbyeOffTheMainThread() throws Exception {
+        LanSyncActivity activity = mController.get();
+        LanSyncViewModel viewModel = new ViewModelProvider(activity).get(LanSyncViewModel.class);
+        List<Runnable> closes = Collections.synchronizedList(new ArrayList<>());
+        viewModel.setCloser(closes::add);
+        CountDownLatch ended = new CountDownLatch(1);
+        SyncFixtures.Catalog catalog = new SyncFixtures.Catalog();
+        catalog.apps.add(SyncFixtures.app("com.example.a", 5, SIGNER_A));
+        LanSyncHost host = new LanSyncHost(null, "Other phone", LocalIdentity.generate(new SeededRandom(91)),
+                new SyncFixtures.MemoryTrust(), catalog, new SeededRandom(92), new LanSyncHost.Listener() {
+            @Override
+            public void onApprovalRequest(@Nullable ApprovalGate.Request request) {
+                if (request != null) {
+                    request.decide(ApprovalGate.Decision.ALLOW);
+                }
+            }
+
+            @Override
+            public void onClientAccepted(@NonNull String peerName) {
+            }
+
+            @Override
+            public void onFileSent(@NonNull String packageName, @NonNull String fileName) {
+            }
+
+            @Override
+            public void onSessionEnded(@Nullable String error) {
+                ended.countDown();
+            }
+
+            @Override
+            public void onHostFailed(@NonNull String error) {
+            }
+        });
+        try {
+            int port = host.start();
+            viewModel.connect(InetAddress.getLoopbackAddress(), port, "Other phone");
+            waitFor(() -> {
+                LanSyncViewModel.Connection connection = viewModel.getConnection().getValue();
+                return connection != null && connection.step == LanSyncViewModel.Connection.CONNECTED
+                        ? connection : null;
+            });
+
+            // Android throws when the main thread writes to a socket, which crashed the app here
+            activity.findViewById(R.id.disconnect).performClick();
+
+            assertEquals(LanSyncViewModel.Connection.IDLE, viewModel.getConnection().getValue().step);
+            assertEquals("The goodbye goes to a background thread", 1, closes.size());
+            assertFalse("Nothing was sent from the main thread", ended.await(300, TimeUnit.MILLISECONDS));
+            Thread worker = new Thread(closes.get(0));
+            worker.start();
+            worker.join(TimeUnit.NANOSECONDS.toMillis(WAIT_NANOS));
+            assertTrue("The other device sees the session end", ended.await(10, TimeUnit.SECONDS));
+        } finally {
+            host.stop();
+        }
     }
 
     @NonNull

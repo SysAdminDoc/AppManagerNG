@@ -191,6 +191,11 @@ public final class SyncClientSession implements Closeable {
         }
     }
 
+    /**
+     * Tells the host goodbye, then closes the connection. The goodbye is a network write, so this
+     * must not run on the main thread.
+     */
+    @WorkerThread
     @Override
     public void close() {
         if (!mChannel.isDead()) {
