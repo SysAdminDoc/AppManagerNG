@@ -52,6 +52,7 @@ import io.github.muntashirakon.AppManager.crypto.auth.AuthManager;
 import io.github.muntashirakon.AppManager.db.AppsDb;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
+import io.github.muntashirakon.AppManager.ipc.HeldBroadcasts;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.runner.RunnerUtils;
 import io.github.muntashirakon.AppManager.servermanager.LocalServer;
@@ -454,6 +455,34 @@ public class ServerControlReceiverTest {
     }
 
     @Test
+    public void aCommandWaitingForTheServicesBinderLetsGoOfTheBroadcastAtOnce() throws Exception {
+        // On Android 14 the binder handoff queues behind a broadcast this process still holds, and
+        // the launched process quits long before the 30 second deadline
+        FakeOperations operations = new FakeOperations();
+        operations.waitsForAHandoff = true;
+        operations.block();
+        ServerControlReceiver.setOperationsForTest(operations);
+
+        Sent sent = sendOrdered(authorized("SERVER_SET_MODE")
+                .putExtra("mode", Ops.MODE_ADB_OVER_TCP)
+                .putExtra("request_id", "handoff-1")
+                .putExtra("result_package", "com.example.caller"));
+        operations.awaitEntered();
+        try {
+            // No clock moves here, so the deadline can't be what answers
+            pumpUntil("the early answer", () -> sent.done);
+            assertEquals(1, sent.code);
+        } finally {
+            operations.release();
+        }
+
+        Intent answer = awaitResultBroadcast();
+        assertEquals(-1, answer.getIntExtra("result_code", 0));
+        assertEquals("handoff-1", answer.getStringExtra("request_id"));
+        assertEquals(OpHistoryManager.STATUS_SUCCESS, awaitRows(1).get(0).status);
+    }
+
+    @Test
     public void aForegroundBroadcastGetsItsShorterDeadline() throws Exception {
         FakeOperations operations = new FakeOperations();
         operations.block();
@@ -618,6 +647,8 @@ public class ServerControlReceiverTest {
         volatile boolean applying;
         volatile boolean serverRunning;
         volatile boolean fail;
+        // What a bind waiting for a launched process does before it waits
+        volatile boolean waitsForAHandoff;
         volatile int status = Ops.STATUS_SUCCESS;
 
         void block() {
@@ -636,6 +667,9 @@ public class ServerControlReceiverTest {
         private int run() {
             calls.incrementAndGet();
             entered.countDown();
+            if (waitsForAHandoff) {
+                HeldBroadcasts.releaseAll();
+            }
             if (blocking) {
                 try {
                     released.await(60, TimeUnit.SECONDS);

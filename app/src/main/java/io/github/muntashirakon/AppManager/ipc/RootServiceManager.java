@@ -24,6 +24,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.Process;
 import android.os.RemoteException;
+import android.os.SystemClock;
 import android.util.ArrayMap;
 import android.util.Log;
 import android.util.Pair;
@@ -45,7 +46,6 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -113,7 +113,9 @@ public class RootServiceManager implements Handler.Callback {
         bundle.putBinder(BUNDLE_BINDER_KEY, binder);
         return new Intent(RECEIVER_BROADCAST)
                 .setPackage(ContextUtils.rootContext.getPackageName())
-                .addFlags(HiddenAPIs.FLAG_RECEIVER_FROM_SHELL)
+                // Foreground: Android 14 and later hold a normal broadcast to an app in the
+                // background for up to two minutes, and this process gives up after ten seconds
+                .addFlags(HiddenAPIs.FLAG_RECEIVER_FROM_SHELL | Intent.FLAG_RECEIVER_FOREGROUND)
                 .putExtra(INTENT_DAEMON_KEY, isDaemon)
                 .putExtra(INTENT_BUNDLE_KEY, bundle);
     }
@@ -136,16 +138,29 @@ public class RootServiceManager implements Handler.Callback {
         return new ServiceKey(name, intent.hasCategory(CATEGORY_DAEMON_MODE));
     }
 
+    /**
+     * A launched process that hasn't answered by now never will: it quits ten seconds after it
+     * broadcasts its binder, or it never started. The next bind launches a new one.
+     */
+    @VisibleForTesting
+    static final long LAUNCH_ANSWER_TIMEOUT_MILLIS = 30_000;
+
     private RemoteProcess mRemote;
     private RemoteProcess mDaemon;
 
     private int mFlags = 0;
+    private long mRemoteLaunchedAt;
+    private long mDaemonLaunchedAt;
 
-    private final List<BindTask> mPendingTasks = new ArrayList<>();
+    // Receives service stop notifications from the remote processes
+    private final Messenger mMessenger = new Messenger(new Handler(Looper.getMainLooper(), this));
+    // One per connection, so a bind retried after a launch was lost doesn't connect twice
+    private final Map<ServiceConnection, BindTask> mPendingTasks = new ArrayMap<>();
     private final Map<ServiceKey, RemoteServiceRecord> mServices = new ArrayMap<>();
     private final Map<ServiceConnection, ConnectionRecord> mConnections = new ArrayMap<>();
 
-    private RootServiceManager() {
+    @VisibleForTesting
+    RootServiceManager() {
     }
 
     @SuppressLint("RestrictedApi")
@@ -336,16 +351,51 @@ public class RootServiceManager implements Handler.Callback {
 
     public Shell.Task createBindTask(Intent intent, Executor executor, ServiceConnection conn) {
         ServiceKey key = bindInternal(intent, executor, conn);
-        if (key != null) {
-            mPendingTasks.add(() -> bindInternal(intent, executor, conn) == null);
-            int mask = key.isDaemon() ? DAEMON_EN_ROUTE : REMOTE_EN_ROUTE;
-            if ((mFlags & mask) == 0) {
-                mFlags |= mask;
-                String action = key.isDaemon() ? CMDLINE_START_DAEMON : CMDLINE_START_SERVICE;
-                return startRootProcess(key.getName(), action);
+        if (key == null) {
+            return null;
+        }
+        // The binder comes back by broadcast, which a receiver holding its own broadcast in this
+        // process would keep out until the launched process has given up
+        HeldBroadcasts.releaseAll();
+        mPendingTasks.put(conn, () -> bindInternal(intent, executor, conn) == null);
+        boolean daemon = key.isDaemon();
+        int mask = daemon ? DAEMON_EN_ROUTE : REMOTE_EN_ROUTE;
+        long now = SystemClock.elapsedRealtime();
+        long launchedAt = daemon ? mDaemonLaunchedAt : mRemoteLaunchedAt;
+        if ((mFlags & mask) != 0 && now - launchedAt < LAUNCH_ANSWER_TIMEOUT_MILLIS) {
+            // Launched already and can still answer
+            return null;
+        }
+        mFlags |= mask;
+        if (daemon) {
+            mDaemonLaunchedAt = now;
+        } else {
+            mRemoteLaunchedAt = now;
+        }
+        String action = daemon ? CMDLINE_START_DAEMON : CMDLINE_START_SERVICE;
+        return startRootProcess(key.getName(), action);
+    }
+
+    /**
+     * A launched process has broadcast its binder: connect to it and run the binds waiting for it.
+     */
+    @VisibleForTesting
+    void onRemoteAnswered(@NonNull IRootServiceManager mgr, boolean isDaemon) throws RemoteException {
+        mgr.connect(mMessenger.getBinder());
+        RemoteProcess p = new RemoteProcess(mgr);
+        if (isDaemon) {
+            mDaemon = p;
+            mFlags &= ~DAEMON_EN_ROUTE;
+        } else {
+            mRemote = p;
+            mFlags &= ~REMOTE_EN_ROUTE;
+        }
+        for (ServiceConnection conn : new ArrayList<>(mPendingTasks.keySet())) {
+            BindTask task = mPendingTasks.get(conn);
+            if (task != null && task.run() && mPendingTasks.get(conn) == task) {
+                mPendingTasks.remove(conn);
             }
         }
-        return null;
     }
 
     public void unbind(@NonNull ServiceConnection conn) {
@@ -484,15 +534,6 @@ public class RootServiceManager implements Handler.Callback {
     }
 
     private class ServiceReceiver extends BroadcastReceiver {
-
-        private final Messenger m;
-
-        ServiceReceiver() {
-            // Create messenger to receive service stop notification
-            Handler h = new Handler(Looper.getMainLooper(), RootServiceManager.this);
-            m = new Messenger(h);
-        }
-
         @Override
         public void onReceive(Context context, Intent intent) {
             Bundle bundle = intent.getBundleExtra(INTENT_BUNDLE_KEY);
@@ -504,21 +545,9 @@ public class RootServiceManager implements Handler.Callback {
 
             IRootServiceManager mgr = IRootServiceManager.Stub.asInterface(binder);
             try {
-                mgr.connect(m.getBinder());
-                RemoteProcess p = new RemoteProcess(mgr);
-                if (intent.getBooleanExtra(INTENT_DAEMON_KEY, false)) {
-                    mDaemon = p;
-                    mFlags &= ~DAEMON_EN_ROUTE;
-                } else {
-                    mRemote = p;
-                    mFlags &= ~REMOTE_EN_ROUTE;
-                }
-                for (int i = mPendingTasks.size() - 1; i >= 0; --i) {
-                    if (mPendingTasks.get(i).run()) {
-                        mPendingTasks.remove(i);
-                    }
-                }
+                onRemoteAnswered(mgr, intent.getBooleanExtra(INTENT_DAEMON_KEY, false));
             } catch (RemoteException e) {
+                // Most likely a process that gave up before this arrived
                 Log.e(TAG, e.getMessage(), e);
             }
         }
