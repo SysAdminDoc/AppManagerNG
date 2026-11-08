@@ -24,6 +24,7 @@ import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.test.core.app.ApplicationProvider;
 
+import com.google.android.material.chip.Chip;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -46,8 +47,11 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.R;
@@ -195,6 +199,31 @@ public class LanSyncActivityTest {
         adapter.setRows(Collections.singletonList(newer), false);
         adapter.onBindViewHolder(second, 0);
         assertFalse(second.pull.isEnabled());
+    }
+
+    @Test
+    public void comingBackFromTheInstallerMovesTheAppOutOfNotInstalled() throws Exception {
+        LanSyncActivity activity = mController.get();
+        LanSyncViewModel viewModel = new ViewModelProvider(activity).get(LanSyncViewModel.class);
+        Map<String, SyncApp> installed = new ConcurrentHashMap<>();
+        viewModel.setLocalIndex(() -> new HashMap<>(installed));
+        SyncApp remote = SyncFixtures.app("com.example.a", 5, SIGNER_A);
+        viewModel.setRows(Collections.singletonList(new LanSyncViewModel.AppRow(remote, null)));
+        shadowOf(Looper.getMainLooper()).idle();
+        Chip notInstalled = activity.findViewById(R.id.chip_not_installed);
+        assertEquals(activity.getString(R.string.lan_sync_bucket_not_installed, 1), notInstalled.getText().toString());
+
+        // Get hands the app to the installer, which covers this screen and puts it on
+        mController.pause().stop();
+        installed.put("com.example.a", SyncFixtures.app("com.example.a", 5, SIGNER_A));
+        mController.restart().resume();
+
+        List<LanSyncViewModel.AppRow> rows = waitFor(() -> {
+            List<LanSyncViewModel.AppRow> shown = viewModel.getRows().getValue();
+            return shown != null && shown.get(0).status == SyncComparator.Status.SAME ? shown : null;
+        });
+        assertEquals(1, rows.size());
+        assertEquals(activity.getString(R.string.lan_sync_bucket_not_installed, 0), notInstalled.getText().toString());
     }
 
     @NonNull
