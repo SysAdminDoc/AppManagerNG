@@ -608,8 +608,8 @@ public class LanSyncViewModel extends AndroidViewModel {
 
     /**
      * Sorts the other device's apps against what is installed here again, without asking it for
-     * the list. Run when the screen comes back, so an app the installer just put on (or one
-     * removed meanwhile) moves to the right group instead of still offering Get.
+     * the list. Run when the screen comes back or an app is installed or removed while it shows,
+     * so an app the installer just put on moves to the right group instead of still offering Get.
      */
     @MainThread
     public void recheckInstalled() {

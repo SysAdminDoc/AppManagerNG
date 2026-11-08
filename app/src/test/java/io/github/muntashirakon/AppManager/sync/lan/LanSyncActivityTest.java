@@ -12,7 +12,11 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
+import android.app.Application;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.net.nsd.NsdManager;
 import android.net.nsd.NsdServiceInfo;
 import android.os.Looper;
@@ -56,6 +60,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.settings.Ops;
+import io.github.muntashirakon.AppManager.types.PackageChangeReceiver;
 
 @RunWith(RobolectricTestRunner.class)
 public class LanSyncActivityTest {
@@ -252,6 +257,55 @@ public class LanSyncActivityTest {
         });
         assertEquals(1, rows.size());
         assertEquals(activity.getString(R.string.lan_sync_bucket_not_installed, 0), notInstalled.getText().toString());
+    }
+
+    @Test
+    public void anInstallBehindTheInstallerDialogMovesTheAppOutOfNotInstalled() throws Exception {
+        LanSyncActivity activity = mController.get();
+        LanSyncViewModel viewModel = new ViewModelProvider(activity).get(LanSyncViewModel.class);
+        Map<String, SyncApp> installed = new ConcurrentHashMap<>();
+        viewModel.setLocalIndex(() -> new HashMap<>(installed));
+        SyncApp remote = SyncFixtures.app("com.example.a", 5, SIGNER_A);
+        viewModel.setRows(Collections.singletonList(new LanSyncViewModel.AppRow(remote, null)));
+        shadowOf(Looper.getMainLooper()).idle();
+        Chip notInstalled = activity.findViewById(R.id.chip_not_installed);
+        assertEquals(activity.getString(R.string.lan_sync_bucket_not_installed, 1), notInstalled.getText().toString());
+
+        // The installer is a dialog: this screen is only paused behind it, never stopped
+        mController.pause();
+        installed.put("com.example.a", SyncFixtures.app("com.example.a", 5, SIGNER_A));
+        Intent added = packageAdded("com.example.a");
+        ApplicationProvider.getApplicationContext().sendBroadcast(added);
+        mController.resume();
+
+        List<LanSyncViewModel.AppRow> rows = waitFor(() -> {
+            List<LanSyncViewModel.AppRow> shown = viewModel.getRows().getValue();
+            return shown != null && shown.get(0).status == SyncComparator.Status.SAME ? shown : null;
+        });
+        assertEquals(1, rows.size());
+        assertEquals(activity.getString(R.string.lan_sync_bucket_not_installed, 0), notInstalled.getText().toString());
+
+        // Out of sight it stops listening
+        assertTrue(listensForInstalls(added));
+        mController.pause().stop();
+        assertFalse(listensForInstalls(added));
+    }
+
+    @NonNull
+    private static Intent packageAdded(@NonNull String packageName) {
+        Intent intent = new Intent(Intent.ACTION_PACKAGE_ADDED, Uri.fromParts("package", packageName, null));
+        intent.putExtra(Intent.EXTRA_UID, 10123);
+        return intent;
+    }
+
+    private static boolean listensForInstalls(@NonNull Intent intent) {
+        Application app = ApplicationProvider.getApplicationContext();
+        for (BroadcastReceiver receiver : shadowOf(app).getReceiversForIntent(intent)) {
+            if (receiver instanceof PackageChangeReceiver) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @NonNull

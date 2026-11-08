@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.sync.lan;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.view.LayoutInflater;
@@ -47,6 +48,7 @@ import io.github.muntashirakon.AppManager.apk.ApkSource;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerActivity;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.settings.Ops;
+import io.github.muntashirakon.AppManager.types.PackageChangeReceiver;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.widget.RecyclerView;
 
@@ -104,6 +106,8 @@ public class LanSyncActivity extends BaseActivity {
     private SyncComparator.Status mFilter = SyncComparator.Status.NEWER;
     @Nullable
     private String mTask;
+    @Nullable
+    private PackageWatcher mPackageWatcher;
 
     @Override
     protected void onAuthenticated(@Nullable Bundle savedInstanceState) {
@@ -246,16 +250,25 @@ public class LanSyncActivity extends BaseActivity {
     @Override
     protected void onStart() {
         super.onStart();
+        if (mPackageWatcher == null) {
+            // The installer only covers this screen as a dialog, so it is paused, never stopped:
+            // the install itself says when an app moves out of the Get groups
+            mPackageWatcher = new PackageWatcher();
+        }
         if (mViewModel != null) {
             updatePermissionCard();
             startDiscoveryIfAllowed();
-            // Back from the installer: what it put on leaves the Get groups
+            // Back from somewhere else: anything installed or removed meanwhile
             mViewModel.recheckInstalled();
         }
     }
 
     @Override
     protected void onStop() {
+        if (mPackageWatcher != null) {
+            mPackageWatcher.close();
+            mPackageWatcher = null;
+        }
         if (mViewModel != null) {
             // Nothing is shared or searched for once the screen is out of sight
             mViewModel.stopSharing();
@@ -583,5 +596,24 @@ public class LanSyncActivity extends BaseActivity {
             sb.append(start, i, Math.min(i + 4, start.length()));
         }
         return sb.toString().toUpperCase(Locale.ROOT);
+    }
+
+    /**
+     * Sorts the other device's apps again whenever an app is installed, updated or removed here
+     * while this screen is showing.
+     */
+    private final class PackageWatcher extends PackageChangeReceiver {
+        PackageWatcher() {
+            super(LanSyncActivity.this);
+        }
+
+        @Override
+        protected void onPackageChanged(Intent intent, @Nullable Integer uid, @Nullable String[] packages) {
+            runOnUiThread(() -> {
+                if (mViewModel != null) {
+                    mViewModel.recheckInstalled();
+                }
+            });
+        }
     }
 }
