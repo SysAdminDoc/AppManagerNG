@@ -17,6 +17,7 @@ import android.provider.Settings;
 import android.provider.SettingsHidden;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
@@ -27,7 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -68,29 +68,86 @@ public class AdbUtils {
         if (!isAdbdRunning()) {
             throw new IOException("ADB daemon not running.");
         }
-        AtomicInteger atomicPort = new AtomicInteger(-1);
-        AtomicReference<String> atomicHostAddress = new AtomicReference<>(null);
-        CountDownLatch resolveHostAndPort = new CountDownLatch(1);
-
-        AdbMdns.OnAdbDaemonDiscoveredListener listener = (hostAddress, port) -> {
-            if (hostAddress != null) {
-                atomicHostAddress.set(hostAddress.getHostAddress());
-                atomicPort.set(port);
-            }
-            resolveHostAndPort.countDown();
-        };
-        List<Scanner> scanners = new ArrayList<>(2);
-        for (String serviceType : serviceTypes(Build.VERSION.SDK_INT, wirelessDebuggingOnly)) {
+        List<String> serviceTypes = serviceTypes(Build.VERSION.SDK_INT, wirelessDebuggingOnly);
+        DaemonChooser chooser = new DaemonChooser(serviceTypes.contains(AdbMdns.SERVICE_TYPE_ADB),
+                PLAIN_PORT_GRACE_MILLIS);
+        List<Scanner> scanners = new ArrayList<>(serviceTypes.size());
+        for (String serviceType : serviceTypes) {
+            boolean plain = AdbMdns.SERVICE_TYPE_ADB.equals(serviceType);
+            AdbMdns.OnAdbDaemonDiscoveredListener listener = (hostAddress, port) ->
+                    chooser.onFound(plain, hostAddress != null ? hostAddress.getHostAddress() : null, port);
             scanners.add(scanner(new AdbMdns(context, serviceType, listener)));
         }
-        scan(scanners, resolveHostAndPort, timeout, unit);
+        scan(scanners, chooser::await, timeout, unit);
 
-        String host = atomicHostAddress.get();
-        int port = atomicPort.get();
-        if (host == null || port == -1) {
+        Pair<String, Integer> daemon = chooser.result();
+        if (daemon == null) {
             throw new IOException("Could not find any valid host address or port");
         }
-        return new Pair<>(host, port);
+        return daemon;
+    }
+
+    /**
+     * How long a scan that found Wireless debugging's TLS port keeps waiting for the plain port.
+     */
+    private static final long PLAIN_PORT_GRACE_MILLIS = 1500;
+
+    /**
+     * Picks the daemon to connect to from what the mDNS searches report. When the plain port that
+     * {@code adb tcpip} opens is searched for too, it wins over Wireless debugging's TLS port even
+     * when TLS answers first, and TLS is used only if no plain port turns up shortly after. Taking
+     * whichever answered first put ADB over TCP on the TLS port while both were on.
+     */
+    @VisibleForTesting
+    static final class DaemonChooser {
+        private final boolean mPlainSearched;
+        private final long mGraceNanos;
+        private final CountDownLatch mAnyFound = new CountDownLatch(1);
+        private final CountDownLatch mPlainFound = new CountDownLatch(1);
+        private final AtomicReference<Pair<String, Integer>> mPlain = new AtomicReference<>();
+        private final AtomicReference<Pair<String, Integer>> mTls = new AtomicReference<>();
+
+        DaemonChooser(boolean plainSearched, long graceMillis) {
+            mPlainSearched = plainSearched;
+            mGraceNanos = TimeUnit.MILLISECONDS.toNanos(graceMillis);
+        }
+
+        void onFound(boolean plain, @Nullable String host, int port) {
+            AtomicReference<Pair<String, Integer>> slot = plain ? mPlain : mTls;
+            if (port <= 0) {
+                // The service went away
+                slot.set(null);
+                return;
+            }
+            if (host == null) {
+                return;
+            }
+            slot.set(new Pair<>(host, port));
+            if (plain) {
+                mPlainFound.countDown();
+            }
+            mAnyFound.countDown();
+        }
+
+        boolean await(long timeout, @NonNull TimeUnit unit) throws InterruptedException {
+            long deadline = System.nanoTime() + unit.toNanos(timeout);
+            if (!mAnyFound.await(timeout, unit)) {
+                return false;
+            }
+            if (mPlainSearched && mPlain.get() == null) {
+                long wait = Math.min(mGraceNanos, deadline - System.nanoTime());
+                if (wait > 0) {
+                    mPlainFound.await(wait, TimeUnit.NANOSECONDS);
+                }
+            }
+            return true;
+        }
+
+        @Nullable
+        Pair<String, Integer> result() {
+            Pair<String, Integer> plain = mPlain.get();
+            return plain != null ? plain : mTls.get();
+        }
     }
 
     @VisibleForTesting
@@ -133,13 +190,20 @@ public class AdbUtils {
     }
 
     /**
+     * Waits until a scan has its answer, as {@link CountDownLatch#await(long, TimeUnit)} does.
+     */
+    interface Waiter {
+        boolean await(long timeout, @NonNull TimeUnit unit) throws InterruptedException;
+    }
+
+    /**
      * Starts every scanner and waits for a result. Each scanner that was asked to start is stopped
      * afterwards whatever happened, even when another one failed to start or to stop: a scanner
      * left running holds a multicast lock and can make later scans fail at once.
      */
     @VisibleForTesting
     @WorkerThread
-    static void scan(@NonNull List<Scanner> scanners, @NonNull CountDownLatch found, long timeout,
+    static void scan(@NonNull List<Scanner> scanners, @NonNull Waiter found, long timeout,
                      @NonNull TimeUnit unit) throws IOException, InterruptedException {
         List<Scanner> started = new ArrayList<>(scanners.size());
         try {
