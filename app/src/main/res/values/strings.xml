@@ -4528,7 +4528,6 @@ Components removed: %8$s</string>
     <string name="lan_sync_share_summary">While this is on and this screen is open, a device you allow on the same Wi-Fi can see your apps and copy them.</string>
     <string name="lan_sync_share_starting">Starting</string>
     <string name="lan_sync_share_waiting">Visible as %1$s on port %2$d. Waiting for a device to connect.</string>
-    <string name="lan_sync_share_ready">Visible as %1$s. Waiting for a device to connect.</string>
     <string name="lan_sync_share_connected">Connected to %1$s</string>
     <string name="lan_sync_share_failed">Sharing stopped: %1$s</string>
     <string name="lan_sync_share_session_ended">The connection ended: %1$s</string>
