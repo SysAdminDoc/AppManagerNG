@@ -1,20 +1,20 @@
 {
   "schemaVersion": 1,
   "repository": "https://github.com/SysAdminDoc/AppManagerNG",
-  "releaseUrl": "https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.6.23",
-  "publishedAt": "2026-09-05T04:44:14Z",
-  "tag": "v0.6.23",
-  "tagObjectSha": "aaeac1c3671b3b2a52264145a634d17fa8b9a146",
-  "tagCommit": "847ff8c30aed49fe4bee08a5debbacce8d4d8145",
-  "versionName": "0.6.23",
-  "versionCode": 31,
+  "releaseUrl": "https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.7.0",
+  "publishedAt": "2026-11-08T16:44:51Z",
+  "tag": "v0.7.0",
+  "tagObjectSha": "423ed8a35587e937d6273461b6b26a2033efdc80",
+  "tagCommit": "22f18fa9afb9061545d8f1e31ad6ada239ca1017",
+  "versionName": "0.7.0",
+  "versionCode": 33,
   "packageName": "io.github.sysadmindoc.AppManagerNG",
   "targetSdk": 36,
   "selectedArtifact": {
     "name": "AppManagerNG-reproducible-floss-release.apk",
-    "size": 20428027,
-    "sha256": "c47fe42a2eb707fb05af8f591f8323ac3a83004ad2671da16fe5a554a2e4da58",
-    "url": "https://github.com/SysAdminDoc/AppManagerNG/releases/download/v0.6.23/AppManagerNG-reproducible-floss-release.apk"
+    "size": 19328094,
+    "sha256": "5aa76a1f631208b51ea1de2e5e739c389ef75729a51fafc41a136851d6424aa7",
+    "url": "https://github.com/SysAdminDoc/AppManagerNG/releases/download/v0.7.0/AppManagerNG-reproducible-floss-release.apk"
   },
   "signingCertificateSha256": "215fb470632ea6cd59a4baab350a9e0b99ad110fddfaf5a9ea6461e5d0c2386c"
 }
