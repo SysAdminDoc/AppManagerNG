@@ -9,11 +9,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
 - [ ] P2: Repeat the drain's device checks on the S22 or S25. The fixes and features for #12, #13, #15, #16, #17, #18, #19, #20, #21, #23, #25, #26, #27, #28 and PR #24 ran on API 29 and API 35 emulators only. On a phone, look hardest at what an emulator fakes: Wireless debugging pairing and ADB over TCP (#20), usage access staying granted after a reboot (#16), the #15 scheduled check in `dumpsys jobscheduler` after a restart, and the #26 overlay bubble over a real app's ad.
 - [ ] P2: Check #22 Local sync between two separate devices. A work profile can't stand in, because both users share one install of each app, so these two rows never show there. "Signature differs": install the same package signed with different keys on each device, connect, and confirm the row says so and offers no install. Update all newer: give the sharing device a higher versionCode of an app the other has (same key), tap Update all newer and confirm it updates. Two emulators work too: on the client type 10.0.2.2 and a host port that `adb -s <host> forward tcp:<port> tcp:<share port>` points at the sharing emulator.
 
-- [ ] P3: Forgetting a device also ends its open connection
-  Why: Forget only removes the remembered fingerprint (`TrustStore.forget`), so a device that's connected right then keeps its session and can keep pulling APKs until it disconnects on its own.
-  Touches: `sync/lan/HostSession.java` (report the peer fingerprint when a client is accepted), `sync/lan/LanSyncHost.java` (keep the current peer's fingerprint and close `mClient` when it's forgotten), `sync/lan/LanSyncViewModel.forget`.
-  Acceptance: forgetting the connected device closes its session within a second and its next connect shows the six digits again; a test with a live session over a socket proves it.
-  Complexity: S
 - [ ] P2: Let ADB mode start in a work profile
   Why: in a managed profile the app reaches adbd and launches its server, but never binds the privileged service, so the splash sits on "Checking the configured operation mode" until the startup check times out and only then offers recovery buttons.
   Evidence: API 35 emulator, `pm create-user --profileOf 0 --managed`, release build in user 10: `:priv:10` started on port 62011 as uid 1010209, then the app logged `RemoteException: Binder not running` from `ipc/LocalServices.bindAmService`.
@@ -28,18 +23,7 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Acceptance: the port differs per package or is picked free at launch and passed to the server; both builds start their servers on one device.
   Complexity: S
 
-- [ ] P3: Drop the old ADB connection when the user connects to a new port
-  Why: `AdbConnectionManager` is a singleton and `useAdbStartServer` skips connecting while `isConnected()`, so typing a new Wireless debugging port keeps using the old connection. `getLatestAdbDaemon` also takes the first mDNS service found, and the emulator advertises both `_adb._tcp` (5555) and `_adb-tls-connect`.
-  Touches: `adb/AdbConnectionManager.java`, `adb/AdbUtils.java` (mDNS pick), `servermanager/LocalServerManager.java`.
-  Acceptance: connecting to a different host or port closes the old connection first, and the TLS service wins over plain `_adb._tcp` when Wireless debugging is the chosen mode; a test with two fake daemons proves it.
-  Complexity: S
-
-- [ ] P3: Follow Local sync announcements that change after they're found
-  Why: on Android 14+ a plain NSD `DiscoveryListener` never reports a service it already found coming back with a new port or address, and `resolveService` answers from the cache. The host now reuses its last port, but a phone that moved to a new address, or a host whose old port was taken, still shows stale in the list until the client screen is reopened.
-  Evidence: API 35 emulator, profile host re-shared on 38299; `dumpsys servicediscovery` logged `onServiceUpdated ... port: 38299` while the client kept offering 33271 and got ECONNREFUSED.
-  Touches: `sync/lan/LanSyncDiscovery.java` (on API 34+ use `registerServiceInfoCallback` per found service instead of `resolveService`, unregister on stop and on lost).
-  Acceptance: a host that re-shares on another port or address shows the new one in the client's list within a few seconds on API 34+; a Robolectric test drives the callback's update and lost events.
-  Complexity: S
+- [ ] P2: Device-check the 2026-11-08 follow-ups on API 35 and a phone: forget a connected Local sync device and confirm it drops at once and asks for the six digits next time; stop sharing, take the old port with `nc -l`, share again and confirm the client's list shows the new port without reopening; in Wireless debugging mode with `adb tcpip 5555` also set, confirm the app connects to the TLS port (`dumpsys` or logcat `AdbConnectionManager`); change the Wireless debugging port mid-session and confirm the new port is used. All three devices were leased to other drains when these landed.
 
 ## Unblocked from Roadmap_Blocked.md (2026-11-07)
 
