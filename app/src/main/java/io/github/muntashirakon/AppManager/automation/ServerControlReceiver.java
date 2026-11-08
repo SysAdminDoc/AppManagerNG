@@ -26,6 +26,7 @@ import io.github.muntashirakon.AppManager.crypto.auth.AuthManager;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.history.ops.OperationJournalMetadata;
 import io.github.muntashirakon.AppManager.history.ops.SingleAppActionHistoryItem;
+import io.github.muntashirakon.AppManager.ipc.HeldBroadcasts;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.settings.Ops;
@@ -183,6 +184,9 @@ public class ServerControlReceiver extends BroadcastReceiver {
         Runnable deadline = () -> finish(pendingResult, ordered, finished, ServerControlRequest.RESULT_STILL_RUNNING);
         handler.postDelayed(deadline, (intent.getFlags() & Intent.FLAG_RECEIVER_FOREGROUND) != 0
                 ? FOREGROUND_DEADLINE_MILLIS : BACKGROUND_DEADLINE_MILLIS);
+        // Starting the privileged services waits for their binder, which comes by broadcast and
+        // can't reach this process while this one is held, so that wait answers early too
+        HeldBroadcasts.hold(deadline);
         try {
             ThreadUtils.postOnBackgroundThread(() -> {
                 int opsStatus = Ops.STATUS_FAILURE;
@@ -196,6 +200,7 @@ public class ServerControlReceiver extends BroadcastReceiver {
                 } finally {
                     sRunning.set(false);
                 }
+                HeldBroadcasts.done(deadline);
                 handler.removeCallbacks(deadline);
                 // The history row goes first: finishing is what lets Android freeze this process
                 report(context, request, result, opsStatus);
@@ -204,6 +209,7 @@ public class ServerControlReceiver extends BroadcastReceiver {
         } catch (RejectedExecutionException e) {
             Log.e(TAG, "Could not queue a server control command.", e);
             sRunning.set(false);
+            HeldBroadcasts.done(deadline);
             handler.removeCallbacks(deadline);
             int result = ServerControlRequest.resultCodeFor(Ops.STATUS_FAILURE);
             reportInBackground(context, request, result, Ops.STATUS_FAILURE);
