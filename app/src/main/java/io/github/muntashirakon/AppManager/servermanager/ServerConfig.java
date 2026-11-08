@@ -13,6 +13,7 @@ import androidx.annotation.AnyThread;
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import java.io.File;
@@ -20,6 +21,7 @@ import java.io.IOException;
 import java.net.Inet4Address;
 import java.security.SecureRandom;
 
+import io.github.muntashirakon.AppManager.adb.AdbTcpipProbe;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.NoOps;
 import io.github.muntashirakon.AppManager.server.common.Constants;
@@ -266,29 +268,59 @@ public final class ServerConfig {
         return Prefs.Misc.getAdbLocalServerPort();
     }
 
+    /**
+     * Where adbd answers on {@code port}. Wireless debugging's ports, and ADB over TCP once
+     * {@code adb tcpip} ran, are on the device itself. On an emulator the computer's own loopback
+     * (10.0.2.2) also reaches adbd, through the port the computer forwards to it, so that's tried
+     * when nothing answers on the device. Always using 10.0.2.2 there failed every Wireless
+     * debugging connect, since those ports only exist on the device.
+     */
     @WorkerThread
     @NonNull
-    public static String getAdbHost(Context context) {
-        return getHostIpAddress(context);
+    public static String getAdbHost(@NonNull Context context, @IntRange(from = 0, to = 65535) int port) {
+        return chooseAdbHost(isEmulator(context), port);
+    }
+
+    @VisibleForTesting
+    @WorkerThread
+    @NonNull
+    static String chooseAdbHost(boolean emulator, @IntRange(from = 0, to = 65535) int port) {
+        String loopback = getLoopbackHost();
+        if (!emulator || AdbTcpipProbe.isPortReachable(loopback, port, AdbTcpipProbe.DEFAULT_TIMEOUT_MILLIS)) {
+            return loopback;
+        }
+        return EMULATOR_HOST_LOOPBACK;
+    }
+
+    /**
+     * Where Wireless debugging's pairing port is. It's always on the device, emulators included.
+     */
+    @AnyThread
+    @NonNull
+    public static String getAdbPairingHost() {
+        return getLoopbackHost();
+    }
+
+    @AnyThread
+    @NonNull
+    public static String getLocalServerHost(Context context) {
+        return getLoopbackHost();
     }
 
     // Reads the loopback address only, no lookup
     @AnyThread
     @NonNull
-    public static String getLocalServerHost(Context context) {
+    private static String getLoopbackHost() {
         String ipAddress = Inet4Address.getLoopbackAddress().getHostAddress();
         if (ipAddress == null || ipAddress.equals("::1")) return "127.0.0.1";
         return ipAddress;
     }
 
-    @WorkerThread
-    @NonNull
-    private static String getHostIpAddress(@NonNull Context context) {
-        if (isEmulator(context)) return "10.0.2.2";
-        String ipAddress = Inet4Address.getLoopbackAddress().getHostAddress();
-        if (ipAddress == null || ipAddress.equals("::1")) return "127.0.0.1";
-        return ipAddress;
-    }
+    /**
+     * The computer running the emulator, as the emulator sees it.
+     */
+    @VisibleForTesting
+    static final String EMULATOR_HOST_LOOPBACK = "10.0.2.2";
 
     // https://github.com/firebase/firebase-android-sdk/blob/7d86138304a6573cbe2c61b66b247e930fa05767/firebase-crashlytics/src/main/java/com/google/firebase/crashlytics/internal/common/CommonUtils.java#L402
     private static final String GOLDFISH = "goldfish";

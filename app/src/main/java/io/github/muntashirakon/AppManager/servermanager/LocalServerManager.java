@@ -492,8 +492,8 @@ class LocalServerManager {
 
     @WorkerThread
     private void connectToAdbd(@NonNull AdbConnectionManager manager) throws Exception {
-        String adbHost = ServerConfig.getAdbHost(mContext);
         int adbPort = ServerConfig.getAdbPort();
+        String adbHost = ServerConfig.getAdbHost(mContext, adbPort);
         Log.d(TAG, "useAdbStartServer: Connecting using host=%s, port=%d", adbHost, adbPort);
         boolean connected;
         try {
@@ -610,8 +610,8 @@ class LocalServerManager {
         if (Ops.isAdb()) {
             IoUtils.closeQuietly(mAdbStream);
             mAdbStream = null;
-            String adbHost = ServerConfig.getAdbHost(mContext);
             int adbPort = ServerConfig.getAdbPort();
+            String adbHost = ServerConfig.getAdbHost(mContext, adbPort);
             AdbConnectionManager manager = AdbConnectionManager.getInstance();
             Log.d(TAG, "stopServer (ADB): Connecting using host=%s, port=%d", adbHost, adbPort);
             manager.setTimeout(10, TimeUnit.SECONDS);

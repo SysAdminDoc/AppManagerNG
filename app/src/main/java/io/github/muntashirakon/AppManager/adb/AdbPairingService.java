@@ -312,7 +312,7 @@ public class AdbPairingService extends Service {
             boolean isSuccess;
             boolean timedOut = false;
             try {
-                mPairer.pair(ServerConfig.getAdbHost(this), port, code);
+                mPairer.pair(ServerConfig.getAdbPairingHost(), port, code);
                 isSuccess = true;
             } catch (Exception e) {
                 Log.w(TAG, "Pairing failed.", e);
