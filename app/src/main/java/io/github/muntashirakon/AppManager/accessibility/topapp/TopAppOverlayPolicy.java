@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.accessibility.topapp;
 
+import android.annotation.SuppressLint;
 import android.os.Build;
 import android.view.Gravity;
 import android.view.WindowManager;
@@ -15,6 +16,7 @@ final class TopAppOverlayPolicy {
     static final int EDGE_MARGIN_DP = 8;
     static final float INITIAL_VERTICAL_FRACTION = 0.15f;
     /** Left, not start: a drag moves with the finger whatever the layout direction. */
+    @SuppressLint("RtlHardcoded")
     static final int GRAVITY = Gravity.TOP | Gravity.LEFT;
 
     enum StartStep {
@@ -43,6 +45,8 @@ final class TopAppOverlayPolicy {
         return usageFeatureEnabled ? StartStep.USAGE_ACCESS : StartStep.ACCESSIBILITY;
     }
 
+    /** The SDK level comes in as a parameter so tests can cover both branches; lint can't follow that check. */
+    @SuppressLint("InlinedApi")
     @SuppressWarnings("deprecation")
     static int windowTypeForSdk(int sdkInt) {
         return sdkInt >= Build.VERSION_CODES.O

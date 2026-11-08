@@ -3,7 +3,6 @@
 package io.github.muntashirakon.AppManager.sync.lan;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.VisibleForTesting;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -36,7 +35,6 @@ public final class SecureChannel implements Closeable {
     private long mReceiveCounter;
     private volatile boolean mDead;
 
-    @VisibleForTesting
     SecureChannel(@NonNull FrameIo io, @NonNull byte[] sendKey, @NonNull byte[] receiveKey) {
         if (sendKey.length != 32 || receiveKey.length != 32) {
             throw new IllegalArgumentException("AES-256 keys are 32 bytes.");
