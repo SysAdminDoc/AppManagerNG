@@ -2,12 +2,44 @@
 
 Actionable work only. Historical and completed roadmap material is archived in CHANGELOG.md; blocked work is kept in Roadmap_Blocked.md.
 
-## Issue Drain Left Open (2026-11-06)
+## Issue Drain Left Open (2026-11-08)
 
-The drain stopped here on the owner's word. These reports are still waiting.
+Every report is fixed or built and has a reply posted or queued. What's left needs hardware the drain couldn't get: the S22 was leased to another drain the whole time and the S25 wasn't connected.
 
-- [ ] P2: Check on a real phone: wireless debugging and ADB over TCP (issue #20), and that usage access isn't asked for again once granted (issue #16). The fixes for #12, #13, #17, #18, #23 and #28 have only run on an API 29 emulator. The features for #19, #25 and #26 and the profile search and sort from PR #24 have only run in tests. For #21, install an APK through Open with in no-root mode and confirm the system prompt shows instead of the spinner, then uninstall an app the same way. For #27, turn on Record toasts with the accessibility service and check that another app's toast lands with its text, app and time. For #15, deny CAMERA on a test app, grant it in system Settings, tap Check now and confirm root or ADB mode takes it back; also the Always allow and Always deny buttons, the App Details long press, the check after a restart and the scheduled job in `dumpsys jobscheduler`. For #22, tap Share this device on one phone and connect from the other (type the address and port when one side is an emulator, since discovery doesn't cross its NAT), check that both show the same six digits and Allow, then check the buckets, a Get install, a "Signature differs" row, Update all newer, Remember and Forget, and that leaving the screen or rotating stops sharing. For the installer prompt fix, send an APK with the batch extra from `adb shell am start` in ADB mode and confirm the prompt still shows.
-- [ ] P2: Reply on #12, #13, #15, #16, #17, #18, #19, #20, #21, #22, #23, #24, #25, #26, #27 and #28 once their device checks pass.
+- [ ] P2: Repeat the drain's device checks on the S22 or S25. The fixes and features for #12, #13, #15, #16, #17, #18, #19, #20, #21, #23, #25, #26, #27, #28 and PR #24 ran on API 29 and API 35 emulators only. On a phone, look hardest at what an emulator fakes: Wireless debugging pairing and ADB over TCP (#20), usage access staying granted after a reboot (#16), the #15 scheduled check in `dumpsys jobscheduler` after a restart, and the #26 overlay bubble over a real app's ad.
+- [ ] P2: Check #22 Local sync between two separate devices. A work profile can't stand in, because both users share one install of each app, so these two rows never show there. "Signature differs": install the same package signed with different keys on each device, connect, and confirm the row says so and offers no install. Update all newer: give the sharing device a higher versionCode of an app the other has (same key), tap Update all newer and confirm it updates. Two emulators work too: on the client type 10.0.2.2 and a host port that `adb -s <host> forward tcp:<port> tcp:<share port>` points at the sharing emulator.
+
+- [ ] P3: Forgetting a device also ends its open connection
+  Why: Forget only removes the remembered fingerprint (`TrustStore.forget`), so a device that's connected right then keeps its session and can keep pulling APKs until it disconnects on its own.
+  Touches: `sync/lan/HostSession.java` (report the peer fingerprint when a client is accepted), `sync/lan/LanSyncHost.java` (keep the current peer's fingerprint and close `mClient` when it's forgotten), `sync/lan/LanSyncViewModel.forget`.
+  Acceptance: forgetting the connected device closes its session within a second and its next connect shows the six digits again; a test with a live session over a socket proves it.
+  Complexity: S
+- [ ] P2: Let ADB mode start in a work profile
+  Why: in a managed profile the app reaches adbd and launches its server, but never binds the privileged service, so the splash sits on "Checking the configured operation mode" until the startup check times out and only then offers recovery buttons.
+  Evidence: API 35 emulator, `pm create-user --profileOf 0 --managed`, release build in user 10: `:priv:10` started on port 62011 as uid 1010209, then the app logged `RemoteException: Binder not running` from `ipc/LocalServices.bindAmService`.
+  Touches: `server/.../RootServiceMain.java` (how it hands the binder to a non-zero user), `ipc/LocalServices.java`, `servermanager/LocalServerManager.java`.
+  Acceptance: a profile instance in ADB mode either binds its service or drops to No root within a few seconds with the reason shown; a test covers the user the binder is delivered to.
+  Complexity: M
+
+- [ ] P3: Let the debug and release builds run their servers side by side
+  Why: both bind local server port 62001 (plus the user id), so whichever starts second fails with EADDRINUSE and its mode check fails.
+  Evidence: emulator, release server left running, debug build's TLS connect then failed on 62001.
+  Touches: `servermanager/ServerConfig.java` (port choice), the server launch arguments.
+  Acceptance: the port differs per package or is picked free at launch and passed to the server; both builds start their servers on one device.
+  Complexity: S
+
+- [ ] P3: Drop the old ADB connection when the user connects to a new port
+  Why: `AdbConnectionManager` is a singleton and `useAdbStartServer` skips connecting while `isConnected()`, so typing a new Wireless debugging port keeps using the old connection. `getLatestAdbDaemon` also takes the first mDNS service found, and the emulator advertises both `_adb._tcp` (5555) and `_adb-tls-connect`.
+  Touches: `adb/AdbConnectionManager.java`, `adb/AdbUtils.java` (mDNS pick), `servermanager/LocalServerManager.java`.
+  Acceptance: connecting to a different host or port closes the old connection first, and the TLS service wins over plain `_adb._tcp` when Wireless debugging is the chosen mode; a test with two fake daemons proves it.
+  Complexity: S
+
+- [ ] P3: Follow Local sync announcements that change after they're found
+  Why: on Android 14+ a plain NSD `DiscoveryListener` never reports a service it already found coming back with a new port or address, and `resolveService` answers from the cache. The host now reuses its last port, but a phone that moved to a new address, or a host whose old port was taken, still shows stale in the list until the client screen is reopened.
+  Evidence: API 35 emulator, profile host re-shared on 38299; `dumpsys servicediscovery` logged `onServiceUpdated ... port: 38299` while the client kept offering 33271 and got ECONNREFUSED.
+  Touches: `sync/lan/LanSyncDiscovery.java` (on API 34+ use `registerServiceInfoCallback` per found service instead of `resolveService`, unregister on stop and on lost).
+  Acceptance: a host that re-shares on another port or address shows the new one in the client's list within a few seconds on API 34+; a Robolectric test drives the callback's update and lost events.
+  Complexity: S
 
 ## Unblocked from Roadmap_Blocked.md (2026-11-07)
 
@@ -405,12 +437,12 @@ The drain stopped here on the owner's word. These reports are still waiting.
 
 ### P2
 
-- [ ] P2: Record permission grant state and report drift against a user policy
-  Why: the monitoring subsystem stores only manifest-declared permissions, so a permission the user revoked and something later re-granted is invisible, and there is no view of which apps deviate from what the user chose.
-  Evidence: fork issue #15 cites PermissionManagerX Pro's Permission Watcher and Scheduled Check as paid features solving exactly this; `permission/monitor/PermissionSnapshot.java:24-33` records declared, requested, and dangerous permissions and never a grant result; `permission/monitor/PermissionChangeMonitor.java:210` never calls `checkPermission`; `permission/monitor/PermissionSnapshotStore.java:60` is at schema version 2 and discards mismatched snapshots on load; `permission/monitor/PermissionChangeReceiver.java:31` fires only on package replacement; `history/ops/OpHistoryPruneScheduler.java:70` is the periodic-job pattern to copy.
-  Touches: `permission/monitor/PermissionSnapshot.java`, `PermissionSnapshotStore.java`, `PermissionChangeMonitor.java`, a policy store modelled on `profiles/trigger/ProfileTriggerStore.java`, a new periodic worker, `permission/monitor/AppChangeFeedStore.java`, `settings/PrivacyPreferences.java`, `self/BootReceiver.java`, tests.
-  Acceptance: snapshots carry grant state at schema 3 and older snapshots are re-primed rather than misread; an opt-in daily worker rescans and appends a drift entry to the existing app-change feed for every permission whose grant state differs from the stored policy, naming package, permission, expected state, and observed state; drift reporting works in every mode including no-root because it only reads; this item stays report-only and says so plainly in its user-facing copy, because automatic revocation needs a live privileged binder; a host test primes a policy, mutates a grant result behind a fake, and asserts exactly one drift entry, and reverting the schema change turns it red. Automatic remediation is deliberately left to the existing profile routines, which can already revoke permissions on a time-of-day trigger.
-  Complexity: M
+- [ ] P2: Log permission watcher drift to the app change feed
+  Why: the watcher (`permission/watcher/`) reports a rule mismatch it couldn't fix only as a notification, so once that's dismissed there's no record of which app drifted from the user's rule or when.
+  Evidence: `permission/watcher/PermissionWatchWorker.java:49-52` passes the report to `PermissionWatchNotifier.notify` and nothing else; `permission/monitor/AppChangeFeedStore.java` already keeps the install and update history.
+  Touches: `permission/watcher/PermissionWatchWorker.java`, `permission/monitor/AppChangeFeedStore.java`, the feed's type labels, a worker test.
+  Acceptance: every drift in a report, fixed or not, appends one feed entry naming the app, the permission or op, the rule's state and the state found; an entry for a drift that was fixed says so; a test with a faked rule DAO and grant lookup asserts the entries and fails with the append removed.
+  Complexity: S
 
 - [ ] P2: Bound the build-expiry lockout so it cannot strand a user
   Why: an expired prerelease build shows a non-cancelable dialog with no way through, expiry is decided from an unvalidated device clock, and the debug update link points at a page this project does not use.
