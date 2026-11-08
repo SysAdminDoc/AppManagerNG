@@ -38,6 +38,17 @@ final class OsConstantsValues {
   // Link value.
   public static final int S_IFLNK_VALUE = 0x0120000;
 
+  // The other file types, in the same scheme as the values above. Left at 0 they make every mode
+  // without a type a pipe and a socket, and SDK 36 reads an asset from a pipe without seeking to
+  // it, so openFd streams started at the first byte of the resources APK.
+  static final ImmutableMap<String, Integer> OTHER_FILE_TYPE_VALUES =
+      new ImmutableMap.Builder<String, Integer>()
+          .put("S_IFIFO", 0x0010000)
+          .put("S_IFCHR", 0x0020000)
+          .put("S_IFBLK", 0x0060000)
+          .put("S_IFSOCK", 0x0140000)
+          .build();
+
   // File open mode values from
   // https://github.com/torvalds/linux/blob/master/include/uapi/asm-generic/fcntl.h
   static final ImmutableMap<String, Integer> OPEN_MODE_VALUES =

@@ -43,6 +43,9 @@ public final class ShadowOsConstants {
         if (fieldName.equals(OsConstantsValues.S_IFLNK)) {
           field.setInt(null, OsConstantsValues.S_IFLNK_VALUE);
         }
+        if (OsConstantsValues.OTHER_FILE_TYPE_VALUES.containsKey(fieldName)) {
+          field.setInt(null, OsConstantsValues.OTHER_FILE_TYPE_VALUES.get(fieldName));
+        }
 
         // File open modes.
         if (OsConstantsValues.OPEN_MODE_VALUES.containsKey(fieldName)) {
