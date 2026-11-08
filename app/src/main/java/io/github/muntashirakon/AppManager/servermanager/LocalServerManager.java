@@ -475,25 +475,28 @@ class LocalServerManager {
     private void useAdbStartServer(int localServerPort) throws Exception {
         AdbConnectionManager manager = AdbConnectionManager.getInstance();
         manager.setTimeout(10, TimeUnit.SECONDS);
-        if (!manager.isConnected()) {
-            connectToAdbd(manager);
-        }
+        connectToAdbd(manager);
         try {
             stageAndLaunch(manager, localServerPort);
         } catch (ShellClosedEarlyException e) {
             Log.w(TAG, "useAdbStartServer: The ADB shell closed as soon as it opened, trying once more.", e);
-            if (!manager.isConnected()) {
-                connectToAdbd(manager);
-            }
+            connectToAdbd(manager);
             stageAndLaunch(manager, localServerPort);
         }
         Log.d(TAG, "useAdbStartServer: Server has started.");
     }
 
+    /**
+     * Connects to the saved ADB port unless the open connection already goes there. One left
+     * open to an earlier port is replaced.
+     */
     @WorkerThread
     private void connectToAdbd(@NonNull AdbConnectionManager manager) throws Exception {
         int adbPort = ServerConfig.getAdbPort();
         String adbHost = ServerConfig.getAdbHost(mContext, adbPort);
+        if (manager.isConnectedTo(adbHost, adbPort)) {
+            return;
+        }
         Log.d(TAG, "useAdbStartServer: Connecting using host=%s, port=%d", adbHost, adbPort);
         boolean connected;
         try {
@@ -615,6 +618,7 @@ class LocalServerManager {
             AdbConnectionManager manager = AdbConnectionManager.getInstance();
             Log.d(TAG, "stopServer (ADB): Connecting using host=%s, port=%d", adbHost, adbPort);
             manager.setTimeout(10, TimeUnit.SECONDS);
+            // Any open connection can stop the old server, wherever it goes
             if (!manager.isConnected() && !manager.connect(adbHost, adbPort)) {
                 throw new IOException("Could not connect to ADB.");
             }

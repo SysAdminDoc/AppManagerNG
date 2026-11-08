@@ -85,6 +85,11 @@ public class AdbConnectionManager extends AbsAdbConnectionManager {
 
     @NonNull
     private final KeyPair mKeyPair;
+    private final Object mTargetLock = new Object();
+    // Where the open connection goes, guarded by mTargetLock
+    @Nullable
+    private String mTargetHost;
+    private int mTargetPort = -1;
 
     public AdbConnectionManager() throws Exception {
         setApi(Build.VERSION.SDK_INT);
@@ -98,7 +103,26 @@ public class AdbConnectionManager extends AbsAdbConnectionManager {
         mKeyPair = keyPair;
     }
 
+    @VisibleForTesting
+    AdbConnectionManager(@NonNull KeyPair keyPair) {
+        setApi(Build.VERSION.SDK_INT);
+        mKeyPair = keyPair;
+    }
+
     /**
+     * Whether the open connection goes to this host and port.
+     */
+    public boolean isConnectedTo(@NonNull String host, int port) {
+        synchronized (mTargetLock) {
+            return port == mTargetPort && host.equals(mTargetHost) && isConnected();
+        }
+    }
+
+    /**
+     * Returns false when a connection to this host and port is already open. A connection to
+     * anywhere else is closed first: libadb only checks that some connection is open, so a new
+     * Wireless debugging port kept going to the old one.
+     * <p>
      * libadb opens a plain Socket with no timeout. A host that drops the connection instead of
      * refusing it (10.0.2.2 on an emulator with nothing listening) held the first launch on
      * "Initializing..." for about two and a half minutes.
@@ -106,10 +130,23 @@ public class AdbConnectionManager extends AbsAdbConnectionManager {
     @Override
     public boolean connect(@NonNull String host, int port)
             throws IOException, InterruptedException, AdbPairingRequiredException {
-        if (!isConnected()) {
+        synchronized (mTargetLock) {
+            if (isConnected()) {
+                if (port == mTargetPort && host.equals(mTargetHost)) {
+                    return false;
+                }
+                disconnect();
+            }
+            mTargetHost = null;
+            mTargetPort = -1;
             ensureReachable(host, port);
+            boolean connected = super.connect(host, port);
+            if (connected) {
+                mTargetHost = host;
+                mTargetPort = port;
+            }
+            return connected;
         }
-        return super.connect(host, port);
     }
 
     @VisibleForTesting
