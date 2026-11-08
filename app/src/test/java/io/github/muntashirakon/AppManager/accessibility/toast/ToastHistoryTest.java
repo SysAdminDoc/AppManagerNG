@@ -114,6 +114,28 @@ public class ToastHistoryTest {
     }
 
     @Test
+    public void theAppNameAndroidAddsUnderTheMessageIsLeftOut() {
+        // What an Android 15 emulator sent for a toast from Clock: the message, then the name beside the app's icon.
+        ToastHistory history = history();
+
+        history.record(NOW, APP, "Alarm set for 8 hours from now.\nExample");
+        runQueued();
+
+        assertEquals("Alarm set for 8 hours from now.", history.readAll().get(0).text);
+    }
+
+    @Test
+    public void aMessageThatIsOnlyTheAppNameIsKept() {
+        ToastHistory history = history();
+
+        history.record(NOW - 2_000L, APP, "Example");
+        history.record(NOW - 1_000L, APP, "Not\nExample too");
+        runQueued();
+
+        assertEquals(Arrays.asList("Not\nExample too", "Example"), texts(history.readAll()));
+    }
+
+    @Test
     public void aVeryLongAppNameIsCut() {
         char[] name = new char[1000];
         Arrays.fill(name, 'n');
