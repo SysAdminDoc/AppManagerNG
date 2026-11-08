@@ -67,6 +67,16 @@ public final class LanSyncHost {
     private ServerSocket mServer;
     @Nullable
     private Socket mClient;
+    /**
+     * Set once the connected client is accepted.
+     */
+    @Nullable
+    private String mClientFingerprint;
+    /**
+     * A client dropped through {@link #endSessionWith}, whose end isn't an error.
+     */
+    @Nullable
+    private Socket mEndedOnPurpose;
     @Nullable
     private NsdManager.RegistrationListener mRegistration;
     private boolean mStarted;
@@ -163,6 +173,7 @@ public final class LanSyncHost {
             registration = mRegistration;
             mServer = null;
             mClient = null;
+            mClientFingerprint = null;
             mRegistration = null;
         }
         mGate.cancel();
@@ -175,6 +186,23 @@ public final class LanSyncHost {
                 // Registration already failed, so NSD dropped the listener itself
             }
         }
+    }
+
+    /**
+     * Drops the connection to the device with this fingerprint, if it's the one connected.
+     * Sharing stays on for everyone else.
+     */
+    public boolean endSessionWith(@NonNull String fingerprint) {
+        Socket client;
+        synchronized (mLock) {
+            client = mClient;
+            if (client == null || !fingerprint.equals(mClientFingerprint)) {
+                return false;
+            }
+            mEndedOnPurpose = client;
+        }
+        closeQuietly(client);
+        return true;
     }
 
     public boolean isRunning() {
@@ -281,23 +309,45 @@ public final class LanSyncHost {
 
     private void runSession(@NonNull Socket socket) {
         String error = null;
+        HostSession.Listener sessionListener = new HostSession.Listener() {
+            @Override
+            public void onClientAccepted(@NonNull String peerName, @NonNull String peerFingerprint) {
+                synchronized (mLock) {
+                    if (mClient == socket) {
+                        mClientFingerprint = peerFingerprint;
+                    }
+                }
+                mListener.onClientAccepted(peerName, peerFingerprint);
+            }
+
+            @Override
+            public void onFileSent(@NonNull String packageName, @NonNull String fileName) {
+                mListener.onFileSent(packageName, fileName);
+            }
+        };
         try {
             socket.setTcpNoDelay(true);
             FrameIo io = new FrameIo(socket.getInputStream(), socket.getOutputStream());
             new HostSession(io, socket::setSoTimeout, mName, mIdentity, mRandom, mTrust, mGate, mCatalog,
-                    mListener).run();
+                    sessionListener).run();
         } catch (IOException e) {
             error = String.valueOf(e.getMessage());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } finally {
             closeQuietly(socket);
+            boolean endedOnPurpose;
             synchronized (mLock) {
                 if (mClient == socket) {
                     mClient = null;
+                    mClientFingerprint = null;
+                }
+                endedOnPurpose = mEndedOnPurpose == socket;
+                if (endedOnPurpose) {
+                    mEndedOnPurpose = null;
                 }
             }
-            mListener.onSessionEnded(error);
+            mListener.onSessionEnded(endedOnPurpose ? null : error);
         }
     }
 

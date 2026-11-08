@@ -349,7 +349,17 @@ public class LanSyncViewModel extends AndroidViewModel {
     }
 
     public void forget(@NonNull TrustedDevice device) {
-        mHostExecutor.execute(() -> mTrust.forget(device.fingerprint));
+        mHostExecutor.execute(() -> {
+            mTrust.forget(device.fingerprint);
+            LanSyncHost host;
+            synchronized (mLock) {
+                host = mHost;
+            }
+            // Its open session would otherwise go on serving apps until it disconnects
+            if (host != null) {
+                host.endSessionWith(device.fingerprint);
+            }
+        });
         loadTrusted();
     }
 
@@ -374,7 +384,7 @@ public class LanSyncViewModel extends AndroidViewModel {
         }
 
         @Override
-        public void onClientAccepted(@NonNull String peerName) {
+        public void onClientAccepted(@NonNull String peerName, @NonNull String peerFingerprint) {
             if (isCurrent()) {
                 mHostStatus.postValue(getApplication().getString(R.string.lan_sync_share_connected, peerName));
                 loadTrusted();

@@ -36,7 +36,7 @@ public final class HostSession {
     }
 
     public interface Listener {
-        void onClientAccepted(@NonNull String peerName);
+        void onClientAccepted(@NonNull String peerName, @NonNull String peerFingerprint);
 
         void onFileSent(@NonNull String packageName, @NonNull String fileName);
     }
@@ -101,7 +101,7 @@ public final class HostSession {
             }
             channel.send(SyncMessages.accept(remembered));
             if (mListener != null) {
-                mListener.onClientAccepted(session.getPeerName());
+                mListener.onClientAccepted(session.getPeerName(), session.getPeerFingerprint());
             }
             mTimeouts.setReadTimeout(IDLE_TIMEOUT_MS);
             serve(channel);

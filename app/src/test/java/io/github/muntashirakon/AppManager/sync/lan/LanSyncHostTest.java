@@ -228,7 +228,7 @@ public class LanSyncHostTest {
         }
 
         @Override
-        public void onClientAccepted(@NonNull String peerName) {
+        public void onClientAccepted(@NonNull String peerName, @NonNull String peerFingerprint) {
             accepted.add(peerName);
         }
 
