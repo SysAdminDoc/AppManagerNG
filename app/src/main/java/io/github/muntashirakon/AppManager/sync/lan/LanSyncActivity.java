@@ -269,8 +269,9 @@ public class LanSyncActivity extends BaseActivity {
             mPackageWatcher.close();
             mPackageWatcher = null;
         }
-        if (mViewModel != null) {
-            // Nothing is shared or searched for once the screen is out of sight
+        if (mViewModel != null && !isChangingConfigurations()) {
+            // Nothing is shared or searched for once the screen is out of sight. Turning the phone
+            // only rebuilds the screen, and stopping then would drop the connected device.
             mViewModel.stopSharing();
             mViewModel.stopDiscovery();
             setShareSwitch(false);
