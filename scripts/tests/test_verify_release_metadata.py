@@ -124,6 +124,8 @@ CurrentVersionCode: 13
                 str(self.build_gradle),
                 "--versions-gradle",
                 str(self.versions_gradle),
+                "--repo-root",
+                str(self.root),
                 "--skip-git",
             ],
             check=False,
@@ -182,12 +184,22 @@ CurrentVersionCode: 13
         errors = metadata.verify_build_gradle(self.build_gradle, self.receipt, self.root)
         self.assertTrue(any("do not match versionName" in error for error in errors))
 
-    def test_tagged_candidate_must_match_published_receipt(self) -> None:
+    def test_tagged_candidate_must_be_ahead_of_published_receipt(self) -> None:
         self._set_tree_version("0.6.6", 14)
         self._tag_head("v0.6.6")
+        self.assertEqual(
+            [],
+            metadata.verify_build_gradle(self.build_gradle, self.receipt, self.root),
+        )
+        subprocess.run(["git", "tag", "-d", "v0.6.6"], cwd=self.root, check=True, capture_output=True)
+        text = self.build_gradle.read_text(encoding="utf-8")
+        text = text.replace('versionName = "0.6.6"', 'versionName = "0.6.4"').replace("versionCode = 14", "versionCode = 12")
+        self.build_gradle.write_text(text, encoding="utf-8")
+        subprocess.run(["git", "commit", "-qam", "older"], cwd=self.root, check=True)
+        subprocess.run(["git", "tag", "v0.6.4"], cwd=self.root, check=True)
         errors = metadata.verify_build_gradle(self.build_gradle, self.receipt, self.root)
-        self.assertTrue(any("tagged versionName" in error for error in errors))
-        self.assertTrue(any("tagged versionCode" in error for error in errors))
+        self.assertTrue(any("tagged versionName 0.6.4 is not ahead" in error for error in errors))
+        self.assertTrue(any("tagged versionCode 12 is not ahead" in error for error in errors))
 
 
 if __name__ == "__main__":
