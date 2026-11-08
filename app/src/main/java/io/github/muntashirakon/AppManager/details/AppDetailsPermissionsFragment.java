@@ -778,6 +778,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                 });
                 return true;
             });
+            AppDetailsAdapterUtils.passLongPressToRow(holder.itemView, true);
         }
 
         private void showAppOpModePicker(@NonNull AppDetailsAppOpItem item) {
@@ -917,6 +918,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                 return true;
             });
             holder.itemView.setLongClickable(longPressable);
+            AppDetailsAdapterUtils.passLongPressToRow(holder.itemView, longPressable);
         }
 
         private void bindReferenceButton(@NonNull MaterialButton button, boolean drifted, boolean enabled,
