@@ -249,6 +249,8 @@ public class LanSyncActivity extends BaseActivity {
         if (mViewModel != null) {
             updatePermissionCard();
             startDiscoveryIfAllowed();
+            // Back from the installer: what it put on leaves the Get groups
+            mViewModel.recheckInstalled();
         }
     }
 

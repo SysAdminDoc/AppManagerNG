@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 
 /**
  * Holds both sides of local sync for the screen: sharing this device (the host) and talking to
@@ -80,6 +81,16 @@ public class LanSyncViewModel extends AndroidViewModel {
             this.local = local;
             this.status = SyncComparator.compare(remote, local);
         }
+    }
+
+    /**
+     * The apps installed on this device, keyed by package name.
+     */
+    @VisibleForTesting
+    interface LocalIndex {
+        @WorkerThread
+        @NonNull
+        Map<String, SyncApp> load();
     }
 
     public static final class TrustedDevice {
@@ -128,11 +139,25 @@ public class LanSyncViewModel extends AndroidViewModel {
     @Nullable
     private ScheduledFuture<?> mPing;
     private boolean mShowSystem;
+    @NonNull
+    private volatile LocalIndex mLocalIndex;
 
     public LanSyncViewModel(@NonNull Application application) {
         super(application);
         mTrust = new TrustStore(application);
         mNsd = (NsdManager) application.getSystemService(Context.NSD_SERVICE);
+        mLocalIndex = () -> new AndroidPackageCatalog(application).indexInstalled();
+    }
+
+    @VisibleForTesting
+    void setLocalIndex(@NonNull LocalIndex localIndex) {
+        mLocalIndex = localIndex;
+    }
+
+    @VisibleForTesting
+    @MainThread
+    void setRows(@Nullable List<AppRow> rows) {
+        mRows.setValue(rows);
     }
 
     @Override
@@ -561,7 +586,7 @@ public class LanSyncViewModel extends AndroidViewModel {
             mTask.postValue(getApplication().getString(R.string.lan_sync_loading_list));
             try {
                 List<SyncApp> remote = client.list(isShowingSystemApps());
-                Map<String, SyncApp> local = new AndroidPackageCatalog(getApplication()).indexInstalled();
+                Map<String, SyncApp> local = mLocalIndex.load();
                 List<AppRow> rows = new ArrayList<>(remote.size());
                 for (SyncApp app : remote) {
                     rows.add(new AppRow(app, local.get(app.packageName)));
@@ -576,6 +601,32 @@ public class LanSyncViewModel extends AndroidViewModel {
             } finally {
                 mTask.postValue(null);
             }
+        });
+    }
+
+    /**
+     * Sorts the other device's apps against what is installed here again, without asking it for
+     * the list. Run when the screen comes back, so an app the installer just put on (or one
+     * removed meanwhile) moves to the right group instead of still offering Get.
+     */
+    @MainThread
+    public void recheckInstalled() {
+        List<AppRow> shown = mRows.getValue();
+        if (shown == null || shown.isEmpty()) {
+            return;
+        }
+        mClientExecutor.execute(() -> {
+            Map<String, SyncApp> local = mLocalIndex.load();
+            List<AppRow> rows = new ArrayList<>(shown.size());
+            for (AppRow row : shown) {
+                rows.add(new AppRow(row.remote, local.get(row.remote.packageName)));
+            }
+            ThreadUtils.postOnMainThread(() -> {
+                // A disconnect or a fresh list since then wins
+                if (mRows.getValue() == shown) {
+                    mRows.setValue(rows);
+                }
+            });
         });
     }
 
