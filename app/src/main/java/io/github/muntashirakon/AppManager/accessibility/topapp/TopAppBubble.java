@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.accessibility.topapp;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -75,6 +76,8 @@ final class TopAppBubble {
     private int mDownParamX;
     private int mDownParamY;
 
+    // The bubble is its own window, so its root has no parent to inflate against.
+    @SuppressLint("InflateParams")
     TopAppBubble(@NonNull Context context, @NonNull Callback callback) {
         mContext = AppearanceUtils.getThemedContext(context, true);
         mWindowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);

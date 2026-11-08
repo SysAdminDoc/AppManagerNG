@@ -1887,7 +1887,8 @@
              gate, and a setting that is off by default turns the whole receiver off. -->
         <receiver
             android:name=".automation.ServerControlReceiver"
-            android:exported="true">
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
             <intent-filter>
                 <action android:name="${applicationId}.action.SERVER_START" />
                 <action android:name="${applicationId}.action.SERVER_STOP" />

@@ -178,30 +178,37 @@ public class LanSyncViewModel extends AndroidViewModel {
         mClientExecutor.shutdownNow();
     }
 
+    @NonNull
     public LiveData<Boolean> getSharing() {
         return mSharing;
     }
 
+    @NonNull
     public LiveData<String> getHostStatus() {
         return mHostStatus;
     }
 
+    @NonNull
     public LiveData<ApprovalGate.Request> getApproval() {
         return mApproval;
     }
 
+    @NonNull
     public LiveData<List<LanSyncDiscovery.Peer>> getPeers() {
         return mPeers;
     }
 
+    @NonNull
     public LiveData<List<TrustedDevice>> getTrusted() {
         return mTrusted;
     }
 
+    @NonNull
     public LiveData<Connection> getConnection() {
         return mConnection;
     }
 
+    @NonNull
     public LiveData<List<AppRow>> getRows() {
         return mRows;
     }
@@ -209,6 +216,7 @@ public class LanSyncViewModel extends AndroidViewModel {
     /**
      * What the client side is busy with, or {@code null} when it is idle.
      */
+    @NonNull
     public LiveData<String> getTask() {
         return mTask;
     }
@@ -216,6 +224,7 @@ public class LanSyncViewModel extends AndroidViewModel {
     /**
      * A one-off message for a toast. Call {@link #onMessageShown()} once it is on screen.
      */
+    @NonNull
     public LiveData<String> getMessage() {
         return mMessage;
     }
@@ -224,6 +233,7 @@ public class LanSyncViewModel extends AndroidViewModel {
      * Downloads that passed every check and wait for the installer. Call
      * {@link #onInstallHandedOff()} once they are handed over.
      */
+    @NonNull
     public LiveData<List<LanSyncDownloader.Result>> getReady() {
         return mReady;
     }

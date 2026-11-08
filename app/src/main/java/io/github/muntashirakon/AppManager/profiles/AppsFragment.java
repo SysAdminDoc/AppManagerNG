@@ -44,7 +44,9 @@ public class AppsFragment extends Fragment implements SwipeRefreshLayout.OnRefre
         public final String packageName;
         @Nullable
         public CharSequence label;
+        @Nullable
         public ApplicationInfo applicationInfo;
+        @Nullable
         public IFilterableAppInfo filterableAppInfo;
         public long firstInstallTime;
         public long lastUpdateTime;
@@ -161,13 +163,13 @@ public class AppsFragment extends Fragment implements SwipeRefreshLayout.OnRefre
     }
 
     @Override
-    public boolean onQueryTextChange(String newText, @AdvancedSearchView.SearchType int type) {
+    public boolean onQueryTextChange(@NonNull String newText, @AdvancedSearchView.SearchType int type) {
         mModel.setAppsQuery(newText, type);
         return true;
     }
 
     @Override
-    public boolean onQueryTextSubmit(String query, @AdvancedSearchView.SearchType int type) {
+    public boolean onQueryTextSubmit(@NonNull String query, @AdvancedSearchView.SearchType int type) {
         return false;
     }
 

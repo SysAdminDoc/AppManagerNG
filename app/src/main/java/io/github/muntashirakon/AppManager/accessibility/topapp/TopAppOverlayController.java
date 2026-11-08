@@ -110,7 +110,10 @@ public final class TopAppOverlayController {
         Intent intent;
         switch (step) {
             case OVERLAY_PERMISSION:
-                intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                // Below Android 6 the permission is granted at install, so this step never comes up there.
+                intent = new Intent(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+                        ? Settings.ACTION_MANAGE_OVERLAY_PERMISSION
+                        : Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                         Uri.parse("package:" + context.getPackageName()));
                 break;
             case USAGE_ACCESS:
