@@ -8,6 +8,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
@@ -151,6 +152,27 @@ public class LanSyncActivityTest {
         int second = announcedPort(nsd, waitFor(viewModel::getHost));
         // A nearby device that cached the first announcement still reaches this one
         assertEquals(first, second);
+    }
+
+    @Test
+    public void turningThePhoneKeepsSharingAndTheConnectedDevice() throws Exception {
+        LanSyncViewModel viewModel = new ViewModelProvider(mController.get()).get(LanSyncViewModel.class);
+        ShadowNsdManager nsd = Shadow.extract(ApplicationProvider.getApplicationContext()
+                .getSystemService(Context.NSD_SERVICE));
+        mController.get().findViewById(R.id.share_switch).performClick();
+        LanSyncHost host = waitFor(viewModel::getHost);
+        int port = announcedPort(nsd, host);
+
+        try (Socket socket = new Socket()) {
+            socket.connect(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), 2000);
+            mController.recreate();
+            shadowOf(Looper.getMainLooper()).idle();
+
+            assertSame("Turning the phone is not leaving the screen", host, viewModel.getHost());
+            assertTrue(host.isRunning());
+            MaterialSwitch share = mController.get().findViewById(R.id.share_switch);
+            assertTrue(share.isChecked());
+        }
     }
 
     private static int announcedPort(@NonNull ShadowNsdManager nsd, @NonNull LanSyncHost host) {
