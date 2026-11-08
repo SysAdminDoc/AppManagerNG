@@ -131,7 +131,9 @@ public abstract class QuickOpenTileService extends TileService {
     @Override
     public void onClick() {
         super.onClick();
-        if (isLocked()) {
+        // From Android 14 the pending intent that open() starts waits for the PIN by itself, and unlockAndRun's
+        // callback gets dropped once the panel closes for it.
+        if (isLocked() && TileActionActivity.unlockAndRunWorks()) {
             unlockAndRun(this::open);
             return;
         }

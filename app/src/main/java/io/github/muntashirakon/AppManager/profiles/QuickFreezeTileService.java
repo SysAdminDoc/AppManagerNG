@@ -2,7 +2,6 @@
 
 package io.github.muntashirakon.AppManager.profiles;
 
-import android.app.PendingIntent;
 import android.app.StatusBarManager;
 import android.content.ComponentName;
 import android.content.Context;
@@ -15,7 +14,6 @@ import android.service.quicksettings.TileService;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.VisibleForTesting;
-import androidx.core.app.PendingIntentCompat;
 import androidx.core.content.ContextCompat;
 
 import org.json.JSONException;
@@ -25,10 +23,13 @@ import java.io.IOException;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
+import io.github.muntashirakon.AppManager.shortcut.QuickOpenTileService;
+import io.github.muntashirakon.AppManager.shortcut.TileActionActivity;
+import io.github.muntashirakon.AppManager.shortcut.TileActionHost;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 
 @RequiresApi(Build.VERSION_CODES.N)
-public class QuickFreezeTileService extends TileService {
+public class QuickFreezeTileService extends TileService implements TileActionHost {
     private static final String TAG = QuickFreezeTileService.class.getSimpleName();
 
     public static void requestTileStateUpdate(@NonNull Context context) {
@@ -84,41 +85,59 @@ public class QuickFreezeTileService extends TileService {
     @Override
     public void onClick() {
         super.onClick();
-        if (isLocked()) {
-            unlockAndRun(this::runSelectedFreezeProfile);
-            return;
-        }
-        runSelectedFreezeProfile();
+        TileActionActivity.run(this, TileActionActivity.Action.QUICK_FREEZE,
+                () -> runSelectedFreezeProfile(this, this));
     }
 
-    private void runSelectedFreezeProfile() {
+    /** What a tap does, run by the tile or, after an unlock, by {@link TileActionActivity}. */
+    public static void runSelectedFreezeProfile(@NonNull Context context, @NonNull TileActionHost host) {
         BaseProfile profile;
         try {
             profile = QuickFreezeTileController.loadSelectedProfile();
         } catch (IOException | JSONException e) {
             Log.e(TAG, "Could not load quick freeze profile.", e);
-            updateTile(Tile.STATE_UNAVAILABLE);
+            host.showTileState(Tile.STATE_UNAVAILABLE);
             UIUtils.displayShortToast(R.string.quick_freeze_tile_profile_missing);
-            openProfilesAndCollapse();
+            openProfiles(context, host);
             return;
         }
         if (profile == null) {
-            updateTile(Tile.STATE_UNAVAILABLE);
+            host.showTileState(Tile.STATE_UNAVAILABLE);
             UIUtils.displayShortToast(R.string.quick_freeze_tile_no_profile);
-            openProfilesAndCollapse();
+            openProfiles(context, host);
             return;
         }
         if (!QuickFreezeTileController.isProfileEligible(profile)) {
-            updateTile(Tile.STATE_UNAVAILABLE);
+            host.showTileState(Tile.STATE_UNAVAILABLE);
             UIUtils.displayShortToast(R.string.quick_freeze_tile_requires_freeze);
-            openProfilesAndCollapse();
+            openProfiles(context, host);
             return;
         }
-        updateTile(Tile.STATE_ACTIVE);
-        Intent intent = ProfileApplierService.getIntent(this,
+        host.showTileState(Tile.STATE_ACTIVE);
+        Intent intent = ProfileApplierService.getIntent(context,
                 ProfileQueueItem.fromProfile(profile, BaseProfile.STATE_ON), true);
-        ContextCompat.startForegroundService(this, intent);
+        ContextCompat.startForegroundService(context, intent);
         UIUtils.displayShortToast(R.string.quick_freeze_tile_started, profile.name);
+    }
+
+    private static void openProfiles(@NonNull Context context, @NonNull TileActionHost host) {
+        host.openScreen(new Intent(context, ProfilesActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));
+    }
+
+    @Override
+    public void showTileState(int state) {
+        updateTile(state);
+    }
+
+    @Override
+    public void openScreen(@NonNull Intent intent) {
+        launch(intent);
+    }
+
+    @VisibleForTesting
+    void launch(@NonNull Intent intent) {
+        QuickOpenTileService.startAndCollapse(this, intent);
     }
 
     private void updateTile(int configuredState) {
@@ -133,18 +152,5 @@ public class QuickFreezeTileService extends TileService {
             tile.setState(configuredState);
         }
         tile.updateTile();
-    }
-
-    @SuppressWarnings("deprecation")
-    private void openProfilesAndCollapse() {
-        Intent intent = new Intent(this, ProfilesActivity.class)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            PendingIntent pendingIntent = PendingIntentCompat.getActivity(this, 0, intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT, false);
-            startActivityAndCollapse(pendingIntent);
-            return;
-        }
-        startActivityAndCollapse(intent);
     }
 }

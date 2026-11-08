@@ -23,7 +23,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
 import org.robolectric.shadow.api.Shadow;
 import org.robolectric.shadows.ShadowLooper;
 import org.robolectric.shadows.ShadowSettings;
@@ -32,6 +34,7 @@ import org.robolectric.shadows.ShadowToast;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
+import io.github.muntashirakon.AppManager.shortcut.TileActionActivity;
 
 @RunWith(RobolectricTestRunner.class)
 public class TopAppOverlayTileServiceTest {
@@ -143,8 +146,50 @@ public class TopAppOverlayTileServiceTest {
         assertEquals(Tile.STATE_INACTIVE, mTile.getQsTile().getState());
     }
 
+    // Android 14 and later drop unlockAndRun's callback once the panel closes for the PIN, so a tap on the lock screen
+    // did nothing (#25). The tile starts a screen the system holds back until the PIN is in, and that screen toggles.
     @Test
-    public void aLockedPhoneUnlocksBeforeTheTileActs() {
+    public void aLockedPhoneTogglesOnlyOnceThePinIsIn() {
+        ShadowSettings.setCanDrawOverlays(true);
+        turnAccessibilityOn();
+        ShadowTileService shadow = Shadow.extract(mTile);
+        shadow.setLocked(true);
+
+        click();
+
+        assertTrue("the click must not go through unlockAndRun", mTile.isLocked());
+        assertNull("nothing happens before the PIN", shadowOf(mApp).getNextStartedService());
+        assertNotNull(mTile.launched);
+        assertEquals(new ComponentName(mApp, TileActionActivity.class), mTile.launched.getComponent());
+
+        TileActionActivity unlocked = Robolectric.buildActivity(TileActionActivity.class, mTile.launched).create().get();
+        ShadowLooper.idleMainLooper();
+
+        Intent started = shadowOf(mApp).getNextStartedService();
+        assertNotNull(started);
+        assertEquals(new ComponentName(mApp, TopAppOverlayService.class), started.getComponent());
+        assertTrue(unlocked.isFinishing());
+    }
+
+    @Test
+    public void aSettingsScreenNeededAfterTheUnlockStillOpens() {
+        ShadowSettings.setCanDrawOverlays(false);
+        turnAccessibilityOn();
+        ShadowTileService shadow = Shadow.extract(mTile);
+        shadow.setLocked(true);
+        click();
+
+        TileActionActivity unlocked = Robolectric.buildActivity(TileActionActivity.class, mTile.launched).create().get();
+
+        Intent opened = shadowOf(unlocked).getNextStartedActivity();
+        assertNotNull(opened);
+        assertEquals(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, opened.getAction());
+        assertEquals(mApp.getString(R.string.top_app_overlay_needs_overlay), ShadowToast.getTextOfLatestToast());
+    }
+
+    @Test
+    @Config(sdk = 33)
+    public void belowAndroid14ALockedPhoneUnlocksBeforeTheTileActs() {
         ShadowSettings.setCanDrawOverlays(true);
         turnAccessibilityOn();
         ShadowTileService shadow = Shadow.extract(mTile);
@@ -153,6 +198,7 @@ public class TopAppOverlayTileServiceTest {
         click();
 
         assertFalse(mTile.isLocked());
+        assertNull(mTile.launched);
         assertNotNull(shadowOf(mApp).getNextStartedService());
     }
 

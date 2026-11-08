@@ -24,6 +24,7 @@ import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
 import org.robolectric.shadow.api.Shadow;
 import org.robolectric.shadows.ShadowLooper;
 import org.robolectric.shadows.ShadowTileService;
@@ -109,15 +110,30 @@ public class QuickOpenTileServiceTest {
         assertEquals(new ComponentName(mContext, ProfilesActivity.class), tile.launched.getComponent());
     }
 
+    // Android 14 and later drop unlockAndRun's callback once the panel closes for the PIN, so a tap on the lock
+    // screen left the user on the home screen (#25). The screen's own pending intent waits for the PIN instead.
     @Test
-    public void clickOnALockedDeviceGoesThroughUnlock() {
+    public void clickOnALockedDeviceOpensTheScreenBehindThePin() {
         RecordingTile tile = new RecordingTile(mContext, QuickOpenTileService.Target.RUNNING_APPS);
         ShadowTileService shadow = Shadow.extract(tile);
         shadow.setLocked(true);
 
         tile.onClick();
 
-        // Only the shadow's unlockAndRun clears the locked state, so this proves the click went through it.
+        // Only the shadow's unlockAndRun clears the locked state, so this proves the click didn't go through it.
+        assertTrue(tile.isLocked());
+        assertEquals(new ComponentName(mContext, RunningAppsActivity.class), tile.launched.getComponent());
+    }
+
+    @Test
+    @Config(sdk = 33)
+    public void belowAndroid14ClickOnALockedDeviceGoesThroughUnlock() {
+        RecordingTile tile = new RecordingTile(mContext, QuickOpenTileService.Target.RUNNING_APPS);
+        ShadowTileService shadow = Shadow.extract(tile);
+        shadow.setLocked(true);
+
+        tile.onClick();
+
         assertFalse(tile.isLocked());
         assertEquals(new ComponentName(mContext, RunningAppsActivity.class), tile.launched.getComponent());
     }
