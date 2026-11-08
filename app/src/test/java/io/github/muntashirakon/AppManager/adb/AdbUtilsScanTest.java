@@ -7,6 +7,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import android.os.Build;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -14,7 +16,10 @@ import org.robolectric.RobolectricTestRunner;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+
+import io.github.muntashirakon.adb.android.AdbMdns;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -79,6 +84,23 @@ public class AdbUtilsScanTest {
         } finally {
             Thread.interrupted();
         }
+    }
+
+    @Test
+    public void wirelessDebuggingLooksOnlyForItsOwnService() {
+        // A plain port opened by adb tcpip is advertised too and could answer first
+        assertEquals(Collections.singletonList(AdbMdns.SERVICE_TYPE_TLS_CONNECT),
+                AdbUtils.serviceTypes(Build.VERSION_CODES.R, true));
+        assertEquals(Collections.singletonList(AdbMdns.SERVICE_TYPE_TLS_CONNECT),
+                AdbUtils.serviceTypes(36, true));
+    }
+
+    @Test
+    public void otherModesTakeWhicheverServiceAnswers() {
+        assertEquals(Arrays.asList(AdbMdns.SERVICE_TYPE_ADB, AdbMdns.SERVICE_TYPE_TLS_CONNECT),
+                AdbUtils.serviceTypes(Build.VERSION_CODES.R, false));
+        assertEquals(Collections.singletonList(AdbMdns.SERVICE_TYPE_ADB),
+                AdbUtils.serviceTypes(Build.VERSION_CODES.O_MR1, false));
     }
 
     private AdbUtils.Scanner scanner(String name, boolean failStart, boolean failStop) {
