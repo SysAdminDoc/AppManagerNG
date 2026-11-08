@@ -57,9 +57,13 @@ public class AdbUtils {
         return false;
     }
 
+    /**
+     * @param wirelessDebuggingOnly look only for Wireless debugging's own service
+     */
     @WorkerThread
     @NonNull
-    public static Pair<String, Integer> getLatestAdbDaemon(@NonNull Context context, long timeout, @NonNull TimeUnit unit)
+    public static Pair<String, Integer> getLatestAdbDaemon(@NonNull Context context, long timeout, @NonNull TimeUnit unit,
+                                                           boolean wirelessDebuggingOnly)
             throws InterruptedException, IOException {
         if (!isAdbdRunning()) {
             throw new IOException("ADB daemon not running.");
@@ -76,9 +80,8 @@ public class AdbUtils {
             resolveHostAndPort.countDown();
         };
         List<Scanner> scanners = new ArrayList<>(2);
-        scanners.add(scanner(new AdbMdns(context, AdbMdns.SERVICE_TYPE_ADB, listener)));
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            scanners.add(scanner(new AdbMdns(context, AdbMdns.SERVICE_TYPE_TLS_CONNECT, listener)));
+        for (String serviceType : serviceTypes(Build.VERSION.SDK_INT, wirelessDebuggingOnly)) {
+            scanners.add(scanner(new AdbMdns(context, serviceType, listener)));
         }
         scan(scanners, resolveHostAndPort, timeout, unit);
 
@@ -88,6 +91,21 @@ public class AdbUtils {
             throw new IOException("Could not find any valid host address or port");
         }
         return new Pair<>(host, port);
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static List<String> serviceTypes(int sdk, boolean wirelessDebuggingOnly) {
+        List<String> serviceTypes = new ArrayList<>(2);
+        // Wireless debugging needs its own TLS port. A plain port that adb tcpip opened earlier is
+        // advertised too, and taking whichever answered first could land on it.
+        if (!wirelessDebuggingOnly) {
+            serviceTypes.add(AdbMdns.SERVICE_TYPE_ADB);
+        }
+        if (sdk >= Build.VERSION_CODES.P) {
+            serviceTypes.add(AdbMdns.SERVICE_TYPE_TLS_CONNECT);
+        }
+        return serviceTypes;
     }
 
     /**

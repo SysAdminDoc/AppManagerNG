@@ -538,7 +538,7 @@ public class Ops {
                     sIsRoot = sIsSystem = false;
                     sIsAdb = true;
                     sIsShizuku = false;
-                    connectAdbFull(findAdbPort(context, 10, AdbUtils.getAdbPortOrDefault()));
+                    connectAdbFull(findAdbPort(context, 10, AdbUtils.getAdbPortOrDefault(), false));
                     AdbFailure.clear();
                     return checkRootOrIncompleteUsbDebuggingInAdb();
             }
@@ -706,7 +706,7 @@ public class Ops {
         }
         sIsAdb = true; // First enable ADB if not already
         try {
-            connectAdbFull(findAdbPort(context, 7, ServerConfig.getAdbPort()));
+            connectAdbFull(findAdbPort(context, 7, ServerConfig.getAdbPort(), false));
         } catch (Throwable e) {
             Log.e(TAG, e);
         }
@@ -818,7 +818,7 @@ public class Ops {
         sIsAdb = true;
         sIsSystem = sIsRoot = false;
         try {
-            connectAdbFull(findAdbPort(context, 5, ServerConfig.getAdbPort()));
+            connectAdbFull(findAdbPort(context, 5, ServerConfig.getAdbPort(), true));
             AdbFailure.clear();
             return checkRootOrIncompleteUsbDebuggingInAdb();
         } catch (RemoteException | IOException | AdbPairingRequiredException | RuntimeException e) {
@@ -1053,7 +1053,7 @@ public class Ops {
         try {
             int status = pairAdbInternal(context);
             if (status == STATUS_ADB_CONNECT_REQUIRED) {
-                return connectAdb(context, findAdbPort(context, 7, ServerConfig.getAdbPort()),
+                return connectAdb(context, findAdbPort(context, 7, ServerConfig.getAdbPort(), true),
                         STATUS_ADB_CONNECT_REQUIRED);
             }
         } catch (Exception e) {
@@ -1343,17 +1343,22 @@ public class Ops {
     @WorkerThread
     @RequiresApi(Build.VERSION_CODES.R)
     @NoOps
-    private static int findAdbPort(@NonNull Context context, long timeoutInSeconds)
+    private static int findAdbPort(@NonNull Context context, long timeoutInSeconds, boolean wirelessDebuggingOnly)
             throws IOException, InterruptedException {
         if (isLocalNetworkPermissionMissing(context)) {
             throw new IOException("Local network permission not granted.");
         }
-        return AdbUtils.getLatestAdbDaemon(context, timeoutInSeconds, TimeUnit.SECONDS).second;
+        return AdbUtils.getLatestAdbDaemon(context, timeoutInSeconds, TimeUnit.SECONDS, wirelessDebuggingOnly).second;
     }
 
+    /**
+     * @param wirelessDebuggingOnly skip the plain port that {@code adb tcpip} advertises, which can
+     *                              answer first while Wireless debugging is also on
+     */
     @WorkerThread
     @NoOps
-    private static int findAdbPort(@NonNull Context context, long timeoutInSeconds, int defaultPort)
+    private static int findAdbPort(@NonNull Context context, long timeoutInSeconds, int defaultPort,
+                                   boolean wirelessDebuggingOnly)
             throws IOException {
         if (!AdbUtils.isAdbdRunning()) {
             throw new IOException("ADB daemon not running.");
@@ -1364,7 +1369,7 @@ public class Ops {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             // Find ADB port only in Android 11 (R) or later
             try {
-                return findAdbPort(context, timeoutInSeconds);
+                return findAdbPort(context, timeoutInSeconds, wirelessDebuggingOnly);
             } catch (InterruptedException e) {
                 // The attempt was cancelled, so it ends here instead of trying the default port
                 Thread.currentThread().interrupt();
