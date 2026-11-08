@@ -129,6 +129,7 @@ public class LanSyncViewModel extends AndroidViewModel {
     // Guarded by mLock
     @Nullable
     private LanSyncHost mHost;
+    private int mHostPort;
     private int mShareGeneration;
     @Nullable
     private LanSyncDiscovery mDiscovery;
@@ -278,10 +279,10 @@ public class LanSyncViewModel extends AndroidViewModel {
                     // The same port as last time keeps other devices' cached announcement right
                     port = host.start(mTrust.getHostPort());
                     mHost = host;
+                    mHostPort = port;
                 }
                 mTrust.setHostPort(port);
-                mHostStatus.postValue(getApplication().getString(R.string.lan_sync_share_waiting,
-                        deviceName(getApplication()), port));
+                mHostStatus.postValue(waitingStatus(port));
             } catch (IOException | GeneralSecurityException | RuntimeException e) {
                 Log.w(TAG, "Could not start sharing", e);
                 synchronized (mLock) {
@@ -314,6 +315,11 @@ public class LanSyncViewModel extends AndroidViewModel {
         mSharing.setValue(false);
         mHostStatus.setValue(null);
         mApproval.setValue(null);
+    }
+
+    @NonNull
+    private String waitingStatus(int port) {
+        return getApplication().getString(R.string.lan_sync_share_waiting, deviceName(getApplication()), port);
     }
 
     @VisibleForTesting
@@ -385,11 +391,13 @@ public class LanSyncViewModel extends AndroidViewModel {
                 return;
             }
             LanSyncHost host;
+            int port;
             synchronized (mLock) {
                 host = mHost;
+                port = mHostPort;
             }
-            mHostStatus.postValue(host == null ? null : getApplication().getString(R.string.lan_sync_share_ready,
-                    deviceName(getApplication())));
+            // The next device may need the port to type the address by hand
+            mHostStatus.postValue(host == null ? null : waitingStatus(port));
             if (error != null) {
                 mMessage.postValue(getApplication().getString(R.string.lan_sync_share_session_ended, error));
             }

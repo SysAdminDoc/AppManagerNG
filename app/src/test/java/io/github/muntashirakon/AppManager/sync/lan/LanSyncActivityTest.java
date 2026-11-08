@@ -23,6 +23,7 @@ import android.net.nsd.NsdServiceInfo;
 import android.os.Looper;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -43,6 +44,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.shadow.api.Shadow;
 import org.robolectric.shadows.ShadowNsdManager;
+import org.robolectric.shadows.ShadowToast;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -173,6 +175,29 @@ public class LanSyncActivityTest {
             MaterialSwitch share = mController.get().findViewById(R.id.share_switch);
             assertTrue(share.isChecked());
         }
+    }
+
+    @Test
+    public void thePortStaysOnScreenAfterADeviceLeaves() throws Exception {
+        LanSyncActivity activity = mController.get();
+        LanSyncViewModel viewModel = new ViewModelProvider(activity).get(LanSyncViewModel.class);
+        ShadowNsdManager nsd = Shadow.extract(ApplicationProvider.getApplicationContext()
+                .getSystemService(Context.NSD_SERVICE));
+        TextView status = activity.findViewById(R.id.share_status);
+        activity.findViewById(R.id.share_switch).performClick();
+        int port = announcedPort(nsd, waitFor(viewModel::getHost));
+        String portText = "port " + port;
+        waitFor(() -> status.getText().toString().contains(portText) ? Boolean.TRUE : null);
+
+        // A device that connects and goes away ends a session
+        try (Socket socket = new Socket()) {
+            socket.connect(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), 2000);
+        }
+        waitFor(ShadowToast::getTextOfLatestToast);
+        shadowOf(Looper.getMainLooper()).idle();
+
+        // Typing the address by hand on the next device still needs the port
+        assertTrue(status.getText().toString(), status.getText().toString().contains(portText));
     }
 
     private static int announcedPort(@NonNull ShadowNsdManager nsd, @NonNull LanSyncHost host) {
