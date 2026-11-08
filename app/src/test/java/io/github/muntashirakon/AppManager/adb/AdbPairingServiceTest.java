@@ -24,6 +24,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ServiceController;
+import org.robolectric.shadows.ShadowBuild;
 import org.robolectric.shadows.ShadowLooper;
 
 import java.io.IOException;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.muntashirakon.AppManager.R;
 
@@ -135,6 +137,34 @@ public class AdbPairingServiceTest {
             assertTrue(shadowOf(service).isStoppedBySelf());
         } finally {
             pairingEnds.countDown();
+            controller.destroy();
+        }
+    }
+
+    @Test(timeout = 60_000)
+    public void anEmulatorPairsWithItself() throws Exception {
+        // Wireless debugging's pairing port is on the device. Pairing an emulator went to the
+        // computer (10.0.2.2) and was always refused.
+        ShadowBuild.setHardware("ranchu");
+        Application app = ApplicationProvider.getApplicationContext();
+        shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
+        ServiceController<AdbPairingService> controller = Robolectric.buildService(AdbPairingService.class).create();
+        AdbPairingService service = controller.get();
+        AtomicReference<String> pairedWith = new AtomicReference<>();
+        CountDownLatch paired = new CountDownLatch(1);
+        service.setPairer((host, port, code) -> {
+            pairedWith.set(host + ":" + port);
+            paired.countDown();
+        });
+        try {
+            service.onStartCommand(AdbPairingService.getStartSearchingIntent(app), 0, 1);
+            AdbPairingRequest request = AdbPairingRequest.create(36353, "666902");
+            assertNotNull(request);
+            service.onStartCommand(AdbPairingService.getStartPairingIntent(app, request), 0, 2);
+
+            assertTrue(paired.await(20, TimeUnit.SECONDS));
+            assertEquals("127.0.0.1:36353", pairedWith.get());
+        } finally {
             controller.destroy();
         }
     }
