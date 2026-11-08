@@ -14,8 +14,11 @@ import androidx.lifecycle.MutableLiveData;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
+import java.security.GeneralSecurityException;
+import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -230,10 +233,26 @@ public class AdbConnectionManager extends AbsAdbConnectionManager {
         }
     }
 
+    /**
+     * A copy of the stored key for each caller. libadb destroys the key of every connection it
+     * closes, and the stored one is Bouncy Castle's when it comes from the keystore, so it really
+     * goes: after a switch to a new port each later connection failed its TLS handshake with
+     * "key destroyed", or its authentication on a plain port.
+     */
     @NonNull
     @Override
     protected PrivateKey getPrivateKey() {
-        return mKeyPair.getPrivateKey();
+        PrivateKey key = mKeyPair.getPrivateKey();
+        byte[] encoded = key.getEncoded();
+        if (encoded == null) {
+            return key;
+        }
+        try {
+            return KeyFactory.getInstance(key.getAlgorithm()).generatePrivate(new PKCS8EncodedKeySpec(encoded));
+        } catch (GeneralSecurityException e) {
+            Log.w(TAG, "Could not copy the ADB key", e);
+            return key;
+        }
     }
 
     @NonNull
