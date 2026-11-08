@@ -267,9 +267,11 @@ public class LanSyncViewModel extends AndroidViewModel {
                     if (generation != mShareGeneration) {
                         return;
                     }
-                    port = host.start();
+                    // The same port as last time keeps other devices' cached announcement right
+                    port = host.start(mTrust.getHostPort());
                     mHost = host;
                 }
+                mTrust.setHostPort(port);
                 mHostStatus.postValue(getApplication().getString(R.string.lan_sync_share_waiting,
                         deviceName(getApplication()), port));
             } catch (IOException | GeneralSecurityException | RuntimeException e) {

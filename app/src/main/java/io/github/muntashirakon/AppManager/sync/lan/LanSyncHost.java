@@ -16,8 +16,9 @@ import java.net.Socket;
 import java.security.SecureRandom;
 
 /**
- * The sharing side of Local sync. Listens on a random port, announces itself over NSD, and serves
- * one paired client at a time. It only runs while the Local sync screen is open with sharing on:
+ * The sharing side of Local sync. Listens on the port it had last time (or any free one),
+ * announces itself over NSD, and serves one paired client at a time. It only runs while the
+ * Local sync screen is open with sharing on:
  * {@link #stop()} closes every socket, withdraws the announcement and turns down any pending
  * pairing request.
  */
@@ -85,21 +86,31 @@ public final class LanSyncHost {
     }
 
     /**
-     * Opens the listening socket and announces it. Returns the port.
+     * Opens the listening socket on any free port and announces it. Returns the port.
      */
     public int start() throws IOException {
-        ServerSocket server = new ServerSocket();
+        return start(0);
+    }
+
+    /**
+     * Opens the listening socket on {@code preferredPort} when it's free, otherwise on any free
+     * port, and announces it. Returns the port.
+     * <p>
+     * Pass the port from last time. Android 14 and later answer a lookup for a name they've seen
+     * from their cache, and a search never hears that the same name came back on another port, so
+     * a nearby device would keep offering the old one.
+     */
+    public int start(int preferredPort) throws IOException {
+        ServerSocket server;
         synchronized (mLock) {
             if (mStarted || mStopped) {
                 // A stop that came first means sharing was turned off before this got going
-                closeQuietly(server);
                 throw new IllegalStateException(mStopped ? "Already stopped" : "Already started");
             }
             mStarted = true;
             try {
-                server.bind(new InetSocketAddress(0), BACKLOG);
+                server = bind(preferredPort);
             } catch (IOException e) {
-                closeQuietly(server);
                 mStopped = true;
                 throw e;
             }
@@ -110,6 +121,32 @@ public final class LanSyncHost {
         acceptThread.start();
         register(server.getLocalPort());
         return server.getLocalPort();
+    }
+
+    @NonNull
+    private static ServerSocket bind(int preferredPort) throws IOException {
+        if (preferredPort > 0 && preferredPort <= 0xFFFF) {
+            try {
+                return bindTo(preferredPort);
+            } catch (IOException ignore) {
+                // Something else has it now, so any free port will do
+            }
+        }
+        return bindTo(0);
+    }
+
+    @NonNull
+    private static ServerSocket bindTo(int port) throws IOException {
+        ServerSocket server = new ServerSocket();
+        try {
+            // Lets the port be reused while the last session's connection is still in TIME_WAIT
+            server.setReuseAddress(true);
+            server.bind(new InetSocketAddress(port), BACKLOG);
+            return server;
+        } catch (IOException e) {
+            closeQuietly(server);
+            throw e;
+        }
     }
 
     public void stop() {

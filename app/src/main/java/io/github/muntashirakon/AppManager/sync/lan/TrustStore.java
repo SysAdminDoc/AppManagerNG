@@ -14,15 +14,16 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * This device's Local sync identity key and the devices it remembers. Kept in its own preference
- * file that backups and device transfers leave out, so a copy of the key never shows up on
- * another phone.
+ * This device's Local sync identity key, the devices it remembers and the port it last shared on.
+ * Kept in its own preference file that backups and device transfers leave out, so a copy of the
+ * key never shows up on another phone.
  */
 public final class TrustStore implements TrustedDevices {
     public static final String PREFS_NAME = "lan_sync_trust";
     private static final String KEY_IDENTITY_PRIVATE = "identity_private";
     private static final String KEY_IDENTITY_PUBLIC = "identity_public";
     private static final String TRUSTED_PREFIX = "trusted.";
+    private static final String KEY_HOST_PORT = "host_port";
 
     @NonNull
     private final SharedPreferences mPrefs;
@@ -54,6 +55,17 @@ public final class TrustStore implements TrustedDevices {
                 .putString(KEY_IDENTITY_PUBLIC, SyncCrypto.toHex(identity.getPublicPoint()))
                 .apply();
         return identity;
+    }
+
+    /**
+     * The port sharing listened on last time, or 0 before the first time.
+     */
+    public synchronized int getHostPort() {
+        return mPrefs.getInt(KEY_HOST_PORT, 0);
+    }
+
+    public synchronized void setHostPort(int port) {
+        mPrefs.edit().putInt(KEY_HOST_PORT, port).apply();
     }
 
     @Override
