@@ -426,17 +426,15 @@ public final class Prefs {
             AppPref.set(AppPref.PrefKey.PREF_BACKUP_SCHEDULE_LAST_ORIGIN_STR, origin);
         }
 
-        public static boolean backupDirectoryExists() {
+        /**
+         * Whether the volume picked for backups is there. Only the volume counts: the AppManager folder inside it is
+         * made by the first backup, so a missing folder means nothing has been backed up yet.
+         */
+        public static boolean backupVolumeExists() {
             Uri uri = Storage.getVolumePath();
-            Path path;
-            if (uri.getScheme().equals(ContentResolver.SCHEME_FILE)) {
-                // Append AppManager only if storage permissions are granted
-                String newPath = uri.getPath();
-                if (SelfPermissions.checkStoragePermission()) {
-                    newPath += Paths.PATH_SEPARATOR + "AppManager";
-                }
-                path = Paths.get(newPath);
-            } else path = Paths.get(uri);
+            Path path = ContentResolver.SCHEME_FILE.equals(uri.getScheme())
+                    ? Paths.get(Objects.requireNonNull(uri.getPath()))
+                    : Paths.get(uri);
             return path.exists();
         }
     }

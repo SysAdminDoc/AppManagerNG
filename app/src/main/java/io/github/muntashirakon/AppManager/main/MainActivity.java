@@ -735,7 +735,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             mAppUsageMenu.setVisible(FeatureController.isUsageAccessEnabled());
         }
         // Check for backup volume
-        if (!Prefs.BackupRestore.backupDirectoryExists()) {
+        if (!Prefs.BackupRestore.backupVolumeExists()) {
             new MaterialAlertDialogBuilder(this)
                     .setTitle(R.string.backup_volume)
                     .setMessage(R.string.backup_volume_unavailable_warning)
