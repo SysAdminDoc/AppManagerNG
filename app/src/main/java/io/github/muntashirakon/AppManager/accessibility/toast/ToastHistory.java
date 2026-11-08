@@ -107,8 +107,9 @@ public final class ToastHistory {
     public void record(long timestampMillis, @NonNull String packageName, @NonNull String text) {
         mWorker.execute(() -> {
             try {
-                mDao.insertAndPrune(new ToastEntry(timestampMillis, packageName, labelOf(packageName), text),
-                        cutoffMillis(), MAX_ENTRIES);
+                String label = mLabels.labelOf(packageName);
+                mDao.insertAndPrune(new ToastEntry(timestampMillis, packageName, cutLabel(label),
+                        withoutAppName(text, label)), cutoffMillis(), MAX_ENTRIES);
                 mSaveFailing = false;
                 announceChange();
             } catch (SQLException e) {
@@ -179,9 +180,21 @@ public final class ToastHistory {
     }
 
     @NonNull
-    private String labelOf(@NonNull String packageName) {
-        String label = mLabels.labelOf(packageName);
+    private static String cutLabel(@NonNull String label) {
         return label.length() > MAX_LABEL_LENGTH ? label.substring(0, MAX_LABEL_LENGTH) : label;
+    }
+
+    /**
+     * From Android 12 SystemUI draws the app's icon and name beside a toast's message, and the name arrives as the
+     * event's last line. The entry already names the app, so the line only gets in the way.
+     */
+    @NonNull
+    private static String withoutAppName(@NonNull String text, @NonNull String label) {
+        String suffix = "\n" + label;
+        if (!label.isEmpty() && text.length() > suffix.length() && text.endsWith(suffix)) {
+            return text.substring(0, text.length() - suffix.length()).trim();
+        }
+        return text;
     }
 
     @NonNull
