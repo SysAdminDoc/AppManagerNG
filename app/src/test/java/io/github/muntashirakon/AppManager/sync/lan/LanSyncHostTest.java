@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.sync.lan;
 import static io.github.muntashirakon.AppManager.sync.lan.SyncFixtures.SIGNER_A;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
@@ -148,6 +149,30 @@ public class LanSyncHostTest {
         assertThrows(IllegalStateException.class, early::start);
         assertFalse(early.isRunning());
         assertNull(early.getRegistrationListener());
+    }
+
+    @Test
+    public void startTakesThePreferredPortAndFallsBackWhenItIsTaken() throws Exception {
+        mHost = newHost(mNsd);
+        int port = mHost.start();
+        mHost.stop();
+
+        mHost = newHost(mNsd);
+        assertEquals(port, mHost.start(port));
+        NsdServiceInfo info = mShadowNsd.getRegisteredServiceInfo(mHost.getRegistrationListener());
+        assertNotNull(info);
+        assertEquals(port, info.getPort());
+
+        // Still held by the running host: a second one opens on a free port instead of failing
+        LanSyncHost other = newHost(null);
+        try {
+            int otherPort = other.start(port);
+            assertTrue(otherPort > 0);
+            assertNotEquals(port, otherPort);
+            assertTrue(other.isRunning());
+        } finally {
+            other.stop();
+        }
     }
 
     @Test

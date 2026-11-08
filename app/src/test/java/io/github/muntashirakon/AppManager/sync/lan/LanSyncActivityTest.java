@@ -128,6 +128,34 @@ public class LanSyncActivityTest {
     }
 
     @Test
+    public void sharingAgainAfterComingBackAnnouncesTheSamePort() throws Exception {
+        LanSyncActivity activity = mController.get();
+        LanSyncViewModel viewModel = new ViewModelProvider(activity).get(LanSyncViewModel.class);
+        ShadowNsdManager nsd = Shadow.extract(ApplicationProvider.getApplicationContext()
+                .getSystemService(Context.NSD_SERVICE));
+        MaterialSwitch share = activity.findViewById(R.id.share_switch);
+
+        share.performClick();
+        int first = announcedPort(nsd, waitFor(viewModel::getHost));
+        mController.pause().stop();
+        mController.restart().resume();
+        assertNull(viewModel.getHost());
+
+        share.performClick();
+        int second = announcedPort(nsd, waitFor(viewModel::getHost));
+        // A nearby device that cached the first announcement still reaches this one
+        assertEquals(first, second);
+    }
+
+    private static int announcedPort(@NonNull ShadowNsdManager nsd, @NonNull LanSyncHost host) {
+        NsdManager.RegistrationListener registration = host.getRegistrationListener();
+        assertNotNull(registration);
+        NsdServiceInfo info = nsd.getRegisteredServiceInfo(registration);
+        assertNotNull(info);
+        return info.getPort();
+    }
+
+    @Test
     public void aTypedAddressMustBeNumericAndOnTheLocalNetwork() throws Exception {
         LanSyncActivity activity = mController.get();
         LanSyncViewModel viewModel = new ViewModelProvider(activity).get(LanSyncViewModel.class);
