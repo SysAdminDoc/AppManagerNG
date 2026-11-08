@@ -251,6 +251,10 @@ def verify_build_gradle(
             errors.append(str(exc))
     receipt_version = _version_tuple(receipt["versionName"], "receipt versionName")
     exact_tags = _exact_release_tags(repo_root)
+    # The receipt is bound in a commit after its tag, so a release tag's own commit still carries
+    # the previous release's receipt. A tagged tree must therefore be strictly ahead of the
+    # receipt, unless the receipt already names that very tag.
+    receipt_names_tag = bool(exact_tags) and f"v{tree_version_name}" == receipt["tag"]
     if tree_version_name is None:
         errors.append(f"{path}: versionName missing")
     elif exact_tags:
@@ -261,9 +265,15 @@ def verify_build_gradle(
                 f"{path}: exact Git tag(s) {', '.join(mismatched_tags)} "
                 f"do not match versionName {tree_version_name}"
             )
-        elif tree_version_name != receipt["versionName"]:
+        elif receipt_names_tag:
+            if tree_version_name != receipt["versionName"]:
+                errors.append(
+                    f"{path}: tagged versionName {tree_version_name} != "
+                    f"published receipt {receipt['versionName']}"
+                )
+        elif tree_version is not None and tree_version <= receipt_version:
             errors.append(
-                f"{path}: tagged versionName {tree_version_name} != "
+                f"{path}: tagged versionName {tree_version_name} is not ahead of "
                 f"published receipt {receipt['versionName']}"
             )
     elif tree_version is not None and tree_version < receipt_version:
@@ -273,9 +283,14 @@ def verify_build_gradle(
         )
     if not code_match:
         errors.append(f"{path}: versionCode missing")
-    elif exact_tags and int(code_match.group(1)) != receipt["versionCode"]:
+    elif receipt_names_tag and int(code_match.group(1)) != receipt["versionCode"]:
         errors.append(
             f"{path}: tagged versionCode {code_match.group(1)} != "
+            f"published receipt {receipt['versionCode']}"
+        )
+    elif exact_tags and not receipt_names_tag and int(code_match.group(1)) <= receipt["versionCode"]:
+        errors.append(
+            f"{path}: tagged versionCode {code_match.group(1)} is not ahead of "
             f"published receipt {receipt['versionCode']}"
         )
     elif not exact_tags and int(code_match.group(1)) < receipt["versionCode"]:
