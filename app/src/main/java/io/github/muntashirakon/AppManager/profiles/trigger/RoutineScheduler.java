@@ -31,6 +31,7 @@ import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.self.PackageEventSync;
 
 public final class RoutineScheduler {
     public static final String WORK_TAG = "routine_trigger";
@@ -63,6 +64,10 @@ public final class RoutineScheduler {
             // jobs for enabled broadcast triggers; only tear down disabled ones.
             if (!trigger.enabled) {
                 cancel(context, trigger);
+            }
+            if (isPackageEventTrigger(trigger.type)) {
+                // Android 8+ doesn't send these broadcasts to the manifest, so the app change sync has to run.
+                PackageEventSync.scheduleOrCancel(context);
             }
             return;
         }
@@ -351,6 +356,16 @@ public final class RoutineScheduler {
     static long getRepeatIntervalMillis(@NonNull ProfileTrigger trigger) {
         return trigger.type == ProfileTrigger.TYPE_TIME_OF_DAY
                 ? DAILY_INTERVAL_MILLIS : MIN_PERIODIC_INTERVAL_MILLIS;
+    }
+
+    /** Whether an enabled routine waits for an app to be installed, updated or removed. */
+    public static boolean hasEnabledPackageEventTrigger(@NonNull Context context) {
+        for (ProfileTrigger trigger : new ProfileTriggerStore(context).all()) {
+            if (trigger.enabled && isPackageEventTrigger(trigger.type)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @VisibleForTesting

@@ -1979,29 +1979,14 @@
         </receiver>
 
         <!--
-            PermissionChangeReceiver — fires the Permission Change Monitor on
-            every package update so the user is alerted when an updated app
-            gains a new dangerous permission. The receiver is always registered
-            (Android requires the manifest entry for the broadcast to reach the
-            app at all) but no-ops unless Settings → Privacy → "Permission
-            change monitor" is enabled. ROADMAP T9 (Permission Change Monitor).
-        -->
-        <!--
-            Not exported: PACKAGE_REPLACED is a protected system broadcast, which the OS
-            still delivers to a non-exported manifest receiver. Keeping it non-exported
-            stops other apps from directly delivering a spoofed intent to drive the
-            snapshot/diff pipeline for an arbitrary package.
+            Package broadcasts only reach this below Android 8; from 8 on the system skips
+            manifest receivers for them. PackageEventSync covers both by comparing the
+            installed apps with its saved list (app start, a runtime receiver, 15 minute job).
+            Not exported: these are protected system broadcasts, which the OS still delivers
+            to a non-exported receiver, and nothing else can send one here.
         -->
         <receiver
-            android:name=".permission.monitor.PermissionChangeReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.intent.action.PACKAGE_REPLACED" />
-                <data android:scheme="package" />
-            </intent-filter>
-        </receiver>
-        <receiver
-            android:name=".profiles.trigger.RoutinePackageChangeReceiver"
+            android:name=".self.PackageChangeReceiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.PACKAGE_ADDED" />

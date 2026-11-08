@@ -72,6 +72,7 @@ import io.github.muntashirakon.AppManager.crypto.auth.AuthManagerActivity;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryPruneScheduler;
 import io.github.muntashirakon.AppManager.scanner.TrackerDatabaseFreshnessChecker;
+import io.github.muntashirakon.AppManager.self.PackageEventSync;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.session.SessionMonitoringService;
 import io.github.muntashirakon.AppManager.snapshot.SnapshotBundle;
@@ -277,6 +278,7 @@ public class PrivacyPreferences extends PreferenceFragment {
         permissionMonitor.setOnPreferenceChangeListener((preference, newValue) -> {
             boolean enabled = (boolean) newValue;
             Prefs.Privacy.setPermissionChangeMonitorEnabled(enabled);
+            PackageEventSync.scheduleOrCancel(requireContext());
             if (enabled) {
                 Context appContext = requireContext().getApplicationContext();
                 ThreadUtils.postOnBackgroundThread(() ->
@@ -327,6 +329,7 @@ public class PrivacyPreferences extends PreferenceFragment {
         signingCertMonitor.setOnPreferenceChangeListener((preference, newValue) -> {
             boolean enabled = (boolean) newValue;
             Prefs.Privacy.setSigningCertChangeMonitorEnabled(enabled);
+            PackageEventSync.scheduleOrCancel(requireContext());
             if (enabled) {
                 Context appContext = requireContext().getApplicationContext();
                 ThreadUtils.postOnBackgroundThread(() ->
@@ -350,6 +353,7 @@ public class PrivacyPreferences extends PreferenceFragment {
         appChangeAuditor.setOnPreferenceChangeListener((preference, newValue) -> {
             boolean enabled = (boolean) newValue;
             Prefs.Privacy.setAppChangeAuditorEnabled(enabled);
+            PackageEventSync.scheduleOrCancel(requireContext());
             if (enabled) {
                 Context appContext = requireContext().getApplicationContext();
                 ThreadUtils.postOnBackgroundThread(() ->
@@ -363,6 +367,7 @@ public class PrivacyPreferences extends PreferenceFragment {
         appUpdateReport.setOnPreferenceChangeListener((preference, newValue) -> {
             boolean enabled = (boolean) newValue;
             Prefs.Privacy.setAppUpdateChangeReportEnabled(enabled);
+            PackageEventSync.scheduleOrCancel(requireContext());
             if (enabled) {
                 Context appContext = requireContext().getApplicationContext();
                 ThreadUtils.postOnBackgroundThread(() -> {

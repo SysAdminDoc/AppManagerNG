@@ -64,9 +64,9 @@ public final class ComponentChangeMonitor {
     /** Refreshes the component snapshot while optionally suppressing the notification. */
     @WorkerThread
     @Nullable
-    static ComponentChangeDiff.Result onPackageReplaced(@NonNull Context appContext,
-                                                        @NonNull String packageName,
-                                                        boolean notify) {
+    public static ComponentChangeDiff.Result onPackageReplaced(@NonNull Context appContext,
+                                                               @NonNull String packageName,
+                                                               boolean notify) {
         if (appContext.getPackageName().equals(packageName)) return null;
         ComponentSnapshotStore store = new ComponentSnapshotStore(appContext);
         ComponentSnapshot before = store.get(packageName);
