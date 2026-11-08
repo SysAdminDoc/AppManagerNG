@@ -20,13 +20,16 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
+import org.robolectric.annotation.Config;
 import org.robolectric.shadow.api.Shadow;
 import org.robolectric.shadows.ShadowNsdManager;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RunWith(RobolectricTestRunner.class)
 public class LanSyncDiscoveryTest {
@@ -81,8 +84,71 @@ public class LanSyncDiscoveryTest {
     }
 
     @Test
+    public void android14AndLaterFollowFoundServices() {
+        assertNotNull(new LanSyncDiscovery(mNsd, OWN_FINGERPRINT, mListener).getFollower());
+    }
+
+    @Test
+    @Config(sdk = 33)
+    public void olderAndroidResolvesFoundServicesOnce() {
+        assertNull(new LanSyncDiscovery(mNsd, OWN_FINGERPRINT, mListener).getFollower());
+    }
+
+    @Test
+    public void aFollowedServiceThatComesBackOnAnotherPortShowsTheNewPort() throws Exception {
+        FakeFollower follower = new FakeFollower();
+        LanSyncDiscovery discovery = new LanSyncDiscovery(mNsd, OWN_FINGERPRINT, mListener, follower);
+        discovery.start();
+        NsdManager.DiscoveryListener found = mShadowNsd.getDiscoveryListeners(LanSyncHost.SERVICE_TYPE).get(0);
+
+        NsdServiceInfo galaxy = unresolved("Galaxy");
+        found.onServiceFound(galaxy);
+        found.onServiceFound(unresolved("Galaxy"));
+        assertEquals("Followed once", 1, follower.sinks.size());
+        assertTrue("Not resolved from the cache", isEmpty(mShadowNsd.getResolveListeners(galaxy)));
+
+        LanSyncDiscovery.FollowSink sink = follower.sinks.get("Galaxy");
+        sink.onUpdated(service("Galaxy", "192.168.1.20", 4000, "1", OTHER_ID));
+        assertEquals(4000, latest().get(0).port);
+        // Sharing was turned off and on again, same name, new port
+        sink.onUpdated(service("Galaxy", "192.168.1.20", 38299, "1", OTHER_ID));
+        assertEquals(1, latest().size());
+        assertEquals(38299, latest().get(0).port);
+
+        sink.onLost();
+        assertTrue(latest().isEmpty());
+        sink.onUpdated(service("Galaxy", "192.168.1.20", 38299, "1", OTHER_ID));
+        assertEquals(1, latest().size());
+
+        found.onServiceLost(galaxy);
+        assertTrue(latest().isEmpty());
+        assertTrue("Stops following a lost service", follower.stopped.contains("Galaxy"));
+
+        NsdServiceInfo me = unresolved("Me");
+        found.onServiceFound(me);
+        int updates = mUpdates.size();
+        follower.sinks.get("Me").onUpdated(service("Me", "192.168.1.21", 4001, "1", OWN_ID));
+        assertEquals("This device's own service is not listed", updates, mUpdates.size());
+
+        // When following can't start, a one-off resolve still finds it
+        NsdServiceInfo pixel = unresolved("Pixel");
+        found.onServiceFound(pixel);
+        follower.sinks.get("Pixel").onFailed(NsdManager.FAILURE_INTERNAL_ERROR);
+        assertEquals(1, mShadowNsd.getResolveListeners(pixel).size());
+        mShadowNsd.getResolveListeners(pixel).get(0)
+                .onServiceResolved(service("Pixel", "192.168.1.22", 4002, "1", OTHER_ID));
+        assertEquals("Pixel", latest().get(0).name);
+
+        discovery.stop();
+        assertTrue(follower.stopped.contains("Me"));
+        updates = mUpdates.size();
+        follower.sinks.get("Me").onUpdated(service("Galaxy", "192.168.1.20", 4000, "1", OTHER_ID));
+        assertEquals("Late updates after stop change nothing", updates, mUpdates.size());
+    }
+
+    @Test
     public void discoveryResolvesFoundServicesAndForgetsLostOnes() throws Exception {
-        LanSyncDiscovery discovery = new LanSyncDiscovery(mNsd, OWN_FINGERPRINT, mListener);
+        LanSyncDiscovery discovery = new LanSyncDiscovery(mNsd, OWN_FINGERPRINT, mListener, null);
         discovery.start();
         List<NsdManager.DiscoveryListener> listeners = mShadowNsd.getDiscoveryListeners(LanSyncHost.SERVICE_TYPE);
         assertEquals(1, listeners.size());
@@ -115,6 +181,25 @@ public class LanSyncDiscoveryTest {
         found.onServiceFound(galaxy);
         assertEquals(2, mUpdates.size());
         discovery.stop();
+    }
+
+    @NonNull
+    private List<LanSyncDiscovery.Peer> latest() {
+        assertTrue(!mUpdates.isEmpty());
+        return mUpdates.get(mUpdates.size() - 1);
+    }
+
+    private static final class FakeFollower implements LanSyncDiscovery.ServiceFollower {
+        final Map<String, LanSyncDiscovery.FollowSink> sinks = new HashMap<>();
+        final List<String> stopped = new ArrayList<>();
+
+        @NonNull
+        @Override
+        public Runnable follow(@NonNull NsdServiceInfo service, @NonNull LanSyncDiscovery.FollowSink sink) {
+            String name = service.getServiceName();
+            sinks.put(name, sink);
+            return () -> stopped.add(name);
+        }
     }
 
     @NonNull
