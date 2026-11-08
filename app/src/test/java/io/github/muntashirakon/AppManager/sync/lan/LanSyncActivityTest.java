@@ -60,6 +60,9 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.R;
@@ -198,6 +201,55 @@ public class LanSyncActivityTest {
 
         // Typing the address by hand on the next device still needs the port
         assertTrue(status.getText().toString(), status.getText().toString().contains(portText));
+    }
+
+    @Test
+    public void forgettingTheConnectedDeviceEndsItsSession() throws Exception {
+        LanSyncActivity activity = mController.get();
+        LanSyncViewModel viewModel = new ViewModelProvider(activity).get(LanSyncViewModel.class);
+        ShadowNsdManager nsd = Shadow.extract(ApplicationProvider.getApplicationContext()
+                .getSystemService(Context.NSD_SERVICE));
+        activity.findViewById(R.id.share_switch).performClick();
+        int port = announcedPort(nsd, waitFor(viewModel::getHost));
+        LocalIdentity clientIdentity = LocalIdentity.generate(new SeededRandom(93));
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            Future<SyncClientSession> pending = executor.submit(() -> new LanSyncConnector().connect(
+                    InetAddress.getLoopbackAddress(), port, "Pixel client", clientIdentity, new SeededRandom(94), null));
+            ApprovalGate.Request request = waitFor(() -> viewModel.getApproval().getValue());
+            viewModel.decide(request, ApprovalGate.Decision.ALLOW_AND_REMEMBER);
+            try (SyncClientSession session = pending.get(10, TimeUnit.SECONDS)) {
+                LanSyncViewModel.TrustedDevice remembered = waitFor(() -> {
+                    List<LanSyncViewModel.TrustedDevice> devices = viewModel.getTrusted().getValue();
+                    return devices != null && devices.size() == 1 ? devices.get(0) : null;
+                });
+                session.ping();
+
+                viewModel.forget(remembered);
+
+                // It can't keep pulling apps on the session it already had
+                long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(3);
+                boolean ended = false;
+                while (!ended && System.nanoTime() < deadline) {
+                    try {
+                        session.ping();
+                        Thread.sleep(50);
+                    } catch (IOException e) {
+                        ended = true;
+                    }
+                }
+                assertTrue("Forgetting the device ends its open session", ended);
+                waitFor(() -> {
+                    List<LanSyncViewModel.TrustedDevice> devices = viewModel.getTrusted().getValue();
+                    return devices != null && devices.isEmpty() ? Boolean.TRUE : null;
+                });
+                assertTrue("Sharing stays on for other devices", waitFor(viewModel::getHost).isRunning());
+                shadowOf(Looper.getMainLooper()).idle();
+                assertNull("Ending it on purpose isn't reported as a failure", ShadowToast.getTextOfLatestToast());
+            }
+        } finally {
+            executor.shutdownNow();
+        }
     }
 
     private static int announcedPort(@NonNull ShadowNsdManager nsd, @NonNull LanSyncHost host) {
@@ -358,7 +410,7 @@ public class LanSyncActivityTest {
             }
 
             @Override
-            public void onClientAccepted(@NonNull String peerName) {
+            public void onClientAccepted(@NonNull String peerName, @NonNull String peerFingerprint) {
             }
 
             @Override
