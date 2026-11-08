@@ -12,6 +12,7 @@ import android.service.quicksettings.TileService;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.VisibleForTesting;
 
 import io.github.muntashirakon.AppManager.R;
@@ -27,7 +28,9 @@ import io.github.muntashirakon.AppManager.utils.UIUtils;
  * listening, and it stops as soon as the panel closes for the PIN, so a tap on the lock screen did nothing (#25). A tile
  * tapped on a locked phone starts this screen through {@link TileService#startActivityAndCollapse(PendingIntent)}
  * instead. The system asks for the PIN before starting it, and it runs the action and closes without showing anything.
+ * Only tiles start it, and tiles need Android 7.
  */
+@RequiresApi(Build.VERSION_CODES.N)
 public class TileActionActivity extends Activity {
     private static final String TAG = TileActionActivity.class.getSimpleName();
     private static final String EXTRA_ACTION = "action";

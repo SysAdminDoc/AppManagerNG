@@ -264,7 +264,8 @@
             android:exported="false"
             android:noHistory="true"
             android:taskAffinity=""
-            android:theme="@android:style/Theme.NoDisplay" />
+            android:theme="@android:style/Theme.NoDisplay"
+            tools:targetApi="24" />
         <activity
             android:name=".shortcut.AutoBackupShortcutActivity"
             android:excludeFromRecents="true"
