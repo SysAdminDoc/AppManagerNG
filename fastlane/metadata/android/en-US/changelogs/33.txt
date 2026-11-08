@@ -1,0 +1,3 @@
+Local sync copies newer app versions between two of your phones on the same Wi-Fi. Watched permissions keep a permission or app op the way you set it. Toast history, new Quick Settings tiles and an app bubble that names the app on top are in too.
+
+Installing without root works again, ADB mode can start its server again, and the code editor, profiles and App Usage no longer crash. The privileged server now uses its own port, apart from upstream App Manager.

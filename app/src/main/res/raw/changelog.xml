@@ -8,6 +8,23 @@
 <changelog>
     <release
         type="stable release"
+        version="v0.7.0"
+        code="33"
+        date="8 November 2026">
+        <new title="Local sync">Two of your phones on the same Wi-Fi can now compare apps and copy newer versions across, once both show the same six digits.</new>
+        <new title="Watched permissions">Long press a permission or app op to keep it the way you set it. Root and ADB modes put it back when something changes it, and other modes tell you what changed.</new>
+        <new title="Toast history">With the accessibility service on, Record toasts keeps toasts from other apps for 30 days so you can see which app showed them.</new>
+        <new title="More tiles and an app bubble">Quick Settings tiles open running apps, usage, profiles and logs. A small bubble names the app on top, which helps track down adware.</new>
+        <improve title="UID in the app list">Each app's UID now shows at the start of its line in the main list.</improve>
+        <improve title="Profile search and sort">A profile's app list can be searched and sorted on its own, without changing the main list's order.</improve>
+        <improve title="Clearer ADB errors">When ADB mode can't connect, the app says why and what to try next.</improve>
+        <fix title="Installs without root">Android's install and uninstall prompt shows up again in No root mode.</fix>
+        <fix title="Privileged server over ADB">ADB over TCP and Wireless debugging can start the privileged server again, now on its own port so it stays apart from upstream App Manager.</fix>
+        <fix title="Fewer crashes">The code editor, new profiles, the App change feed and App Usage open again instead of crashing.</fix>
+    </release>
+
+    <release
+        type="stable release"
         version="v0.6.23"
         code="31"
         date="5 September 2026">

@@ -708,18 +708,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Confidence: Verified
   Effort: S
 
-### P3
-
-- [ ] P3 — Add the current version to What’s New
-  Category: Release communication
-  Where: `app/build.gradle:22-23`; `app/src/main/res/raw/changelog.xml:8-16`; `app/src/main/java/io/github/muntashirakon/AppManager/settings/AboutPreferences.java:127-142`
-  Problem: A 0.6.24 build displays 0.6.23 as the newest bundled What’s New entry.
-  Evidence: HEAD declares version code 32 and version name 0.6.24, while the first changelog record is version code 31 and 0.6.23; the current-run screen showed that older entry.
-  Fix: Add the 0.6.24 entry and make release consistency parse the first bundled changelog record against the application version.
-  Acceptance: About and first-run What’s New show 0.6.24 first; a version bump without a matching first record fails the local release gate; historic entries keep their order and content.
-  Confidence: Verified
-  Effort: S
-
 ## Research-Driven Additions (2026-09-30)
 
 Sources and reasoning: RESEARCH.md (2026-09-30).
