@@ -210,7 +210,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.write_baseline:
             baseline = build_baseline(data)
             baseline_path.parent.mkdir(parents=True, exist_ok=True)
-            baseline_path.write_text(json.dumps(baseline, indent=2) + "\n", encoding="utf-8")
+            baseline_path.write_text(json.dumps(baseline, indent=2) + "\n", encoding="utf-8", newline="\n")
             print(f"Wrote translation coverage baseline: {baseline_path}")
             return 0
         baseline = load_baseline(baseline_path)
