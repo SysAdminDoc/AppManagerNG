@@ -4521,7 +4521,7 @@ Components removed: %8$s</string>
     <string name="lan_sync_tab_devices">Devices</string>
     <string name="lan_sync_tab_apps">Apps</string>
     <string name="lan_sync_permission_title">Local network access is off</string>
-    <string name="lan_sync_permission_summary">App Manager needs it to find nearby devices and talk to them over Wi-Fi.</string>
+    <string name="lan_sync_permission_summary">AppManagerNG needs it to find nearby devices and talk to them over Wi-Fi.</string>
     <string name="lan_sync_allow">Allow</string>
     <string name="lan_sync_deny">Deny</string>
     <string name="lan_sync_share_this_device">Share this device</string>
