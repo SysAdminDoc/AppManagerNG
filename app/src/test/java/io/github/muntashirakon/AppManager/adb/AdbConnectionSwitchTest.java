@@ -4,10 +4,12 @@ package io.github.muntashirakon.AppManager.adb;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import androidx.annotation.NonNull;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -23,12 +25,18 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
+import java.security.PrivateKey;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.security.auth.Destroyable;
+
+import io.github.muntashirakon.AppManager.crypto.ks.KeyPair;
 import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreUtils;
 
 /**
@@ -60,6 +68,39 @@ public class AdbConnectionSwitchTest {
             assertFalse("The same port keeps the connection it has", manager.connect(HOST, second.port()));
             assertEquals(1, second.sessions());
         }
+    }
+
+    @Test
+    public void switchingPortsLeavesTheKeyUsable() throws Exception {
+        // libadb destroys the key of a connection it closes. The key loaded from the keystore is a
+        // Bouncy Castle one that really goes, so Wireless debugging's TLS handshake failed with
+        // "key destroyed" right after ADB over TCP's connection was dropped for it.
+        KeyPair stored = storedKeyPair();
+        assertTrue(stored.getPrivateKey() instanceof Destroyable);
+        try (FakeAdbd first = new FakeAdbd(); FakeAdbd second = new FakeAdbd();
+             AdbConnectionManager manager = new AdbConnectionManager(stored)) {
+            manager.setTimeout(10, TimeUnit.SECONDS);
+            assertTrue(manager.connect(HOST, first.port()));
+
+            assertTrue(manager.connect(HOST, second.port()));
+
+            assertTrue(first.awaitSessionEnded(5, TimeUnit.SECONDS));
+            assertFalse(stored.getPrivateKey().isDestroyed());
+            assertNotNull(manager.getPrivateKey().getEncoded());
+        }
+        assertFalse("Closing the manager leaves the stored key alone", stored.getPrivateKey().isDestroyed());
+    }
+
+    /**
+     * A key pair like the one the keystore hands back: its private key is Bouncy Castle's.
+     */
+    @NonNull
+    private static KeyPair storedKeyPair() throws Exception {
+        KeyPair generated = KeyStoreUtils.generateRSAKeyPair("CN=Test", 2048,
+                System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1));
+        PrivateKey bouncyCastleKey = KeyFactory.getInstance("RSA", new BouncyCastleProvider())
+                .generatePrivate(new PKCS8EncodedKeySpec(generated.getPrivateKey().getEncoded()));
+        return new KeyPair(bouncyCastleKey, generated.getCertificate());
     }
 
     /**
