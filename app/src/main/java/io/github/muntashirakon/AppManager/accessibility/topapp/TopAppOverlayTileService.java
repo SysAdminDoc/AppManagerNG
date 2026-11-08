@@ -16,14 +16,16 @@ import androidx.annotation.VisibleForTesting;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.shortcut.QuickOpenTileService;
+import io.github.muntashirakon.AppManager.shortcut.TileActionActivity;
+import io.github.muntashirakon.AppManager.shortcut.TileActionHost;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 
 /** Turns the top-app bubble on and off, and shows which of the two it is. */
 @RequiresApi(Build.VERSION_CODES.N)
-public class TopAppOverlayTileService extends TileService {
+public class TopAppOverlayTileService extends TileService implements TileActionHost {
     private static final String TAG = TopAppOverlayTileService.class.getSimpleName();
 
-    static void requestTileStateUpdate(@NonNull Context context) {
+    public static void requestTileStateUpdate(@NonNull Context context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             return;
         }
@@ -43,26 +45,33 @@ public class TopAppOverlayTileService extends TileService {
     @Override
     public void onClick() {
         super.onClick();
-        if (isLocked()) {
-            unlockAndRun(this::toggle);
-            return;
-        }
-        toggle();
+        TileActionActivity.run(this, TileActionActivity.Action.TOP_APP_BUBBLE, () -> toggle(this, this));
     }
 
-    private void toggle() {
-        TopAppOverlayController.Outcome outcome = TopAppOverlayController.toggle(this);
+    /** What a tap does, run by the tile or, after an unlock, by {@link TileActionActivity}. */
+    public static void toggle(@NonNull Context context, @NonNull TileActionHost host) {
+        TopAppOverlayController.Outcome outcome = TopAppOverlayController.toggle(context);
         if (outcome.settingsIntent == null) {
             // The service reports its real state through requestTileStateUpdate once it's up or down.
-            updateTile(outcome.running);
+            host.showTileState(outcome.running ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
             return;
         }
         try {
-            launch(outcome.settingsIntent);
+            host.openScreen(outcome.settingsIntent);
         } catch (RuntimeException e) {
             Log.w(TAG, "Could not open the settings screen.", e);
             UIUtils.displayLongToast(R.string.top_app_overlay_failed);
         }
+    }
+
+    @Override
+    public void showTileState(int state) {
+        updateTile(state == Tile.STATE_ACTIVE);
+    }
+
+    @Override
+    public void openScreen(@NonNull Intent intent) {
+        launch(intent);
     }
 
     @VisibleForTesting
