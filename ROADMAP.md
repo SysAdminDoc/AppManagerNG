@@ -6,7 +6,7 @@ Actionable work only. Historical and completed roadmap material is archived in C
 
 Every report is fixed or built and has a reply posted or queued. What's left needs hardware the drain couldn't get: the S22 was leased to another drain the whole time and the S25 wasn't connected.
 
-- [ ] P2: Repeat the drain's device checks on the S22 or S25. The fixes and features for #12, #13, #15, #16, #17, #18, #19, #20, #21, #23, #25, #26, #27, #28 and PR #24 ran on API 29 and API 35 emulators only. On a phone, look hardest at what an emulator fakes: Wireless debugging pairing and ADB over TCP (#20), usage access staying granted after a reboot (#16), the #15 scheduled check in `dumpsys jobscheduler` after a restart, and the #26 overlay bubble over a real app's ad.
+- [ ] P2: Repeat the drain's device checks on the S22 or S25. The fixes and features for #12, #13, #15, #16, #17, #18, #19, #20, #21, #23, #25, #26, #27, #28 and PR #24 ran on API 29 and API 35 emulators only. On a phone, look hardest at what an emulator fakes: Wireless debugging pairing and ADB over TCP (#20), usage access staying granted after a reboot (#16), the #15 scheduled check in `dumpsys jobscheduler` after a restart, and the #26 overlay bubble over a real app's ad. For #20 on a phone with `adb tcpip 5555` and Wireless debugging both on (adbd's secure auth is on there, unlike the emulator): ADB over TCP connects to 5555, switching to Wireless debugging moves to the TLS port without asking to pair again, and a new Wireless debugging port mid-session gets used (`adb shell ss -tn`). For #22, Forget drops a connected device at once, and a share that comes back on a new port shows up on the other device without reopening.
 - [ ] P2: Check #22 Local sync between two separate devices. A work profile can't stand in, because both users share one install of each app, so these two rows never show there. "Signature differs": install the same package signed with different keys on each device, connect, and confirm the row says so and offers no install. Update all newer: give the sharing device a higher versionCode of an app the other has (same key), tap Update all newer and confirm it updates. Two emulators work too: on the client type 10.0.2.2 and a host port that `adb -s <host> forward tcp:<port> tcp:<share port>` points at the sharing emulator.
 
 - [ ] P2: Let ADB mode start in a work profile
@@ -22,8 +22,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Touches: `servermanager/ServerConfig.java` (port choice), the server launch arguments.
   Acceptance: the port differs per package or is picked free at launch and passed to the server; both builds start their servers on one device.
   Complexity: S
-
-- [ ] P2: Device-check the 2026-11-08 follow-ups on API 35 and a phone: forget a connected Local sync device and confirm it drops at once and asks for the six digits next time; stop sharing, take the old port with `nc -l`, share again and confirm the client's list shows the new port without reopening; in Wireless debugging mode with `adb tcpip 5555` also set, confirm the app connects to the TLS port (`dumpsys` or logcat `AdbConnectionManager`); change the Wireless debugging port mid-session and confirm the new port is used. All three devices were leased to other drains when these landed.
 
 ## Unblocked from Roadmap_Blocked.md (2026-11-07)
 
