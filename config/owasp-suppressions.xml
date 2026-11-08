@@ -55,4 +55,33 @@
         <packageUrl regex="true">^pkg:maven/io\.netty/[^@]+@4\.1\.(93|110)\.Final$</packageUrl>
         <cve>CVE-2026-47691</cve>
     </suppress>
+    <!--
+        Release audit disposition, 2026-11-08 (v0.7.0). Both release APKs were rechecked: their DEX files
+        contain no io/netty or org/jetbrains/kotlin classes.
+    -->
+    <suppress>
+        <notes>Netty 4.1.93.Final and 4.1.110.Final occur only in Android Gradle Plugin unified-test-platform host configurations. They are absent from both release runtime dependency graphs and both release APK DEX files. Re-evaluate before any UTP or Netty dependency is promoted into the application runtime.</notes>
+        <packageUrl regex="true">^pkg:maven/io\.netty/[^@]+@4\.1\.(93|110)\.Final$</packageUrl>
+        <cve>CVE-2026-56817</cve>
+    </suppress>
+    <suppress>
+        <notes>Netty 4.1.93.Final and 4.1.110.Final occur only in Android Gradle Plugin unified-test-platform host configurations. They are absent from both release runtime dependency graphs and both release APK DEX files. Re-evaluate before any UTP or Netty dependency is promoted into the application runtime.</notes>
+        <packageUrl regex="true">^pkg:maven/io\.netty/[^@]+@4\.1\.(93|110)\.Final$</packageUrl>
+        <cve>CVE-2026-56820</cve>
+    </suppress>
+    <suppress>
+        <notes>Netty 4.1.93.Final and 4.1.110.Final occur only in Android Gradle Plugin unified-test-platform host configurations. They are absent from both release runtime dependency graphs and both release APK DEX files. Re-evaluate before any UTP or Netty dependency is promoted into the application runtime.</notes>
+        <packageUrl regex="true">^pkg:maven/io\.netty/[^@]+@4\.1\.(93|110)\.Final$</packageUrl>
+        <cve>CVE-2026-75595</cve>
+    </suppress>
+    <suppress>
+        <notes>CVE-2026-53914 is unsafe deserialization of Kotlin build cache metadata in the Kotlin compiler and Gradle plugin before 2.4.20 (JetBrains scores it 6.7, local access with high privileges; the NVD CPE matches every Kotlin artifact at 9.8). The standard library carries no build cache code, so this is a vendor-wide CPE match rather than affected code. Re-evaluate if a stdlib release ever ships build cache handling.</notes>
+        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/kotlin-stdlib(-common|-jdk7|-jdk8)?@(1\.8\.(0|20|21|22)|1\.9\.(0|24)|2\.1\.10|2\.2\.10|2\.3\.10)$</packageUrl>
+        <cve>CVE-2026-53914</cve>
+    </suppress>
+    <suppress>
+        <notes>CVE-2026-53914 is unsafe deserialization of Kotlin build cache metadata in the Kotlin compiler and Gradle plugin before 2.4.20 (JetBrains scores it 6.7, local access with high privileges). These Kotlin tooling jars occur only in build-host configurations (AGP's built-in Kotlin compiler and build-tools classpaths, androidLintTool, annotation processor paths, unified-test-platform), never in a release APK. The repository has no Kotlin sources, so no Kotlin compilation reads build cache metadata, release builds run with --no-build-cache, and no remote build cache is configured. Re-evaluate before adding Kotlin sources or a remote cache, and drop this rule once AGP's built-in Kotlin moves to 2.4.20 or later.</notes>
+        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/((kotlin-build-tools-(api|impl)|kotlin-compiler-(embeddable|runner)|kotlin-daemon-(client|embeddable)|kotlin-script-runtime|kotlin-scripting-(common|compiler-embeddable|compiler-impl-embeddable|jvm))@2\.2\.10|kotlin-metadata-jvm@2\.1\.10|kotlin-reflect@(1\.6\.10|1\.8\.21|1\.9\.24|2\.2\.10))$</packageUrl>
+        <cve>CVE-2026-53914</cve>
+    </suppress>
 </suppressions>
