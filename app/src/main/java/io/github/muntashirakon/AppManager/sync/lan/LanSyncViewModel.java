@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -141,6 +142,8 @@ public class LanSyncViewModel extends AndroidViewModel {
     private boolean mShowSystem;
     @NonNull
     private volatile LocalIndex mLocalIndex;
+    @NonNull
+    private Executor mCloser = ThreadUtils::postOnBackgroundThread;
 
     public LanSyncViewModel(@NonNull Application application) {
         super(application);
@@ -152,6 +155,11 @@ public class LanSyncViewModel extends AndroidViewModel {
     @VisibleForTesting
     void setLocalIndex(@NonNull LocalIndex localIndex) {
         mLocalIndex = localIndex;
+    }
+
+    @VisibleForTesting
+    void setCloser(@NonNull Executor closer) {
+        mCloser = closer;
     }
 
     @VisibleForTesting
@@ -561,7 +569,8 @@ public class LanSyncViewModel extends AndroidViewModel {
             connector.cancel();
         }
         if (client != null) {
-            client.close();
+            // Saying goodbye writes to the socket, which Android refuses on the main thread
+            mCloser.execute(client::close);
         }
         mConnection.setValue(Connection.NONE);
         mRows.setValue(null);
