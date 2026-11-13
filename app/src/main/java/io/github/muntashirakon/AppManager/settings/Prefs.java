@@ -1067,6 +1067,15 @@ public final class Prefs {
             AppPref.set(AppPref.PrefKey.PREF_ENABLE_TOAST_HISTORY_BOOL, enabled);
         }
 
+        /** Whether the top-app bubble saves each app and overlay it sees. */
+        public static boolean isTopAppHistoryEnabled() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_ENABLE_TOP_APP_HISTORY_BOOL);
+        }
+
+        public static void setTopAppHistoryEnabled(boolean enabled) {
+            AppPref.set(AppPref.PrefKey.PREF_ENABLE_TOP_APP_HISTORY_BOOL, enabled);
+        }
+
         /** Whether a watched permission that changed gets put back when root or ADB mode allows it. */
         public static boolean isPermissionWatcherEnforceEnabled() {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_ENABLE_PERMISSION_WATCHER_ENFORCE_BOOL);

@@ -7,6 +7,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - The top app bubble now tells an overlay apart from the app under it (issue #26). An app drawing a pop-up or a floating ad gets its own row on top in red, with the app you were using named underneath, so the overlay no longer takes that app's place. Once the overlay goes away it stays listed, faded and marked gone, until a different app comes up.
+- Top app history (issue #26). Open it from Labs and turn on recording, and while the bubble is on it keeps a list of every app and overlay it sees, newest first, with the time each one showed up. Each row says what happened, like "Weather drew an overlay over Chrome", so an ad that was gone before you could read the bubble can still be traced. It keeps the last 1,000 changes, tap a row to copy it, and clearing it can be undone. It's off until you turn it on and stays on the phone.
 
 ### Fixed
 - A watched permission set to Always deny gets taken back right away when someone grants it in Settings, in root, ADB and Shizuku modes (issue #15). Android doesn't tell apps about a permission granted there, and it pauses apps in the background, so the grant used to stick until the next check. The privileged server now watches those apps itself and starts the check the moment one changes. No-root mode still checks at the usual times.
