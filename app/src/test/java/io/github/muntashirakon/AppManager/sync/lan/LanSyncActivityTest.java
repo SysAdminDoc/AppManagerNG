@@ -22,6 +22,7 @@ import android.net.nsd.NsdManager;
 import android.net.nsd.NsdServiceInfo;
 import android.os.Looper;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -31,9 +32,11 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.test.core.app.ApplicationProvider;
 
 import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.tabs.TabLayout;
@@ -71,6 +74,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.types.PackageChangeReceiver;
 
@@ -454,6 +458,55 @@ public class LanSyncActivityTest {
         adapter.setRows(Collections.singletonList(newer), false);
         adapter.onBindViewHolder(second, 0);
         assertFalse(second.pull.isEnabled());
+    }
+
+    @Test
+    public void searchNarrowsTheListAndTheChipsCountWhatItFinds() {
+        LanSyncActivity activity = mController.get();
+        LanSyncViewModel viewModel = new ViewModelProvider(activity).get(LanSyncViewModel.class);
+        viewModel.setRows(Arrays.asList(
+                new LanSyncViewModel.AppRow(SyncFixtures.app("org.mozilla.firefox", 5, SIGNER_A),
+                        SyncFixtures.app("org.mozilla.firefox", 4, SIGNER_A)),
+                new LanSyncViewModel.AppRow(SyncFixtures.app("org.mozilla.focus", 5, SIGNER_A), null),
+                new LanSyncViewModel.AppRow(SyncFixtures.app("com.termux", 5, SIGNER_A),
+                        SyncFixtures.app("com.termux", 4, SIGNER_A))));
+        shadowOf(Looper.getMainLooper()).idle();
+        RecyclerView list = activity.findViewById(R.id.recycler_view);
+        Chip newer = activity.findViewById(R.id.chip_newer);
+        Chip notInstalled = activity.findViewById(R.id.chip_not_installed);
+        TabLayout tabs = activity.findViewById(R.id.tab_layout);
+        assertEquals(2, list.getAdapter().getItemCount());
+        assertEquals(0, tabs.getSelectedTabPosition());
+
+        MenuItem searchItem = ((MaterialToolbar) activity.findViewById(R.id.toolbar)).getMenu()
+                .findItem(R.id.action_search);
+        searchItem.expandActionView();
+        AdvancedSearchView searchView = (AdvancedSearchView) searchItem.getActionView();
+        searchView.setQuery("MOZILLA", false);
+        shadowOf(Looper.getMainLooper()).idle();
+
+        assertEquals("Typing on the Devices tab moves to the apps", 1, tabs.getSelectedTabPosition());
+        assertEquals(1, list.getAdapter().getItemCount());
+        assertEquals(activity.getString(R.string.lan_sync_bucket_newer, 1), newer.getText().toString());
+        assertEquals(activity.getString(R.string.lan_sync_bucket_not_installed, 1), notInstalled.getText().toString());
+        MaterialButton updateAll = activity.findViewById(R.id.update_all);
+        assertEquals("Update all still means every newer app",
+                activity.getString(R.string.lan_sync_update_all, 2), updateAll.getText().toString());
+
+        // A version number works as well, and the chips still pick the group
+        searchView.setQuery("v4", false);
+        shadowOf(Looper.getMainLooper()).idle();
+        assertEquals(2, list.getAdapter().getItemCount());
+        notInstalled.performClick();
+        shadowOf(Looper.getMainLooper()).idle();
+        assertEquals(0, list.getAdapter().getItemCount());
+        TextView emptyTitle = activity.findViewById(android.R.id.empty).findViewById(R.id.empty_state_title);
+        assertEquals(activity.getString(R.string.no_matching_package_found), emptyTitle.getText().toString());
+
+        searchItem.collapseActionView();
+        shadowOf(Looper.getMainLooper()).idle();
+        assertNull(viewModel.getSearchQuery());
+        assertEquals(1, list.getAdapter().getItemCount());
     }
 
     @Test
