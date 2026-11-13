@@ -18,6 +18,7 @@ import androidx.annotation.VisibleForTesting;
 import androidx.core.app.PendingIntentCompat;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.accessibility.toast.ToastHistoryActivity;
 import io.github.muntashirakon.AppManager.logcat.LogViewerActivity;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.profiles.ProfilesActivity;
@@ -39,7 +40,8 @@ public abstract class QuickOpenTileService extends TileService {
         RUNNING_APPS(RunningAppsActivity.class, R.string.running_apps),
         APP_USAGE(AppUsageActivity.class, R.string.app_usage),
         PROFILES(ProfilesActivity.class, R.string.profiles),
-        LOG_VIEWER(LogViewerActivity.class, R.string.log_viewer);
+        LOG_VIEWER(LogViewerActivity.class, R.string.log_viewer),
+        TOAST_HISTORY(ToastHistoryActivity.class, R.string.toast_history_title);
 
         @NonNull
         final Class<? extends Activity> activityClass;
@@ -99,6 +101,14 @@ public abstract class QuickOpenTileService extends TileService {
         @Override
         Target getTarget() {
             return Target.LOG_VIEWER;
+        }
+    }
+
+    public static final class ToastHistory extends QuickOpenTileService {
+        @NonNull
+        @Override
+        Target getTarget() {
+            return Target.TOAST_HISTORY;
         }
     }
 

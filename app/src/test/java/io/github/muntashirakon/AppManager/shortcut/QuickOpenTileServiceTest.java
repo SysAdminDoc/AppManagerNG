@@ -32,6 +32,7 @@ import org.robolectric.shadows.ShadowToast;
 
 import java.util.List;
 
+import io.github.muntashirakon.AppManager.accessibility.toast.ToastHistoryActivity;
 import io.github.muntashirakon.AppManager.logcat.LogViewerActivity;
 import io.github.muntashirakon.AppManager.profiles.ProfilesActivity;
 import io.github.muntashirakon.AppManager.runningapps.RunningAppsActivity;
@@ -79,6 +80,7 @@ public class QuickOpenTileServiceTest {
         assertRoutesTo(new QuickOpenTileService.AppUsage(), AppUsageActivity.class);
         assertRoutesTo(new QuickOpenTileService.Profiles(), ProfilesActivity.class);
         assertRoutesTo(new QuickOpenTileService.LogViewer(), LogViewerActivity.class);
+        assertRoutesTo(new QuickOpenTileService.ToastHistory(), ToastHistoryActivity.class);
     }
 
     @Test
@@ -88,7 +90,7 @@ public class QuickOpenTileServiceTest {
                 .setPackage(mContext.getPackageName()), PackageManager.GET_META_DATA);
         for (Class<?> tile : new Class<?>[]{QuickOpenTileService.RunningApps.class,
                 QuickOpenTileService.AppUsage.class, QuickOpenTileService.Profiles.class,
-                QuickOpenTileService.LogViewer.class}) {
+                QuickOpenTileService.LogViewer.class, QuickOpenTileService.ToastHistory.class}) {
             ServiceInfo found = null;
             for (ResolveInfo info : tiles) {
                 if (tile.getName().equals(info.serviceInfo.name)) {

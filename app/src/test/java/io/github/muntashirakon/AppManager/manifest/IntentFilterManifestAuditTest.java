@@ -213,6 +213,7 @@ public class IntentFilterManifestAuditTest {
                 SOURCE_PKG + ".shortcut.QuickOpenTileService$AppUsage",
                 SOURCE_PKG + ".shortcut.QuickOpenTileService$Profiles",
                 SOURCE_PKG + ".shortcut.QuickOpenTileService$LogViewer",
+                SOURCE_PKG + ".shortcut.QuickOpenTileService$ToastHistory",
                 SOURCE_PKG + ".accessibility.topapp.TopAppOverlayTileService"
         };
         for (String name : tileNames) {
