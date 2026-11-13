@@ -14,6 +14,7 @@ import java.nio.file.Paths;
 import java.util.stream.Stream;
 
 import io.github.muntashirakon.AppManager.apk.list.AppListImportFuzzTarget;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackImportFuzzTarget;
 import io.github.muntashirakon.AppManager.rules.struct.RuleImportFuzzTarget;
 import io.github.muntashirakon.AppManager.snapshot.SnapshotManifestFuzzTarget;
 import io.github.muntashirakon.AppManager.utils.ArchiveImportFuzzTarget;
@@ -41,6 +42,9 @@ public class ImportFuzzCorpusRegressionTest {
                         break;
                     case "archive":
                         ArchiveImportFuzzTarget.fuzzerTestOneInput(data);
+                        break;
+                    case "languagePack":
+                        LanguagePackImportFuzzTarget.fuzzerTestOneInput(data);
                         break;
                     default:
                         throw new AssertionError("Unknown fuzz corpus target: " + target);

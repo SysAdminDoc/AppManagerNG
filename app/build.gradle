@@ -212,6 +212,53 @@ tasks.register('verifyEditorLanguageAssets') {
 tasks.named('preBuild').configure { dependsOn('verifyEditorLanguageAssets') }
 tasks.named('check').configure { dependsOn('verifyEditorLanguageAssets') }
 
+/**
+ * Lists the English strings and plurals people can translate with an imported language file, as
+ * "s name" and "p name" lines. Strings marked translatable="false" are left out.
+ */
+abstract class LanguagePackKeysTask extends DefaultTask {
+    @InputFiles
+    @PathSensitive(PathSensitivity.NAME_ONLY)
+    abstract ConfigurableFileCollection getSources()
+
+    @OutputDirectory
+    abstract DirectoryProperty getOutputDir()
+
+    @TaskAction
+    void generate() {
+        def lines = new LinkedHashSet<String>()
+        sources.files.each { source ->
+            def root = new groovy.xml.XmlParser(false, false).parse(source)
+            root.children().each { node ->
+                if (!(node instanceof Node) || node.attribute('translatable') == 'false') {
+                    return
+                }
+                String name = node.attribute('name')
+                if (node.name() == 'string' && !node.text().trim().startsWith('@')) {
+                    lines << "s ${name}".toString()
+                } else if (node.name() == 'plurals') {
+                    lines << "p ${name}".toString()
+                }
+            }
+        }
+        def out = outputDir.file('language_pack_keys.txt').get().asFile
+        out.parentFile.mkdirs()
+        out.setText(lines.join('\n') + '\n', 'UTF-8')
+    }
+}
+
+def languagePackKeySources = ['strings.xml', 'disclaimer.xml', 'strings_auto_freeze.xml', 'strings_rule_reset.xml']
+        .collect { file("src/main/res/values/${it}") }
+
+androidComponents {
+    onVariants(selector().all(), { variant ->
+        def keysTask = tasks.register("generate${variant.name.capitalize()}LanguagePackKeys", LanguagePackKeysTask) {
+            sources.from(languagePackKeySources)
+        }
+        variant.sources.assets?.addGeneratedSourceDirectory(keysTask, { it.outputDir })
+    })
+}
+
 dependencies {
     compileOnly project(path: ':hiddenapi')
     coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:${desugar_jdk_version}"
@@ -348,6 +395,7 @@ def fuzzTargets = [
         rules   : "io.github.muntashirakon.AppManager.rules.struct.RuleImportFuzzTarget",
         snapshot: "io.github.muntashirakon.AppManager.snapshot.SnapshotManifestFuzzTarget",
         archive : "io.github.muntashirakon.AppManager.utils.ArchiveImportFuzzTarget",
+        languagePack: "io.github.muntashirakon.AppManager.i18n.LanguagePackImportFuzzTarget",
 ]
 def flossUnitTestName = "testFlossDebugUnitTest"
 def fuzzTasks = fuzzTargets.collect { targetName, targetClass ->

@@ -37,6 +37,7 @@ import java.util.Locale;
 
 import io.github.muntashirakon.AppManager.PerProcessActivity;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackManager;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.LangUtils;
 
@@ -201,6 +202,7 @@ public final class AppearanceUtils {
                 // API 31+. Re-pin the black surfaces; dynamic accents survive.
                 activity.getTheme().applyStyle(R.style.ThemeOverlay_AppTheme_V2_AmoledSurfaces, true);
             }
+            LanguagePackManager.attachToActivity(activity);
         }
 
         @Override
