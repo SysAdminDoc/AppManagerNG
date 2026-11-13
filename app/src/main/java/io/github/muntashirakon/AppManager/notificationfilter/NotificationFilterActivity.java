@@ -241,6 +241,9 @@ public class NotificationFilterActivity extends BaseActivity {
     }
 
     private void quietModeChanged() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            QuietModeTileService.requestTileStateUpdate(this);
+        }
         refreshQuietMode();
     }
 

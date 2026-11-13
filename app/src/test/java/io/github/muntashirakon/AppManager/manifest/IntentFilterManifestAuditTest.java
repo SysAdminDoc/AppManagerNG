@@ -214,7 +214,8 @@ public class IntentFilterManifestAuditTest {
                 SOURCE_PKG + ".shortcut.QuickOpenTileService$Profiles",
                 SOURCE_PKG + ".shortcut.QuickOpenTileService$LogViewer",
                 SOURCE_PKG + ".shortcut.QuickOpenTileService$ToastHistory",
-                SOURCE_PKG + ".accessibility.topapp.TopAppOverlayTileService"
+                SOURCE_PKG + ".accessibility.topapp.TopAppOverlayTileService",
+                SOURCE_PKG + ".notificationfilter.QuietModeTileService"
         };
         for (String name : tileNames) {
             ExportedComponent comp = sComponents.get(name);
