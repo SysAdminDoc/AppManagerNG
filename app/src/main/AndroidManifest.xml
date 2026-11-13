@@ -727,6 +727,11 @@
             android:exported="false"
             android:label="@string/lan_sync_title" />
         <activity
+            android:name=".sync.lan.ReceivedApksActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:label="@string/received_apks_title" />
+        <activity
             android:name=".permissions.PermissionAppsActivity"
             android:enableOnBackInvokedCallback="true"
             android:exported="false"

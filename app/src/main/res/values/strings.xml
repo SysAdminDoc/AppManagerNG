@@ -4737,4 +4737,19 @@ Components removed: %8$s</string>
     <string name="lan_sync_storage_failed">Couldn\'t create the download folder</string>
     <string name="lan_sync_request_failed">The other device couldn\'t answer: %1$s</string>
     <string name="lan_sync_connection_lost">Lost the connection: %1$s</string>
+    <string name="received_apks_title">Received APKs</string>
+    <string name="received_apks_keep_for">Keep received APKs for</string>
+    <string name="received_apks_2_hours">2 hours</string>
+    <string name="received_apks_24_hours">24 hours</string>
+    <string name="received_apks_7_days">7 days</string>
+    <string name="received_apks_keep_installed">Keep APKs after installing</string>
+    <string name="received_apks_empty">No received APKs</string>
+    <string name="received_apks_empty_summary">Apps you get from another device stay here for a while, so you can install them again without it.</string>
+    <string name="received_apks_version">Version %1$s (%2$d)</string>
+    <string name="received_apks_detail">%1$s, received %2$s</string>
+    <string name="received_apks_partial">Unfinished: %1$s of %2$s. Get it again to continue.</string>
+    <string name="received_apks_deleted">Deleted %1$s</string>
+    <string name="received_apks_gone">%1$s is no longer here</string>
+    <string name="received_apks_signature_differs">%1$s is signed with a different key than the copy installed here</string>
+    <string name="received_apks_install_failed">Couldn\'t install %1$s: %2$s</string>
 </resources>

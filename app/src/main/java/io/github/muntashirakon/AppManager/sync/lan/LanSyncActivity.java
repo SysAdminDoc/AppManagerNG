@@ -3,9 +3,12 @@
 package io.github.muntashirakon.AppManager.sync.lan;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
@@ -121,7 +124,7 @@ public class LanSyncActivity extends BaseActivity {
         }
         mViewModel = new ViewModelProvider(this).get(LanSyncViewModel.class);
         if (savedInstanceState == null) {
-            mViewModel.purgeStaleDownloads();
+            mViewModel.cleanUpDownloads();
         }
 
         mProgress = findViewById(R.id.progress_linear);
@@ -277,6 +280,23 @@ public class LanSyncActivity extends BaseActivity {
             setShareSwitch(false);
         }
         super.onStop();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(@NonNull Menu menu) {
+        getMenuInflater().inflate(R.menu.activity_lan_sync_actions, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
+        if (id == android.R.id.home) {
+            finish();
+        } else if (id == R.id.action_received_apks) {
+            startActivity(new Intent(this, ReceivedApksActivity.class));
+        } else return super.onOptionsItemSelected(item);
+        return true;
     }
 
     @Override
@@ -533,8 +553,9 @@ public class LanSyncActivity extends BaseActivity {
     }
 
     /**
-     * Every download here already matched the signer list and the installed copy. The installer
-     * owns the files from now on and deletes them when it is done.
+     * Every download here already matched the signer list and the installed copy. A bundle is a
+     * temporary file the installer owns and deletes when it is done. A single APK is the received
+     * copy itself, which stays for Received APKs until it's cleaned up.
      */
     private void handOffToInstaller(@Nullable List<LanSyncDownloader.Result> ready) {
         if (ready == null || ready.isEmpty()) {
@@ -542,16 +563,19 @@ public class LanSyncActivity extends BaseActivity {
         }
         mViewModel.onInstallHandedOff();
         if (ready.size() == 1) {
-            LanSyncDownloader.Result result = ready.get(0);
-            startActivity(PackageInstallerActivity.getLaunchableInstance(this,
-                    ApkSource.getOwnedCachedApkSource(result.file, result.mimeType)));
+            startActivity(PackageInstallerActivity.getLaunchableInstance(this, sourceOf(ready.get(0))));
             return;
         }
         // The installer runs one at a time and queues the rest as they arrive
         for (LanSyncDownloader.Result result : ready) {
-            startActivity(PackageInstallerActivity.getBatchInstallInstance(this,
-                    ApkSource.getOwnedCachedApkSource(result.file, result.mimeType)));
+            startActivity(PackageInstallerActivity.getBatchInstallInstance(this, sourceOf(result)));
         }
+    }
+
+    @NonNull
+    static ApkSource sourceOf(@NonNull LanSyncDownloader.Result result) {
+        return result.owned ? ApkSource.getOwnedCachedApkSource(result.file, result.mimeType)
+                : ApkSource.getCachedApkSource(Uri.fromFile(result.file), result.mimeType);
     }
 
     @NonNull
