@@ -133,16 +133,7 @@ public final class LanSyncDownloader {
     public static Result prepare(@NonNull ReceivedApkStore store, @NonNull ReceivedApkStore.Entry entry,
                                  @NonNull File dir, @Nullable SyncApp installed,
                                  @NonNull ApkSignatureGate.DigestReader reader) throws IOException {
-        if (!entry.hasAllFiles()) {
-            throw new IOException("Some files of " + entry.app.label + " are missing.");
-        }
-        List<File> files = entry.files();
-        try {
-            ApkSignatureGate.check(files, entry.app, installed, reader);
-        } catch (ApkSignatureGate.MismatchException e) {
-            store.delete(entry);
-            throw e;
-        }
+        List<File> files = verify(store, entry, installed, reader);
         if (!entry.isBundle()) {
             return new Result(files.get(0), MIME_APK, false, entry);
         }
@@ -157,6 +148,30 @@ public final class LanSyncDownloader {
             }
         }
         return new Result(output, MIME_APKS, true, entry);
+    }
+
+    /**
+     * Checks a finished entry before anything installs it: every file is here, signed by the keys
+     * the other device listed, and the splits match the base. An entry that fails is deleted.
+     *
+     * @return the entry's files, base first
+     */
+    @WorkerThread
+    @NonNull
+    public static List<File> verify(@NonNull ReceivedApkStore store, @NonNull ReceivedApkStore.Entry entry,
+                                    @Nullable SyncApp installed,
+                                    @NonNull ApkSignatureGate.DigestReader reader) throws IOException {
+        if (!entry.hasAllFiles()) {
+            throw new IOException("Some files of " + entry.app.label + " are missing.");
+        }
+        List<File> files = entry.files();
+        try {
+            ApkSignatureGate.check(files, entry.app, installed, reader);
+        } catch (ApkSignatureGate.MismatchException e) {
+            store.delete(entry);
+            throw e;
+        }
+        return files;
     }
 
     /**
@@ -225,8 +240,16 @@ public final class LanSyncDownloader {
 
     private static void writeBundle(@NonNull File output, @NonNull List<SyncApp.ApkFileInfo> infos,
                                     @NonNull List<File> parts) throws IOException {
+        writeBundle(new FileOutputStream(output), infos, parts);
+    }
+
+    /**
+     * Writes the files as a stored (uncompressed) .apks bundle and closes {@code out}.
+     */
+    static void writeBundle(@NonNull OutputStream out, @NonNull List<SyncApp.ApkFileInfo> infos,
+                            @NonNull List<File> parts) throws IOException {
         byte[] buffer = new byte[64 * 1024];
-        try (ZipOutputStream zip = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(output)))) {
+        try (ZipOutputStream zip = new ZipOutputStream(new BufferedOutputStream(out))) {
             for (int i = 0; i < parts.size(); ++i) {
                 File part = parts.get(i);
                 ZipEntry entry = new ZipEntry(infos.get(i).name);

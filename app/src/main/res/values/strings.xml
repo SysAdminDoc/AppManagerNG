@@ -4750,6 +4750,17 @@ Components removed: %8$s</string>
     <string name="received_apks_partial">Unfinished: %1$s of %2$s. Get it again to continue.</string>
     <string name="received_apks_deleted">Deleted %1$s</string>
     <string name="received_apks_gone">%1$s is no longer here</string>
+    <string name="received_apks_missing">That APK is no longer here. Get it again from the other device.</string>
     <string name="received_apks_signature_differs">%1$s is signed with a different key than the copy installed here</string>
     <string name="received_apks_install_failed">Couldn\'t install %1$s: %2$s</string>
+    <string name="received_apks_system_installer">Use Android\'s installer</string>
+    <string name="received_apks_save_to_downloads">Save to Downloads</string>
+    <string name="received_apks_saved">Saved %1$s to Downloads</string>
+    <string name="received_apks_save_failed">Couldn\'t save %1$s: %2$s</string>
+    <string name="received_apks_no_system_installer">Android\'s installer isn\'t available on this device</string>
+    <string name="received_apks_split_no_system_installer">Android\'s installer can\'t take split APKs. Save them to Downloads instead.</string>
+    <string name="received_apks_storage_denied">Saving to Downloads needs storage access</string>
+    <string name="lan_sync_install_failed_title">Couldn\'t install %1$s</string>
+    <string name="lan_sync_install_failed_try_system">Try Android\'s own installer, or save the APK to Downloads.</string>
+    <string name="lan_sync_install_failed_try_save">Android\'s installer can\'t take split APKs. Save them to Downloads and open the .apks file with an installer that can.</string>
 </resources>

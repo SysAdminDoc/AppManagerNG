@@ -3,9 +3,11 @@
 package io.github.muntashirakon.AppManager.sync.lan;
 
 import android.app.Application;
+import android.content.Intent;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.lifecycle.AndroidViewModel;
@@ -46,6 +48,7 @@ public class ReceivedApksViewModel extends AndroidViewModel {
     private final MutableLiveData<List<Item>> mItems = new MutableLiveData<>();
     private final MutableLiveData<String> mMessage = new MutableLiveData<>();
     private final MutableLiveData<LanSyncDownloader.Result> mReady = new MutableLiveData<>();
+    private final MutableLiveData<Intent> mSystemInstaller = new MutableLiveData<>();
     @NonNull
     private final LanSyncSettings mSettings;
     @NonNull
@@ -54,6 +57,16 @@ public class ReceivedApksViewModel extends AndroidViewModel {
     private volatile LanSyncViewModel.LocalIndex mLocalIndex;
     @NonNull
     private volatile ApkSignatureGate.DigestReader mReader = ApkSigners.VERIFIED_FILE_READER;
+    /**
+     * Where saved copies go in tests. Null means the public Downloads folder.
+     */
+    @Nullable
+    private volatile DestinationFactory mDestinations;
+
+    interface DestinationFactory {
+        @NonNull
+        ReceivedApkExport.Destination create();
+    }
 
     public ReceivedApksViewModel(@NonNull Application application) {
         super(application);
@@ -68,6 +81,11 @@ public class ReceivedApksViewModel extends AndroidViewModel {
         mDir = dir;
         mLocalIndex = localIndex;
         mReader = reader;
+    }
+
+    @VisibleForTesting
+    void setDestinationsForTesting(@Nullable DestinationFactory destinations) {
+        mDestinations = destinations;
     }
 
     @Override
@@ -100,6 +118,19 @@ public class ReceivedApksViewModel extends AndroidViewModel {
     @NonNull
     public LiveData<LanSyncDownloader.Result> getReady() {
         return mReady;
+    }
+
+    /**
+     * Android's own installer, ready to open a received APK. Call
+     * {@link #onSystemInstallerStarted()} once it is started.
+     */
+    @NonNull
+    public LiveData<Intent> getSystemInstaller() {
+        return mSystemInstaller;
+    }
+
+    public void onSystemInstallerStarted() {
+        mSystemInstaller.setValue(null);
     }
 
     public void onMessageShown() {
@@ -177,6 +208,93 @@ public class ReceivedApksViewModel extends AndroidViewModel {
                 postList();
             }
         });
+    }
+
+    /**
+     * Saves a copy in Downloads after checking it against the signers the other device listed,
+     * so it can go on with another installer. A split set becomes one .apks file.
+     */
+    public void save(@NonNull String key) {
+        mExecutor.execute(() -> {
+            ReceivedApkStore store = new ReceivedApkStore(mDir);
+            ReceivedApkStore.Entry current = findComplete(store, key);
+            if (current == null) {
+                return;
+            }
+            String label = current.app.label;
+            try {
+                LanSyncDownloader.verify(store, current, null, mReader);
+                DestinationFactory destinations = mDestinations;
+                String name = destinations != null ? ReceivedApkExport.save(current, destinations.create())
+                        : ReceivedApkExport.saveToDownloads(getApplication(), current);
+                mMessage.postValue(getApplication().getString(R.string.received_apks_saved, name));
+            } catch (IOException | RuntimeException e) {
+                // MediaStore reports a full or missing volume as an unchecked exception
+                Log.w(TAG, "Could not save %s", e, current.app.packageName);
+                mMessage.postValue(getApplication().getString(R.string.received_apks_save_failed, label,
+                        describe(e)));
+                postList();
+            }
+        });
+    }
+
+    /**
+     * Opens a received APK in Android's own installer, after the same checks an install here
+     * gets. Android's installer takes only single APKs.
+     */
+    public void openInSystemInstaller(@NonNull String key) {
+        mExecutor.execute(() -> {
+            ReceivedApkStore store = new ReceivedApkStore(mDir);
+            ReceivedApkStore.Entry current = findComplete(store, key);
+            if (current == null) {
+                return;
+            }
+            String label = current.app.label;
+            if (current.isBundle()) {
+                mMessage.postValue(getApplication().getString(R.string.received_apks_split_no_system_installer));
+                return;
+            }
+            SyncApp installed = mLocalIndex.load().get(current.app.packageName);
+            if (SyncComparator.compare(current.app, installed) == SyncComparator.Status.SIGNATURE_DIFFERS) {
+                mMessage.postValue(getApplication().getString(R.string.received_apks_signature_differs, label));
+                return;
+            }
+            try {
+                LanSyncDownloader.verify(store, current, installed, mReader);
+            } catch (IOException e) {
+                Log.w(TAG, "Could not open %s in the system installer", e, current.app.packageName);
+                mMessage.postValue(getApplication().getString(R.string.received_apks_install_failed, label,
+                        describe(e)));
+                postList();
+                return;
+            }
+            Intent intent = ReceivedApkExport.systemInstallerIntent(getApplication(), current);
+            if (intent == null) {
+                mMessage.postValue(getApplication().getString(R.string.received_apks_no_system_installer));
+                return;
+            }
+            mSystemInstaller.postValue(intent);
+        });
+    }
+
+    /**
+     * The entry, or null after posting why it can't be used.
+     */
+    @WorkerThread
+    @Nullable
+    private ReceivedApkStore.Entry findComplete(@NonNull ReceivedApkStore store, @NonNull String key) {
+        ReceivedApkStore.Entry current = store.find(key);
+        if (current == null) {
+            mMessage.postValue(getApplication().getString(R.string.received_apks_missing));
+            postList();
+            return null;
+        }
+        if (!current.complete || !current.hasAllFiles()) {
+            mMessage.postValue(getApplication().getString(R.string.received_apks_gone, current.app.label));
+            postList();
+            return null;
+        }
+        return current;
     }
 
     @WorkerThread

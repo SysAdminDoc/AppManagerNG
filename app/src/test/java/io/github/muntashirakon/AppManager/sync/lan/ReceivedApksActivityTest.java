@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.sync.lan;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -9,8 +10,12 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.ResolveInfo;
 import android.os.Looper;
 import android.view.View;
 import android.widget.TextView;
@@ -32,6 +37,7 @@ import org.robolectric.shadows.ShadowToast;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -40,6 +46,8 @@ import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerActivity;
+import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat;
+import io.github.muntashirakon.AppManager.fm.FmProvider;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.widget.RecyclerView;
 
@@ -47,6 +55,7 @@ import io.github.muntashirakon.widget.RecyclerView;
 public class ReceivedApksActivityTest {
     private static final long WAIT_NANOS = TimeUnit.SECONDS.toNanos(10);
     private static final String PKG = "ademar.textlauncher";
+    private static final String SYSTEM_INSTALLER = "com.android.packageinstaller";
 
     @Rule
     public TemporaryFolder mTemp = new TemporaryFolder();
@@ -83,6 +92,8 @@ public class ReceivedApksActivityTest {
 
     @After
     public void tearDown() {
+        LanSyncInstallTracker.resetForTesting();
+        mViewModel.setDestinationsForTesting(null);
         mController.pause().stop().destroy();
         mViewModel.getSettings().setRetention(LanSyncSettings.RETENTION_24_HOURS);
         mViewModel.getSettings().setKeepAfterInstall(false);
@@ -101,6 +112,81 @@ public class ReceivedApksActivityTest {
         assertNotNull(started.getComponent());
         assertEquals(PackageInstallerActivity.class.getName(), started.getComponent().getClassName());
         assertTrue("The APK stays until the app is in", mEntry.file("base.apk").isFile());
+    }
+
+    @Test
+    public void aFailedInstallOffersAndroidsInstallerRightOnTheScreen() throws Exception {
+        handledBySystemInstaller(mEntry.file("base.apk"));
+        View row = loadRow();
+        assertEquals(View.VISIBLE, row.findViewById(R.id.more).getVisibility());
+        LanSyncInstallTracker.track(new LanSyncDownloader.Result(mEntry.file("base.apk"), LanSyncDownloader.MIME_APK,
+                false, mEntry));
+
+        LanSyncInstallTracker.onInstallFinished(mContext, PKG, PackageInstallerCompat.STATUS_FAILURE_INCOMPATIBLE,
+                "Installation failed: incompatible", "INSTALL_FAILED_NO_MATCHING_ABIS");
+
+        TextView text = waitFor(() -> mActivity.findViewById(com.google.android.material.R.id.snackbar_text));
+        assertTrue(text.getText().toString(), text.getText().toString().contains("incompatible"));
+        TextView action = mActivity.findViewById(com.google.android.material.R.id.snackbar_action);
+        assertEquals(mContext.getString(R.string.received_apks_system_installer), action.getText().toString());
+
+        action.performClick();
+
+        Intent started = waitFor(() -> shadowOf(mActivity).getNextStartedActivity());
+        assertEquals(new ComponentName(SYSTEM_INSTALLER, SYSTEM_INSTALLER + ".InstallStart"), started.getComponent());
+        assertTrue((started.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION) != 0);
+    }
+
+    @Test
+    public void aNotificationButtonSavesTheApkToDownloads() throws Exception {
+        File downloads = mTemp.newFolder("Download");
+        mViewModel.setDestinationsForTesting(() -> new ReceivedApkExport.FolderDestination(downloads));
+        loadRow();
+
+        mController.newIntent(new Intent(mContext, ReceivedApksActivity.class)
+                .setAction(ReceivedApksActivity.ACTION_SAVE)
+                .putExtra(ReceivedApksActivity.EXTRA_ENTRY_KEY, mEntry.key)
+                .putExtra(ReceivedApksActivity.EXTRA_PACKAGE_NAME, PKG));
+
+        String toast = waitFor(ShadowToast::getTextOfLatestToast);
+        assertEquals(mContext.getString(R.string.received_apks_saved, PKG + "_v1.apk"), toast);
+        assertArrayEquals(Files.readAllBytes(mEntry.file("base.apk").toPath()),
+                Files.readAllBytes(new File(downloads, PKG + "_v1.apk").toPath()));
+        assertTrue("Saving keeps the received copy", mEntry.file("base.apk").isFile());
+    }
+
+    @Test
+    public void splitApksAreNotSentToAndroidsInstaller() throws Exception {
+        SyncApp app = SyncFixtures.app(PKG, 1, Collections.singletonList(ApkSignatureGateTest.TEXTLAUNCHER_SIGNER),
+                Collections.<String>emptyList(), Arrays.asList(
+                        new SyncApp.ApkFileInfo("base.apk", mEntry.file("base.apk").length()),
+                        new SyncApp.ApkFileInfo("split_config.en.apk", mEntry.file("base.apk").length())));
+        ReceivedApkStore.Entry bundle = mStore.open(app, System.currentTimeMillis());
+        Files.copy(mEntry.file("base.apk").toPath(), bundle.file("base.apk").toPath());
+        Files.copy(mEntry.file("base.apk").toPath(), bundle.file("split_config.en.apk").toPath());
+        bundle = mStore.markComplete(bundle, System.currentTimeMillis());
+        handledBySystemInstaller(bundle.file("base.apk"));
+        loadRow();
+
+        mViewModel.openInSystemInstaller(bundle.key);
+
+        String toast = waitFor(ShadowToast::getTextOfLatestToast);
+        assertEquals(mContext.getString(R.string.received_apks_split_no_system_installer), toast);
+        assertNull(shadowOf(mActivity).getNextStartedActivity());
+    }
+
+    private void handledBySystemInstaller(@NonNull File apk) {
+        ApplicationInfo applicationInfo = new ApplicationInfo();
+        applicationInfo.packageName = SYSTEM_INSTALLER;
+        applicationInfo.flags = ApplicationInfo.FLAG_SYSTEM;
+        ActivityInfo activityInfo = new ActivityInfo();
+        activityInfo.packageName = SYSTEM_INSTALLER;
+        activityInfo.name = SYSTEM_INSTALLER + ".InstallStart";
+        activityInfo.applicationInfo = applicationInfo;
+        ResolveInfo resolveInfo = new ResolveInfo();
+        resolveInfo.activityInfo = activityInfo;
+        shadowOf(mContext.getPackageManager()).addResolveInfoForIntent(new Intent(Intent.ACTION_INSTALL_PACKAGE)
+                .setDataAndType(FmProvider.getContentUri(apk), LanSyncDownloader.MIME_APK), resolveInfo);
     }
 
     @Test
@@ -139,6 +225,7 @@ public class ReceivedApksActivityTest {
         View row = loadRow();
 
         assertEquals(View.GONE, row.findViewById(R.id.install).getVisibility());
+        assertEquals("Nothing to save or hand on yet", View.GONE, row.findViewById(R.id.more).getVisibility());
         String detail = ((TextView) row.findViewById(R.id.detail)).getText().toString();
         assertTrue(detail, detail.startsWith("Unfinished"));
     }

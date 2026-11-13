@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.sync.lan;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.text.Editable;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -241,6 +242,17 @@ public class LanSyncActivity extends BaseActivity {
             }
         });
         mViewModel.getReady().observe(this, this::handOffToInstaller);
+        LanSyncInstallTracker.getFailures().observe(this, failure -> {
+            if (failure == null) {
+                return;
+            }
+            LanSyncInstallTracker.onFailureShown();
+            if (failure.isRecent(SystemClock.elapsedRealtime())) {
+                ReceivedApksActivity.showFailureSnackbar(this, findViewById(R.id.coordinator_layout), failure,
+                        failure.bundle ? ReceivedApksActivity.ACTION_SAVE
+                                : ReceivedApksActivity.ACTION_SYSTEM_INSTALLER);
+            }
+        });
 
         mViewModel.loadTrusted();
         updatePermissionCard();
@@ -562,6 +574,9 @@ public class LanSyncActivity extends BaseActivity {
             return;
         }
         mViewModel.onInstallHandedOff();
+        for (LanSyncDownloader.Result result : ready) {
+            LanSyncInstallTracker.track(result);
+        }
         if (ready.size() == 1) {
             startActivity(PackageInstallerActivity.getLaunchableInstance(this, sourceOf(ready.get(0))));
             return;
