@@ -2095,6 +2095,10 @@
     <string name="toast_history_cleared">Toast history cleared.</string>
     <string name="toast_history_clear_failed">Couldn\'t clear the toast history.</string>
     <string name="toast_history_save_failed">Couldn\'t save a toast to the history.</string>
+    <string name="toast_history_search_hint">Search toasts</string>
+    <string name="toast_history_no_matches_title">No matching toasts</string>
+    <string name="toast_history_no_matches">No toast text, app name or package matches this search.</string>
+    <string name="search_regex_unusable">This isn\'t a regular expression that can be used, so nothing matches it.</string>
     <string name="toast_invalid_level">Invalid level name: %s</string>
     <string name="toast_invalid_selection">Invalid selection. Please try again.</string>
     <plurals name="toast_log_truncated">

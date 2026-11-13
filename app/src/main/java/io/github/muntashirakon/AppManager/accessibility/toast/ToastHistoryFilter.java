@@ -11,6 +11,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.github.muntashirakon.AppManager.misc.TextQuery;
+
 /** Lists the apps the saved toasts came from, for the screen's app filter. */
 public final class ToastHistoryFilter {
     private ToastHistoryFilter() {
@@ -54,6 +56,21 @@ public final class ToastHistoryFilter {
             return byLabel != 0 ? byLabel : a.packageName.compareTo(b.packageName);
         });
         return apps;
+    }
+
+    /** @return The toasts whose text, app name or package matches, in the same order. */
+    @NonNull
+    public static List<ToastEntry> search(@NonNull List<ToastEntry> entries, @NonNull TextQuery query) {
+        if (query.isEmpty() && query.isValid()) {
+            return entries;
+        }
+        List<ToastEntry> found = new ArrayList<>();
+        for (ToastEntry entry : entries) {
+            if (query.matches(entry.text, entry.appLabel, entry.packageName)) {
+                found.add(entry);
+            }
+        }
+        return found;
     }
 
     /** @return The filter to go on using: an app with nothing left to show would just be an empty list with no way out. */

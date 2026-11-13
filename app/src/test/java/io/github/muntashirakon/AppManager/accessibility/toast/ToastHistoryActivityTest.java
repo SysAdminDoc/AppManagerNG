@@ -36,6 +36,7 @@ import org.robolectric.shadows.ShadowToast;
 import java.util.function.BooleanSupplier;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 
@@ -261,6 +262,68 @@ public class ToastHistoryActivityTest {
         filter = activity.findViewById(R.id.filter_app);
         filter.getOnItemClickListener().onItemClick(null, null, 0, 0);
         waitForRows(activity, 3);
+    }
+
+    @Test
+    public void theToolbarHasARegexCapableSearch() {
+        ToastHistoryActivity activity = open();
+
+        View searchView = shadowOf(activity).getOptionsMenu().findItem(R.id.action_search).getActionView();
+
+        assertTrue(searchView instanceof AdvancedSearchView);
+    }
+
+    @Test
+    public void searchNarrowsTheListAndWorksWithTheAppFilter() {
+        mHistory.record(T0 + 1_000L, ONE, "Battery low");
+        mHistory.record(T0 + 2_000L, TWO, "Battery saver on");
+        mHistory.record(T0 + 3_000L, TWO, "Saved");
+        ToastHistoryActivity activity = open();
+        waitForRows(activity, 3);
+
+        activity.onQueryTextChange("BATTERY", AdvancedSearchView.SEARCH_TYPE_CONTAINS);
+        waitForRows(activity, 2);
+
+        AutoCompleteTextView filter = activity.findViewById(R.id.filter_app);
+        filter.getOnItemClickListener().onItemClick(null, null, 2, 0);
+        waitForRows(activity, 1);
+        assertEquals("Battery saver on", activity.getVisibleEntries().get(0).text);
+
+        // The package matches too, and a search that hides every row says so.
+        activity.onQueryTextChange("example.one", AdvancedSearchView.SEARCH_TYPE_CONTAINS);
+        waitForRows(activity, 0);
+        assertEquals(mApp.getString(R.string.toast_history_no_matches_title), text(activity, R.id.empty_state_title));
+        assertEquals(mApp.getString(R.string.toast_history_no_matches), text(activity, R.id.empty_state_summary));
+
+        filter = activity.findViewById(R.id.filter_app);
+        filter.getOnItemClickListener().onItemClick(null, null, 0, 0);
+        waitForRows(activity, 1);
+        assertEquals(ONE, activity.getVisibleEntries().get(0).packageName);
+
+        activity.onQueryTextChange("", AdvancedSearchView.SEARCH_TYPE_CONTAINS);
+        waitForRows(activity, 3);
+    }
+
+    @Test
+    public void aRegexSearchMatchesAndABrokenOneSaysWhyNothingShows() {
+        mHistory.record(T0 + 1_000L, ONE, "Photo saved");
+        mHistory.record(T0 + 2_000L, TWO, "Photo deleted");
+        mHistory.record(T0 + 3_000L, TWO, "Battery saver on");
+        ToastHistoryActivity activity = open();
+        waitForRows(activity, 3);
+
+        activity.onQueryTextChange("^photo (saved|deleted)$", AdvancedSearchView.SEARCH_TYPE_REGEX);
+        waitForRows(activity, 2);
+
+        activity.onQueryTextChange("photo (saved", AdvancedSearchView.SEARCH_TYPE_REGEX);
+        waitForRows(activity, 0);
+        assertEquals(mApp.getString(R.string.search_regex_unusable), text(activity, R.id.empty_state_summary));
+
+        // The same text as plain text isn't a pattern at all.
+        activity.onQueryTextChange("photo (saved", AdvancedSearchView.SEARCH_TYPE_CONTAINS);
+        waitFor(() -> mApp.getString(R.string.toast_history_no_matches)
+                .equals(text(activity, R.id.empty_state_summary)));
+        assertTrue(activity.getVisibleEntries().isEmpty());
     }
 
     @Test

@@ -39,6 +39,8 @@ import java.util.Map;
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.accessibility.BaseAccessibilityService;
+import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
+import io.github.muntashirakon.AppManager.misc.TextQuery;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.LiveDataChanges;
@@ -49,7 +51,7 @@ import io.github.muntashirakon.util.UiUtils;
 import io.github.muntashirakon.widget.MaterialAutoCompleteTextView;
 import io.github.muntashirakon.widget.RecyclerView;
 
-public class ToastHistoryActivity extends BaseActivity {
+public class ToastHistoryActivity extends BaseActivity implements AdvancedSearchView.OnQueryTextListener {
     private ToastHistoryViewModel mViewModel;
     private LinearProgressIndicator mProgressIndicator;
     private MaterialSwitch mRecordSwitch;
@@ -57,12 +59,16 @@ public class ToastHistoryActivity extends BaseActivity {
     private TextInputLayout mFilterLayout;
     private MaterialAutoCompleteTextView mFilterView;
     private View mEmptyView;
+    private TextView mEmptyTitle;
     private TextView mEmptySummary;
     private MaterialButton mEmptyAction;
     private ToastAdapter mAdapter;
     /** What the screen shows, for the copy action. */
     @NonNull
     private List<ToastEntry> mVisible = Collections.emptyList();
+    @NonNull
+    private TextQuery mShownQuery = TextQuery.empty();
+    private int mTotal;
 
     @Override
     protected void onAuthenticated(@Nullable Bundle savedInstanceState) {
@@ -84,7 +90,7 @@ public class ToastHistoryActivity extends BaseActivity {
         listView.setLayoutManager(new LinearLayoutManager(this));
         mEmptyView = findViewById(android.R.id.empty);
         ((ImageView) mEmptyView.findViewById(R.id.empty_state_icon)).setImageResource(R.drawable.ic_history);
-        ((TextView) mEmptyView.findViewById(R.id.empty_state_title)).setText(R.string.toast_history_empty_title);
+        mEmptyTitle = mEmptyView.findViewById(R.id.empty_state_title);
         mEmptySummary = mEmptyView.findViewById(R.id.empty_state_summary);
         mEmptyAction = mEmptyView.findViewById(R.id.empty_state_action);
         listView.setEmptyView(mEmptyView);
@@ -112,7 +118,43 @@ public class ToastHistoryActivity extends BaseActivity {
     @Override
     public boolean onCreateOptionsMenu(@NonNull Menu menu) {
         getMenuInflater().inflate(R.menu.activity_toast_history_actions, menu);
+        MenuItem searchItem = menu.findItem(R.id.action_search);
+        AdvancedSearchView searchView = (AdvancedSearchView) searchItem.getActionView();
+        if (searchView != null) {
+            searchView.setEnabledTypes(AdvancedSearchView.SEARCH_TYPE_CONTAINS | AdvancedSearchView.SEARCH_TYPE_REGEX);
+            searchView.setQueryHint(getString(R.string.toast_history_search_hint));
+            searchItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener() {
+                @Override
+                public boolean onMenuItemActionExpand(@NonNull MenuItem item) {
+                    return true;
+                }
+
+                @Override
+                public boolean onMenuItemActionCollapse(@NonNull MenuItem item) {
+                    mViewModel.setQuery(null, false);
+                    return true;
+                }
+            });
+            TextQuery query = mViewModel.getQuery();
+            if (!query.isEmpty()) {
+                // After a rotation: show the search that's still narrowing the list.
+                searchItem.expandActionView();
+                searchView.setQuery(query.getQuery(), false);
+            }
+            searchView.setOnQueryTextListener(this);
+        }
         return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onQueryTextChange(@NonNull String newText, @AdvancedSearchView.SearchType int type) {
+        mViewModel.setQuery(newText, type == AdvancedSearchView.SEARCH_TYPE_REGEX);
+        return true;
+    }
+
+    @Override
+    public boolean onQueryTextSubmit(@NonNull String query, @AdvancedSearchView.SearchType int type) {
+        return onQueryTextChange(query, type);
     }
 
     @Override
@@ -146,6 +188,16 @@ public class ToastHistoryActivity extends BaseActivity {
         boolean serviceOn = BaseAccessibilityService.isAccessibilityEnabled(this);
         boolean empty = mVisible.isEmpty();
         mServiceOffGroup.setVisibility(recording && !serviceOn && !empty ? View.VISIBLE : View.GONE);
+        if (mTotal > 0 && (!mShownQuery.isValid() || !mShownQuery.isEmpty())) {
+            // The history has rows, the search hides them all.
+            mEmptyTitle.setText(R.string.toast_history_no_matches_title);
+            mEmptySummary.setText(mShownQuery.isValid() ? R.string.toast_history_no_matches
+                    : R.string.search_regex_unusable);
+            mEmptyAction.setOnClickListener(null);
+            mEmptyAction.setVisibility(View.GONE);
+            return;
+        }
+        mEmptyTitle.setText(R.string.toast_history_empty_title);
         if (!recording) {
             mEmptySummary.setText(R.string.toast_history_empty_off);
             mEmptyAction.setText(R.string.toast_history_turn_on);
@@ -205,6 +257,8 @@ public class ToastHistoryActivity extends BaseActivity {
     private void showState(@NonNull ToastHistoryViewModel.State state) {
         mProgressIndicator.hide();
         mVisible = state.visible;
+        mShownQuery = state.query;
+        mTotal = state.total;
         mAdapter.setEntries(state.visible, state.appInfos);
         showFilter(state);
         updateGuidance();
