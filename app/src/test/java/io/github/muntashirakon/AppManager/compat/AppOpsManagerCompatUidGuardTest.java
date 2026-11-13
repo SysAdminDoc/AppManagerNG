@@ -19,6 +19,7 @@ import org.robolectric.annotation.Config;
 import java.util.Collections;
 import java.util.List;
 
+import com.android.internal.app.IAppOpsCallback;
 import com.android.internal.app.IAppOpsService;
 
 import io.github.muntashirakon.AppManager.safety.AppOpsUidGuard;
@@ -134,6 +135,14 @@ public class AppOpsManagerCompatUidGuardTest {
         @Override
         public int checkOperationRaw(int code, int uid, String packageName, String attributionTag) {
             return AppOpsManager.MODE_DEFAULT;
+        }
+
+        @Override
+        public void startWatchingMode(int op, String packageName, IAppOpsCallback callback) {
+        }
+
+        @Override
+        public void stopWatchingMode(IAppOpsCallback callback) {
         }
 
         @Override

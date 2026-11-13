@@ -1863,6 +1863,11 @@
         <receiver
             android:name=".permission.watcher.WatchRuleActionReceiver"
             android:exported="false" />
+        <!-- Only the privileged process (shell or root) holds this permission, and it's the one that sends -->
+        <receiver
+            android:name=".permission.watcher.WatchedAppChangedReceiver"
+            android:exported="true"
+            android:permission="android.permission.UPDATE_APP_OPS_STATS" />
         <receiver
             android:name=".automation.AutomationReceiver"
             android:exported="true"
