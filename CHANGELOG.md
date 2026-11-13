@@ -10,6 +10,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Top app history (issue #26). Open it from Labs and turn on recording, and while the bubble is on it keeps a list of every app and overlay it sees, newest first, with the time each one showed up. Each row says what happened, like "Weather drew an overlay over Chrome", so an ad that was gone before you could read the bubble can still be traced. It keeps the last 1,000 changes, tap a row to copy it, and clearing it can be undone. It's off until you turn it on and stays on the phone.
 - A Possible ad source chip on the main list, plus a filter of the same name (issue #26). An app gets it when it's allowed to draw over other apps and also has a way to come up without being opened, by starting itself after a restart or by opening full screen from a notification. Tap the chip to go straight to that app's permissions. It's a hint, not a malware check. Plenty of normal apps match too (chat bubbles, alarm clocks), and system apps never get it.
 
+### Changed
+- The Russian translation now covers nearly the whole app, about 3,580 of 3,900 strings, thanks to antiframe (issue #31). Every string was checked against the English original before it went in, and the 30 that no longer match it (missing or extra placeholders, usually from an older English wording) stay in English until they're redone.
+
 ### Fixed
 - A watched permission set to Always deny gets taken back right away when someone grants it in Settings, in root, ADB and Shizuku modes (issue #15). Android doesn't tell apps about a permission granted there, and it pauses apps in the background, so the grant used to stick until the next check. The privileged server now watches those apps itself and starts the check the moment one changes. No-root mode still checks at the usual times.
 

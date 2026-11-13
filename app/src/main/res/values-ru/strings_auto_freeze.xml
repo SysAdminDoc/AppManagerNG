@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <string name="pref_auto_freeze_on_lock">Автозаморозка при блокировке экрана</string>
+    <string name="pref_auto_freeze_on_lock_summary">Замораживать приложения с сохранёнными правилами заморозки после выключения экрана. Оставьте включённой «Конфиденциальность → Постоянная сессия» для надёжного определения блокировки.</string>
+    <string name="pref_auto_freeze_delay">Задержка перед автозаморозкой</string>
+    <string name="pref_auto_freeze_delay_summary">Секунды ожидания перед заморозкой. Разблокировка отменяет ожидающую работу.</string>
+</resources>

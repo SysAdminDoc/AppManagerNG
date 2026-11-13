@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <string name="rule_reset_preparing">Подготовка сброса правил…</string>
+    <string name="rule_reset_progress_target">%1$s · пользователь %2$d · %3$s</string>
+    <string name="rule_reset_cancelling">Отмена…</string>
+    <string name="rule_reset_result_title">Сброс правил завершён</string>
+    <string name="rule_reset_result_empty">Сохранённые правила не найдены.</string>
+    <string name="rule_reset_result_success">Сброшено %1$d целей правил.</string>
+    <string name="rule_reset_result_partial">Сброшено %1$d из %2$d целей правил. %3$d с ошибкой; %4$d остаются в ожидании повтора.</string>
+    <string name="rule_reset_result_cancelled">Сброс отменён после успешного выполнения %1$d из %2$d целей правил. %3$d с ошибкой; %4$d остаются в ожидании повтора.</string>
+    <string name="rule_reset_retry_failed">Повторить оставшиеся</string>
+    <string name="rule_reset_view_history">История операций</string>
+</resources>
