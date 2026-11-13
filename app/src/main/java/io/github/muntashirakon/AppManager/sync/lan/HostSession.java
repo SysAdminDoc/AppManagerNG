@@ -64,6 +64,10 @@ public final class HostSession {
     @Nullable
     private final Listener mListener;
     private int mRevision = SyncMessages.REVISION;
+    /**
+     * The revision the client sent with a PING, 0 until it does.
+     */
+    private int mClientRevision;
 
     public HostSession(@NonNull FrameIo io, @NonNull TimeoutSetter timeouts, @NonNull String hostName,
                        @NonNull LocalIdentity identity, @NonNull SecureRandom random,
@@ -132,7 +136,8 @@ public final class HostSession {
                     r.expectEnd();
                     byte[] reply;
                     try {
-                        reply = SyncMessages.listResponse(mCatalog.listApps(includeSystem));
+                        reply = SyncMessages.listResponse(mCatalog.listApps(includeSystem),
+                                sendsSignerSubjects());
                     } catch (SyncProtocolException e) {
                         reply = SyncMessages.error(SyncMessages.ERR_TOO_LARGE, e.getMessage());
                     }
@@ -166,13 +171,24 @@ public final class HostSession {
         if (mRevision >= SyncMessages.REVISION_RESUME) {
             SyncMessages.Reader r = SyncMessages.read(message, SyncMessages.PING);
             if (r.hasMore()) {
-                // The client's revision; nothing on this side depends on it yet
-                r.readInt();
+                int clientRevision = r.readInt();
                 r.expectEnd();
+                // A nonsense revision just means the plain list
+                mClientRevision = Math.max(clientRevision, 0);
                 return SyncMessages.revisionAnswer(mRevision);
             }
         }
         return SyncMessages.simple(SyncMessages.PONG);
+    }
+
+    /**
+     * Whether the app list carries signer subjects: only when this host and the client both said
+     * they're on {@link SyncMessages#REVISION_SIGNER_SUBJECTS}. A client that never asked gets the
+     * list it always got.
+     */
+    private boolean sendsSignerSubjects() {
+        return mRevision >= SyncMessages.REVISION_SIGNER_SUBJECTS
+                && mClientRevision >= SyncMessages.REVISION_SIGNER_SUBJECTS;
     }
 
     /**

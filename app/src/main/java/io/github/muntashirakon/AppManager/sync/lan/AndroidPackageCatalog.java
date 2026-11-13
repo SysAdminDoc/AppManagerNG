@@ -14,6 +14,7 @@ import androidx.annotation.WorkerThread;
 import androidx.core.content.pm.PackageInfoCompat;
 
 import java.io.File;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -21,6 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.github.muntashirakon.AppManager.apk.signing.SignerInfo;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
 
@@ -113,7 +115,8 @@ public final class AndroidPackageCatalog implements HostCatalog {
         if (!SyncMessages.isValidPackageName(info.packageName)) {
             return null;
         }
-        ApkSignatureGate.SignerDigests signers = ApkSigners.fromSignerInfo(PackageUtils.getSignerInfo(info, false));
+        SignerInfo signerInfo = PackageUtils.getSignerInfo(info, false);
+        ApkSignatureGate.SignerDigests signers = ApkSigners.fromSignerInfo(signerInfo);
         if (signers == null || signers.current.size() > SyncMessages.MAX_SIGNERS
                 || signers.lineage.size() > SyncMessages.MAX_SIGNERS) {
             return null;
@@ -129,7 +132,28 @@ public final class AndroidPackageCatalog implements HostCatalog {
         String label = String.valueOf(appInfo.loadLabel(mPm));
         String versionName = info.versionName != null ? info.versionName : "";
         return new SyncApp(info.packageName, label, PackageInfoCompat.getLongVersionCode(info), versionName,
-                system, signers.current, signers.lineage, fileInfos);
+                system, signers.current, signers.lineage, fileInfos, signerSubjects(signerInfo));
+    }
+
+    /**
+     * Each current signing certificate's subject line, the same text the main list's signature
+     * filter matches, so Local sync can be searched by who signed an app.
+     */
+    @VisibleForTesting
+    @NonNull
+    static List<String> signerSubjects(@Nullable SignerInfo signerInfo) {
+        X509Certificate[] certs = signerInfo != null ? signerInfo.getCurrentSignerCerts() : null;
+        if (certs == null) {
+            return Collections.emptyList();
+        }
+        List<String> subjects = new ArrayList<>(certs.length);
+        for (X509Certificate cert : certs) {
+            String subject = cert.getSubjectX500Principal().getName();
+            if (!subject.isEmpty() && !subjects.contains(subject)) {
+                subjects.add(subject);
+            }
+        }
+        return subjects;
     }
 
     /**

@@ -13,8 +13,9 @@ import java.util.Locale;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 
 /**
- * Search for the Local sync app list: the app name, the package name and the version name or code,
- * of the other device's copy and of the one installed here.
+ * Search for the Local sync app list: the app name, the package name, the version name or code and
+ * who signed it (the signing certificate's subject), of the other device's copy and of the one
+ * installed here.
  */
 public final class LanSyncRowFilter {
     private LanSyncRowFilter() {
@@ -45,15 +46,21 @@ public final class LanSyncRowFilter {
 
     @NonNull
     private static List<String> choices(@NonNull LanSyncViewModel.AppRow row, boolean regex) {
-        List<String> choices = new ArrayList<>(7);
+        List<String> choices = new ArrayList<>(9);
         add(choices, row.remote.label, regex);
         add(choices, row.remote.packageName, regex);
         add(choices, row.remote.versionName, regex);
         choices.add(Long.toString(row.remote.versionCode));
+        for (String subject : row.remote.signerSubjects) {
+            add(choices, subject, regex);
+        }
         if (row.local != null) {
             add(choices, row.local.label, regex);
             add(choices, row.local.versionName, regex);
             choices.add(Long.toString(row.local.versionCode));
+            for (String subject : row.local.signerSubjects) {
+                add(choices, subject, regex);
+            }
         }
         return choices;
     }
