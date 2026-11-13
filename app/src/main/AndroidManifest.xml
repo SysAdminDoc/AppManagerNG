@@ -152,6 +152,7 @@
         android:name="android.permission.UPDATE_DOMAIN_VERIFICATION_USER_SELECTION"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION" />
+    <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission
@@ -916,6 +917,26 @@
             android:exported="false"
             android:icon="@drawable/ic_history"
             android:label="@string/top_app_history_title" />
+        <activity
+            android:name=".notificationfilter.NotificationFilterActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:icon="@drawable/ic_notifications_paused"
+            android:label="@string/notification_filter_title" />
+        <activity
+            android:name=".notificationfilter.NotificationRuleEditorActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:label="@string/notification_filter_rule_new"
+            android:parentActivityName=".notificationfilter.NotificationFilterActivity"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".notificationfilter.NotificationHistoryActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:icon="@drawable/ic_history"
+            android:label="@string/notification_history_title"
+            android:parentActivityName=".notificationfilter.NotificationFilterActivity" />
         <activity
             android:name=".permission.watcher.WatchedPermissionsActivity"
             android:enableOnBackInvokedCallback="true"
@@ -1807,6 +1828,15 @@
             <meta-data
                 android:name="android.service.quicksettings.TOGGLEABLE_TILE"
                 android:value="false" />
+        </service>
+        <service
+            android:name=".notificationfilter.NotificationFilterService"
+            android:exported="true"
+            android:label="@string/notification_filter_title"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
         </service>
         <service
             android:name=".accessibility.topapp.TopAppOverlayTileService"

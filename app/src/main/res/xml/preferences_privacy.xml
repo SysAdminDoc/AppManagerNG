@@ -124,6 +124,12 @@
         app:summary="@string/toast_history_settings_summary"
         app:iconSpaceReserved="false" />
 
+    <Preference
+        app:key="notification_filter"
+        app:title="@string/notification_filter_title"
+        app:summary="@string/notification_filter_settings_summary"
+        app:iconSpaceReserved="false" />
+
     <SwitchPreferenceCompat
         app:key="enable_app_change_auditor"
         app:title="@string/pref_app_change_auditor"

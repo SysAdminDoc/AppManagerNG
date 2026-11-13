@@ -15,4 +15,5 @@
     <exclude domain="sharedpref" path="installer_state.xml" />
     <exclude domain="sharedpref" path="server_secrets.xml" />
     <exclude domain="sharedpref" path="lan_sync_trust.xml" />
+    <exclude domain="sharedpref" path="notification_filter.xml" />
 </full-backup-content>

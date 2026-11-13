@@ -225,6 +225,13 @@ public class IntentFilterManifestAuditTest {
     }
 
     @Test
+    public void notificationListenerOnlyBindsForTheSystem() {
+        ExportedComponent comp = sComponents.get(SOURCE_PKG + ".notificationfilter.NotificationFilterService");
+        assertNotNull("NotificationFilterService must be exported for the system to bind it", comp);
+        assertEquals("android.permission.BIND_NOTIFICATION_LISTENER_SERVICE", comp.permission);
+    }
+
+    @Test
     public void documentsProviderRequiresManageDocumentsPermission() {
         ExportedComponent comp = sComponents.get(SOURCE_PKG + ".fm.AppManagerDocumentsProvider");
         assertNotNull("AppManagerDocumentsProvider must be exported", comp);

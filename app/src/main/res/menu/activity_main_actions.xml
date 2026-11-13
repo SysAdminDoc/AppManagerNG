@@ -91,6 +91,11 @@
         android:title="@string/toast_history_title" />
 
     <item
+        android:id="@+id/action_notification_filter"
+        android:icon="@drawable/ic_notifications_paused"
+        android:title="@string/notification_filter_title" />
+
+    <item
         android:id="@+id/action_labs"
         android:icon="@drawable/ic_package"
         android:title="@string/title_labs_activity" />

@@ -77,6 +77,7 @@ import io.github.muntashirakon.AppManager.history.ops.OpHistoryActivity;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.misc.HelpActivity;
 import io.github.muntashirakon.AppManager.misc.LabsActivity;
+import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterActivity;
 import io.github.muntashirakon.AppManager.oneclickops.OneClickOpsActivity;
 import io.github.muntashirakon.AppManager.onboarding.OnboardingFragment;
 import io.github.muntashirakon.AppManager.profiles.AddToProfileDialogFragment;
@@ -504,6 +505,8 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
             startActivity(settingsIntent);
         } else if (id == R.id.action_toast_history) {
             startActivity(new Intent(this, ToastHistoryActivity.class));
+        } else if (id == R.id.action_notification_filter) {
+            startActivity(new Intent(this, NotificationFilterActivity.class));
         } else if (id == R.id.action_app_usage) {
             Intent usageIntent = new Intent(this, AppUsageActivity.class);
             startActivity(usageIntent);
