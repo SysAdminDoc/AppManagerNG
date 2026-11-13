@@ -8,6 +8,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.lifecycle.ViewModelProvider;
@@ -46,6 +47,8 @@ public class PermissionAppsActivity extends BaseActivity {
     private MenuItem mGrantAllMenu;
     private List<PermissionAppsViewModel.AppRow> mRows;
     private boolean mLoading;
+    /** Set when a Settings page was opened, so the list reloads with what the user changed there. */
+    private boolean mReloadOnResume;
 
     @Override
     protected void onAuthenticated(@Nullable Bundle savedInstanceState) {
@@ -90,7 +93,7 @@ public class PermissionAppsActivity extends BaseActivity {
         RecyclerView recycler = findViewById(R.id.recycler_view);
         recycler.setLayoutManager(new LinearLayoutManager(this));
         mAdapter = new PermissionAppsAdapter(row -> mViewModel.togglePermission(row),
-                row -> mViewModel.referenceAction(row));
+                row -> mViewModel.referenceAction(row), this::openSettings);
         recycler.setAdapter(mAdapter);
 
         mViewModel = new ViewModelProvider(this).get(PermissionAppsViewModel.class);
@@ -123,6 +126,24 @@ public class PermissionAppsActivity extends BaseActivity {
         mViewModel.load();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (mReloadOnResume && mViewModel != null) {
+            mReloadOnResume = false;
+            mViewModel.load();
+        }
+    }
+
+    private void openSettings(@NonNull PermissionAppsViewModel.AppRow row) {
+        if (PermissionSettingsLauncher.launch(this,
+                PermissionSettingsLauncher.candidates(row.packageName, row.permissionNames))) {
+            mReloadOnResume = true;
+        } else {
+            Toast.makeText(this, R.string.permission_settings_unavailable, Toast.LENGTH_LONG).show();
+        }
+    }
+
     private void showInfoDialog() {
         new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.perm_inspector_info_title)
@@ -147,7 +168,7 @@ public class PermissionAppsActivity extends BaseActivity {
     }
 
     @Override
-    public boolean onOptionsItemSelected(@androidx.annotation.NonNull MenuItem item) {
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_revoke_all) {
             showBulkActionConfirmation(false);

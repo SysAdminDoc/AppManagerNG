@@ -88,6 +88,17 @@
             android:clickable="false"
             android:focusable="false" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/permission_settings_action"
+            style="@style/Widget.AppTheme.Button.IconButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="@dimen/premium_space_4"
+            android:contentDescription="@string/view_in_settings"
+            android:visibility="gone"
+            app:icon="@drawable/ic_settings"
+            app:iconSize="20dp" />
+
     </LinearLayout>
 
 </com.google.android.material.card.MaterialCardView>
