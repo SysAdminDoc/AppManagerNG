@@ -114,6 +114,7 @@ public class MainListOptions extends ListOptions {
             FILTER_STOPPED_APPS,
             FILTER_APPS_WITH_TRACKERS,
             FILTER_APPS_WITH_GRANTED_PERMS,
+            FILTER_APPS_POSSIBLE_AD_SOURCES,
     })
     @Retention(RetentionPolicy.SOURCE)
     public @interface Filter {
@@ -138,6 +139,8 @@ public class MainListOptions extends ListOptions {
     public static final int FILTER_UNFROZEN_APPS = 1 << 15;
     public static final int FILTER_APPS_WITH_TRACKERS = 1 << 16;
     public static final int FILTER_APPS_WITH_GRANTED_PERMS = 1 << 17;
+    /** See {@link AdSourceSignals#isPossibleAdSource(ApplicationItem)}. */
+    public static final int FILTER_APPS_POSSIBLE_AD_SOURCES = 1 << 18;
 
     public static final int OPTION_PROFILE_FILTER_INVERSE = 1;
 
@@ -443,6 +446,7 @@ public class MainListOptions extends ListOptions {
             put(FILTER_APPS_WITH_SPLITS, R.string.filter_apps_with_splits);
             put(FILTER_APPS_WITH_TRACKERS, R.string.filter_apps_with_trackers);
             put(FILTER_APPS_WITH_GRANTED_PERMS, R.string.filter_apps_with_granted_perms);
+            put(FILTER_APPS_POSSIBLE_AD_SOURCES, R.string.filter_apps_possible_ad_sources);
             if (Ops.isWorkingUidRoot()) {
                 put(FILTER_APPS_WITH_KEYSTORE, R.string.filter_apps_with_keystore);
                 put(FILTER_APPS_WITH_SAF, R.string.filter_apps_with_saf);

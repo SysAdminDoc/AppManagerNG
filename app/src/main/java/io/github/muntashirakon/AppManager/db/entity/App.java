@@ -131,6 +131,13 @@ public class App implements Serializable {
     @ColumnInfo(name = "dangerous_perm_granted", defaultValue = "0")
     public int dangerousPermGranted;
 
+    /**
+     * What could let the app put ads over other apps, as
+     * {@link io.github.muntashirakon.AppManager.main.AdSourceSignals} flags. Set in the AppDb refresh pass.
+     */
+    @ColumnInfo(name = "ad_source_signals", defaultValue = "0")
+    public int adSourceSignals;
+
     @ColumnInfo(name = "open_count", defaultValue = "0")
     public int openCount;
 

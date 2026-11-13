@@ -923,6 +923,10 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                                 || item.dangerousPermGranted == 0)) {
                     continue;
                 }
+                if ((mFilterFlags & MainListOptions.FILTER_APPS_POSSIBLE_AD_SOURCES) != 0
+                        && !AdSourceSignals.isPossibleAdSource(item)) {
+                    continue;
+                }
                 filteredApplicationItems.add(item);
             }
             if (!TextUtils.isEmpty(mSearchQuery)) {
@@ -1250,6 +1254,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
             item.trackerBlockedCount = app.trackerBlockedCount;
             item.dangerousPermTotal = app.dangerousPermTotal;
             item.dangerousPermGranted = app.dangerousPermGranted;
+            item.adSourceSignals = app.adSourceSignals;
             item.lastActionTime = app.lastActionTime;
             if (item.backup == null) {
                 item.backup = BackupUtils.getLatestBackupMetadataFromDbNoLockValidate(packageName);

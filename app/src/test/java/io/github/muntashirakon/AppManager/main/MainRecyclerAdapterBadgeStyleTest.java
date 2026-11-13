@@ -63,6 +63,19 @@ public class MainRecyclerAdapterBadgeStyleTest {
     }
 
     @Test
+    public void adSourceBadgeSaysHowTheAppCanComeUpUnopened() {
+        Context context = RuntimeEnvironment.getApplication();
+
+        assertEquals(context.getString(R.string.main_list_ad_source_boot), MainRecyclerAdapter
+                .getAdSourceDescription(context, AdSourceSignals.OVERLAY | AdSourceSignals.BOOT));
+        assertEquals(context.getString(R.string.main_list_ad_source_full_screen), MainRecyclerAdapter
+                .getAdSourceDescription(context, AdSourceSignals.OVERLAY | AdSourceSignals.FULL_SCREEN));
+        assertEquals(context.getString(R.string.main_list_ad_source_both), MainRecyclerAdapter
+                .getAdSourceDescription(context, AdSourceSignals.OVERLAY | AdSourceSignals.BOOT
+                        | AdSourceSignals.FULL_SCREEN));
+    }
+
+    @Test
     public void expandTouchRectToMinimumGrowsSmallBadgeSymmetrically() {
         Rect rect = new Rect(10, 20, 34, 44);
 

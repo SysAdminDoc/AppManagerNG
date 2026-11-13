@@ -7,6 +7,7 @@ import static io.github.muntashirakon.AppManager.compat.PackageManagerCompat.MAT
 import static io.github.muntashirakon.AppManager.compat.PackageManagerCompat.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES;
 import static io.github.muntashirakon.AppManager.compat.PackageManagerCompat.MATCH_UNINSTALLED_PACKAGES;
 
+import android.Manifest;
 import android.annotation.UserIdInt;
 import android.content.Context;
 import android.content.pm.PackageInfo;
@@ -31,6 +32,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
+import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.db.AppsDb;
 import io.github.muntashirakon.AppManager.db.dao.AppDao;
@@ -38,6 +40,7 @@ import io.github.muntashirakon.AppManager.db.dao.BackupDao;
 import io.github.muntashirakon.AppManager.db.entity.App;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.main.AdSourceSignals;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
@@ -49,6 +52,7 @@ import io.github.muntashirakon.AppManager.usage.PackageUsageInfo;
 import io.github.muntashirakon.AppManager.usage.TimeInterval;
 import io.github.muntashirakon.AppManager.usage.UsageUtils;
 import io.github.muntashirakon.AppManager.users.Users;
+import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.BroadcastUtils;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
 import io.github.muntashirakon.AppManager.utils.KeyStoreUtils;
@@ -386,6 +390,11 @@ public class AppDb {
                 }
             }
         }
+        // Read through the privileged server when there is one, so other users' apps are covered too
+        AppOpsManagerCompat appOps = ExUtils.exceptionAsNull(AppOpsManagerCompat::new);
+        Integer overlayOpCode = ExUtils.exceptionAsNull(() ->
+                AppOpsManagerCompat.permissionToOpCode(Manifest.permission.SYSTEM_ALERT_WINDOW));
+        int overlayOp = overlayOpCode != null ? overlayOpCode : AppOpsManagerCompat.OP_NONE;
         for (App app : modifiedApps) {
             if (!app.isInstalled && !app.isSystemApp()) {
                 continue;
@@ -422,6 +431,11 @@ public class AppDb {
                                 app.packageName,
                                 android.content.pm.PackageManager.GET_PERMISSIONS,
                                 userId);
+                if (packageInfoForPerms != null) {
+                    app.adSourceSignals = AdSourceSignals.compute(packageInfoForPerms.requestedPermissions,
+                            packageInfoForPerms.requestedPermissionsFlags,
+                            readOverlayMode(appOps, overlayOp, app, packageInfoForPerms.requestedPermissions));
+                }
                 if (packageInfoForPerms != null
                         && packageInfoForPerms.requestedPermissions != null) {
                     String[] perms = packageInfoForPerms.requestedPermissions;
@@ -488,6 +502,21 @@ public class AppDb {
                 app.mobileDataUsage = app.wifiDataUsage = app.screenTime = app.lastUsageTime = 0;
                 app.openCount = 0;
             }
+        }
+    }
+
+    /** The user's draw-over-apps switch for the app, read only when the app asks for that permission. */
+    private static int readOverlayMode(@Nullable AppOpsManagerCompat appOps, int overlayOp, @NonNull App app,
+                                       @Nullable String[] requested) {
+        if (appOps == null || overlayOp == AppOpsManagerCompat.OP_NONE
+                || !ArrayUtils.contains(requested, Manifest.permission.SYSTEM_ALERT_WINDOW)) {
+            return AdSourceSignals.MODE_UNKNOWN;
+        }
+        try {
+            return appOps.checkOperation(overlayOp, app.uid, app.packageName);
+        } catch (RemoteException | RuntimeException e) {
+            // The grant decides instead
+            return AdSourceSignals.MODE_UNKNOWN;
         }
     }
 

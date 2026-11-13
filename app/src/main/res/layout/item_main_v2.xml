@@ -115,6 +115,22 @@
                     app:rowSpacing="@dimen/premium_space_4">
 
                     <androidx.appcompat.widget.AppCompatTextView
+                        android:id="@+id/ad_source_indicator"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="@dimen/premium_space_8"
+                        android:ellipsize="end"
+                        android:gravity="center_vertical"
+                        android:includeFontPadding="false"
+                        android:maxLines="1"
+                        android:maxWidth="@dimen/premium_badge_max_width"
+                        android:minHeight="@dimen/premium_badge_min_height"
+                        android:text="@string/main_list_ad_source_badge"
+                        android:textAppearance="@style/TextAppearance.AppTheme.V2.LabelSmall"
+                        android:visibility="gone"
+                        tools:visibility="visible" />
+
+                    <androidx.appcompat.widget.AppCompatTextView
                         android:id="@+id/backup_indicator"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"

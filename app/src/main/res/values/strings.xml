@@ -296,6 +296,10 @@
     <string name="main_list_tracker_count_partial_a11y"><xliff:g id="blocked" example="3">%1$d</xliff:g> of <xliff:g id="total" example="27">%2$d</xliff:g> trackers blocked</string>
     <string name="main_list_perm_count_a11y"><xliff:g id="granted" example="3">%1$d</xliff:g> of <xliff:g id="total" example="8">%2$d</xliff:g> dangerous permissions granted</string>
     <string name="main_list_perm_badge_label"><xliff:g id="granted" example="3">%1$d</xliff:g>/<xliff:g id="total" example="8">%2$d</xliff:g> perms</string>
+    <string name="main_list_ad_source_badge">Possible ad source</string>
+    <string name="main_list_ad_source_boot">Possible ad source. It can draw over other apps and starts itself after a restart. Lots of normal apps can too. Tap to see its permissions.</string>
+    <string name="main_list_ad_source_full_screen">Possible ad source. It can draw over other apps and open full screen from a notification. Lots of normal apps can too. Tap to see its permissions.</string>
+    <string name="main_list_ad_source_both">Possible ad source. It can draw over other apps, open full screen from a notification and start itself after a restart. Lots of normal apps can too. Tap to see its permissions.</string>
     <string name="main_list_tag_badge_a11y">Tags: <xliff:g id="tags" example="work, review">%1$s</xliff:g></string>
     <plurals name="tracker_and_classes">
         <item quantity="one">1 tracker with <xliff:g id="class_no" example="50">%1$d</xliff:g> class</item>
@@ -1691,6 +1695,7 @@
     <string name="filter_apps_with_splits">With splits</string>
     <string name="filter_apps_with_trackers">Unblocked trackers</string>
     <string name="filter_apps_with_granted_perms">Granted permissions</string>
+    <string name="filter_apps_possible_ad_sources">Possible ad sources</string>
     <string name="value">Value</string>
     <string name="matching_activities">Matching activities</string>
     <string name="send_edited_intent">Send edited Intent</string>
