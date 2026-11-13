@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.permission.watcher;
 
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -34,6 +35,7 @@ public class WatchedAppChangedReceiver extends BroadcastReceiver {
     /** {@code Intent.FLAG_RECEIVER_FROM_SHELL}, hidden: the sender is the shell or root. */
     private static final int FLAG_RECEIVER_FROM_SHELL = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? 0x00400000 : 0;
 
+    @SuppressLint("WrongConstant") // FLAG_RECEIVER_FROM_SHELL is a hidden flag lint doesn't list
     @NonNull
     static Intent intentFor(@NonNull String packageName, int uid) {
         return new Intent(ACTION_WATCHED_APP_CHANGED)
