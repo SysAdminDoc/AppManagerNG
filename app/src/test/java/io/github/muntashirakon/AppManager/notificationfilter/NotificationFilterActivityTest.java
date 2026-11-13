@@ -190,6 +190,19 @@ public class NotificationFilterActivityTest {
     }
 
     @Test
+    public void typingInTheAppFieldReplacesAnyApp() {
+        NotificationRuleEditorActivity editor = openEditor(null);
+        EditText app = editor.findViewById(R.id.rule_app);
+        assertEquals(editor.getString(R.string.notification_filter_rule_any_app), app.getText().toString());
+
+        app.requestFocus();
+        // What a keyboard does with typed text: replace the selection, or insert at the cursor.
+        app.getText().replace(app.getSelectionStart(), app.getSelectionEnd(), "chr");
+
+        assertEquals("chr", app.getText().toString());
+    }
+
+    @Test
     public void editorKeepsTheIdOfTheRuleItEdits() {
         mSettings.setRules(Arrays.asList(rule("a", "alpha"), rule("b", "beta")));
         NotificationRuleEditorActivity editor = openEditor("b");
