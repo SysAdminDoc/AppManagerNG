@@ -194,6 +194,7 @@ public class PackageInstallerService extends ForegroundService {
             // Install package
             PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
             installer.setAppLabel(apkQueueItem.getAppLabel());
+            installer.setApkName(InstallSessionDetails.apkNameOf(apkQueueItem.getApkSource()));
             installer.setOnInstallListener(new PackageInstallerCompat.OnInstallListener() {
                 @Override
                 public void onStartInstall(int sessionId, String packageName) {

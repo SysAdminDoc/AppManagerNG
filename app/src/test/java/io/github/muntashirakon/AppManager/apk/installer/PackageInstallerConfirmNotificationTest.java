@@ -7,6 +7,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.Manifest;
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.content.Context;
@@ -28,6 +29,8 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.Shadows;
 import org.robolectric.shadows.ShadowNotificationManager;
+
+import io.github.muntashirakon.AppManager.R;
 
 /**
  * The confirmation notification is posted with {@code setAutoCancel(false)}, so nothing retires it
@@ -190,6 +193,38 @@ public class PackageInstallerConfirmNotificationTest {
         receiver.onReceive(mContext, pendingUserAction(hostile, 7));
 
         assertEquals(0, mNotifications.size());
+    }
+
+    /**
+     * Issue #22: with several installs queued in the background, "Confirm installation" alone
+     * didn't say which one was waiting. The notification names the app and the file.
+     */
+    @Test
+    public void theConfirmationNamesTheAppAndTheFile() {
+        PackageInstallerBroadcastReceiver receiver = new PackageInstallerBroadcastReceiver();
+        receiver.setPackageName("com.example.app");
+        receiver.setAppLabel("Example");
+        receiver.setApkName("Example-2.0.apk");
+
+        receiver.onReceive(mContext, pendingUserAction(installConfirmationResolvingToSystem(), 7));
+
+        Notification posted = mNotifications.getAllNotifications().get(0);
+        assertEquals("Example", String.valueOf(posted.extras.getCharSequence(Notification.EXTRA_TITLE)));
+        assertEquals("Confirm installation of Example-2.0.apk",
+                String.valueOf(posted.extras.getCharSequence(Notification.EXTRA_TEXT)));
+    }
+
+    @Test
+    public void withoutALabelThePackageNameTitlesTheConfirmation() {
+        PackageInstallerBroadcastReceiver receiver = new PackageInstallerBroadcastReceiver();
+        receiver.setPackageName("com.example.app");
+
+        receiver.onReceive(mContext, pendingUserAction(installConfirmationResolvingToSystem(), 7));
+
+        Notification posted = mNotifications.getAllNotifications().get(0);
+        assertEquals("com.example.app", String.valueOf(posted.extras.getCharSequence(Notification.EXTRA_TITLE)));
+        assertEquals(mContext.getString(R.string.confirm_installation),
+                String.valueOf(posted.extras.getCharSequence(Notification.EXTRA_TEXT)));
     }
 
     /**

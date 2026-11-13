@@ -44,6 +44,7 @@ import androidx.annotation.WorkerThread;
 import androidx.core.app.PendingIntentCompat;
 import androidx.core.content.ContextCompat;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -542,6 +543,8 @@ public final class PackageInstallerCompat {
     private String mPackageName;
     @Nullable
     private CharSequence mAppLabel;
+    @Nullable
+    private String mApkName;
     private int mSessionId = -1;
     @Nullable
     private String mSessionSha256;
@@ -618,6 +621,14 @@ public final class PackageInstallerCompat {
 
     public void setAppLabel(@Nullable CharSequence appLabel) {
         mAppLabel = appLabel;
+    }
+
+    /**
+     * The name of the file being installed, shown with the checksum and in the confirmation
+     * notification so installs running one after another can be told apart.
+     */
+    public void setApkName(@Nullable String apkName) {
+        mApkName = apkName;
     }
 
     @Nullable
@@ -705,9 +716,14 @@ public final class PackageInstallerCompat {
             // still happens before the expansion files are staged and before a session is created —
             // a doomed install leaves no session and no replaced OBB generation behind.
             long totalSize = 0;
+            File baseApk = null;
             for (ApkFile.Entry selectedEntry : selectedEntries) {
                 try {
-                    totalSize += selectedEntry.getFile(options.isSignApkFiles()).length();
+                    File entryFile = selectedEntry.getFile(options.isSignApkFiles());
+                    totalSize += entryFile.length();
+                    if (selectedEntry.type == ApkFile.APK_BASE) {
+                        baseApk = entryFile;
+                    }
                 } catch (IOException e) {
                     callFinish(STATUS_FAILURE_INVALID, withCause(
                             "STATUS_FAILURE_INVALID: Could not read " + selectedEntry.getFileName() + ".", e));
@@ -766,6 +782,7 @@ public final class PackageInstallerCompat {
             if (mPkgInstallerReceiver != null) {
                 mPkgInstallerReceiver.setSessionSha256(mSessionSha256);
             }
+            InstallSessionDetails.register(mSessionId, new InstallSessionDetails(mAppLabel, mApkName, baseApk));
             Log.d(TAG, "Install: Running installation...");
             // Commit
             boolean installed = commit(userId);
@@ -915,12 +932,30 @@ public final class PackageInstallerCompat {
             if (mPkgInstallerReceiver != null) {
                 mPkgInstallerReceiver.setSessionSha256(mSessionSha256);
             }
+            InstallSessionDetails.register(mSessionId, new InstallSessionDetails(mAppLabel, mApkName,
+                    baseApkOf(apkFiles)));
             // Commit
             return commit(userId);
         } finally {
             unregisterReceiver();
             restoreVerifySettings();
         }
+    }
+
+    /**
+     * The base APK among already-resolved session files: the one named {@code base.apk}, or the
+     * only file there is. {@code null} when it isn't a local file the parser can open.
+     */
+    @Nullable
+    static File baseApkOf(@NonNull Path[] apkFiles) {
+        Path base = apkFiles.length == 1 ? apkFiles[0] : null;
+        for (Path apkFile : apkFiles) {
+            if ("base.apk".equals(apkFile.getName())) {
+                base = apkFile;
+                break;
+            }
+        }
+        return base != null ? base.getFile() : null;
     }
 
     private boolean commit(int userId) {
@@ -1646,6 +1681,8 @@ public final class PackageInstallerCompat {
             mPkgInstallerReceiver.clearConfirmNotification(mContext);
             ContextUtils.unregisterReceiver(mContext, mPkgInstallerReceiver);
         }
+        // The session's files go with it, so nothing may be read from them after this
+        InstallSessionDetails.unregister(mSessionId);
         ContextUtils.unregisterReceiver(mContext, mBroadcastReceiver);
     }
 
@@ -1654,6 +1691,7 @@ public final class PackageInstallerCompat {
         mInteractionWatcher = new CountDownLatch(1);
         mPkgInstallerReceiver = new PackageInstallerBroadcastReceiver();
         mPkgInstallerReceiver.setAppLabel(mAppLabel);
+        mPkgInstallerReceiver.setApkName(mApkName);
         mPkgInstallerReceiver.setPackageName(mPackageName);
         ContextCompat.registerReceiver(mContext, mPkgInstallerReceiver,
                 new IntentFilter(PackageInstallerBroadcastReceiver.ACTION_PI_RECEIVER),

@@ -215,6 +215,8 @@ public class InstallerPreferences extends PreferenceFragment {
         // Display changes
         ((SwitchPreferenceCompat) Objects.requireNonNull(findPreference("installer_display_changes")))
                 .setChecked(Prefs.Installer.displayChanges());
+        ((SwitchPreferenceCompat) Objects.requireNonNull(findPreference("installer_show_session_changes")))
+                .setChecked(Prefs.Installer.showSessionChanges());
         // Block trackers
         SwitchPreferenceCompat blockTrackersPref = Objects.requireNonNull(findPreference("installer_block_trackers"));
         blockTrackersPref.setVisible(SelfPermissions.canModifyAppComponentStates(UserHandleHidden.myUserId(), null, true));

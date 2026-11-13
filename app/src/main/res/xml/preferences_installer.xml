@@ -32,6 +32,12 @@
             app:summary="@string/pref_display_changes_msg"
             app:title="@string/pref_display_changes" />
 
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="false"
+            app:key="installer_show_session_changes"
+            app:summary="@string/pref_installer_show_session_changes_msg"
+            app:title="@string/pref_installer_show_session_changes" />
+
     </PreferenceCategory>
 
     <PreferenceCategory

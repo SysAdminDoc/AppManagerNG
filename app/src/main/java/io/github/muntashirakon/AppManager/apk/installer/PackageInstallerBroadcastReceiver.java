@@ -30,6 +30,8 @@ class PackageInstallerBroadcastReceiver extends BroadcastReceiver {
     private String mPackageName;
     private CharSequence mAppLabel;
     @Nullable
+    private String mApkName;
+    @Nullable
     private String mSessionSha256;
     private int mConfirmNotificationId = 0;
 
@@ -39,6 +41,24 @@ class PackageInstallerBroadcastReceiver extends BroadcastReceiver {
 
     public void setAppLabel(CharSequence appLabel) {
         mAppLabel = appLabel;
+    }
+
+    public void setApkName(@Nullable String apkName) {
+        mApkName = apkName;
+    }
+
+    /**
+     * The confirmation notification's text. Installs queued one after another wait behind these
+     * notifications, so it names the file when there is one.
+     */
+    @NonNull
+    String confirmText(@NonNull Context context, int sessionId) {
+        if (sessionId == -1) {
+            // A neat way to tell an uninstall apart is to check for sessionId
+            return context.getString(R.string.confirm_uninstallation);
+        }
+        return mApkName != null ? context.getString(R.string.confirm_installation_of_file, mApkName)
+                : context.getString(R.string.confirm_installation);
     }
 
     public void setSessionSha256(@Nullable String sessionSha256) {
@@ -124,17 +144,17 @@ class PackageInstallerBroadcastReceiver extends BroadcastReceiver {
                 broadcastCancel.putExtra(PackageInstaller.EXTRA_STATUS, PackageInstallerCompat.STATUS_FAILURE_ABORTED);
                 broadcastCancel.putExtra(PackageInstaller.EXTRA_SESSION_ID, sessionId);
                 // Ask user for permission
+                CharSequence title = mAppLabel != null ? mAppLabel : mPackageName;
                 mConfirmNotificationId = NotificationUtils.displayInstallConfirmNotification(context, builder -> builder
                         .setAutoCancel(false)
                         .setSilent(appInForeground)
                         .setDefaults(Notification.DEFAULT_ALL)
                         .setWhen(System.currentTimeMillis())
                         .setSmallIcon(R.drawable.ic_default_notification)
-                        .setTicker(mAppLabel)
-                        .setContentTitle(mAppLabel)
+                        .setTicker(title)
+                        .setContentTitle(title)
                         .setSubText(context.getString(R.string.package_installer))
-                        // A neat way to find the title is to check for sessionId
-                        .setContentText(context.getString(sessionId == -1 ? R.string.confirm_uninstallation : R.string.confirm_installation))
+                        .setContentText(confirmText(context, sessionId))
                         .setContentIntent(PendingIntentCompat.getActivity(context, 0, intent2,
                                 PendingIntent.FLAG_UPDATE_CURRENT, false))
                         .setDeleteIntent(PendingIntentCompat.getBroadcast(context, 0, broadcastCancel,
