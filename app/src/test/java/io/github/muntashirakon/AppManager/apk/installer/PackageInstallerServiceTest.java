@@ -8,23 +8,44 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.robolectric.Shadows.shadowOf;
 
+import android.Manifest;
+import android.app.Application;
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.service.notification.StatusBarNotification;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
+import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
+import org.robolectric.android.controller.ServiceController;
+import org.robolectric.annotation.Config;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.apk.ApkSource;
+import io.github.muntashirakon.AppManager.intercept.IntentCompat;
 import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler.NotificationInfo;
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
 import io.github.muntashirakon.AppManager.progress.QueuedProgressHandler;
+import io.github.muntashirakon.test.shadows.ShadowCpuUtils;
 
 @RunWith(RobolectricTestRunner.class)
 public class PackageInstallerServiceTest {
@@ -76,6 +97,74 @@ public class PackageInstallerServiceTest {
         assertFalse(PackageInstallerService.isStaleInstallSession(30_001L, now, timeout));
         assertFalse(PackageInstallerService.isStaleInstallSession(0L, now, timeout));
         assertFalse(PackageInstallerService.isStaleInstallSession(70_000L, now, timeout));
+    }
+
+    @Test
+    @Config(shadows = ShadowCpuUtils.class)
+    public void aQueuedItemsNotificationGoesAwayWhenThatItemStarts() {
+        Application app = ApplicationProvider.getApplicationContext();
+        shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
+        ServiceController<PackageInstallerService> controller = Robolectric.buildService(PackageInstallerService.class).create();
+        PackageInstallerService service = controller.get();
+        try {
+            // The first install is running, so the next two wait in the queue
+            service.onStartCommand(new Intent(app, PackageInstallerService.class), 0, 1);
+            Intent first = queuedIntent(app, "First");
+            Intent second = queuedIntent(app, "Second");
+            service.onQueued(first);
+            service.onQueued(second);
+            assertEquals(Arrays.asList("First", "Second"), queueTitles(app));
+
+            // The user starts the first queued install by hand
+            service.onStartIntent(first);
+            assertEquals(Collections.singletonList("Second"), queueTitles(app));
+
+            service.onStartIntent(second);
+            assertEquals(Collections.emptyList(), queueTitles(app));
+        } finally {
+            controller.destroy();
+        }
+    }
+
+    @Test
+    @Config(shadows = ShadowCpuUtils.class)
+    public void queueNotificationsGoAwayWhenTheInstallerStopsBeforeReachingThem() {
+        Application app = ApplicationProvider.getApplicationContext();
+        shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
+        ServiceController<PackageInstallerService> controller = Robolectric.buildService(PackageInstallerService.class).create();
+        PackageInstallerService service = controller.get();
+        service.onStartCommand(new Intent(app, PackageInstallerService.class), 0, 1);
+        service.onQueued(queuedIntent(app, "Waiting"));
+        assertEquals(Collections.singletonList("Waiting"), queueTitles(app));
+
+        controller.destroy();
+
+        assertEquals(Collections.emptyList(), queueTitles(app));
+    }
+
+    @NonNull
+    private static Intent queuedIntent(@NonNull Context context, @NonNull String label) {
+        ApkQueueItem item = ApkQueueItem.fromApkSource(ApkSource.getApkSource(
+                Uri.parse("file:///sdcard/Download/" + label + ".apk"),
+                "application/vnd.android.package-archive"));
+        item.setAppLabel(label);
+        Intent intent = new Intent(context, PackageInstallerService.class);
+        IntentCompat.putWrappedParcelableExtra(intent, PackageInstallerService.EXTRA_QUEUE_ITEM, item);
+        return intent;
+    }
+
+    @NonNull
+    private static List<String> queueTitles(@NonNull Context context) {
+        String queued = context.getString(R.string.added_to_queue);
+        List<String> titles = new ArrayList<>();
+        for (StatusBarNotification sbn : context.getSystemService(NotificationManager.class).getActiveNotifications()) {
+            Bundle extras = sbn.getNotification().extras;
+            if (queued.contentEquals(String.valueOf(extras.getCharSequence(Notification.EXTRA_TEXT)))) {
+                titles.add(String.valueOf(extras.getCharSequence(Notification.EXTRA_TITLE)));
+            }
+        }
+        Collections.sort(titles);
+        return titles;
     }
 
     private static final class FakeProgressHandler extends QueuedProgressHandler {

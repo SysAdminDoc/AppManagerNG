@@ -22,6 +22,8 @@ import androidx.core.app.PendingIntentCompat;
 import org.jetbrains.annotations.Contract;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.R;
@@ -55,6 +57,8 @@ public class NotificationProgressHandler extends QueuedProgressHandler {
     private volatile int mLastMax = MAX_INDETERMINATE;
     private volatile float mLastProgress = 0;
     private boolean mAttachedToService;
+    // Queue notifications still showing, by the message that posted them (main thread only)
+    private final Map<Object, Integer> mQueueNotificationIds = new IdentityHashMap<>();
 
     public NotificationProgressHandler(@NonNull Context context,
                                        @NonNull NotificationManagerInfo progressNotificationManagerInfo,
@@ -80,7 +84,17 @@ public class NotificationProgressHandler extends QueuedProgressHandler {
                 .getBuilder(mContext, mQueueNotificationManagerInfo)
                 .setLocalOnly(true)
                 .build();
-        notify(mContext, mQueueNotificationManager, TAG_QUEUE, NotificationUtils.nextNotificationId(TAG_QUEUE), notification);
+        int id = NotificationUtils.nextNotificationId(TAG_QUEUE);
+        mQueueNotificationIds.put(info, id);
+        notify(mContext, mQueueNotificationManager, TAG_QUEUE, id, notification);
+    }
+
+    @Override
+    public void onDequeue(@Nullable Object message) {
+        Integer id = message != null ? mQueueNotificationIds.remove(message) : null;
+        if (id != null && mQueueNotificationManager != null) {
+            mQueueNotificationManager.cancel(TAG_QUEUE, id);
+        }
     }
 
     @Override
