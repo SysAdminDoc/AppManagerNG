@@ -27,7 +27,6 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
-import androidx.appcompat.widget.TooltipCompat;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
@@ -55,6 +54,7 @@ import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.permission.watcher.PermissionWatcher;
 import io.github.muntashirakon.AppManager.permission.watcher.WatchRule;
 import io.github.muntashirakon.AppManager.permission.watcher.WatchRuleMenu;
+import io.github.muntashirakon.AppManager.permissions.ReferenceAction;
 import io.github.muntashirakon.AppManager.safety.AppOpsUidGuard;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
@@ -747,9 +747,8 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             holder.toggleSwitch.setVisibility(mCanModifyAppOpMode ? View.VISIBLE : View.GONE);
             // op granted
             holder.toggleSwitch.setChecked(item.isAllowed());
-            bindReferenceButton(holder.referenceButton, item.isReferenceDrifted(),
-                    !item.isReferenceDrifted() || mCanModifyAppOpMode, () ->
-                            handleAppOpReferenceAction(item));
+            bindReferenceButton(holder.referenceButton, item.hasReference, item.isReferenceDrifted(),
+                    mCanModifyAppOpMode, () -> handleAppOpReferenceAction(item, mCanModifyAppOpMode));
             holder.itemView.setOnClickListener(v -> {
                 // Three-state cycle ALLOWED → IGNORED → ERRORED → ALLOWED, matching Inure's
                 // AppOps editor model. The IGNORE state is the correct option for ops that
@@ -868,9 +867,9 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             } else holder.textView5.setVisibility(View.GONE);
             // Permission Switch
             boolean canGrantOrRevokePermission = permissionItem.modifiable && !mIsExternalApk;
-            bindReferenceButton(holder.referenceButton, permissionItem.isReferenceDrifted(),
-                    !mIsExternalApk && (!permissionItem.isReferenceDrifted() || canGrantOrRevokePermission), () ->
-                            handlePermissionReferenceAction(permissionItem));
+            bindReferenceButton(holder.referenceButton, permissionItem.hasReference,
+                    permissionItem.isReferenceDrifted(), canGrantOrRevokePermission, () ->
+                            handlePermissionReferenceAction(permissionItem, canGrantOrRevokePermission));
             if (canGrantOrRevokePermission) {
                 holder.toggleSwitch.setVisibility(View.VISIBLE);
                 holder.toggleSwitch.setChecked(permissionItem.isGranted());
@@ -921,57 +920,65 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             AppDetailsAdapterUtils.passLongPressToRow(holder.itemView, longPressable);
         }
 
-        private void bindReferenceButton(@NonNull MaterialButton button, boolean drifted, boolean enabled,
-                                         @NonNull Runnable action) {
+        private void bindReferenceButton(@NonNull MaterialButton button, boolean hasReference, boolean drifted,
+                                         boolean canRestore, @NonNull Runnable action) {
             button.setVisibility(mIsExternalApk ? View.GONE : View.VISIBLE);
-            int label = drifted ? R.string.permission_reference_restore : R.string.permission_reference_pin;
-            button.setContentDescription(getString(label));
-            TooltipCompat.setTooltipText(button, getString(label));
-            button.setIconResource(drifted ? R.drawable.ic_restore : R.drawable.ic_flag);
-            button.setEnabled(!mIsExternalApk && enabled);
-            button.setOnClickListener(!mIsExternalApk && enabled ? v -> action.run() : null);
+            ReferenceAction.bind(button, ReferenceAction.next(hasReference, drifted, canRestore), hasReference);
+            button.setEnabled(!mIsExternalApk);
+            button.setOnClickListener(!mIsExternalApk ? v -> action.run() : null);
         }
 
-        private void handlePermissionReferenceAction(@NonNull AppDetailsPermissionItem item) {
+        private void handlePermissionReferenceAction(@NonNull AppDetailsPermissionItem item, boolean canRestore) {
             ThreadUtils.postOnBackgroundThread(() -> {
-                boolean restore = item.isReferenceDrifted();
+                int action = ReferenceAction.next(item.hasReference, item.isReferenceDrifted(), canRestore);
                 boolean ok = false;
                 if (viewModel != null) {
-                    ok = restore ? viewModel.restorePermissionReference(item)
-                            : viewModel.pinPermissionReference(item);
+                    switch (action) {
+                        case ReferenceAction.RESTORE:
+                            ok = viewModel.restorePermissionReference(item);
+                            break;
+                        case ReferenceAction.UNPIN:
+                            ok = viewModel.unpinPermissionReference(item);
+                            break;
+                        case ReferenceAction.PIN:
+                        default:
+                            ok = viewModel.pinPermissionReference(item);
+                            break;
+                    }
                 }
-                boolean finalOk = ok;
-                ThreadUtils.postOnMainThread(() -> {
-                    if (finalOk) {
-                        AppDetailsAdapterUtils.notifyItemChangedIfPresent(this, mAdapterList, item);
-                        UIUtils.displayShortToast(restore
-                                ? R.string.permission_reference_restored
-                                : R.string.permission_reference_pinned);
-                    } else UIUtils.displayShortToast(restore
-                            ? R.string.permission_reference_restore_failed
-                            : R.string.permission_reference_pin_failed);
-                });
+                showReferenceOutcome(item, action, ok);
             });
         }
 
-        private void handleAppOpReferenceAction(@NonNull AppDetailsAppOpItem item) {
+        private void handleAppOpReferenceAction(@NonNull AppDetailsAppOpItem item, boolean canRestore) {
             ThreadUtils.postOnBackgroundThread(() -> {
-                boolean restore = item.isReferenceDrifted();
+                int action = ReferenceAction.next(item.hasReference, item.isReferenceDrifted(), canRestore);
                 boolean ok = false;
                 if (viewModel != null) {
-                    ok = restore ? viewModel.restoreAppOpReference(item) : viewModel.pinAppOpReference(item);
+                    switch (action) {
+                        case ReferenceAction.RESTORE:
+                            ok = viewModel.restoreAppOpReference(item);
+                            break;
+                        case ReferenceAction.UNPIN:
+                            ok = viewModel.unpinAppOpReference(item);
+                            break;
+                        case ReferenceAction.PIN:
+                        default:
+                            ok = viewModel.pinAppOpReference(item);
+                            break;
+                    }
                 }
-                boolean finalOk = ok;
-                ThreadUtils.postOnMainThread(() -> {
-                    if (finalOk) {
-                        AppDetailsAdapterUtils.notifyItemChangedIfPresent(this, mAdapterList, item);
-                        UIUtils.displayShortToast(restore
-                                ? R.string.permission_reference_restored
-                                : R.string.permission_reference_pinned);
-                    } else UIUtils.displayShortToast(restore
-                            ? R.string.permission_reference_restore_failed
-                            : R.string.permission_reference_pin_failed);
-                });
+                showReferenceOutcome(item, action, ok);
+            });
+        }
+
+        private void showReferenceOutcome(@NonNull AppDetailsItem<?> item, @ReferenceAction.Action int action,
+                                          boolean ok) {
+            ThreadUtils.postOnMainThread(() -> {
+                if (ok) {
+                    AppDetailsAdapterUtils.notifyItemChangedIfPresent(this, mAdapterList, item);
+                    UIUtils.displayShortToast(ReferenceAction.doneMessage(action));
+                } else UIUtils.displayShortToast(ReferenceAction.failedMessage(action));
             });
         }
 

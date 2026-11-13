@@ -229,6 +229,18 @@ public final class PermissionToggleHelper {
         }
     }
 
+    @WorkerThread
+    public static boolean unpinReference(@NonNull String packageName, int userId, @NonNull String permissionName) {
+        try (ComponentsBlocker cb = ComponentsBlocker.getMutableInstance(packageName, userId)) {
+            cb.deletePermissionReference(permissionName);
+            cb.commit();
+            return true;
+        } catch (Throwable th) {
+            Log.e(TAG, "Could not unpin permission reference %s for %s/%d.", th, permissionName, packageName, userId);
+            return false;
+        }
+    }
+
     private static void persistRule(@NonNull String packageName, int userId,
                                     @NonNull String permissionName, @NonNull Permission permission) {
         try (ComponentsBlocker cb = ComponentsBlocker.getMutableInstance(packageName, userId)) {

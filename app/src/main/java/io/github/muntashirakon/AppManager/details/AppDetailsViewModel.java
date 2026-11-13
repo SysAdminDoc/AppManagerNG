@@ -1022,6 +1022,24 @@ public class AppDetailsViewModel extends AndroidViewModel {
 
     @WorkerThread
     @GuardedBy("blockerLocker")
+    public boolean unpinPermissionReference(final AppDetailsPermissionItem permissionItem) {
+        if (mExternalApk) return false;
+        synchronized (mBlockerLocker) {
+            waitForBlockerOrExit();
+            if (mBlocker == null) return false;
+            mBlocker.setMutable();
+            mBlocker.deletePermissionReference(permissionItem.name);
+            mBlocker.commit();
+            permissionItem.setReference(mBlocker.getPermissionReference(permissionItem.name));
+            mBlocker.setReadOnly();
+            mBlockerLocker.notifyAll();
+        }
+        setUsesPermission(permissionItem);
+        return !permissionItem.hasReference;
+    }
+
+    @WorkerThread
+    @GuardedBy("blockerLocker")
     public boolean restorePermissionReference(final AppDetailsPermissionItem permissionItem) {
         if (mExternalApk || !permissionItem.hasReference || !permissionItem.modifiable) return false;
         PermissionReferenceRule reference = getPermissionReference(permissionItem.name);
@@ -1242,6 +1260,24 @@ public class AppDetailsViewModel extends AndroidViewModel {
         }
         setAppOp(appOpItem);
         return true;
+    }
+
+    @WorkerThread
+    @GuardedBy("blockerLocker")
+    public boolean unpinAppOpReference(final AppDetailsAppOpItem appOpItem) {
+        if (mExternalApk) return false;
+        synchronized (mBlockerLocker) {
+            waitForBlockerOrExit();
+            if (mBlocker == null) return false;
+            mBlocker.setMutable();
+            mBlocker.deleteAppOpReference(appOpItem.getOp());
+            mBlocker.commit();
+            appOpItem.setReference(mBlocker.getAppOpReference(appOpItem.getOp()));
+            mBlocker.setReadOnly();
+            mBlockerLocker.notifyAll();
+        }
+        setAppOp(appOpItem);
+        return !appOpItem.hasReference;
     }
 
     @WorkerThread
