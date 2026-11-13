@@ -123,6 +123,7 @@ public class LanSyncViewModel extends AndroidViewModel {
     private final MutableLiveData<String> mTask = new MutableLiveData<>();
     private final MutableLiveData<String> mMessage = new MutableLiveData<>();
     private final MutableLiveData<List<LanSyncDownloader.Result>> mReady = new MutableLiveData<>();
+    private final ScreenOnPolicy mScreenOn = new ScreenOnPolicy();
     @Nullable
     private volatile LocalIdentity mIdentity;
     // Guarded by mLock
@@ -164,6 +165,12 @@ public class LanSyncViewModel extends AndroidViewModel {
 
     @VisibleForTesting
     @MainThread
+    void setTask(@Nullable String task) {
+        mTask.setValue(task);
+    }
+
+    @VisibleForTesting
+    @MainThread
     void setRows(@Nullable List<AppRow> rows) {
         mRows.setValue(rows);
     }
@@ -180,6 +187,14 @@ public class LanSyncViewModel extends AndroidViewModel {
     @NonNull
     public LiveData<Boolean> getSharing() {
         return mSharing;
+    }
+
+    /**
+     * Kept here so turning the phone doesn't restart a time limit on keeping the screen on.
+     */
+    @NonNull
+    public ScreenOnPolicy getScreenOnPolicy() {
+        return mScreenOn;
     }
 
     @NonNull

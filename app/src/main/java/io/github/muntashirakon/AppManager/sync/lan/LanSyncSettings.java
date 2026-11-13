@@ -20,8 +20,14 @@ public final class LanSyncSettings {
     public static final int RETENTION_24_HOURS = 1;
     public static final int RETENTION_7_DAYS = 2;
 
+    public static final int SCREEN_ON_OFF = 0;
+    public static final int SCREEN_ON_10_MINUTES = 1;
+    public static final int SCREEN_ON_30_MINUTES = 2;
+    public static final int SCREEN_ON_UNTIL_DONE = 3;
+
     private static final String KEY_RETENTION = "received_retention";
     private static final String KEY_KEEP_AFTER_INSTALL = "received_keep_after_install";
+    private static final String KEY_KEEP_SCREEN_ON = "keep_screen_on";
 
     @NonNull
     private final SharedPreferences mPrefs;
@@ -63,5 +69,18 @@ public final class LanSyncSettings {
 
     public void setKeepAfterInstall(boolean keep) {
         mPrefs.edit().putBoolean(KEY_KEEP_AFTER_INSTALL, keep).apply();
+    }
+
+    /**
+     * How long the screen stays on while sharing or a download runs, as one of the SCREEN_ON
+     * constants. Until transfers finish by default: the screen going off stops sharing.
+     */
+    public int getKeepScreenOn() {
+        int mode = mPrefs.getInt(KEY_KEEP_SCREEN_ON, SCREEN_ON_UNTIL_DONE);
+        return mode >= SCREEN_ON_OFF && mode <= SCREEN_ON_UNTIL_DONE ? mode : SCREEN_ON_UNTIL_DONE;
+    }
+
+    public void setKeepScreenOn(int mode) {
+        mPrefs.edit().putInt(KEY_KEEP_SCREEN_ON, mode).apply();
     }
 }
