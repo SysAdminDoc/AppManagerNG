@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "generatedBy": "scripts/generate-hidden-api-baseline.ps1",
-  "generatedOn": "2026-08-30",
+  "generatedOn": "2026-11-13",
   "sourceRoot": "hiddenapi/src/main/java",
   "classes": [
     {
@@ -3324,12 +3324,34 @@
       "minSdk": 1,
       "members": [
         {
+          "kind": "field",
+          "name": "RemoteException",
+          "minSdk": 1,
+          "deprecated": false
+        }
+      ]
+    },
+    {
+      "sourceFile": "hiddenapi/src/main/java/android/content/pm/IOnPermissionsChangeListener.java",
+      "stub": "android.content.pm.IOnPermissionsChangeListener$Stub",
+      "runtime": "android.content.pm.IOnPermissionsChangeListener$Stub",
+      "minSdk": 1,
+      "members": [
+        {
           "kind": "method",
-          "name": "onPermissionsChanged",
+          "name": "asInterface",
           "parameterCount": 1,
           "parameters": [
-            "int"
+            "IBinder"
           ],
+          "minSdk": 1,
+          "deprecated": false
+        },
+        {
+          "kind": "method",
+          "name": "asBinder",
+          "parameterCount": 0,
+          "parameters": [],
           "minSdk": 1,
           "deprecated": false
         }
@@ -8087,6 +8109,32 @@
       ]
     },
     {
+      "sourceFile": "hiddenapi/src/main/java/android/permission/IOnPermissionsChangeListener.java",
+      "stub": "android.permission.IOnPermissionsChangeListener$Stub",
+      "runtime": "android.permission.IOnPermissionsChangeListener$Stub",
+      "minSdk": 30,
+      "members": [
+        {
+          "kind": "method",
+          "name": "asInterface",
+          "parameterCount": 1,
+          "parameters": [
+            "IBinder"
+          ],
+          "minSdk": 30,
+          "deprecated": false
+        },
+        {
+          "kind": "method",
+          "name": "asBinder",
+          "parameterCount": 0,
+          "parameters": [],
+          "minSdk": 30,
+          "deprecated": false
+        }
+      ]
+    },
+    {
       "sourceFile": "hiddenapi/src/main/java/android/permission/IPermissionManager.java",
       "stub": "android.permission.IPermissionManager",
       "runtime": "android.permission.IPermissionManager",
@@ -8562,6 +8610,52 @@
       ]
     },
     {
+      "sourceFile": "hiddenapi/src/main/java/com/android/internal/app/IAppOpsCallback.java",
+      "stub": "com.android.internal.app.IAppOpsCallback",
+      "runtime": "com.android.internal.app.IAppOpsCallback",
+      "minSdk": 1,
+      "members": [
+        {
+          "kind": "field",
+          "name": "RemoteException",
+          "minSdk": 1,
+          "deprecated": false
+        },
+        {
+          "kind": "field",
+          "name": "RemoteException",
+          "minSdk": 35,
+          "deprecated": false
+        }
+      ]
+    },
+    {
+      "sourceFile": "hiddenapi/src/main/java/com/android/internal/app/IAppOpsCallback.java",
+      "stub": "com.android.internal.app.IAppOpsCallback$Stub",
+      "runtime": "com.android.internal.app.IAppOpsCallback$Stub",
+      "minSdk": 1,
+      "members": [
+        {
+          "kind": "method",
+          "name": "asInterface",
+          "parameterCount": 1,
+          "parameters": [
+            "IBinder"
+          ],
+          "minSdk": 1,
+          "deprecated": false
+        },
+        {
+          "kind": "method",
+          "name": "asBinder",
+          "parameterCount": 0,
+          "parameters": [],
+          "minSdk": 1,
+          "deprecated": false
+        }
+      ]
+    },
+    {
       "sourceFile": "hiddenapi/src/main/java/com/android/internal/app/IAppOpsService.java",
       "stub": "com.android.internal.app.IAppOpsService",
       "runtime": "com.android.internal.app.IAppOpsService",
@@ -8643,6 +8737,18 @@
           "kind": "field",
           "name": "RemoteException",
           "minSdk": 31,
+          "deprecated": false
+        },
+        {
+          "kind": "field",
+          "name": "RemoteException",
+          "minSdk": 1,
+          "deprecated": false
+        },
+        {
+          "kind": "field",
+          "name": "RemoteException",
+          "minSdk": 1,
           "deprecated": false
         }
       ]
