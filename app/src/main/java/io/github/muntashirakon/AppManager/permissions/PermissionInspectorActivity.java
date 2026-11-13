@@ -34,7 +34,8 @@ import io.github.muntashirakon.widget.RecyclerView;
 
 /**
  * Catalog screen for the Permission Inspector. Shows every curated dangerous
- * permission group with a count of "X of Y apps granted", tap to drill in.
+ * permission group, then the special app access Android keeps outside runtime
+ * permissions, each with a count of "X of Y apps granted", tap to drill in.
  */
 public class PermissionInspectorActivity extends BaseActivity {
     private PermissionInspectorViewModel mViewModel;
@@ -77,9 +78,13 @@ public class PermissionInspectorActivity extends BaseActivity {
                 .setText(R.string.perm_inspector_catalog_empty_message);
         emptyState.setVisibility(View.GONE);
         recycler.setEmptyView(emptyState);
-        mAdapter = new PermissionInspectorAdapter(group -> {
+        mAdapter = new PermissionInspectorAdapter(row -> {
             Intent i = new Intent(this, PermissionAppsActivity.class);
-            i.putExtra(PermissionAppsActivity.EXTRA_GROUP_ID, group.id);
+            if (row.group != null) {
+                i.putExtra(PermissionAppsActivity.EXTRA_GROUP_ID, row.group.id);
+            } else if (row.special != null) {
+                i.putExtra(PermissionAppsActivity.EXTRA_SPECIAL_ID, row.special.id);
+            } else return;
             startActivity(i);
         });
         recycler.setAdapter(mAdapter);
@@ -193,14 +198,18 @@ public class PermissionInspectorActivity extends BaseActivity {
 
     private void updateSummary(@Nullable List<PermissionInspectorViewModel.Row> rows) {
         if (mSummary == null || rows == null) return;
+        // Runtime permission groups only, special access counts mean different things
+        int groups = 0;
         int requested = 0;
         int granted = 0;
         for (PermissionInspectorViewModel.Row row : rows) {
+            if (row.group == null) continue;
+            groups++;
             requested += row.requestedCount;
             granted += row.grantedCount;
         }
         mSummary.setText(getString(R.string.perm_inspector_summary_stats,
-                rows.size(), requested, granted));
+                groups, requested, granted));
     }
 
     private void finishRecoveryUi() {

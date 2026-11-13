@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.permissions;
 
 import android.app.Application;
+import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -23,6 +24,7 @@ import java.util.concurrent.Executors;
 
 import android.os.UserHandleHidden;
 
+import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.rules.struct.PermissionReferenceRule;
@@ -30,7 +32,9 @@ import io.github.muntashirakon.AppManager.safety.CriticalPackageGuard;
 
 /**
  * Per-permission-group "apps that request this" list. Toggle and bulk-revoke
- * actions delegate to {@link PermissionToggleHelper}.
+ * actions delegate to {@link PermissionToggleHelper}. For a special app access
+ * entry the list holds the apps it applies to, and the entry's own probe reads
+ * and changes the state.
  */
 public class PermissionAppsViewModel extends AndroidViewModel {
     public static final class AppRow {
@@ -47,6 +51,13 @@ public class PermissionAppsViewModel extends AndroidViewModel {
         public boolean hasReference;
         public boolean referenceDrifted;
         public int referenceCount;
+        /** False when App Manager couldn't read whether the app has the access. */
+        public boolean stateKnown = true;
+        /** Settings pages for special app access, best first. */
+        @Nullable
+        public List<Intent> settingsIntents;
+        @Nullable
+        PackageInfo packageInfo;
 
         AppRow(String packageName, CharSequence label, @Nullable Drawable icon, boolean isSystem,
                boolean anyGranted, boolean anyModifiable) {
@@ -82,6 +93,11 @@ public class PermissionAppsViewModel extends AndroidViewModel {
     private final MutableLiveData<Integer> mLastSkippedCount = new MutableLiveData<>();
 
     private PermissionGroupCatalog.Group mGroup;
+    @Nullable
+    private SpecialAccessCatalog.Entry mSpecial;
+    /** The state the last special access load read; only touched on {@link #mExecutor}. */
+    @Nullable
+    private SpecialAccessSnapshot mSnapshot;
     /** The full unfiltered set; {@link #mRows} stays the post-filter view. */
     @NonNull
     private List<AppRow> mUnfiltered = Collections.emptyList();
@@ -103,6 +119,13 @@ public class PermissionAppsViewModel extends AndroidViewModel {
         mGroup = group;
     }
 
+    @Nullable
+    public SpecialAccessCatalog.Entry getSpecial() { return mSpecial; }
+
+    public void setSpecial(@NonNull SpecialAccessCatalog.Entry special) {
+        mSpecial = special;
+    }
+
     public void load() {
         mLoading.postValue(true);
         mExecutor.submit(this::loadInternal);
@@ -111,6 +134,10 @@ public class PermissionAppsViewModel extends AndroidViewModel {
     @WorkerThread
     private void loadInternal() {
         try {
+            if (mSpecial != null) {
+                publish(loadSpecialRows(mSpecial));
+                return;
+            }
             if (mGroup == null) {
                 mRows.postValue(Collections.emptyList());
                 return;
@@ -170,19 +197,58 @@ public class PermissionAppsViewModel extends AndroidViewModel {
                 rows.add(new AppRow(pi.packageName, label, icon, isSystem, granted, modifiable,
                         permissionNames, hasReference, referenceDrifted, referenceCount));
             }
-            Collections.sort(rows, new Comparator<AppRow>() {
-                @Override
-                public int compare(AppRow a, AppRow b) {
-                    if (a.anyGranted != b.anyGranted) return a.anyGranted ? -1 : 1;
-                    if (a.isSystem != b.isSystem) return a.isSystem ? 1 : -1;
-                    return String.valueOf(a.label).compareToIgnoreCase(String.valueOf(b.label));
-                }
-            });
-            mUnfiltered = rows;
-            mRows.postValue(applyFilter(rows, mFilter));
+            publish(rows);
         } finally {
             mLoading.postValue(false);
         }
+    }
+
+    private void publish(@NonNull List<AppRow> rows) {
+        Collections.sort(rows, new Comparator<AppRow>() {
+            @Override
+            public int compare(AppRow a, AppRow b) {
+                if (a.anyGranted != b.anyGranted) return a.anyGranted ? -1 : 1;
+                if (a.isSystem != b.isSystem) return a.isSystem ? 1 : -1;
+                return String.valueOf(a.label).compareToIgnoreCase(String.valueOf(b.label));
+            }
+        });
+        mUnfiltered = rows;
+        mRows.postValue(applyFilter(rows, mFilter));
+    }
+
+    @WorkerThread
+    @NonNull
+    private List<AppRow> loadSpecialRows(@NonNull SpecialAccessCatalog.Entry entry) {
+        int userId = UserHandleHidden.myUserId();
+        PackageManager pm = getApplication().getPackageManager();
+        List<PackageInfo> packages;
+        try {
+            packages = PackageManagerCompat.getInstalledPackages(
+                    SpecialAccessCatalog.packageFlags(Collections.singletonList(entry)), userId);
+        } catch (Exception th) {
+            packages = Collections.emptyList();
+        }
+        if (packages == null) packages = Collections.emptyList();
+        SpecialAccessSnapshot snapshot = SpecialAccessSnapshot.take(getApplication(), mAppOpsManager);
+        mSnapshot = snapshot;
+        List<AppRow> rows = new ArrayList<>();
+        for (PackageInfo pi : packages) {
+            if (pi == null || !entry.appliesTo(pi, snapshot)) continue;
+            ApplicationInfo ai = pi.applicationInfo;
+            int status = entry.status(pi, snapshot);
+            Drawable icon = null;
+            try {
+                icon = ai.loadIcon(pm);
+            } catch (Exception ignore) {}
+            AppRow row = new AppRow(pi.packageName, ai.loadLabel(pm), icon,
+                    (ai.flags & ApplicationInfo.FLAG_SYSTEM) != 0, status == SpecialAccess.GRANTED,
+                    entry.canChange(pi, snapshot));
+            row.stateKnown = status != SpecialAccess.UNKNOWN;
+            row.settingsIntents = entry.settings(pi, snapshot);
+            row.packageInfo = pi;
+            rows.add(row);
+        }
+        return rows;
     }
 
     /** EI-04 — change the active chip-row filter and re-emit. */
@@ -221,6 +287,10 @@ public class PermissionAppsViewModel extends AndroidViewModel {
     }
 
     public void togglePermission(@NonNull AppRow row) {
+        if (mSpecial != null) {
+            toggleSpecial(mSpecial, row);
+            return;
+        }
         mLoading.postValue(true);
         mExecutor.submit(() -> {
             int successCount = 0;
@@ -251,6 +321,26 @@ public class PermissionAppsViewModel extends AndroidViewModel {
             if (failedCount > 0) {
                 mToast.postValue(getApplication().getString(
                         io.github.muntashirakon.AppManager.R.string.failed_to_revoke_permission));
+            }
+        });
+    }
+
+    private void toggleSpecial(@NonNull SpecialAccessCatalog.Entry entry, @NonNull AppRow row) {
+        mLoading.postValue(true);
+        mExecutor.submit(() -> {
+            boolean changed = false;
+            try {
+                PackageInfo pi = row.packageInfo;
+                if (pi == null) return;
+                SpecialAccessSnapshot snapshot = mSnapshot != null ? mSnapshot
+                        : SpecialAccessSnapshot.take(getApplication(), mAppOpsManager);
+                boolean allow = !row.anyGranted;
+                // Android can refuse quietly, so read the state back before calling it done
+                changed = entry.set(pi, allow, snapshot)
+                        && entry.status(pi, snapshot) == (allow ? SpecialAccess.GRANTED : SpecialAccess.DENIED);
+            } finally {
+                loadInternal();
+                if (!changed) mToast.postValue(getApplication().getString(R.string.special_access_change_failed));
             }
         });
     }
@@ -365,6 +455,7 @@ public class PermissionAppsViewModel extends AndroidViewModel {
     }
 
     public void revokeForAll() {
+        if (mGroup == null) return;
         mLoading.postValue(true);
         mExecutor.submit(() -> {
             int affected = 0;
@@ -410,6 +501,7 @@ public class PermissionAppsViewModel extends AndroidViewModel {
     }
 
     public void grantForAll() {
+        if (mGroup == null) return;
         mLoading.postValue(true);
         mExecutor.submit(() -> {
             int affected = 0;

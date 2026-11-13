@@ -55,6 +55,7 @@ public final class ManifestCompat {
         public static final String REAL_GET_TASKS = "android.permission.REAL_GET_TASKS";
         public static final String REVOKE_RUNTIME_PERMISSIONS = "android.permission.REVOKE_RUNTIME_PERMISSIONS";
         public static final String START_ANY_ACTIVITY = "android.permission.START_ANY_ACTIVITY";
+        public static final String STATUS_BAR_SERVICE = "android.permission.STATUS_BAR_SERVICE";
         @RequiresApi(Build.VERSION_CODES.P)
         public static final String SUSPEND_APPS = "android.permission.SUSPEND_APPS";
         public static final String UPDATE_APP_OPS_STATS = "android.permission.UPDATE_APP_OPS_STATS";

@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.permissions;
 
+import android.content.res.Resources;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,54 +18,95 @@ import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
 
-class PermissionInspectorAdapter extends RecyclerView.Adapter<PermissionInspectorAdapter.VH> {
-    interface OnGroupClick {
-        void onClick(@NonNull PermissionGroupCatalog.Group group);
+class PermissionInspectorAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    interface OnRowClick {
+        void onClick(@NonNull PermissionInspectorViewModel.Row row);
     }
 
-    private final List<PermissionInspectorViewModel.Row> mRows = new ArrayList<>();
-    private final OnGroupClick mClick;
+    private static final int TYPE_SECTION = 0;
+    private static final int TYPE_ROW = 1;
 
-    PermissionInspectorAdapter(OnGroupClick click) {
+    /** Rows, with an Integer section title before each run of rows from the same section. */
+    private final List<Object> mItems = new ArrayList<>();
+    private final OnRowClick mClick;
+
+    PermissionInspectorAdapter(OnRowClick click) {
         mClick = click;
     }
 
     void submit(List<PermissionInspectorViewModel.Row> rows) {
-        mRows.clear();
-        if (rows != null) mRows.addAll(rows);
+        mItems.clear();
+        if (rows != null) {
+            int section = 0;
+            for (PermissionInspectorViewModel.Row row : rows) {
+                if (row.sectionRes != section) {
+                    section = row.sectionRes;
+                    mItems.add(section);
+                }
+                mItems.add(row);
+            }
+        }
         notifyDataSetChanged();
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        return mItems.get(position) instanceof Integer ? TYPE_SECTION : TYPE_ROW;
     }
 
     @NonNull
     @Override
-    public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_permission_group, parent, false);
-        return new VH(v);
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        LayoutInflater inflater = LayoutInflater.from(parent.getContext());
+        if (viewType == TYPE_SECTION) {
+            return new SectionVH(inflater.inflate(R.layout.item_permission_section, parent, false));
+        }
+        return new VH(inflater.inflate(R.layout.item_permission_group, parent, false));
     }
 
     @Override
-    public void onBindViewHolder(@NonNull VH h, int position) {
-        PermissionInspectorViewModel.Row r = mRows.get(position);
-        String label = h.itemView.getResources().getString(r.group.labelRes);
-        String groupSummary = h.itemView.getResources().getString(r.group.summaryRes);
-        String countSummary = h.itemView.getResources().getString(
-                R.string.perm_inspector_count_fmt, r.grantedCount, r.requestedCount);
-        h.icon.setImageResource(r.group.iconRes);
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        Object item = mItems.get(position);
+        if (holder instanceof SectionVH) {
+            ((SectionVH) holder).title.setText((Integer) item);
+            return;
+        }
+        VH h = (VH) holder;
+        PermissionInspectorViewModel.Row r = (PermissionInspectorViewModel.Row) item;
+        Resources res = h.itemView.getResources();
+        String label = res.getString(r.labelRes);
+        String groupSummary = res.getString(r.summaryRes);
+        String countSummary;
+        if (r.stateKnown) {
+            countSummary = res.getString(R.string.perm_inspector_count_fmt, r.grantedCount, r.requestedCount);
+            h.count.setText(res.getString(R.string.perm_inspector_count_short_fmt, r.grantedCount,
+                    r.requestedCount));
+        } else {
+            countSummary = res.getString(R.string.perm_inspector_count_unknown_fmt, r.requestedCount);
+            h.count.setText(res.getString(R.string.perm_inspector_count_unknown_short_fmt, r.requestedCount));
+        }
+        h.icon.setImageResource(r.iconRes);
         h.label.setText(label);
         h.summary.setText(groupSummary);
-        h.count.setText(h.itemView.getResources().getString(
-                R.string.perm_inspector_count_short_fmt, r.grantedCount, r.requestedCount));
-        h.itemView.setContentDescription(h.itemView.getResources().getString(
-                R.string.perm_inspector_group_a11y, label, countSummary, groupSummary));
+        h.itemView.setContentDescription(res.getString(R.string.perm_inspector_group_a11y, label, countSummary,
+                groupSummary));
         h.itemView.setOnClickListener(v -> {
-            if (mClick != null) mClick.onClick(r.group);
+            if (mClick != null) mClick.onClick(r);
         });
     }
 
     @Override
     public int getItemCount() {
-        return mRows.size();
+        return mItems.size();
+    }
+
+    static class SectionVH extends RecyclerView.ViewHolder {
+        final MaterialTextView title;
+
+        SectionVH(@NonNull View v) {
+            super(v);
+            title = (MaterialTextView) v;
+        }
     }
 
     static class VH extends RecyclerView.ViewHolder {
