@@ -40,6 +40,7 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -267,6 +268,18 @@ public class ReceivedApksActivityTest {
         mViewModel.load();
         RecyclerView list = mActivity.findViewById(android.R.id.list);
         return waitFor(() -> {
+            // The screen's own first load reads the folder the view model was built with, which
+            // belongs to an earlier test in the run and may still hold that test's download. Only
+            // the list read from this test's folder counts.
+            List<ReceivedApksViewModel.Item> items = mViewModel.getItems().getValue();
+            if (items == null || items.isEmpty()) {
+                return null;
+            }
+            for (ReceivedApksViewModel.Item item : items) {
+                if (!mEntry.dir.getParentFile().equals(item.entry.dir.getParentFile())) {
+                    return null;
+                }
+            }
             if (list.getAdapter() == null || list.getAdapter().getItemCount() == 0) {
                 return null;
             }
