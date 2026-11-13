@@ -911,6 +911,12 @@
             android:icon="@drawable/ic_history"
             android:label="@string/toast_history_title" />
         <activity
+            android:name=".accessibility.topapp.TopAppHistoryActivity"
+            android:enableOnBackInvokedCallback="true"
+            android:exported="false"
+            android:icon="@drawable/ic_history"
+            android:label="@string/top_app_history_title" />
+        <activity
             android:name=".permission.watcher.WatchedPermissionsActivity"
             android:enableOnBackInvokedCallback="true"
             android:exported="false"

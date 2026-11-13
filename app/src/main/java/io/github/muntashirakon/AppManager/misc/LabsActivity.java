@@ -20,6 +20,7 @@ import com.google.android.material.button.MaterialButton;
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.accessibility.activity.LeadingActivityTrackerActivity;
+import io.github.muntashirakon.AppManager.accessibility.topapp.TopAppHistoryActivity;
 import io.github.muntashirakon.AppManager.accessibility.topapp.TopAppOverlayController;
 import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
 import io.github.muntashirakon.AppManager.editor.CodeEditorActivity;
@@ -58,6 +59,8 @@ public class LabsActivity extends BaseActivity {
                 });
         addAction(this, actionContainer, R.string.top_app_overlay_title, R.drawable.ic_eye)
                 .setOnClickListener(v -> TopAppOverlayController.toggleAndOpenSettings(this));
+        addAction(this, actionContainer, R.string.top_app_history_title, R.drawable.ic_history)
+                .setOnClickListener(v -> startActivity(new Intent(this, TopAppHistoryActivity.class)));
         if (FeatureController.isInterceptorEnabled()) {
             addAction(this, actionContainer, R.string.interceptor, R.drawable.ic_transit_connection)
                     .setOnClickListener(v -> {

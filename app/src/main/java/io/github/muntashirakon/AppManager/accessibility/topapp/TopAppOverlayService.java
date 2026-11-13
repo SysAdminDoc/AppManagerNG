@@ -47,6 +47,7 @@ import io.github.muntashirakon.AppManager.compat.UsageStatsManagerCompat;
 import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
+import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.types.ForegroundService;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
@@ -121,6 +122,9 @@ public class TopAppOverlayService extends Service implements AccessibilityMultip
     private final AccessibilityMultiplexer mMultiplexer = AccessibilityMultiplexer.getInstance();
     private TopAppTracker mTracker;
     private TopAppBubble mBubble;
+    private TopAppHistory mHistory;
+    @NonNull
+    private TopAppTransition.Layers mLastLayers = TopAppTransition.Layers.EMPTY;
     private int mNotificationId;
     private int mNotificationGeneration;
     private boolean mForeground;
@@ -141,6 +145,7 @@ public class TopAppOverlayService extends Service implements AccessibilityMultip
         super.onCreate();
         sRunning = true;
         mTracker = new TopAppTracker(resolveIgnoredPackages(this));
+        mHistory = TopAppHistory.getInstance(this);
         // Here and not in onStartCommand: a stop can't then land between a foreground start and startForeground.
         try {
             NotificationUtils.getNewNotificationManager(this, CHANNEL_ID, getString(R.string.top_app_overlay_title),
@@ -232,12 +237,25 @@ public class TopAppOverlayService extends Service implements AccessibilityMultip
     private void onTopAppChanged() {
         String underlying = mTracker.getUnderlying();
         String overlay = mTracker.getOverlay();
+        recordHistory(new TopAppTransition.Layers(underlying, overlay, mTracker.isOverlayOnScreen()));
         if (underlying == null && overlay == null) {
             // Only overlays that were already up when the bubble started, named over the home screen.
             underlying = mTracker.getCurrent();
         }
         mBubble.setLayers(underlying, overlay, mTracker.isOverlayOnScreen(), mTracker.getRecents());
         refreshNotification();
+    }
+
+    /**
+     * Kept in step even while recording is off, so turning it on mid-session doesn't log the apps already up as
+     * if they had just appeared.
+     */
+    private void recordHistory(@NonNull TopAppTransition.Layers layers) {
+        TopAppTransition.Layers before = mLastLayers;
+        mLastLayers = layers;
+        if (Prefs.Privacy.isTopAppHistoryEnabled()) {
+            mHistory.record(TopAppTransition.between(before, layers, System.currentTimeMillis()));
+        }
     }
 
     private void openAppDetails(@NonNull String packageName) {

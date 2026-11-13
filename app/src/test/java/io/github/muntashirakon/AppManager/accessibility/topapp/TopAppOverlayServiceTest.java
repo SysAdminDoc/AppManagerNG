@@ -19,11 +19,14 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.ResolveInfo;
 import android.provider.Settings;
 
+import androidx.annotation.NonNull;
 import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
@@ -32,6 +35,7 @@ import org.robolectric.shadows.ShadowLooper;
 import org.robolectric.shadows.ShadowSettings;
 import org.robolectric.shadows.ShadowToast;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -39,11 +43,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.accessibility.AccessibilityMultiplexer;
+import io.github.muntashirakon.AppManager.settings.Prefs;
 
 @RunWith(RobolectricTestRunner.class)
 public class TopAppOverlayServiceTest {
@@ -52,10 +59,15 @@ public class TopAppOverlayServiceTest {
 
     private final AccessibilityMultiplexer mMultiplexer = AccessibilityMultiplexer.getInstance();
     private ServiceController<TopAppOverlayService> mController;
+    @Rule
+    public final TemporaryFolder mFolder = new TemporaryFolder();
+    private TopAppHistory mHistory;
 
     @Before
     public void setUp() {
         ShadowSettings.setCanDrawOverlays(true);
+        mHistory = new TopAppHistory(new File(mFolder.getRoot(), TopAppHistory.FILE_NAME), Runnable::run);
+        TopAppHistory.setInstanceForTesting(mHistory);
         mController = Robolectric.buildService(TopAppOverlayService.class);
     }
 
@@ -66,6 +78,20 @@ public class TopAppOverlayServiceTest {
         mMultiplexer.setTopAppListener(null);
         mMultiplexer.setServiceConnected(false);
         ShadowSettings.setCanDrawOverlays(false);
+        Prefs.Privacy.setTopAppHistoryEnabled(false);
+        TopAppHistory.setInstanceForTesting(null);
+    }
+
+    @NonNull
+    private List<TopAppTransition> savedHistory() {
+        AtomicReference<List<TopAppTransition>> read = new AtomicReference<>();
+        mHistory.read(read::set);
+        return read.get();
+    }
+
+    private static void walk(@NonNull TopAppOverlayService service, @NonNull TopAppTracker.Window... windows) {
+        service.onWindowsChanged(Arrays.asList(windows));
+        ShadowLooper.idleMainLooper();
     }
 
     private TopAppOverlayService startService() {
@@ -172,6 +198,50 @@ public class TopAppOverlayServiceTest {
         ShadowLooper.idleMainLooper();
 
         assertEquals(AD, service.getTracker().getCurrent());
+    }
+
+    @Test
+    public void historyIsOnlySavedWhileRecordingIsOn() {
+        TopAppOverlayService service = startService();
+
+        walk(service, new TopAppTracker.Window(APP, true));
+
+        assertTrue(savedHistory().isEmpty());
+    }
+
+    @Test
+    public void historyNamesTheOverlayAndTheAppUnderIt() {
+        Prefs.Privacy.setTopAppHistoryEnabled(true);
+        TopAppOverlayService service = startService();
+
+        walk(service, new TopAppTracker.Window(APP, true));
+        walk(service, new TopAppTracker.Window(AD, false), new TopAppTracker.Window(APP, true));
+        walk(service, new TopAppTracker.Window(APP, true));
+
+        List<TopAppTransition> saved = savedHistory();
+        assertEquals(3, saved.size());
+        assertEquals(TopAppTransition.Kind.OVERLAY_GONE, saved.get(0).kind);
+        assertEquals(AD, saved.get(0).packageName);
+        assertEquals(APP, saved.get(0).other);
+        assertEquals(TopAppTransition.Kind.OVERLAY_SHOWN, saved.get(1).kind);
+        assertEquals(AD, saved.get(1).packageName);
+        assertEquals(APP, saved.get(1).other);
+        assertEquals(TopAppTransition.Kind.APP, saved.get(2).kind);
+        assertEquals(APP, saved.get(2).packageName);
+        assertNull(saved.get(2).other);
+    }
+
+    @Test
+    public void turningRecordingOnLaterDoesNotReplayTheAppAlreadyUp() {
+        TopAppOverlayService service = startService();
+        walk(service, new TopAppTracker.Window(APP, true));
+
+        Prefs.Privacy.setTopAppHistoryEnabled(true);
+        walk(service, new TopAppTracker.Window(AD, false), new TopAppTracker.Window(APP, true));
+
+        List<TopAppTransition> saved = savedHistory();
+        assertEquals(1, saved.size());
+        assertEquals(TopAppTransition.Kind.OVERLAY_SHOWN, saved.get(0).kind);
     }
 
     @Test
