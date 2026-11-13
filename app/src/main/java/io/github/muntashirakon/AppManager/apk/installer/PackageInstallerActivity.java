@@ -26,6 +26,7 @@ import android.content.ServiceConnection;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageInstaller;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.net.Uri;
 import android.os.Build;
@@ -51,6 +52,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.pm.PackageInfoCompat;
 import androidx.lifecycle.ViewModelProvider;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -664,14 +666,20 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     }
 
     private void showInstallChecksumDialog(@NonNull Intent confirmIntent, @NonNull String sessionSha256) {
+        String packageName = mPackageName != null ? mPackageName : "";
+        InstallSessionDetails details = InstallSessionDetails.get(mSessionId);
+        View body = InstallSessionPrompt.inflate(this, details, packageName, sessionSha256);
+        File baseApk = details != null ? details.baseApk : null;
+        PackageManager pm = getPackageManager();
+        InstallSessionPrompt.bindChanges(body, packageName, baseApk == null ? null
+                        : () -> InstallerManifestSummary.load(pm, baseApk),
+                ThreadUtils::postOnBackgroundThread);
         new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.installer_session_sha256_title)
-                .setMessage(getString(R.string.installer_session_sha256_message,
-                        formatSha256ForDisplay(sessionSha256)))
+                .setView(body)
                 .setCancelable(false)
                 .setPositiveButton(R.string.action_continue, (dialog, which) -> launchInstallConfirmation(confirmIntent))
                 .setNegativeButton(R.string.cancel, (dialog, which) -> {
-                    String packageName = mPackageName != null ? mPackageName : "";
                     PackageInstallerCompat.sendCompletedBroadcast(this, packageName,
                             PackageInstallerCompat.STATUS_FAILURE_ABORTED, mSessionId);
                     if (!hasNext() && !mIsDealingWithApk) {

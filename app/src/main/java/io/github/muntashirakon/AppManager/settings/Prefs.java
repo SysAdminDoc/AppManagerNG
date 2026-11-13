@@ -683,6 +683,15 @@ public final class Prefs {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_INSTALLER_DISPLAY_CHANGES_BOOL);
         }
 
+        /** List what an install adds and removes next to the SHA-256 shown before Android's prompt. */
+        public static boolean showSessionChanges() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_INSTALLER_SHOW_SESSION_CHANGES_BOOL);
+        }
+
+        public static void setShowSessionChanges(boolean show) {
+            AppPref.set(AppPref.PrefKey.PREF_INSTALLER_SHOW_SESSION_CHANGES_BOOL, show);
+        }
+
         public static boolean blockTrackers() {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_INSTALLER_BLOCK_TRACKERS_BOOL);
         }
