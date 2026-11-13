@@ -23,6 +23,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.annotation.AnyThread;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -977,6 +978,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             });
         }
 
+        @AnyThread
         private void showReferenceOutcome(@NonNull AppDetailsItem<?> item, @ReferenceAction.Action int action,
                                           boolean ok) {
             ThreadUtils.postOnMainThread(() -> {
