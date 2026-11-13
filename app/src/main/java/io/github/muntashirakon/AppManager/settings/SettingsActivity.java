@@ -25,7 +25,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -71,7 +70,7 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
     @NonNull
     private List<String> mKeys = Collections.emptyList();
     @NonNull
-    private ArrayList<String> mSavedKeys = new ArrayList<>();
+    private final SettingsKeyPath mSavedKeys = new SettingsKeyPath();
     private int mLevel = 0;
     private boolean mDualPaneMode;
     @Nullable
@@ -144,10 +143,7 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
 
         if (savedInstanceState != null) {
             clearBackStack();
-            ArrayList<String> savedKeys = savedInstanceState.getStringArrayList(SAVED_KEYS);
-            if (savedKeys != null) {
-                mSavedKeys = savedKeys;
-            }
+            mSavedKeys.restore(savedInstanceState.getStringArrayList(SAVED_KEYS));
         }
         setKeysFromIntent(getIntent());
 
@@ -159,11 +155,7 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
         getSupportFragmentManager().addOnBackStackChangedListener(() -> {
             mLevel = getSupportFragmentManager().getBackStackEntryCount();
             Log.d(TAG, "Backstack changed. Level: %d", mLevel);
-            // Update saved level: Delete everything from mLevel to the last item)
-            int size = mSavedKeys.size();
-            if (mLevel <= size - 1) {
-                mSavedKeys.subList(mLevel, size).clear();
-            }
+            mSavedKeys.onBackStackChanged(mLevel);
         });
 
         String defaultPref = getKey(mLevel);
@@ -228,7 +220,8 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
                 args.putString(PreferenceFragment.PREF_KEY, subKey);
             }
             // Save current key
-            saveKey(mLevel, pref.getKey());
+            Log.d(TAG, "Save level: %d, Key: %s", mLevel, pref.getKey());
+            mSavedKeys.save(mLevel, pref.getKey());
         }
         fragment.setArguments(args);
         // The line below is kept because this is how it is handled in AndroidX library
@@ -246,36 +239,20 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
 
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
-        outState.putStringArrayList(SAVED_KEYS, mSavedKeys);
+        outState.putStringArrayList(SAVED_KEYS, mSavedKeys.toList());
         super.onSaveInstanceState(outState);
     }
 
     @Nullable
     private String getKey(int level) {
-        if (!mSavedKeys.isEmpty() && mSavedKeys.size() > level) {
-            String key = mSavedKeys.get(level);
-            if (key != null) {
-                return key;
-            }
+        String key = mSavedKeys.get(level);
+        if (key != null) {
+            return key;
         }
         if (mKeys.size() > level) {
             return mKeys.get(level);
         }
         return null;
-    }
-
-    private void saveKey(int level, @Nullable String key) {
-        Log.d(TAG, "Save level: %d, Key: %s", level, key);
-        int size = mSavedKeys.size();
-        if (level >= size) {
-            // Create levels
-            int count = level - size + 1;
-            for (int i = 0; i < count; ++i) {
-                mSavedKeys.add(null);
-            }
-        }
-        // Add this level
-        mSavedKeys.set(level, key);
     }
 
     private boolean setKeysFromIntent(@NonNull Intent intent) {
