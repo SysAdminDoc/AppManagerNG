@@ -136,6 +136,7 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Where: app/src/main/res/layout/, app/src/main/java/io/github/muntashirakon/AppManager/
   Today: the main-list badge composite TouchDelegate and `MainRecyclerAdapterBadgeStyleTest` landed, and so did the 2026-09-30 label commits (ebc4008ea, 19b27d3a4). Include the badge row in the scanner run.
   Unblocked 2026-11-07: Accessibility Scanner, TalkBack and keyboard input all work on the emulators and phones, so finding the violations is the first step of the work.
+  Research 2026-11-13: the scanner run should also cover what the November issue drain added after the label commits: notification filter rules and history, toast history, the overlay detector bubble, Local sync, the permission watcher and the Quick Settings tiles.
   Complexity: M
 
 - [ ] P2: Degraded, empty, error, loading, and success state system
