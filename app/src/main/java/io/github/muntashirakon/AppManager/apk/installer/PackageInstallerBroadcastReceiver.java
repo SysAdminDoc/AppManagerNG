@@ -100,7 +100,9 @@ class PackageInstallerBroadcastReceiver extends BroadcastReceiver {
                     // whether or not the app is in the foreground.
                     Log.w(TAG, "Confirmation intent refused: %s", decision);
                     PackageInstallerCompat.sendCompletedBroadcast(context, mPackageName,
-                            PackageInstallerCompat.STATUS_FAILURE_INCOMPATIBLE_ROM, sessionId);
+                            PackageInstallerCompat.STATUS_FAILURE_INCOMPATIBLE_ROM, sessionId,
+                            "STATUS_FAILURE_INCOMPATIBLE_ROM: Android's confirmation was refused ("
+                                    + decision + ")");
                     break;
                 }
                 Intent intent2 = new Intent(context, PackageInstallerActivity.class);

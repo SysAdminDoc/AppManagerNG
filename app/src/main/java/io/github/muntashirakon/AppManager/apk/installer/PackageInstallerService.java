@@ -266,7 +266,9 @@ public class PackageInstallerService extends ForegroundService {
                                 OperationJournalMetadata.forInstaller(this, apkQueueItem,
                                         STATUS_FAILURE_INVALID, null, th.getMessage()));
                         String packageName = apkQueueItem.getPackageName();
-                        finishInstallation(packageName != null ? packageName : "Unknown Package", STATUS_FAILURE_INVALID, apkQueueItem.getAppLabel(), null, null);
+                        String reason = th.getMessage() != null ? th.getMessage() : th.getClass().getSimpleName();
+                        finishInstallation(packageName != null ? packageName : "Unknown Package", STATUS_FAILURE_INVALID,
+                                apkQueueItem.getAppLabel(), null, "STATUS_FAILURE_INVALID: " + reason);
                         return;
                     }
                     installer.install(apkFile, selectedSplitIds, options, mProgressHandler);

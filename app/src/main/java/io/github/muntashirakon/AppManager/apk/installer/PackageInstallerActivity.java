@@ -648,7 +648,9 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                 Log.w(TAG, e);
                 String packageName = mPackageName != null ? mPackageName : "";
                 PackageInstallerCompat.sendCompletedBroadcast(this, packageName,
-                        PackageInstallerCompat.STATUS_FAILURE_INCOMPATIBLE_ROM, mSessionId);
+                        PackageInstallerCompat.STATUS_FAILURE_INCOMPATIBLE_ROM, mSessionId,
+                        "STATUS_FAILURE_INCOMPATIBLE_ROM: Could not show Android's confirmation ("
+                                + e.getMessage() + ")");
                 if (!hasNext() && !mIsDealingWithApk) {
                     // No APKs left, this maybe a solo call
                     finish();
