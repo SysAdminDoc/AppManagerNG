@@ -9,11 +9,11 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
 - [ ] P2: Repeat the drain's device checks on the S22 or S25. The fixes and features for #12, #13, #15, #16, #17, #18, #19, #20, #21, #23, #25, #26, #27, #28 and PR #24 ran on API 29 and API 35 emulators only. On a phone, look hardest at what an emulator fakes: Wireless debugging pairing and ADB over TCP (#20), usage access staying granted after a reboot (#16), the #15 scheduled check in `dumpsys jobscheduler` after a restart, and the #26 overlay bubble over a real app's ad. For #20 on a phone with `adb tcpip 5555` and Wireless debugging both on (adbd's secure auth is on there, unlike the emulator): ADB over TCP connects to 5555, switching to Wireless debugging moves to the TLS port without asking to pair again, and a new Wireless debugging port mid-session gets used (`adb shell ss -tn`). For #22, Forget drops a connected device at once, and a share that comes back on a new port shows up on the other device without reopening.
 - [ ] P2: Check #22 Local sync between two separate devices. A work profile can't stand in, because both users share one install of each app, so these two rows never show there. "Signature differs": install the same package signed with different keys on each device, connect, and confirm the row says so and offers no install. Update all newer: give the sharing device a higher versionCode of an app the other has (same key), tap Update all newer and confirm it updates. Two emulators work too: on the client type 10.0.2.2 and a host port that `adb -s <host> forward tcp:<port> tcp:<share port>` points at the sharing emulator.
 
-- [ ] P2: Undo a temporary allow on a watched permission right away (#15)
-  Why: a permission watched as Always deny only goes back at the next check (rule set, app install or update, restart, or the Scheduled check at 15 minutes at the shortest). Android sends no broadcast when a runtime permission is granted in Settings, so a Bouncer-style "allow for now" stays granted until then. The reporter asked for exactly that on 2026-11-08, after trying a build from before v0.7.0.
-  Touches: `permission/watcher/` (a trigger that calls `PermissionWatchScheduler.checkSoon(context, package, user)`), and a listener in the privileged server: `IPermissionManager.addOnPermissionsChangeListener` for runtime permissions and `IAppOpsService.startWatchingMode` for app ops. Check which of them the shell uid may call (`OBSERVE_GRANT_REVOKE_PERMISSIONS`, `WATCH_APPOPS`) and fall back to root only where it can't.
-  Acceptance: in root or ADB mode, granting a permission watched as Always deny from Android's Settings is revoked within a few seconds and the notification says so; a test covers the listener scheduling a check for the right package and user. No-root mode keeps the current check points.
-  Complexity: M
+- [ ] P2: Check the #15 instant revoke on a phone in ADB and Shizuku mode
+  Why: the privileged server now watches apps that have an Always deny permission and starts a check the moment one changes (c9eb21750, 2026-11-13), so a grant from Android's Settings is taken back right away. It hasn't run on a phone yet.
+  Touches: nothing unless it fails (`permission/watcher/`, the server's permission listener).
+  Acceptance: on the S22 or S25, in ADB mode and again in Shizuku mode, grant a permission watched as Always deny from Android's Settings. It's revoked within a few seconds and the notification says so. Reboot, start the server again and repeat once.
+  Complexity: S
 
 - [ ] P2: Let ADB mode start in a work profile
   Why: in a managed profile the app reaches adbd and launches its server, but never binds the privileged service, so the splash sits on "Checking the configured operation mode" until the startup check times out and only then offers recovery buttons.
@@ -45,6 +45,7 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Acceptance: on API 37, each privileged mode either binds or reports why in the UI rather than failing silently.
   Today: Shizuku's newest release is still v13.6.0 (2025-05-25) and its Android 17 reports #1965 and #1988 are open, so a Shizuku failure on API 37 that shows its reason in the UI meets the bar.
   Unblocked 2026-11-07: the API 37.0 and 37.1 images are on disk and should root with Magisk 31.1 the way the API 36 image did (not tried yet), Shizuku 13.6.0 sideloads and starts over ADB, and Dhizuku 2.13.0 (2026-10-30) gets device owner through `dpm set-device-owner` on an emulator with no accounts.
+  Research 2026-11-13: Shizuku 13.6.0 shows an empty authorized-apps list on Android 17 (RikkaApps/Shizuku #2180 with 25 upvotes, #2681 on 2026-11-11), so a 13.6.0 failure is expected. Also bind once through a Shizuku-API compatible server, such as Porter's compatibility mode (SD Maid SE 2.2.0, 2026-09-29). The warning logic is the new P2 "Judge Shizuku on Android 17 by whether the server answers".
   Complexity: S
 
 - [ ] P1: Root-detection retune for 2026 root managers
@@ -93,6 +94,7 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Evidence: `dhizuku/DhizukuBridge.java` is a detection probe only, and `settings/Ops.java` declares no Dhizuku mode.
   Order: do it after the ROADMAP item "Make the Dhizuku capability copy match what Dhizuku can actually do", which settles the API 26 module question.
   Unblocked 2026-11-07: Dhizuku 2.13.0 (2026-10-30) is out, and `dpm set-device-owner` hands it device owner on any emulator with no accounts.
+  Research 2026-11-13: Thor 1.96.1 to 1.97.4 shows a working shape. It freezes with `setApplicationHidden`, grants with `setPermissionGrantState` and clears data through DevicePolicyManager, and has no Dhizuku path for force-stop or cache clearing. Dhizuku 2.12.0 (2026-06-24) also works as profile owner.
   Complexity: M
 
 - [ ] P2: Wireless-ADB resilience: recover after the One UI 8 doze kill
@@ -100,6 +102,7 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Evidence: the trusted-network half landed. 658ef6e38 asks once per network when Wireless debugging must be allowed, 14e8c1277 reconnects after a reboot on Android 15+, and 4cc5254b6 says why ADB mode failed. Nothing in `servermanager/` or `adb/` handles the server dying on wake from doze, and Shizuku #2475 is still open.
   Acceptance: on the S22, after the phone sits in doze and wakes, NG notices the dead server and reconnects or says why it can't.
   Unblocked 2026-11-07: the S22 from the Shizuku report is here, and doze can be forced with `dumpsys deviceidle force-idle`. Pair it with the ROADMAP P1 reboot reconnect check.
+  Research 2026-11-13: Shizuku #2596 (2026-10-14) reports the same disconnects on an S25 Ultra with One UI 8.5, so run the check on the S25 as well as the S22.
   Complexity: M
 
 - [ ] P2: SAF DocumentsProvider exposure of app-private directories
@@ -290,6 +293,7 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Today: `filters/options/` has no scheme predicate, so `IFilterableAppInfo` needs a scheme flag first.
   Acceptance: a Finder filter lists only v1-only-signed apps; the app row shows a weak-signature badge.
   Unblocked 2026-11-07: adding a scheme flag is an internal API choice, and the chip can be checked on an emulator in each theme.
+  Research 2026-11-13: arXiv 2606.21487 (2026-06-19) found 26 leaked signing certificates tied to 278 real apps but published no certificate list, so a "leaked key" chip has no data to use yet. Keep this item to signature schemes.
   Complexity: M
 
 - [ ] P3: Health-permission granular mapping (Android 16 android.permissions.health)
@@ -304,6 +308,7 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Today: `misc/XposedModuleInfo.java` already tells modern modules from legacy ones (`META-INF/xposed/module.prop`). There's no live-update or themed-icon signal, and no Finder filter for any of them.
   Acceptance: at least one new signal appears in App Details and is filterable in the Finder, over fixture package data.
   Unblocked 2026-11-07: the Xposed signal only needs a row and a Finder filter, and the rows can be checked on an emulator.
+  Research 2026-11-13: LibChecker 2.5.5 (2026-11-05) added AppFunctions, v3.2 signature and R8 mode detection, three more candidates for this item.
   Complexity: M
 
 - [ ] P3: Persistent removal/debloat ledger surface
@@ -350,6 +355,7 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Evidence: `build/reports/dependency-check/dependency-check-report.sarif` from 2026-08-22; `scripts/run_dependency_cve_gate.py`; root `build.gradle`; `config/owasp-suppressions.xml`; CVE-2026-11822 and CVE-2026-11824 mappings to AndroidX wrappers and host `sqlite-jdbc`.
   Touches: `scripts/run_dependency_cve_gate.py`, Gradle dependency-report inputs, reproducible-release evidence, SBOM/APK reachability join, SARIF/HTML outputs, suppression validation tests.
   Acceptance: the gate produces separate packaged-release and host/build/test sections for FLOSS and full; every blocking finding records module, configuration, resolved artifact, and APK or SBOM reachability evidence; host-only and CPE-name-collision findings cannot be presented as shipped APK code; CVSS policy still fails closed for reachable findings; stale or blanket suppressions fail validation. The six August 2026 SQLite CVEs (CVE-2026-51296, -51297, -51300, -51302, -51303, -51304) are documented upstream as fabricated and must carry that disposition rather than being re-investigated each release.
+  Research 2026-11-13: Guava 32.1.3-android is inside GHSA-xxph-c9ww-hj94 (fixed after 33.7.1), and the fix can't be taken at minSdk 21 because Guava 33.5.0 needs API 23. Record it as held with its reachability: NG would have to Java-deserialize Guava types from untrusted input.
   Complexity: M
 
 ### P2
@@ -444,6 +450,7 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Evidence: fork discussion #5, where a user asks for full Dhizuku support because ColorOS 16 restricted ADB permissions and points at `trinadhthatakula/Thor`; `onboarding_confidence_mode_shizuku_ready` and `onboarding_mode_dhizuku_status_ready` in `app/src/main/res/values/strings.xml` against `privilege_health_dhizuku_dialog_message`; `settings/Ops.java:85-90` declares no Dhizuku mode; `apk/installer/InstallerPrivilegeCascade.java:182` adds Dhizuku only as an informational step with a null mode; `dhizuku/DhizukuBridge.java` is a detection probe; Dhizuku-API 2.6.0 declares a minimum SDK of 26 (https://raw.githubusercontent.com/iamr0s/Dhizuku-API/main/build.gradle) against a Dhizuku manager that already requires Android 8.0, so the AAR is a manifest-merger question rather than the API 21 floor conflict the string claims.
   Touches: `app/src/main/res/values/strings.xml`, `onboarding/OnboardingFragment.java`, `settings/PrivilegeHealthPreferences.java`, `docs/policy/minsdk-21-ceiling.md`, `Roadmap_Blocked.md`.
   Acceptance: no user-facing string implies Dhizuku can perform operations while it cannot, and none conflates Shizuku readiness with Dhizuku readiness; the Dhizuku status text states what detection gives the user today and what it does not; `docs/policy/minsdk-21-ceiling.md` records the measured Dhizuku-API minimum SDK and the decision on whether an API 26 guarded module with `tools:overrideLibrary` is acceptable under the API 21 policy, so the parked Dhizuku executor-parity row in `Roadmap_Blocked.md` carries a decided approach instead of an open question; a settings-string test fails if a readiness string is reintroduced without a matching capability.
+  Research 2026-11-13: Dhizuku 2.12.0 (2026-06-24) added profile owner support and 2.13.0 (2026-10-30) an off-by-default setting that lets clients transfer or clear ownership. Its default APK needs API 23, which the copy should say.
   Complexity: S
 
 ## Research-Driven Additions (2026-09-25)
@@ -455,6 +462,7 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Evidence: upstream App Manager #1959; Thor's Changed elsewhere model; `history/ops/PerAppRollbackManager.java`; current operation history and App Change Feed stores. The existing App Details readback item covers two screen caches, not durable cross-operation rollback.
   Touches: operation-history schema, mutation executors, authoritative readback adapters, `PerAppRollbackManager.java`, rollback review UI, retention and export, tests.
   Acceptance: every supported mutation records target, operation, exact before value, requested value, confirmed post value, execution identity, result, and timestamp in an append-only entry; rollback reads current state first and proceeds only when it matches the recorded post value; a mismatch displays Changed elsewhere with both values and performs no write; partial batch results remain independently reversible; schema migration, pruning, restart, export, and tamper tests pass.
+  Research 2026-11-13: upstream's unreleased Actions engine (434037c40, 2026-10-12) tracks `RevertMode` and `ActionConflict` and refuses to revert over an outside change, the same check this item asks for. Borrow its conflict cases, not the engine (RESEARCH.md, Rejected Ideas).
   Complexity: L
 
 - [ ] P1: Decode binary XML with an API-correct framework table
@@ -462,6 +470,7 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Evidence: upstream App Manager #2040; `apk/parser/AndroidBinXmlDecoder.java`; Android resource-table evolution across API levels.
   Touches: `AndroidBinXmlDecoder.java`, compiled-against API metadata discovery, framework table selection and cache, raw-ID rendering, old-manifest fixtures, tests.
   Acceptance: the decoder uses the APK's compiled-against API metadata when present; when it is absent, a name is emitted only if every plausible framework table agrees, otherwise the hexadecimal resource ID is preserved; fixtures compiled against at least API 21, 28, 35, and 37 assert stable attribute names and values; malformed tables still produce a bounded parse error.
+  Research 2026-11-13: API 37 adds `PackageManager.parseAndroidManifest(ParcelFileDescriptor)`, a platform answer to check the decoder against on API 37. Upstream #2060 (2026-10-03) failed on a chunk of type 0, but its sample APK returns 403, so it can't be a fixture.
   Complexity: M
 
 - [ ] P1: Keep shortcut-launched targets in Recents
@@ -527,6 +536,7 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Evidence: Android 17 feature and behavior-change documentation; `ActivityManager.registerAnrWarningListener`; `AnrWarningResult`; `ApplicationExitInfo.AnrInfo`; current profiling and support-bundle helpers.
   Touches: process lifecycle registration, a bounded ANR-warning store, support bundle, process-exit correlation, API 37 tests.
   Acceptance: API 37 registers one listener while the app process is active; each warning stores only time, process identity, warning type, and ANR identifier under a small count and age cap; later exit evidence links by identifier when available; callback work cannot block the main thread or read app content; older APIs and unsupported devices remain silent; tests cover correlation, pruning, duplicate callbacks, and listener teardown.
+  Research 2026-11-13: `ApplicationExitInfo.AnrInfo` and `ActivityManager.registerAnrWarningListener` are both in `core/api/current.txt` at android-17.0.0_r1, so the names here are final.
   Complexity: M
 
 - [ ] P2: Add Shizuku OEM failure diagnostics
@@ -534,6 +544,7 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Evidence: Shizuku API 13.1.5; Shizuku API pull request #299; current Shizuku bridge and Privilege Health diagnostics.
   Touches: Shizuku bridge diagnostics, Privilege Health, support bundle, binder-death classification, OEM fixture tests.
   Acceptance: a failed Shizuku operation records SDK, manufacturer, provider package and version, binder alive state, permission state, remote UID, and one stable failure code without device identifiers or command contents; Privilege Health distinguishes provider missing, permission denied, binder dead, incompatible provider, and operation failure; no open upstream patch is vendored by this item; tests redact user data and cover MediaTek or HyperOS signatures only as diagnostic inputs.
+  Research 2026-11-13: realme's ColorOS 16 shell lacks `CREATE_VIRTUAL_DISPLAY` (ccch1mneyyy/dsh-Go #1153), and ColorOS 16 changed dumpsys output (Verlintas/NOIR #19). Both belong in the OEM codes, and fork discussion #5 is from a ColorOS 16 user.
   Complexity: S
 
 - [ ] P2: Honor Android 16 outlined text in custom usage charts
@@ -557,6 +568,7 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Evidence: InstallerX Revived option model and issue #821; `apk/installer/InstallerOptions.java`; installer preferences and preflight.
   Touches: preset model and store, installer options UI, preflight diff, import and export, migration, tests.
   Acceptance: users can save, rename, duplicate, apply, and delete local presets; applying a preset shows the fields that differ from current options before commit; unsupported options are ignored with an explanation, not silently coerced; no preset changes the default until explicitly applied; presets round-trip through app settings export without secrets or device-specific paths.
+  Research 2026-11-13: Obtainium 1.7.4 (2026-11-01) added a per-app install method, so a preset may need a per-app default as well as a global one.
   Complexity: M
 
 ## Audit Findings — 2026-09-25
@@ -703,6 +715,7 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Acceptance: In no-root mode, opening App Info, the device info dialog, and the storage fallback make no `su` attempt, pinned by a spy test like `OpsNoRootInitTest`; the mode chooser and Privilege Health still report a granted root when the user checks.
   Confidence: Verified
   Effort: S
+  Research 2026-11-13: upstream b11644c3b makes the no-root shell skip the probe. NG's `runner/NormalShell.java` already does that, so only the three screens listed here remain.
 
 - [ ] P2 — Import PKCS #8 keys off the main thread
   Category: Responsiveness
@@ -744,3 +757,160 @@ Sources and reasoning: RESEARCH.md (2026-09-30).
   Touches: libadb-android (a socket timeout, or a pairing context the caller can close), `AdbConnectionManager`, tests.
   Acceptance: a pairing attempt against a port that accepts TCP and never answers ends within its limit with no thread left blocked in the pairing code, shown by a host test with a silent local server socket; the replaced manager's connection is closed without waiting on the stuck attempt.
   Complexity: M
+
+## Research-Driven Additions (2026-11-13)
+
+Sources and reasoning: RESEARCH.md (2026-11-13). The four crash fixes come first, then the Android 17 items, then the rest.
+
+### P1
+
+- [ ] P1: Make the Finder's app-op filter safe on every call
+  Why: `getAppOps()` resets its cache to an empty list on every call after the first, because its `else` branch also runs when the cache is already filled. It returns null when the ops lookup fails, although the getter is `@NonNull`. The AppOps Finder filter then calls `ops.isEmpty()` on that null, and an app's match depends on how many times the getter already ran.
+  Evidence: `main/ApplicationItem.java:590-600`, `filters/FilterableAppInfo.java:249-257`, `filters/options/AppOpsOption.java:92-95`. `getAllComponents` and `getUsedPermissions` in `ApplicationItem.java` (returns at :630 and :670) also return null without package info. Upstream fixed the same code in 84603ef98.
+  Touches: those three files and a host test.
+  Acceptance: each getter returns the same non-null list on its first and second call, and an empty list when package info or the ops lookup is missing. A host test covers both classes for app ops, components and permissions, and the AppOps filter never throws for an app with no ops.
+  Complexity: S
+
+- [ ] P1: Stop the audio player crashing on a negative or unknown position
+  Why: Material's Slider throws when its value falls outside its range. The audio player checks only the upper bound, and rewinding 10 seconds near the start asks for a negative position. Upstream #2064 (2026-10-11) is this crash, "Slider value(-13.0)".
+  Evidence: `viewer/audio/AudioPlayerDialogFragment.java:184-186` (upper bound only), `:259` (`seekTo(pos - 10 * 1000)`), `:381-383` (the range comes from the duration, which can be unknown).
+  Touches: `AudioPlayerDialogFragment.java`, a Robolectric test.
+  Acceptance: the slider value is clamped to its range, rewind never seeks below 0, and an unknown duration disables the slider instead of setting an empty range. A test drives a negative position and one past the end with no crash.
+  Complexity: S
+
+- [ ] P1: Keep running when Android refuses a foreground service start
+  Why: `ForegroundService.start()` calls `ServiceCompat.startForeground` with no guard, so a `SecurityException` or `ForegroundServiceStartNotAllowedException` kills the app mid-operation. Upstream #2066 (2026-10-17) is that crash on Android 17 (PixelOS) during Advanced pause, then Freeze, from the specialUse freeze service.
+  Evidence: `types/ForegroundService.java:36-40`. Callers: `accessibility/topapp/TopAppOverlayService.java:154`, `apk/behavior/FreezeUnfreezeService.java:134`, `progress/NotificationProgressHandler.java:112`, `servermanager/WifiWaitService.java:188`, `session/SessionMonitoringService.java:104`. `adb/AdbPairingService.java:237` and `:309` start their own.
+  Touches: `ForegroundService.java`, the callers above, tests.
+  Acceptance: a refused start stops that service cleanly, logs why and tells the user in a toast or notification. The operation it was started for either finishes without the service or reports that it didn't run, never half done without a word. A Robolectric test that makes `startForeground` throw shows no crash for each caller.
+  Complexity: M
+
+- [ ] P1: Keep every install sent while the app lock screen is up
+  Why: when another app sends an APK while AppManagerNG's app lock screen is showing, `onNewIntent` replaces the activity's intent and queues it, and `onAuthenticated` later queues `getIntent()`, which is now the second APK. The first install is lost and the second runs twice.
+  Evidence: `apk/installer/PackageInstallerActivity.java:629-660` (`setIntent`, then `enqueue`), `:324-341` (`onAuthenticated` queues `getIntent()`), `:215-224` and `:286` (a plain `LinkedList` with no dedupe). `BaseActivity.java:76-97` holds `onAuthenticated` until authentication finishes, and the activity is `singleInstance`. Upstream fixed the same race in c4c81f492.
+  Touches: `PackageInstallerActivity.java`, `PackageInstallerActivityTest.java`.
+  Acceptance: one intent at launch and a second through `onNewIntent` before authentication each install once, in order. A test in `PackageInstallerActivityTest` covers it.
+  Complexity: S
+
+- [ ] P1: Follow Android 17's wireless debugging port when it moves
+  Why: on Android 17, adbd advertises `_adb-tls-connect` through NsdManager under one name stored in `persist.adb.wifi.guid`, with an `api` TXT record, and no longer sets `service.adb.tls.port`. Android 14+ NSD answers a resolve from its cache and doesn't report a known name moving to a new port, which is what hid Local sync shares that came back on a new port in the #22 drain. libadb's `AdbMdns` resolves each name once, so when Wireless debugging restarts on a new port under the same name, NG can keep dialing the old one.
+  Evidence: `daemon/mdns.cpp` and `daemon/adb_wifi.cpp` at android-17.0.0_r1 (`use_tls_lifecycle` is on in the cp2a release config). `adb/AdbUtils.java:72-79` and `:160-178` scan with `AdbMdns`. `sync/lan/LanSyncDiscovery.java` already follows each service with `registerServiceInfoCallback` on API 34+.
+  Touches: `adb/AdbUtils.java` (a follower like Local sync's for `_adb-tls-connect` on API 34+), the reconnect path in `adb/AdbConnectionManager.java`, host tests with an injected follower.
+  Acceptance: on an API 37 image, toggle Wireless debugging until its port changes, and NG reconnects to the new port without a restart. API 30 to 36 discover as before. A host test feeds a port change for one service name and sees the new port chosen. On the same run, `wireless_debugging_allow_network_text` still appears when ADB Wi-Fi 2.0 turns debugging off on a network that isn't allowed.
+  Complexity: M
+
+### P2
+
+- [ ] P2: Judge Shizuku on Android 17 by whether the server answers
+  Why: NG warns every Shizuku user on Android 17 and points them at Wireless ADB, because `MIN_ANDROID_17_COMPATIBLE_VERSION` is null. That's right for the official 13.6.0, which shows an empty authorized-apps list there. It's noise for anyone on a Shizuku-API server that works, such as Porter's compatibility mode (SD Maid SE 2.2.0, 2026-09-29) or one of the forks awesome-shizuku lists.
+  Evidence: `shizuku/ShizukuBridge.java:50` and `:342-357`, `onboarding/OnboardingFragment.java:350`, `settings/PrivilegeHealthPreferences.java:345`. RikkaApps/Shizuku #2180 (25 upvotes) and #2681 (2026-11-11). r/ShizukuforAndroid 1xbl3af (2026-10-21) shows users split across forks.
+  Touches: `ShizukuBridge.java`, the two warning call sites, `onboarding_mode_shizuku_android17_warning` and `privilege_health_shizuku_android17_warning`, `ShizukuBridgeTest.java`.
+  Acceptance: on API 37 the warning shows when the server is missing, its binder is dead, or NG's permission request can't complete, and stays off when the binder answers and NG holds the permission. The copy names no third-party fork until the owner picks one (RESEARCH.md, Open Questions). `ShizukuBridgeTest` covers each case. Related: "Validate privileged-mode binding on Android 17".
+  Complexity: S
+
+- [ ] P2: Say why a work profile is out of reach in ADB mode
+  Why: when a work profile sets `DISALLOW_DEBUGGING_FEATURES`, which managed profiles often do, Android refuses shell calls for that user. ADB mode then lists the main profile's apps and nothing from the work profile, with no reason. Upstream #2059 (2026-10-03, One UI 8.5, wireless ADB) is this report.
+  Evidence: `UserController.handleIncomingUser` at android-16.0.0_r4 refuses shell for a user with that restriction. `users/Users.java`.
+  Touches: `users/Users.java`, the main list's user filter, Privilege Health, a host test.
+  Acceptance: in ADB mode, or Shizuku running as shell, a profile NG can't reach shows in the user picker and Privilege Health with a short reason instead of vanishing. The reason comes from the restriction where it's readable, else from the `SecurityException`. Root mode is unchanged. Related: "Let ADB mode start in a work profile" is about NG running inside the profile.
+  Complexity: S
+
+- [ ] P2: Freeze instead when Android refuses a system app uninstall
+  Why: Android 17 refuses `pm uninstall --user` of a system app unless the caller is root, so rootless debloat fails there. UAD-ng made disable its default in v1.3.0 (2026-11-02) for this reason (issues #1426 and #1436), and HN 49193173 discussed the same change. NG's rootless debloat runs that exact command.
+  Evidence: `PackageManagerShellCommand.java` at android-17.0.0_r1. `debloat/RootlessDebloat.java:33-63` builds `pm uninstall --user`. Callers: `batchops/BatchOpsManager.java:1211-1224` and `debloat/DebloaterActivity.java:480`. The freeze fallback at `DebloaterActivity.java:617` (`rootless_debloat_oem_disable_fallbacks`) covers a fixed OEM list only.
+  Touches: `RootlessDebloat.java`, `BatchOpsManager.java`, `DebloaterActivity.java`, the removal ledger, host tests with a recorded refusal.
+  Acceptance: on API 37 in ADB or Shizuku mode, a refused system app uninstall offers freeze for the same apps as an action on the result, records which action ran in the ledger, and doesn't count the refusal as a removal. API 36 and below behave as today. A host test feeds the API 37 failure text and checks the fallback.
+  Complexity: M
+
+- [ ] P2: Leave other tools' pauses alone
+  Why: NG suspends with a null `SuspendDialogInfo`, and in ADB mode the suspending package is the shell. A pause set by another shell tool, or by hand over adb, looks the same, so NG's unfreeze can lift a pause it never set. Thor fixed this in PR #599 by recording its own suspensions and keeping outside ones.
+  Evidence: `compat/PackageManagerCompat.java:693-711`, `utils/FreezeUtils.java:123` and `:130`, trinadhthatakula/Thor PR #599.
+  Touches: `PackageManagerCompat.java`, `FreezeUtils.java`, the freeze state store, host tests.
+  Acceptance: NG records which packages it suspended, per user. Unfreeze and unfreeze-all lift only those. A package someone else suspended shows as paused by another app, and lifting it is its own action. A host test covers an outside suspension surviving unfreeze-all.
+  Complexity: M
+
+- [ ] P2: Get ready for target SDK 37
+  Why: at target 37, Android 17 enforces the local network permission (TCP to the LAN times out and UDP gets EPERM without it) and applies background activity launch rules to `IntentSender` starts. It also adds the normal permission `USE_LOOPBACK_INTERFACE`, which will guard 127.0.0.1 once `full_loopback_protections_enabled` is enforced. NG uses all three: Local sync and wireless ADB on the LAN, PendingIntents from notifications and the installer, and its local server on loopback.
+  Evidence: developer.android.com Android 17 behavior changes for apps targeting 17, and the local network permission page. `core/api/current.txt` and `permissions/flags.aconfig` at android-17.0.0_r1. `AndroidManifest.xml:16` already declares `ACCESS_LOCAL_NETWORK`.
+  Touches: `AndroidManifest.xml`, `sync/lan/`, `adb/`, `IntentSender` and `PendingIntent` call sites, a target 37 test run.
+  Acceptance: `USE_LOOPBACK_INTERFACE` is declared now (a normal permission, so nothing to ask). A build targeting 37 passes the unit suite, and on an API 37 image Local sync, wireless pairing and the local server all connect, and every notification action and installer prompt still opens. Raising the shipped target stays a separate decision.
+  Complexity: M
+
+- [ ] P2: Check Android/data access in ADB mode on Android 17 before backing it up
+  Why: one report says Android 17 on a Galaxy S25 Ultra changed Android/data so shell, and so Shizuku, can no longer read other apps' folders there (r/ShizukuforAndroid 1xmoo42, 2026-11-03). NG's ADB-mode backup reads those folders. If the report holds, a backup could finish as complete while missing external data.
+  Evidence: r/ShizukuforAndroid 1xmoo42. `backup/BackupDataDirectoryInfo.java:112` and `:176` handle `Android/data/`. Upstream #2068 (2026-10-25) asks to move files out of Android/data in ADB mode.
+  Touches: `BackupDataDirectoryInfo.java`, the backup's external data step, the file manager's error text, tests.
+  Acceptance: on an API 37 image, check whether shell can list and read another app's Android/data folder, and note the result in RESEARCH.md's Open Questions. Where it can't, an ADB-mode backup that includes external data says which folders it skipped and why instead of finishing as complete, and a host test covers that result.
+  Complexity: M
+
+- [ ] P2: Add ColorOS 16 dumpsys output to the parser fixtures
+  Why: ColorOS 16 changed dumpsys output enough to break another app's parser (Verlintas/NOIR #19, 2026-11-11). NG reads activity, job and memory state from dumpsys too, and its fixtures are AOSP only.
+  Evidence: Verlintas/NOIR #19. `compat/ActivityManagerCompat.java`, `compat/JobSchedulerCompat.java`, `details/info/AppMemoryInfoParser.java`. Fork discussion #5 is from a ColorOS 16 user.
+  Touches: those parsers and their tests, fixtures taken from the samples in NOIR #19 or a ColorOS 16 device.
+  Acceptance: ColorOS 16 fixtures parse to the same fields as the AOSP ones, or the parser marks a field unknown instead of returning a wrong value. One test per parser.
+  Complexity: S
+
+- [ ] P2: Mark permissions an update brought in already granted
+  Why: Android grants a new permission without asking when the app already holds another in the same group. A 2026 study of 2.24 million apps with several versions found 17% gained permissions this way (arXiv 2605.27667, DIMVA 2026). NG's watcher reports new dangerous permissions after an update but not which ones arrived granted, and that's the part the user never saw.
+  Evidence: arXiv 2605.27667. `permission/monitor/PermissionChangeMonitor.java:95-132`. `permission/monitor/PermissionSnapshot.java` stores no grant state.
+  Touches: `PermissionChangeMonitor.java`, `PermissionSnapshot.java`, `PermissionChangeDiff.java`, the notification text, host tests.
+  Acceptance: after an update adds a permission to a group the app already held, the notification and its App Change Feed entry mark it granted without asking, with a revoke action. Snapshots saved before this change still load. A host test covers both.
+  Complexity: S
+
+- [ ] P2: Take the dependency updates that keep API 21
+  Why: several pinned libraries have newer releases that still support minSdk 21, and upstream already moved to Robolectric 4.17 (9dd048f26, 2026-10-19).
+  Evidence: Robolectric 4.17, or 4.18 (2026-11-13) once it's two weeks old. gson 2.15.0 (2026-10-24), smali 3.0.10 (2026-08-20), zstd-jni 1.5.7-26 (2026-11-08), AndroidHiddenApiBypass 6.2 (2026-10-09), BouncyCastle 1.87 (2026-11-12) once it's two weeks old. Guava stays at 32.1.3-android because 33.5.0 needs API 23.
+  Touches: `versions.gradle`, the backup round-trip tests, the reproducible-build check.
+  Acceptance: each bump lands on its own with the unit suite and the backup round-trip tests green and the APK's minSdk still 21. `versions.gradle` says why Guava is held.
+  Complexity: S
+
+### P3
+
+- [ ] P3: Add cooldown and batch delivery to notification filter rules
+  Why: BuzzKill builds its rules around a cooldown (let one through, then mute repeats from that app for a while) and batch delivery (hold matches and deliver them together). NG's filter has Allow, Silent, Vibrate and Block, and fork #32 asked for taming noisy apps.
+  Evidence: `notificationfilter/NotificationFilterRule.java:30-38`, buzzkillapp.com, fork issue #32.
+  Touches: `NotificationFilterRule.java`, the listener service, the rule editor, an alarm or WorkManager release for batches, tests.
+  Acceptance: a rule can mute repeats for a set number of minutes after the first one, and a batch rule delivers held notifications as one summary at set times. Both survive a restart, and host tests cover the timing.
+  Complexity: M
+
+- [ ] P3: Set one language for many apps at once
+  Why: upstream #2027 (2026-08-16) asks for a per-app language switcher. NG sets one app's language from App Info, and people who run several apps in a second language have to do them one by one.
+  Evidence: upstream #2027. `compat/AppLocaleManagerCompat.java`, used only at `details/info/AppInfoFragment.java:3598-3649`.
+  Touches: a new batch operation, `AppLocaleManagerCompat.java`, the batch options dialog, tests.
+  Acceptance: select several apps in the main list, pick a language or the system default, and each app that declares that locale gets it. Apps that don't support per-app languages are listed as skipped. Works in every privileged mode on API 33+, and the change goes in the ledger.
+  Complexity: M
+
+- [ ] P3: Let an app skip Android 17's memory limiter
+  Why: Android 17 adds per-app memory limits and an `am memory-limiter ignore <uid>` shell command to lift them. NG's exit history already spots kills by the memory limiter, so the switch can sit next to the evidence.
+  Evidence: developer.android.com/tools/adb (`memory-limiter ignore uid|none|all`), Android 17 behavior changes (app memory limits), `details/info/ExitHistoryDiagnostics.java`.
+  Touches: `ExitHistoryDiagnostics.java`, App Info's exit history, the privileged command runner, tests.
+  Acceptance: on API 37 in root, ADB or Shizuku mode, App Info offers to lift the limit for an app after a memory limiter kill, runs the command for its uid, and can put the limit back. Hidden below API 37. Note that `none` clears every app's exemption, so undo has to restore the others.
+  Complexity: S
+
+- [ ] P3: Edit system, secure and global settings with a guarded undo
+  Why: Thor added a settings editor in v1.97.1 (2026-10-06) that reads each value back after writing and keeps an undo, and upstream added one in c6728f56c. NG already writes `Settings.Global` through its server for Wireless debugging.
+  Evidence: Thor releases, upstream c6728f56c, `servermanager/WirelessDebuggingSwitch.java`.
+  Touches: a new settings screen, the server's settings calls, the ledger, tests.
+  Acceptance: search keys in the three tables, see the old and new value side by side while editing, read the value back after the write and undo it from the ledger. A key Android refuses shows the reason. Works in root, ADB and Shizuku modes.
+  Complexity: M
+
+- [ ] P3: Offer to turn off Wireless debugging when NG's server stops
+  Why: banking and UPI apps refuse to run while Wireless debugging is on (r/UPI 1w7zsmt, 2026-09-05, 48 points), and thedjchi's Shizuku fork added a switch for it. NG already writes that setting.
+  Evidence: r/UPI 1w7zsmt, thedjchi/Shizuku releases, `servermanager/WirelessDebuggingSwitch.java`.
+  Touches: `WirelessDebuggingSwitch.java`, a setting, the server stop path, tests.
+  Acceptance: with the setting on, stopping NG's server turns Wireless debugging off, and starting ADB mode turns it back on where NG is allowed to. Off by default, and a host test covers both directions.
+  Complexity: S
+
+- [ ] P3: Back up saved Wi-Fi networks without root
+  Why: Wi-Fi backup is root only in NG, while Swift Backup backs up saved networks with Shizuku on Android 11 and later. Upstream #568 (+3) asks for Wi-Fi networks in backups.
+  Evidence: `backup/SystemDataBackup.java:66` (`SelfPermissions.isSystemOrRoot()`), swiftbackup.app, upstream #568.
+  Touches: `SystemDataBackup.java`, the server's Wi-Fi calls (find which ones shell may make on API 30+), restore, tests.
+  Acceptance: in ADB or Shizuku mode on API 30+, a backup includes saved networks, encrypted like the rest of the backup, and restore adds them back. Where shell lacks the permission, the backup says Wi-Fi was skipped. Host tests cover the format.
+  Complexity: M
+
+- [ ] P3: Turn on memory tagging
+  Why: upstream accepted `android:memtagMode="async"` in #2058 (2026-09-25). On a device with MTE it catches memory bugs in the native code NG ships at little cost, and does nothing elsewhere.
+  Evidence: upstream #2058. `AndroidManifest.xml` has no `memtagMode`. NG already shows other apps' MTE state (`details/info/MemoryTaggingInfo.java`).
+  Touches: `AndroidManifest.xml`, one check on an MTE-capable device or image.
+  Acceptance: the manifest sets `memtagMode="async"`, and a pass through the main screens plus a backup round trip on an MTE-enabled device shows no tag faults.
+  Complexity: S
