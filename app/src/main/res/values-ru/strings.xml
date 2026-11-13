@@ -3674,8 +3674,6 @@
     <string name="perm_apps_grant_all_confirm_body">Выдаёт %1$s всем редактируемым приложениям в этом списке. Приложения могут получить доступ сразу после изменения.</string>
     <string name="perm_app_status_granted">Выдано</string>
     <string name="perm_app_status_not_granted">Не выдано</string>
-    <string name="perm_app_status_read_only">Только чтение</string>
-    <string name="perm_app_status_reference_pinned">Эталон закреплён</string>
     <string name="perm_app_status_reference_drift">Отклонение от эталона</string>
     <string name="permission_reference_pin">Закрепить эталон</string>
     <string name="permission_reference_restore">Восстановить эталон</string>

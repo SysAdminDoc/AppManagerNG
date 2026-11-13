@@ -47,6 +47,14 @@ public class AppDetailsPermissionItem extends AppDetailsItem<PermissionInfo> {
         referenceGranted = reference != null && reference.isGranted();
     }
 
+    /**
+     * Whether Android Settings has a page where the user can change this permission. Runtime
+     * permissions without a dedicated page are changed from the app's info page.
+     */
+    public boolean hasSettingsPage() {
+        return settingItem != null || isDangerous;
+    }
+
     public boolean isReferenceDrifted() {
         return hasReference && isGranted() != referenceGranted;
     }

@@ -50,10 +50,10 @@ import io.github.muntashirakon.AppManager.details.struct.AppDetailsAppOpItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsDefinedPermissionItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsPermissionItem;
-import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.permission.watcher.PermissionWatcher;
 import io.github.muntashirakon.AppManager.permission.watcher.WatchRule;
 import io.github.muntashirakon.AppManager.permission.watcher.WatchRuleMenu;
+import io.github.muntashirakon.AppManager.permissions.PermissionSettingsLauncher;
 import io.github.muntashirakon.AppManager.permissions.ReferenceAction;
 import io.github.muntashirakon.AppManager.safety.AppOpsUidGuard;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
@@ -76,7 +76,6 @@ import io.github.muntashirakon.widget.MaterialAlertView;
 import io.github.muntashirakon.widget.RecyclerView;
 
 public class AppDetailsPermissionsFragment extends AppDetailsFragment {
-    private static final String TAG = AppDetailsPermissionsFragment.class.getSimpleName();
 
     @IntDef(value = {
             APP_OPS,
@@ -90,6 +89,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
     private String mPackageName;
     private AppDetailsRecyclerAdapter mAdapter;
     private boolean mIsExternalApk;
+    private boolean mRefreshOnResume;
     @PermissionProperty
     private int mNeededProperty;
     private int mSortOrder;
@@ -320,6 +320,11 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
     @Override
     public void onResume() {
         super.onResume();
+        if (mRefreshOnResume) {
+            // Back from a Settings page the user may have changed something on
+            mRefreshOnResume = false;
+            refreshDetails();
+        }
         if (activity.searchView != null) {
             if (!activity.searchView.isShown()) {
                 activity.searchView.setVisibility(View.VISIBLE);
@@ -880,14 +885,14 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                 holder.toggleSwitch.setVisibility(View.GONE);
                 holder.itemView.setOnClickListener(null);
                 holder.itemView.setClickable(false);
-                if (permissionItem.settingItem != null) {
+                String packageName = viewModel != null ? viewModel.getPackageName() : null;
+                if (!mIsExternalApk && packageName != null && permissionItem.hasSettingsPage()) {
                     holder.settingButton.setVisibility(View.VISIBLE);
                     holder.settingButton.setOnClickListener(v -> {
-                        try {
-                            String packageName = Objects.requireNonNull(viewModel).getPackageName();
-                            startActivity(permissionItem.settingItem.toIntent(Objects.requireNonNull(packageName)));
-                        } catch (Exception e) {
-                            Log.e(TAG, "Could not open permission settings for %s.", e, permissionItem.name);
+                        if (PermissionSettingsLauncher.launch(requireContext(), PermissionSettingsLauncher
+                                .candidates(packageName, Collections.singletonList(permissionItem.name)))) {
+                            mRefreshOnResume = true;
+                        } else {
                             UIUtils.displayLongToast(R.string.permission_settings_unavailable);
                         }
                     });

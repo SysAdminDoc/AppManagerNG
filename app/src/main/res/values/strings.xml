@@ -4581,8 +4581,6 @@ Components removed: %8$s</string>
     <string name="perm_apps_grant_all_confirm_body">Grants %1$s to every editable app in this list. Apps may gain access immediately after the change.</string>
     <string name="perm_app_status_granted">Granted</string>
     <string name="perm_app_status_not_granted">Not granted</string>
-    <string name="perm_app_status_read_only">Read-only</string>
-    <string name="perm_app_status_reference_pinned">Reference pinned</string>
     <string name="perm_app_status_reference_drift">Reference drift</string>
     <string name="permission_reference_pin">Pin reference</string>
     <string name="permission_reference_restore">Restore reference</string>
