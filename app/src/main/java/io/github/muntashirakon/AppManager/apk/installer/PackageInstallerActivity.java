@@ -209,7 +209,10 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         }
     }
 
-    private void enqueue(@NonNull Intent intent) {
+    /**
+     * @return how many items the intent added
+     */
+    private int enqueue(@NonNull Intent intent) {
         List<ApkQueueItem> items = queueItemsFrom(intent, Utils.getRealReferrer(this));
         synchronized (mApkQueue) {
             mApkQueue.addAll(items);
@@ -217,6 +220,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                 mBatchItems.addAll(items);
             }
         }
+        return items.size();
     }
 
     /**
@@ -660,9 +664,10 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             }
             return;
         }
-        // New APK files added
-        enqueue(intent);
-        UIUtils.displayShortToast(R.string.added_to_queue);
+        // New APK files added, or nothing at all when the installer is just brought back
+        if (enqueue(intent) > 0) {
+            UIUtils.displayShortToast(R.string.added_to_queue);
+        }
     }
 
     private void showInstallChecksumDialog(@NonNull Intent confirmIntent, @NonNull String sessionSha256) {
