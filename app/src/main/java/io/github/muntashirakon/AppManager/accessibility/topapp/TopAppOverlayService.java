@@ -230,7 +230,13 @@ public class TopAppOverlayService extends Service implements AccessibilityMultip
     }
 
     private void onTopAppChanged() {
-        mBubble.setTopApp(mTracker.getCurrent(), mTracker.getRecents());
+        String underlying = mTracker.getUnderlying();
+        String overlay = mTracker.getOverlay();
+        if (underlying == null && overlay == null) {
+            // Only overlays that were already up when the bubble started, named over the home screen.
+            underlying = mTracker.getCurrent();
+        }
+        mBubble.setLayers(underlying, overlay, mTracker.isOverlayOnScreen(), mTracker.getRecents());
         refreshNotification();
     }
 
@@ -381,10 +387,16 @@ public class TopAppOverlayService extends Service implements AccessibilityMultip
                 .setSilent(true)
                 .addAction(R.drawable.ic_stop, getString(R.string.top_app_overlay_stop), stop);
         String current = mTracker.getCurrent();
+        String overlay = mTracker.getOverlay();
+        String underlying = mTracker.getUnderlying();
         if (!mSourceAvailable) {
             builder.setContentText(getString(R.string.top_app_overlay_no_source));
         } else if (current == null) {
             builder.setContentText(getString(R.string.top_app_overlay_waiting));
+        } else if (overlay != null && underlying != null && mTracker.isOverlayOnScreen()) {
+            builder.setContentText(getString(R.string.top_app_overlay_notification_layers,
+                    labelOrPackage(labels, overlay), labelOrPackage(labels, underlying)));
+            builder.setContentIntent(detailsPendingIntent(overlay, REQUEST_CODE_BASE));
         } else {
             builder.setContentText(getString(R.string.top_app_overlay_notification_text, current));
             builder.setContentIntent(detailsPendingIntent(current, REQUEST_CODE_BASE));
@@ -406,6 +418,12 @@ public class TopAppOverlayService extends Service implements AccessibilityMultip
             builder.setStyle(new NotificationCompat.BigTextStyle().bigText(TextUtils.join("\n", lines)));
         }
         return builder.build();
+    }
+
+    @NonNull
+    private static CharSequence labelOrPackage(@NonNull Map<String, CharSequence> labels, @NonNull String packageName) {
+        CharSequence label = labels.get(packageName);
+        return label != null ? label : packageName;
     }
 
     @Nullable

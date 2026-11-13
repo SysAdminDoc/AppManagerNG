@@ -33,11 +33,15 @@ import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 
 /**
- * The bubble itself: a small window showing the top app. A tap asks to open that app, a long press shows the last few
- * apps inside the same window, and a drag moves it.
+ * The bubble itself: a small window showing the top app. When another app draws an overlay, that app gets its own row
+ * on top in the error colors and the app underneath stays below it. A tap on a row asks to open that app, a long press
+ * shows the last few apps inside the same window, and a drag moves it.
  */
 final class TopAppBubble {
     private static final String TAG = TopAppBubble.class.getSimpleName();
+    /** A gone overlay fades so a live one stands out, but stays readable. */
+    @VisibleForTesting
+    static final float GONE_OVERLAY_ALPHA = 0.6f;
 
     interface Callback {
         void onOpenApp(@NonNull String packageName);
@@ -58,6 +62,16 @@ final class TopAppBubble {
     @NonNull
     private final TextView mPackageName;
     @NonNull
+    private final TextView mUnderlyingLayer;
+    @NonNull
+    private final View mOverlayRow;
+    @NonNull
+    private final ImageView mOverlayIcon;
+    @NonNull
+    private final TextView mOverlayLayer;
+    @NonNull
+    private final TextView mOverlayPackageName;
+    @NonNull
     private final ViewGroup mRecentsContainer;
     @NonNull
     private final WindowManager.LayoutParams mParams;
@@ -69,6 +83,8 @@ final class TopAppBubble {
     private List<String> mRecents = Collections.emptyList();
     @Nullable
     private String mTopApp;
+    @Nullable
+    private String mOverlayApp;
     private boolean mShown;
     private boolean mDragging;
     private float mDownRawX;
@@ -86,6 +102,11 @@ final class TopAppBubble {
         mPill = mRoot.findViewById(R.id.top_app_pill);
         mIcon = mRoot.findViewById(android.R.id.icon);
         mPackageName = mRoot.findViewById(R.id.package_name);
+        mUnderlyingLayer = mRoot.findViewById(R.id.underlying_layer);
+        mOverlayRow = mRoot.findViewById(R.id.top_app_overlay_row);
+        mOverlayIcon = mRoot.findViewById(R.id.overlay_icon);
+        mOverlayLayer = mRoot.findViewById(R.id.overlay_layer);
+        mOverlayPackageName = mRoot.findViewById(R.id.overlay_package_name);
         mRecentsContainer = mRoot.findViewById(R.id.top_app_recents);
         float density = context.getResources().getDisplayMetrics().density;
         mMarginPx = TopAppOverlayPolicy.edgeMarginPx(density);
@@ -101,17 +122,17 @@ final class TopAppBubble {
         mParams.alpha = TopAppOverlayPolicy.COLLAPSED_ALPHA;
         mParams.x = mMarginPx;
         mParams.y = Math.round(mDisplaySize.y * TopAppOverlayPolicy.INITIAL_VERTICAL_FRACTION);
-        mPill.setOnTouchListener(this::onPillTouch);
-        mPill.setOnClickListener(v -> {
-            if (mTopApp != null) {
-                setExpanded(false);
-                mCallback.onOpenApp(mTopApp);
-            }
-        });
-        mPill.setOnLongClickListener(v -> {
+        // Either row drags the whole bubble.
+        mPill.setOnTouchListener(this::onRowTouch);
+        mOverlayRow.setOnTouchListener(this::onRowTouch);
+        mPill.setOnClickListener(v -> openApp(mTopApp));
+        mOverlayRow.setOnClickListener(v -> openApp(mOverlayApp));
+        View.OnLongClickListener toggleRecents = v -> {
             setExpanded(mRecentsContainer.getVisibility() != View.VISIBLE);
             return true;
-        });
+        };
+        mPill.setOnLongClickListener(toggleRecents);
+        mOverlayRow.setOnLongClickListener(toggleRecents);
         // A longer package name or the recent rows can push the window past the edge of the screen.
         mRoot.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) ->
                 moveTo(mParams.x, mParams.y));
@@ -151,20 +172,66 @@ final class TopAppBubble {
 
     @MainThread
     void setTopApp(@Nullable String packageName, @NonNull List<String> recents) {
+        setLayers(packageName, null, false, recents);
+    }
+
+    /**
+     * @param underlying      The app under any overlay, or {@code null} when it isn't known, such as over the home
+     *                        screen
+     * @param overlay         Another app's overlay, or {@code null}
+     * @param overlayOnScreen Whether that overlay is still up
+     */
+    @MainThread
+    void setLayers(@Nullable String underlying, @Nullable String overlay, boolean overlayOnScreen,
+                   @NonNull List<String> recents) {
         mRecents = recents;
-        if (packageName == null) {
+        bindOverlay(overlay, overlayOnScreen);
+        // Over the home screen there's nothing underneath worth a row.
+        mPill.setVisibility(underlying == null && overlay != null ? View.GONE : View.VISIBLE);
+        mUnderlyingLayer.setVisibility(overlay != null ? View.VISIBLE : View.GONE);
+        if (underlying == null) {
             mTopApp = null;
             mPackageName.setText(R.string.top_app_overlay_waiting);
             mPill.setContentDescription(mContext.getString(R.string.top_app_overlay_waiting));
             mIcon.setImageResource(R.drawable.ic_android);
-        } else if (!packageName.equals(mTopApp)) {
-            mTopApp = packageName;
-            mPackageName.setText(packageName);
-            mPill.setContentDescription(mContext.getString(R.string.top_app_overlay_bubble_description, packageName));
-            bindIcon(packageName, mIcon, null);
+        } else {
+            if (!underlying.equals(mTopApp)) {
+                mTopApp = underlying;
+                mPackageName.setText(underlying);
+                bindIcon(underlying, mIcon, null);
+            }
+            mPill.setContentDescription(mContext.getString(overlay != null
+                    ? R.string.top_app_overlay_underneath_description
+                    : R.string.top_app_overlay_bubble_description, underlying));
         }
         if (mRecentsContainer.getVisibility() == View.VISIBLE) {
             bindRecents();
+        }
+    }
+
+    private void bindOverlay(@Nullable String overlay, boolean onScreen) {
+        if (overlay == null) {
+            mOverlayApp = null;
+            mOverlayRow.setVisibility(View.GONE);
+            return;
+        }
+        mOverlayRow.setVisibility(View.VISIBLE);
+        mOverlayRow.setAlpha(onScreen ? 1f : GONE_OVERLAY_ALPHA);
+        mOverlayLayer.setText(onScreen ? R.string.top_app_overlay_layer_overlay
+                : R.string.top_app_overlay_layer_overlay_gone);
+        mOverlayRow.setContentDescription(mContext.getString(onScreen ? R.string.top_app_overlay_overlay_description
+                : R.string.top_app_overlay_overlay_gone_description, overlay));
+        if (!overlay.equals(mOverlayApp)) {
+            mOverlayApp = overlay;
+            mOverlayPackageName.setText(overlay);
+            bindIcon(overlay, mOverlayIcon, null);
+        }
+    }
+
+    private void openApp(@Nullable String packageName) {
+        if (packageName != null) {
+            setExpanded(false);
+            mCallback.onOpenApp(packageName);
         }
     }
 
@@ -194,11 +261,29 @@ final class TopAppBubble {
 
     @VisibleForTesting
     @NonNull
+    View getOverlayRow() {
+        return mOverlayRow;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    TextView getOverlayLayer() {
+        return mOverlayLayer;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    TextView getUnderlyingLayer() {
+        return mUnderlyingLayer;
+    }
+
+    @VisibleForTesting
+    @NonNull
     ViewGroup getRecentsContainer() {
         return mRecentsContainer;
     }
 
-    private boolean onPillTouch(@NonNull View view, @NonNull MotionEvent event) {
+    private boolean onRowTouch(@NonNull View view, @NonNull MotionEvent event) {
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
                 mDragging = false;

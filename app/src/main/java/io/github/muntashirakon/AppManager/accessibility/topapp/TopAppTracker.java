@@ -19,6 +19,9 @@ import java.util.Set;
  * <p>
  * Ignored packages (this app, System UI, the launcher, the keyboard) never replace the current app. An ad that closes
  * back to the home screen therefore stays named by the bubble, which is what makes it possible to catch.
+ * <p>
+ * Besides the newest app, it keeps two layers apart: the app whose window is underneath, and an overlay some other
+ * app drew over it. An overlay that went away stays named, marked gone, until a different app comes up underneath.
  */
 public final class TopAppTracker {
     /** Rows the bubble can show at once, so its window stays small. */
@@ -49,6 +52,11 @@ public final class TopAppTracker {
     private Set<String> mLastOverlays;
     @Nullable
     private String mLastTopApplication;
+    @Nullable
+    private String mUnderlying;
+    @Nullable
+    private String mOverlay;
+    private boolean mOverlayOnScreen;
 
     public TopAppTracker(@NonNull Collection<String> ignoredPackages) {
         mIgnored = new HashSet<>(ignoredPackages);
@@ -65,10 +73,54 @@ public final class TopAppTracker {
         return Collections.unmodifiableList(new ArrayList<>(mRecents));
     }
 
+    /** The app whose window is under any overlay, or {@code null} before one is seen. */
+    @Nullable
+    public String getUnderlying() {
+        return mUnderlying;
+    }
+
     /**
-     * @return {@code true} if this changed the current app
+     * The newest overlay another app drew, or {@code null}. It may be gone already, see {@link #isOverlayOnScreen()}.
+     */
+    @Nullable
+    public String getOverlay() {
+        return mOverlay;
+    }
+
+    public boolean isOverlayOnScreen() {
+        return mOverlay != null && mOverlayOnScreen;
+    }
+
+    /**
+     * An app came to the front, as told by a window-state change or by usage stats.
+     *
+     * @return {@code true} if this changed what the bubble shows
      */
     public boolean onTopApp(@Nullable String packageName) {
+        if (packageName == null || packageName.isEmpty() || mIgnored.contains(packageName)) {
+            return false;
+        }
+        boolean changed = false;
+        // An overlay's own window-state change says nothing about the app under it.
+        if (mLastOverlays == null || !mLastOverlays.contains(packageName)) {
+            changed = setUnderlying(packageName);
+        }
+        return remember(packageName) | changed;
+    }
+
+    private boolean setUnderlying(@NonNull String packageName) {
+        if (packageName.equals(mUnderlying)) {
+            return false;
+        }
+        mUnderlying = packageName;
+        if (mOverlay != null && !mOverlayOnScreen) {
+            // A gone overlay is only worth naming over the app it covered.
+            mOverlay = null;
+        }
+        return true;
+    }
+
+    private boolean remember(@Nullable String packageName) {
         if (packageName == null || packageName.isEmpty() || mIgnored.contains(packageName)) {
             return false;
         }
@@ -91,7 +143,7 @@ public final class TopAppTracker {
      * Overlays already up at the first walk are never named over the top app afterwards, or a permanent one would hold
      * the bubble forever. They still go in the recents, since one of them may be the ad the bubble was turned on for.
      *
-     * @return {@code true} if this changed the current app
+     * @return {@code true} if this changed what the bubble shows
      */
     public boolean onWindows(@NonNull List<Window> windowsTopFirst) {
         Set<String> lastOverlays = mLastOverlays;
@@ -118,16 +170,31 @@ public final class TopAppTracker {
             List<String> topLast = new ArrayList<>(overlays);
             Collections.reverse(topLast);
             for (String packageName : topLast) {
-                changed |= onTopApp(packageName);
+                changed |= remember(packageName);
             }
         }
         mLastOverlays = overlays;
-        if (topApplication != null && !topApplication.equals(mLastTopApplication)) {
-            mLastTopApplication = topApplication;
-            changed |= onTopApp(topApplication);
+        if (mOverlay != null && mOverlayOnScreen != overlays.contains(mOverlay)) {
+            mOverlayOnScreen = !mOverlayOnScreen;
+            changed = true;
+        }
+        if (topApplication != null) {
+            if (!topApplication.equals(mLastTopApplication)) {
+                mLastTopApplication = topApplication;
+                changed |= remember(topApplication);
+            }
+            // Every walk, so a window-state change from an overlay can't leave it named as the app underneath.
+            if (!mIgnored.contains(topApplication)) {
+                changed |= setUnderlying(topApplication);
+            }
         }
         // Recorded last, so that an overlay arriving with a new app is the one the bubble names.
-        changed |= onTopApp(newOverlay);
+        if (newOverlay != null) {
+            mOverlay = newOverlay;
+            mOverlayOnScreen = true;
+            remember(newOverlay);
+            changed = true;
+        }
         return changed;
     }
 }

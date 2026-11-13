@@ -144,9 +144,94 @@ public class TopAppTrackerTest {
         mTracker.onWindows(walk(app(APP)));
         mTracker.onWindows(walk(overlay(AD), app(APP)));
 
-        assertFalse(mTracker.onWindows(walk(app(APP))));
+        // A change, so the bubble can mark the overlay gone.
+        assertTrue(mTracker.onWindows(walk(app(APP))));
 
         assertEquals(AD, mTracker.getCurrent());
+        assertEquals(AD, mTracker.getOverlay());
+        assertFalse(mTracker.isOverlayOnScreen());
+        assertEquals(APP, mTracker.getUnderlying());
+        assertFalse(mTracker.onWindows(walk(app(APP))));
+    }
+
+    @Test
+    public void anOverlayAndTheAppUnderneathAreKeptApart() {
+        mTracker.onWindows(walk(app(APP)));
+        assertEquals(APP, mTracker.getUnderlying());
+        assertNull(mTracker.getOverlay());
+
+        assertTrue(mTracker.onWindows(walk(overlay(AD), app(APP))));
+
+        assertEquals(APP, mTracker.getUnderlying());
+        assertEquals(AD, mTracker.getOverlay());
+        assertTrue(mTracker.isOverlayOnScreen());
+    }
+
+    @Test
+    public void aGoneOverlayIsDroppedOnceAnotherAppComesUp() {
+        mTracker.onWindows(walk(app(APP)));
+        mTracker.onWindows(walk(overlay(AD), app(APP)));
+        mTracker.onWindows(walk(app(APP)));
+
+        assertTrue(mTracker.onWindows(walk(app(OTHER_APP))));
+
+        assertEquals(OTHER_APP, mTracker.getUnderlying());
+        assertNull(mTracker.getOverlay());
+        assertFalse(mTracker.isOverlayOnScreen());
+    }
+
+    @Test
+    public void aLiveOverlayStaysNamedOverTheNextApp() {
+        mTracker.onWindows(walk(app(APP)));
+        mTracker.onWindows(walk(overlay(AD), app(APP)));
+
+        assertTrue(mTracker.onWindows(walk(overlay(AD), app(OTHER_APP))));
+
+        assertEquals(OTHER_APP, mTracker.getUnderlying());
+        assertEquals(AD, mTracker.getOverlay());
+        assertTrue(mTracker.isOverlayOnScreen());
+    }
+
+    @Test
+    public void anOverlaysOwnWindowStateChangeLeavesTheAppUnderneath() {
+        mTracker.onWindows(walk(app(APP)));
+        mTracker.onWindows(walk(overlay(AD), app(APP)));
+
+        mTracker.onTopApp(AD);
+
+        assertEquals(APP, mTracker.getUnderlying());
+        assertEquals(AD, mTracker.getOverlay());
+    }
+
+    @Test
+    public void theNextWalkFixesAnOverlayNamedUnderneathTooEarly() {
+        mTracker.onWindows(walk(app(APP)));
+        // The window-state change can arrive before the walk that shows it's an overlay.
+        mTracker.onTopApp(AD);
+        assertEquals(AD, mTracker.getUnderlying());
+
+        assertTrue(mTracker.onWindows(walk(overlay(AD), app(APP))));
+
+        assertEquals(APP, mTracker.getUnderlying());
+        assertEquals(AD, mTracker.getOverlay());
+    }
+
+    @Test
+    public void aPermanentOverlayIsNeverTheOverlay() {
+        mTracker.onWindows(walk(overlay(EDGE_HANDLE), app(APP)));
+        mTracker.onWindows(walk(overlay(EDGE_HANDLE), app(OTHER_APP)));
+
+        assertNull(mTracker.getOverlay());
+        assertEquals(OTHER_APP, mTracker.getUnderlying());
+    }
+
+    @Test
+    public void usageStatsNameOnlyTheAppUnderneath() {
+        assertTrue(mTracker.onTopApp(APP));
+
+        assertEquals(APP, mTracker.getUnderlying());
+        assertNull(mTracker.getOverlay());
+        assertFalse(mTracker.isOverlayOnScreen());
     }
 
     @Test

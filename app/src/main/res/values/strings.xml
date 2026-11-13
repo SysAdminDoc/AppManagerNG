@@ -3222,6 +3222,13 @@
     <string name="top_app_overlay_notification_text">Showing %1$s. Tap to open its App Details.</string>
     <string name="top_app_overlay_recent_row">%1$s (%2$s)</string>
     <string name="top_app_overlay_bubble_description">Top app %1$s. Tap for App Details, long press for recent apps, drag to move.</string>
+    <string name="top_app_overlay_layer_overlay">Overlay</string>
+    <string name="top_app_overlay_layer_overlay_gone">Overlay, now gone</string>
+    <string name="top_app_overlay_layer_underneath">Underneath</string>
+    <string name="top_app_overlay_overlay_description">Overlay drawn by %1$s. Tap for App Details, long press for recent apps, drag to move.</string>
+    <string name="top_app_overlay_overlay_gone_description">Overlay drawn by %1$s, now gone. Tap for App Details, long press for recent apps, drag to move.</string>
+    <string name="top_app_overlay_underneath_description">App underneath %1$s. Tap for App Details, long press for recent apps, drag to move.</string>
+    <string name="top_app_overlay_notification_layers">%1$s is drawing over %2$s. Tap to open its App Details.</string>
     <string name="open_in_app_store">Open in app store</string>
     <string name="title_terminal_emulator">Terminal (Preview)</string>
     <string name="terminal_preview_notice">Preview: no tab completion, command history, or init scripts.</string>
