@@ -107,6 +107,76 @@
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/trouble_card"
+                    style="@style/Widget.AppTheme.V2.Card.Header"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/premium_space_8"
+                    android:visibility="gone"
+                    app:cardBackgroundColor="?attr/colorErrorContainer"
+                    app:contentPadding="@dimen/premium_space_16"
+                    tools:visibility="visible">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/trouble_title"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="?attr/textAppearanceTitleMedium"
+                            android:textColor="?attr/colorOnErrorContainer"
+                            tools:text="@string/lan_sync_trouble_nothing_found" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/premium_space_4"
+                            android:text="@string/lan_sync_trouble_firewall"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
+                            android:textColor="?attr/colorOnErrorContainer" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/premium_space_8"
+                            android:text="@string/lan_sync_trouble_afwall"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
+                            android:textColor="?attr/colorOnErrorContainer" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/premium_space_8"
+                            android:text="@string/lan_sync_trouble_huawei"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
+                            android:textColor="?attr/colorOnErrorContainer" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/premium_space_8"
+                            android:text="@string/lan_sync_trouble_same_wifi"
+                            android:textAppearance="?attr/textAppearanceBodyMedium"
+                            android:textColor="?attr/colorOnErrorContainer" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/trouble_dismiss"
+                            style="@style/Widget.AppTheme.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end"
+                            android:layout_marginTop="@dimen/premium_space_4"
+                            android:text="@string/lan_sync_trouble_dismiss"
+                            android:textColor="?attr/colorOnErrorContainer" />
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
                     android:id="@+id/share_card"
                     style="@style/Widget.AppTheme.V2.Card.Header"
                     android:layout_width="match_parent"

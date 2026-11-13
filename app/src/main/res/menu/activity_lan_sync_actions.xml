@@ -32,4 +32,9 @@
         </menu>
     </item>
 
+    <item
+        android:id="@+id/action_troubleshooting"
+        android:title="@string/lan_sync_troubleshooting"
+        app:showAsAction="never" />
+
 </menu>

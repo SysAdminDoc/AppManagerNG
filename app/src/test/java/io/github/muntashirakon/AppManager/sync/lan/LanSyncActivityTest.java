@@ -23,6 +23,7 @@ import android.net.nsd.NsdServiceInfo;
 import android.os.Looper;
 import android.view.Menu;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -35,6 +36,7 @@ import androidx.test.core.app.ApplicationProvider;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.materialswitch.MaterialSwitch;
+import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -224,6 +226,80 @@ public class LanSyncActivityTest {
 
     private static boolean keepsScreenOn(@NonNull LanSyncActivity activity) {
         return (activity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) != 0;
+    }
+
+    @Test
+    public void findingNothingForAWhileShowsHowToUnblockTheNetwork() {
+        LanSyncActivity activity = mController.get();
+        View card = activity.findViewById(R.id.trouble_card);
+        TextView title = activity.findViewById(R.id.trouble_title);
+        shadowOf(Looper.getMainLooper()).idle();
+        assertEquals("Not while the search has only just started", View.GONE, card.getVisibility());
+
+        shadowOf(Looper.getMainLooper()).idleFor(LanSyncActivity.NOTHING_FOUND_MILLIS - 1000, TimeUnit.MILLISECONDS);
+        assertEquals(View.GONE, card.getVisibility());
+        shadowOf(Looper.getMainLooper()).idleFor(1000, TimeUnit.MILLISECONDS);
+
+        assertEquals(View.VISIBLE, card.getVisibility());
+        assertEquals(activity.getString(R.string.lan_sync_trouble_nothing_found), title.getText().toString());
+        assertTrue(shows(card, activity.getString(R.string.lan_sync_trouble_firewall)));
+        assertTrue(shows(card, activity.getString(R.string.lan_sync_trouble_afwall)));
+        assertTrue(shows(card, activity.getString(R.string.lan_sync_trouble_huawei)));
+
+        activity.findViewById(R.id.trouble_dismiss).performClick();
+        assertEquals(View.GONE, card.getVisibility());
+    }
+
+    @Test
+    public void theHelpIsInTheMenuToo() {
+        LanSyncActivity activity = mController.get();
+        TabLayout tabs = activity.findViewById(R.id.tab_layout);
+        tabs.getTabAt(1).select();
+        assertEquals(View.GONE, activity.findViewById(R.id.devices_pane).getVisibility());
+
+        shadowOf(activity).clickMenuItem(R.id.action_troubleshooting);
+
+        assertEquals(View.VISIBLE, activity.findViewById(R.id.devices_pane).getVisibility());
+        assertEquals(View.VISIBLE, activity.findViewById(R.id.trouble_card).getVisibility());
+        assertEquals(activity.getString(R.string.lan_sync_trouble_asked),
+                ((TextView) activity.findViewById(R.id.trouble_title)).getText().toString());
+    }
+
+    @Test
+    public void aConnectionNobodyAnswersShowsTheHelp() throws Exception {
+        LanSyncActivity activity = mController.get();
+        LanSyncViewModel viewModel = new ViewModelProvider(activity).get(LanSyncViewModel.class);
+        int closedPort;
+        try (ServerSocket socket = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
+            closedPort = socket.getLocalPort();
+        }
+
+        viewModel.connect(InetAddress.getLoopbackAddress(), closedPort, "Other phone");
+        waitFor(() -> Integer.valueOf(LanSyncViewModel.TROUBLE_CONNECT_FAILED).equals(viewModel.getTrouble().getValue())
+                ? Boolean.TRUE : null);
+
+        assertEquals(View.VISIBLE, activity.findViewById(R.id.trouble_card).getVisibility());
+        assertEquals(activity.getString(R.string.lan_sync_trouble_connect_failed),
+                ((TextView) activity.findViewById(R.id.trouble_title)).getText().toString());
+
+        // Nothing found later doesn't hide the stronger reason
+        viewModel.showTrouble(LanSyncViewModel.TROUBLE_NOTHING_FOUND);
+        assertEquals(Integer.valueOf(LanSyncViewModel.TROUBLE_CONNECT_FAILED), viewModel.getTrouble().getValue());
+    }
+
+    private static boolean shows(@NonNull View root, @NonNull String text) {
+        if (root instanceof TextView) {
+            return text.contentEquals(((TextView) root).getText()) && root.isShown();
+        }
+        if (root instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) root;
+            for (int i = 0; i < group.getChildCount(); ++i) {
+                if (shows(group.getChildAt(i), text)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Test

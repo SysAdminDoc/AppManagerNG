@@ -45,6 +45,13 @@ import io.github.muntashirakon.AppManager.utils.ThreadUtils;
  */
 public class LanSyncViewModel extends AndroidViewModel {
     public static final String TAG = LanSyncViewModel.class.getSimpleName();
+    public static final int TROUBLE_NONE = 0;
+    /** Nothing nearby answered for a while. */
+    public static final int TROUBLE_NOTHING_FOUND = 1;
+    /** A connection failed or timed out before the other device could answer. */
+    public static final int TROUBLE_CONNECT_FAILED = 2;
+    /** Opened from the menu. */
+    public static final int TROUBLE_ASKED = 3;
     private static final long STALE_DOWNLOAD_MS = TimeUnit.DAYS.toMillis(1);
     private static final int MAX_DEVICE_NAME_CHARS = 63;
 
@@ -124,6 +131,7 @@ public class LanSyncViewModel extends AndroidViewModel {
     private final MutableLiveData<String> mMessage = new MutableLiveData<>();
     private final MutableLiveData<List<LanSyncDownloader.Result>> mReady = new MutableLiveData<>();
     private final ScreenOnPolicy mScreenOn = new ScreenOnPolicy();
+    private final MutableLiveData<Integer> mTrouble = new MutableLiveData<>(TROUBLE_NONE);
     @Nullable
     private volatile LocalIdentity mIdentity;
     // Guarded by mLock
@@ -241,6 +249,38 @@ public class LanSyncViewModel extends AndroidViewModel {
     @NonNull
     public LiveData<String> getMessage() {
         return mMessage;
+    }
+
+    /**
+     * Why the help for blocked networks is showing, one of the TROUBLE constants.
+     */
+    @NonNull
+    public LiveData<Integer> getTrouble() {
+        return mTrouble;
+    }
+
+    /**
+     * Shows the help for blocked networks. Nothing being found doesn't replace a stronger reason
+     * already on screen.
+     */
+    @MainThread
+    public void showTrouble(int trouble) {
+        Integer current = mTrouble.getValue();
+        if (trouble == TROUBLE_NOTHING_FOUND && current != null && current != TROUBLE_NONE) {
+            return;
+        }
+        mTrouble.setValue(trouble);
+    }
+
+    /**
+     * Hides the help, or only the given reason for it when one is passed.
+     */
+    @MainThread
+    public void clearTrouble(@Nullable Integer onlyIf) {
+        Integer current = mTrouble.getValue();
+        if (onlyIf == null || onlyIf.equals(current)) {
+            mTrouble.setValue(TROUBLE_NONE);
+        }
     }
 
     /**
@@ -581,6 +621,7 @@ public class LanSyncViewModel extends AndroidViewModel {
                             SyncClientSession.PING_INTERVAL_MS, TimeUnit.MILLISECONDS);
                 }
                 mConnection.postValue(new Connection(Connection.CONNECTED, peerName, null));
+                mTrouble.postValue(TROUBLE_NONE);
                 loadList();
             } catch (IOException | GeneralSecurityException | RuntimeException e) {
                 if (session != null) {
@@ -596,6 +637,10 @@ public class LanSyncViewModel extends AndroidViewModel {
                 if (current) {
                     Log.w(TAG, "Could not connect", e);
                     mConnection.postValue(Connection.NONE);
+                    if (e instanceof IOException && !(e instanceof SyncClientSession.RejectedException)) {
+                        // Refused or no answer: often a firewall or a per-app data setting
+                        mTrouble.postValue(TROUBLE_CONNECT_FAILED);
+                    }
                     mMessage.postValue(e instanceof SyncClientSession.RejectedException
                             ? getApplication().getString(R.string.lan_sync_connect_rejected)
                             : getApplication().getString(R.string.lan_sync_connect_failed, describe(e)));
