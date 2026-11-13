@@ -40,6 +40,19 @@ public final class SyncMessages {
     public static final int ERR_TOO_LARGE = 5;
 
     /**
+     * The message set this build speaks. Revision 1 is the first release. Revision 2 adds a
+     * revision answer to a PING that carries one, and GET requests that start part way into a
+     * file. Pairing keeps its own version ({@link PairingHandshake#PROTOCOL_VERSION}) at 1 so
+     * older peers still pair, and a peer learns the other's revision by asking: an older host
+     * answers a PING with a bare PONG, which reads as revision 1.
+     */
+    public static final int REVISION = 2;
+    /**
+     * The first revision that accepts a start offset in GET.
+     */
+    public static final int REVISION_RESUME = 2;
+
+    /**
      * Requests and small replies (accept, reject, errors, file headers and ends).
      */
     public static final int MAX_CONTROL = 4 * 1024;
@@ -117,10 +130,57 @@ public final class SyncMessages {
         return w.toByteArray();
     }
 
+    /**
+     * A GET that skips the first {@code offset} bytes. An offset of 0 builds the revision 1 frame,
+     * which every host understands. Anything else only goes to a host at
+     * {@link #REVISION_RESUME} or later, since an older one ends the session on trailing bytes.
+     */
+    @NonNull
+    public static byte[] getRequest(@NonNull String packageName, @NonNull String fileName, long expectedSize,
+                                    long offset) throws IOException {
+        if (offset == 0) {
+            return getRequest(packageName, fileName, expectedSize);
+        }
+        Writer w = new Writer(GET_REQUEST);
+        w.writeString(packageName, MAX_NAME_CHARS);
+        w.writeString(fileName, MAX_NAME_CHARS);
+        w.out.writeLong(expectedSize);
+        w.out.writeLong(offset);
+        return w.toByteArray();
+    }
+
     @NonNull
     public static byte[] fileHeader(long size) throws IOException {
         Writer w = new Writer(FILE_HEADER);
         w.out.writeLong(size);
+        return w.toByteArray();
+    }
+
+    /**
+     * The header for a ranged GET. It repeats the offset so the client knows the host skipped it.
+     */
+    @NonNull
+    public static byte[] fileHeader(long size, long offset) throws IOException {
+        Writer w = new Writer(FILE_HEADER);
+        w.out.writeLong(size);
+        w.out.writeLong(offset);
+        return w.toByteArray();
+    }
+
+    /**
+     * A PING that also asks for the host's revision.
+     */
+    @NonNull
+    public static byte[] revisionQuery(int revision) throws IOException {
+        Writer w = new Writer(PING);
+        w.out.writeInt(revision);
+        return w.toByteArray();
+    }
+
+    @NonNull
+    public static byte[] revisionAnswer(int revision) throws IOException {
+        Writer w = new Writer(PONG);
+        w.out.writeInt(revision);
         return w.toByteArray();
     }
 
@@ -355,6 +415,13 @@ public final class SyncMessages {
                 digests.add(SyncCrypto.toHex(readFixed(SyncCrypto.HASH_LENGTH)));
             }
             return digests;
+        }
+
+        /**
+         * Whether anything is left to read. Only used for fields a later revision appended.
+         */
+        public boolean hasMore() throws IOException {
+            return in.available() > 0;
         }
 
         public void expectEnd() throws IOException {
