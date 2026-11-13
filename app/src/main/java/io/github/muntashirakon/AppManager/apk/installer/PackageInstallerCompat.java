@@ -1363,6 +1363,7 @@ public final class PackageInstallerCompat {
                                   @Nullable String blockingPackage,
                                   @Nullable String statusMessage) {
         ThreadUtils.ensureWorkerThread();
+        finalStatus = VerifierRefusal.classify(finalStatus, statusMessage);
         if (finalStatus == STATUS_FAILURE_ABORTED
                 && mSessionId == sessionId
                 && mOnInstallListener != null) {
