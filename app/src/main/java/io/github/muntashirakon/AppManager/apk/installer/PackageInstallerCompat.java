@@ -30,6 +30,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Process;
 import android.os.RemoteException;
+import android.os.SystemClock;
 import android.os.UserHandleHidden;
 import android.provider.Settings;
 import android.text.TextUtils;
@@ -676,7 +677,7 @@ public final class PackageInstallerCompat {
             int[] allRequestedUsers = getAllRequestedUsers(userId);
             if (allRequestedUsers.length == 0) {
                 Log.d(TAG, "Install: no users.");
-                callFinish(STATUS_FAILURE_INVALID);
+                callFinish(STATUS_FAILURE_INVALID, "STATUS_FAILURE_INVALID: No user is selected.");
                 return false;
             }
             Log.d(TAG, "Installing for users: %s", Arrays.toString(allRequestedUsers));
@@ -708,7 +709,8 @@ public final class PackageInstallerCompat {
                 try {
                     totalSize += selectedEntry.getFile(options.isSignApkFiles()).length();
                 } catch (IOException e) {
-                    callFinish(STATUS_FAILURE_INVALID);
+                    callFinish(STATUS_FAILURE_INVALID, withCause(
+                            "STATUS_FAILURE_INVALID: Could not read " + selectedEntry.getFileName() + ".", e));
                     Log.e(TAG, "Install: Cannot retrieve the selected APK files.", e);
                     return false;
                 }
@@ -749,11 +751,13 @@ public final class PackageInstallerCompat {
                     mSession.fsync(apkOutputStream);
                     Log.d(TAG, "Install: copied entry %s", entry.name);
                 } catch (IOException e) {
-                    callFinish(STATUS_FAILURE_SESSION_WRITE);
+                    callFinish(STATUS_FAILURE_SESSION_WRITE, withCause(
+                            "STATUS_FAILURE_SESSION_WRITE: Could not copy " + entry.getFileName() + ".", e));
                     Log.e(TAG, "Install: Cannot copy files to session.", e);
                     return abandon();
                 } catch (SecurityException e) {
-                    callFinish(STATUS_FAILURE_SECURITY);
+                    callFinish(STATUS_FAILURE_SECURITY, withCause(
+                            "STATUS_FAILURE_SECURITY: Could not read " + entry.getFileName() + ".", e));
                     Log.e(TAG, "Install: Cannot access apk files.", e);
                     return abandon();
                 }
@@ -855,7 +859,7 @@ public final class PackageInstallerCompat {
             int[] allRequestedUsers = getAllRequestedUsers(userId);
             if (allRequestedUsers.length == 0) {
                 Log.d(TAG, "Install: no users.");
-                callFinish(STATUS_FAILURE_INVALID);
+                callFinish(STATUS_FAILURE_INVALID, "STATUS_FAILURE_INVALID: No user is selected.");
                 return false;
             }
             Log.d(TAG, "Installing for users: %s", Arrays.toString(allRequestedUsers));
@@ -896,11 +900,13 @@ public final class PackageInstallerCompat {
                             progressHandler);
                     mSession.fsync(apkOutputStream);
                 } catch (IOException e) {
-                    callFinish(STATUS_FAILURE_SESSION_WRITE);
+                    callFinish(STATUS_FAILURE_SESSION_WRITE, withCause(
+                            "STATUS_FAILURE_SESSION_WRITE: Could not copy " + apkFile.getName() + ".", e));
                     Log.e(TAG, "Install: Cannot copy files to session.", e);
                     return abandon();
                 } catch (SecurityException e) {
-                    callFinish(STATUS_FAILURE_SECURITY);
+                    callFinish(STATUS_FAILURE_SECURITY, withCause(
+                            "STATUS_FAILURE_SECURITY: Could not read " + apkFile.getName() + ".", e));
                     Log.e(TAG, "Install: Cannot access apk files.", e);
                     return abandon();
                 }
@@ -926,7 +932,8 @@ public final class PackageInstallerCompat {
                 intentReceiver = new LocalIntentReceiver();
                 sender = intentReceiver.getIntentSender();
             } catch (Exception e) {
-                callFinish(STATUS_FAILURE_SESSION_COMMIT);
+                callFinish(STATUS_FAILURE_SESSION_COMMIT, withCause(
+                        "STATUS_FAILURE_SESSION_COMMIT: Could not set up the result receiver.", e));
                 Log.e(TAG, "Commit: Could not commit session.", e);
                 return false;
             }
@@ -941,7 +948,8 @@ public final class PackageInstallerCompat {
         try {
             mSession.commit(sender);
         } catch (Throwable e) {  // primarily RemoteException
-            callFinish(STATUS_FAILURE_SESSION_COMMIT);
+            callFinish(STATUS_FAILURE_SESSION_COMMIT, withCause(
+                    "STATUS_FAILURE_SESSION_COMMIT: Android refused the commit.", e));
             Log.e(TAG, "Commit: Could not commit session.", e);
             // Discard the staged session so its written APK bytes don't linger on disk.
             abandon();
@@ -952,6 +960,10 @@ public final class PackageInstallerCompat {
             waitForPackageInstallerBroadcasts("Commit");
         } else {
             Intent resultIntent = intentReceiver.getResult(INSTALL_RESULT_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+            if (resultIntent != null && resultIntent.getIntExtra(PackageInstaller.EXTRA_STATUS,
+                    PackageInstaller.STATUS_FAILURE) == PackageInstaller.STATUS_PENDING_USER_ACTION) {
+                resultIntent = awaitUserAction(intentReceiver, resultIntent);
+            }
             if (resultIntent != null) {
                 mFinalStatus = resultIntent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE);
                 mStatusMessage = resultIntent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
@@ -974,6 +986,34 @@ public final class PackageInstallerCompat {
         return mFinalStatus == PackageInstaller.STATUS_SUCCESS;
     }
 
+    /**
+     * Android 14 and later can ask even a privileged installer to confirm, for example when
+     * another app owns the package's updates. Taking that first answer as the result reported a
+     * generic failure and left the session waiting. Show the usual confirmation instead and wait
+     * for the real result, which still comes back through the local sender.
+     *
+     * @return the final result, or {@code null} when it never came or the user dismissed the prompt.
+     */
+    @Nullable
+    private Intent awaitUserAction(@NonNull LocalIntentReceiver intentReceiver, @NonNull Intent pending) {
+        Log.d(TAG, "Commit: Android asked the user to confirm.");
+        if (mPkgInstallerReceiver != null) {
+            mPkgInstallerReceiver.onReceive(mContext, pending);
+        }
+        long deadline = SystemClock.elapsedRealtime() + TimeUnit.MINUTES.toMillis(
+                USER_INTERACTION_TIMEOUT_MINUTES + INSTALL_RESULT_TIMEOUT_MINUTES);
+        while (!mInstallCompleted && !Thread.currentThread().isInterrupted()
+                && SystemClock.elapsedRealtime() < deadline) {
+            Intent result = intentReceiver.getResult(1, TimeUnit.SECONDS);
+            if (result != null) {
+                return result;
+            }
+        }
+        // Dismissed, timed out or interrupted: don't leave the session waiting for a tap
+        abandon();
+        return null;
+    }
+
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     private boolean openSession(@UserIdInt int userId, @InstallFlags int installFlags,
                                 String installerName, int installLocation,
@@ -989,7 +1029,8 @@ public final class PackageInstallerCompat {
         try {
             mPackageInstaller = PackageManagerCompat.getPackageInstaller();
         } catch (RemoteException e) {
-            callFinish(STATUS_FAILURE_SESSION_CREATE);
+            callFinish(STATUS_FAILURE_SESSION_CREATE, withCause(
+                    "STATUS_FAILURE_SESSION_CREATE: Could not reach Android's package installer.", e));
             Log.e(TAG, "OpenSession: Could not get PackageInstaller.", e);
             return false;
         }
@@ -1071,7 +1112,8 @@ public final class PackageInstallerCompat {
             }
             Log.d(TAG, "OpenSession: session id %d", mSessionId);
         } catch (RemoteException e) {
-            callFinish(STATUS_FAILURE_SESSION_CREATE);
+            callFinish(STATUS_FAILURE_SESSION_CREATE, withCause(
+                    "STATUS_FAILURE_SESSION_CREATE: Android refused to create the install session.", e));
             Log.e(TAG, "OpenSession: Failed to create install session.", e);
             return false;
         }
@@ -1080,7 +1122,8 @@ public final class PackageInstallerCompat {
                     new ProxyBinder(mPackageInstaller.openSession(mSessionId).asBinder()))));
             Log.d(TAG, "OpenSession: session opened.");
         } catch (RemoteException e) {
-            callFinish(STATUS_FAILURE_SESSION_CREATE);
+            callFinish(STATUS_FAILURE_SESSION_CREATE, withCause(
+                    "STATUS_FAILURE_SESSION_CREATE: Could not open the install session.", e));
             Log.e(TAG, "OpenSession: Failed to open install session.", e);
             // createSession already allocated mSessionId; discard it so the created session
             // (and any staged bytes) don't linger.
@@ -1259,8 +1302,25 @@ public final class PackageInstallerCompat {
         return false;
     }
 
-    private void callFinish(int result) {
-        sendCompletedBroadcast(mContext, mPackageName, result, mSessionId);
+    /**
+     * Reports a failure the installer found on its own, with the reason. It runs synchronously:
+     * every caller returns right after and the receivers are unregistered on the way out, so the
+     * broadcast this used to send arrived when nobody was listening and the result was lost.
+     */
+    private void callFinish(@Status int status, @NonNull String statusMessage) {
+        mFinalStatus = status;
+        mStatusMessage = statusMessage;
+        installCompleted(mSessionId, status, null, statusMessage);
+    }
+
+    @NonNull
+    private static String withCause(@NonNull String statusMessage, @Nullable Throwable cause) {
+        if (cause == null) {
+            return statusMessage;
+        }
+        String detail = cause.getMessage();
+        return statusMessage + " (" + cause.getClass().getSimpleName()
+                + (detail != null ? ": " + detail : "") + ")";
     }
 
     private void installCompleted(int sessionId,
@@ -1360,7 +1420,8 @@ public final class PackageInstallerCompat {
                 return false;
             }
             if (userId != UserHandleHidden.USER_ALL && !factoryResetUpdatedSystemApp(packageName, userId, keepData)) {
-                callFinish(STATUS_FAILURE_SESSION_CREATE);
+                callFinish(STATUS_FAILURE_SESSION_CREATE,
+                        "STATUS_FAILURE_SESSION_CREATE: Could not reset the updated system app.");
                 Log.e(TAG, "Uninstall: Could not factory-reset updated system app %s", packageName);
                 return false;
             }
@@ -1368,7 +1429,8 @@ public final class PackageInstallerCompat {
             try {
                 flags = getDeleteFlags(packageName, userId, keepData);
             } catch (Exception e) {
-                callFinish(STATUS_FAILURE_SESSION_CREATE);
+                callFinish(STATUS_FAILURE_SESSION_CREATE, withCause(
+                        "STATUS_FAILURE_SESSION_CREATE: Could not read the app's install state.", e));
                 Log.e(TAG, "Uninstall: Could not get PackageInstaller.", e);
                 return false;
             }
@@ -1376,7 +1438,8 @@ public final class PackageInstallerCompat {
             try {
                 mPackageInstaller = PackageManagerCompat.getPackageInstaller();
             } catch (RemoteException e) {
-                callFinish(STATUS_FAILURE_SESSION_CREATE);
+                callFinish(STATUS_FAILURE_SESSION_CREATE, withCause(
+                        "STATUS_FAILURE_SESSION_CREATE: Could not reach Android's package installer.", e));
                 Log.e(TAG, "Uninstall: Could not get PackageInstaller.", e);
                 return false;
             }
@@ -1390,7 +1453,8 @@ public final class PackageInstallerCompat {
                     intentReceiver = new LocalIntentReceiver();
                     sender = intentReceiver.getIntentSender();
                 } catch (Exception e) {
-                    callFinish(STATUS_FAILURE_SESSION_COMMIT);
+                    callFinish(STATUS_FAILURE_SESSION_COMMIT, withCause(
+                            "STATUS_FAILURE_SESSION_COMMIT: Could not set up the result receiver.", e));
                     Log.e(TAG, "Uninstall: Could not uninstall %s", e, packageName);
                     return false;
                 }
@@ -1410,7 +1474,8 @@ public final class PackageInstallerCompat {
                     mPackageInstaller.uninstall(packageName, callerPackageName, flags, sender, userId);
                 } else mPackageInstaller.uninstall(packageName, flags, sender, userId);
             } catch (Throwable th) { // primarily RemoteException
-                callFinish(STATUS_FAILURE_SESSION_COMMIT);
+                callFinish(STATUS_FAILURE_SESSION_COMMIT, withCause(
+                        "STATUS_FAILURE_SESSION_COMMIT: Android refused the uninstall.", th));
                 Log.e(TAG, "Uninstall: Could not uninstall %s", th, packageName);
                 return false;
             }
@@ -1632,11 +1697,23 @@ public final class PackageInstallerCompat {
 
     static void sendCompletedBroadcast(@NonNull Context context, @NonNull String packageName, @Status int status,
                                        int sessionId) {
+        sendCompletedBroadcast(context, packageName, status, sessionId, null);
+    }
+
+    /**
+     * Tells a running install (in another component) how it ended. Only for senders outside the
+     * installer itself: the installer reports its own failures through {@link #callFinish}.
+     */
+    static void sendCompletedBroadcast(@NonNull Context context, @NonNull String packageName, @Status int status,
+                                       int sessionId, @Nullable String statusMessage) {
         Intent broadcastIntent = new Intent(ACTION_INSTALL_COMPLETED);
         broadcastIntent.setPackage(context.getPackageName());
         broadcastIntent.putExtra(PackageInstaller.EXTRA_PACKAGE_NAME, packageName);
         broadcastIntent.putExtra(PackageInstaller.EXTRA_STATUS, status);
         broadcastIntent.putExtra(PackageInstaller.EXTRA_SESSION_ID, sessionId);
+        if (statusMessage != null) {
+            broadcastIntent.putExtra(PackageInstaller.EXTRA_STATUS_MESSAGE, statusMessage);
+        }
         context.sendBroadcast(broadcastIntent);
     }
 }
