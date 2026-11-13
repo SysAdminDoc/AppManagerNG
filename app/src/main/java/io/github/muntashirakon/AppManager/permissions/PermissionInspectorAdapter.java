@@ -82,7 +82,8 @@ class PermissionInspectorAdapter extends RecyclerView.Adapter<RecyclerView.ViewH
             h.count.setText(res.getString(R.string.perm_inspector_count_short_fmt, r.grantedCount,
                     r.requestedCount));
         } else {
-            countSummary = res.getString(R.string.perm_inspector_count_unknown_fmt, r.requestedCount);
+            countSummary = res.getQuantityString(R.plurals.perm_inspector_count_unknown, r.requestedCount,
+                    r.requestedCount);
             h.count.setText(res.getString(R.string.perm_inspector_count_unknown_short_fmt, r.requestedCount));
         }
         h.icon.setImageResource(r.iconRes);

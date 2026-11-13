@@ -241,7 +241,8 @@ public class PermissionAppsActivity extends BaseActivity {
         }
         if (!known) {
             // A granted count would only cover the apps Android told us about
-            mPermissionAppsSummary.setText(getString(R.string.perm_inspector_count_unknown_fmt, rows.size()));
+            mPermissionAppsSummary.setText(getResources().getQuantityString(
+                    R.plurals.perm_inspector_count_unknown, rows.size(), rows.size()));
             return;
         }
         mPermissionAppsSummary.setText(getString(R.string.perm_apps_summary_stats,

@@ -154,17 +154,17 @@ public final class SpecialAccessCatalog {
                         "android.settings.MANAGE_APP_USE_FULL_SCREEN_INTENT")));
         e.add(new Entry("accessibility", R.string.special_access_accessibility,
                 R.string.special_access_accessibility_summary, display, R.drawable.ic_touch_app,
-                R.string.perm_app_status_on, R.string.perm_app_status_off, Build.VERSION_CODES.LOLLIPOP,
+                R.string.on, R.string.off, Build.VERSION_CODES.LOLLIPOP,
                 new AccessibilityProbe()));
-        e.add(new Entry("notification_listener", R.string.special_access_notification_listener,
+        e.add(new Entry("notification_listener", R.string.notification_filter_access_title,
                 R.string.special_access_notification_listener_summary, display, R.drawable.ic_eye,
                 R.string.perm_app_status_allowed, R.string.perm_app_status_not_allowed,
                 Build.VERSION_CODES.LOLLIPOP, new NotificationListenerProbe()));
 
         int background = R.string.perm_section_background;
-        e.add(new Entry("battery_optimization", R.string.special_access_battery,
+        e.add(new Entry("battery_optimization", R.string.battery_optimization,
                 R.string.special_access_battery_summary, background, R.drawable.ic_battery_plus,
-                R.string.perm_app_status_not_optimized, R.string.perm_app_status_optimized,
+                R.string.perm_app_status_not_optimized, R.string.pref_backup_schedule_battery_optimized,
                 Build.VERSION_CODES.M, new BatteryOptimizationProbe()));
         e.add(new Entry("background_activity", R.string.special_access_background,
                 R.string.special_access_background_summary, background, R.drawable.ic_autorenew,
@@ -189,7 +189,7 @@ public final class SpecialAccessCatalog {
         e.add(new Entry("install_unknown", R.string.special_access_install_unknown,
                 R.string.special_access_install_unknown_summary, files, R.drawable.ic_get_app,
                 R.string.perm_app_status_allowed, R.string.perm_app_status_not_allowed, Build.VERSION_CODES.O,
-                new AppOpPermissionProbe(Manifest.permission.REQUEST_INSTALL_PACKAGES,
+                new AppOpPermissionProbe("android.permission.REQUEST_INSTALL_PACKAGES",
                         "android.settings.MANAGE_UNKNOWN_APP_SOURCES")));
         e.add(new Entry("all_files", R.string.special_access_all_files, R.string.special_access_all_files_summary,
                 files, R.drawable.ic_file_document_multiple, R.string.perm_app_status_allowed,
@@ -201,11 +201,11 @@ public final class SpecialAccessCatalog {
                 R.string.perm_app_status_allowed, R.string.perm_app_status_not_allowed, Build.VERSION_CODES.S,
                 new AppOpPermissionProbe("android.permission.MANAGE_MEDIA",
                         "android.settings.REQUEST_MANAGE_MEDIA")));
-        e.add(new Entry("usage_access", R.string.special_access_usage, R.string.special_access_usage_summary,
+        e.add(new Entry("usage_access", R.string.usage_access, R.string.special_access_usage_summary,
                 files, R.drawable.ic_list_status, R.string.perm_app_status_allowed,
                 R.string.perm_app_status_not_allowed, Build.VERSION_CODES.LOLLIPOP,
                 // Settings denies usage access with "ignore", not "error"
-                new AppOpPermissionProbe(Manifest.permission.PACKAGE_USAGE_STATS,
+                new AppOpPermissionProbe("android.permission.PACKAGE_USAGE_STATS",
                         Settings.ACTION_USAGE_ACCESS_SETTINGS, AppOpsManager.MODE_IGNORED)));
 
         int system = R.string.perm_section_system;
@@ -584,7 +584,7 @@ public final class SpecialAccessCatalog {
     static final class DndAccessProbe extends Probe {
         @Override
         boolean appliesTo(@NonNull PackageInfo pi, @NonNull SpecialAccessSnapshot s) {
-            return requests(pi, Manifest.permission.ACCESS_NOTIFICATION_POLICY);
+            return requests(pi, "android.permission.ACCESS_NOTIFICATION_POLICY");
         }
 
         @Override

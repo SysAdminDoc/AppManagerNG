@@ -59,15 +59,17 @@ class PermissionAppsAdapter extends RecyclerView.Adapter<PermissionAppsAdapter.V
 
     /** What the badge says for an app that has, or doesn't have, the access. */
     void setStatusLabels(@StringRes int granted, @StringRes int denied) {
+        if (mGrantedLabel == granted && mDeniedLabel == denied) return;
         mGrantedLabel = granted;
         mDeniedLabel = denied;
-        notifyDataSetChanged();
+        notifyItemRangeChanged(0, mRows.size());
     }
 
     /** Reference pins only exist for runtime permissions. */
     void setReferencesEnabled(boolean enabled) {
+        if (mReferencesEnabled == enabled) return;
         mReferencesEnabled = enabled;
-        notifyDataSetChanged();
+        notifyItemRangeChanged(0, mRows.size());
     }
 
     void setInteractionsEnabled(boolean enabled) {
@@ -97,7 +99,7 @@ class PermissionAppsAdapter extends RecyclerView.Adapter<PermissionAppsAdapter.V
         // permission App Manager can't change (or can't read) gets a Settings button instead of
         // the switch.
         String status = h.itemView.getResources().getString(!r.stateKnown
-                ? R.string.perm_app_status_unknown
+                ? R.string.state_unknown
                 : r.referenceDrifted
                         ? R.string.perm_app_status_reference_drift
                         : r.anyGranted ? mGrantedLabel : mDeniedLabel);
