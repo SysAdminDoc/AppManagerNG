@@ -87,7 +87,6 @@ public class LanSyncViewModel extends AndroidViewModel {
     /**
      * The apps installed on this device, keyed by package name.
      */
-    @VisibleForTesting
     interface LocalIndex {
         @WorkerThread
         @NonNull
@@ -255,12 +254,25 @@ public class LanSyncViewModel extends AndroidViewModel {
     }
 
     /**
-     * Clears downloads an earlier visit left behind, for example when the app was closed while the
-     * installer was still open.
+     * Clears what earlier visits left behind: received APKs past the time the user keeps them,
+     * the ones whose app is now installed (unless the user keeps those), and bundles from an
+     * install that never finished. Runs with the downloads, so it never pulls files from under one.
      */
-    public void purgeStaleDownloads() {
+    public void cleanUpDownloads() {
         File dir = downloadDir();
-        mHostExecutor.execute(() -> LanSyncDownloader.purgeStale(dir, STALE_DOWNLOAD_MS, System.currentTimeMillis()));
+        LanSyncSettings settings = new LanSyncSettings(getApplication());
+        mClientExecutor.execute(() -> cleanUp(dir, settings, mLocalIndex, System.currentTimeMillis()));
+    }
+
+    @WorkerThread
+    static void cleanUp(@NonNull File dir, @NonNull LanSyncSettings settings, @NonNull LocalIndex localIndex,
+                        long now) {
+        LanSyncDownloader.purgeStale(dir, STALE_DOWNLOAD_MS, now);
+        ReceivedApkStore store = new ReceivedApkStore(dir);
+        store.purge(settings.getRetentionMillis(), now);
+        if (!settings.isKeepAfterInstall()) {
+            store.removeInstalled(localIndex.load());
+        }
     }
 
     // Sharing this device
@@ -650,6 +662,8 @@ public class LanSyncViewModel extends AndroidViewModel {
      */
     @MainThread
     public void recheckInstalled() {
+        // An app that just went on no longer needs its received copy
+        cleanUpDownloads();
         List<AppRow> shown = mRows.getValue();
         if (shown == null || shown.isEmpty()) {
             return;
