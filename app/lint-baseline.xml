@@ -14,73 +14,7 @@
 
     <issue
         id="CannotEnableHidden"
-        message="Issue `LogConditional` was configured with severity `informational` in app, but was not enabled (or was disabled) in library compat"
-        errorLine1="    &lt;issue id=&quot;LogConditional&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="7"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `LogConditional` was configured with severity `informational` in app, but was not enabled (or was disabled) in library compat"
-        errorLine1="    &lt;issue id=&quot;LogConditional&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="7"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
         message="Issue `LogConditional` was configured with severity `informational` in app, but was not enabled (or was disabled) in library docs"
-        errorLine1="    &lt;issue id=&quot;LogConditional&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="7"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `LogConditional` was configured with severity `informational` in app, but was not enabled (or was disabled) in library docs"
-        errorLine1="    &lt;issue id=&quot;LogConditional&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="7"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `LogConditional` was configured with severity `informational` in app, but was not enabled (or was disabled) in library docs"
-        errorLine1="    &lt;issue id=&quot;LogConditional&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="7"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `LogConditional` was configured with severity `informational` in app, but was not enabled (or was disabled) in library hiddenapi"
-        errorLine1="    &lt;issue id=&quot;LogConditional&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="7"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `LogConditional` was configured with severity `informational` in app, but was not enabled (or was disabled) in library hiddenapi"
         errorLine1="    &lt;issue id=&quot;LogConditional&quot; severity=&quot;informational&quot; />"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -113,73 +47,7 @@
 
     <issue
         id="CannotEnableHidden"
-        message="Issue `LogConditional` was configured with severity `informational` in app, but was not enabled (or was disabled) in library io"
-        errorLine1="    &lt;issue id=&quot;LogConditional&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="7"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `LogConditional` was configured with severity `informational` in app, but was not enabled (or was disabled) in library io"
-        errorLine1="    &lt;issue id=&quot;LogConditional&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="7"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
         message="Issue `LogConditional` was configured with severity `informational` in app, but was not enabled (or was disabled) in library libopenpgp"
-        errorLine1="    &lt;issue id=&quot;LogConditional&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="7"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `LogConditional` was configured with severity `informational` in app, but was not enabled (or was disabled) in library libopenpgp"
-        errorLine1="    &lt;issue id=&quot;LogConditional&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="7"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `LogConditional` was configured with severity `informational` in app, but was not enabled (or was disabled) in library libopenpgp"
-        errorLine1="    &lt;issue id=&quot;LogConditional&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="7"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `LogConditional` was configured with severity `informational` in app, but was not enabled (or was disabled) in library libserver"
-        errorLine1="    &lt;issue id=&quot;LogConditional&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="7"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `LogConditional` was configured with severity `informational` in app, but was not enabled (or was disabled) in library libserver"
         errorLine1="    &lt;issue id=&quot;LogConditional&quot; severity=&quot;informational&quot; />"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -212,73 +80,7 @@
 
     <issue
         id="CannotEnableHidden"
-        message="Issue `LogConditional` was configured with severity `informational` in app, but was not enabled (or was disabled) in library ui"
-        errorLine1="    &lt;issue id=&quot;LogConditional&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="7"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `LogConditional` was configured with severity `informational` in app, but was not enabled (or was disabled) in library ui"
-        errorLine1="    &lt;issue id=&quot;LogConditional&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="7"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
         message="Issue `Registered` was configured with severity `informational` in app, but was not enabled (or was disabled) in library compat"
-        errorLine1="    &lt;issue id=&quot;Registered&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="8"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `Registered` was configured with severity `informational` in app, but was not enabled (or was disabled) in library compat"
-        errorLine1="    &lt;issue id=&quot;Registered&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="8"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `Registered` was configured with severity `informational` in app, but was not enabled (or was disabled) in library compat"
-        errorLine1="    &lt;issue id=&quot;Registered&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="8"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `Registered` was configured with severity `informational` in app, but was not enabled (or was disabled) in library docs"
-        errorLine1="    &lt;issue id=&quot;Registered&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="8"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `Registered` was configured with severity `informational` in app, but was not enabled (or was disabled) in library docs"
         errorLine1="    &lt;issue id=&quot;Registered&quot; severity=&quot;informational&quot; />"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -311,73 +113,7 @@
 
     <issue
         id="CannotEnableHidden"
-        message="Issue `Registered` was configured with severity `informational` in app, but was not enabled (or was disabled) in library hiddenapi"
-        errorLine1="    &lt;issue id=&quot;Registered&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="8"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `Registered` was configured with severity `informational` in app, but was not enabled (or was disabled) in library hiddenapi"
-        errorLine1="    &lt;issue id=&quot;Registered&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="8"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
         message="Issue `Registered` was configured with severity `informational` in app, but was not enabled (or was disabled) in library io"
-        errorLine1="    &lt;issue id=&quot;Registered&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="8"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `Registered` was configured with severity `informational` in app, but was not enabled (or was disabled) in library io"
-        errorLine1="    &lt;issue id=&quot;Registered&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="8"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `Registered` was configured with severity `informational` in app, but was not enabled (or was disabled) in library io"
-        errorLine1="    &lt;issue id=&quot;Registered&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="8"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `Registered` was configured with severity `informational` in app, but was not enabled (or was disabled) in library libopenpgp"
-        errorLine1="    &lt;issue id=&quot;Registered&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="8"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `Registered` was configured with severity `informational` in app, but was not enabled (or was disabled) in library libopenpgp"
         errorLine1="    &lt;issue id=&quot;Registered&quot; severity=&quot;informational&quot; />"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -410,50 +146,6 @@
 
     <issue
         id="CannotEnableHidden"
-        message="Issue `Registered` was configured with severity `informational` in app, but was not enabled (or was disabled) in library libserver"
-        errorLine1="    &lt;issue id=&quot;Registered&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="8"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `Registered` was configured with severity `informational` in app, but was not enabled (or was disabled) in library libserver"
-        errorLine1="    &lt;issue id=&quot;Registered&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="8"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `Registered` was configured with severity `informational` in app, but was not enabled (or was disabled) in library ui"
-        errorLine1="    &lt;issue id=&quot;Registered&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="8"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `Registered` was configured with severity `informational` in app, but was not enabled (or was disabled) in library ui"
-        errorLine1="    &lt;issue id=&quot;Registered&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="8"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
         message="Issue `Registered` was configured with severity `informational` in app, but was not enabled (or was disabled) in library ui"
         errorLine1="    &lt;issue id=&quot;Registered&quot; severity=&quot;informational&quot; />"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
@@ -466,50 +158,6 @@
     <issue
         id="CannotEnableHidden"
         message="Issue `UnknownNullness` was configured with severity `informational` in app, but was not enabled (or was disabled) in library compat"
-        errorLine1="    &lt;issue id=&quot;UnknownNullness&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="9"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `UnknownNullness` was configured with severity `informational` in app, but was not enabled (or was disabled) in library compat"
-        errorLine1="    &lt;issue id=&quot;UnknownNullness&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="9"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `UnknownNullness` was configured with severity `informational` in app, but was not enabled (or was disabled) in library compat"
-        errorLine1="    &lt;issue id=&quot;UnknownNullness&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="9"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `UnknownNullness` was configured with severity `informational` in app, but was not enabled (or was disabled) in library docs"
-        errorLine1="    &lt;issue id=&quot;UnknownNullness&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="9"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `UnknownNullness` was configured with severity `informational` in app, but was not enabled (or was disabled) in library docs"
         errorLine1="    &lt;issue id=&quot;UnknownNullness&quot; severity=&quot;informational&quot; />"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -542,73 +190,7 @@
 
     <issue
         id="CannotEnableHidden"
-        message="Issue `UnknownNullness` was configured with severity `informational` in app, but was not enabled (or was disabled) in library hiddenapi"
-        errorLine1="    &lt;issue id=&quot;UnknownNullness&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="9"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `UnknownNullness` was configured with severity `informational` in app, but was not enabled (or was disabled) in library hiddenapi"
-        errorLine1="    &lt;issue id=&quot;UnknownNullness&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="9"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
         message="Issue `UnknownNullness` was configured with severity `informational` in app, but was not enabled (or was disabled) in library io"
-        errorLine1="    &lt;issue id=&quot;UnknownNullness&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="9"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `UnknownNullness` was configured with severity `informational` in app, but was not enabled (or was disabled) in library io"
-        errorLine1="    &lt;issue id=&quot;UnknownNullness&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="9"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `UnknownNullness` was configured with severity `informational` in app, but was not enabled (or was disabled) in library io"
-        errorLine1="    &lt;issue id=&quot;UnknownNullness&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="9"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `UnknownNullness` was configured with severity `informational` in app, but was not enabled (or was disabled) in library libopenpgp"
-        errorLine1="    &lt;issue id=&quot;UnknownNullness&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="9"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `UnknownNullness` was configured with severity `informational` in app, but was not enabled (or was disabled) in library libopenpgp"
         errorLine1="    &lt;issue id=&quot;UnknownNullness&quot; severity=&quot;informational&quot; />"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -641,50 +223,6 @@
 
     <issue
         id="CannotEnableHidden"
-        message="Issue `UnknownNullness` was configured with severity `informational` in app, but was not enabled (or was disabled) in library libserver"
-        errorLine1="    &lt;issue id=&quot;UnknownNullness&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="9"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `UnknownNullness` was configured with severity `informational` in app, but was not enabled (or was disabled) in library libserver"
-        errorLine1="    &lt;issue id=&quot;UnknownNullness&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="9"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `UnknownNullness` was configured with severity `informational` in app, but was not enabled (or was disabled) in library ui"
-        errorLine1="    &lt;issue id=&quot;UnknownNullness&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="9"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `UnknownNullness` was configured with severity `informational` in app, but was not enabled (or was disabled) in library ui"
-        errorLine1="    &lt;issue id=&quot;UnknownNullness&quot; severity=&quot;informational&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="9"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
         message="Issue `UnknownNullness` was configured with severity `informational` in app, but was not enabled (or was disabled) in library ui"
         errorLine1="    &lt;issue id=&quot;UnknownNullness&quot; severity=&quot;informational&quot; />"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
@@ -697,50 +235,6 @@
     <issue
         id="CannotEnableHidden"
         message="Issue `DuplicateStrings` was configured with severity `warning` in app, but was not enabled (or was disabled) in library compat"
-        errorLine1="    &lt;issue id=&quot;DuplicateStrings&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="11"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `DuplicateStrings` was configured with severity `warning` in app, but was not enabled (or was disabled) in library compat"
-        errorLine1="    &lt;issue id=&quot;DuplicateStrings&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="11"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `DuplicateStrings` was configured with severity `warning` in app, but was not enabled (or was disabled) in library compat"
-        errorLine1="    &lt;issue id=&quot;DuplicateStrings&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="11"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `DuplicateStrings` was configured with severity `warning` in app, but was not enabled (or was disabled) in library docs"
-        errorLine1="    &lt;issue id=&quot;DuplicateStrings&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="11"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `DuplicateStrings` was configured with severity `warning` in app, but was not enabled (or was disabled) in library docs"
         errorLine1="    &lt;issue id=&quot;DuplicateStrings&quot; severity=&quot;warning&quot; />"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -773,73 +267,7 @@
 
     <issue
         id="CannotEnableHidden"
-        message="Issue `DuplicateStrings` was configured with severity `warning` in app, but was not enabled (or was disabled) in library hiddenapi"
-        errorLine1="    &lt;issue id=&quot;DuplicateStrings&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="11"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `DuplicateStrings` was configured with severity `warning` in app, but was not enabled (or was disabled) in library hiddenapi"
-        errorLine1="    &lt;issue id=&quot;DuplicateStrings&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="11"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
         message="Issue `DuplicateStrings` was configured with severity `warning` in app, but was not enabled (or was disabled) in library io"
-        errorLine1="    &lt;issue id=&quot;DuplicateStrings&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="11"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `DuplicateStrings` was configured with severity `warning` in app, but was not enabled (or was disabled) in library io"
-        errorLine1="    &lt;issue id=&quot;DuplicateStrings&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="11"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `DuplicateStrings` was configured with severity `warning` in app, but was not enabled (or was disabled) in library io"
-        errorLine1="    &lt;issue id=&quot;DuplicateStrings&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="11"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `DuplicateStrings` was configured with severity `warning` in app, but was not enabled (or was disabled) in library libopenpgp"
-        errorLine1="    &lt;issue id=&quot;DuplicateStrings&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="11"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `DuplicateStrings` was configured with severity `warning` in app, but was not enabled (or was disabled) in library libopenpgp"
         errorLine1="    &lt;issue id=&quot;DuplicateStrings&quot; severity=&quot;warning&quot; />"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -872,50 +300,6 @@
 
     <issue
         id="CannotEnableHidden"
-        message="Issue `DuplicateStrings` was configured with severity `warning` in app, but was not enabled (or was disabled) in library libserver"
-        errorLine1="    &lt;issue id=&quot;DuplicateStrings&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="11"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `DuplicateStrings` was configured with severity `warning` in app, but was not enabled (or was disabled) in library libserver"
-        errorLine1="    &lt;issue id=&quot;DuplicateStrings&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="11"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `DuplicateStrings` was configured with severity `warning` in app, but was not enabled (or was disabled) in library ui"
-        errorLine1="    &lt;issue id=&quot;DuplicateStrings&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="11"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `DuplicateStrings` was configured with severity `warning` in app, but was not enabled (or was disabled) in library ui"
-        errorLine1="    &lt;issue id=&quot;DuplicateStrings&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="11"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
         message="Issue `DuplicateStrings` was configured with severity `warning` in app, but was not enabled (or was disabled) in library ui"
         errorLine1="    &lt;issue id=&quot;DuplicateStrings&quot; severity=&quot;warning&quot; />"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
@@ -928,50 +312,6 @@
     <issue
         id="CannotEnableHidden"
         message="Issue `WrongThreadInterprocedural` was configured with severity `error` in app, but was not enabled (or was disabled) in library compat"
-        errorLine1="    &lt;issue id=&quot;WrongThreadInterprocedural&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="14"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `WrongThreadInterprocedural` was configured with severity `error` in app, but was not enabled (or was disabled) in library compat"
-        errorLine1="    &lt;issue id=&quot;WrongThreadInterprocedural&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="14"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `WrongThreadInterprocedural` was configured with severity `error` in app, but was not enabled (or was disabled) in library compat"
-        errorLine1="    &lt;issue id=&quot;WrongThreadInterprocedural&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="14"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `WrongThreadInterprocedural` was configured with severity `error` in app, but was not enabled (or was disabled) in library docs"
-        errorLine1="    &lt;issue id=&quot;WrongThreadInterprocedural&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="14"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `WrongThreadInterprocedural` was configured with severity `error` in app, but was not enabled (or was disabled) in library docs"
         errorLine1="    &lt;issue id=&quot;WrongThreadInterprocedural&quot; severity=&quot;warning&quot; />"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -1004,50 +344,6 @@
 
     <issue
         id="CannotEnableHidden"
-        message="Issue `WrongThreadInterprocedural` was configured with severity `error` in app, but was not enabled (or was disabled) in library hiddenapi"
-        errorLine1="    &lt;issue id=&quot;WrongThreadInterprocedural&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="14"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `WrongThreadInterprocedural` was configured with severity `error` in app, but was not enabled (or was disabled) in library hiddenapi"
-        errorLine1="    &lt;issue id=&quot;WrongThreadInterprocedural&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="14"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `WrongThreadInterprocedural` was configured with severity `error` in app, but was not enabled (or was disabled) in library io"
-        errorLine1="    &lt;issue id=&quot;WrongThreadInterprocedural&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="14"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `WrongThreadInterprocedural` was configured with severity `error` in app, but was not enabled (or was disabled) in library io"
-        errorLine1="    &lt;issue id=&quot;WrongThreadInterprocedural&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="14"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
         message="Issue `WrongThreadInterprocedural` was configured with severity `error` in app, but was not enabled (or was disabled) in library io"
         errorLine1="    &lt;issue id=&quot;WrongThreadInterprocedural&quot; severity=&quot;warning&quot; />"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
@@ -1070,73 +366,7 @@
 
     <issue
         id="CannotEnableHidden"
-        message="Issue `WrongThreadInterprocedural` was configured with severity `error` in app, but was not enabled (or was disabled) in library libopenpgp"
-        errorLine1="    &lt;issue id=&quot;WrongThreadInterprocedural&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="14"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `WrongThreadInterprocedural` was configured with severity `error` in app, but was not enabled (or was disabled) in library libopenpgp"
-        errorLine1="    &lt;issue id=&quot;WrongThreadInterprocedural&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="14"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
         message="Issue `WrongThreadInterprocedural` was configured with severity `error` in app, but was not enabled (or was disabled) in library libserver"
-        errorLine1="    &lt;issue id=&quot;WrongThreadInterprocedural&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="14"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `WrongThreadInterprocedural` was configured with severity `error` in app, but was not enabled (or was disabled) in library libserver"
-        errorLine1="    &lt;issue id=&quot;WrongThreadInterprocedural&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="14"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `WrongThreadInterprocedural` was configured with severity `error` in app, but was not enabled (or was disabled) in library libserver"
-        errorLine1="    &lt;issue id=&quot;WrongThreadInterprocedural&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="14"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `WrongThreadInterprocedural` was configured with severity `error` in app, but was not enabled (or was disabled) in library ui"
-        errorLine1="    &lt;issue id=&quot;WrongThreadInterprocedural&quot; severity=&quot;warning&quot; />"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="lint.xml"
-            line="14"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="CannotEnableHidden"
-        message="Issue `WrongThreadInterprocedural` was configured with severity `error` in app, but was not enabled (or was disabled) in library ui"
         errorLine1="    &lt;issue id=&quot;WrongThreadInterprocedural&quot; severity=&quot;warning&quot; />"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -2011,6 +1241,17 @@
             file="src/main/java/io/github/muntashirakon/AppManager/utils/appearance/TypefaceUtil.java"
             line="94"
             column="29"/>
+    </issue>
+
+    <issue
+        id="Registered"
+        message="The `&lt;service> io.github.muntashirakon.AppManager.logcat.CrazyLoggerService` is not registered in the manifest"
+        errorLine1="public class CrazyLoggerService extends ForegroundService {"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/io/github/muntashirakon/AppManager/logcat/CrazyLoggerService.java"
+            line="14"
+            column="14"/>
     </issue>
 
     <issue
@@ -10606,6 +9847,13 @@
 
     <issue
         id="UnusedResources"
+        message="The resource `R.raw.appops` appears to be unused">
+        <location
+            file="../docs/src/main/res/raw/appops.svg"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
         message="The resource `R.drawable.batch_result_status_background` appears to be unused"
         errorLine1="&lt;shape xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
         errorLine2="^">
@@ -11178,6 +10426,13 @@
 
     <issue
         id="UnusedResources"
+        message="The resource `R.raw.custom` appears to be unused">
+        <location
+            file="../docs/src/main/res/raw/custom.css"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
         message="The resource `R.dimen.premium_elevation_1` appears to be unused"
         errorLine1="    &lt;dimen name=&quot;premium_elevation_1&quot;>1dp&lt;/dimen>"
         errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~~~">
@@ -11376,6 +10631,20 @@
 
     <issue
         id="UnusedResources"
+        message="The resource `R.raw.icon` appears to be unused">
+        <location
+            file="../docs/src/main/res/raw/icon.png"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.raw.index` appears to be unused">
+        <location
+            file="../docs/src/main/res/raw/index.html"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
         message="The resource `R.layout.item_main` appears to be unused"
         errorLine1="&lt;com.google.android.material.card.MaterialCardView xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
         errorLine2="^">
@@ -11405,6 +10674,13 @@
             file="src/main/res/values/libs.xml"
             line="11497"
             column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.raw.main_page_entry_info_labeled` appears to be unused">
+        <location
+            file="../docs/src/main/res/raw/main_page_entry_info_labeled.svg"/>
     </issue>
 
     <issue
@@ -12186,6 +11462,17 @@
             file="src/main/res/values/strings.xml"
             line="4093"
             column="13"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.plurals.duplicate_backups_pruned` appears to be unused"
+        errorLine1="    &lt;plurals name=&quot;duplicate_backups_pruned&quot;>"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="4100"
+            column="14"/>
     </issue>
 
     <issue
