@@ -3,6 +3,14 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## Unreleased
+
+### Added
+- The top app bubble now tells an overlay apart from the app under it (issue #26). An app drawing a pop-up or a floating ad gets its own row on top in red, with the app you were using named underneath, so the overlay no longer takes that app's place. Once the overlay goes away it stays listed, faded and marked gone, until a different app comes up.
+
+### Fixed
+- A watched permission set to Always deny gets taken back right away when someone grants it in Settings, in root, ADB and Shizuku modes (issue #15). Android doesn't tell apps about a permission granted there, and it pauses apps in the background, so the grant used to stick until the next check. The privileged server now watches those apps itself and starts the check the moment one changes. No-root mode still checks at the usual times.
+
 ## v0.7.0, 2026-11-08
 
 ### Security
