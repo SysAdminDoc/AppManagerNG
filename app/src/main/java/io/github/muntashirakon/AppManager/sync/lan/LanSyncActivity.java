@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -54,6 +55,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.ApkSource;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerActivity;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
+import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.types.PackageChangeReceiver;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -336,7 +338,55 @@ public class LanSyncActivity extends BaseActivity {
     @Override
     public boolean onCreateOptionsMenu(@NonNull Menu menu) {
         getMenuInflater().inflate(R.menu.activity_lan_sync_actions, menu);
+        MenuItem searchItem = menu.findItem(R.id.action_search);
+        AdvancedSearchView searchView = (AdvancedSearchView) searchItem.getActionView();
+        if (searchView != null && mViewModel != null) {
+            searchItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener() {
+                @Override
+                public boolean onMenuItemActionExpand(@NonNull MenuItem item) {
+                    return true;
+                }
+
+                @Override
+                public boolean onMenuItemActionCollapse(@NonNull MenuItem item) {
+                    search(null, AdvancedSearchView.SEARCH_TYPE_CONTAINS);
+                    return true;
+                }
+            });
+            String query = mViewModel.getSearchQuery();
+            if (!TextUtils.isEmpty(query)) {
+                // After a rotation: show the search that's still filtering the list
+                searchItem.expandActionView();
+                searchView.setQuery(query, false);
+            }
+            searchView.setOnQueryTextListener(new AdvancedSearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextChange(String newText, int type) {
+                    search(newText, type);
+                    return true;
+                }
+
+                @Override
+                public boolean onQueryTextSubmit(String query, int type) {
+                    return false;
+                }
+            });
+        }
         return super.onCreateOptionsMenu(menu);
+    }
+
+    /**
+     * Searches the app list. Typing while the Devices tab is open moves to the apps.
+     */
+    private void search(@Nullable String query, @AdvancedSearchView.SearchType int type) {
+        if (mViewModel == null) {
+            return;
+        }
+        mViewModel.setSearch(query, type);
+        if (!TextUtils.isEmpty(query) && mTabs.getSelectedTabPosition() != TAB_APPS) {
+            selectTab(TAB_APPS);
+        }
+        renderRows();
     }
 
     @Override
@@ -661,17 +711,27 @@ public class LanSyncActivity extends BaseActivity {
 
     private void renderRows() {
         List<LanSyncViewModel.AppRow> rows = mViewModel.getRows().getValue();
+        String query = mViewModel.getSearchQuery();
+        boolean searching = !TextUtils.isEmpty(query);
         Map<SyncComparator.Status, Integer> counts = new EnumMap<>(SyncComparator.Status.class);
         for (SyncComparator.Status status : SyncComparator.Status.values()) {
             counts.put(status, 0);
         }
-        List<LanSyncViewModel.AppRow> shown = new ArrayList<>();
+        int newer = 0;
         if (rows != null) {
             for (LanSyncViewModel.AppRow row : rows) {
-                counts.put(row.status, counts.get(row.status) + 1);
-                if (row.status == mFilter) {
-                    shown.add(row);
+                if (row.status == SyncComparator.Status.NEWER) {
+                    // Update all gets every newer app, whatever the search shows
+                    ++newer;
                 }
+            }
+        }
+        // The chips count what the search matches, so they point to the group holding an app
+        List<LanSyncViewModel.AppRow> shown = new ArrayList<>();
+        for (LanSyncViewModel.AppRow row : LanSyncRowFilter.matching(rows, query, mViewModel.getSearchType())) {
+            counts.put(row.status, counts.get(row.status) + 1);
+            if (row.status == mFilter) {
+                shown.add(row);
             }
         }
         mChips.get(SyncComparator.Status.NEWER).setText(getString(R.string.lan_sync_bucket_newer,
@@ -686,7 +746,6 @@ public class LanSyncActivity extends BaseActivity {
                 counts.get(SyncComparator.Status.OLDER)));
 
         boolean idle = mTask == null;
-        int newer = counts.get(SyncComparator.Status.NEWER);
         mUpdateAll.setVisibility(rows != null && newer > 0 ? View.VISIBLE : View.GONE);
         mUpdateAll.setText(getString(R.string.lan_sync_update_all, newer));
         mUpdateAll.setEnabled(idle);
@@ -700,7 +759,8 @@ public class LanSyncActivity extends BaseActivity {
             String peer = connection == null || connection.peerName == null ? "" : connection.peerName;
             mAppsSummary.setText(getString(R.string.lan_sync_apps_summary, peer, rows.size()));
         }
-        mEmptyTitle.setText(rows == null ? R.string.lan_sync_apps_not_connected : R.string.lan_sync_apps_empty_bucket);
+        mEmptyTitle.setText(rows == null ? R.string.lan_sync_apps_not_connected
+                : searching ? R.string.no_matching_package_found : R.string.lan_sync_apps_empty_bucket);
         mAdapter.setRows(shown, idle);
     }
 

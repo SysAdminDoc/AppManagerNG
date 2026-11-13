@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 
 /**
@@ -132,6 +133,11 @@ public class LanSyncViewModel extends AndroidViewModel {
     private final MutableLiveData<List<LanSyncDownloader.Result>> mReady = new MutableLiveData<>();
     private final ScreenOnPolicy mScreenOn = new ScreenOnPolicy();
     private final MutableLiveData<Integer> mTrouble = new MutableLiveData<>(TROUBLE_NONE);
+    // Main thread only
+    @Nullable
+    private String mSearchQuery;
+    @AdvancedSearchView.SearchType
+    private int mSearchType = AdvancedSearchView.SEARCH_TYPE_CONTAINS;
     @Nullable
     private volatile LocalIdentity mIdentity;
     // Guarded by mLock
@@ -195,6 +201,26 @@ public class LanSyncViewModel extends AndroidViewModel {
     @NonNull
     public LiveData<Boolean> getSharing() {
         return mSharing;
+    }
+
+    /**
+     * What the app list is searched for, kept here so it survives turning the phone.
+     */
+    @Nullable
+    public String getSearchQuery() {
+        return mSearchQuery;
+    }
+
+    @AdvancedSearchView.SearchType
+    public int getSearchType() {
+        return mSearchType;
+    }
+
+    @MainThread
+    public void setSearch(@Nullable String query, @AdvancedSearchView.SearchType int type) {
+        // Collapsing the search view clears its text, which reports an empty query
+        mSearchQuery = TextUtils.isEmpty(query) ? null : query;
+        mSearchType = type;
     }
 
     /**

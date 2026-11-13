@@ -4,6 +4,13 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/action_search"
+        android:icon="@drawable/ic_search"
+        android:title="@string/search"
+        app:actionViewClass="io.github.muntashirakon.AppManager.misc.AdvancedSearchView"
+        app:showAsAction="collapseActionView|always" />
+
+    <item
         android:id="@+id/action_received_apks"
         android:title="@string/received_apks_title"
         app:showAsAction="never" />
