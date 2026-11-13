@@ -4591,6 +4591,9 @@ Components removed: %8$s</string>
     <string name="permission_reference_status_pinned">reference pinned</string>
     <string name="permission_reference_drift">reference drift</string>
     <string name="permission_reference_pin_failed">Could not pin reference</string>
+    <string name="permission_reference_unpin">Unpin reference</string>
+    <string name="permission_reference_unpinned">Reference unpinned</string>
+    <string name="permission_reference_unpin_failed">Could not unpin reference</string>
     <string name="permission_reference_restore_failed">Could not restore reference</string>
     <string name="perm_app_row_a11y">%1$s, package %2$s, %3$s.</string>
     <plurals name="perm_inspector_bulk_revoked">

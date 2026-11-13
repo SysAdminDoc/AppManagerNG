@@ -283,6 +283,44 @@ public class PermissionAppsViewModel extends AndroidViewModel {
         });
     }
 
+    /** Runs whatever the row's reference flag stands for right now: pin, unpin or restore. */
+    public void referenceAction(@NonNull AppRow row) {
+        switch (ReferenceAction.next(row.hasReference, row.referenceDrifted, row.anyModifiable)) {
+            case ReferenceAction.RESTORE:
+                restoreReference(row);
+                break;
+            case ReferenceAction.UNPIN:
+                unpinReference(row);
+                break;
+            case ReferenceAction.PIN:
+            default:
+                pinReference(row);
+                break;
+        }
+    }
+
+    public void unpinReference(@NonNull AppRow row) {
+        mLoading.postValue(true);
+        mExecutor.submit(() -> {
+            int unpinned = 0;
+            int failed = 0;
+            try {
+                int userId = UserHandleHidden.myUserId();
+                for (String permName : row.permissionNames) {
+                    if (PermissionToggleHelper.loadReference(row.packageName, userId, permName) == null) continue;
+                    if (PermissionToggleHelper.unpinReference(row.packageName, userId, permName)) {
+                        unpinned++;
+                    } else failed++;
+                }
+                mToast.postValue(getApplication().getString(failed == 0 && unpinned > 0
+                        ? ReferenceAction.doneMessage(ReferenceAction.UNPIN)
+                        : ReferenceAction.failedMessage(ReferenceAction.UNPIN)));
+            } finally {
+                loadInternal();
+            }
+        });
+    }
+
     public void restoreReference(@NonNull AppRow row) {
         mLoading.postValue(true);
         mExecutor.submit(() -> {

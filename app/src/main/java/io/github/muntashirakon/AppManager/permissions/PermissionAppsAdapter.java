@@ -8,7 +8,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.widget.TooltipCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
@@ -84,16 +83,11 @@ class PermissionAppsAdapter extends RecyclerView.Adapter<PermissionAppsAdapter.V
         h.itemView.setEnabled(enabled);
         h.toggle.setEnabled(enabled);
         h.itemView.setAlpha(enabled ? 1f : 0.62f);
-        int referenceDescription = r.referenceDrifted
-                ? R.string.permission_reference_restore
-                : R.string.permission_reference_pin;
-        h.referenceAction.setContentDescription(h.itemView.getResources().getString(referenceDescription));
-        TooltipCompat.setTooltipText(h.referenceAction, h.itemView.getResources().getString(referenceDescription));
-        h.referenceAction.setIconResource(r.referenceDrifted ? R.drawable.ic_restore : R.drawable.ic_flag);
-        h.referenceAction.setEnabled(mInteractionsEnabled && (!r.referenceDrifted || r.anyModifiable));
+        ReferenceAction.bind(h.referenceAction,
+                ReferenceAction.next(r.hasReference, r.referenceDrifted, r.anyModifiable), r.hasReference);
+        h.referenceAction.setEnabled(mInteractionsEnabled);
         h.referenceAction.setOnClickListener(v -> {
             if (!mInteractionsEnabled || mReferenceAction == null) return;
-            if (r.referenceDrifted && !r.anyModifiable) return;
             mReferenceAction.onReferenceAction(r);
         });
         View.OnClickListener click = v -> {
