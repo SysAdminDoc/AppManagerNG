@@ -4768,4 +4768,13 @@ Components removed: %8$s</string>
     <string name="lan_sync_keep_screen_10_minutes">For 10 minutes</string>
     <string name="lan_sync_keep_screen_30_minutes">For 30 minutes</string>
     <string name="lan_sync_keep_screen_until_done">Until transfers finish</string>
+    <string name="lan_sync_troubleshooting">Troubleshooting</string>
+    <string name="lan_sync_trouble_nothing_found">No devices found yet</string>
+    <string name="lan_sync_trouble_connect_failed">Couldn\'t reach the other device</string>
+    <string name="lan_sync_trouble_asked">Can\'t find or reach the other device?</string>
+    <string name="lan_sync_trouble_firewall">A firewall or a per-app data setting may be blocking AppManagerNG. On both devices, let it use Wi-Fi and the local network (LAN).</string>
+    <string name="lan_sync_trouble_afwall">In AFWall+, tick the LAN rule for AppManagerNG. If the devices still can\'t see each other, turn AFWall+ off while you sync.</string>
+    <string name="lan_sync_trouble_huawei">Huawei\'s firewall has separate switches for mobile data and Wi-Fi. Turn on the Wi-Fi one for AppManagerNG.</string>
+    <string name="lan_sync_trouble_same_wifi">Both devices need to be on the same Wi-Fi. Guest networks often keep devices apart.</string>
+    <string name="lan_sync_trouble_dismiss">Hide</string>
 </resources>

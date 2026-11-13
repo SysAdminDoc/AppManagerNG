@@ -69,6 +69,11 @@ public class LanSyncActivity extends BaseActivity {
     private static final int TAB_DEVICES = 0;
     private static final int TAB_APPS = 1;
     private static final int KEY_CHARS_SHOWN = 16;
+    /**
+     * How long the search runs with nothing found before the help for blocked networks shows. Two
+     * devices on the same Wi-Fi usually find each other within a few seconds.
+     */
+    static final long NOTHING_FOUND_MILLIS = 20_000;
 
     private final ActivityResultLauncher<String> mPermissionLauncher = registerForActivityResult(
             new ActivityResultContracts.RequestPermission(), granted -> {
@@ -118,8 +123,11 @@ public class LanSyncActivity extends BaseActivity {
     @Nullable
     private LanSyncSettings mSettings;
     private boolean mSharing;
-    private final Handler mScreenHandler = new Handler(Looper.getMainLooper());
+    private final Handler mHandler = new Handler(Looper.getMainLooper());
     private final Runnable mScreenRecheck = this::updateKeepScreenOn;
+    private final Runnable mNothingFoundCheck = this::checkNothingFound;
+    private View mTroubleCard;
+    private TextView mTroubleTitle;
 
     @Override
     protected void onAuthenticated(@Nullable Bundle savedInstanceState) {
@@ -163,6 +171,9 @@ public class LanSyncActivity extends BaseActivity {
         showPane(tab);
 
         // Devices
+        mTroubleCard = findViewById(R.id.trouble_card);
+        mTroubleTitle = findViewById(R.id.trouble_title);
+        findViewById(R.id.trouble_dismiss).setOnClickListener(v -> mViewModel.clearTrouble(null));
         mPermissionCard = findViewById(R.id.permission_card);
         findViewById(R.id.permission_allow).setOnClickListener(v ->
                 mPermissionLauncher.launch(ManifestCompat.permission.ACCESS_LOCAL_NETWORK));
@@ -238,7 +249,14 @@ public class LanSyncActivity extends BaseActivity {
             }
         });
         mViewModel.getApproval().observe(this, this::renderApproval);
-        mViewModel.getPeers().observe(this, peers -> renderPeers());
+        mViewModel.getPeers().observe(this, peers -> {
+            renderPeers();
+            if (peers != null && !peers.isEmpty()) {
+                mHandler.removeCallbacks(mNothingFoundCheck);
+                mViewModel.clearTrouble(LanSyncViewModel.TROUBLE_NOTHING_FOUND);
+            }
+        });
+        mViewModel.getTrouble().observe(this, this::renderTrouble);
         mViewModel.getTrusted().observe(this, this::renderTrusted);
         mViewModel.getConnection().observe(this, this::renderConnection);
         mViewModel.getRows().observe(this, rows -> renderRows());
@@ -297,6 +315,7 @@ public class LanSyncActivity extends BaseActivity {
             mPackageWatcher.close();
             mPackageWatcher = null;
         }
+        mHandler.removeCallbacks(mNothingFoundCheck);
         if (mViewModel != null && !isChangingConfigurations()) {
             // Nothing is shared or searched for once the screen is out of sight. Turning the phone
             // only rebuilds the screen, and stopping then would drop the connected device.
@@ -309,7 +328,8 @@ public class LanSyncActivity extends BaseActivity {
 
     @Override
     protected void onDestroy() {
-        mScreenHandler.removeCallbacks(mScreenRecheck);
+        mHandler.removeCallbacks(mScreenRecheck);
+        mHandler.removeCallbacks(mNothingFoundCheck);
         super.onDestroy();
     }
 
@@ -335,6 +355,8 @@ public class LanSyncActivity extends BaseActivity {
             finish();
         } else if (id == R.id.action_received_apks) {
             startActivity(new Intent(this, ReceivedApksActivity.class));
+        } else if (id == R.id.action_troubleshooting) {
+            showTroubleshooting();
         } else if (screenOnModeFor(id) >= 0) {
             item.setChecked(true);
             getSettings().setKeepScreenOn(screenOnModeFor(id));
@@ -383,7 +405,7 @@ public class LanSyncActivity extends BaseActivity {
      * list or download is loading, as long as the setting allows.
      */
     private void updateKeepScreenOn() {
-        mScreenHandler.removeCallbacks(mScreenRecheck);
+        mHandler.removeCallbacks(mScreenRecheck);
         if (mViewModel == null) {
             return;
         }
@@ -396,7 +418,7 @@ public class LanSyncActivity extends BaseActivity {
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         }
         if (decision.recheckAt > 0) {
-            mScreenHandler.postDelayed(mScreenRecheck, Math.max(0, decision.recheckAt - now));
+            mHandler.postDelayed(mScreenRecheck, Math.max(0, decision.recheckAt - now));
         }
     }
 
@@ -449,7 +471,47 @@ public class LanSyncActivity extends BaseActivity {
     private void startDiscoveryIfAllowed() {
         if (mViewModel != null && !mPermissionMissing) {
             mViewModel.startDiscovery();
+            mHandler.removeCallbacks(mNothingFoundCheck);
+            mHandler.postDelayed(mNothingFoundCheck, NOTHING_FOUND_MILLIS);
         }
+    }
+
+    private void checkNothingFound() {
+        if (mViewModel == null || !isStarted()) {
+            return;
+        }
+        List<LanSyncDiscovery.Peer> peers = mViewModel.getPeers().getValue();
+        if ((peers == null || peers.isEmpty()) && isIdle()) {
+            mViewModel.showTrouble(LanSyncViewModel.TROUBLE_NOTHING_FOUND);
+        }
+    }
+
+    private void renderTrouble(@Nullable Integer trouble) {
+        int reason = trouble == null ? LanSyncViewModel.TROUBLE_NONE : trouble;
+        switch (reason) {
+            case LanSyncViewModel.TROUBLE_NOTHING_FOUND:
+                mTroubleTitle.setText(R.string.lan_sync_trouble_nothing_found);
+                break;
+            case LanSyncViewModel.TROUBLE_CONNECT_FAILED:
+                mTroubleTitle.setText(R.string.lan_sync_trouble_connect_failed);
+                break;
+            case LanSyncViewModel.TROUBLE_ASKED:
+                mTroubleTitle.setText(R.string.lan_sync_trouble_asked);
+                break;
+            default:
+                break;
+        }
+        mTroubleCard.setVisibility(reason == LanSyncViewModel.TROUBLE_NONE ? View.GONE : View.VISIBLE);
+    }
+
+    private void showTroubleshooting() {
+        if (mViewModel == null) {
+            return;
+        }
+        mViewModel.showTrouble(LanSyncViewModel.TROUBLE_ASKED);
+        selectTab(TAB_DEVICES);
+        showPane(TAB_DEVICES);
+        mDevicesPane.scrollTo(0, 0);
     }
 
     private boolean isStarted() {
