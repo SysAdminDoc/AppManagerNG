@@ -22,7 +22,8 @@ import io.github.muntashirakon.AppManager.R;
 
 /**
  * Rows of the other device's apps. A pull button shows only where a pull can work: the other
- * copy is newer or missing here, and the keys match.
+ * copy is newer or missing here, and the keys match. With replacing allowed, an app signed by a
+ * different key gets a Replace button instead, unless the copy here is a system app.
  */
 class LanSyncAppsAdapter extends RecyclerView.Adapter<LanSyncAppsAdapter.ViewHolder> {
     interface OnPullListener {
@@ -32,11 +33,20 @@ class LanSyncAppsAdapter extends RecyclerView.Adapter<LanSyncAppsAdapter.ViewHol
     @NonNull
     private final OnPullListener mListener;
     @NonNull
+    private final OnPullListener mReplaceListener;
+    @NonNull
     private final List<LanSyncViewModel.AppRow> mRows = new ArrayList<>();
     private boolean mEnabled = true;
+    private boolean mAllowReplace;
 
     LanSyncAppsAdapter(@NonNull OnPullListener listener) {
+        this(listener, row -> {
+        });
+    }
+
+    LanSyncAppsAdapter(@NonNull OnPullListener listener, @NonNull OnPullListener replaceListener) {
         mListener = listener;
+        mReplaceListener = replaceListener;
     }
 
     @SuppressLint("NotifyDataSetChanged")
@@ -45,6 +55,19 @@ class LanSyncAppsAdapter extends RecyclerView.Adapter<LanSyncAppsAdapter.ViewHol
         mRows.addAll(rows);
         mEnabled = enabled;
         notifyDataSetChanged();
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    void setAllowReplace(boolean allowReplace) {
+        if (mAllowReplace != allowReplace) {
+            mAllowReplace = allowReplace;
+            notifyDataSetChanged();
+        }
+    }
+
+    static boolean canReplace(@NonNull LanSyncViewModel.AppRow row, boolean allowReplace) {
+        return allowReplace && row.status == SyncComparator.Status.SIGNATURE_DIFFERS && row.local != null
+                && !row.local.system;
     }
 
     @NonNull
@@ -64,11 +87,19 @@ class LanSyncAppsAdapter extends RecyclerView.Adapter<LanSyncAppsAdapter.ViewHol
                 row.remote.versionCode);
         holder.versions.setText(row.local == null ? there : there + "\n" + context.getString(
                 R.string.lan_sync_version_here, row.local.versionName, row.local.versionCode));
-        holder.note.setText(noteFor(context, row));
+        holder.note.setText(noteFor(context, row, mAllowReplace));
         boolean canPull = SyncComparator.canPull(row.status);
-        holder.pull.setVisibility(canPull ? View.VISIBLE : View.GONE);
-        holder.pull.setEnabled(canPull && mEnabled);
-        holder.pull.setOnClickListener(canPull ? v -> mListener.onPull(row) : null);
+        boolean canReplace = !canPull && canReplace(row, mAllowReplace);
+        holder.pull.setText(canReplace ? R.string.lan_sync_replace : R.string.lan_sync_get);
+        holder.pull.setVisibility(canPull || canReplace ? View.VISIBLE : View.GONE);
+        holder.pull.setEnabled((canPull || canReplace) && mEnabled);
+        if (canPull) {
+            holder.pull.setOnClickListener(v -> mListener.onPull(row));
+        } else if (canReplace) {
+            holder.pull.setOnClickListener(v -> mReplaceListener.onPull(row));
+        } else {
+            holder.pull.setOnClickListener(null);
+        }
     }
 
     @Override
@@ -77,9 +108,15 @@ class LanSyncAppsAdapter extends RecyclerView.Adapter<LanSyncAppsAdapter.ViewHol
     }
 
     @NonNull
-    static String noteFor(@NonNull Context context, @NonNull LanSyncViewModel.AppRow row) {
+    static String noteFor(@NonNull Context context, @NonNull LanSyncViewModel.AppRow row, boolean allowReplace) {
         switch (row.status) {
             case SIGNATURE_DIFFERS:
+                if (canReplace(row, allowReplace)) {
+                    return context.getString(R.string.lan_sync_note_signature_replace);
+                }
+                if (allowReplace) {
+                    return context.getString(R.string.lan_sync_note_signature_system);
+                }
                 return context.getString(R.string.lan_sync_note_signature);
             case SAME:
                 return context.getString(R.string.lan_sync_note_same);

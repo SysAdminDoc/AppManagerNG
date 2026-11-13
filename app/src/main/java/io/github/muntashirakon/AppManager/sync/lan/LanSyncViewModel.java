@@ -6,6 +6,7 @@ import android.app.Application;
 import android.content.Context;
 import android.net.nsd.NsdManager;
 import android.os.Build;
+import android.os.UserHandleHidden;
 import android.provider.Settings;
 import android.text.TextUtils;
 
@@ -36,6 +37,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
@@ -101,6 +103,27 @@ public class LanSyncViewModel extends AndroidViewModel {
         Map<String, SyncApp> load();
     }
 
+    /**
+     * Reads one installed app again, right before its download.
+     */
+    interface InstalledLookup {
+        @WorkerThread
+        @Nullable
+        SyncApp find(@NonNull String packageName);
+    }
+
+    /**
+     * Removes an app for every user, data included, before a copy signed by another key goes in.
+     */
+    interface Uninstaller {
+        /**
+         * @return {@code null} once the app is gone, otherwise why it isn't
+         */
+        @WorkerThread
+        @Nullable
+        String uninstall(@NonNull String packageName, @NonNull String label);
+    }
+
     public static final class TrustedDevice {
         @NonNull
         public final String fingerprint;
@@ -159,12 +182,32 @@ public class LanSyncViewModel extends AndroidViewModel {
     private volatile LocalIndex mLocalIndex;
     @NonNull
     private Executor mCloser = ThreadUtils::postOnBackgroundThread;
+    @NonNull
+    private volatile InstalledLookup mInstalledLookup;
+    @NonNull
+    private volatile Uninstaller mUninstaller;
+    // An uninstall can wait on Android's prompt, so it runs apart from the session's pings
+    @NonNull
+    private volatile Executor mReplaceExecutor = ThreadUtils::postOnBackgroundThread;
 
     public LanSyncViewModel(@NonNull Application application) {
         super(application);
         mTrust = new TrustStore(application);
         mNsd = (NsdManager) application.getSystemService(Context.NSD_SERVICE);
         mLocalIndex = () -> new AndroidPackageCatalog(application).indexInstalled();
+        mInstalledLookup = packageName -> new AndroidPackageCatalog(application).findInstalled(packageName);
+        mUninstaller = this::uninstallEverywhere;
+    }
+
+    @VisibleForTesting
+    void setInstalledLookup(@NonNull InstalledLookup installedLookup) {
+        mInstalledLookup = installedLookup;
+    }
+
+    @VisibleForTesting
+    void setUninstaller(@NonNull Uninstaller uninstaller, @NonNull Executor executor) {
+        mUninstaller = uninstaller;
+        mReplaceExecutor = executor;
     }
 
     @VisibleForTesting
@@ -774,7 +817,7 @@ public class LanSyncViewModel extends AndroidViewModel {
      */
     @MainThread
     public void pull(@NonNull AppRow row) {
-        pullAll(Collections.singletonList(row));
+        pullAll(Collections.singletonList(row), false);
     }
 
     /**
@@ -794,11 +837,21 @@ public class LanSyncViewModel extends AndroidViewModel {
             }
         }
         if (!newer.isEmpty()) {
-            pullAll(newer);
+            pullAll(newer, false);
         }
     }
 
-    private void pullAll(@NonNull List<AppRow> rows) {
+    /**
+     * Gets an app signed by a different key than the copy here, uninstalls that copy with its
+     * data, then hands the new one to the installer. The caller checks that the user turned
+     * replacing on ({@link LanSyncSettings#isAllowReplace()}).
+     */
+    @MainThread
+    public void replace(@NonNull AppRow row) {
+        pullAll(Collections.singletonList(row), true);
+    }
+
+    private void pullAll(@NonNull List<AppRow> rows, boolean replace) {
         mClientExecutor.execute(() -> {
             SyncClientSession client = currentClient();
             if (client == null) {
@@ -809,25 +862,33 @@ public class LanSyncViewModel extends AndroidViewModel {
                 mMessage.postValue(getApplication().getString(R.string.lan_sync_storage_failed));
                 return;
             }
-            AndroidPackageCatalog catalog = new AndroidPackageCatalog(getApplication());
             List<LanSyncDownloader.Result> ready = new ArrayList<>();
+            List<LanSyncDownloader.Result> replacements = new ArrayList<>();
             try {
                 for (AppRow row : rows) {
                     String label = row.remote.label;
                     int[] lastPercent = {-1};
-                    mTask.postValue(getApplication().getString(R.string.lan_sync_downloading, label, 0));
                     try {
                         // Read the installed copy again: it may have changed since the list came in
-                        SyncApp installed = catalog.findInstalled(row.remote.packageName);
-                        ready.add(LanSyncDownloader.pull(client, row.remote, installed, dir,
-                                ApkSigners.VERIFIED_FILE_READER, (done, total) -> {
+                        SyncApp installed = mInstalledLookup.find(row.remote.packageName);
+                        boolean replacing = replace && installed != null && SyncComparator.compare(row.remote,
+                                installed) == SyncComparator.Status.SIGNATURE_DIFFERS;
+                        if (replacing && installed.system) {
+                            // Its copy on the system partition would stay, still signed by the old key
+                            mMessage.postValue(getApplication().getString(R.string.lan_sync_replace_system, label));
+                            continue;
+                        }
+                        mTask.postValue(getApplication().getString(R.string.lan_sync_downloading, label, 0));
+                        LanSyncDownloader.Result result = LanSyncDownloader.pull(client, row.remote, installed,
+                                replacing, dir, ApkSigners.VERIFIED_FILE_READER, (done, total) -> {
                                     int percent = total > 0 ? (int) (done * 100 / total) : 0;
                                     if (percent != lastPercent[0]) {
                                         lastPercent[0] = percent;
                                         mTask.postValue(getApplication().getString(R.string.lan_sync_downloading,
                                                 label, percent));
                                     }
-                                }));
+                                });
+                        (replacing ? replacements : ready).add(result);
                     } catch (SyncClientSession.RemoteError | ApkSignatureGate.MismatchException e) {
                         // This app failed, the session is still fine
                         Log.w(TAG, "Could not get %s", e, row.remote.packageName);
@@ -838,13 +899,71 @@ public class LanSyncViewModel extends AndroidViewModel {
             } catch (IOException e) {
                 onClientError(client, e);
             } finally {
-                mTask.postValue(null);
+                // A replacement keeps the screen busy until the old copy is gone
+                mTask.postValue(replacements.isEmpty() ? null : getApplication().getString(
+                        R.string.lan_sync_uninstalling, replacements.get(0).label));
             }
             // Whatever arrived before a failure still goes to the installer
             if (!ready.isEmpty()) {
                 mReady.postValue(ready);
             }
+            for (LanSyncDownloader.Result result : replacements) {
+                mReplaceExecutor.execute(() -> uninstallThenInstall(result));
+            }
         });
+    }
+
+    /**
+     * The new copy goes to the installer only once the old one is gone. When the uninstall fails,
+     * the installed app stays as it was and the new copy waits in Received APKs.
+     */
+    @WorkerThread
+    private void uninstallThenInstall(@NonNull LanSyncDownloader.Result result) {
+        try {
+            mTask.postValue(getApplication().getString(R.string.lan_sync_uninstalling, result.label));
+            String failure;
+            try {
+                failure = mUninstaller.uninstall(result.packageName, result.label);
+            } catch (RuntimeException e) {
+                Log.w(TAG, "Could not uninstall %s", e, result.packageName);
+                failure = describe(e);
+            }
+            if (failure != null) {
+                if (result.owned) {
+                    // Only the bundle made for the installer goes, the received files stay
+                    LanSyncDownloader.deleteQuietly(result.file);
+                }
+                mMessage.postValue(getApplication().getString(R.string.lan_sync_replace_uninstall_failed,
+                        result.label, failure));
+                return;
+            }
+            mReady.postValue(Collections.singletonList(result));
+        } finally {
+            mTask.postValue(null);
+        }
+    }
+
+    @WorkerThread
+    @Nullable
+    private String uninstallEverywhere(@NonNull String packageName, @NonNull String label) {
+        PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
+        installer.setAppLabel(label);
+        String[] reason = new String[1];
+        installer.setOnInstallListener(new PackageInstallerCompat.OnInstallListener() {
+            @Override
+            public void onStartInstall(int sessionId, String packageName) {
+            }
+
+            @Override
+            public void onFinishedInstall(int sessionId, String packageName, int result,
+                                          @Nullable String blockingPackage, @Nullable String statusMessage) {
+                reason[0] = statusMessage;
+            }
+        });
+        if (installer.uninstall(packageName, UserHandleHidden.USER_ALL, false)) {
+            return null;
+        }
+        return reason[0] != null ? reason[0] : getApplication().getString(R.string.failed_to_uninstall_app);
     }
 
     @WorkerThread

@@ -174,6 +174,58 @@ public class LanSyncDownloaderTest {
     }
 
     @Test
+    public void aReplacementNeedsTheListedKeyButNotTheInstalledOne() throws Exception {
+        mCatalog.add(listed(mApk, TEXTLAUNCHER_SIGNER, "base.apk"), mApk);
+        SyncApp remote = connectAndList();
+        SyncApp installed = SyncFixtures.app(PKG, 7, DNSFILTER_SIGNER);
+
+        LanSyncDownloader.Result result = LanSyncDownloader.pull(mClient, remote, installed, true, mDir,
+                ApkSigners.VERIFIED_FILE_READER, null);
+
+        assertArrayEquals(mApkBytes, Files.readAllBytes(result.file.toPath()));
+        assertEquals(PKG, result.packageName);
+        assertTrue(onlyEntry().complete);
+    }
+
+    @Test
+    public void aReplacementFromAHostLyingAboutTheKeyIsStillStopped() throws Exception {
+        // The file is signed by TEXTLAUNCHER_SIGNER
+        mCatalog.add(listed(mApk, DNSFILTER_SIGNER, "base.apk"), mApk);
+        SyncApp remote = connectAndList();
+
+        assertThrows(ApkSignatureGate.MismatchException.class, () -> LanSyncDownloader.pull(mClient, remote,
+                SyncFixtures.app(PKG, 1, SyncFixtures.SIGNER_A), true, mDir, ApkSigners.VERIFIED_FILE_READER, null));
+        assertNothingReceived();
+    }
+
+    @Test
+    public void aReplacementWithASplitFromAnotherKeyIsStopped() throws Exception {
+        List<SyncApp.ApkFileInfo> files = Arrays.asList(new SyncApp.ApkFileInfo("base.apk", mApk.length()),
+                new SyncApp.ApkFileInfo("split_config.en.apk", mBigApk.length()));
+        mCatalog.add(new SyncApp(PKG, "Text Launcher", 5, "5", false, Collections.singletonList(TEXTLAUNCHER_SIGNER),
+                Collections.<String>emptyList(), files), mApk, mBigApk);
+        SyncApp remote = connectAndList();
+
+        ApkSignatureGate.MismatchException e = assertThrows(ApkSignatureGate.MismatchException.class,
+                () -> LanSyncDownloader.pull(mClient, remote, SyncFixtures.app(PKG, 1, DNSFILTER_SIGNER), true, mDir,
+                        ApkSigners.VERIFIED_FILE_READER, null));
+        assertTrue(e.getMessage(), e.getMessage().contains("split"));
+        assertNothingReceived();
+    }
+
+    @Test
+    public void replacingChangesNothingWhenTheKeysMatch() throws Exception {
+        mCatalog.add(listed(mApk, TEXTLAUNCHER_SIGNER, "base.apk"), mApk);
+        SyncApp remote = connectAndList();
+
+        // Same key, same version: there's nothing to replace and nothing to get
+        assertThrows(IOException.class, () -> LanSyncDownloader.pull(mClient, remote,
+                SyncFixtures.app(PKG, remote.versionCode, TEXTLAUNCHER_SIGNER), true, mDir,
+                ApkSigners.VERIFIED_FILE_READER, null));
+        assertTrue(mCatalog.fileLookups.isEmpty());
+    }
+
+    @Test
     public void failedTransferLeavesNothingBehind() throws Exception {
         // Listed one byte short, so the host reports the file changed
         SyncApp wrongSize = new SyncApp(PKG, "Text Launcher", 5, "5", false,

@@ -527,6 +527,17 @@
 
                 </HorizontalScrollView>
 
+                <com.google.android.material.materialswitch.MaterialSwitch
+                    android:id="@+id/allow_replace"
+                    style="@style/Widget.AppTheme.MaterialSwitch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/premium_space_4"
+                    android:saveEnabled="false"
+                    android:text="@string/lan_sync_allow_replace"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/update_all"
                     style="@style/Widget.AppTheme.Button.FilledTonalButton"

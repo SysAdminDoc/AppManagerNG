@@ -28,6 +28,7 @@ public final class LanSyncSettings {
     private static final String KEY_RETENTION = "received_retention";
     private static final String KEY_KEEP_AFTER_INSTALL = "received_keep_after_install";
     private static final String KEY_KEEP_SCREEN_ON = "keep_screen_on";
+    private static final String KEY_ALLOW_REPLACE = "allow_replace_different_key";
 
     @NonNull
     private final SharedPreferences mPrefs;
@@ -82,5 +83,17 @@ public final class LanSyncSettings {
 
     public void setKeepScreenOn(int mode) {
         mPrefs.edit().putInt(KEY_KEEP_SCREEN_ON, mode).apply();
+    }
+
+    /**
+     * Whether an app signed by a different key than the copy here may replace it. That uninstalls
+     * the copy here and deletes its data, so it's off by default.
+     */
+    public boolean isAllowReplace() {
+        return mPrefs.getBoolean(KEY_ALLOW_REPLACE, false);
+    }
+
+    public void setAllowReplace(boolean allow) {
+        mPrefs.edit().putBoolean(KEY_ALLOW_REPLACE, allow).apply();
     }
 }

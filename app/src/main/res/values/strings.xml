@@ -4726,6 +4726,13 @@ Components removed: %8$s</string>
     <string name="lan_sync_version_here">This device: %1$s (%2$d)</string>
     <string name="lan_sync_note_size">Download size: %1$s</string>
     <string name="lan_sync_note_signature">Signed with a different key than the copy installed here. Android won\'t install it over that copy.</string>
+    <string name="lan_sync_note_signature_replace">Signed with a different key than the copy installed here. Replace uninstalls that copy and deletes its data first.</string>
+    <string name="lan_sync_note_signature_system">Signed with a different key than the system app installed here. A system app can\'t be replaced.</string>
+    <string name="lan_sync_allow_replace">Allow replacing apps signed by a different key (uninstalls the installed app and deletes its data)</string>
+    <string name="lan_sync_replace">Replace</string>
+    <string name="lan_sync_replace_system">%1$s is a system app here, so it can\'t be replaced</string>
+    <string name="lan_sync_uninstalling">Uninstalling %1$s</string>
+    <string name="lan_sync_replace_uninstall_failed">Couldn\'t uninstall %1$s, so the new copy wasn\'t installed (it\'s in Received APKs). Reason: %2$s</string>
     <string name="lan_sync_note_same">Same version on both devices</string>
     <string name="lan_sync_note_older">The copy on this device is newer</string>
     <string name="lan_sync_apps_summary">Apps on %1$s: %2$d</string>
