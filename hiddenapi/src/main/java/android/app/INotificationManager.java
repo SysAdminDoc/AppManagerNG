@@ -79,4 +79,10 @@ public interface INotificationManager extends IInterface {
 
     @RequiresApi(Build.VERSION_CODES.O_MR1)
     List<ComponentName> getEnabledNotificationListeners(int userId) throws RemoteException;
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    boolean isNotificationPolicyAccessGrantedForPackage(String pkg) throws RemoteException;
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    void setNotificationPolicyAccessGranted(String pkg, boolean granted) throws RemoteException;
 }

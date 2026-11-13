@@ -23,9 +23,11 @@ import java.util.List;
  *       "review me" set.</li>
  * </ul>
  *
- * <p>{@link #matches(Filter, int, int)} is the JVM-unit-testable core (plain
- * ints, no Android types); {@link #apply(List, Filter)} is the trivial glue the
- * Activity calls.
+ * <p>{@link #matches(Filter, int, int, boolean)} is the JVM-unit-testable core
+ * (plain ints, no Android types); {@link #apply(List, Filter)} is the trivial
+ * glue the Activity calls. A row whose state App Manager can't read (special
+ * access without root or ADB, say) only shows under ALL and REQUESTED, since
+ * its granted count would be a guess.
  */
 public final class PermissionInspectorFilter {
 
@@ -42,13 +44,24 @@ public final class PermissionInspectorFilter {
     /** Whether a row with the given counts is kept under {@code filter}. */
     @VisibleForTesting
     public static boolean matches(@NonNull Filter filter, int requestedCount, int grantedCount) {
+        return matches(filter, requestedCount, grantedCount, true);
+    }
+
+    /**
+     * Whether a row with the given counts is kept under {@code filter}.
+     *
+     * @param stateKnown {@code false} when the granted count can't be trusted
+     */
+    @VisibleForTesting
+    public static boolean matches(@NonNull Filter filter, int requestedCount, int grantedCount,
+                                  boolean stateKnown) {
         switch (filter) {
             case REQUESTED:
                 return requestedCount > 0;
             case GRANTED:
-                return grantedCount > 0;
+                return stateKnown && grantedCount > 0;
             case NEEDS_ATTENTION:
-                return requestedCount > grantedCount;
+                return stateKnown && requestedCount > grantedCount;
             case ALL:
             default:
                 return true;
@@ -71,7 +84,7 @@ public final class PermissionInspectorFilter {
         }
         List<PermissionInspectorViewModel.Row> out = new ArrayList<>(rows.size());
         for (PermissionInspectorViewModel.Row row : rows) {
-            if (row != null && matches(filter, row.requestedCount, row.grantedCount)) {
+            if (row != null && matches(filter, row.requestedCount, row.grantedCount, row.stateKnown)) {
                 out.add(row);
             }
         }

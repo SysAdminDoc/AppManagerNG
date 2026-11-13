@@ -40,4 +40,15 @@ public class PermissionInspectorFilterTest {
         assertFalse(PermissionInspectorFilter.matches(Filter.NEEDS_ATTENTION, 3, 3));
         assertFalse(PermissionInspectorFilter.matches(Filter.NEEDS_ATTENTION, 0, 0));
     }
+
+    @Test
+    public void unreadableStateOnlyShowsUnderAllAndRequested() {
+        // Special access App Manager can't read reports 0 granted, which would look like
+        // "nothing granted, everything needs attention".
+        assertTrue(PermissionInspectorFilter.matches(Filter.ALL, 7, 0, false));
+        assertTrue(PermissionInspectorFilter.matches(Filter.REQUESTED, 7, 0, false));
+        assertFalse(PermissionInspectorFilter.matches(Filter.GRANTED, 7, 2, false));
+        assertFalse(PermissionInspectorFilter.matches(Filter.NEEDS_ATTENTION, 7, 0, false));
+        assertTrue(PermissionInspectorFilter.matches(Filter.NEEDS_ATTENTION, 7, 0, true));
+    }
 }

@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.permissions;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -28,14 +29,20 @@ import io.github.muntashirakon.widget.RecyclerView;
 
 /**
  * Drilldown screen: every installed app that requests any permission in the
- * selected group, with per-app toggles and guarded bulk actions.
+ * selected group, with per-app toggles and guarded bulk actions. Opened with
+ * {@link #EXTRA_SPECIAL_ID} instead, it lists the apps a special app access
+ * entry applies to, with a switch where App Manager can change it and a
+ * Settings shortcut where it can't.
  */
 public class PermissionAppsActivity extends BaseActivity {
     public static final String EXTRA_GROUP_ID = "group_id";
+    public static final String EXTRA_SPECIAL_ID = "special_id";
 
     private PermissionAppsViewModel mViewModel;
     private PermissionAppsAdapter mAdapter;
     private PermissionGroupCatalog.Group mGroup;
+    @Nullable
+    private SpecialAccessCatalog.Entry mSpecial;
     private LinearProgressIndicator mProgress;
     private MaterialTextView mPermissionGroupSummary;
     private MaterialTextView mPermissionAppsSummary;
@@ -56,10 +63,15 @@ public class PermissionAppsActivity extends BaseActivity {
         mGroup = groupId != null
                 ? PermissionGroupCatalog.requireById(groupId)
                 : null;
-        if (mGroup == null) {
+        mSpecial = mGroup == null
+                ? SpecialAccessCatalog.findById(getIntent().getStringExtra(EXTRA_SPECIAL_ID))
+                : null;
+        if (mGroup == null && mSpecial == null) {
             finish();
             return;
         }
+        int labelRes = mGroup != null ? mGroup.labelRes : mSpecial.labelRes;
+        int summaryRes = mGroup != null ? mGroup.summaryRes : mSpecial.summaryRes;
 
         setContentView(R.layout.activity_permission_apps);
         MaterialToolbar toolbar = findViewById(R.id.toolbar);
@@ -67,22 +79,22 @@ public class PermissionAppsActivity extends BaseActivity {
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
-            actionBar.setTitle(mGroup.labelRes);
+            actionBar.setTitle(labelRes);
         }
 
         mProgress = findViewById(R.id.progress_linear);
         mProgress.setVisibilityAfterHide(View.GONE);
         mPermissionGroupSummary = findViewById(R.id.permission_group_summary);
         mPermissionAppsSummary = findViewById(R.id.permission_apps_summary);
-        mPermissionGroupSummary.setText(mGroup.summaryRes);
+        mPermissionGroupSummary.setText(summaryRes);
 
         mEmptyState = findViewById(android.R.id.empty);
         mEmptyTitle = mEmptyState.findViewById(R.id.empty_state_title);
         mEmptySummary = mEmptyState.findViewById(R.id.empty_state_summary);
         mEmptyAction = mEmptyState.findViewById(R.id.empty_state_action);
         mEmptyTitle.setText(R.string.permission_inspector_empty_title);
-        mEmptySummary.setText(getString(R.string.permission_inspector_no_apps,
-                getString(mGroup.labelRes)));
+        mEmptySummary.setText(getString(mGroup != null ? R.string.permission_inspector_no_apps
+                : R.string.special_access_no_apps, getString(labelRes)));
         mEmptyAction.setText(R.string.refresh);
         mEmptyAction.setIconResource(R.drawable.ic_refresh);
         mEmptyAction.setVisibility(View.VISIBLE);
@@ -94,10 +106,15 @@ public class PermissionAppsActivity extends BaseActivity {
         recycler.setLayoutManager(new LinearLayoutManager(this));
         mAdapter = new PermissionAppsAdapter(row -> mViewModel.togglePermission(row),
                 row -> mViewModel.referenceAction(row), this::openSettings);
+        if (mSpecial != null) {
+            mAdapter.setStatusLabels(mSpecial.grantedRes, mSpecial.deniedRes);
+            mAdapter.setReferencesEnabled(false);
+        }
         recycler.setAdapter(mAdapter);
 
         mViewModel = new ViewModelProvider(this).get(PermissionAppsViewModel.class);
-        mViewModel.setGroup(mGroup);
+        if (mGroup != null) mViewModel.setGroup(mGroup);
+        else mViewModel.setSpecial(mSpecial);
         bindFilterChips();
         mViewModel.getRows().observe(this, rows -> {
             mRows = rows;
@@ -136,8 +153,9 @@ public class PermissionAppsActivity extends BaseActivity {
     }
 
     private void openSettings(@NonNull PermissionAppsViewModel.AppRow row) {
-        if (PermissionSettingsLauncher.launch(this,
-                PermissionSettingsLauncher.candidates(row.packageName, row.permissionNames))) {
+        List<Intent> candidates = row.settingsIntents != null ? row.settingsIntents
+                : PermissionSettingsLauncher.candidates(row.packageName, row.permissionNames);
+        if (PermissionSettingsLauncher.launch(this, candidates)) {
             mReloadOnResume = true;
         } else {
             Toast.makeText(this, R.string.permission_settings_unavailable, Toast.LENGTH_LONG).show();
@@ -157,6 +175,11 @@ public class PermissionAppsActivity extends BaseActivity {
         getMenuInflater().inflate(R.menu.activity_permission_apps_actions, menu);
         mRevokeAllMenu = menu.findItem(R.id.action_revoke_all);
         mGrantAllMenu = menu.findItem(R.id.action_grant_all);
+        // Bulk changes stay with runtime permissions, special access is one app at a time
+        mRevokeAllMenu.setVisible(mGroup != null);
+        mGrantAllMenu.setVisible(mGroup != null);
+        MenuItem info = menu.findItem(R.id.action_perm_inspector_info);
+        if (info != null) info.setVisible(mGroup != null);
         updateMenuState();
         return true;
     }
@@ -210,9 +233,16 @@ public class PermissionAppsActivity extends BaseActivity {
         if (mPermissionAppsSummary == null || rows == null) return;
         int granted = 0;
         int editable = 0;
+        boolean known = true;
         for (PermissionAppsViewModel.AppRow row : rows) {
             if (row.anyGranted) granted++;
             if (row.anyModifiable) editable++;
+            if (!row.stateKnown) known = false;
+        }
+        if (!known) {
+            // A granted count would only cover the apps Android told us about
+            mPermissionAppsSummary.setText(getString(R.string.perm_inspector_count_unknown_fmt, rows.size()));
+            return;
         }
         mPermissionAppsSummary.setText(getString(R.string.perm_apps_summary_stats,
                 rows.size(), granted, editable));
