@@ -285,6 +285,12 @@ public class ToastHistoryTest {
 
         @NonNull
         @Override
+        public List<ToastEntry> getNewest(int limit) {
+            return mReal.getNewest(limit);
+        }
+
+        @NonNull
+        @Override
         public List<ToastEntry> getByPackage(@NonNull String packageName) {
             return mReal.getByPackage(packageName);
         }

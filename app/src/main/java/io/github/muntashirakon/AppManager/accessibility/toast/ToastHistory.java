@@ -61,9 +61,11 @@ public final class ToastHistory {
                     ThreadPoolExecutor worker = new ThreadPoolExecutor(1, 1, 30, TimeUnit.SECONDS,
                             new LinkedBlockingQueue<>());
                     worker.allowCoreThreadTimeOut(true);
-                    instance = new ToastHistory(ToastHistoryDb.open(appContext).dao(), worker,
+                    ToastHistory created = new ToastHistory(ToastHistoryDb.open(appContext).dao(), worker,
                             packageName -> resolveLabel(appContext.getPackageManager(), packageName),
                             System::currentTimeMillis);
+                    created.setAfterChange(() -> ToastShadeNotification.update(appContext, created));
+                    instance = created;
                     sInstance = instance;
                 }
             }
@@ -85,6 +87,9 @@ public final class ToastHistory {
     @NonNull
     private final LongSupplier mClock;
     private final MutableLiveData<Long> mChanges = new MutableLiveData<>();
+    /** Runs on the worker after every change, to keep the notification in the shade current. */
+    @Nullable
+    private volatile Runnable mAfterChange;
     /** Touched on the worker only. Tells the user once per run of failures instead of once per toast. */
     private boolean mSaveFailing;
 
@@ -95,6 +100,17 @@ public final class ToastHistory {
         mWorker = worker;
         mLabels = labels;
         mClock = clock;
+    }
+
+    @VisibleForTesting
+    void setAfterChange(@Nullable Runnable afterChange) {
+        mAfterChange = afterChange;
+    }
+
+    /** Brings the notification in the shade in line with the switches, after one of them changed. */
+    @AnyThread
+    public void refreshShade() {
+        mWorker.execute(this::afterChange);
     }
 
     /** Changes each time the saved toasts do. */
@@ -112,6 +128,7 @@ public final class ToastHistory {
                         withoutAppName(text, label)), cutoffMillis(), MAX_ENTRIES);
                 mSaveFailing = false;
                 announceChange();
+                afterChange();
             } catch (SQLException e) {
                 Log.w(TAG, "Could not save a toast.", e);
                 if (!mSaveFailing) {
@@ -135,6 +152,7 @@ public final class ToastHistory {
             try {
                 removed = mDao.takeAll();
                 announceChange();
+                afterChange();
             } catch (SQLException e) {
                 Log.w(TAG, "Could not clear the toast history.", e);
                 removed = null;
@@ -150,6 +168,7 @@ public final class ToastHistory {
             try {
                 mDao.restoreAndPrune(entries, cutoffMillis(), MAX_ENTRIES);
                 announceChange();
+                afterChange();
             } catch (SQLException e) {
                 Log.w(TAG, "Could not restore the toast history.", e);
                 ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(R.string.toast_history_save_failed));
@@ -162,6 +181,13 @@ public final class ToastHistory {
     @NonNull
     public List<ToastEntry> readAll() {
         return mDao.getAll();
+    }
+
+    /** @return Up to that many of the newest toasts, newest first. */
+    @WorkerThread
+    @NonNull
+    public List<ToastEntry> readNewest(int limit) {
+        return mDao.getNewest(limit);
     }
 
     /** @return One app's toasts, newest first. */
@@ -177,6 +203,13 @@ public final class ToastHistory {
 
     private void announceChange() {
         mChanges.postValue(System.nanoTime());
+    }
+
+    private void afterChange() {
+        Runnable afterChange = mAfterChange;
+        if (afterChange != null) {
+            afterChange.run();
+        }
     }
 
     @NonNull

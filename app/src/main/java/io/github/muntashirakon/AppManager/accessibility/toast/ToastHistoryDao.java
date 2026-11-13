@@ -25,6 +25,11 @@ public abstract class ToastHistoryDao {
     @Query("SELECT * FROM toast_history ORDER BY timestamp_millis DESC, id DESC")
     public abstract List<ToastEntry> getAll();
 
+    /** @return Up to {@code limit} toasts, newest first. */
+    @NonNull
+    @Query("SELECT * FROM toast_history ORDER BY timestamp_millis DESC, id DESC LIMIT :limit")
+    public abstract List<ToastEntry> getNewest(int limit);
+
     /** @return One app's toasts, newest first. */
     @NonNull
     @Query("SELECT * FROM toast_history WHERE package_name = :packageName ORDER BY timestamp_millis DESC, id DESC")
