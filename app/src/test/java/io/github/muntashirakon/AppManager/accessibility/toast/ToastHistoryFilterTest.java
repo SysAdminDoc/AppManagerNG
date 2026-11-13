@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.accessibility.toast;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import androidx.annotation.NonNull;
@@ -17,6 +18,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
+
+import io.github.muntashirakon.AppManager.misc.TextQuery;
 
 public class ToastHistoryFilterTest {
     private static final String ONE = "com.example.one";
@@ -72,6 +75,28 @@ public class ToastHistoryFilterTest {
     public void aFilterGoesWhenItsAppHasNoToastsLeft() {
         assertNull(ToastHistoryFilter.keepIfPresent(ONE, Collections.emptyList()));
         assertNull(ToastHistoryFilter.keepIfPresent(null, ToastHistoryFilter.apps(mEntries)));
+    }
+
+    @Test
+    public void searchMatchesTheTextTheAppNameOrThePackageAndKeepsTheOrder() {
+        List<ToastEntry> entries = Arrays.asList(
+                new ToastEntry(3L, TWO, "Camera", "Photo saved"),
+                new ToastEntry(2L, ONE, "Saver", "Battery low"),
+                new ToastEntry(1L, "org.saved.app", "Notes", "Synced"));
+
+        List<ToastEntry> found = ToastHistoryFilter.search(entries, TextQuery.of("saved", false));
+        assertEquals(2, found.size());
+        assertEquals(3L, found.get(0).timestampMillis);
+        assertEquals(1L, found.get(1).timestampMillis);
+
+        assertEquals(1, ToastHistoryFilter.search(entries, TextQuery.of("SAVER", false)).size());
+        assertEquals(1, ToastHistoryFilter.search(entries, TextQuery.of("example\\.one$", true)).size());
+    }
+
+    @Test
+    public void anEmptySearchKeepsEverythingAndABrokenOneKeepsNothing() {
+        assertSame(mEntries, ToastHistoryFilter.search(mEntries, TextQuery.empty()));
+        assertTrue(ToastHistoryFilter.search(mEntries, TextQuery.of("[", true)).isEmpty());
     }
 
     @Test

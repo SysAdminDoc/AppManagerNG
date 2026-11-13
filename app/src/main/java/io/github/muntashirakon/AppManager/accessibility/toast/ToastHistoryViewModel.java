@@ -25,6 +25,7 @@ import java.util.concurrent.Executors;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.misc.TextQuery;
 import io.github.muntashirakon.AppManager.utils.ClipboardUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -42,14 +43,19 @@ public class ToastHistoryViewModel extends AndroidViewModel {
         public final Map<String, ApplicationInfo> appInfos;
         @Nullable
         public final String filterPackage;
+        /** The search that was applied. One that isn't valid hides every row, and the screen says why. */
+        @NonNull
+        public final TextQuery query;
         public final int total;
 
         State(@NonNull List<ToastEntry> visible, @NonNull List<ToastHistoryFilter.AppChoice> apps,
-              @NonNull Map<String, ApplicationInfo> appInfos, @Nullable String filterPackage, int total) {
+              @NonNull Map<String, ApplicationInfo> appInfos, @Nullable String filterPackage,
+              @NonNull TextQuery query, int total) {
             this.visible = visible;
             this.apps = apps;
             this.appInfos = appInfos;
             this.filterPackage = filterPackage;
+            this.query = query;
             this.total = total;
         }
     }
@@ -77,6 +83,13 @@ public class ToastHistoryViewModel extends AndroidViewModel {
     private final ToastHistory mHistory;
     @Nullable
     private volatile String mFilterPackage;
+    @NonNull
+    private volatile TextQuery mQuery = TextQuery.empty();
+    // The last read, before the search, so typing re-filters it instead of reading the database again. Worker only.
+    @Nullable
+    private List<ToastEntry> mUnsearched;
+    @Nullable
+    private State mLast;
 
     public ToastHistoryViewModel(@NonNull Application application) {
         super(application);
@@ -111,6 +124,17 @@ public class ToastHistoryViewModel extends AndroidViewModel {
     public void setFilterPackage(@Nullable String packageName) {
         mFilterPackage = packageName;
         load();
+    }
+
+    /** Narrows the list to toasts whose text, app name or package matches, on top of the app filter. */
+    public void setQuery(@Nullable String query, boolean regex) {
+        mQuery = TextQuery.of(query, regex);
+        mExecutor.execute(this::searchNow);
+    }
+
+    @NonNull
+    public TextQuery getQuery() {
+        return mQuery;
     }
 
     public void clear() {
@@ -158,7 +182,24 @@ public class ToastHistoryViewModel extends AndroidViewModel {
             }
         }
         List<ToastEntry> visible = filterPackage != null ? mHistory.readByPackage(filterPackage) : all;
-        mState.postValue(new State(visible, apps, appInfos, filterPackage, all.size()));
+        TextQuery query = mQuery;
+        mUnsearched = visible;
+        mLast = new State(ToastHistoryFilter.search(visible, query), apps, appInfos, filterPackage, query, all.size());
+        mState.postValue(mLast);
+    }
+
+    @WorkerThread
+    private void searchNow() {
+        State last = mLast;
+        List<ToastEntry> unsearched = mUnsearched;
+        if (last == null || unsearched == null) {
+            loadNow();
+            return;
+        }
+        TextQuery query = mQuery;
+        mLast = new State(ToastHistoryFilter.search(unsearched, query), last.apps, last.appInfos, last.filterPackage,
+                query, last.total);
+        mState.postValue(mLast);
     }
 
     @SuppressLint("WrongConstant")
