@@ -4647,9 +4647,7 @@ Components removed: %8$s</string>
     <string name="special_access_full_screen_summary">Apps that can take over the screen for alerts such as incoming calls and alarms.</string>
     <string name="special_access_accessibility">Accessibility services</string>
     <string name="special_access_accessibility_summary">Apps that can read the screen and act for you. Android only lets you turn these on in its accessibility settings.</string>
-    <string name="special_access_notification_listener">Notification access</string>
     <string name="special_access_notification_listener_summary">Apps that can read every notification and act on it.</string>
-    <string name="special_access_battery">Battery optimization</string>
     <string name="special_access_battery_summary">Apps that skip battery optimization, so Android lets them stay awake in the background.</string>
     <string name="special_access_background">Background activity</string>
     <string name="special_access_background_summary">Apps that can keep running when you aren\'t using them.</string>
@@ -4665,7 +4663,6 @@ Components removed: %8$s</string>
     <string name="special_access_all_files_summary">Apps that can read and change every file on your storage.</string>
     <string name="special_access_manage_media">Media management</string>
     <string name="special_access_manage_media_summary">Apps that can edit or delete your photos and videos without asking each time.</string>
-    <string name="special_access_usage">Usage access</string>
     <string name="special_access_usage_summary">Apps that can see which apps you use and how often.</string>
     <string name="special_access_dnd">Do Not Disturb access</string>
     <string name="special_access_dnd_summary">Apps that can turn Do Not Disturb on or off and change its rules.</string>
@@ -4677,17 +4674,16 @@ Components removed: %8$s</string>
     <string name="special_access_change_failed">Couldn\'t change this. Try it in Android\'s settings instead.</string>
     <string name="perm_app_status_allowed">Allowed</string>
     <string name="perm_app_status_not_allowed">Not allowed</string>
-    <string name="perm_app_status_unknown">Unknown</string>
-    <string name="perm_app_status_on">On</string>
-    <string name="perm_app_status_off">Off</string>
     <string name="perm_app_status_not_optimized">Not optimized</string>
-    <string name="perm_app_status_optimized">Optimized</string>
     <string name="perm_app_status_restricted">Restricted</string>
     <string name="perm_app_status_blocked">Blocked</string>
     <string name="perm_app_status_active">Active</string>
     <string name="perm_app_status_not_active">Not active</string>
     <string name="perm_inspector_count_unknown_short_fmt">\?/%1$d</string>
-    <string name="perm_inspector_count_unknown_fmt">%1$d apps. App Manager can\'t read this with its current access.</string>
+    <plurals name="perm_inspector_count_unknown">
+        <item quantity="one">%1$d app. App Manager can\'t read this with its current access.</item>
+        <item quantity="other">%1$d apps. App Manager can\'t read this with its current access.</item>
+    </plurals>
     <!-- Launcher app shortcuts (long-press the AppManagerNG icon). ROADMAP iter-22 / iter-20 T8 [S252]. -->
     <string name="shortcut_one_click_ops_short">1-Click Ops</string>
     <string name="shortcut_one_click_ops_long">Open 1-Click Ops</string>

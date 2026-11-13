@@ -437,7 +437,7 @@
         errorLine2="                   ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/permissions/PermissionAppsActivity.java"
-            line="140"
+            line="174"
             column="20"/>
     </issue>
 
@@ -448,7 +448,7 @@
         errorLine2="                   ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/permissions/PermissionInspectorActivity.java"
-            line="118"
+            line="123"
             column="20"/>
     </issue>
 
@@ -1382,7 +1382,7 @@
         errorLine2="               ^">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsPermissionsFragment.java"
-            line="267"
+            line="268"
             column="16"/>
     </issue>
 
@@ -9412,7 +9412,7 @@
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/permissions/PermissionAppsAdapter.java"
-            line="45"
+            line="57"
             column="9"/>
     </issue>
 
@@ -9423,7 +9423,7 @@
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/permissions/PermissionAppsAdapter.java"
-            line="51"
+            line="78"
             column="9"/>
     </issue>
 
@@ -9434,7 +9434,7 @@
         errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/permissions/PermissionInspectorAdapter.java"
-            line="35"
+            line="49"
             column="9"/>
     </issue>
 
@@ -12014,7 +12014,7 @@
             message="Duplicates value in `uninstall`"/>
         <location
             file="src/main/res/values-ru/strings.xml"
-            line="3750"
+            line="3748"
             column="5"
             message="Duplicates value in `uninstall`"/>
     </issue>
@@ -12360,7 +12360,7 @@
             column="5"/>
         <location
             file="src/main/res/values-ru/strings.xml"
-            line="3776"
+            line="3774"
             column="5"
             message="Duplicates value in `launch`"/>
     </issue>
@@ -20078,7 +20078,7 @@
             column="5"/>
         <location
             file="src/main/res/values-ru/strings.xml"
-            line="3772"
+            line="3770"
             column="5"
             message="Duplicates value in `go`"/>
     </issue>
@@ -20131,7 +20131,7 @@
             message="Duplicates value in `edit`"/>
         <location
             file="src/main/res/values-ru/strings.xml"
-            line="3747"
+            line="3745"
             column="5"
             message="Duplicates value in `edit`"/>
     </issue>
@@ -20551,7 +20551,7 @@
             column="5"/>
         <location
             file="src/main/res/values-ru/strings.xml"
-            line="3773"
+            line="3771"
             column="5"
             message="Duplicates value in `discard`"/>
     </issue>
@@ -21174,7 +21174,7 @@
             message="Duplicates value in `edit`"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4670"
+            line="4724"
             column="5"
             message="Duplicates value in `edit`"/>
     </issue>
@@ -21371,7 +21371,7 @@
             column="5"/>
         <location
             file="src/main/res/values-ru/strings.xml"
-            line="3789"
+            line="3787"
             column="5"
             message="Duplicates value in `disable`"/>
     </issue>
@@ -21776,7 +21776,7 @@
             column="5"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4673"
+            line="4727"
             column="5"
             message="Duplicates value in `delete`"/>
     </issue>
@@ -24517,7 +24517,7 @@
             column="5"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4636"
+            line="4690"
             column="5"
             message="Duplicates value in `running`"/>
     </issue>
@@ -25354,7 +25354,7 @@
             column="5"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4634"
+            line="4688"
             column="5"
             message="Duplicates value in `one_click_ops` (case varies, but you can use `android:inputType` or `android:capitalize` in the presentation)"/>
     </issue>
@@ -26202,7 +26202,7 @@
             column="5"/>
         <location
             file="src/main/res/values-ru/strings.xml"
-            line="3734"
+            line="3732"
             column="5"
             message="Duplicates value in `tag_name`"/>
     </issue>
@@ -27000,7 +27000,7 @@
             column="5"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4657"
+            line="4711"
             column="5"
             message="Duplicates value in `tag_name`"/>
     </issue>
@@ -27016,7 +27016,7 @@
             column="5"/>
         <location
             file="src/main/res/values-ru/strings.xml"
-            line="3698"
+            line="3696"
             column="5"
             message="Duplicates value in `default_app_role_phone`"/>
     </issue>
@@ -27719,7 +27719,7 @@
             message="Duplicates value in `apps`"/>
         <location
             file="src/main/res/values-ru/strings.xml"
-            line="3769"
+            line="3767"
             column="5"
             message="Duplicates value in `apps`"/>
     </issue>
@@ -28043,7 +28043,7 @@
             column="5"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4619"
+            line="4620"
             column="5"
             message="Duplicates value in `default_app_role_phone`"/>
     </issue>
@@ -28075,7 +28075,7 @@
             column="5"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4617"
+            line="4618"
             column="5"
             message="Duplicates value in `default_app_role_sms`"/>
     </issue>
@@ -28107,7 +28107,7 @@
             column="5"/>
         <location
             file="src/main/res/values-ru/strings.xml"
-            line="3738"
+            line="3736"
             column="5"
             message="Duplicates value in `encryption`"/>
     </issue>
@@ -28144,7 +28144,7 @@
             message="Duplicates value in `none`"/>
         <location
             file="src/main/res/values-ru/strings.xml"
-            line="3760"
+            line="3758"
             column="5"
             message="Duplicates value in `none`"/>
     </issue>
@@ -28909,7 +28909,7 @@
             message="Duplicates value in `apps`"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4699"
+            line="4753"
             column="5"
             message="Duplicates value in `apps`"/>
     </issue>
@@ -29169,7 +29169,7 @@
             column="5"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4661"
+            line="4715"
             column="5"
             message="Duplicates value in `encryption`"/>
     </issue>
@@ -29211,7 +29211,7 @@
             column="5"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4685"
+            line="4739"
             column="5"
             message="Duplicates value in `aes`"/>
     </issue>
@@ -29227,7 +29227,7 @@
             column="5"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4686"
+            line="4740"
             column="5"
             message="Duplicates value in `rsa`"/>
     </issue>
@@ -29280,7 +29280,7 @@
             message="Duplicates value in `profile_trigger_recovery_continue`"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4692"
+            line="4746"
             column="5"
             message="Duplicates value in `profile_trigger_recovery_continue`"/>
     </issue>
@@ -29601,7 +29601,7 @@
 
     <issue
         id="DuplicateStrings"
-        message="Duplicate string value `runtime permissions`, used in `backup_extras_item_permissions` and `privilege_health_capability_feature_runtime_permissions`"
+        message="Duplicate string value `Runtime permissions`, used in `backup_extras_item_permissions`, `perm_section_runtime` and `privilege_health_capability_feature_runtime_permissions`. Use `android:inputType` or `android:capitalize` to treat these as the same and avoid string duplication."
         errorLine1="    &lt;string name=&quot;backup_extras_item_permissions&quot;>runtime permissions&lt;/string>"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -29613,6 +29613,11 @@
             line="2817"
             column="5"
             message="Duplicates value in `backup_extras_item_permissions`"/>
+        <location
+            file="src/main/res/values/strings.xml"
+            line="4634"
+            column="5"
+            message="Duplicates value in `backup_extras_item_permissions` (case varies, but you can use `android:inputType` or `android:capitalize` in the presentation)"/>
     </issue>
 
     <issue
@@ -29722,7 +29727,7 @@
             column="5"/>
         <location
             file="src/main/res/values-ru/strings.xml"
-            line="3700"
+            line="3698"
             column="5"
             message="Duplicates value in `storage`"/>
     </issue>
@@ -29738,7 +29743,7 @@
             column="5"/>
         <location
             file="src/main/res/values-ru/strings.xml"
-            line="3792"
+            line="3790"
             column="5"
             message="Duplicates value in `adb_pair`"/>
     </issue>
@@ -29919,7 +29924,7 @@
             column="5"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4671"
+            line="4725"
             column="5"
             message="Duplicates value in `notification_filter_rule_move_up`"/>
     </issue>
@@ -29935,7 +29940,7 @@
             column="5"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4672"
+            line="4726"
             column="5"
             message="Duplicates value in `notification_filter_rule_move_down`"/>
     </issue>
@@ -29951,7 +29956,7 @@
             column="5"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4772"
+            line="4826"
             column="5"
             message="Duplicates value in `notification_filter_rule_deleted`"/>
     </issue>
@@ -30036,7 +30041,7 @@
             column="5"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4684"
+            line="4738"
             column="5"
             message="Duplicates value in `no_encryption`"/>
     </issue>
@@ -30169,7 +30174,7 @@
             column="5"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4722"
+            line="4776"
             column="5"
             message="Duplicates value in `adb_connect`"/>
     </issue>
@@ -30281,7 +30286,7 @@
             column="5"/>
         <location
             file="src/main/res/values-ru/strings.xml"
-            line="3693"
+            line="3691"
             column="5"
             message="Duplicates value in `tracker_category_location`"/>
     </issue>
@@ -30400,7 +30405,7 @@
 
     <issue
         id="DuplicateStrings"
-        message="Duplicate string value `active`, used in `mode_of_op_capability_status_active` and `standby_bucket_active`. Use `android:inputType` or `android:capitalize` to treat these as the same and avoid string duplication."
+        message="Duplicate string value `Active`, used in `mode_of_op_capability_status_active`, `perm_app_status_active` and `standby_bucket_active`. Use `android:inputType` or `android:capitalize` to treat these as the same and avoid string duplication."
         errorLine1="    &lt;string name=&quot;standby_bucket_active&quot;>Active&lt;/string>"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
@@ -30412,6 +30417,27 @@
             line="2798"
             column="5"
             message="Duplicates value in `standby_bucket_active` (case varies, but you can use `android:inputType` or `android:capitalize` in the presentation)"/>
+        <location
+            file="src/main/res/values/strings.xml"
+            line="4680"
+            column="5"
+            message="Duplicates value in `standby_bucket_active` (case varies, but you can use `android:inputType` or `android:capitalize` in the presentation)"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Restricted`, used in `perm_app_status_restricted` and `standby_bucket_restricted`"
+        errorLine1="    &lt;string name=&quot;standby_bucket_restricted&quot;>Restricted&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="2584"
+            column="5"/>
+        <location
+            file="src/main/res/values/strings.xml"
+            line="4678"
+            column="5"
+            message="Duplicates value in `standby_bucket_restricted`"/>
     </issue>
 
     <issue
@@ -30531,7 +30557,7 @@
             message="Duplicates value in `pref_glossary_finder_title`"/>
         <location
             file="src/main/res/values-ru/strings.xml"
-            line="3715"
+            line="3713"
             column="5"
             message="Duplicates value in `pref_glossary_finder_title`"/>
     </issue>
@@ -30648,7 +30674,7 @@
             message="Duplicates value in `action_continue`"/>
         <location
             file="src/main/res/values-ru/strings.xml"
-            line="3764"
+            line="3762"
             column="5"
             message="Duplicates value in `action_continue`"/>
     </issue>
@@ -30731,6 +30757,22 @@
             line="2903"
             column="5"
             message="Duplicates value in `mode_of_op_capability_status_permission_required`"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `Not active`, used in `mode_of_op_capability_status_inactive` and `perm_app_status_not_active`. Use `android:inputType` or `android:capitalize` to treat these as the same and avoid string duplication."
+        errorLine1="    &lt;string name=&quot;mode_of_op_capability_status_inactive&quot;>not active&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="2800"
+            column="5"/>
+        <location
+            file="src/main/res/values/strings.xml"
+            line="4681"
+            column="5"
+            message="Duplicates value in `mode_of_op_capability_status_inactive` (case varies, but you can use `android:inputType` or `android:capitalize` in the presentation)"/>
     </issue>
 
     <issue
@@ -30840,7 +30882,7 @@
             column="5"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4613"
+            line="4614"
             column="5"
             message="Duplicates value in `tracker_category_location`"/>
     </issue>
@@ -30989,7 +31031,7 @@
             message="Duplicates value in `pref_glossary_finder_title`"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4638"
+            line="4692"
             column="5"
             message="Duplicates value in `pref_glossary_finder_title`"/>
     </issue>
@@ -31074,7 +31116,7 @@
             column="5"/>
         <location
             file="src/main/res/values-ru/strings.xml"
-            line="3758"
+            line="3756"
             column="5"
             message="Duplicates value in `backup_retention_unlimited` (case varies, but you can use `android:inputType` or `android:capitalize` in the presentation)"/>
     </issue>
@@ -31225,39 +31267,34 @@
 
     <issue
         id="DuplicateStrings"
-        message="Duplicate string value `эталон закреплён`, used in `perm_app_status_reference_pinned`, `permission_reference_pinned` and `permission_reference_status_pinned`. Use `android:inputType` or `android:capitalize` to treat these as the same and avoid string duplication."
-        errorLine1="    &lt;string name=&quot;perm_app_status_reference_pinned&quot;>Эталон закреплён&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values-ru/strings.xml"
-            line="3678"
-            column="5"/>
-        <location
-            file="src/main/res/values-ru/strings.xml"
-            line="3682"
-            column="5"
-            message="Duplicates value in `perm_app_status_reference_pinned`"/>
-        <location
-            file="src/main/res/values-ru/strings.xml"
-            line="3684"
-            column="5"
-            message="Duplicates value in `perm_app_status_reference_pinned` (case varies, but you can use `android:inputType` or `android:capitalize` in the presentation)"/>
-    </issue>
-
-    <issue
-        id="DuplicateStrings"
         message="Duplicate string value `отклонение от эталона`, used in `perm_app_status_reference_drift` and `permission_reference_drift`. Use `android:inputType` or `android:capitalize` to treat these as the same and avoid string duplication."
         errorLine1="    &lt;string name=&quot;perm_app_status_reference_drift&quot;>Отклонение от эталона&lt;/string>"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values-ru/strings.xml"
-            line="3679"
+            line="3677"
             column="5"/>
         <location
             file="src/main/res/values-ru/strings.xml"
-            line="3685"
+            line="3683"
             column="5"
             message="Duplicates value in `perm_app_status_reference_drift` (case varies, but you can use `android:inputType` or `android:capitalize` in the presentation)"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `эталон закреплён`, used in `permission_reference_pinned` and `permission_reference_status_pinned`. Use `android:inputType` or `android:capitalize` to treat these as the same and avoid string duplication."
+        errorLine1="    &lt;string name=&quot;permission_reference_pinned&quot;>Эталон закреплён&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-ru/strings.xml"
+            line="3680"
+            column="5"/>
+        <location
+            file="src/main/res/values-ru/strings.xml"
+            line="3682"
+            column="5"
+            message="Duplicates value in `permission_reference_pinned` (case varies, but you can use `android:inputType` or `android:capitalize` in the presentation)"/>
     </issue>
 
     <issue
@@ -31299,11 +31336,11 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values-ru/strings.xml"
-            line="3778"
+            line="3776"
             column="5"/>
         <location
             file="src/main/res/values-ru/strings.xml"
-            line="3788"
+            line="3786"
             column="5"
             message="Duplicates value in `lan_sync_share_connected`"/>
     </issue>
@@ -31399,7 +31436,7 @@
             column="5"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4681"
+            line="4735"
             column="5"
             message="Duplicates value in `backup_retention_unlimited` (case varies, but you can use `android:inputType` or `android:capitalize` in the presentation)"/>
     </issue>
@@ -31486,39 +31523,34 @@
 
     <issue
         id="DuplicateStrings"
-        message="Duplicate string value `reference pinned`, used in `perm_app_status_reference_pinned`, `permission_reference_pinned` and `permission_reference_status_pinned`. Use `android:inputType` or `android:capitalize` to treat these as the same and avoid string duplication."
-        errorLine1="    &lt;string name=&quot;perm_app_status_reference_pinned&quot;>Reference pinned&lt;/string>"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings.xml"
-            line="4585"
-            column="5"/>
-        <location
-            file="src/main/res/values/strings.xml"
-            line="4589"
-            column="5"
-            message="Duplicates value in `perm_app_status_reference_pinned`"/>
-        <location
-            file="src/main/res/values/strings.xml"
-            line="4591"
-            column="5"
-            message="Duplicates value in `perm_app_status_reference_pinned` (case varies, but you can use `android:inputType` or `android:capitalize` in the presentation)"/>
-    </issue>
-
-    <issue
-        id="DuplicateStrings"
         message="Duplicate string value `reference drift`, used in `perm_app_status_reference_drift` and `permission_reference_drift`. Use `android:inputType` or `android:capitalize` to treat these as the same and avoid string duplication."
         errorLine1="    &lt;string name=&quot;perm_app_status_reference_drift&quot;>Reference drift&lt;/string>"
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="4586"
+            line="4584"
             column="5"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4592"
+            line="4590"
             column="5"
             message="Duplicates value in `perm_app_status_reference_drift` (case varies, but you can use `android:inputType` or `android:capitalize` in the presentation)"/>
+    </issue>
+
+    <issue
+        id="DuplicateStrings"
+        message="Duplicate string value `reference pinned`, used in `permission_reference_pinned` and `permission_reference_status_pinned`. Use `android:inputType` or `android:capitalize` to treat these as the same and avoid string duplication."
+        errorLine1="    &lt;string name=&quot;permission_reference_pinned&quot;>Reference pinned&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="4587"
+            column="5"/>
+        <location
+            file="src/main/res/values/strings.xml"
+            line="4589"
+            column="5"
+            message="Duplicates value in `permission_reference_pinned` (case varies, but you can use `android:inputType` or `android:capitalize` in the presentation)"/>
     </issue>
 
     <issue
@@ -31528,11 +31560,11 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings.xml"
-            line="4708"
+            line="4762"
             column="5"/>
         <location
             file="src/main/res/values/strings.xml"
-            line="4718"
+            line="4772"
             column="5"
             message="Duplicates value in `lan_sync_share_connected`"/>
     </issue>
@@ -33582,7 +33614,7 @@
         errorLine2="                                                                   ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/struct/AppDetailsPermissionItem.java"
-            line="81"
+            line="89"
             column="68"/>
     </issue>
 
@@ -33593,7 +33625,7 @@
         errorLine2="                                     ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsPermissionsFragment.java"
-            line="339"
+            line="345"
             column="38"/>
     </issue>
 
@@ -33758,7 +33790,7 @@
         errorLine2="                                                    ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="1025"
+            line="1043"
             column="53"/>
     </issue>
 
@@ -33769,7 +33801,7 @@
         errorLine2="                                ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="1167"
+            line="1185"
             column="33"/>
     </issue>
 
@@ -33780,7 +33812,7 @@
         errorLine2="                                ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="1201"
+            line="1219"
             column="33"/>
     </issue>
 
@@ -33791,7 +33823,7 @@
         errorLine2="                                           ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="1231"
+            line="1249"
             column="44"/>
     </issue>
 
@@ -33802,7 +33834,7 @@
         errorLine2="                                               ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="1249"
+            line="1285"
             column="48"/>
     </issue>
 
@@ -33813,7 +33845,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="1392"
+            line="1428"
             column="12"/>
     </issue>
 
@@ -33824,7 +33856,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="1486"
+            line="1522"
             column="12"/>
     </issue>
 
@@ -33835,7 +33867,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="1501"
+            line="1537"
             column="12"/>
     </issue>
 
@@ -33846,7 +33878,7 @@
         errorLine2="                         ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="2012"
+            line="2048"
             column="26"/>
     </issue>
 
@@ -33857,7 +33889,7 @@
         errorLine2="                                  ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="2125"
+            line="2161"
             column="35"/>
     </issue>
 
@@ -33868,7 +33900,7 @@
         errorLine2="           ~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="2165"
+            line="2201"
             column="12"/>
     </issue>
 
@@ -33879,7 +33911,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="2424"
+            line="2460"
             column="12"/>
     </issue>
 
@@ -33890,7 +33922,7 @@
         errorLine2="                                        ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="2616"
+            line="2652"
             column="41"/>
     </issue>
 
@@ -43922,7 +43954,7 @@
         errorLine2="                             ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/apk/installer/PackageInstallerCompat.java"
-            line="1444"
+            line="1483"
             column="30"/>
     </issue>
 
@@ -44571,7 +44603,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/permissions/PermissionAppsViewModel.java"
-            line="95"
+            line="111"
             column="12"/>
     </issue>
 
@@ -44582,7 +44614,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/permissions/PermissionAppsViewModel.java"
-            line="96"
+            line="112"
             column="12"/>
     </issue>
 
@@ -44593,7 +44625,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/permissions/PermissionAppsViewModel.java"
-            line="97"
+            line="113"
             column="12"/>
     </issue>
 
@@ -44604,7 +44636,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/permissions/PermissionAppsViewModel.java"
-            line="98"
+            line="114"
             column="12"/>
     </issue>
 
@@ -44615,7 +44647,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/permissions/PermissionAppsViewModel.java"
-            line="100"
+            line="116"
             column="12"/>
     </issue>
 
@@ -44736,7 +44768,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/permissions/PermissionInspectorViewModel.java"
-            line="50"
+            line="94"
             column="12"/>
     </issue>
 
@@ -44747,7 +44779,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/permissions/PermissionInspectorViewModel.java"
-            line="51"
+            line="95"
             column="12"/>
     </issue>
 
@@ -47057,7 +47089,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/settings/SettingsActivity.java"
-            line="68"
+            line="67"
             column="12"/>
     </issue>
 
@@ -47068,7 +47100,7 @@
         errorLine2="                                   ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/settings/SettingsActivity.java"
-            line="90"
+            line="89"
             column="36"/>
     </issue>
 

@@ -1022,7 +1022,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
 
     @WorkerThread
     @GuardedBy("blockerLocker")
-    public boolean unpinPermissionReference(final AppDetailsPermissionItem permissionItem) {
+    public boolean unpinPermissionReference(@NonNull final AppDetailsPermissionItem permissionItem) {
         if (mExternalApk) return false;
         synchronized (mBlockerLocker) {
             waitForBlockerOrExit();
@@ -1264,7 +1264,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
 
     @WorkerThread
     @GuardedBy("blockerLocker")
-    public boolean unpinAppOpReference(final AppDetailsAppOpItem appOpItem) {
+    public boolean unpinAppOpReference(@NonNull final AppDetailsAppOpItem appOpItem) {
         if (mExternalApk) return false;
         synchronized (mBlockerLocker) {
             waitForBlockerOrExit();
