@@ -75,6 +75,7 @@
                     android:id="@+id/rule_app"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:selectAllOnFocus="true"
                     android:completionThreshold="1"
                     android:imeOptions="actionNext"
                     android:inputType="text"
