@@ -4763,4 +4763,9 @@ Components removed: %8$s</string>
     <string name="lan_sync_install_failed_title">Couldn\'t install %1$s</string>
     <string name="lan_sync_install_failed_try_system">Try Android\'s own installer, or save the APK to Downloads.</string>
     <string name="lan_sync_install_failed_try_save">Android\'s installer can\'t take split APKs. Save them to Downloads and open the .apks file with an installer that can.</string>
+    <string name="lan_sync_keep_screen_on">Keep screen on</string>
+    <string name="lan_sync_keep_screen_off">Off</string>
+    <string name="lan_sync_keep_screen_10_minutes">For 10 minutes</string>
+    <string name="lan_sync_keep_screen_30_minutes">For 30 minutes</string>
+    <string name="lan_sync_keep_screen_until_done">Until transfers finish</string>
 </resources>

@@ -8,4 +8,28 @@
         android:title="@string/received_apks_title"
         app:showAsAction="never" />
 
+    <item
+        android:id="@+id/action_keep_screen_on"
+        android:title="@string/lan_sync_keep_screen_on"
+        app:showAsAction="never">
+        <menu>
+            <group
+                android:id="@+id/group_keep_screen_on"
+                android:checkableBehavior="single">
+                <item
+                    android:id="@+id/keep_screen_off"
+                    android:title="@string/lan_sync_keep_screen_off" />
+                <item
+                    android:id="@+id/keep_screen_10_minutes"
+                    android:title="@string/lan_sync_keep_screen_10_minutes" />
+                <item
+                    android:id="@+id/keep_screen_30_minutes"
+                    android:title="@string/lan_sync_keep_screen_30_minutes" />
+                <item
+                    android:id="@+id/keep_screen_until_done"
+                    android:title="@string/lan_sync_keep_screen_until_done" />
+            </group>
+        </menu>
+    </item>
+
 </menu>

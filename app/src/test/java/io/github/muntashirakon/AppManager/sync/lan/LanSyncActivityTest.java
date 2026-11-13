@@ -21,7 +21,9 @@ import android.net.Uri;
 import android.net.nsd.NsdManager;
 import android.net.nsd.NsdServiceInfo;
 import android.os.Looper;
+import android.view.Menu;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -30,6 +32,7 @@ import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.test.core.app.ApplicationProvider;
 
+import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputEditText;
@@ -178,6 +181,49 @@ public class LanSyncActivityTest {
             MaterialSwitch share = mController.get().findViewById(R.id.share_switch);
             assertTrue(share.isChecked());
         }
+    }
+
+    @Test
+    public void theScreenStaysOnWhileSharingOrDownloadingAsLongAsTheSettingSays() throws Exception {
+        LanSyncActivity activity = mController.get();
+        LanSyncViewModel viewModel = new ViewModelProvider(activity).get(LanSyncViewModel.class);
+        MaterialSwitch share = activity.findViewById(R.id.share_switch);
+        shadowOf(Looper.getMainLooper()).idle();
+        Menu menu = ((MaterialToolbar) activity.findViewById(R.id.toolbar)).getMenu();
+        assertTrue("Until transfers finish is the default",
+                menu.findItem(R.id.keep_screen_until_done).isChecked());
+        assertFalse("Nothing running yet", keepsScreenOn(activity));
+
+        share.performClick();
+        waitFor(viewModel::getHost);
+        assertTrue("The screen going off would stop sharing", keepsScreenOn(activity));
+        share.performClick();
+        assertFalse("Sharing off lets the screen sleep again", keepsScreenOn(activity));
+
+        viewModel.setTask("Downloading");
+        assertTrue("A download holds it too", keepsScreenOn(activity));
+        viewModel.setTask(null);
+        assertFalse(keepsScreenOn(activity));
+
+        shadowOf(activity).clickMenuItem(R.id.keep_screen_10_minutes);
+        assertEquals(LanSyncSettings.SCREEN_ON_10_MINUTES, new LanSyncSettings(activity).getKeepScreenOn());
+        viewModel.setTask("Downloading");
+        assertTrue(keepsScreenOn(activity));
+        shadowOf(Looper.getMainLooper()).idleFor(9, TimeUnit.MINUTES);
+        assertTrue(keepsScreenOn(activity));
+        shadowOf(Looper.getMainLooper()).idleFor(1, TimeUnit.MINUTES);
+        assertFalse("Ten minutes are up, the download goes on", keepsScreenOn(activity));
+
+        shadowOf(activity).clickMenuItem(R.id.keep_screen_until_done);
+        assertTrue(keepsScreenOn(activity));
+        shadowOf(activity).clickMenuItem(R.id.keep_screen_off);
+        assertFalse(keepsScreenOn(activity));
+        assertEquals(LanSyncSettings.SCREEN_ON_OFF, new LanSyncSettings(activity).getKeepScreenOn());
+        viewModel.setTask(null);
+    }
+
+    private static boolean keepsScreenOn(@NonNull LanSyncActivity activity) {
+        return (activity.getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) != 0;
     }
 
     @Test

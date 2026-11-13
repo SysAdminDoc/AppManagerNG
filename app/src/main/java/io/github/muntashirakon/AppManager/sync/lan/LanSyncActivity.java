@@ -5,6 +5,8 @@ package io.github.muntashirakon.AppManager.sync.lan;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.text.Editable;
 import android.view.LayoutInflater;
@@ -12,6 +14,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
@@ -112,6 +115,11 @@ public class LanSyncActivity extends BaseActivity {
     private String mTask;
     @Nullable
     private PackageWatcher mPackageWatcher;
+    @Nullable
+    private LanSyncSettings mSettings;
+    private boolean mSharing;
+    private final Handler mScreenHandler = new Handler(Looper.getMainLooper());
+    private final Runnable mScreenRecheck = this::updateKeepScreenOn;
 
     @Override
     protected void onAuthenticated(@Nullable Bundle savedInstanceState) {
@@ -217,7 +225,11 @@ public class LanSyncActivity extends BaseActivity {
         mAdapter = new LanSyncAppsAdapter(row -> mViewModel.pull(row));
         recyclerView.setAdapter(mAdapter);
 
-        mViewModel.getSharing().observe(this, sharing -> setShareSwitch(Boolean.TRUE.equals(sharing)));
+        mViewModel.getSharing().observe(this, sharing -> {
+            mSharing = Boolean.TRUE.equals(sharing);
+            setShareSwitch(mSharing);
+            updateKeepScreenOn();
+        });
         mViewModel.getHostStatus().observe(this, status -> {
             if (status == null) {
                 mShareStatus.setText(R.string.lan_sync_share_summary);
@@ -234,6 +246,7 @@ public class LanSyncActivity extends BaseActivity {
             mTask = task;
             updateProgress();
             renderRows();
+            updateKeepScreenOn();
         });
         mViewModel.getMessage().observe(this, message -> {
             if (message != null) {
@@ -295,9 +308,24 @@ public class LanSyncActivity extends BaseActivity {
     }
 
     @Override
+    protected void onDestroy() {
+        mScreenHandler.removeCallbacks(mScreenRecheck);
+        super.onDestroy();
+    }
+
+    @Override
     public boolean onCreateOptionsMenu(@NonNull Menu menu) {
         getMenuInflater().inflate(R.menu.activity_lan_sync_actions, menu);
         return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(@NonNull Menu menu) {
+        MenuItem keepScreenOn = menu.findItem(screenOnItemFor(getSettings().getKeepScreenOn()));
+        if (keepScreenOn != null) {
+            keepScreenOn.setChecked(true);
+        }
+        return super.onPrepareOptionsMenu(menu);
     }
 
     @Override
@@ -307,8 +335,69 @@ public class LanSyncActivity extends BaseActivity {
             finish();
         } else if (id == R.id.action_received_apks) {
             startActivity(new Intent(this, ReceivedApksActivity.class));
+        } else if (screenOnModeFor(id) >= 0) {
+            item.setChecked(true);
+            getSettings().setKeepScreenOn(screenOnModeFor(id));
+            updateKeepScreenOn();
         } else return super.onOptionsItemSelected(item);
         return true;
+    }
+
+    @NonNull
+    private LanSyncSettings getSettings() {
+        if (mSettings == null) {
+            mSettings = new LanSyncSettings(this);
+        }
+        return mSettings;
+    }
+
+    private static int screenOnItemFor(int mode) {
+        switch (mode) {
+            case LanSyncSettings.SCREEN_ON_OFF:
+                return R.id.keep_screen_off;
+            case LanSyncSettings.SCREEN_ON_10_MINUTES:
+                return R.id.keep_screen_10_minutes;
+            case LanSyncSettings.SCREEN_ON_30_MINUTES:
+                return R.id.keep_screen_30_minutes;
+            case LanSyncSettings.SCREEN_ON_UNTIL_DONE:
+            default:
+                return R.id.keep_screen_until_done;
+        }
+    }
+
+    private static int screenOnModeFor(int itemId) {
+        if (itemId == R.id.keep_screen_off) {
+            return LanSyncSettings.SCREEN_ON_OFF;
+        } else if (itemId == R.id.keep_screen_10_minutes) {
+            return LanSyncSettings.SCREEN_ON_10_MINUTES;
+        } else if (itemId == R.id.keep_screen_30_minutes) {
+            return LanSyncSettings.SCREEN_ON_30_MINUTES;
+        } else if (itemId == R.id.keep_screen_until_done) {
+            return LanSyncSettings.SCREEN_ON_UNTIL_DONE;
+        }
+        return -1;
+    }
+
+    /**
+     * Sharing stops once the screen goes off, so the display stays on while sharing is on or a
+     * list or download is loading, as long as the setting allows.
+     */
+    private void updateKeepScreenOn() {
+        mScreenHandler.removeCallbacks(mScreenRecheck);
+        if (mViewModel == null) {
+            return;
+        }
+        long now = SystemClock.elapsedRealtime();
+        ScreenOnPolicy.Decision decision = mViewModel.getScreenOnPolicy()
+                .update(getSettings().getKeepScreenOn(), mSharing || mTask != null, now);
+        if (decision.keepOn) {
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        } else {
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
+        if (decision.recheckAt > 0) {
+            mScreenHandler.postDelayed(mScreenRecheck, Math.max(0, decision.recheckAt - now));
+        }
     }
 
     @Override
