@@ -58,6 +58,7 @@ import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler.N
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
 import io.github.muntashirakon.AppManager.progress.QueuedProgressHandler;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
+import io.github.muntashirakon.AppManager.sync.lan.LanSyncInstallTracker;
 import io.github.muntashirakon.AppManager.types.ForegroundService;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.utils.CpuUtils;
@@ -354,6 +355,10 @@ public class PackageInstallerService extends ForegroundService {
     private void finishInstallation(@NonNull String packageName, int status,
                                     @Nullable String appLabel, @Nullable String blockingPackage,
                                     @Nullable String statusMessage) {
+        // Local sync offers its own ways out (Android's installer, Downloads) for apps it sent here
+        LanSyncInstallTracker.onInstallFinished(this, packageName, status,
+                getStringFromStatus(this, status, appLabel != null ? appLabel : packageName, blockingPackage),
+                statusMessage);
         if (mOnInstallFinished != null) {
             ThreadUtils.postOnMainThread(() -> {
                 if (mOnInstallFinished != null) {

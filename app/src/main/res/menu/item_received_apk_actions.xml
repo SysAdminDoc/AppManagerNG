@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/action_system_installer"
+        android:title="@string/received_apks_system_installer" />
+
+    <item
+        android:id="@+id/action_save_to_downloads"
+        android:title="@string/received_apks_save_to_downloads" />
+
+</menu>
