@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:minHeight="56dp"
+    android:orientation="horizontal">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/rule_body"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackground"
+        android:orientation="vertical"
+        android:paddingVertical="@dimen/premium_space_8">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/rule_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textAppearance="?attr/textAppearanceTitleSmall"
+            android:textColor="?attr/colorOnSurface"
+            tools:text="Work chat" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/rule_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="3"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            tools:text="Slack, sender contains Boss: Allow pop-up" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/rule_up"
+        style="@style/Widget.AppTheme.Button.IconButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:contentDescription="@string/notification_filter_rule_move_up"
+        app:icon="@drawable/ic_expand_less"
+        app:iconSize="24dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/rule_down"
+        style="@style/Widget.AppTheme.Button.IconButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:contentDescription="@string/notification_filter_rule_move_down"
+        app:icon="@drawable/ic_expand_more"
+        app:iconSize="24dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/rule_delete"
+        style="@style/Widget.AppTheme.Button.IconButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:contentDescription="@string/notification_filter_rule_delete"
+        app:icon="@drawable/ic_trash_can"
+        app:iconSize="24dp" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

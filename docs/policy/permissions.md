@@ -33,6 +33,7 @@ them at runtime on Android 6+ before use.
 | `FOREGROUND_SERVICE` | Required since Android 9 for any service the app starts via `startForegroundService()`. | `batchops/BatchOpsService`, `installer/PackageInstallerService`, `profiles/ProfileApplierService`, `backup/schedule/AutoBackupWorker` |
 | `FOREGROUND_SERVICE_DATA_SYNC` | Android 14+ subtype for backup / install / batch foreground services. | same services as `FOREGROUND_SERVICE` |
 | `WAKE_LOCK` | Partial wake-lock during batch backup / restore so a 10-minute backup doesn't get cut by Doze. Centralised via `CpuUtils.acquireWakeLock`. | `batchops/BatchOpsService`, `backup/BackupManager` |
+| `VIBRATE` | Vibrate-only copies from the notification filter. Android 7.1 and older set vibration on each notification rather than on a channel. | `notificationfilter/NotificationReposter` |
 | `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` | Android-standard prompt asking the user to add AppManagerNG to the Doze allowlist before long backups. | `self/SelfBatteryOptimization` |
 | `REQUEST_INSTALL_PACKAGES` | Direct install path when AppManagerNG is the user-chosen installer. | `apk/installer/PackageInstallerActivity` |
 | `REQUEST_DELETE_PACKAGES` | Android-standard prompt-based uninstall path. | `apk/uninstaller/UninstallerActivity` |

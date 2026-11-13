@@ -59,6 +59,7 @@ import io.github.muntashirakon.AppManager.StaticDataset;
 import io.github.muntashirakon.AppManager.accessibility.toast.ToastHistoryActivity;
 import io.github.muntashirakon.AppManager.db.AppsDb;
 import io.github.muntashirakon.AppManager.db.entity.AppUpdateChangeReport;
+import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterActivity;
 import io.github.muntashirakon.AppManager.permission.monitor.AppChangeFeedEntry;
 import io.github.muntashirakon.AppManager.permission.monitor.AppChangeFeedStore;
 import io.github.muntashirakon.AppManager.permission.monitor.AppChangeFeedTransfer;
@@ -346,6 +347,10 @@ public class PrivacyPreferences extends PreferenceFragment {
         });
         requirePreference("toast_history").setOnPreferenceClickListener(preference -> {
             startActivity(new Intent(requireContext(), ToastHistoryActivity.class));
+            return true;
+        });
+        requirePreference("notification_filter").setOnPreferenceClickListener(preference -> {
+            startActivity(new Intent(requireContext(), NotificationFilterActivity.class));
             return true;
         });
         SwitchPreferenceCompat appChangeAuditor = requirePreference("enable_app_change_auditor");
