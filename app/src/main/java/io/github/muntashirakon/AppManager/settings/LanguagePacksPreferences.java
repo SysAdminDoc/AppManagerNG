@@ -213,7 +213,8 @@ public class LanguagePacksPreferences extends PreferenceFragment {
         if (pack.inUse) {
             parts.add(getString(R.string.language_files_in_use));
         }
-        parts.add(getString(R.string.language_files_translated, pack.translated, pack.total));
+        parts.add(getResources().getQuantityString(R.plurals.language_files_translated, pack.total, pack.translated,
+                pack.total));
         if (pack.outdated > 0) {
             parts.add(getResources().getQuantityString(R.plurals.language_files_outdated, pack.outdated, pack.outdated));
         }
@@ -386,7 +387,7 @@ public class LanguagePacksPreferences extends PreferenceFragment {
 
     private void showUndo(@NonNull LanguagePackManager.Removal removal) {
         if (!isAdded()) {
-            mManager.finishRemove(removal);
+            ThreadUtils.postOnBackgroundThread(() -> mManager.finishRemove(removal));
             return;
         }
         Snackbar.make(requireView(), getString(R.string.language_files_removed, removal.name), Snackbar.LENGTH_LONG)

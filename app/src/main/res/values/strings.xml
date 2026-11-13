@@ -1087,7 +1087,10 @@
     <string name="language_files_yours">Your language files</string>
     <string name="language_files_none">No language files yet</string>
     <string name="language_files_needs_android_11">Using a language file needs Android 11 or newer. You can still make and share them here.</string>
-    <string name="language_files_translated">%1$d of %2$d strings translated</string>
+    <plurals name="language_files_translated">
+        <item quantity="one">%1$d of %2$d string translated</item>
+        <item quantity="other">%1$d of %2$d strings translated</item>
+    </plurals>
     <plurals name="language_files_outdated">
         <item quantity="one">%d may be out of date</item>
         <item quantity="other">%d may be out of date</item>
