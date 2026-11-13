@@ -36,6 +36,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.widget.AppCompatImageView;
+import androidx.appcompat.widget.TooltipCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -503,6 +504,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                 holder.permIndicator.setClickable(false);
             }
         }
+        bindAdSourceIndicator(context, holder, item);
         installBadgeTouchDelegate(holder);
         bindTagIndicator(context, holder, item);
         // Set version (along with HW accelerated, debug and test only flags)
@@ -605,8 +607,54 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         applyBadgeStyle(holder.tagIndicator, mColorSelectedStroke);
     }
 
+    private void bindAdSourceIndicator(@NonNull Context context, @NonNull ViewHolder holder,
+                                       @NonNull ApplicationItem item) {
+        TextView indicator = holder.adSourceIndicator;
+        if (indicator == null) {
+            return;
+        }
+        if (!item.isInstalled || !AdSourceSignals.isPossibleAdSource(item)) {
+            indicator.setVisibility(View.GONE);
+            indicator.setOnClickListener(null);
+            indicator.setClickable(false);
+            TooltipCompat.setTooltipText(indicator, null);
+            return;
+        }
+        String description = getAdSourceDescription(context, item.adSourceSignals);
+        indicator.setVisibility(View.VISIBLE);
+        indicator.setContentDescription(description);
+        // Long press explains it, since the chip alone can read like a verdict
+        TooltipCompat.setTooltipText(indicator, description);
+        int warningColor = getBadgeWarningContentColor(context);
+        applyBadgeStyle(indicator, warningColor, warningColor);
+        indicator.setClickable(true);
+        indicator.setFocusable(true);
+        indicator.setOnClickListener(v -> {
+            int userId = item.userIds != null && item.userIds.length > 0
+                    ? item.userIds[0]
+                    : UserHandleHidden.myUserId();
+            mActivity.startActivity(AppDetailsActivity.getIntentForPermissions(mActivity, item.packageName, userId));
+        });
+    }
+
+    /** Says which ways the app has to come up unopened. Only for a possible ad source. */
+    @VisibleForTesting
+    @NonNull
+    static String getAdSourceDescription(@NonNull Context context, @Nullable Integer signals) {
+        int flags = signals != null ? signals : 0;
+        boolean boot = (flags & AdSourceSignals.BOOT) != 0;
+        boolean fullScreen = (flags & AdSourceSignals.FULL_SCREEN) != 0;
+        if (boot && fullScreen) {
+            return context.getString(R.string.main_list_ad_source_both);
+        }
+        return context.getString(fullScreen ? R.string.main_list_ad_source_full_screen
+                : R.string.main_list_ad_source_boot);
+    }
+
     private static void limitVisibleStatuses(@NonNull ViewHolder holder, int limit) {
         TextView[] statuses = {
+                // First, so it isn't the one squeezed out
+                holder.adSourceIndicator,
                 holder.trackerIndicator,
                 holder.permIndicator,
                 holder.backupIndicator,
@@ -1091,7 +1139,8 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         holder.itemView.post(() -> {
             int minTouchSize = holder.itemView.getResources()
                     .getDimensionPixelSize(R.dimen.premium_chip_touch_target);
-            List<TouchDelegate> delegates = new ArrayList<>(2);
+            List<TouchDelegate> delegates = new ArrayList<>(3);
+            addBadgeTouchDelegate(holder.itemView, delegates, holder.adSourceIndicator, minTouchSize);
             addBadgeTouchDelegate(holder.itemView, delegates, holder.trackerIndicator, minTouchSize);
             addBadgeTouchDelegate(holder.itemView, delegates, holder.permIndicator, minTouchSize);
             holder.itemView.setTouchDelegate(delegates.isEmpty()
@@ -1174,6 +1223,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         TextView trackerIndicator;
         TextView permIndicator;
         TextView tagIndicator;
+        TextView adSourceIndicator;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -1197,6 +1247,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             trackerIndicator = itemView.findViewById(R.id.tracker_indicator);
             permIndicator = itemView.findViewById(R.id.perm_indicator);
             tagIndicator = itemView.findViewById(R.id.tag_indicator);
+            adSourceIndicator = itemView.findViewById(R.id.ad_source_indicator);
         }
     }
 }
