@@ -30,6 +30,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A watched permission set to Always deny gets taken back right away when someone grants it in Settings, in root, ADB and Shizuku modes (issue #15). Android doesn't tell apps about a permission granted there, and it pauses apps in the background, so the grant used to stick until the next check. The privileged server now watches those apps itself and starts the check the moment one changes. No-root mode still checks at the usual times.
 - An install that waited in the queue drops its "Added to queue" notification once it starts (issue #22). The notification used to stay next to the result, so a finished install still looked queued.
 - An install that fails before Android's prompt shows up now says why (issue #22). Those failures used to get lost or come back as a generic error. A root or ADB install that Android 14 and later hands back for confirmation, because another app owns the app's updates, now shows the prompt and waits for the real result instead of failing.
+- An install that Play Protect stops to ask about no longer ends in a timeout (issue #22). Android keeps the install open while its "Harmful app blocked" or "Scan app?" dialog waits for you, and AppManagerNG gave up after a minute and missed Android's real answer, which came moments later. It now keeps waiting as long as Android still has the install open, for up to 15 minutes.
 
 ## v0.7.0, 2026-11-08
 
