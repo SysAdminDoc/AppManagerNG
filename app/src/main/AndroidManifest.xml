@@ -1830,6 +1830,21 @@
                 android:value="false" />
         </service>
         <service
+            android:name=".notificationfilter.QuietModeTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_notifications_paused"
+            android:label="@string/notification_filter_quiet_mode"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            tools:targetApi="24">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
+        </service>
+        <service
             android:name=".notificationfilter.NotificationFilterService"
             android:exported="true"
             android:label="@string/notification_filter_title"
