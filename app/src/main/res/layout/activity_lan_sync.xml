@@ -169,7 +169,7 @@
                             android:layout_height="wrap_content"
                             android:layout_gravity="end"
                             android:layout_marginTop="@dimen/premium_space_4"
-                            android:text="@string/lan_sync_trouble_dismiss"
+                            android:text="@string/close"
                             android:textColor="?attr/colorOnErrorContainer" />
 
                     </LinearLayout>

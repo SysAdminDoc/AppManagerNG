@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.apk.installer;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -46,6 +47,8 @@ final class InstallSessionPrompt {
     private InstallSessionPrompt() {
     }
 
+    // The dialog gives the view its parent when it's shown
+    @SuppressLint("InflateParams")
     @UiThread
     @NonNull
     static View inflate(@NonNull Context context, @Nullable InstallSessionDetails details,
@@ -208,16 +211,16 @@ final class InstallSessionPrompt {
     private static int kindLabel(@NonNull InstallerManifestSummary.Kind kind) {
         switch (kind) {
             case PERMISSIONS:
-                return R.string.installer_session_kind_permissions;
+                return R.string.permissions;
             case ACTIVITIES:
-                return R.string.installer_session_kind_activities;
+                return R.string.activities;
             case SERVICES:
-                return R.string.installer_session_kind_services;
+                return R.string.service;
             case RECEIVERS:
-                return R.string.installer_session_kind_receivers;
+                return R.string.receivers;
             case PROVIDERS:
             default:
-                return R.string.installer_session_kind_providers;
+                return R.string.providers;
         }
     }
 }

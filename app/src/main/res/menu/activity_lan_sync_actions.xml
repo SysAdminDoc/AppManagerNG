@@ -8,7 +8,7 @@
         android:icon="@drawable/ic_search"
         android:title="@string/search"
         app:actionViewClass="io.github.muntashirakon.AppManager.misc.AdvancedSearchView"
-        app:showAsAction="collapseActionView|always" />
+        app:showAsAction="collapseActionView|ifRoom" />
 
     <item
         android:id="@+id/action_received_apks"
@@ -25,7 +25,7 @@
                 android:checkableBehavior="single">
                 <item
                     android:id="@+id/keep_screen_off"
-                    android:title="@string/lan_sync_keep_screen_off" />
+                    android:title="@string/off" />
                 <item
                     android:id="@+id/keep_screen_10_minutes"
                     android:title="@string/lan_sync_keep_screen_10_minutes" />
@@ -41,7 +41,7 @@
 
     <item
         android:id="@+id/action_troubleshooting"
-        android:title="@string/lan_sync_troubleshooting"
+        android:title="@string/troubleshooting"
         app:showAsAction="never" />
 
 </menu>

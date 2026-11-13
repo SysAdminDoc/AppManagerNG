@@ -2406,18 +2406,13 @@
     <string name="installer_session_changes_unreadable">Couldn\'t read this APK\'s manifest.</string>
     <string name="installer_session_version_update">Version %1$s to %2$s</string>
     <string name="installer_session_version_new">New install, version %1$s</string>
-    <string name="installer_session_kind_changed">%1$s: %2$d added, %3$d removed</string>
+    <string name="installer_session_kind_changed">%1$s: added %2$d, removed %3$d</string>
     <string name="installer_session_kind_unchanged">%1$s: no change</string>
     <string name="installer_session_kind_total">%1$s: %2$d</string>
     <string name="installer_session_added">Added</string>
     <string name="installer_session_removed">Removed</string>
     <string name="installer_session_expanded">Expanded</string>
     <string name="installer_session_collapsed">Collapsed</string>
-    <string name="installer_session_kind_permissions">Permissions</string>
-    <string name="installer_session_kind_activities">Activities</string>
-    <string name="installer_session_kind_services">Services</string>
-    <string name="installer_session_kind_receivers">Receivers</string>
-    <string name="installer_session_kind_providers">Providers</string>
     <string name="confirm_installation_of_file">Confirm installation of %1$s</string>
     <string name="pref_installer_show_session_changes">Show what an install changes</string>
     <string name="pref_installer_show_session_changes_msg">Next to the SHA-256, list the version and the permissions, activities, services, receivers and providers an update adds or removes</string>
@@ -4750,7 +4745,6 @@ Components removed: %8$s</string>
     <string name="lan_sync_note_signature_replace">Signed with a different key than the copy installed here. Replace uninstalls that copy and deletes its data first.</string>
     <string name="lan_sync_note_signature_system">Signed with a different key than the system app installed here. A system app can\'t be replaced.</string>
     <string name="lan_sync_allow_replace">Allow replacing apps signed by a different key (uninstalls the installed app and deletes its data)</string>
-    <string name="lan_sync_replace">Replace</string>
     <string name="lan_sync_replace_system">%1$s is a system app here, so it can\'t be replaced</string>
     <string name="lan_sync_uninstalling">Uninstalling %1$s</string>
     <string name="lan_sync_replace_uninstall_failed">Couldn\'t uninstall %1$s, so the new copy wasn\'t installed (it\'s in Received APKs). Reason: %2$s</string>
@@ -4768,8 +4762,7 @@ Components removed: %8$s</string>
     <string name="received_apks_title">Received APKs</string>
     <string name="received_apks_keep_for">Keep received APKs for</string>
     <string name="received_apks_2_hours">2 hours</string>
-    <string name="received_apks_24_hours">24 hours</string>
-    <string name="received_apks_7_days">7 days</string>
+    <string name="received_apks_24_hours">1 day</string>
     <string name="received_apks_keep_installed">Keep APKs after installing</string>
     <string name="received_apks_empty">No received APKs</string>
     <string name="received_apks_empty_summary">Apps you get from another device stay here for a while, so you can install them again without it.</string>
@@ -4792,11 +4785,9 @@ Components removed: %8$s</string>
     <string name="lan_sync_install_failed_try_system">Try Android\'s own installer, or save the APK to Downloads.</string>
     <string name="lan_sync_install_failed_try_save">Android\'s installer can\'t take split APKs. Save them to Downloads and open the .apks file with an installer that can.</string>
     <string name="lan_sync_keep_screen_on">Keep screen on</string>
-    <string name="lan_sync_keep_screen_off">Off</string>
     <string name="lan_sync_keep_screen_10_minutes">For 10 minutes</string>
     <string name="lan_sync_keep_screen_30_minutes">For 30 minutes</string>
     <string name="lan_sync_keep_screen_until_done">Until transfers finish</string>
-    <string name="lan_sync_troubleshooting">Troubleshooting</string>
     <string name="lan_sync_trouble_nothing_found">No devices found yet</string>
     <string name="lan_sync_trouble_connect_failed">Couldn\'t reach the other device</string>
     <string name="lan_sync_trouble_asked">Can\'t find or reach the other device?</string>
@@ -4804,5 +4795,4 @@ Components removed: %8$s</string>
     <string name="lan_sync_trouble_afwall">In AFWall+, tick the LAN rule for AppManagerNG. If the devices still can\'t see each other, turn AFWall+ off while you sync.</string>
     <string name="lan_sync_trouble_huawei">Huawei\'s firewall has separate switches for mobile data and Wi-Fi. Turn on the Wi-Fi one for AppManagerNG.</string>
     <string name="lan_sync_trouble_same_wifi">Both devices need to be on the same Wi-Fi. Guest networks often keep devices apart.</string>
-    <string name="lan_sync_trouble_dismiss">Hide</string>
 </resources>

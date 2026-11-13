@@ -21,7 +21,6 @@ import android.provider.MediaStore;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
-import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import java.io.File;
@@ -79,7 +78,6 @@ public final class ReceivedApkExport {
         return save(entry, destination);
     }
 
-    @VisibleForTesting
     @WorkerThread
     @NonNull
     static String save(@NonNull ReceivedApkStore.Entry entry, @NonNull Destination destination) throws IOException {

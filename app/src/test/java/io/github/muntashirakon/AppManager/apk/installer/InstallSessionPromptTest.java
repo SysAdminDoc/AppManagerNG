@@ -98,7 +98,7 @@ public class InstallSessionPromptTest {
         View activities = rows.getChildAt(InstallerManifestSummary.Kind.ACTIVITIES.ordinal());
         TextView header = activities.findViewById(R.id.header);
         TextView names = activities.findViewById(R.id.names);
-        assertEquals("Activities: 1 added, 1 removed", header.getText().toString());
+        assertEquals("Activities: added 1, removed 1", header.getText().toString());
         assertEquals("names start folded away", View.GONE, names.getVisibility());
 
         header.performClick();
