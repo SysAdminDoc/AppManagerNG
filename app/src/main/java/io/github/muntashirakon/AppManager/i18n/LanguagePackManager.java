@@ -342,7 +342,7 @@ public final class LanguagePackManager {
         if (inUseCode() == null) {
             editor.putString(KEY_PREVIOUS, Prefs.Appearance.getLanguage(mContext));
         }
-        editor.commit();
+        editor.apply();
         applyLanguage(code);
     }
 
@@ -351,7 +351,7 @@ public final class LanguagePackManager {
     public void stop() {
         boolean inUse = inUseCode() != null;
         String previous = mPrefs.getString(KEY_PREVIOUS, LangUtils.LANG_AUTO);
-        mPrefs.edit().remove(KEY_ACTIVE).remove(KEY_PREVIOUS).commit();
+        mPrefs.edit().remove(KEY_ACTIVE).remove(KEY_PREVIOUS).apply();
         if (mLoader != null && canUse()) {
             Api30.clear(mLoader);
         }
