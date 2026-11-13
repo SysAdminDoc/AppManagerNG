@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.accessibility.topapp;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import android.content.Context;
 import android.os.SystemClock;
 import android.view.MotionEvent;
 import android.view.View;
@@ -26,6 +27,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import io.github.muntashirakon.AppManager.R;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(qualifiers = "w360dp-h640dp-port-mdpi")
@@ -56,10 +59,85 @@ public class TopAppBubbleTest {
     }
 
     private void tap() {
-        View pill = mBubble.getPill();
-        touch(pill, MotionEvent.ACTION_DOWN, 10, 10);
-        touch(pill, MotionEvent.ACTION_UP, 10, 10);
+        tap(mBubble.getPill());
+    }
+
+    private static void tap(@NonNull View row) {
+        touch(row, MotionEvent.ACTION_DOWN, 10, 10);
+        touch(row, MotionEvent.ACTION_UP, 10, 10);
         ShadowLooper.idleMainLooper();
+    }
+
+    @Test
+    public void anOverlayGetsItsOwnRowAboveTheAppUnderneath() {
+        mBubble.setLayers(APP, AD, true, Arrays.asList(AD, APP));
+
+        assertEquals(View.VISIBLE, mBubble.getOverlayRow().getVisibility());
+        assertEquals(1f, mBubble.getOverlayRow().getAlpha(), 0f);
+        assertEquals(View.VISIBLE, mBubble.getUnderlyingLayer().getVisibility());
+        assertEquals(View.VISIBLE, mBubble.getPill().getVisibility());
+        Context context = ApplicationProvider.getApplicationContext();
+        assertEquals(context.getString(R.string.top_app_overlay_layer_overlay), mBubble.getOverlayLayer().getText());
+        // Each row opens its own app.
+        tap(mBubble.getOverlayRow());
+        tap(mBubble.getPill());
+        assertEquals(Arrays.asList(AD, APP), mOpened);
+    }
+
+    @Test
+    public void aGoneOverlayFadesAndSaysSo() {
+        mBubble.setLayers(APP, AD, false, Arrays.asList(AD, APP));
+
+        assertEquals(View.VISIBLE, mBubble.getOverlayRow().getVisibility());
+        assertEquals(TopAppBubble.GONE_OVERLAY_ALPHA, mBubble.getOverlayRow().getAlpha(), 0f);
+        Context context = ApplicationProvider.getApplicationContext();
+        assertEquals(context.getString(R.string.top_app_overlay_layer_overlay_gone),
+                mBubble.getOverlayLayer().getText());
+    }
+
+    @Test
+    public void withoutAnOverlayOnlyTheAppRowShows() {
+        mBubble.setLayers(APP, AD, true, Arrays.asList(AD, APP));
+
+        mBubble.setLayers(APP, null, false, Collections.singletonList(APP));
+
+        assertEquals(View.GONE, mBubble.getOverlayRow().getVisibility());
+        assertEquals(View.GONE, mBubble.getUnderlyingLayer().getVisibility());
+        assertEquals(View.VISIBLE, mBubble.getPill().getVisibility());
+    }
+
+    @Test
+    public void overTheHomeScreenOnlyTheOverlayRowShows() {
+        mBubble.setLayers(null, AD, true, Collections.singletonList(AD));
+
+        assertEquals(View.VISIBLE, mBubble.getOverlayRow().getVisibility());
+        assertEquals(View.GONE, mBubble.getPill().getVisibility());
+    }
+
+    @Test
+    public void aDragOnTheOverlayRowMovesTheBubbleWithoutOpeningAnything() {
+        mBubble.setLayers(APP, AD, true, Arrays.asList(AD, APP));
+        ShadowLooper.idleMainLooper();
+        WindowManager.LayoutParams params = mBubble.getLayoutParams();
+        int startY = params.y;
+        View row = mBubble.getOverlayRow();
+
+        touch(row, MotionEvent.ACTION_DOWN, 10, 10);
+        touch(row, MotionEvent.ACTION_MOVE, 10, 90);
+        touch(row, MotionEvent.ACTION_UP, 10, 90);
+        ShadowLooper.idleMainLooper();
+
+        assertEquals(startY + 80, params.y);
+        assertTrue(mOpened.isEmpty());
+    }
+
+    @Test
+    public void aLongPressOnTheOverlayRowShowsTheRecentApps() {
+        mBubble.setLayers(APP, AD, true, Arrays.asList(AD, APP));
+
+        mBubble.getOverlayRow().performLongClick();
+
+        assertEquals(View.VISIBLE, mBubble.getRecentsContainer().getVisibility());
     }
 
     @Test
