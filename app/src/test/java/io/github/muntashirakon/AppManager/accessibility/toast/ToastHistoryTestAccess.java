@@ -29,6 +29,9 @@ public final class ToastHistoryTestAccess {
         sDb = newInMemoryDb(context);
         ToastHistory history = new ToastHistory(sDb.dao(), Runnable::run, packageName -> "Label of " + packageName,
                 System::currentTimeMillis);
+        // Wired as in the app, so the notification in the shade is tested through the same path.
+        Context appContext = context.getApplicationContext();
+        history.setAfterChange(() -> ToastShadeNotification.update(appContext, history));
         ToastHistory.setInstanceForTesting(history);
         return history;
     }

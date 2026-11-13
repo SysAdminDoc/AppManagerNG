@@ -2098,6 +2098,9 @@
     <string name="toast_history_search_hint">Search toasts</string>
     <string name="toast_history_no_matches_title">No matching toasts</string>
     <string name="toast_history_no_matches">No toast text, app name or package matches this search.</string>
+    <string name="toast_history_shade">Show recent toasts in the notification shade</string>
+    <string name="toast_history_shade_line">%1$s  %2$s: %3$s</string>
+    <string name="toast_history_shade_needs_permission">Allow notifications to keep recent toasts in the shade.</string>
     <string name="search_regex_unusable">This isn\'t a regular expression that can be used, so nothing matches it.</string>
     <string name="toast_invalid_level">Invalid level name: %s</string>
     <string name="toast_invalid_selection">Invalid selection. Please try again.</string>

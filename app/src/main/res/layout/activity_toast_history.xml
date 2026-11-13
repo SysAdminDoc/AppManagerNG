@@ -38,6 +38,14 @@
             android:layout_marginHorizontal="@dimen/padding_medium"
             android:text="@string/toast_history_record" />
 
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/shade_switch"
+            style="@style/Widget.AppTheme.MaterialSwitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/padding_medium"
+            android:text="@string/toast_history_shade" />
+
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/service_off_group"
             android:layout_width="match_parent"

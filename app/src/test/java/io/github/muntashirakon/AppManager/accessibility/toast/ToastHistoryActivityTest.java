@@ -4,20 +4,27 @@ package io.github.muntashirakon.AppManager.accessibility.toast;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
+import android.Manifest;
 import android.app.Application;
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.provider.Settings;
+import android.service.notification.StatusBarNotification;
 import android.view.View;
 import android.widget.AutoCompleteTextView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.test.core.app.ApplicationProvider;
 
@@ -30,6 +37,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
+import org.robolectric.shadows.ShadowActivity;
 import org.robolectric.shadows.ShadowLooper;
 import org.robolectric.shadows.ShadowToast;
 
@@ -66,6 +74,7 @@ public class ToastHistoryActivityTest {
             mController.pause().stop().destroy();
         }
         Prefs.Privacy.setToastHistoryEnabled(false);
+        Prefs.Privacy.setToastHistoryShadeEnabled(false);
         ToastHistoryTestAccess.reset();
         Ops.setAuthenticated(mApp, mAuthenticatedBefore);
         Settings.Secure.putString(mApp.getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, null);
@@ -202,6 +211,70 @@ public class ToastHistoryActivityTest {
 
         assertFalse(Prefs.Privacy.isToastHistoryEnabled());
         assertEquals(1, mHistory.readAll().size());
+    }
+
+    @Nullable
+    private Notification shadeNotification() {
+        NotificationManager manager = (NotificationManager) mApp.getSystemService(Context.NOTIFICATION_SERVICE);
+        for (StatusBarNotification sbn : manager.getActiveNotifications()) {
+            if (ToastShadeNotification.NOTIFICATION_TAG.equals(sbn.getTag())) {
+                return sbn.getNotification();
+            }
+        }
+        return null;
+    }
+
+    @Test
+    public void theShadeSwitchStartsOffAndFollowsRecording() {
+        shadowOf(mApp).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
+        Prefs.Privacy.setToastHistoryEnabled(true);
+        turnAccessibilityOn();
+        mHistory.record(T0 + 1_000L, ONE, "Saved");
+        ToastHistoryActivity activity = open();
+        waitForRows(activity, 1);
+        MaterialSwitch shade = activity.findViewById(R.id.shade_switch);
+        assertFalse(shade.isChecked());
+        assertNull(shadeNotification());
+
+        shade.setChecked(true);
+
+        assertTrue(Prefs.Privacy.isToastHistoryShadeEnabled());
+        assertNotNull(shadeNotification());
+
+        ((MaterialSwitch) activity.findViewById(R.id.record_switch)).setChecked(false);
+
+        assertNull(shadeNotification());
+        assertTrue("the choice is kept for when recording is back on", shade.isChecked());
+
+        ((MaterialSwitch) activity.findViewById(R.id.record_switch)).setChecked(true);
+
+        assertNotNull(shadeNotification());
+
+        shade.setChecked(false);
+
+        assertNull(shadeNotification());
+    }
+
+    @Test
+    public void theShadeSwitchAsksForNotificationsAndARefusalTurnsItBackOff() {
+        shadowOf(mApp).denyPermissions(Manifest.permission.POST_NOTIFICATIONS);
+        ToastHistoryActivity activity = open();
+        MaterialSwitch shade = activity.findViewById(R.id.shade_switch);
+
+        shade.setChecked(true);
+
+        ShadowActivity.PermissionsRequest request = shadowOf(activity).getLastRequestedPermission();
+        assertNotNull(request);
+        assertEquals(Manifest.permission.POST_NOTIFICATIONS, request.requestedPermissions[0]);
+        assertFalse("nothing is saved until the answer comes back", Prefs.Privacy.isToastHistoryShadeEnabled());
+
+        activity.onRequestPermissionsResult(request.requestCode, request.requestedPermissions,
+                new int[]{PackageManager.PERMISSION_DENIED});
+
+        assertFalse(shade.isChecked());
+        assertFalse(Prefs.Privacy.isToastHistoryShadeEnabled());
+        assertEquals(mApp.getString(R.string.toast_history_shade_needs_permission),
+                ShadowToast.getTextOfLatestToast());
     }
 
     @Test

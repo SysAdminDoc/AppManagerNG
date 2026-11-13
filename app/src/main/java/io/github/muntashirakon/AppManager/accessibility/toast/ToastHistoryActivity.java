@@ -2,9 +2,12 @@
 
 package io.github.muntashirakon.AppManager.accessibility.toast;
 
+import android.Manifest;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.LayoutInflater;
@@ -15,9 +18,12 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.lifecycle.ViewModelProvider;
@@ -55,6 +61,7 @@ public class ToastHistoryActivity extends BaseActivity implements AdvancedSearch
     private ToastHistoryViewModel mViewModel;
     private LinearProgressIndicator mProgressIndicator;
     private MaterialSwitch mRecordSwitch;
+    private MaterialSwitch mShadeSwitch;
     private View mServiceOffGroup;
     private TextInputLayout mFilterLayout;
     private MaterialAutoCompleteTextView mFilterView;
@@ -69,6 +76,8 @@ public class ToastHistoryActivity extends BaseActivity implements AdvancedSearch
     @NonNull
     private TextQuery mShownQuery = TextQuery.empty();
     private int mTotal;
+    private final ActivityResultLauncher<String> mNotificationPermission = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(), this::onNotificationPermissionResult);
 
     @Override
     protected void onAuthenticated(@Nullable Bundle savedInstanceState) {
@@ -80,6 +89,7 @@ public class ToastHistoryActivity extends BaseActivity implements AdvancedSearch
         mProgressIndicator.show();
 
         mRecordSwitch = findViewById(R.id.record_switch);
+        mShadeSwitch = findViewById(R.id.shade_switch);
         mServiceOffGroup = findViewById(R.id.service_off_group);
         MaterialButton openSettings = findViewById(R.id.open_accessibility_settings);
         openSettings.setOnClickListener(v -> openAccessibilitySettings());
@@ -176,7 +186,37 @@ public class ToastHistoryActivity extends BaseActivity implements AdvancedSearch
         mRecordSwitch.setOnCheckedChangeListener(null);
         mRecordSwitch.setChecked(recording);
         mRecordSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> onRecordingToggled(isChecked));
+        mShadeSwitch.setOnCheckedChangeListener(null);
+        mShadeSwitch.setChecked(Prefs.Privacy.isToastHistoryShadeEnabled());
+        mShadeSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> onShadeToggled(isChecked));
         updateGuidance();
+    }
+
+    private void onShadeToggled(boolean show) {
+        if (show && !ToastShadeNotification.canPost(this)) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                // The switch is saved once the answer comes back.
+                mNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS);
+                return;
+            }
+            // Notifications are off in the system settings. It starts showing once they're back on.
+            UIUtils.displayLongToast(R.string.toast_history_shade_needs_permission);
+        }
+        setShade(show);
+    }
+
+    private void onNotificationPermissionResult(boolean granted) {
+        if (!granted) {
+            UIUtils.displayLongToast(R.string.toast_history_shade_needs_permission);
+        }
+        setShade(granted);
+    }
+
+    private void setShade(boolean show) {
+        Prefs.Privacy.setToastHistoryShadeEnabled(show);
+        refreshRecording();
+        ToastHistory.getInstance(this).refreshShade();
     }
 
     /**
@@ -218,6 +258,8 @@ public class ToastHistoryActivity extends BaseActivity implements AdvancedSearch
     private void onRecordingToggled(boolean recording) {
         Prefs.Privacy.setToastHistoryEnabled(recording);
         refreshRecording();
+        // The notification in the shade comes and goes with recording.
+        ToastHistory.getInstance(this).refreshShade();
         if (recording && !BaseAccessibilityService.isAccessibilityEnabled(this)) {
             openAccessibilitySettings();
         }

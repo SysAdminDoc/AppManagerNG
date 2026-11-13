@@ -1076,6 +1076,15 @@ public final class Prefs {
             AppPref.set(AppPref.PrefKey.PREF_ENABLE_TOP_APP_HISTORY_BOOL, enabled);
         }
 
+        /** Whether the newest toasts also stay in one quiet notification while they're being recorded. */
+        public static boolean isToastHistoryShadeEnabled() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_TOAST_HISTORY_SHADE_BOOL);
+        }
+
+        public static void setToastHistoryShadeEnabled(boolean enabled) {
+            AppPref.set(AppPref.PrefKey.PREF_TOAST_HISTORY_SHADE_BOOL, enabled);
+        }
+
         /** Whether a watched permission that changed gets put back when root or ADB mode allows it. */
         public static boolean isPermissionWatcherEnforceEnabled() {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_ENABLE_PERMISSION_WATCHER_ENFORCE_BOOL);
