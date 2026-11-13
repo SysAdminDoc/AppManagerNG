@@ -42,14 +42,14 @@ public class PermissionWatchWorker extends Worker {
         int status = Ops.init(context, false);
         if (status != Ops.STATUS_SUCCESS) {
             Log.w(TAG, "Privileged mode isn't ready (%d), so mismatches will only be reported.", status);
+        } else {
+            // A check follows every rule change, so this keeps the live watch on the current rules
+            PermissionWatchRelayClient.push(context);
         }
         String packageName = getInputData().getString(INPUT_PACKAGE);
         int userId = getInputData().getInt(INPUT_USER, 0);
         try {
-            PermissionWatcher.Report report = runCheck(PermissionWatchDb.getInstance(context).ruleDao(),
-                    new SystemWatchBackend(context), Prefs.Privacy.isPermissionWatcherEnforceEnabled(), packageName,
-                    userId);
-            PermissionWatchNotifier.notify(context, report);
+            PermissionWatcher.Report report = checkAndNotify(context, packageName, userId);
             return Result.success(new Data.Builder()
                     .putInt(OUTPUT_CHECKED, report.checked)
                     .putInt(OUTPUT_DRIFTED, report.drifts.size())
@@ -59,6 +59,18 @@ public class PermissionWatchWorker extends Worker {
             Log.e(TAG, "Permission watcher check failed.", e);
             return Result.failure();
         }
+    }
+
+    /** Checks on the caller's thread and posts the alert for whatever drifted. */
+    @WorkerThread
+    @NonNull
+    static PermissionWatcher.Report checkAndNotify(@NonNull Context context, @Nullable String packageName,
+                                                   int userId) {
+        PermissionWatcher.Report report = runCheck(PermissionWatchDb.getInstance(context).ruleDao(),
+                new SystemWatchBackend(context), Prefs.Privacy.isPermissionWatcherEnforceEnabled(), packageName,
+                userId);
+        PermissionWatchNotifier.notify(context, report);
+        return report;
     }
 
     /**

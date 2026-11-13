@@ -16,4 +16,6 @@ interface IAMService {
     int getUid() = 12;
     void symlink(in String file, in String link) = 13;
     IBinder getService(in String serviceName) = 14;
+    // Pairs by index; empty arrays stop the watch
+    void setPermissionWatchTargets(in int[] uids, in String[] packageNames) = 15;
 }

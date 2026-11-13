@@ -55,6 +55,13 @@ public interface IAppOpsService extends IInterface {
     @RequiresApi(Build.VERSION_CODES.S)
     int checkOperationRaw(int code, int uid, String packageName, @Nullable String attributionTag) throws RemoteException;
 
+    /**
+     * Watches every op of {@code packageName} when {@code op} is {@code AppOpsManager.OP_NONE}.
+     */
+    void startWatchingMode(int op, @Nullable String packageName, IAppOpsCallback callback) throws RemoteException;
+
+    void stopWatchingMode(IAppOpsCallback callback) throws RemoteException;
+
     abstract class Stub {
         public static IAppOpsService asInterface(android.os.IBinder obj) {
             return null;

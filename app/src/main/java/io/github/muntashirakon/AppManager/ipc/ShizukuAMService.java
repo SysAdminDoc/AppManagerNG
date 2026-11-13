@@ -17,11 +17,13 @@ public class ShizukuAMService extends AMService.IAMServiceImpl {
     private static final int TRANSACTION_DESTROY = 16777115;
 
     public ShizukuAMService() {
+        super(null);
         Log.d(TAG, "constructor");
     }
 
     @Keep
     public ShizukuAMService(@NonNull Context context) {
+        super(context);
         Log.d(TAG, "constructor with context");
     }
 

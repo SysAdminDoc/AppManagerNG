@@ -18,7 +18,9 @@ import java.util.concurrent.TimeUnit;
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.IAMService;
 import io.github.muntashirakon.AppManager.misc.NoOps;
+import io.github.muntashirakon.AppManager.permission.watcher.PermissionWatchRelayClient;
 import io.github.muntashirakon.AppManager.settings.Ops;
+import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.io.FileSystemManager;
 import io.github.muntashirakon.io.ShizukuFileSystemService;
@@ -67,6 +69,8 @@ public class LocalServices {
                 // Update UID
                 Ops.setWorkingUid(getAmService().getUid());
                 sState.postValue(true);
+                // A new privileged process starts with nothing to watch
+                ThreadUtils.postOnBackgroundThread(() -> PermissionWatchRelayClient.push(ContextUtils.getContext()));
             } catch (RemoteException | RuntimeException e) {
                 // Don't leave one service running on its own
                 stopServices();

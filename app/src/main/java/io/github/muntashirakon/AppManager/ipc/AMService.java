@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.ipc;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
@@ -23,12 +24,22 @@ import io.github.muntashirakon.AppManager.IRemoteProcess;
 import io.github.muntashirakon.AppManager.IRemoteShell;
 import io.github.muntashirakon.AppManager.ipc.ps.ProcessEntry;
 import io.github.muntashirakon.AppManager.ipc.ps.Ps;
+import io.github.muntashirakon.AppManager.permission.watcher.PermissionWatchRelay;
 import io.github.muntashirakon.AppManager.server.common.IRootServiceManager;
+import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.compat.android16.Android16BinderCompat;
 import io.github.muntashirakon.compat.os.ParcelCompat2;
 
 public class AMService extends RootService {
     static class IAMServiceImpl extends IAMService.Stub {
+        /** A context of this package in the privileged process; {@code null} where the host gave none. */
+        @Nullable
+        private final Context mContext;
+
+        IAMServiceImpl(@Nullable Context context) {
+            mContext = context;
+        }
+
         /**
          * To get {@link Process}, wrap it using {@link RemoteProcess}. Since the streams are piped,
          * I/O operations may have to be done in different threads.
@@ -76,6 +87,16 @@ public class AMService extends RootService {
         }
 
         @Override
+        public void setPermissionWatchTargets(int[] uids, String[] packageNames) {
+            Context context = mContext != null ? mContext : ContextUtils.rootContext;
+            if (context == null) {
+                Log.w(TAG, "No context to reach the app from, so permission changes aren't relayed.");
+                return;
+            }
+            PermissionWatchRelay.getInstance(context).setTargets(Binder.getCallingUid(), uids, packageNames);
+        }
+
+        @Override
         public boolean onTransact(int code, @NonNull Parcel data, @Nullable Parcel reply, int flags) throws RemoteException {
             if (code == ProxyBinder.PROXY_BINDER_TRANSACTION) {
                 data.enforceInterface(IRootServiceManager.class.getName());
@@ -117,7 +138,7 @@ public class AMService extends RootService {
     @Override
     public IBinder onBind(@NonNull Intent intent) {
         Log.d(TAG, "AMService: onBind");
-        return new IAMServiceImpl();
+        return new IAMServiceImpl(this);
     }
 
     @Override
