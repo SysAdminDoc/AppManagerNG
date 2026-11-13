@@ -178,6 +178,7 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
     /** Subset of {@link #dangerousPermTotal} currently granted to the app. */
     public Integer dangerousPermGranted = 0;
     /** {@link AdSourceSignals} flags. */
+    @Nullable
     public Integer adSourceSignals = 0;
     public Long lastActionTime = 0L;
     public Long dataUsage = 0L;
