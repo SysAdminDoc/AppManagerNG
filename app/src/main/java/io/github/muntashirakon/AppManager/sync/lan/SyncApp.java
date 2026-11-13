@@ -48,10 +48,25 @@ public final class SyncApp {
      */
     @NonNull
     public final List<ApkFileInfo> files;
+    /**
+     * The subject line of each current signing certificate (who signed it, like
+     * {@code CN=Jane Doe, O=Example}), for search only. Empty when the other device's revision
+     * doesn't send them. Never used to decide whether keys match: the digests do that.
+     */
+    @NonNull
+    public final List<String> signerSubjects;
 
     public SyncApp(@NonNull String packageName, @NonNull String label, long versionCode,
                    @NonNull String versionName, boolean system, @NonNull List<String> signers,
                    @NonNull List<String> pastSigners, @NonNull List<ApkFileInfo> files) {
+        this(packageName, label, versionCode, versionName, system, signers, pastSigners, files,
+                Collections.<String>emptyList());
+    }
+
+    public SyncApp(@NonNull String packageName, @NonNull String label, long versionCode,
+                   @NonNull String versionName, boolean system, @NonNull List<String> signers,
+                   @NonNull List<String> pastSigners, @NonNull List<ApkFileInfo> files,
+                   @NonNull List<String> signerSubjects) {
         this.packageName = packageName;
         this.label = label;
         this.versionCode = versionCode;
@@ -62,6 +77,7 @@ public final class SyncApp {
         this.signers = Collections.unmodifiableList(sorted);
         this.pastSigners = Collections.unmodifiableList(new ArrayList<>(pastSigners));
         this.files = Collections.unmodifiableList(new ArrayList<>(files));
+        this.signerSubjects = Collections.unmodifiableList(new ArrayList<>(signerSubjects));
     }
 
     public long totalSize() {

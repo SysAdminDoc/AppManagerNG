@@ -123,13 +123,19 @@ public final class SyncClientSession implements Closeable {
         return mChannel.isDead();
     }
 
+    /**
+     * The host's apps. Asks the host's revision first (once per session), which also tells the
+     * host this client's, so a host of {@link SyncMessages#REVISION_SIGNER_SUBJECTS} or later adds
+     * signer subjects for search.
+     */
     @WorkerThread
     @NonNull
     public List<SyncApp> list(boolean includeSystem) throws IOException {
+        boolean withSignerSubjects = hostRevision() >= SyncMessages.REVISION_SIGNER_SUBJECTS;
         mChannel.send(SyncMessages.listRequest(includeSystem));
         byte[] reply = mChannel.receive(SyncMessages.MAX_LIST);
         throwIfError(reply);
-        return SyncMessages.parseList(reply);
+        return SyncMessages.parseList(reply, withSignerSubjects);
     }
 
     @WorkerThread

@@ -58,6 +58,24 @@ public class LanSyncRowFilterTest {
     }
 
     @Test
+    public void whoSignedItMatchesOnEitherDevice() {
+        List<LanSyncViewModel.AppRow> rows = Arrays.asList(
+                row(signed("com.whatsapp", "WhatsApp", "CN=Brian Acton,OU=Engineering,O=WhatsApp Inc."), null),
+                row(signed("org.example.fork", "Fork", "CN=Jane Doe"),
+                        signed("org.example.fork", "Fork", "CN=Upstream Release,O=Example Apps")),
+                row(app("com.termux", "Termux", 118, "0.118.1"), null));
+
+        assertEquals("The publisher on the other device", Collections.singletonList("com.whatsapp"),
+                names(LanSyncRowFilter.matching(rows, "whatsapp inc", CONTAINS)));
+        assertEquals("The publisher of the copy installed here", Collections.singletonList("org.example.fork"),
+                names(LanSyncRowFilter.matching(rows, "Example Apps", CONTAINS)));
+        assertEquals(Collections.singletonList("org.example.fork"),
+                names(LanSyncRowFilter.matching(rows, "O=Example", AdvancedSearchView.SEARCH_TYPE_REGEX)));
+        assertTrue("An app sent without subjects still matches by name",
+                LanSyncRowFilter.matching(rows, "termux", CONTAINS).size() == 1);
+    }
+
+    @Test
     public void aRegexMatchesAndABrokenOneMatchesNothing() {
         assertEquals(Arrays.asList("org.mozilla.firefox", "org.mozilla.focus"),
                 names(LanSyncRowFilter.matching(mRows, "^org\\.mozilla\\.f", AdvancedSearchView.SEARCH_TYPE_REGEX)));
@@ -71,6 +89,13 @@ public class LanSyncRowFilterTest {
                                @NonNull String versionName) {
         return new SyncApp(packageName, label, versionCode, versionName, false, Collections.singletonList(SIGNER_A),
                 Collections.<String>emptyList(), Collections.singletonList(new SyncApp.ApkFileInfo("base.apk", 1)));
+    }
+
+    @NonNull
+    private static SyncApp signed(@NonNull String packageName, @NonNull String label, @NonNull String subject) {
+        return new SyncApp(packageName, label, 1, "1", false, Collections.singletonList(SIGNER_A),
+                Collections.<String>emptyList(), Collections.singletonList(new SyncApp.ApkFileInfo("base.apk", 1)),
+                Collections.singletonList(subject));
     }
 
     @NonNull

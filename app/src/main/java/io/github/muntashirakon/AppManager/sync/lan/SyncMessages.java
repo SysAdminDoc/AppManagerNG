@@ -11,6 +11,7 @@ import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -44,13 +45,18 @@ public final class SyncMessages {
      * revision answer to a PING that carries one, and GET requests that start part way into a
      * file. Pairing keeps its own version ({@link PairingHandshake#PROTOCOL_VERSION}) at 1 so
      * older peers still pair, and a peer learns the other's revision by asking: an older host
-     * answers a PING with a bare PONG, which reads as revision 1.
+     * answers a PING with a bare PONG, which reads as revision 1. Revision 3 adds each app's
+     * signing certificate subjects to the app list, sent only when both sides said they're on 3.
      */
-    public static final int REVISION = 2;
+    public static final int REVISION = 3;
     /**
      * The first revision that accepts a start offset in GET.
      */
     public static final int REVISION_RESUME = 2;
+    /**
+     * The first revision whose app list carries signer subjects.
+     */
+    public static final int REVISION_SIGNER_SUBJECTS = 3;
 
     /**
      * Requests and small replies (accept, reject, errors, file headers and ends).
@@ -91,6 +97,15 @@ public final class SyncMessages {
 
     @NonNull
     public static byte[] listResponse(@NonNull List<SyncApp> apps) throws IOException {
+        return listResponse(apps, false);
+    }
+
+    /**
+     * The app list. {@code withSignerSubjects} appends each app's signer subjects after its
+     * files, which only a client of {@link #REVISION_SIGNER_SUBJECTS} or later can read.
+     */
+    @NonNull
+    public static byte[] listResponse(@NonNull List<SyncApp> apps, boolean withSignerSubjects) throws IOException {
         if (apps.size() > MAX_APPS) {
             throw new SyncProtocolException("Too many apps to list.");
         }
@@ -111,6 +126,14 @@ public final class SyncMessages {
             for (SyncApp.ApkFileInfo file : app.files) {
                 w.writeString(file.name, MAX_NAME_CHARS);
                 w.out.writeLong(file.size);
+            }
+            if (withSignerSubjects) {
+                List<String> subjects = app.signerSubjects.size() > MAX_SIGNERS
+                        ? app.signerSubjects.subList(0, MAX_SIGNERS) : app.signerSubjects;
+                w.out.writeByte(subjects.size());
+                for (String subject : subjects) {
+                    w.writeString(clip(subject, MAX_LABEL_CHARS), MAX_LABEL_CHARS);
+                }
             }
         }
         byte[] bytes = w.toByteArray();
@@ -229,6 +252,15 @@ public final class SyncMessages {
 
     @NonNull
     public static List<SyncApp> parseList(@NonNull byte[] message) throws IOException {
+        return parseList(message, false);
+    }
+
+    /**
+     * Reads an app list. {@code withSignerSubjects} must match what the host was told to send,
+     * since the field has no marker of its own.
+     */
+    @NonNull
+    public static List<SyncApp> parseList(@NonNull byte[] message, boolean withSignerSubjects) throws IOException {
         Reader r = read(message, LIST_RESPONSE);
         int count = r.in.readInt();
         if (count < 0 || count > MAX_APPS) {
@@ -259,7 +291,19 @@ public final class SyncMessages {
                 }
                 files.add(new SyncApp.ApkFileInfo(name, size));
             }
-            apps.add(new SyncApp(packageName, label, versionCode, versionName, system, signers, pastSigners, files));
+            List<String> subjects = Collections.emptyList();
+            if (withSignerSubjects) {
+                int subjectCount = r.in.readUnsignedByte();
+                if (subjectCount > MAX_SIGNERS) {
+                    throw new SyncProtocolException("Too many signer subjects.");
+                }
+                subjects = new ArrayList<>(subjectCount);
+                for (int j = 0; j < subjectCount; ++j) {
+                    subjects.add(r.readString(MAX_LABEL_CHARS));
+                }
+            }
+            apps.add(new SyncApp(packageName, label, versionCode, versionName, system, signers, pastSigners, files,
+                    subjects));
         }
         r.expectEnd();
         return apps;
