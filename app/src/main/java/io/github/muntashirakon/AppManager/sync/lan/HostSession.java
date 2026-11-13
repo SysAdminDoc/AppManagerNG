@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.sync.lan;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import java.io.File;
@@ -62,6 +63,7 @@ public final class HostSession {
     private final HostCatalog mCatalog;
     @Nullable
     private final Listener mListener;
+    private int mRevision = SyncMessages.REVISION;
 
     public HostSession(@NonNull FrameIo io, @NonNull TimeoutSetter timeouts, @NonNull String hostName,
                        @NonNull LocalIdentity identity, @NonNull SecureRandom random,
@@ -76,6 +78,15 @@ public final class HostSession {
         mApprover = approver;
         mCatalog = catalog;
         mListener = listener;
+    }
+
+    /**
+     * Makes this session answer like a host of an older revision, so tests can check that a newer
+     * client still works with one. Revision 1 is the first release's exact behavior.
+     */
+    @VisibleForTesting
+    void setRevision(int revision) {
+        mRevision = revision;
     }
 
     /**
@@ -134,7 +145,7 @@ public final class HostSession {
                     }
                     break;
                 case SyncMessages.PING:
-                    channel.send(SyncMessages.simple(SyncMessages.PONG));
+                    channel.send(answerPing(message));
                     break;
                 case SyncMessages.BYE:
                     return;
@@ -146,6 +157,25 @@ public final class HostSession {
     }
 
     /**
+     * A bare PING is a keepalive and gets a bare PONG, as it always did. A PING carrying the
+     * client's revision gets this host's revision back. Revision 1 never looked past the type
+     * byte, which is what lets a client ask an older host without breaking the session.
+     */
+    @NonNull
+    private byte[] answerPing(@NonNull byte[] message) throws IOException {
+        if (mRevision >= SyncMessages.REVISION_RESUME) {
+            SyncMessages.Reader r = SyncMessages.read(message, SyncMessages.PING);
+            if (r.hasMore()) {
+                // The client's revision; nothing on this side depends on it yet
+                r.readInt();
+                r.expectEnd();
+                return SyncMessages.revisionAnswer(mRevision);
+            }
+        }
+        return SyncMessages.simple(SyncMessages.PONG);
+    }
+
+    /**
      * Answers one GET. Returns false when the request was malformed and the session should end.
      */
     private boolean serveFile(@NonNull SecureChannel channel, @NonNull byte[] message) throws IOException {
@@ -153,9 +183,15 @@ public final class HostSession {
         String packageName = r.readString(SyncMessages.MAX_NAME_CHARS);
         String fileName = r.readString(SyncMessages.MAX_NAME_CHARS);
         long expectedSize = r.readLong();
+        boolean ranged = mRevision >= SyncMessages.REVISION_RESUME && r.hasMore();
+        long offset = ranged ? r.readLong() : 0;
         r.expectEnd();
         if (!SyncMessages.isValidPackageName(packageName) || !SyncMessages.isSafeFileName(fileName)) {
             channel.send(SyncMessages.error(SyncMessages.ERR_BAD_REQUEST, "That file is not offered."));
+            return false;
+        }
+        if (ranged && (offset <= 0 || offset > expectedSize)) {
+            channel.send(SyncMessages.error(SyncMessages.ERR_BAD_REQUEST, "Bad start offset."));
             return false;
         }
         Map<String, File> files = mCatalog.apkFiles(packageName);
@@ -177,10 +213,27 @@ public final class HostSession {
             return true;
         }
         try {
-            channel.send(SyncMessages.fileHeader(size));
+            channel.send(ranged ? SyncMessages.fileHeader(size, offset) : SyncMessages.fileHeader(size));
             MessageDigest digest = SyncCrypto.sha256();
             byte[] buffer = new byte[SyncMessages.MAX_CHUNK];
-            long remaining = size;
+            // The client already has the first part. It still goes into the digest, since FILE_END
+            // vouches for the whole file and that is what the client checks its copy against.
+            long skip = offset;
+            while (skip > 0) {
+                int n;
+                try {
+                    n = in.read(buffer, 0, (int) Math.min(buffer.length, skip));
+                } catch (IOException e) {
+                    n = -1;
+                }
+                if (n < 0) {
+                    channel.send(SyncMessages.error(SyncMessages.ERR_IO, "The file changed while it was being sent."));
+                    return true;
+                }
+                digest.update(buffer, 0, n);
+                skip -= n;
+            }
+            long remaining = size - offset;
             while (remaining > 0) {
                 int n;
                 try {

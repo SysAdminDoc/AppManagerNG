@@ -61,6 +61,10 @@ public final class SyncClientSession implements Closeable {
     @NonNull
     private final SecureChannel mChannel;
     private final boolean mRemembered;
+    /**
+     * 0 until {@link #hostRevision()} asks.
+     */
+    private int mHostRevision;
 
     private SyncClientSession(@NonNull PairedSession session, boolean remembered) {
         mSession = session;
@@ -135,6 +139,34 @@ public final class SyncClientSession implements Closeable {
     }
 
     /**
+     * The host's message revision, asked once and remembered. A host from before revisions
+     * existed answers with a bare PONG, which reads as 1.
+     */
+    @WorkerThread
+    public int hostRevision() throws IOException {
+        if (mHostRevision == 0) {
+            mChannel.send(SyncMessages.revisionQuery(SyncMessages.REVISION));
+            SyncMessages.Reader r = SyncMessages.read(mChannel.receive(SyncMessages.MAX_CONTROL), SyncMessages.PONG);
+            int revision = r.hasMore() ? r.readInt() : 1;
+            r.expectEnd();
+            if (revision < 1) {
+                mChannel.close();
+                throw new SyncProtocolException("The other device sent a bad revision.");
+            }
+            mHostRevision = revision;
+        }
+        return mHostRevision;
+    }
+
+    /**
+     * Whether the host can continue a download part way into a file.
+     */
+    @WorkerThread
+    public boolean canResume() throws IOException {
+        return hostRevision() >= SyncMessages.REVISION_RESUME;
+    }
+
+    /**
      * Streams one APK file into {@code out}. The size must match what the host listed, every
      * byte is counted against it, and the SHA-256 the host sends at the end must match what
      * arrived. Returns that digest.
@@ -143,21 +175,52 @@ public final class SyncClientSession implements Closeable {
     @NonNull
     public byte[] download(@NonNull String packageName, @NonNull String fileName, long expectedSize,
                            @NonNull OutputStream out, @Nullable ProgressListener progress) throws IOException {
+        return download(packageName, fileName, expectedSize, 0, null, out, progress);
+    }
+
+    /**
+     * Like {@link #download(String, String, long, OutputStream, ProgressListener)}, but skips the
+     * first {@code offset} bytes, which the caller already has. {@code prefixDigest} must already
+     * hold those bytes: the host's digest covers the whole file, so it's the only way to check the
+     * stitched copy. Progress counts from the offset. A host that can't resume is refused here,
+     * before anything is sent, and the session stays usable.
+     */
+    @WorkerThread
+    @NonNull
+    public byte[] download(@NonNull String packageName, @NonNull String fileName, long expectedSize, long offset,
+                           @Nullable MessageDigest prefixDigest, @NonNull OutputStream out,
+                           @Nullable ProgressListener progress) throws IOException {
         if (!SyncMessages.isSafeFileName(fileName) || expectedSize < 0 || expectedSize > SyncMessages.MAX_FILE_SIZE) {
             throw new SyncProtocolException("Refusing to request " + fileName);
         }
-        mChannel.send(SyncMessages.getRequest(packageName, fileName, expectedSize));
+        if (offset < 0 || offset > expectedSize) {
+            throw new SyncProtocolException("Bad start offset for " + fileName);
+        }
+        if (offset > 0) {
+            if (prefixDigest == null) {
+                throw new IllegalArgumentException("A resumed download needs the digest of what is already here.");
+            }
+            if (!canResume()) {
+                throw new SyncProtocolException("The other device can't resume a download.");
+            }
+        }
+        mChannel.send(SyncMessages.getRequest(packageName, fileName, expectedSize, offset));
         byte[] reply = mChannel.receive(SyncMessages.MAX_CONTROL);
         throwIfError(reply);
         SyncMessages.Reader header = SyncMessages.read(reply, SyncMessages.FILE_HEADER);
         long size = header.readLong();
+        long skipped = offset > 0 ? header.readLong() : 0;
         header.expectEnd();
         if (size != expectedSize) {
             mChannel.close();
             throw new SyncProtocolException("The other device announced a different file size.");
         }
-        MessageDigest digest = SyncCrypto.sha256();
-        long received = 0;
+        if (skipped != offset) {
+            mChannel.close();
+            throw new SyncProtocolException("The other device started from a different place.");
+        }
+        MessageDigest digest = offset > 0 ? prefixDigest : SyncCrypto.sha256();
+        long received = offset;
         while (true) {
             byte[] frame = mChannel.receive(SyncMessages.MAX_CHUNK_FRAME);
             byte type = SyncMessages.typeOf(frame);
