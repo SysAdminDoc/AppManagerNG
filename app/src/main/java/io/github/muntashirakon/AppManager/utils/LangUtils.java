@@ -24,6 +24,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackManager;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 
 public final class LangUtils {
@@ -76,6 +77,10 @@ public final class LangUtils {
         Locale locale = getAppLanguages(context).get(language);
         if (locale != null) {
             return locale;
+        }
+        if (language.equals(LanguagePackManager.getActiveCode(context))) {
+            // An imported language file the app has no built-in translation for
+            return Locale.forLanguageTag(language);
         }
         // Load from system configuration
         Configuration conf = Resources.getSystem().getConfiguration();

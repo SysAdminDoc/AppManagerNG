@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "language_code": "pt_br",
+  "language_name": "Portugues",
+  "translation_version": 2,
+  "translators": [
+    "Ana",
+    "Ben"
+  ],
+  "translations": {
+    "cancel": {
+      "original": "Cancel now",
+      "translation": "Cancelar"
+    },
+    "apps_count": {
+      "translation": "%1$d tem %2$s apps"
+    },
+    "warning": {
+      "translation": "<script>x</script>"
+    },
+    "help_link": {
+      "translation": "<a href=\"https://evil.example\">ajuda</a>"
+    },
+    "apps": {
+      "translation": "Apps"
+    },
+    "items_left": {
+      "translation": {
+        "one": "%s item"
+      }
+    },
+    "gone_key": {
+      "original": "Gone",
+      "translation": "Foi"
+    },
+    "bad key": {
+      "translation": "x"
+    },
+    "not_object": "x",
+    "bad_form": {
+      "translation": {
+        "one": 1,
+        "other": "x"
+      }
+    },
+    "bad_quantity": {
+      "translation": {
+        "other": "x",
+        "several": "y"
+      }
+    }
+  }
+}

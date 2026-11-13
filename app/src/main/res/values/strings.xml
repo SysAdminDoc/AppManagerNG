@@ -1075,6 +1075,45 @@
     <!-- T21-E Discreet / generic launcher icon (Settings -> Appearance) -->
     <string name="pref_launcher_icon">Launcher icon</string>
     <string name="pref_launcher_icon_summary">Choose how AppManagerNG appears on your home screen.</string>
+    <!-- Language files people import to translate the app themselves (Settings -> Appearance) -->
+    <string name="language_files">Language files</string>
+    <string name="language_files_summary">Import and share translations people make themselves</string>
+    <string name="language_files_import">Import a language file</string>
+    <string name="language_files_import_summary">Pick a .json file someone shared or one you made. It only holds text, so it can\'t run anything.</string>
+    <string name="language_files_start">Start a translation</string>
+    <string name="language_files_start_summary">Save a file with every English string to fill in, or start from a built-in translation to correct it</string>
+    <string name="language_files_start_from">Start from</string>
+    <string name="language_files_start_scratch">Nothing, every string empty</string>
+    <string name="language_files_yours">Your language files</string>
+    <string name="language_files_none">No language files yet</string>
+    <string name="language_files_needs_android_11">Using a language file needs Android 11 or newer. You can still make and share them here.</string>
+    <string name="language_files_translated">%1$d of %2$d strings translated</string>
+    <plurals name="language_files_outdated">
+        <item quantity="one">%d may be out of date</item>
+        <item quantity="other">%d may be out of date</item>
+    </plurals>
+    <plurals name="language_files_need_fixing">
+        <item quantity="one">%d needs fixing</item>
+        <item quantity="other">%d need fixing</item>
+    </plurals>
+    <string name="language_files_in_use">In use</string>
+    <string name="language_files_use">Use this language</string>
+    <string name="language_files_stop_using">Stop using it</string>
+    <string name="language_files_export">Export for editing</string>
+    <string name="language_files_added">Added %s</string>
+    <string name="language_files_updated">Updated %s</string>
+    <string name="language_files_removed">Removed %s</string>
+    <string name="language_files_save_failed">Couldn\'t save the file</string>
+    <string name="language_files_use_failed">Couldn\'t switch to that language file</string>
+    <string name="language_files_import_failed">Couldn\'t import that file. %s</string>
+    <string name="language_files_error_not_a_pack">It isn\'t a language file.</string>
+    <string name="language_files_error_too_large">It\'s bigger than 4 MB.</string>
+    <string name="language_files_error_newer">It was made for a newer version of the app.</string>
+    <string name="language_files_error_bad_code">Fill in language_code with a code like de or pt-BR.</string>
+    <string name="language_files_error_bad_name">Fill in language_name with the name of the language.</string>
+    <string name="language_files_error_english">English is built in, so the file needs another language.</string>
+    <string name="language_files_error_nothing_usable">None of its translations can be used with this version.</string>
+    <string name="language_files_error_read">The file couldn\'t be read.</string>
     <string name="launcher_icon_default">Default</string>
     <string name="launcher_icon_ng_mark">AppManagerNG mark</string>
     <string name="launcher_icon_neutral">Neutral square</string>

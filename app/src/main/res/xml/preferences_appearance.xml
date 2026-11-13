@@ -1,5 +1,6 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
     <Preference
         app:key="app_theme"
@@ -29,6 +30,13 @@
         app:key="launcher_icon_style"
         app:title="@string/pref_launcher_icon"
         app:summary="@string/pref_launcher_icon_summary"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        android:fragment="io.github.muntashirakon.AppManager.settings.LanguagePacksPreferences"
+        app:key="language_files"
+        app:title="@string/language_files"
+        app:summary="@string/language_files_summary"
         app:iconSpaceReserved="false" />
 
     <Preference

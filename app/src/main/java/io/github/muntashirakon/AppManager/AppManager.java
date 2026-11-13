@@ -28,6 +28,7 @@ import io.github.muntashirakon.AppManager.apk.behavior.AutoFreezeOnLockReceiver;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerService;
 import io.github.muntashirakon.AppManager.debloat.DebloatDefinitionsUpdater;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryPruneScheduler;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackManager;
 import io.github.muntashirakon.AppManager.logcat.helper.WidgetHelper;
 import io.github.muntashirakon.AppManager.misc.AMExceptionHandler;
 import io.github.muntashirakon.AppManager.misc.ProfilingTriggerHelper;
@@ -68,6 +69,8 @@ public class AppManager extends Application {
         Thread.setDefaultUncaughtExceptionHandler(new AMExceptionHandler(this));
         mNightModeMask = getNightModeMask(getResources().getConfiguration());
         configureActivityEmbeddingSplits();
+        // Before the locale is applied, so an imported language file is already in place
+        LanguagePackManager.installOnStartup(this);
         AppearanceUtils.init(this);
         registerAutoFreezeOnLockReceiver();
         Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
