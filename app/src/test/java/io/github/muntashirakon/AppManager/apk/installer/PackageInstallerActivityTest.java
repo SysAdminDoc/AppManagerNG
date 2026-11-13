@@ -19,6 +19,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
+import org.robolectric.shadows.ShadowToast;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.ApkSource;
 import io.github.muntashirakon.AppManager.apk.CachedApkSource;
 
@@ -113,6 +115,20 @@ public class PackageInstallerActivityTest {
         activity.onNewIntent(intent);
 
         assertTrue("A second app sent while the installer is open must not be dropped", activity.hasNext());
+        assertEquals(RuntimeEnvironment.getApplication().getString(R.string.added_to_queue),
+                ShadowToast.getTextOfLatestToast());
+    }
+
+    @Test
+    public void bringingTheInstallerBackDoesNotSayAnythingWasQueued() {
+        PackageInstallerActivity activity = Robolectric.buildActivity(PackageInstallerActivity.class).get();
+
+        // A launch with nothing to install (the installer brought to the front) queued nothing
+        // but still toasted "Added to queue"
+        activity.onNewIntent(new Intent(RuntimeEnvironment.getApplication(), PackageInstallerActivity.class));
+
+        assertFalse(activity.hasNext());
+        assertNull(ShadowToast.getLatestToast());
     }
 
     @Test
