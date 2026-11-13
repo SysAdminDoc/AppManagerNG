@@ -490,7 +490,7 @@ public class LanSyncActivityTest {
         adapter.onBindViewHolder(first, 0);
         assertEquals(View.VISIBLE, first.pull.getVisibility());
         assertTrue(first.pull.isEnabled());
-        assertEquals(activity.getString(R.string.lan_sync_replace), first.pull.getText().toString());
+        assertEquals(activity.getString(R.string.replace), first.pull.getText().toString());
         assertEquals(activity.getString(R.string.lan_sync_note_signature_replace), first.note.getText().toString());
         first.pull.performClick();
         assertEquals(Collections.singletonList(mismatch), replaced);
@@ -713,7 +713,7 @@ public class LanSyncActivityTest {
             shadowOf(Looper.getMainLooper()).idle();
             assertTrue(new LanSyncSettings(activity).isAllowReplace());
             MaterialButton replace = rowButton(activity);
-            assertEquals(activity.getString(R.string.lan_sync_replace), replace.getText().toString());
+            assertEquals(activity.getString(R.string.replace), replace.getText().toString());
             assertTrue(replace.isEnabled());
             replace.performClick();
 

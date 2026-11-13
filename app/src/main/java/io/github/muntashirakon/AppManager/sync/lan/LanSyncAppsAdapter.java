@@ -90,7 +90,7 @@ class LanSyncAppsAdapter extends RecyclerView.Adapter<LanSyncAppsAdapter.ViewHol
         holder.note.setText(noteFor(context, row, mAllowReplace));
         boolean canPull = SyncComparator.canPull(row.status);
         boolean canReplace = !canPull && canReplace(row, mAllowReplace);
-        holder.pull.setText(canReplace ? R.string.lan_sync_replace : R.string.lan_sync_get);
+        holder.pull.setText(canReplace ? R.string.replace : R.string.lan_sync_get);
         holder.pull.setVisibility(canPull || canReplace ? View.VISIBLE : View.GONE);
         holder.pull.setEnabled((canPull || canReplace) && mEnabled);
         if (canPull) {

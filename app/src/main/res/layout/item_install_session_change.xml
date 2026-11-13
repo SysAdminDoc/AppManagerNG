@@ -15,7 +15,7 @@
         android:gravity="center_vertical"
         android:minHeight="48dp"
         android:textAppearance="?attr/textAppearanceBodyLarge"
-        tools:text="Activities: 2 added, 1 removed" />
+        tools:text="Activities: added 2, removed 1" />
 
     <TextView
         android:id="@+id/names"
@@ -23,6 +23,7 @@
         android:layout_height="wrap_content"
         android:paddingBottom="@dimen/padding_small"
         android:paddingStart="@dimen/padding_small"
+        android:paddingEnd="@dimen/padding_small"
         android:textAppearance="?attr/textAppearanceBodySmall"
         android:textIsSelectable="true"
         android:visibility="gone"
