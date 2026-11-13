@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.i18n;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
@@ -15,6 +16,7 @@ import android.os.ParcelFileDescriptor;
 import android.os.SystemClock;
 import android.util.Log;
 
+import androidx.annotation.ChecksSdkIntAtLeast;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -137,6 +139,7 @@ public final class LanguagePackManager {
     }
 
     /** Using a language file needs {@code ResourcesLoader}, which arrived in Android 11. */
+    @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.R)
     public static boolean canUse() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
     }
@@ -157,7 +160,11 @@ public final class LanguagePackManager {
      * Lays the language file in use over the app's strings. Called from {@code Application#onCreate}
      * before the app's locale is applied. A table cached for this app build loads in a few
      * milliseconds. After an app update the file is compiled again first.
+     * <p>
+     * This blocks on purpose: the first activity inflates right after {@code onCreate}, and a table
+     * loaded later would show the first screen in the wrong language.
      */
+    @SuppressLint("WrongThread")
     @MainThread
     public static void installOnStartup(@NonNull Application app) {
         if (!canUse() || getActiveCode(app) == null) {
@@ -345,7 +352,7 @@ public final class LanguagePackManager {
         boolean inUse = inUseCode() != null;
         String previous = mPrefs.getString(KEY_PREVIOUS, LangUtils.LANG_AUTO);
         mPrefs.edit().remove(KEY_ACTIVE).remove(KEY_PREVIOUS).commit();
-        if (mLoader != null) {
+        if (mLoader != null && canUse()) {
             Api30.clear(mLoader);
         }
         if (inUse) {
@@ -457,6 +464,7 @@ public final class LanguagePackManager {
         AppearanceUtils.applyConfigurationChangesToActivities();
     }
 
+    @RequiresApi(Build.VERSION_CODES.R)
     @MainThread
     private void loadTable(@NonNull File table) throws IOException {
         if (mLoader == null) {
