@@ -994,7 +994,7 @@ public final class PackageInstallerCompat {
             Log.d(TAG, "Commit: Waiting for user interaction...");
             waitForPackageInstallerBroadcasts("Commit");
         } else {
-            Intent resultIntent = intentReceiver.getResult(INSTALL_RESULT_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+            Intent resultIntent = awaitCommitResult(intentReceiver);
             if (resultIntent != null && resultIntent.getIntExtra(PackageInstaller.EXTRA_STATUS,
                     PackageInstaller.STATUS_FAILURE) == PackageInstaller.STATUS_PENDING_USER_ACTION) {
                 resultIntent = awaitUserAction(intentReceiver, resultIntent);
@@ -1423,7 +1423,9 @@ public final class PackageInstallerCompat {
                 markPackageInstallerWaitFailed(operation, STATUS_MESSAGE_INSTALLER_TIMEOUT);
                 return;
             }
-            boolean installFinished = mInstallWatcher.await(INSTALL_RESULT_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+            boolean installFinished = InstallResultWait.await(
+                    TimeUnit.MINUTES.toMillis(INSTALL_RESULT_TIMEOUT_MINUTES),
+                    millis -> mInstallWatcher.await(millis, TimeUnit.MILLISECONDS), this::isSessionAlive);
             if (!installFinished && !mInstallCompleted) {
                 markPackageInstallerWaitFailed(operation, STATUS_MESSAGE_INSTALLER_TIMEOUT);
             }
@@ -1431,6 +1433,42 @@ public final class PackageInstallerCompat {
             Thread.currentThread().interrupt();
             markPackageInstallerWaitFailed(operation, STATUS_MESSAGE_INSTALLER_INTERRUPTED);
             Log.e(TAG, "%s: PackageInstaller wait interrupted.", e, operation);
+        }
+    }
+
+    /**
+     * The first answer to a commit through the local sender, waiting past the usual minute while
+     * Android still holds the session (see {@link InstallResultWait}).
+     *
+     * @return {@code null} when no answer came or the wait was interrupted.
+     */
+    @Nullable
+    private Intent awaitCommitResult(@NonNull LocalIntentReceiver intentReceiver) {
+        Intent[] result = new Intent[1];
+        try {
+            InstallResultWait.await(TimeUnit.MINUTES.toMillis(INSTALL_RESULT_TIMEOUT_MINUTES), millis -> {
+                result[0] = intentReceiver.getResult(millis, TimeUnit.MILLISECONDS);
+                if (result[0] == null && Thread.currentThread().isInterrupted()) {
+                    throw new InterruptedException();
+                }
+                return result[0] != null;
+            }, this::isSessionAlive);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        return result[0];
+    }
+
+    /** Whether Android still holds the session being installed, so its answer is still coming. */
+    private boolean isSessionAlive() {
+        if (mPackageInstaller == null || mSessionId < 0) {
+            return false;
+        }
+        try {
+            return mPackageInstaller.getSessionInfo(mSessionId) != null;
+        } catch (Throwable e) {  // RemoteException
+            Log.w(TAG, "Could not read session %d.", e, mSessionId);
+            return false;
         }
     }
 
