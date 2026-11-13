@@ -78,8 +78,28 @@ public final class LanSyncDownloader {
     public static Result pull(@NonNull SyncClientSession session, @NonNull SyncApp app, @Nullable SyncApp installed,
                               @NonNull File dir, @NonNull ApkSignatureGate.DigestReader reader,
                               @Nullable Progress progress) throws IOException {
-        if (!SyncComparator.canPull(SyncComparator.compare(app, installed))) {
+        return pull(session, app, installed, false, dir, reader, progress);
+    }
+
+    /**
+     * @param replacing the installed copy is signed by a different key and will be uninstalled
+     *                  before this one goes in. The files still have to be signed by the keys the
+     *                  other device listed, splits matching the base, but not by the installed key.
+     *                  Ignored when the keys match or nothing is installed.
+     */
+    @WorkerThread
+    @NonNull
+    public static Result pull(@NonNull SyncClientSession session, @NonNull SyncApp app, @Nullable SyncApp installed,
+                              boolean replacing, @NonNull File dir, @NonNull ApkSignatureGate.DigestReader reader,
+                              @Nullable Progress progress) throws IOException {
+        SyncComparator.Status status = SyncComparator.compare(app, installed);
+        replacing = replacing && status == SyncComparator.Status.SIGNATURE_DIFFERS;
+        if (!replacing && !SyncComparator.canPull(status)) {
             throw new IOException("This app is not newer on the other device or is signed differently.");
+        }
+        if (replacing) {
+            // Checked against the listed keys only: the installed copy goes before the install
+            installed = null;
         }
         Set<String> names = new HashSet<>();
         for (SyncApp.ApkFileInfo info : app.files) {

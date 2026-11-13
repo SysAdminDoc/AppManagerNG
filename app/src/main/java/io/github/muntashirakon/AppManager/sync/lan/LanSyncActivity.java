@@ -111,6 +111,7 @@ public class LanSyncActivity extends BaseActivity {
     private TextView mAppsSummary;
     private final Map<SyncComparator.Status, Chip> mChips = new EnumMap<>(SyncComparator.Status.class);
     private MaterialButton mUpdateAll;
+    private MaterialSwitch mAllowReplace;
     private TextView mEmptyTitle;
     private LanSyncAppsAdapter mAdapter;
 
@@ -227,6 +228,12 @@ public class LanSyncActivity extends BaseActivity {
         mFilter = statusForChip(chipGroup.getCheckedChipId());
         mUpdateAll = findViewById(R.id.update_all);
         mUpdateAll.setOnClickListener(v -> mViewModel.pullAllNewer());
+        mAllowReplace = findViewById(R.id.allow_replace);
+        mAllowReplace.setChecked(getSettings().isAllowReplace());
+        mAllowReplace.setOnCheckedChangeListener((button, checked) -> {
+            getSettings().setAllowReplace(checked);
+            mAdapter.setAllowReplace(checked);
+        });
         RecyclerView recyclerView = findViewById(R.id.recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         View emptyState = findViewById(android.R.id.empty);
@@ -235,7 +242,13 @@ public class LanSyncActivity extends BaseActivity {
         emptyState.findViewById(R.id.empty_state_summary).setVisibility(View.GONE);
         emptyState.setVisibility(View.GONE);
         recyclerView.setEmptyView(emptyState);
-        mAdapter = new LanSyncAppsAdapter(row -> mViewModel.pull(row));
+        mAdapter = new LanSyncAppsAdapter(row -> mViewModel.pull(row), row -> {
+            // A row bound before the switch went off can't remove anything
+            if (getSettings().isAllowReplace()) {
+                mViewModel.replace(row);
+            }
+        });
+        mAdapter.setAllowReplace(mAllowReplace.isChecked());
         recyclerView.setAdapter(mAdapter);
 
         mViewModel.getSharing().observe(this, sharing -> {
@@ -746,6 +759,8 @@ public class LanSyncActivity extends BaseActivity {
                 counts.get(SyncComparator.Status.OLDER)));
 
         boolean idle = mTask == null;
+        // The switch sits with the apps it's about
+        mAllowReplace.setVisibility(mFilter == SyncComparator.Status.SIGNATURE_DIFFERS ? View.VISIBLE : View.GONE);
         mUpdateAll.setVisibility(rows != null && newer > 0 ? View.VISIBLE : View.GONE);
         mUpdateAll.setText(getString(R.string.lan_sync_update_all, newer));
         mUpdateAll.setEnabled(idle);
@@ -776,7 +791,8 @@ public class LanSyncActivity extends BaseActivity {
     }
 
     /**
-     * Every download here already matched the signer list and the installed copy. A bundle is a
+     * Every download here already matched the signer list and the installed copy (or, for a
+     * replacement, the installed copy is already uninstalled). A bundle is a
      * temporary file the installer owns and deletes when it is done. A single APK is the received
      * copy itself, which stays for Received APKs until it's cleaned up.
      */

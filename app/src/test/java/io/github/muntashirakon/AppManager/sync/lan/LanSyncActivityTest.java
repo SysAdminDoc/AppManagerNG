@@ -54,6 +54,7 @@ import org.robolectric.shadow.api.Shadow;
 import org.robolectric.shadows.ShadowNsdManager;
 import org.robolectric.shadows.ShadowToast;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -74,6 +75,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerActivity;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.types.PackageChangeReceiver;
@@ -461,6 +463,54 @@ public class LanSyncActivityTest {
     }
 
     @Test
+    public void withReplacingAllowedAnAppSignedByAnotherKeyGetsAReplaceButton() {
+        LanSyncActivity activity = mController.get();
+        List<LanSyncViewModel.AppRow> pulled = new ArrayList<>();
+        List<LanSyncViewModel.AppRow> replaced = new ArrayList<>();
+        LanSyncAppsAdapter adapter = new LanSyncAppsAdapter(pulled::add, replaced::add);
+        FrameLayout parent = new FrameLayout(activity);
+        LanSyncViewModel.AppRow mismatch = new LanSyncViewModel.AppRow(SyncFixtures.app("com.example.a", 5, SIGNER_B),
+                SyncFixtures.app("com.example.a", 3, SIGNER_A));
+        SyncApp systemHere = new SyncApp("com.example.s", "com.example.s", 3, "v3", true,
+                Collections.singletonList(SIGNER_A), Collections.<String>emptyList(),
+                Collections.singletonList(new SyncApp.ApkFileInfo("base.apk", 1)));
+        LanSyncViewModel.AppRow system = new LanSyncViewModel.AppRow(SyncFixtures.app("com.example.s", 5, SIGNER_B),
+                systemHere);
+        assertEquals(SyncComparator.Status.SIGNATURE_DIFFERS, system.status);
+        adapter.setRows(Arrays.asList(mismatch, system), true);
+        LanSyncAppsAdapter.ViewHolder first = adapter.onCreateViewHolder(parent, 0);
+        LanSyncAppsAdapter.ViewHolder second = adapter.onCreateViewHolder(parent, 0);
+
+        // Off by default: nothing changes for anyone who hasn't asked for it
+        adapter.onBindViewHolder(first, 0);
+        assertEquals(View.GONE, first.pull.getVisibility());
+        assertEquals(activity.getString(R.string.lan_sync_note_signature), first.note.getText().toString());
+
+        adapter.setAllowReplace(true);
+        adapter.onBindViewHolder(first, 0);
+        assertEquals(View.VISIBLE, first.pull.getVisibility());
+        assertTrue(first.pull.isEnabled());
+        assertEquals(activity.getString(R.string.lan_sync_replace), first.pull.getText().toString());
+        assertEquals(activity.getString(R.string.lan_sync_note_signature_replace), first.note.getText().toString());
+        first.pull.performClick();
+        assertEquals(Collections.singletonList(mismatch), replaced);
+        assertTrue("Replace never goes down the plain Get path", pulled.isEmpty());
+
+        // The copy of a system app on the system partition can't be removed, so there's no button
+        adapter.onBindViewHolder(second, 1);
+        assertEquals(View.GONE, second.pull.getVisibility());
+        assertEquals(activity.getString(R.string.lan_sync_note_signature_system), second.note.getText().toString());
+        second.pull.performClick();
+        assertEquals(1, replaced.size());
+
+        // While a download runs, nothing else can start
+        adapter.setRows(Collections.singletonList(mismatch), false);
+        adapter.onBindViewHolder(first, 0);
+        assertEquals(View.VISIBLE, first.pull.getVisibility());
+        assertFalse(first.pull.isEnabled());
+    }
+
+    @Test
     public void searchNarrowsTheListAndTheChipsCountWhatItFinds() {
         LanSyncActivity activity = mController.get();
         LanSyncViewModel viewModel = new ViewModelProvider(activity).get(LanSyncViewModel.class);
@@ -623,6 +673,155 @@ public class LanSyncActivityTest {
         } finally {
             host.stop();
         }
+    }
+
+    @Test
+    public void replacingUninstallsTheOldCopyBeforeTheInstallerGetsTheNewOne() throws Exception {
+        LanSyncActivity activity = mController.get();
+        LanSyncViewModel viewModel = new ViewModelProvider(activity).get(LanSyncViewModel.class);
+        List<String> uninstalled = Collections.synchronizedList(new ArrayList<>());
+        List<Object> readyDuringUninstall = Collections.synchronizedList(new ArrayList<>());
+        viewModel.setUninstaller((packageName, label) -> {
+            uninstalled.add(packageName);
+            readyDuringUninstall.add(String.valueOf(viewModel.getReady().getValue()));
+            return null;
+        }, Runnable::run);
+        SyncFixtures.Catalog catalog = new SyncFixtures.Catalog();
+        LanSyncHost host = textLauncherHost(viewModel, catalog);
+        try {
+            LanSyncViewModel.AppRow row = connectAndWaitForRow(viewModel, host.start());
+            assertEquals(SyncComparator.Status.SIGNATURE_DIFFERS, row.status);
+            ((Chip) activity.findViewById(R.id.chip_signature)).performClick();
+            shadowOf(Looper.getMainLooper()).idle();
+            MaterialSwitch allowReplace = activity.findViewById(R.id.allow_replace);
+            assertEquals(View.VISIBLE, allowReplace.getVisibility());
+            assertFalse("Replacing is off until asked for", allowReplace.isChecked());
+            assertEquals(View.GONE, rowButton(activity).getVisibility());
+
+            // A Replace button left over from before the switch went off does nothing
+            LanSyncAppsAdapter adapter = (LanSyncAppsAdapter) ((RecyclerView) activity.findViewById(
+                    R.id.recycler_view)).getAdapter();
+            adapter.setAllowReplace(true);
+            rowButton(activity).performClick();
+            Thread.sleep(300);
+            shadowOf(Looper.getMainLooper()).idle();
+            assertTrue(catalog.fileLookups.isEmpty());
+            assertTrue(uninstalled.isEmpty());
+            adapter.setAllowReplace(false);
+
+            allowReplace.performClick();
+            shadowOf(Looper.getMainLooper()).idle();
+            assertTrue(new LanSyncSettings(activity).isAllowReplace());
+            MaterialButton replace = rowButton(activity);
+            assertEquals(activity.getString(R.string.lan_sync_replace), replace.getText().toString());
+            assertTrue(replace.isEnabled());
+            replace.performClick();
+
+            Intent started = waitFor(() -> shadowOf(activity).getNextStartedActivity());
+            assertEquals(Collections.singletonList("ademar.textlauncher"), uninstalled);
+            assertEquals("The installer waits for the uninstall", Collections.singletonList("null"),
+                    readyDuringUninstall);
+            assertEquals(PackageInstallerActivity.class.getName(), started.getComponent().getClassName());
+            assertNull(ShadowToast.getTextOfLatestToast());
+        } finally {
+            host.stop();
+            LanSyncInstallTracker.resetForTesting();
+        }
+    }
+
+    @Test
+    public void aFailedUninstallKeepsTheOldAppAndSaysWhy() throws Exception {
+        LanSyncActivity activity = mController.get();
+        LanSyncViewModel viewModel = new ViewModelProvider(activity).get(LanSyncViewModel.class);
+        List<String> uninstalled = Collections.synchronizedList(new ArrayList<>());
+        viewModel.setUninstaller((packageName, label) -> {
+            uninstalled.add(packageName);
+            return "DELETE_FAILED_INTERNAL_ERROR";
+        }, Runnable::run);
+        SyncFixtures.Catalog catalog = new SyncFixtures.Catalog();
+        LanSyncHost host = textLauncherHost(viewModel, catalog);
+        try {
+            LanSyncViewModel.AppRow row = connectAndWaitForRow(viewModel, host.start());
+            viewModel.replace(row);
+
+            String toast = waitFor(() -> ShadowToast.getTextOfLatestToast());
+            assertEquals(activity.getString(R.string.lan_sync_replace_uninstall_failed, "Text Launcher",
+                    "DELETE_FAILED_INTERNAL_ERROR"), toast);
+            assertEquals(Collections.singletonList("ademar.textlauncher"), uninstalled);
+            assertNull("Nothing goes to the installer", shadowOf(activity).getNextStartedActivity());
+            waitFor(() -> viewModel.getTask().getValue() == null ? Boolean.TRUE : null);
+            // The view model's Application can outlive a Robolectric test, so ask it for the folder
+            ReceivedApkStore.Entry received = ReceivedApkStore.of(viewModel.getApplication())
+                    .find(ReceivedApkStore.keyOf(row.remote));
+            assertNotNull("The new copy waits in Received APKs", received);
+            assertTrue(received.complete);
+            assertTrue(received.hasAllFiles());
+        } finally {
+            host.stop();
+            LanSyncInstallTracker.resetForTesting();
+        }
+    }
+
+    /**
+     * Lists the text launcher fixture signed by its own key, while the copy installed here is
+     * signed by another one.
+     */
+    @NonNull
+    private static LanSyncHost textLauncherHost(@NonNull LanSyncViewModel viewModel,
+                                                @NonNull SyncFixtures.Catalog catalog) throws Exception {
+        File apk = SyncFixtures.resource(ApkSignatureGateTest.TEXTLAUNCHER);
+        catalog.add(new SyncApp("ademar.textlauncher", "Text Launcher", 5, "5", false,
+                Collections.singletonList(ApkSignatureGateTest.TEXTLAUNCHER_SIGNER), Collections.<String>emptyList(),
+                Collections.singletonList(new SyncApp.ApkFileInfo("base.apk", apk.length()))), apk);
+        SyncApp here = SyncFixtures.app("ademar.textlauncher", 3, ApkSignatureGateTest.DNSFILTER_SIGNER);
+        viewModel.setLocalIndex(() -> new HashMap<>(Collections.singletonMap(here.packageName, here)));
+        viewModel.setInstalledLookup(packageName -> here.packageName.equals(packageName) ? here : null);
+        return new LanSyncHost(null, "Other phone", LocalIdentity.generate(new SeededRandom(93)),
+                new SyncFixtures.MemoryTrust(), catalog, new SeededRandom(94), new LanSyncHost.Listener() {
+            @Override
+            public void onApprovalRequest(@Nullable ApprovalGate.Request request) {
+                if (request != null) {
+                    request.decide(ApprovalGate.Decision.ALLOW);
+                }
+            }
+
+            @Override
+            public void onClientAccepted(@NonNull String peerName, @NonNull String peerFingerprint) {
+            }
+
+            @Override
+            public void onFileSent(@NonNull String packageName, @NonNull String fileName) {
+            }
+
+            @Override
+            public void onSessionEnded(@Nullable String error) {
+            }
+
+            @Override
+            public void onHostFailed(@NonNull String error) {
+            }
+        });
+    }
+
+    @NonNull
+    private static LanSyncViewModel.AppRow connectAndWaitForRow(@NonNull LanSyncViewModel viewModel, int port)
+            throws Exception {
+        viewModel.connect(InetAddress.getLoopbackAddress(), port, "Other phone");
+        return waitFor(() -> {
+            List<LanSyncViewModel.AppRow> rows = viewModel.getRows().getValue();
+            return rows != null && !rows.isEmpty() ? rows.get(0) : null;
+        });
+    }
+
+    @NonNull
+    private static MaterialButton rowButton(@NonNull LanSyncActivity activity) {
+        RecyclerView list = activity.findViewById(R.id.recycler_view);
+        list.measure(View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY));
+        list.layout(0, 0, 1080, 1920);
+        RecyclerView.ViewHolder holder = list.findViewHolderForAdapterPosition(0);
+        assertNotNull(holder);
+        return ((LanSyncAppsAdapter.ViewHolder) holder).pull;
     }
 
     @NonNull
