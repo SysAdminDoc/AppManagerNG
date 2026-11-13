@@ -35,7 +35,9 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.PendingIntentCompat;
 import androidx.core.app.ServiceCompat;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -67,6 +69,7 @@ public class PackageInstallerService extends ForegroundService {
     public static final String TAG = PackageInstallerService.class.getSimpleName();
 
     public static final String EXTRA_QUEUE_ITEM = "queue_item";
+    private static final String EXTRA_QUEUE_TOKEN = "queue_token";
     public static final String CHANNEL_ID = BuildConfig.APPLICATION_ID + ".channel.INSTALL";
     private static final long STALE_INSTALL_SESSION_TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(30);
 
@@ -85,6 +88,9 @@ public class PackageInstallerService extends ForegroundService {
     private QueuedProgressHandler mProgressHandler;
     private NotificationInfo mNotificationInfo;
     private PowerManager.WakeLock mWakeLock;
+    // "Added to queue" notifications still showing, by the token put on their intent (main thread only)
+    private final Map<String, Object> mQueuedNotifications = new HashMap<>();
+    private int mNextQueueToken;
 
     @Override
     public void onCreate() {
@@ -284,11 +290,22 @@ public class PackageInstallerService extends ForegroundService {
                 .setTitle(appLabel)
                 .setBody(getString(R.string.added_to_queue))
                 .setTime(System.currentTimeMillis());
+        if (intent != null) {
+            // The intent queued here is the one handed back to onStartIntent
+            String token = String.valueOf(++mNextQueueToken);
+            intent.putExtra(EXTRA_QUEUE_TOKEN, token);
+            mQueuedNotifications.put(token, notificationInfo);
+        }
         mProgressHandler.onQueue(notificationInfo);
     }
 
     @Override
     protected void onStartIntent(@Nullable Intent intent) {
+        // The item is no longer waiting: its queue notification goes and the ongoing one takes over
+        String token = intent != null ? intent.getStringExtra(EXTRA_QUEUE_TOKEN) : null;
+        if (token != null) {
+            mProgressHandler.onDequeue(mQueuedNotifications.remove(token));
+        }
         // Set app name in the ongoing notification
         ApkQueueItem apkQueueItem = getQueueItem(intent);
         String appName;
@@ -310,8 +327,12 @@ public class PackageInstallerService extends ForegroundService {
     public void onDestroy() {
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
         if (mProgressHandler != null) {
+            for (Object queued : mQueuedNotifications.values()) {
+                mProgressHandler.onDequeue(queued);
+            }
             mProgressHandler.onDetach(this);
         }
+        mQueuedNotifications.clear();
         CpuUtils.releaseWakeLock(mWakeLock);
         super.onDestroy();
     }

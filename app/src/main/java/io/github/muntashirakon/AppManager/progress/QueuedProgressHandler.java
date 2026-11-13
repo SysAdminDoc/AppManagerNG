@@ -12,4 +12,12 @@ public abstract class QueuedProgressHandler extends ProgressHandler {
      */
     @MainThread
     public abstract void onQueue(@Nullable Object message);
+
+    /**
+     * Call when an item passed to {@link #onQueue(Object)} leaves the queue (it started, or the work was dropped),
+     * with the same message object, so anything shown for the waiting item can go away.
+     */
+    @MainThread
+    public void onDequeue(@Nullable Object message) {
+    }
 }
