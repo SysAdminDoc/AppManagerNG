@@ -1374,6 +1374,21 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         }
     }
 
+    /**
+     * Reads the storage totals again only once Android has confirmed the cache is gone, so a
+     * failed clear keeps showing the last totals that were actually read.
+     */
+    @VisibleForTesting
+    @UiThread
+    static void finishCacheClear(boolean success, @NonNull Runnable reload) {
+        if (success) {
+            UIUtils.displayShortToast(R.string.done);
+            reload.run();
+        } else {
+            UIUtils.displayShortToast(R.string.failed);
+        }
+    }
+
     @UiThread
     private void refreshDetails() {
         if (mMainModel == null || !isAdded()) return;
@@ -3080,11 +3095,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                         ThreadUtils.postOnBackgroundThread(() -> {
                             boolean success = PackageManagerCompat
                                     .deleteApplicationCacheFilesAsUser(mPackageName, mUserId);
-                            ThreadUtils.postOnMainThread(() -> {
-                                if (success) {
-                                    UIUtils.displayShortToast(R.string.done);
-                                } else UIUtils.displayShortToast(R.string.failed);
-                            });
+                            ThreadUtils.postOnMainThread(() -> finishCacheClear(success, this::refreshDetails));
                         });
                     } else {
                         // Use accessibility

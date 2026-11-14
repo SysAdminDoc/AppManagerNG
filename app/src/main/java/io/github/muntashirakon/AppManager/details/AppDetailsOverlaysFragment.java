@@ -10,12 +10,14 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CompoundButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.annotation.UiThread;
+import androidx.annotation.VisibleForTesting;
 
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.materialswitch.MaterialSwitch;
@@ -29,11 +31,9 @@ import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.compat.OverlayManagerCompact;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsOverlayItem;
-import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.self.pref.TipsPrefs;
 import io.github.muntashirakon.AppManager.utils.LangUtils;
-import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.AppManager.utils.appearance.ColorCodes;
 import io.github.muntashirakon.util.AdapterUtils;
@@ -43,7 +43,6 @@ import io.github.muntashirakon.widget.RecyclerView;
 
 public class AppDetailsOverlaysFragment extends AppDetailsFragment {
 
-    private static final String TAG = AppDetailsOverlaysFragment.class.getSimpleName();
     private AppDetailsRecyclerAdapter mAdapter;
     private IOverlayManager overlayManager;
 
@@ -150,6 +149,68 @@ public class AppDetailsOverlaysFragment extends AppDetailsFragment {
         return OVERLAYS;
     }
 
+    /**
+     * What an overlay's switch needs from the view model.
+     */
+    interface OverlayChanges {
+        /**
+         * @return {@code false} if the change was refused because one is still running
+         */
+        boolean setOverlayEnabled(@NonNull String overlayPackage, boolean enable);
+
+        boolean isOverlayChanging(@NonNull String overlayPackage);
+    }
+
+    @Nullable
+    private OverlayChanges overlayChanges() {
+        AppDetailsViewModel model = viewModel;
+        if (model == null) {
+            return null;
+        }
+        return new OverlayChanges() {
+            @Override
+            public boolean setOverlayEnabled(@NonNull String overlayPackage, boolean enable) {
+                return model.setOverlayEnabled(overlayPackage, enable);
+            }
+
+            @Override
+            public boolean isOverlayChanging(@NonNull String overlayPackage) {
+                return model.isOverlayChanging(overlayPackage);
+            }
+        };
+    }
+
+    /**
+     * Shows the overlay's state as last read, and keeps the switch off while a change to it runs.
+     * A tap asks the view model for the change and turns the switch off until the read back after
+     * it arrives. A refused tap puts the switch back.
+     */
+    @VisibleForTesting
+    @UiThread
+    static void bindOverlaySwitch(@NonNull CompoundButton toggle, @NonNull String overlayPackage, boolean mutable,
+                                  boolean enabled, @Nullable OverlayChanges changes) {
+        toggle.setOnClickListener(null);
+        toggle.setChecked(enabled);
+        if (!mutable) {
+            toggle.setEnabled(false);
+            toggle.setClickable(false);
+            toggle.setVisibility(View.GONE);
+            return;
+        }
+        toggle.setEnabled(changes != null && !changes.isOverlayChanging(overlayPackage));
+        toggle.setClickable(true);
+        toggle.setVisibility(View.VISIBLE);
+        toggle.setOnClickListener(v -> {
+            // The switch has already flipped to what was asked for.
+            boolean enable = toggle.isChecked();
+            if (changes != null && changes.setOverlayEnabled(overlayPackage, enable)) {
+                toggle.setEnabled(false);
+            } else {
+                toggle.setChecked(!enable);
+            }
+        });
+    }
+
     private class AppDetailsRecyclerAdapter extends RecyclerView.Adapter<AppDetailsRecyclerAdapter.ViewHolder> {
 
         @NonNull
@@ -159,16 +220,14 @@ public class AppDetailsOverlaysFragment extends AppDetailsFragment {
 
         @UiThread
         void setDefaultList(List<AppDetailsItem<?>> list) {
-            ThreadUtils.postOnBackgroundThread(() -> {
-                mConstraint = viewModel == null ? null : viewModel.getSearchQuery();
-                ThreadUtils.postOnMainThread(() -> {
-                    if (!isAdded()) return;
-                    ProgressIndicatorCompat.setVisibility(progressIndicator, false);
-                    synchronized (mAdapterList) {
-                        AdapterUtils.notifyDataSetChanged(this, mAdapterList, list);
-                    }
-                });
-            });
+            // Applied right here, in the order the lists arrive. Going through a background
+            // thread could put an older list on screen after a newer one.
+            if (!isAdded()) return;
+            mConstraint = viewModel == null ? null : viewModel.getSearchQuery();
+            ProgressIndicatorCompat.setVisibility(progressIndicator, false);
+            synchronized (mAdapterList) {
+                AdapterUtils.notifyDataSetChanged(this, mAdapterList, list);
+            }
         }
 
         AppDetailsRecyclerAdapter() {
@@ -205,9 +264,8 @@ public class AppDetailsOverlaysFragment extends AppDetailsFragment {
             } else {
                 holder.overlayCategory.setVisibility(View.GONE);
             }
-            holder.toggleSwitch.setEnabled(overlayItem.isMutable());
-            holder.toggleSwitch.setClickable(true);
-            holder.toggleSwitch.setChecked(overlayItem.isEnabled());
+            bindOverlaySwitch(holder.toggleSwitch, overlayItem.getPackageName(), overlayItem.isMutable(),
+                    overlayItem.isEnabled(), overlayChanges());
 
             StringBuilder sb = new StringBuilder(getString(R.string.state))
                     .append(LangUtils.getSeparatorString())
@@ -220,26 +278,6 @@ public class AppDetailsOverlaysFragment extends AppDetailsFragment {
             }
             holder.overlayState.setText(sb);
             holder.itemView.setClickable(false);
-            if (overlayItem.isMutable()) {
-                holder.toggleSwitch.setClickable(true);
-                holder.toggleSwitch.setOnClickListener((v) -> ThreadUtils.postOnBackgroundThread(() -> {
-                    try {
-                        // TODO: 2/18/25 Move to ViewModel
-                        if (overlayItem.setEnabled(overlayManager, !overlayItem.isEnabled())) {
-                            ThreadUtils.postOnMainThread(() ->
-                                    AppDetailsAdapterUtils.notifyItemChangedIfPresent(this, mAdapterList, overlayItem));
-                        } else throw new Exception("Error Changing Overlay State " + overlayItem);
-                    } catch (Exception e) {
-                        Log.e(TAG, "Couldn't Change Overlay State", e);
-                        ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.failed));
-                    }
-                }));
-                holder.toggleSwitch.setVisibility(View.VISIBLE);
-            } else {
-                holder.toggleSwitch.setOnClickListener(null);
-                holder.toggleSwitch.setClickable(false);
-                holder.toggleSwitch.setVisibility(View.GONE);
-            }
 
 
             if (overlayItem.isFabricated()) {

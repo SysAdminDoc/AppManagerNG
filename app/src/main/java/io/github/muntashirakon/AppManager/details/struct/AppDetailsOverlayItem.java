@@ -70,10 +70,6 @@ public class AppDetailsOverlayItem extends AppDetailsItem<OverlayInfoHidden> {
     }
 
 
-    public boolean setEnabled(@NonNull IOverlayManager mgr, boolean enabled) throws RemoteException {
-        return mgr.setEnabled(getPackageName(), enabled, item.userId);
-    }
-
     public boolean setPriority(@NonNull IOverlayManager mgr, String newParentPackageName) throws RemoteException {
         return mgr.setPriority(getPackageName(), newParentPackageName, item.userId);
     }
