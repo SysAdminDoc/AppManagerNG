@@ -73,14 +73,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Unblocked 2026-11-07: the upstream commits are public, and the rooted API 36 Magisk AVD on disk is the Android 16 root runtime the acceptance asks for.
   Complexity: M
 
-- [ ] P1: Privileged local-server secure-session hardening
-  Why: the server channel is still a cleartext loopback socket. Protocol 1.4.0 added mutual HMAC proof of the session token, but no doc states the trust model and no test pins the loopback bind.
-  Evidence: `server/src/main/java/io/github/muntashirakon/AppManager/server/Server.java:262` binds `127.0.0.1`. `DataTransmissionHandshakeTest` already rejects a wrong token, a squatting server, a replayed nonce and old handshakes. No trust-model doc exists under `docs/`.
-  Touches: security docs, server connection tests.
-  Acceptance: a security doc states the trust model (loopback only, mutual HMAC, no TLS, and why), and a host test fails if the server binds anything other than loopback.
-  Unblocked 2026-11-07: the design call is already made in the code (loopback bind plus mutual HMAC), so what's left is writing it down and pinning the bind with a test.
-  Complexity: S
-
 - [ ] P2: Dhizuku freeze/suspend executor parity
   Why: freeze and suspend should run through Dhizuku's device-owner delegation on devices where ADB permissions are restricted.
   Evidence: `dhizuku/DhizukuBridge.java` is a detection probe only, and `settings/Ops.java` declares no Dhizuku mode.
