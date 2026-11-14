@@ -2,6 +2,8 @@
 
 package io.github.muntashirakon.AppManager.db.utils;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
@@ -52,6 +54,94 @@ public class AppDbTest {
         for (Backup backup : appDb.getAllBackups(PACKAGE)) {
             appDb.deleteBackup(backup);
         }
+    }
+
+    @Test
+    public void anAppInstalledAgainAfterItsBackupWasListedIsReadFromThePackage() throws IOException {
+        // Backed up, then uninstalled, so the list read it from its backup
+        Backup backup = backup("test", 1_700_000_000_000L, "1.0");
+        AppDb appDb = new AppDb();
+        appDb.insert(backup);
+        appDb.insert(App.fromBackup(backup));
+        // Then installed again
+        Application application = RuntimeEnvironment.getApplication();
+        install(application);
+
+        // What a package change and the list's own refresh both run
+        App mine = mine(appDb.updateApplications(application, new String[]{PACKAGE}));
+
+        assertNotNull(mine);
+        assertTrue(mine.isInstalled);
+    }
+
+    @Test
+    public void anAppInstalledAgainIsStoredAsInstalledHoweverManyBackupsItHas() throws IOException {
+        AppDb appDb = new AppDb();
+        Backup older = backup("older", 1_600_000_000_000L, "0.9");
+        Backup latest = backup("latest", 1_700_000_000_000L, "1.0");
+        appDb.insert(older);
+        appDb.insert(latest);
+        appDb.insert(App.fromBackup(latest));
+        Application application = RuntimeEnvironment.getApplication();
+        install(application);
+
+        List<App> apps = appDb.updateApplications(application, new String[]{PACKAGE});
+
+        // One row for this user, and the one stored is the one returned
+        assertEquals(1, apps.size());
+        assertTrue(apps.get(0).isInstalled);
+        App stored = mine(appDb.getAllApplications(PACKAGE));
+        assertNotNull(stored);
+        assertTrue(stored.isInstalled);
+    }
+
+    @Test
+    public void anUninstalledAppWithSeveralBackupsIsListedFromItsLatest() {
+        AppDb appDb = new AppDb();
+        // The older one comes first by insertion and by name, so the database hands it back first
+        appDb.insert(backup("a_older", 1_600_000_000_000L, "0.9"));
+        appDb.insert(backup("b_latest", 1_700_000_000_000L, "1.0"));
+
+        List<App> apps = appDb.updateApplications(RuntimeEnvironment.getApplication(), new String[]{PACKAGE});
+
+        assertEquals(1, apps.size());
+        assertFalse(apps.get(0).isInstalled);
+        assertEquals("1.0", apps.get(0).versionName);
+        App stored = mine(appDb.getAllApplications(PACKAGE));
+        assertNotNull(stored);
+        assertEquals("1.0", stored.versionName);
+    }
+
+    @Test
+    public void aRemovedUsersBackupsAreListedOnceFromTheLatest() {
+        // A user the device no longer has, so the rest of the backups stand for them
+        int removed = ME + 10;
+        AppDb appDb = new AppDb();
+        appDb.insert(backup(removed, "a_older", 1_600_000_000_000L, "0.9"));
+        appDb.insert(backup(removed, "b_latest", 1_700_000_000_000L, "1.0"));
+
+        List<App> apps = appDb.updateApplications(RuntimeEnvironment.getApplication(), new String[]{PACKAGE});
+
+        assertEquals(1, apps.size());
+        assertEquals(removed, apps.get(0).userId);
+        assertEquals("1.0", apps.get(0).versionName);
+    }
+
+    @NonNull
+    private static Backup backup(@NonNull String name, long time, @NonNull String versionName) {
+        return backup(ME, name, time, versionName);
+    }
+
+    @NonNull
+    private static Backup backup(int userId, @NonNull String name, long time, @NonNull String versionName) {
+        Backup backup = new Backup();
+        backup.packageName = PACKAGE;
+        backup.backupName = userId + "_" + name;
+        backup.userId = userId;
+        backup.backupTime = time;
+        backup.label = "Reinstalled";
+        backup.versionName = versionName;
+        return backup;
     }
 
     @Test

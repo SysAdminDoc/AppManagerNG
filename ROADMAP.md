@@ -461,13 +461,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Acceptance: the trampoline calls `finish()` or `finishAndRemoveTask()` on itself after a successful handoff and never relies on request code 0; a target launched from an AppManagerNG shortcut appears in Recents with the target app's normal label and task behavior unless that target itself opts out; repeated launches do not create duplicate orphan tasks; cancellation and missing-target paths close cleanly.
   Complexity: M
 
-- [ ] P1: Include archived packages in API 35 and later inventory
-  Why: archive and unarchive actions exist, but package enumeration narrows match flags to `int`, so `MATCH_ARCHIVED_PACKAGES` cannot reach the framework query and archived apps disappear from inventory.
-  Evidence: upstream App Manager #2043; Android `PackageManager.MATCH_ARCHIVED_PACKAGES`; `compat/PackageManagerCompat.java`; archive actions and filters in the app list.
-  Touches: `PackageManagerCompat.java`, long-backed `PackageInfoFlags` adapters, inventory queries, archived-state model, filters, secondary-user tests.
-  Acceptance: API 35 and later query with a lossless long flag path and include archived packages when the user enables the archived filter; older APIs retain current queries; archived rows cannot expose actions that require an installed APK; primary and secondary-user tests cover installed, archived, restored, and unavailable states; a contract test fails if flags are narrowed to `int`.
-  Complexity: M
-
 - [ ] P1: Stabilize scheduled backup work on Android 15 and later
   Why: WorkManager 2.10.5 retains connectivity and periodic-work defects fixed in 2.11.1 and 2.11.2, while taking 2.11 directly would raise its minimum SDK from 21 to 23.
   Evidence: AndroidX WorkManager release notes; AndroidX version ledger; the pinned version in `versions.gradle`; scheduled backup workers and network-backed SAF support.
@@ -812,6 +805,20 @@ Sources and reasoning: RESEARCH.md (2026-11-13). The four crash fixes come first
   Acceptance: each bump lands on its own with the unit suite and the backup round-trip tests green and the APK's minSdk still 21. `versions.gradle` says why Guava is held.
   Complexity: S
 
+- [ ] P2: Read the per-user disabled state the same way on a full load and a refresh
+  Why: a full load (`PackageUtils.mergeApplicationItems`) records no enabled or disabled users for a row, but a one-package refresh (`MainViewModel.getNewApplicationItem`) does. An app disabled for one user and enabled for another gets the per-user tint on its UID after a refresh and loses it on the next full load.
+  Evidence: `utils/PackageUtils.java` `mergeApplicationItems`, `main/MainViewModel.java` `getNewApplicationItem`, `MainListUidFormatter.isHighlighted`. Found while making the two paths agree on uninstalled users (2026-11-14).
+  Touches: `mergeApplicationItems`, `getNewApplicationItem`, `PackageUtilsMergeTest`, `MainViewModelNewApplicationItemTest`.
+  Acceptance: for the same database rows, both paths give the row the same `userIds`, `disabledUserIds` and `uninstalledUserIds`, and one test runs both over an app disabled for one of two users.
+  Complexity: S
+
+- [ ] P2: Stop passing log messages in as format strings
+  Why: `Log.v/d/i/w/e(tag, format, args)` formats its first string, so a call like `Log.w(TAG, "Error: " + e.getMessage())` throws `MissingFormatArgumentException` or `UnknownFormatConversionException` when the message holds a `%`, such as a URL-encoded path. The SSAID read in `AppDb.updateVariableData` did this and stopped a package refresh on the test host. About 190 such calls remain in about 70 files.
+  Evidence: `logs/Log.java` (`String.format(Locale.ROOT, format, args)`); `rg 'Log\.[vdiwe]\(TAG, "[^"]*" \+' app/src/main`.
+  Touches: those call sites, or a `Log` overload that takes a plain message, and a test that logs a `%`.
+  Acceptance: no production call builds the format string from runtime text, a message holding `%3A` logs as written, and the change keeps each call's level and throwable.
+  Complexity: M
+
 ### P3
 
 - [ ] P3: Name a snapshot section that failed to export
@@ -883,3 +890,10 @@ Sources and reasoning: RESEARCH.md (2026-11-13). The four crash fixes come first
   Touches: `AndroidManifest.xml`, one check on an MTE-capable device or image.
   Acceptance: the manifest sets `memtagMode="async"`, and a pass through the main screens plus a backup round trip on an MTE-enabled device shows no tag faults.
   Complexity: S
+
+- [ ] P3: Show an app archived for another user under its own name and icon
+  Why: the main list reads an archived app's name and icon through `PackageManager.getArchivedPackage`, which only answers for this user, so an app archived for a work profile or second user is marked Archived but still shows its package name and the generic icon.
+  Evidence: `apk/installer/AppArchiveManager.java`; AOSP `PackageArchiver` and `IPackageManager.getArchivedPackage(String, int)` take a user ID behind a hidden API.
+  Touches: `AppArchiveManager`, the privileged-server path for other users, `ApplicationItem.isKnownArchived`, `ShadowArchivedPackages`, a work-profile check on API 35 or later.
+  Acceptance: with root, ADB or Shizuku, a row archived only for another user shows that user's archived name and icon; in no-root mode it keeps the package name as now; a test covers both modes.
+  Complexity: M

@@ -8,6 +8,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
+import android.os.UserHandleHidden;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -30,17 +31,20 @@ import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.test.shadows.ShadowPackageManagerCompat;
 
 @RunWith(RobolectricTestRunner.class)
 public class MainViewModelLoadStatusTest {
     @Before
     public void setUp() {
         resetMainFilters();
+        ShadowPackageManagerCompat.resetPackageInfo();
     }
 
     @After
     public void tearDown() {
         resetMainFilters();
+        ShadowPackageManagerCompat.resetPackageInfo();
     }
 
     /**
@@ -159,6 +163,33 @@ public class MainViewModelLoadStatusTest {
             assertEquals("com.example.first", last(observedLists).get(0).packageName);
         } finally {
             viewModel.getApplicationListLoadStatus().removeObserver(statusObserver);
+            viewModel.getApplicationItems().removeObserver(listObserver);
+            viewModel.close();
+        }
+    }
+
+    @Test
+    public void aFullLoadLooksUpWhichUninstalledRowsAreArchivedBeforePublishingThem() throws Exception {
+        int me = UserHandleHidden.myUserId();
+        String archived = "com.example.archived";
+        ShadowPackageManagerCompat.setPackageInfoForUser(archived, me,
+                ApplicationItemTest.uninstalledPackage(archived, ApplicationItemTest.ARCHIVE_TIME));
+        ApplicationItem archivedRow = new ApplicationItem();
+        archivedRow.packageName = archived;
+        archivedRow.label = archived;
+        archivedRow.isInstalled = false;
+        archivedRow.uninstalledUserIds = new int[]{me};
+        TestMainViewModel viewModel = newViewModel();
+        viewModel.setNextItems(Arrays.asList(app("com.example.first"), archivedRow));
+        Observer<List<ApplicationItem>> listObserver = items -> { };
+
+        try {
+            viewModel.getApplicationItems().observeForever(listObserver);
+            waitForCurrentTask(viewModel);
+
+            // The list checks this on the main thread, where it makes no call
+            assertTrue(archivedRow.isKnownArchived());
+        } finally {
             viewModel.getApplicationItems().removeObserver(listObserver);
             viewModel.close();
         }

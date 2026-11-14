@@ -204,9 +204,12 @@ public class AppDb {
             while (backupListIterator.hasNext()) {
                 Backup b = backupListIterator.next();
                 if (b.userId == userId) {
-                    backup = b;
+                    // All of this user's backups are used up here, the latest standing for them as in
+                    // the full update. One left for the rest below would be stored over this row.
+                    if (backup == null || b.backupTime > backup.backupTime) {
+                        backup = b;
+                    }
                     backupListIterator.remove();
-                    break;
                 }
             }
             try {
@@ -230,8 +233,9 @@ public class AppDb {
                 // There's already existing app
                 App oldApp = oldApps.get(oldAppIndex);
                 mAppDao.delete(oldApp);
-                if ((packageInfo != null && isUpToDate(oldApp, packageInfo))
-                        || (backup != null && isUpToDate(oldApp, backup))) {
+                // The package wins over its backup, as in the full update: a row read from the backup
+                // while the app was gone must not outlive its reinstall
+                if (packageInfo != null ? isUpToDate(oldApp, packageInfo) : isUpToDate(oldApp, backup)) {
                     // Up-to-date app
                     appList.add(oldApp);
                     oldApp.lastActionTime = System.currentTimeMillis();
@@ -243,8 +247,16 @@ public class AppDb {
             appList.add(app);
         }
 
-        // Add the rest of the backups if any
+        // Add the rest of the backups if any: users the device no longer has, one row each from their
+        // latest, since a second row for a user would be stored over the first
+        ArrayMap<Integer, Backup> latestByUser = new ArrayMap<>();
         for (Backup backup : backups) {
+            Backup latest = latestByUser.get(backup.userId);
+            if (latest == null || backup.backupTime > latest.backupTime) {
+                latestByUser.put(backup.userId, backup);
+            }
+        }
+        for (Backup backup : latestByUser.values()) {
             appList.add(App.fromBackup(backup));
         }
 

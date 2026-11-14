@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.RemoteException;
 import android.os.UserHandleHidden;
 import android.text.TextUtils;
@@ -52,6 +53,8 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
+import aosp.libcore.util.EmptyArray;
+import io.github.muntashirakon.AppManager.apk.installer.AppArchiveManager;
 import io.github.muntashirakon.AppManager.apk.list.ListExporter;
 import io.github.muntashirakon.AppManager.apk.list.ListImporter;
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
@@ -620,6 +623,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                         = loadInstalledOrBackedUpApplications(loadGeneration);
                 attachUserTags(updatedApplicationItems);
                 attachUserNotes(updatedApplicationItems);
+                lookUpArchivedState(updatedApplicationItems);
                 synchronized (mApplicationItems) {
                     mApplicationItems.clear();
                     mApplicationItems.addAll(updatedApplicationItems);
@@ -769,6 +773,22 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         Map<String, String> notesByPackage = new AppNoteStore(getApplication()).snapshot();
         for (ApplicationItem item : items) {
             item.setUserNote(notesByPackage.get(item.packageName));
+        }
+    }
+
+    /**
+     * Looks up whether each uninstalled row is archived while still off the main thread, so the list
+     * can tell archived rows apart when it binds them.
+     */
+    @WorkerThread
+    private static void lookUpArchivedState(@NonNull List<ApplicationItem> items) {
+        if (!AppArchiveManager.isSupported(Build.VERSION.SDK_INT)) {
+            return;
+        }
+        for (ApplicationItem item : items) {
+            if (!item.isInstalled) {
+                item.isArchived();
+            }
         }
     }
 
@@ -1182,9 +1202,10 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         }
     }
 
+    @VisibleForTesting
     @WorkerThread
     @Nullable
-    private ApplicationItem getNewApplicationItem(@NonNull String packageName, @NonNull List<App> apps) {
+    ApplicationItem getNewApplicationItem(@NonNull String packageName, @NonNull List<App> apps) {
         ApplicationItem item = new ApplicationItem();
         int thisUser = UserHandleHidden.myUserId();
         for (App app : apps) {
@@ -1196,6 +1217,12 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                 boolean newItem = item.packageName == null || !item.isInstalled;
                 if (item.packageName == null) {
                     item.packageName = app.packageName;
+                }
+                if (newItem) {
+                    // Only installed copies count once one is found, whatever order the users come in
+                    item.hasKeystore = false;
+                    // A full load records no uninstalled users for an installed row, so neither does this
+                    item.uninstalledUserIds = EmptyArray.INT;
                 }
                 item.userIds = ArrayUtils.appendInt(item.userIds, app.userId);
                 if (app.isEnabled) {
@@ -1223,16 +1250,25 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                 }
             } else {
                 // App not installed but may be installed in other profiles
-                item.uninstalledUserIds = ArrayUtils.appendInt(item.uninstalledUserIds, app.userId);
                 if (item.packageName != null) {
+                    if (!item.isInstalled) {
+                        item.uninstalledUserIds = ArrayUtils.appendInt(item.uninstalledUserIds, app.userId);
+                        // Any user's copy counts, whichever comes first
+                        item.hasKeystore |= app.hasKeystore;
+                        if (app.userId == thisUser && !app.packageName.equals(app.packageLabel)) {
+                            // Android keeps an archived app's launcher name for the user it was
+                            // archived for only, so only this user's copy has it
+                            item.label = app.packageLabel;
+                        }
+                    }
                     // Item exists, use the previous status
                     continue;
-                } else {
-                    item.packageName = app.packageName;
-                    item.isInstalled = false;
-                    item.isOnlyDataInstalled = app.isOnlyDataInstalled;
-                    item.hasKeystore |= app.hasKeystore;
                 }
+                item.uninstalledUserIds = ArrayUtils.appendInt(item.uninstalledUserIds, app.userId);
+                item.packageName = app.packageName;
+                item.isInstalled = false;
+                item.isOnlyDataInstalled = app.isOnlyDataInstalled;
+                item.hasKeystore |= app.hasKeystore;
             }
             item.flags = app.flags;
             item.uid = app.uid;
@@ -1266,6 +1302,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         }
         item.setUserTags(new AppTagStore(getApplication()).getTags(item.packageName));
         item.setUserNote(new AppNoteStore(getApplication()).getNote(item.packageName));
+        lookUpArchivedState(Collections.singletonList(item));
         return item;
     }
 

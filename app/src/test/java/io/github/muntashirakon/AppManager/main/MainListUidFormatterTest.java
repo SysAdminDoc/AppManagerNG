@@ -5,8 +5,10 @@ package io.github.muntashirakon.AppManager.main;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.robolectric.Shadows.shadowOf;
 
 import android.content.Context;
+import android.os.UserHandleHidden;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
@@ -21,10 +23,12 @@ import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
+import org.robolectric.annotation.Config;
 
 import java.util.Collections;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.apk.installer.ShadowArchivedPackages;
 
 /**
  * Issue 19: the compact row dropped the UID, which automation and sandbox work read from the list.
@@ -74,6 +78,27 @@ public class MainListUidFormatterTest {
             assertFalse(metadata, metadata.contains("UID"));
             assertFalse(rowDescription(row), rowDescription(row).contains("UID"));
         }
+    }
+
+    @Test
+    @Config(shadows = ShadowArchivedPackages.class)
+    public void anArchivedAppIsMarkedWhereTheUidWouldBe() {
+        ShadowArchivedPackages.reset();
+        ShadowArchivedPackages.keep("com.example.app", "Example", null);
+        // Android keeps the package of an app archived for this user, with the time it was archived
+        shadowOf(RuntimeEnvironment.getApplication().getPackageManager())
+                .installPackage(ApplicationItemTest.uninstalledPackage("com.example.app", 1_700_000_000_000L));
+        ApplicationItem item = item(10123, new int[0]);
+        item.isInstalled = false;
+        item.uninstalledUserIds = new int[]{UserHandleHidden.myUserId()};
+        // The loader thread's lookup
+        assertTrue(item.isArchived());
+
+        FrameLayout row = bind(item);
+
+        String metadata = ((TextView) row.findViewById(R.id.metadata)).getText().toString();
+        assertTrue(metadata, metadata.startsWith("Archived" + DOT + "v4.7.3" + DOT));
+        assertTrue(rowDescription(row), rowDescription(row).startsWith("Example, Archived, "));
     }
 
     @Test

@@ -69,6 +69,7 @@ import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.users.UserInfo;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
+import io.github.muntashirakon.AppManager.utils.BroadcastUtils;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -381,11 +382,12 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             holder.sha.setVisibility(View.GONE);
         }
         // Load app icon
-        holder.icon.setTag(item.packageName);
+        String iconTag = getIconTag(item);
+        holder.icon.setTag(iconTag);
         holder.icon.setContentDescription(context.getString(item.isInstalled && !item.isDisabled
                 ? R.string.main_list_open_app
                 : R.string.main_list_select_app, item.label));
-        ImageLoader.getInstance().displayImage(item.packageName, item, holder.icon);
+        ImageLoader.getInstance().displayImage(iconTag, item, holder.icon);
         // T21-G attention badge — a single severity-tinted dot when the row has
         // actionable state. Recent-OS-revert count is not yet wired into the
         // cache, so it is passed as 0 for now (the perm/disabled signals already
@@ -566,8 +568,8 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         holder.metadata.setText(MainListUidFormatter.metadataLine(context, item, holder.isSystemApp.getText(),
                 getBadgeWarningContentColor(context)));
         limitVisibleStatuses(holder, MAX_INLINE_STATUSES);
-        String installedState = context.getString(item.isInstalled
-                ? R.string.main_list_installed_state : R.string.main_list_uninstalled_state);
+        String installedState = context.getString(item.isInstalled ? R.string.main_list_installed_state
+                : item.isKnownArchived() ? R.string.archived_app : R.string.main_list_uninstalled_state);
         String sdkState = item.sdkString != null ? item.sdkString : "-";
         String contentDescription = context.getString(R.string.main_list_app_content_description,
                 item.label, installedState, item.packageName, item.versionTag, sdkState);
@@ -635,6 +637,20 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
                     : UserHandleHidden.myUserId();
             mActivity.startActivity(AppDetailsActivity.getIntentForPermissions(mActivity, item.packageName, userId));
         });
+    }
+
+    /**
+     * The key the row's icon is cached under, on disk for days. An archived app's icon is the
+     * launcher's copy, so it gets its own key: an icon cached for the package while it was installed,
+     * or by a version that couldn't read that copy, would stand in for it otherwise. The key names the
+     * user it's archived for and when, since another user's copy draws no launcher icon and archiving
+     * again can keep a new one.
+     */
+    @VisibleForTesting
+    @NonNull
+    static String getIconTag(@NonNull ApplicationItem item) {
+        String archive = item.getKnownArchiveKey();
+        return archive != null ? item.packageName + "#archived-" + archive : item.packageName;
     }
 
     /** Says which ways the app has to come up unopened. Only for a possible ad source. */
@@ -927,7 +943,8 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         popup.show();
     }
 
-    private void handleClick(@NonNull ApplicationItem item) {
+    @VisibleForTesting
+    void handleClick(@NonNull ApplicationItem item) {
         if (!item.isInstalled || item.userIds.length == 0) {
             // The app should not be installed. But make sure this is really true. (For current user only)
             ApplicationInfo info;
@@ -942,10 +959,9 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             // 1. Check if the app was really uninstalled.
             if (ApplicationInfoCompat.isInstalled(info)) {
                 // The app is already installed, and we were wrong to assume that it was installed.
-                // Update data before opening it.
-                item.isInstalled = true;
-                item.isOnlyDataInstalled = false;
-                item.userIds = new int[]{UserHandleHidden.myUserId()};
+                // The list reads it again like any other changed package, which builds a new row: this
+                // one stays as it is, since filter and sort threads may be reading it right now.
+                BroadcastUtils.sendPackageAltered(mActivity, new String[]{item.packageName});
                 Intent intent = AppDetailsActivity.getIntent(mActivity, item.packageName, UserHandleHidden.myUserId());
                 mActivity.startActivity(intent);
                 return;
