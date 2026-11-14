@@ -17,6 +17,7 @@ import androidx.room.Entity;
 import java.io.Serializable;
 import java.util.Objects;
 
+import io.github.muntashirakon.AppManager.apk.installer.AppArchiveManager;
 import io.github.muntashirakon.AppManager.compat.ApplicationInfoCompat;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
 import io.github.muntashirakon.AppManager.utils.FreezeUtils;
@@ -170,6 +171,13 @@ public class App implements Serializable {
         app.flags = applicationInfo.flags;
         app.isEnabled = !FreezeUtils.isFrozen(applicationInfo);
         app.packageLabel = ApplicationInfoCompat.loadLabelSafe(applicationInfo, context.getPackageManager()).toString();
+        if (AppArchiveManager.isArchived(packageInfo) && app.userId == UserHandleHidden.myUserId()) {
+            // The APK is gone, so the package's own label falls back to its name. Android only answers for this user.
+            CharSequence archivedLabel = AppArchiveManager.getArchivedLabel(context.getPackageManager(), app.packageName);
+            if (archivedLabel != null) {
+                app.packageLabel = archivedLabel.toString();
+            }
+        }
         app.sdk = applicationInfo.targetSdkVersion;
         app.versionName = packageInfo.versionName;
         app.versionCode = PackageInfoCompat.getLongVersionCode(packageInfo);

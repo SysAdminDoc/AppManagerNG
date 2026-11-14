@@ -165,77 +165,7 @@ public final class PackageUtils {
             }
         }
         Map<String, Backup> backups = appDb.getBackups(false);
-        int thisUser = UserHandleHidden.myUserId();
-        // Get application items from apps
-        for (App app : apps) {
-            ApplicationItem item;
-            ApplicationItem oldItem = applicationItems.get(app.packageName);
-            if (app.isInstalled) {
-                boolean newItem = oldItem == null || !oldItem.isInstalled;
-                if (oldItem != null) {
-                    // Item already exists
-                    item = oldItem;
-                } else {
-                    // Item doesn't exist
-                    item = new ApplicationItem();
-                    applicationItems.put(app.packageName, item);
-                    item.packageName = app.packageName;
-                }
-                item.userIds = ArrayUtils.appendInt(item.userIds, app.userId);
-                item.isInstalled = true;
-                item.isOnlyDataInstalled = false;
-                item.openCount += app.openCount;
-                item.screenTime += app.screenTime;
-                if (item.lastUsageTime == 0L || item.lastUsageTime < app.lastUsageTime) {
-                    item.lastUsageTime = app.lastUsageTime;
-                }
-                item.hasKeystore |= app.hasKeystore;
-                item.usesSaf |= app.usesSaf;
-                if (app.ssaid != null) {
-                    item.ssaid = app.ssaid;
-                }
-                item.totalSize += app.codeSize + app.dataSize;
-                item.dataUsage += app.wifiDataUsage + app.mobileDataUsage;
-                if (!newItem && app.userId != thisUser) {
-                    // This user has the highest priority
-                    continue;
-                }
-            } else {
-                // App not installed but may be installed in other profiles
-                if (oldItem != null) {
-                    // Item exists, use the previous status
-                    continue;
-                } else {
-                    // Item doesn't exist, don't add user handle
-                    item = new ApplicationItem();
-                    item.packageName = app.packageName;
-                    applicationItems.put(app.packageName, item);
-                    item.isInstalled = false;
-                    item.isOnlyDataInstalled = app.isOnlyDataInstalled;
-                    item.hasKeystore |= app.hasKeystore;
-                }
-            }
-            item.backup = backups.remove(item.packageName);
-            item.flags = app.flags;
-            item.uid = app.uid;
-            item.debuggable = app.isDebuggable();
-            item.isUser = !app.isSystemApp();
-            item.isDisabled = !app.isEnabled;
-            item.label = app.packageLabel;
-            item.targetSdk = app.sdk;
-            item.versionName = app.versionName;
-            item.versionCode = app.versionCode;
-            item.sharedUserId = app.sharedUserId;
-            item.sha = new Pair<>(app.certName, app.certAlgo);
-            item.firstInstallTime = app.firstInstallTime;
-            item.lastUpdateTime = app.lastUpdateTime;
-            item.hasActivities = app.hasActivities;
-            item.hasSplits = app.hasSplits;
-            item.blockedCount = app.rulesCount;
-            item.trackerCount = app.trackerCount;
-            item.lastActionTime = app.lastActionTime;
-            item.generateOtherInfo();
-        }
+        mergeApplicationItems(applicationItems, apps, backups);
         // Add rest of the backups
         for (String packageName : backups.keySet()) {
             Backup backup = backups.get(packageName);
@@ -279,6 +209,111 @@ public final class PackageUtils {
             });
         }
         return new ArrayList<>(applicationItems.values());
+    }
+
+    /**
+     * Folds the database's rows, one per package and user, into one list row per package. An
+     * installed copy wins, the current user's first. A package installed for no user keeps its first
+     * copy, with the current user's label when it has one, and the users it was found for, so an
+     * archived copy can be looked up.
+     */
+    @VisibleForTesting
+    static void mergeApplicationItems(@NonNull Map<String, ApplicationItem> applicationItems,
+                                      @NonNull List<App> apps, @NonNull Map<String, Backup> backups) {
+        int thisUser = UserHandleHidden.myUserId();
+        // Get application items from apps
+        for (App app : apps) {
+            ApplicationItem item;
+            ApplicationItem oldItem = applicationItems.get(app.packageName);
+            if (app.isInstalled) {
+                boolean newItem = oldItem == null || !oldItem.isInstalled;
+                if (oldItem != null) {
+                    // Item already exists
+                    item = oldItem;
+                } else {
+                    // Item doesn't exist
+                    item = new ApplicationItem();
+                    applicationItems.put(app.packageName, item);
+                    item.packageName = app.packageName;
+                }
+                if (newItem) {
+                    // This load records no other per-user state for installed rows
+                    item.uninstalledUserIds = EmptyArray.INT;
+                    // Only installed copies count once one is found, whatever order the users come in
+                    item.hasKeystore = false;
+                }
+                item.userIds = ArrayUtils.appendInt(item.userIds, app.userId);
+                item.isInstalled = true;
+                item.isOnlyDataInstalled = false;
+                item.openCount += app.openCount;
+                item.screenTime += app.screenTime;
+                if (item.lastUsageTime == 0L || item.lastUsageTime < app.lastUsageTime) {
+                    item.lastUsageTime = app.lastUsageTime;
+                }
+                item.hasKeystore |= app.hasKeystore;
+                item.usesSaf |= app.usesSaf;
+                if (app.ssaid != null) {
+                    item.ssaid = app.ssaid;
+                }
+                item.totalSize += app.codeSize + app.dataSize;
+                item.dataUsage += app.wifiDataUsage + app.mobileDataUsage;
+                if (!newItem && app.userId != thisUser) {
+                    // This user has the highest priority
+                    continue;
+                }
+            } else {
+                // App not installed but may be installed in other profiles
+                if (oldItem != null) {
+                    if (oldItem.isInstalled) {
+                        // Installed for another user, whose copy the row shows
+                        continue;
+                    }
+                    oldItem.uninstalledUserIds = ArrayUtils.appendInt(oldItem.uninstalledUserIds, app.userId);
+                    // Any user's copy counts, whichever comes first
+                    oldItem.hasKeystore |= app.hasKeystore;
+                    if (app.userId == thisUser && !app.packageName.equals(app.packageLabel)) {
+                        // Android keeps an archived app's launcher name for the user it was archived
+                        // for only, so only this user's copy has it
+                        oldItem.label = app.packageLabel;
+                    }
+                    // Item exists, use the previous status
+                    continue;
+                } else {
+                    // Item doesn't exist. Remember the user so an archived copy can be found.
+                    item = new ApplicationItem();
+                    item.packageName = app.packageName;
+                    item.uninstalledUserIds = ArrayUtils.appendInt(item.uninstalledUserIds, app.userId);
+                    applicationItems.put(app.packageName, item);
+                    item.isInstalled = false;
+                    item.isOnlyDataInstalled = app.isOnlyDataInstalled;
+                    item.hasKeystore |= app.hasKeystore;
+                }
+            }
+            Backup backup = backups.remove(item.packageName);
+            if (backup != null) {
+                // A second pass for this user's copy finds it already taken
+                item.backup = backup;
+            }
+            item.flags = app.flags;
+            item.uid = app.uid;
+            item.debuggable = app.isDebuggable();
+            item.isUser = !app.isSystemApp();
+            item.isDisabled = !app.isEnabled;
+            item.label = app.packageLabel;
+            item.targetSdk = app.sdk;
+            item.versionName = app.versionName;
+            item.versionCode = app.versionCode;
+            item.sharedUserId = app.sharedUserId;
+            item.sha = new Pair<>(app.certName, app.certAlgo);
+            item.firstInstallTime = app.firstInstallTime;
+            item.lastUpdateTime = app.lastUpdateTime;
+            item.hasActivities = app.hasActivities;
+            item.hasSplits = app.hasSplits;
+            item.blockedCount = app.rulesCount;
+            item.trackerCount = app.trackerCount;
+            item.lastActionTime = app.lastActionTime;
+            item.generateOtherInfo();
+        }
     }
 
     public interface PackageEnumerationCallback {

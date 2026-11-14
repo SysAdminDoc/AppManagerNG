@@ -58,7 +58,9 @@ final class MainListUidFormatter {
         String details = version + SEPARATOR + appType + SEPARATOR + sdk;
         String uid = valueFor(item);
         if (uid.isEmpty()) {
-            return details;
+            // An archived app has no UID, so the mark takes its place at the front, where the ellipsis
+            // can't cut it. The lookup ran on the loader thread, so this makes no call.
+            return item.isKnownArchived() ? context.getString(R.string.archived_app) + SEPARATOR + details : details;
         }
         String token = context.getString(R.string.main_list_uid_label, uid);
         SpannableString line = new SpannableString(token + SEPARATOR + details);

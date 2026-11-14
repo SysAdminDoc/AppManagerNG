@@ -270,6 +270,8 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
     private DebloatObject mBloatwareInfo;
     private Integer mFreezeFlags = null;
     private Integer mUserId = null;
+    private boolean mArchiveLookupDone = false;
+    private int mArchivedUserId = -1;
     private Boolean mUsesSensors = null;
     private Boolean mBatteryOptEnabled = null;
     private Boolean mHasKeystoreItems = null;
@@ -377,7 +379,15 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
     @Override
     public Drawable loadIcon(PackageManager pm) {
         fetchPackageInfo();
-        if (mApplicationInfo != null) {
+        if (isKnownArchived()) {
+            // The APK is gone, so its own icon is too. Android keeps the launcher's copy, but only
+            // hands it to the user it was archived for.
+            Drawable archivedIcon = mArchivedUserId == UserHandleHidden.myUserId()
+                    ? AppArchiveManager.getArchivedIcon(pm, packageName) : null;
+            if (archivedIcon != null) {
+                return archivedIcon;
+            }
+        } else if (mApplicationInfo != null) {
             return mApplicationInfo.loadIcon(pm);
         }
         // App not installed
@@ -474,8 +484,58 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
         }
         int userId = getUserId();
         if (userId < 0) {
+            fetchArchivedPackageInfo();
             return;
         }
+        PackageInfo packageInfo = readPackageInfo(userId);
+        if (packageInfo == null) {
+            return;
+        }
+        // Both or neither, so no getter sees package info without its application info
+        mApplicationInfo = packageInfo.applicationInfo;
+        mPackageInfo = packageInfo;
+        // Update dynamic info
+        isStopped = (mApplicationInfo.flags & ApplicationInfo.FLAG_STOPPED) != 0;
+        isDisabled = FreezeUtils.isFrozen(mApplicationInfo);
+    }
+
+    /**
+     * An app archived on every user it's on has no user it's installed for, but Android keeps its
+     * package and still reports it. The row keeps that package info only when it says archived, and
+     * getUserId() stays -1, so nothing that needs the installed APK is offered for it.
+     */
+    private void fetchArchivedPackageInfo() {
+        if (mArchiveLookupDone || !AppArchiveManager.isSupported(Build.VERSION.SDK_INT)) {
+            return;
+        }
+        // Once per row: most uninstalled rows aren't archived, and every getter lands here
+        mArchiveLookupDone = true;
+        // This user first: Android hands the launcher's label and icon only to the user it was archived for
+        int myUserId = UserHandleHidden.myUserId();
+        if (ArrayUtils.contains(uninstalledUserIds, myUserId) && keepIfArchived(myUserId)) {
+            return;
+        }
+        for (int userId : uninstalledUserIds) {
+            if (userId != myUserId && keepIfArchived(userId)) {
+                return;
+            }
+        }
+    }
+
+    private boolean keepIfArchived(int userId) {
+        PackageInfo packageInfo = readPackageInfo(userId);
+        if (packageInfo == null || !AppArchiveManager.isArchived(packageInfo)) {
+            return false;
+        }
+        // The user first, so a row that reads the package info as archived reads whose copy it is
+        mArchivedUserId = userId;
+        mApplicationInfo = packageInfo.applicationInfo;
+        mPackageInfo = packageInfo;
+        return true;
+    }
+
+    @Nullable
+    private PackageInfo readPackageInfo(int userId) {
         try {
             PackageInfo packageInfo = PackageManagerCompat.getPackageInfo(packageName,
                     PackageManager.GET_META_DATA | GET_SIGNING_CERTIFICATES
@@ -485,17 +545,10 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
                             | PackageManager.GET_URI_PERMISSION_PATTERNS
                             | MATCH_DISABLED_COMPONENTS | MATCH_UNINSTALLED_PACKAGES
                             | MATCH_STATIC_SHARED_AND_SDK_LIBRARIES, userId);
-            if (packageInfo.applicationInfo == null) {
-                return;
-            }
-            // Both or neither, so no getter sees package info without its application info
-            mApplicationInfo = packageInfo.applicationInfo;
-            mPackageInfo = packageInfo;
-            // Update dynamic info
-            isStopped = (mApplicationInfo.flags & ApplicationInfo.FLAG_STOPPED) != 0;
-            isDisabled = FreezeUtils.isFrozen(mApplicationInfo);
+            return packageInfo.applicationInfo != null ? packageInfo : null;
         } catch (RemoteException | PackageManager.NameNotFoundException | SecurityException ignore) {
             // SecurityException: another user's app without INTERACT_ACROSS_USERS
+            return null;
         }
     }
 
@@ -735,7 +788,31 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
     @Override
     public boolean isArchived() {
         fetchPackageInfo();
-        return mPackageInfo != null && AppArchiveManager.isArchived(mPackageInfo);
+        return isKnownArchived();
+    }
+
+    /**
+     * Whether a lookup already done showed the app archived. Makes no call, so the list can use it on
+     * the main thread once {@link #isArchived()} has run on a worker.
+     */
+    public boolean isKnownArchived() {
+        PackageInfo packageInfo = mPackageInfo;
+        return packageInfo != null && AppArchiveManager.isArchived(packageInfo);
+    }
+
+    /**
+     * Which archived copy a lookup already done found: "own" when it's archived for this user or
+     * "other", then when it was archived. Null when it found none. Makes no call. Android hands the
+     * launcher's icon only to the user an app was archived for, and archiving it again can keep another.
+     */
+    @Nullable
+    public String getKnownArchiveKey() {
+        PackageInfo packageInfo = mPackageInfo;
+        if (packageInfo == null || !AppArchiveManager.isArchived(packageInfo)) {
+            return null;
+        }
+        String user = mArchivedUserId == UserHandleHidden.myUserId() ? "own" : "other";
+        return user + "-" + AppArchiveManager.getArchiveTimeMillis(packageInfo);
     }
 
     @Override
