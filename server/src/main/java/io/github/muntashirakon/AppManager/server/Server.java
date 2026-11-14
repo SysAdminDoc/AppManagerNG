@@ -9,6 +9,7 @@ import android.os.Process;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
@@ -242,7 +243,8 @@ class Server implements Closeable {
         }
     }
 
-    private static class NetSocketServerImpl implements IServer {
+    @VisibleForTesting
+    static final class NetSocketServerImpl implements IServer {
         /** IPv4 and IPv6 connection tables; a loopback peer appears in one of them. */
         private static final String[] PROC_NET_TCP_TABLES = {"/proc/net/tcp", "/proc/net/tcp6"};
 
@@ -260,6 +262,16 @@ class Server implements Closeable {
             // mode. Match the client's loopback target and the liveness probe
             // in LocalServer.alive(); keep the default backlog (50).
             mServerSocket = new ServerSocket(port, 50, InetAddress.getByName("127.0.0.1"));
+        }
+
+        @VisibleForTesting
+        InetAddress getBoundAddress() {
+            return mServerSocket.getInetAddress();
+        }
+
+        @VisibleForTesting
+        int getPort() {
+            return mServerSocket.getLocalPort();
         }
 
         @Override

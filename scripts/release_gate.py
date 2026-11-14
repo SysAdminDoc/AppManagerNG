@@ -634,11 +634,14 @@ def stage_dependencies(repo_root: Path, gradle_cmd: str) -> StageResult:
 
 
 def stage_tests(repo_root: Path, gradle_cmd: str) -> StageResult:
-    result = run([gradle_cmd, ":app:testFlossDebugUnitTest", ":app:testFullDebugUnitTest"], repo_root)
+    result = run([gradle_cmd, ":app:testFlossDebugUnitTest", ":app:testFullDebugUnitTest",
+                  ":server:testDebugUnitTest"], repo_root)
     if result.returncode != 0:
         raise GateError(f"host unit tests failed:\n{result.stdout[-8000:]}")
     total, failed = 0, 0
-    for report in (repo_root / "app" / "build" / "test-results").rglob("TEST-*.xml"):
+    reports = [report for module in ("app", "server")
+               for report in (repo_root / module / "build" / "test-results").rglob("TEST-*.xml")]
+    for report in reports:
         header = report.read_text(encoding="utf-8", errors="replace")[:2000]
         for pattern, target in ((r'tests="(\d+)"', "total"), (r'failures="(\d+)"', "failed"), (r'errors="(\d+)"', "failed")):
             match = re.search(pattern, header)

@@ -32,6 +32,8 @@ dependencies {
     api project(path: ':libserver')
 
     implementation "androidx.annotation:annotation:${annotation_version}"
+
+    testImplementation "junit:junit:${junit_version}"
 }
 
 // https://docs.gradle.org/current/userguide/service_injection.html#execoperations
