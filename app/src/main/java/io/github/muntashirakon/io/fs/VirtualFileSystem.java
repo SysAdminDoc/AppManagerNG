@@ -28,6 +28,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -1081,7 +1082,44 @@ public abstract class VirtualFileSystem {
      * with {@code out} holding only part of it
      */
     @WorkerThread
-    public boolean copyAtMost(String path, @NonNull OutputStream out, long maxBytes) throws IOException {
+    public boolean copyAtMost(@NonNull String path, @NonNull OutputStream out, long maxBytes) throws IOException {
+        Node<?> targetNode = getReadableFile(path);
+        CappedOutputStream capped = new CappedOutputStream(out, maxBytes);
+        try {
+            copyUncached(targetNode, capped);
+        } catch (IOException e) {
+            // A reader may wrap the stream's own exception, so the stream says whether it was the cap
+            if (capped.isPastCap()) {
+                return false;
+            }
+            throw e;
+        }
+        return true;
+    }
+
+    /**
+     * Reads the start of a file, up to {@code maxBytes} of it, without extracting it into this file
+     * system's cache. That's enough to tell what kind of file it is.
+     */
+    @WorkerThread
+    @NonNull
+    public byte[] readHead(@NonNull String path, int maxBytes) throws IOException {
+        Node<?> targetNode = getReadableFile(path);
+        HeadOutputStream head = new HeadOutputStream(maxBytes);
+        try {
+            copyUncached(targetNode, head);
+        } catch (IOException e) {
+            // As with copyAtMost, the stream says whether it stopped the read. Any other error is
+            // the file's own.
+            if (!head.hasStopped()) {
+                throw e;
+            }
+        }
+        return head.toByteArray();
+    }
+
+    @NonNull
+    private Node<?> getReadableFile(@NonNull String path) throws IOException {
         if (!checkAccess(path, OsConstants.R_OK)) {
             throw new IOException(path + " is inaccessible.");
         }
@@ -1092,30 +1130,27 @@ public abstract class VirtualFileSystem {
         if (!targetNode.isFile()) {
             throw new IOException(path + " is not a file.");
         }
-        CappedOutputStream capped = new CappedOutputStream(out, maxBytes);
-        try {
-            File cachedFile = findCachedFile(targetNode);
-            if (cachedFile != null) {
-                // Already extracted, or changed since the archive was opened
-                try (InputStream is = new FileInputStream(cachedFile)) {
-                    byte[] buffer = new byte[64 * 1024];
-                    int read;
-                    while ((read = is.read(buffer)) != -1) {
-                        capped.write(buffer, 0, read);
-                    }
+        return targetNode;
+    }
+
+    /**
+     * Writes a file's current contents to {@code out} without caching it.
+     */
+    private void copyUncached(@NonNull Node<?> node, @NonNull OutputStream out) throws IOException {
+        File cachedFile = findCachedFile(node);
+        if (cachedFile != null) {
+            // Already extracted, or changed since the archive was opened
+            try (InputStream is = new FileInputStream(cachedFile)) {
+                byte[] buffer = new byte[64 * 1024];
+                int read;
+                while ((read = is.read(buffer)) != -1) {
+                    out.write(buffer, 0, read);
                 }
-            } else if (targetNode.isPhysical()) {
-                copyFile(targetNode, capped);
             }
-            // Otherwise it was created after the archive was opened and nothing was written to it
-        } catch (IOException e) {
-            // A reader may wrap the stream's own exception, so the stream says whether it was the cap
-            if (capped.isPastCap()) {
-                return false;
-            }
-            throw e;
+        } else if (node.isPhysical()) {
+            copyFile(node, out);
         }
-        return true;
+        // Otherwise it was created after the archive was opened and nothing was written to it
     }
 
     /**
@@ -1172,6 +1207,44 @@ public abstract class VirtualFileSystem {
             if (mWritten > mMaxBytes) {
                 mPastCap = true;
                 throw new IOException("More than " + mMaxBytes + " bytes");
+            }
+        }
+    }
+
+    /**
+     * Keeps the first bytes written to it and stops the writer once more come than it holds.
+     */
+    private static final class HeadOutputStream extends OutputStream {
+        private final byte[] mHead;
+        private int mCount;
+        private boolean mStopped;
+
+        HeadOutputStream(int maxBytes) {
+            mHead = new byte[maxBytes];
+        }
+
+        boolean hasStopped() {
+            return mStopped;
+        }
+
+        @NonNull
+        byte[] toByteArray() {
+            return Arrays.copyOf(mHead, mCount);
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            write(new byte[]{(byte) b}, 0, 1);
+        }
+
+        @Override
+        public void write(@NonNull byte[] b, int off, int len) throws IOException {
+            int kept = Math.min(len, mHead.length - mCount);
+            System.arraycopy(b, off, mHead, mCount, kept);
+            mCount += kept;
+            if (kept < len) {
+                mStopped = true;
+                throw new IOException("Read the first " + mHead.length + " bytes");
             }
         }
     }
