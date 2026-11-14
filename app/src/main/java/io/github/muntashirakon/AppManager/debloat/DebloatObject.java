@@ -20,6 +20,7 @@ import com.google.gson.annotations.SerializedName;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.ArrayList;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.compat.ApplicationInfoCompat;
@@ -91,6 +92,40 @@ public class DebloatObject {
     private Boolean mFrozen = null;
     @Nullable
     private List<SuggestionObject> mSuggestions;
+
+    /**
+     * A new row with this entry's definition and none of its install state, so it can be
+     * filled in without changing a row a list may be showing.
+     *
+     * @param knownIcon an icon already loaded for this package, reused so it isn't loaded again
+     */
+    @NonNull
+    public DebloatObject copyDefinition(@Nullable Drawable knownIcon) {
+        DebloatObject copy = new DebloatObject();
+        copy.packageName = packageName;
+        copy.mInternalLabel = mInternalLabel;
+        copy.mTags = mTags;
+        copy.mDependencies = mDependencies;
+        copy.mRequiredBy = mRequiredBy;
+        copy.mKnownPreinstallOems = mKnownPreinstallOems;
+        copy.type = type;
+        copy.mDescription = mDescription;
+        copy.mWebRefs = mWebRefs;
+        copy.mRemoval = mRemoval;
+        copy.mWarning = mWarning;
+        copy.mSuggestionId = mSuggestionId;
+        copy.mId = mId;
+        copy.mIcon = knownIcon;
+        List<SuggestionObject> suggestions = mSuggestions;
+        if (suggestions != null) {
+            List<SuggestionObject> suggestionCopies = new ArrayList<>(suggestions.size());
+            for (SuggestionObject suggestion : suggestions) {
+                suggestionCopies.add(suggestion.copyDefinition());
+            }
+            copy.mSuggestions = suggestionCopies;
+        }
+        return copy;
+    }
 
     public void setId(int id) {
         mId = id;

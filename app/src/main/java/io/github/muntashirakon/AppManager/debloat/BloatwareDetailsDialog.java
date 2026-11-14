@@ -34,7 +34,6 @@ import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.StaticDataset;
-import io.github.muntashirakon.AppManager.db.utils.AppDb;
 import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.settings.Prefs;
@@ -106,7 +105,10 @@ public class BloatwareDetailsDialog extends CapsuleBottomSheetDialogFragment {
             dismiss();
             return;
         }
-        BloatwareDetailsViewModel viewModel = new ViewModelProvider(requireActivity()).get(BloatwareDetailsViewModel.class);
+        // Scoped to this dialog. The screen behind it can open the dialog for one package after
+        // another, and a result kept for the whole screen would show the last package's details
+        // first, or replace the newer package's result if it finished later.
+        BloatwareDetailsViewModel viewModel = new ViewModelProvider(this).get(BloatwareDetailsViewModel.class);
         viewModel.debloatObjectLiveData.observe(getViewLifecycleOwner(), debloatObject -> {
             if (debloatObject == null) {
                 dismiss();
@@ -285,17 +287,8 @@ public class BloatwareDetailsDialog extends CapsuleBottomSheetDialogFragment {
         }
 
         public void findDebloatObject(@NonNull String packageName) {
-            ThreadUtils.postOnBackgroundThread(() -> {
-                List<DebloatObject> debloatObjects = StaticDataset.getDebloatObjects();
-                for (DebloatObject debloatObject : debloatObjects) {
-                    if (packageName.equals(debloatObject.packageName)) {
-                        debloatObject.fillInstallInfo(getApplication(), new AppDb());
-                        debloatObjectLiveData.postValue(debloatObject);
-                        return;
-                    }
-                }
-                debloatObjectLiveData.postValue(null);
-            });
+            ThreadUtils.postOnBackgroundThread(() -> debloatObjectLiveData.postValue(
+                    StaticDataset.getDebloatObjectWithInstalledInfo(getApplication(), packageName)));
         }
     }
 

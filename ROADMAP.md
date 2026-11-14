@@ -590,16 +590,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Confidence: Verified
   Effort: M
 
-- [ ] P1 — Serialize Debloater loads and discard stale results
-  Category: Concurrency
-  Where: `app/src/main/java/io/github/muntashirakon/AppManager/debloat/DebloaterViewModel.java:40-85,210-308`; `app/src/main/java/io/github/muntashirakon/AppManager/debloat/DebloaterActivity.java:157-162,289-294`; `app/src/main/java/io/github/muntashirakon/AppManager/debloat/DebloaterListOptions.java:148-155`; `app/src/main/java/io/github/muntashirakon/AppManager/utils/MultithreadedExecutor.java:22-40`
-  Problem: Filter, sort, and reload requests can run concurrently over mutable shared state, allowing an older computation to overwrite a newer selection.
-  Evidence: UI option changes submit independent work to a fixed pool without a generation check, serialized snapshot, or immutable result dataset.
-  Fix: Snapshot inputs, serialize or cancel superseded loads, compute immutable result sets, and publish only the newest generation.
-  Acceptance: Rapid filter, sort, source, and search changes always end on the latest requested state; delayed older work cannot publish; stress tests use forced completion reordering and report no concurrent mutation or mixed-source rows.
-  Confidence: Verified
-  Effort: M
-
 
 - [ ] P2 — Represent complete routes in Settings search
   Category: Navigation

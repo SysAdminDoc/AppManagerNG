@@ -4,10 +4,12 @@ package io.github.muntashirakon.AppManager;
 
 import android.content.Context;
 import android.content.res.Resources;
+import android.graphics.drawable.Drawable;
 import android.util.DisplayMetrics;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.collection.ArrayMap;
 import androidx.core.os.ConfigurationCompat;
@@ -40,6 +42,8 @@ public class StaticDataset {
     private static AhoCorasick sAhoCorasickTrackerCache;
     private static String[] sTrackerNames;
     private static List<DebloatObject> sDebloatObjects;
+    // Guarded by StaticDataset.class
+    private static final Map<String, Drawable> sDebloatIcons = new HashMap<>();
 
     public static final String ARMEABI_V7A = "armeabi_v7a";
     public static final String ARM64_V8A = "arm64_v8a";
@@ -136,18 +140,67 @@ public class StaticDataset {
 
     public static synchronized void clearDebloatObjectsCache() {
         sDebloatObjects = null;
+        sDebloatIcons.clear();
     }
 
+    @VisibleForTesting
+    public static synchronized void setDebloatObjectsForTesting(@NonNull List<DebloatObject> definitions) {
+        sDebloatObjects = definitions;
+        sDebloatIcons.clear();
+    }
+
+    /**
+     * Fills in a new copy of every entry on each call. A list or dialog can keep showing the
+     * rows an earlier call returned, so they're never changed afterwards. The entries from
+     * {@link #getDebloatObjects()} aren't filled in at all.
+     */
     @WorkerThread
+    @NonNull
     public static synchronized List<DebloatObject> getDebloatObjectsWithInstalledInfo(@NonNull Context context) {
         AppDb appDb = new AppDb();
         if (sDebloatObjects == null) {
             sDebloatObjects = loadDebloatObjects(context, new Gson());
         }
-        for (DebloatObject debloatObject : sDebloatObjects) {
-            debloatObject.fillInstallInfo(context, appDb);
+        List<DebloatObject> filled = new ArrayList<>(sDebloatObjects.size());
+        for (DebloatObject definition : sDebloatObjects) {
+            filled.add(fillCopy(context, definition, appDb));
         }
-        return sDebloatObjects;
+        return filled;
+    }
+
+    /**
+     * One package's entry, filled in on a new copy like
+     * {@link #getDebloatObjectsWithInstalledInfo(Context)} does.
+     *
+     * @return {@code null} if the list has no entry for the package
+     */
+    @WorkerThread
+    @Nullable
+    public static synchronized DebloatObject getDebloatObjectWithInstalledInfo(@NonNull Context context,
+                                                                               @NonNull String packageName) {
+        if (sDebloatObjects == null) {
+            sDebloatObjects = loadDebloatObjects(context, new Gson());
+        }
+        for (DebloatObject definition : sDebloatObjects) {
+            if (packageName.equals(definition.packageName)) {
+                return fillCopy(context, definition, new AppDb());
+            }
+        }
+        return null;
+    }
+
+    // Called with the StaticDataset.class lock held
+    @WorkerThread
+    @NonNull
+    private static DebloatObject fillCopy(@NonNull Context context, @NonNull DebloatObject definition,
+                                          @NonNull AppDb appDb) {
+        DebloatObject debloatObject = definition.copyDefinition(sDebloatIcons.get(definition.packageName));
+        debloatObject.fillInstallInfo(context, appDb);
+        Drawable icon = debloatObject.getIcon();
+        if (icon != null) {
+            sDebloatIcons.put(definition.packageName, icon);
+        }
+        return debloatObject;
     }
 
     @NonNull

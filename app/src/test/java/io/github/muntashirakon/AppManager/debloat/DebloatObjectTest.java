@@ -2,13 +2,18 @@
 
 package io.github.muntashirakon.AppManager.debloat;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.google.gson.Gson;
 
 import org.junit.Test;
+
+import java.util.Collections;
 
 public class DebloatObjectTest {
 
@@ -35,6 +40,52 @@ public class DebloatObjectTest {
         assertFalse(flags.installed);
         assertEquals(Boolean.FALSE, flags.systemApp);
         assertEquals(Boolean.FALSE, flags.frozen);
+    }
+
+    @Test
+    public void aCopyKeepsTheDefinitionAndStartsWithNoInstallState() {
+        Gson gson = new Gson();
+        DebloatObject original = gson.fromJson("{\"id\":\"com.example\",\"label\":\"Example\",\"type\":\"oem\","
+                + "\"description\":\"test\",\"removal\":\"caution\",\"warning\":\"careful\","
+                + "\"dependencies\":[\"com.example.dep\"],\"required_by\":[\"com.example.parent\"],"
+                + "\"web\":[\"https://example.com\"],\"suggestions\":\"s1\"}", DebloatObject.class);
+        SuggestionObject suggestion = gson.fromJson(
+                "{\"_id\":\"s1\",\"id\":\"org.example.alt\",\"label\":\"Alt\",\"reason\":\"open\",\"source\":\"f\"}",
+                SuggestionObject.class);
+        suggestion.addUser(0);
+        original.setSuggestions(Collections.singletonList(suggestion));
+        original.setId(7);
+        original.setInstalledForTesting(true);
+
+        DebloatObject copy = original.copyDefinition(null);
+
+        assertNotSame(original, copy);
+        assertEquals("com.example", copy.packageName);
+        assertEquals("oem", copy.type);
+        assertEquals("Example", copy.getLabelOrPackageName().toString());
+        assertEquals("test", copy.getDescription());
+        assertEquals(DebloatObject.REMOVAL_CAUTION, copy.getRemoval());
+        assertEquals("careful", copy.getWarning());
+        assertArrayEquals(new String[]{"com.example.dep"}, copy.getDependencies());
+        assertArrayEquals(new String[]{"com.example.parent"}, copy.getRequiredBy());
+        assertArrayEquals(new String[]{"https://example.com"}, copy.getWebRefs());
+        assertEquals("s1", copy.getSuggestionId());
+        assertEquals(7, copy.getId());
+        assertFalse(copy.isInstalled());
+        assertNull(copy.getUsers());
+        assertNull(copy.getIcon());
+
+        SuggestionObject suggestionCopy = copy.getSuggestions().get(0);
+        assertNotSame(suggestion, suggestionCopy);
+        assertEquals("org.example.alt", suggestionCopy.packageName);
+        assertEquals("Alt", suggestionCopy.getLabel());
+        assertEquals("open", suggestionCopy.getReason());
+        assertTrue(suggestionCopy.isInFDroidMarket());
+        assertNull(suggestionCopy.getUsers());
+        // Filling in the copy leaves the original alone.
+        suggestionCopy.addUser(10);
+        assertArrayEquals(new int[]{0}, suggestion.getUsers());
+        assertTrue(original.isInstalled());
     }
 
     private static DebloatObject parse(String removal) {
