@@ -747,15 +747,6 @@ Sources and reasoning: RESEARCH.md (2026-09-30).
 
 Sources and reasoning: RESEARCH.md (2026-11-13). The four crash fixes come first, then the Android 17 items, then the rest.
 
-### P1
-
-- [ ] P1: Follow Android 17's wireless debugging port when it moves
-  Why: on Android 17, adbd advertises `_adb-tls-connect` through NsdManager under one name stored in `persist.adb.wifi.guid`, with an `api` TXT record, and no longer sets `service.adb.tls.port`. Android 14+ NSD answers a resolve from its cache and doesn't report a known name moving to a new port, which is what hid Local sync shares that came back on a new port in the #22 drain. libadb's `AdbMdns` resolves each name once, so when Wireless debugging restarts on a new port under the same name, NG can keep dialing the old one.
-  Evidence: `daemon/mdns.cpp` and `daemon/adb_wifi.cpp` at android-17.0.0_r1 (`use_tls_lifecycle` is on in the cp2a release config). `adb/AdbUtils.java:72-79` and `:160-178` scan with `AdbMdns`. `sync/lan/LanSyncDiscovery.java` already follows each service with `registerServiceInfoCallback` on API 34+.
-  Touches: `adb/AdbUtils.java` (a follower like Local sync's for `_adb-tls-connect` on API 34+), the reconnect path in `adb/AdbConnectionManager.java`, host tests with an injected follower.
-  Acceptance: on an API 37 image, toggle Wireless debugging until its port changes, and NG reconnects to the new port without a restart. API 30 to 36 discover as before. A host test feeds a port change for one service name and sees the new port chosen. On the same run, `wireless_debugging_allow_network_text` still appears when ADB Wi-Fi 2.0 turns debugging off on a network that isn't allowed.
-  Complexity: M
-
 ### P2
 
 - [ ] P2: Keep the install queue when the installer is recreated after unlocking

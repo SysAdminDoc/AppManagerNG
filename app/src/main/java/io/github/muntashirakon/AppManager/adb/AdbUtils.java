@@ -10,6 +10,7 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.Uri;
+import android.net.nsd.NsdManager;
 import android.os.Build;
 import android.os.SystemClock;
 import android.os.SystemProperties;
@@ -76,7 +77,7 @@ public class AdbUtils {
             boolean plain = AdbMdns.SERVICE_TYPE_ADB.equals(serviceType);
             AdbMdns.OnAdbDaemonDiscoveredListener listener = (hostAddress, port) ->
                     chooser.onFound(plain, hostAddress != null ? hostAddress.getHostAddress() : null, port);
-            scanners.add(scanner(new AdbMdns(context, serviceType, listener)));
+            scanners.add(scanner(context, serviceType, listener));
         }
         scan(scanners, chooser::await, timeout, unit);
 
@@ -174,8 +175,29 @@ public class AdbUtils {
         void stop();
     }
 
+    /**
+     * Whether a scan follows each service it finds instead of resolving it once. Android 17 keeps Wireless
+     * debugging's name when it moves to a new port, and Android 14 and later answer a resolve for a known name from
+     * their cache, so only a followed service shows the new port.
+     */
+    @VisibleForTesting
+    static boolean followsServices(int sdk, @NonNull String serviceType) {
+        return sdk >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && AdbMdns.SERVICE_TYPE_TLS_CONNECT.equals(serviceType);
+    }
+
+    @VisibleForTesting
     @NonNull
-    private static Scanner scanner(@NonNull AdbMdns adbMdns) {
+    static Scanner scanner(@NonNull Context context, @NonNull String serviceType,
+                           @NonNull AdbMdns.OnAdbDaemonDiscoveredListener listener) {
+        // The SDK check is repeated here for lint, which can't see it inside followsServices()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+                && followsServices(Build.VERSION.SDK_INT, serviceType)) {
+            NsdManager nsd = (NsdManager) context.getSystemService(Context.NSD_SERVICE);
+            if (nsd != null) {
+                return new AdbServiceFollower(nsd, serviceType, listener);
+            }
+        }
+        AdbMdns adbMdns = new AdbMdns(context, serviceType, listener);
         return new Scanner() {
             @Override
             public void start() {
