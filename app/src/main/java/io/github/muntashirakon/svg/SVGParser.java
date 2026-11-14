@@ -18,11 +18,16 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import org.jetbrains.annotations.Contract;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXNotRecognizedException;
+import org.xml.sax.SAXNotSupportedException;
 import org.xml.sax.XMLReader;
+import org.xml.sax.ext.DefaultHandler2;
 import org.xml.sax.helpers.DefaultHandler;
 
 import java.io.ByteArrayInputStream;
@@ -175,10 +180,12 @@ public class SVGParser {
         try {
             // long start = System.currentTimeMillis();
             SAXParserFactory spf = SAXParserFactory.newInstance();
-            configureSecureParser(spf);
+            // Android's parser is namespace aware by default and the JDK's isn't. The handler
+            // matches local names, which only a namespace-aware parser reports.
+            spf.setNamespaceAware(true);
             SAXParser sp = spf.newSAXParser();
             XMLReader xr = sp.getXMLReader();
-            xr.setEntityResolver((publicId, systemId) -> new InputSource(new StringReader("")));
+            configureSecureReader(xr);
             final Picture picture = new Picture();
             SVGHandler handler = new SVGHandler(picture);
             handler.setColorSwap(searchColor, replaceColor);
@@ -197,12 +204,38 @@ public class SVGParser {
         }
     }
 
-    private static void configureSecureParser(@NonNull SAXParserFactory spf) throws Exception {
-        spf.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        spf.setFeature("http://xml.org/sax/features/external-general-entities", false);
-        spf.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-        spf.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-        spf.setXIncludeAware(false);
+    static final String LEXICAL_HANDLER = "http://xml.org/sax/properties/lexical-handler";
+
+    /**
+     * Refuses DOCTYPEs and never loads an external entity, on Android's Expat reader as well as
+     * the JDK's. Android's parser recognizes only the standard SAX features, so a DOCTYPE is
+     * refused from the lexical handler, which both readers call.
+     */
+    @VisibleForTesting
+    static void configureSecureReader(@NonNull XMLReader xr) throws SAXException {
+        xr.setProperty(LEXICAL_HANDLER, new DoctypeRejecter());
+        xr.setEntityResolver((publicId, systemId) -> new InputSource(new StringReader("")));
+        setFeatureIfRecognized(xr, "http://xml.org/sax/features/external-general-entities", false);
+        setFeatureIfRecognized(xr, "http://xml.org/sax/features/external-parameter-entities", false);
+        // The JDK's reader stops at a DOCTYPE before reading it at all
+        setFeatureIfRecognized(xr, "http://apache.org/xml/features/disallow-doctype-decl", true);
+        setFeatureIfRecognized(xr, "http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+    }
+
+    private static void setFeatureIfRecognized(@NonNull XMLReader xr, @NonNull String name, boolean value) {
+        try {
+            xr.setFeature(name, value);
+        } catch (SAXNotRecognizedException | SAXNotSupportedException ignore) {
+            // Not this reader's feature; the lexical handler and entity resolver still apply
+        }
+    }
+
+    @VisibleForTesting
+    static final class DoctypeRejecter extends DefaultHandler2 {
+        @Override
+        public void startDTD(String name, String publicId, String systemId) throws SAXException {
+            throw new SAXException("DOCTYPE is not allowed");
+        }
     }
 
     @NonNull

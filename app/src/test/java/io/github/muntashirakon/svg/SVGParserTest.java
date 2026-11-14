@@ -18,6 +18,22 @@ import android.graphics.RectF;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.GraphicsMode;
+import org.xml.sax.ContentHandler;
+import org.xml.sax.DTDHandler;
+import org.xml.sax.EntityResolver;
+import org.xml.sax.ErrorHandler;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.SAXNotRecognizedException;
+import org.xml.sax.SAXNotSupportedException;
+import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.DefaultHandler;
+
+import java.io.IOException;
+import java.io.StringReader;
+
+import javax.xml.parsers.SAXParserFactory;
 
 @RunWith(RobolectricTestRunner.class)
 public class SVGParserTest {
@@ -39,6 +55,45 @@ public class SVGParserTest {
                                 + "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\" height=\"10\">"
                                 + "<text>&local;</text>"
                                 + "</svg>"));
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    public void parsedSvgKeepsItsDeclaredSize() {
+        // Element names only match when the parser reports local names
+        SVG svg = SVGParser.getSVGFromString(
+                "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"34\">"
+                        + "<rect width=\"12\" height=\"34\" fill=\"#000000\"/>"
+                        + "</svg>");
+
+        assertEquals(12, svg.getPicture().getWidth());
+        assertEquals(34, svg.getPicture().getHeight());
+    }
+
+    @Test
+    public void readerWithOnlyStandardFeaturesIsConfigured() throws Exception {
+        // Android's Expat reader refuses every feature outside http://xml.org/sax/features/,
+        // which made each SVG fail to parse when those features were required
+        XMLReader reader = new StandardFeaturesOnlyReader(newJdkReader());
+
+        SVGParser.configureSecureReader(reader);
+
+        assertTrue(reader.getProperty(SVGParser.LEXICAL_HANDLER) instanceof SVGParser.DoctypeRejecter);
+        assertNotNull(reader.getEntityResolver());
+        InputSource resolved = reader.getEntityResolver().resolveEntity(null, "file:///etc/passwd");
+        assertEquals(-1, resolved.getCharacterStream().read());
+    }
+
+    @Test
+    public void readerWithOnlyStandardFeaturesStillRefusesDoctype() throws Exception {
+        XMLReader reader = new StandardFeaturesOnlyReader(newJdkReader());
+        SVGParser.configureSecureReader(reader);
+        reader.setContentHandler(new DefaultHandler());
+
+        assertThrows(SAXException.class, () -> reader.parse(new InputSource(new StringReader(
+                "<!DOCTYPE svg [<!ENTITY lol \"lol\">]>"
+                        + "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\" height=\"10\">"
+                        + "<text>&lol;</text></svg>"))));
     }
 
     @Test
@@ -115,6 +170,101 @@ public class SVGParserTest {
         RectF bounds = new RectF();
         path.computeBounds(bounds, true);
         return bounds;
+    }
+
+    private static XMLReader newJdkReader() throws Exception {
+        SAXParserFactory factory = SAXParserFactory.newInstance();
+        factory.setNamespaceAware(true);
+        return factory.newSAXParser().getXMLReader();
+    }
+
+    /**
+     * Acts like Android's ExpatReader: standard SAX features only.
+     */
+    private static final class StandardFeaturesOnlyReader implements XMLReader {
+        private final XMLReader mReader;
+
+        StandardFeaturesOnlyReader(XMLReader reader) {
+            mReader = reader;
+        }
+
+        @Override
+        public boolean getFeature(String name) throws SAXNotRecognizedException, SAXNotSupportedException {
+            check(name);
+            return mReader.getFeature(name);
+        }
+
+        @Override
+        public void setFeature(String name, boolean value) throws SAXNotRecognizedException, SAXNotSupportedException {
+            check(name);
+            mReader.setFeature(name, value);
+        }
+
+        private static void check(String name) throws SAXNotRecognizedException {
+            if (!name.startsWith("http://xml.org/sax/features/")) {
+                throw new SAXNotRecognizedException(name);
+            }
+        }
+
+        @Override
+        public Object getProperty(String name) throws SAXNotRecognizedException, SAXNotSupportedException {
+            return mReader.getProperty(name);
+        }
+
+        @Override
+        public void setProperty(String name, Object value) throws SAXNotRecognizedException, SAXNotSupportedException {
+            mReader.setProperty(name, value);
+        }
+
+        @Override
+        public void setEntityResolver(EntityResolver resolver) {
+            mReader.setEntityResolver(resolver);
+        }
+
+        @Override
+        public EntityResolver getEntityResolver() {
+            return mReader.getEntityResolver();
+        }
+
+        @Override
+        public void setDTDHandler(DTDHandler handler) {
+            mReader.setDTDHandler(handler);
+        }
+
+        @Override
+        public DTDHandler getDTDHandler() {
+            return mReader.getDTDHandler();
+        }
+
+        @Override
+        public void setContentHandler(ContentHandler handler) {
+            mReader.setContentHandler(handler);
+        }
+
+        @Override
+        public ContentHandler getContentHandler() {
+            return mReader.getContentHandler();
+        }
+
+        @Override
+        public void setErrorHandler(ErrorHandler handler) {
+            mReader.setErrorHandler(handler);
+        }
+
+        @Override
+        public ErrorHandler getErrorHandler() {
+            return mReader.getErrorHandler();
+        }
+
+        @Override
+        public void parse(InputSource input) throws IOException, SAXException {
+            mReader.parse(input);
+        }
+
+        @Override
+        public void parse(String systemId) throws IOException, SAXException {
+            mReader.parse(systemId);
+        }
     }
 
 }
