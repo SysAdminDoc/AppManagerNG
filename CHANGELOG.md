@@ -53,6 +53,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - An install that Play Protect or another verifier turns down now says it was blocked (issue #22). Android reports that refusal the same way as a cancel, so the result told you to try again and keep the installer open, and an app from Local sync got no notification offering another way to install it. It now reads as blocked, with Android's reason underneath.
 - The reference flag next to a permission or app op works both ways now (issue #33). Tapping it on a pinned reference used to pin it again and say "Reference pinned", so there was no way to take one off. A second tap unpins it, the flag is filled while a reference is pinned, and each tap says what it did. This applies in the Permission Inspector and on an app's Permissions and App ops tabs. A reference that has drifted still offers Restore first, and when the app can't change that permission it offers Unpin instead of greying the button out.
 - The unit test suite no longer runs out of memory about ten minutes in. Each test's copy of the app installed its crash handler on top of the last one, and that chain kept every earlier test's app and resources alive until the run died. The handler is now skipped under the test runner, so nothing changes on a phone.
+- Refreshing an app in the main list no longer fails when its SSAIDs can't be read and the error has a percent sign in it, as an encoded file path does.
 
 ## v0.7.0, 2026-11-08
 
