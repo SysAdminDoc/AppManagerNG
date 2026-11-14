@@ -4,6 +4,9 @@ package io.github.muntashirakon.AppManager.backup;
 
 import static org.junit.Assert.*;
 
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -16,8 +19,10 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.regex.Pattern;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
@@ -27,6 +32,7 @@ import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
 import io.github.muntashirakon.AppManager.backup.struct.BackupOpOptions;
 import io.github.muntashirakon.AppManager.backup.struct.DeleteOpOptions;
 import io.github.muntashirakon.AppManager.backup.struct.RestoreOpOptions;
+import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.batchops.struct.BatchBackupOptions;
 import io.github.muntashirakon.AppManager.db.utils.AppDb;
 import io.github.muntashirakon.AppManager.settings.Prefs;
@@ -41,6 +47,9 @@ import io.github.muntashirakon.io.Paths;
 @RunWith(RobolectricTestRunner.class)
 @LooperMode(LooperMode.Mode.INSTRUMENTATION_TEST)
 public class BackupManagerTest {
+    private static final int DATA_EXTRAS_AND_RULES = BackupFlags.BACKUP_INT_DATA | BackupFlags.BACKUP_EXT_DATA
+            | BackupFlags.BACKUP_EXTRAS | BackupFlags.BACKUP_RULES;
+
     private final ClassLoader classLoader = getClass().getClassLoader();
     private Path rscBackupPath;
     private Path tmpBackupPath;
@@ -53,13 +62,16 @@ public class BackupManagerTest {
         rscBackupPath = Paths.get(classLoader.getResource("backups/v4").getFile());
         tmpBackupPath = Paths.get(RoboUtils.getTestBaseDir());
         ShadowPackageManagerCompat.resetClearApplicationUserDataCalls();
+        ShadowPackageManagerCompat.resetPackageInfo();
     }
 
     @After
     public void tearDown() {
         BackupOp.setPostWriteBackupHook(null);
+        RestoreOp.setDirectoryCommandHook(null);
         MetadataManager.setCurrentBackupMetaVersion(mDefaultMetaVersion);
         ShadowPackageManagerCompat.resetClearApplicationUserDataCalls();
+        ShadowPackageManagerCompat.resetPackageInfo();
         for (Path path : tmpBackupPath.listFiles()) {
             path.delete();
         }
@@ -340,6 +352,81 @@ public class BackupManagerTest {
 
         assertTrue(exception.getMessage().contains("Failed to restore data files for index 0."));
         assertEquals(0, ShadowPackageManagerCompat.getClearApplicationUserDataCalls());
+    }
+
+    @Test
+    public void aDirectoryThatCannotBeRelabeledFailsTheRestoreOnlyAfterTheRestIsBack() throws Exception {
+        List<String> chowned = Collections.synchronizedList(new ArrayList<>());
+        restoreconFailsOnAnOlderBackup(chowned);
+        BackupManager bm = new BackupManager();
+        RestoreOpOptions options = new RestoreOpOptions("dnsfilter.android", 0, "dnsfilter.android/0",
+                DATA_EXTRAS_AND_RULES);
+
+        BackupException exception = assertThrows(BackupException.class, () -> bm.restore(options, null));
+
+        assertEquals("Failed to restore SELinux context for index 0.", exception.getMessage());
+        // A single-user device restores the backup's /storage/emulated/0 directory under /sdcard
+        String externalDir = "/sdcard/Android/data/dnsfilter.android";
+        assertTrue(chowned.toString(), Paths.get(RoboUtils.getTestBaseDir().getAbsolutePath() + externalDir
+                + "/files/PersonalDNSFilter/dnsfilter.conf").exists());
+        assertEquals(2, chowned.size());
+        assertTrue(chowned.get(1), chowned.get(1).endsWith(externalDir));
+        assertFalse(bm.getRestoreExtraWarnings().isEmpty());
+    }
+
+    @Test
+    public void aBatchRestoreThatFailsLateKeepsItsWarnings() throws Exception {
+        restoreconFailsOnAnOlderBackup(Collections.synchronizedList(new ArrayList<>()));
+        BatchOpsManager.BatchOpsInfo info = BatchOpsManager.BatchOpsInfo.getInstance(
+                BatchOpsManager.OP_RESTORE_BACKUP, Collections.singletonList("dnsfilter.android"),
+                Collections.singletonList(0),
+                new BatchBackupOptions(DATA_EXTRAS_AND_RULES, null, new String[]{"dnsfilter.android/0"}));
+
+        BatchOpsManager.Result result = new BatchOpsManager(null).performOp(info, null);
+
+        assertEquals(Collections.singletonList("dnsfilter.android"), result.getFailedPackages());
+        assertFalse(result.getWarnings().isEmpty());
+    }
+
+    /**
+     * Puts a copy of the test backup on the volume, marked as made on Android 11 so restoring it
+     * warns, and makes restorecon fail. Index 0 is the backup's only internal directory, so it's
+     * the only one restorecon runs on. Every chown target is added to the list.
+     * <p>
+     * The app counts as installed through the shadow, so the restore leaves the APK alone:
+     * Robolectric keeps an APK it parsed open, and on Windows that leaves the copied backup
+     * undeletable for the tests that run after this one.
+     */
+    private void restoreconFailsOnAnOlderBackup(List<String> chowned) throws Exception {
+        ApplicationInfo applicationInfo = new ApplicationInfo();
+        applicationInfo.packageName = "dnsfilter.android";
+        applicationInfo.uid = 10421;
+        applicationInfo.publicSourceDir = RoboUtils.getTestBaseDir().getAbsolutePath()
+                + "/data/app/dnsfilter.android/base.apk";
+        applicationInfo.sourceDir = applicationInfo.publicSourceDir;
+        applicationInfo.dataDir = "/data/data/dnsfilter.android";
+        PackageInfo packageInfo = new PackageInfo();
+        packageInfo.packageName = "dnsfilter.android";
+        packageInfo.applicationInfo = applicationInfo;
+        ShadowPackageManagerCompat.setPackageInfoForUser("dnsfilter.android", 0, packageInfo);
+        Prefs.Storage.setVolumePath(tmpBackupPath.getUri().toString());
+        assertNotNull(rscBackupPath.findFile("AppManager")
+                .copyTo(tmpBackupPath, true));
+        Path backupPath = tmpBackupPath.findFile("AppManager")
+                .findFile("dnsfilter.android")
+                .findFile("0");
+        Path metadataFile = backupPath.findFile(MetadataManager.META_V2_FILE);
+        writeString(metadataFile, new JSONObject(metadataFile.getContentAsString())
+                .put("source_api_level", 30).toString());
+        Path checksumFile = backupPath.findFile("checksums.txt");
+        writeString(checksumFile, replaceChecksum(checksumFile.getContentAsString(),
+                metadataFile.getName(), DigestUtils.getHexDigest(DigestUtils.SHA_256, metadataFile)));
+        RestoreOp.setDirectoryCommandHook(command -> {
+            if (command[0].equals("chown")) {
+                chowned.add(command[command.length - 1].replace('\\', '/'));
+            }
+            return !command[0].equals("restorecon");
+        });
     }
 
     @Test

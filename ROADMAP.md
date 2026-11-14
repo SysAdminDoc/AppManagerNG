@@ -66,14 +66,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Today: 2026-11-14 there was no RAM to boot a Magisk AVD next to the other sessions' emulator, and both phones were leased. Check which Magisk the Hushfeed_Magisk_API36 AVD carries first, since the vault records 30.7 there.
   Complexity: S
 
-- [ ] P1: Backup/restore round-trip integration tests
-  Why: backup/restore has the highest reliability risk and still lacks end-to-end runtime coverage for no-crypto and AES paths.
-  Evidence: backup/adb/AndroidBackupHeader.java; backup/RestoreOp.java; test coverage gaps in backup round-trip behavior.
-  Acceptance: a local emulator suite installs a fixture app, backs it up with no-crypto and AES modes, uninstalls it, restores it, and asserts data equality.
-  Today: `app/src/androidTest` has seven classes and none of them runs a backup round trip. This also covers INIT-D5 (backup round-trip emulator coverage).
-  Unblocked 2026-11-07: every emulator image on disk has room for a fixture-app backup and restore, so this is test work with nothing missing.
-  Complexity: M
-
 - [ ] P1: Port upstream's native run_server for the local privileged channel
   Why: the HMAC half is done. Protocol 1.4.0 (fcbb19030) proves the token both ways without sending it, and `DataTransmissionHandshakeTest` covers the negative cases. Upstream's native run_server executable is what's left.
   Evidence: upstream commits 07c7199 (run_server as a native executable, 2026-05-28) and b42efbb (main.jar copied through run_server). NG still launches through `app/src/main/assets/run_server.sh` and `servermanager/AdbLaunchFiles.java`, and its server has run apart from upstream's since 6e8f45d31 (port 62001 plus user ID, process `amng_server`).

@@ -19,6 +19,7 @@ import android.widget.Button;
 import androidx.annotation.CheckResult;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.NotificationCompat;
@@ -75,8 +76,10 @@ public class KeyStoreManager {
 
     private static final String AM_KEYSTORE = "BKS";  // KeyStore.getDefaultType() == JKS
     private static final String PREF_AM_KEYSTORE_PREFIX = "ks_";
-    private static final String PREF_AM_KEYSTORE_PASS = "kspass";
-    private static final SharedPreferences sSharedPreferences;
+    @VisibleForTesting
+    static final String PREF_AM_KEYSTORE_PASS = "kspass";
+    @VisibleForTesting
+    static final SharedPreferences sSharedPreferences;
 
     public static final String ACTION_KS_INTERACTION_BEGIN = BuildConfig.APPLICATION_ID + ".action.KS_INTERACTION_BEGIN";
     public static final String ACTION_KS_INTERACTION_END = BuildConfig.APPLICATION_ID + ".action.KS_INTERACTION_END";

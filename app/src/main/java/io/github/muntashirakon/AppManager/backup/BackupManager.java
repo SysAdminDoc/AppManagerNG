@@ -173,10 +173,14 @@ public class BackupManager {
             progressHandler.postUpdate(max, 0f);
         }
         try (RestoreOp restoreOp = new RestoreOp(options.packageName, options.flags, backupItem, options.userId)) {
-            restoreOp.runRestore(progressHandler);
-            mRequiresRestart |= restoreOp.requiresRestart();
-            mPendingDefaultRoleRebindRequests.addAll(restoreOp.getPendingDefaultRoleRebindRequests());
-            mRestoreExtraWarnings.addAll(restoreOp.getRestoreExtraWarnings());
+            try {
+                restoreOp.runRestore(progressHandler);
+            } finally {
+                // A restore that fails late has still changed the app, which may need a restart
+                mRequiresRestart |= restoreOp.requiresRestart();
+                mPendingDefaultRoleRebindRequests.addAll(restoreOp.getPendingDefaultRoleRebindRequests());
+                mRestoreExtraWarnings.addAll(restoreOp.getRestoreExtraWarnings());
+            }
         }
     }
 

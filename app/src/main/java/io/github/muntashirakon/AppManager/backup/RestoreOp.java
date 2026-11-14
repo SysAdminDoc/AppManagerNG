@@ -15,9 +15,11 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.system.ErrnoException;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import java.io.Closeable;
@@ -86,6 +88,15 @@ class RestoreOp implements Closeable {
     static final String TAG = RestoreOp.class.getSimpleName();
     private static final Object sLock = new Object();
 
+    /** Stands in for the chown and restorecon calls on restored directories, which tests can't run. */
+    @VisibleForTesting
+    interface DirectoryCommandHook {
+        boolean run(@NonNull String[] command);
+    }
+
+    @Nullable
+    private static DirectoryCommandHook sDirectoryCommandHook;
+
     @NonNull
     private final String mPackageName;
     @NonNull
@@ -110,6 +121,13 @@ class RestoreOp implements Closeable {
     private final ArrayList<DefaultAppRoleBackupHelper.RoleRebindRequest> mPendingDefaultRoleRebindRequests = new ArrayList<>();
     @NonNull
     private final ArrayList<String> mRestoreExtraWarnings = new ArrayList<>();
+    @NonNull
+    private final ArrayList<String> mDirectoryFailures = new ArrayList<>();
+
+    @VisibleForTesting
+    static void setDirectoryCommandHook(@Nullable DirectoryCommandHook hook) {
+        sDirectoryCommandHook = hook;
+    }
 
     RestoreOp(@NonNull String packageName, @NonNull BackupFlags requestedFlags,
               @NonNull BackupItems.BackupItem backupItem, int userId) throws BackupException {
@@ -270,6 +288,10 @@ class RestoreOp implements Closeable {
                 incrementProgress(progressHandler);
             }
             restoreDefaultAppRoles();
+            if (!mDirectoryFailures.isEmpty()) {
+                // Reported last, so one directory the app can't use yet doesn't stop the rest of the restore
+                throw new BackupException(TextUtils.join("\n", mDirectoryFailures));
+            }
         } catch (BackupException e) {
             throw e;
         } catch (Exception th) {
@@ -801,19 +823,39 @@ class RestoreOp implements Closeable {
         }
     }
 
+    /**
+     * Hands a restored directory back to the app. A failure is recorded rather than thrown: the
+     * app's data is already cleared by now, so stopping here would throw away the directories still
+     * staged. runRestore fails once everything else is restored.
+     */
     private void finishRestoredDirectory(@NonNull DataDirectoryRestoreTarget restoreTarget,
-                                         @NonNull Path restoredDirectory) throws BackupException {
-        boolean isRoboUnitTest = Utils.isRoboUnitTest();
+                                         @NonNull Path restoredDirectory) {
         // Restore UID and GID
-        if (!isRoboUnitTest && !Runner.runCommand(new String[]{"chown", "-R",
+        if (!runDirectoryCommand(new String[]{"chown", "-R",
                 restoreTarget.uidGidPair.uid + ":" + restoreTarget.uidGidPair.gid,
-                restoredDirectory.getFilePath()}).isSuccessful()) {
-            throw new BackupException("Failed to restore ownership info for index " + restoreTarget.index + ".");
+                restoredDirectory.getFilePath()})) {
+            addDirectoryFailure("Failed to restore ownership info for index " + restoreTarget.index + ".");
         }
-        // Restore context
-        if (!isRoboUnitTest && !restoreTarget.dataDirectoryInfo.isExternal()) {
-            Runner.runCommand(new String[]{"restorecon", "-R", restoredDirectory.getFilePath()});
+        // Restore context. Without -D, restorecon leaves everything below /data/user/N/<pkg>
+        // alone, so files extracted in a staging dir would keep system_data_file and the app
+        // could not read its own data.
+        if (!restoreTarget.dataDirectoryInfo.isExternal() && !runDirectoryCommand(new String[]{
+                "restorecon", "-R", "-D", restoredDirectory.getFilePath()})) {
+            addDirectoryFailure("Failed to restore SELinux context for index " + restoreTarget.index + ".");
         }
+    }
+
+    private static boolean runDirectoryCommand(@NonNull String[] command) {
+        DirectoryCommandHook hook = sDirectoryCommandHook;
+        if (hook != null) {
+            return hook.run(command);
+        }
+        return Utils.isRoboUnitTest() || Runner.runCommand(command).isSuccessful();
+    }
+
+    private void addDirectoryFailure(@NonNull String message) {
+        Log.e(TAG, "%s", message);
+        mDirectoryFailures.add(message);
     }
 
     @NonNull

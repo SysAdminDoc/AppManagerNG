@@ -634,21 +634,22 @@ public class BatchOpsManager {
                     CharSequence title = context.getString(R.string.restoring_app, appLabel);
                     ProgressHandler subProgressHandler = newSubProgress(operationName, title);
                     boolean failed = false;
+                    BackupManager backupManager = new BackupManager();
                     try {
-                        BackupManager backupManager = new BackupManager();
                         backupManager.restore(options.getRestoreOpOptions(pair.getPackageName(), pair.getUserId()), subProgressHandler);
-                        // Idempotent set-true: a get()|set() read-modify-write can lose a concurrent
-                        // worker's true, dropping a needed "restart required" prompt after restore.
-                        if (backupManager.requiresRestart()) {
-                            requiresRestart.set(true);
-                        }
-                        pendingDefaultRoleRebindRequests.addAll(backupManager.getPendingDefaultRoleRebindRequests());
-                        restoreExtraWarnings.addAll(backupManager.getRestoreExtraWarnings());
                     } catch (Throwable e) {
                         failed = true;
                         log("====> op=BACKUP_RESTORE, mode=RESTORE pkg=" + pair, e);
                         failedPackages.add(pair);
                     }
+                    // Kept for a failed restore too: one that fails late has still changed the app.
+                    // Idempotent set-true: a get()|set() read-modify-write can lose a concurrent
+                    // worker's true, dropping a needed "restart required" prompt after restore.
+                    if (backupManager.requiresRestart()) {
+                        requiresRestart.set(true);
+                    }
+                    pendingDefaultRoleRebindRequests.addAll(backupManager.getPendingDefaultRoleRebindRequests());
+                    restoreExtraWarnings.addAll(backupManager.getRestoreExtraWarnings());
                     recordTargetFinished(pair, failed);
                     if (subProgressHandler != null) {
                         ThreadUtils.postOnMainThread(() -> subProgressHandler.onResult(null));
