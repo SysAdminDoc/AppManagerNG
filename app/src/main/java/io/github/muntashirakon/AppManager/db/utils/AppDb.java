@@ -386,7 +386,8 @@ public class AppDb {
                 try {
                     userIdSsaidSettingsMap.put(userId, new SsaidSettings(userId));
                 } catch (IOException e) {
-                    Log.w(TAG, "Error: " + e.getMessage());
+                    // The message is an argument: Log formats its first string, and a path can hold a '%'
+                    Log.w(TAG, "Couldn't read the SSAIDs of user %d", e, userId);
                 }
             }
         }
