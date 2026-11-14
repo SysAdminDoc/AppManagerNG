@@ -74,7 +74,7 @@ public abstract class Runner {
         }
     }
 
-    private static NormalShell sRootShell;
+    private static Runner sRootShell;
     private static PrivilegedShell sPrivilegedShell;
     private static NormalShell sNoRootShell;
 
@@ -96,6 +96,18 @@ public abstract class Runner {
             Log.d(TAG, "RootShell");
         }
         return sRootShell;
+    }
+
+    /**
+     * Drops the root shell if su refused it, so the next root check asks su again. See
+     * {@link RunnerUtils#retryRootGrant()} for when that's safe, since asking again can put up a
+     * superuser prompt.
+     */
+    static synchronized void forgetRefusedRootShell() {
+        if (sRootShell != null && !sRootShell.isRoot()) {
+            sRootShell.close();
+            sRootShell = null;
+        }
     }
 
     @NonNull
@@ -173,6 +185,10 @@ public abstract class Runner {
     }
 
     public abstract boolean isRoot();
+
+    /** Lets go of the shell behind this runner once it's no longer used. */
+    void close() {
+    }
 
     @WorkerThread
     @NonNull

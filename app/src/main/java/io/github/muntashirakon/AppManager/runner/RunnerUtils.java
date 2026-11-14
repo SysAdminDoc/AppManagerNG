@@ -6,18 +6,25 @@ import android.os.Build;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
+import androidx.annotation.WorkerThread;
 
 import com.topjohnwu.superuser.Shell;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.security.InvalidParameterException;
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.NoOps;
@@ -29,6 +36,10 @@ public final class RunnerUtils {
     public static final String CMD_PM = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P ? "cmd package" : "pm";
 
     private static final String EMPTY = "";
+    /** Magisk's su answers -v and -V at once, so anything slower isn't worth waiting for. */
+    private static final long VERSION_PROBE_TIMEOUT_MILLIS = 2000;
+    /** Both answers are one short line, so anything longer is something else talking. */
+    private static final int VERSION_PROBE_MAX_BYTES = 256;
 
     /**
      * Translator object for escaping Shell command language.
@@ -86,6 +97,17 @@ public final class RunnerUtils {
         return ESCAPE_XSI.translate(input);
     }
 
+    /**
+     * Makes the next root check ask su again if it refused earlier in this process, so root granted
+     * in the root manager since then gets picked up. Only for something the user just asked for
+     * (picking Root or Auto, a grant button), or where no prompt can come up (Magisk 31.1+), since
+     * asking again can put up a superuser prompt.
+     */
+    @NoOps
+    public static void retryRootGrant() {
+        Runner.forgetRefusedRootShell();
+    }
+
     @NoOps
     public static boolean isRootGiven() {
         return Boolean.TRUE.equals(isAppGrantedRoot());
@@ -120,17 +142,140 @@ public final class RunnerUtils {
      */
     @NoOps
     public static boolean isSuOnPath() {
+        return findSuOnPath() != null;
+    }
+
+    /**
+     * Magisk's version code as its su reports it, or null when the su on the PATH isn't Magisk's.
+     * Magisk's su answers {@code -v} and {@code -V} before it talks to Magisk, so this never asks
+     * for root, and it still works when the Magisk app is hidden under a random package name.
+     */
+    @WorkerThread
+    @Nullable
+    @NoOps
+    public static Long getMagiskSuVersionCode() {
+        File su = findSuOnPath();
+        if (su == null) {
+            return null;
+        }
+        return readMagiskSuVersionCode(Collections.singletonList(su.getAbsolutePath()), VERSION_PROBE_TIMEOUT_MILLIS);
+    }
+
+    /**
+     * {@link #getMagiskSuVersionCode()} for the su that {@code suCommand} starts, giving -v and -V
+     * {@code timeoutMillis} between them.
+     */
+    @VisibleForTesting
+    @WorkerThread
+    @Nullable
+    static Long readMagiskSuVersionCode(@NonNull List<String> suCommand, long timeoutMillis) {
+        long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
+        // Magisk's su prints "31.1:MAGISKSU" for -v. Anything else is another su, so -V isn't tried.
+        String versionName = readFirstLine(suCommand, "-v", deadline);
+        if (versionName == null || !versionName.endsWith(":MAGISKSU")) {
+            return null;
+        }
+        String versionCode = readFirstLine(suCommand, "-V", deadline);
+        if (versionCode == null) {
+            return null;
+        }
+        try {
+            return Long.parseLong(versionCode);
+        } catch (NumberFormatException e) {
+            Log.w(TAG, "Magisk su printed %s for -V", versionCode);
+            return null;
+        }
+    }
+
+    @Nullable
+    private static File findSuOnPath() {
         String pathEnv = System.getenv("PATH");
         Log.d(TAG, "PATH=%s", pathEnv);
-        if (pathEnv == null) return false;
+        if (pathEnv == null) return null;
         for (String pathDir : pathEnv.split(":")) {
             File suFile = new File(pathDir, "su");
             Log.d(TAG, "SU(file=%s, exists=%s, executable=%s)", suFile, suFile.exists(), suFile.canExecute());
             if (suFile.canExecute()) {
-                return true;
+                return suFile;
             }
         }
-        return false;
+        return null;
+    }
+
+    /**
+     * The first line {@code command arg} prints, or null when it fails or hasn't printed a line or
+     * exited by {@code deadline} ({@link System#nanoTime()}), so a su that waits on something can't
+     * hang the caller. Only bytes already in the pipe are read, so a child that keeps the pipe open
+     * after su exits can't hold this up either.
+     */
+    @WorkerThread
+    @Nullable
+    private static String readFirstLine(@NonNull List<String> command, @NonNull String arg, long deadline) {
+        List<String> argv = new ArrayList<>(command);
+        argv.add(arg);
+        Process process;
+        try {
+            process = new ProcessBuilder(argv).redirectErrorStream(true).start();
+        } catch (IOException e) {
+            Log.w(TAG, "Could not run %s", e, argv);
+            return null;
+        }
+        try {
+            process.getOutputStream().close();
+            InputStream output = process.getInputStream();
+            ByteArrayOutputStream printed = new ByteArrayOutputStream();
+            byte[] buffer = new byte[VERSION_PROBE_MAX_BYTES];
+            while (true) {
+                boolean exited = hasExited(process);
+                int available;
+                while (printed.size() < VERSION_PROBE_MAX_BYTES && (available = output.available()) > 0) {
+                    int read = output.read(buffer, 0, Math.min(available, VERSION_PROBE_MAX_BYTES - printed.size()));
+                    if (read < 0) {
+                        break;
+                    }
+                    printed.write(buffer, 0, read);
+                }
+                if (exited || printed.size() >= VERSION_PROBE_MAX_BYTES || printed.toString("UTF-8").indexOf('\n') >= 0) {
+                    break;
+                }
+                if (System.nanoTime() - deadline > 0) {
+                    Log.w(TAG, "%s printed no line in time", argv);
+                    return null;
+                }
+                Thread.sleep(20);
+            }
+            String text = printed.toString("UTF-8");
+            int newline = text.indexOf('\n');
+            String line = (newline >= 0 ? text.substring(0, newline) : text).trim();
+            return line.isEmpty() ? null : line;
+        } catch (IOException e) {
+            Log.w(TAG, "Could not read %s", e, argv);
+            return null;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+        } finally {
+            kill(process);
+        }
+    }
+
+    /** destroy() is SIGTERM from Android 7 on, and SIGKILL through destroyForcibly() needs API 26. */
+    private static void kill(@NonNull Process process) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            process.destroyForcibly();
+        } else {
+            process.destroy();
+        }
+    }
+
+    /** Process.isAlive() is API 26, and exitValue() throws while the process runs. */
+    private static boolean hasExited(@NonNull Process process) {
+        try {
+            process.exitValue();
+            return true;
+        } catch (IllegalThreadStateException e) {
+            return false;
+        }
     }
 
     /**

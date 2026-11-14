@@ -5,7 +5,6 @@ package io.github.muntashirakon.AppManager.settings;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.widget.Toast;
@@ -19,6 +18,7 @@ import androidx.preference.PreferenceScreen;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.dhizuku.DhizukuBridge;
 import io.github.muntashirakon.AppManager.misc.SupportInfoBundle;
+import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
 import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.utils.ClipboardUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
@@ -26,13 +26,6 @@ import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.io.Path;
 
 public class ModeDoctorPreferences extends PreferenceFragment {
-    private static final String[] ROOT_MANAGER_PACKAGES = new String[]{
-            "com.topjohnwu.magisk",
-            "me.weishu.kernelsu",
-            "com.rifsxd.ksunext",
-            "me.bmax.apatch",
-    };
-
     @Override
     public void onCreatePreferences(@Nullable Bundle savedInstanceState, @Nullable String rootKey) {
         renderRunning();
@@ -206,7 +199,7 @@ public class ModeDoctorPreferences extends PreferenceFragment {
             case MODE_SETTINGS:
                 return SettingsActivity.getSettingsIntent(context, "mode_of_operations");
             case ROOT_MANAGER: {
-                Intent rootManagerIntent = getRootManagerIntent(context);
+                Intent rootManagerIntent = RootManagerInfo.getManagerLaunchIntent(context);
                 return rootManagerIntent != null
                         ? rootManagerIntent
                         : SettingsActivity.getSettingsIntent(context, "mode_of_operations");
@@ -232,18 +225,6 @@ public class ModeDoctorPreferences extends PreferenceFragment {
             default:
                 return null;
         }
-    }
-
-    @Nullable
-    private static Intent getRootManagerIntent(@NonNull Context context) {
-        PackageManager pm = context.getPackageManager();
-        for (String packageName : ROOT_MANAGER_PACKAGES) {
-            Intent intent = pm.getLaunchIntentForPackage(packageName);
-            if (intent != null) {
-                return intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            }
-        }
-        return null;
     }
 
     private void shareModeDoctorWithSupportBundle(@NonNull String report) {

@@ -7,9 +7,12 @@ import androidx.annotation.WorkerThread;
 
 import com.topjohnwu.superuser.Shell;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+
+import io.github.muntashirakon.AppManager.logs.Log;
 
 class NormalShell extends Runner {
     private final Shell mShell;
@@ -29,6 +32,19 @@ class NormalShell extends Runner {
     @Override
     public boolean isRoot() {
         return mShell.isRoot();
+    }
+
+    @Override
+    void close() {
+        if (mShell == Shell.getCachedShell()) {
+            // libsu's main shell stays for everyone else
+            return;
+        }
+        try {
+            mShell.close();
+        } catch (IOException e) {
+            Log.w(TAG, "Could not close the shell.", e);
+        }
     }
 
     @WorkerThread

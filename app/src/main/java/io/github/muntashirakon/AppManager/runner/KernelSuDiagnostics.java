@@ -26,9 +26,6 @@ import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
  * Active KernelSU diagnostics for the Settings -> Privileges health surface.
  */
 public final class KernelSuDiagnostics {
-    public static final String KERNELSU_PACKAGE = "me.weishu.kernelsu";
-    public static final String KERNELSU_NEXT_PACKAGE = "com.rifsxd.ksunext";
-
     private static final int MAX_SULOG_LINES = 5;
     private static final int PR_GET_SECCOMP = 21;
     private static final int UNKNOWN_ID = -1;

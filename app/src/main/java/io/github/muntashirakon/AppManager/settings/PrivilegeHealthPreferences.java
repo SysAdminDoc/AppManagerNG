@@ -601,7 +601,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
                 .setMessage(message)
                 .setNeutralButton(R.string.copy, (dialog, which) ->
                         Utils.copyToClipboard(context, "KernelSU diagnostics", message));
-        Intent managerIntent = getKernelSuManagerIntent(context);
+        Intent managerIntent = RootManagerInfo.getKernelSuManagerLaunchIntent(context);
         if (result.recoveryAction == KernelSuDiagnostics.RecoveryAction.REQUEST_ROOT_GRANT) {
             builder.setPositiveButton(R.string.privilege_health_kernelsu_request_root_grant,
                     (dialog, which) -> requestKernelSuRootGrant(context));
@@ -640,6 +640,9 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         Context appContext = context.getApplicationContext();
         Toast.makeText(context, R.string.privilege_health_kernelsu_regrant_started, Toast.LENGTH_SHORT).show();
         ThreadUtils.postOnBackgroundThread(() -> {
+            // The user asked, so drop a refused root shell: the grant made in the manager since then
+            // only shows up on a fresh su
+            RunnerUtils.retryRootGrant();
             Boolean granted = RunnerUtils.isAppGrantedRoot();
             if (Boolean.TRUE.equals(granted)) {
                 Ops.init(appContext, true);
@@ -666,20 +669,6 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
             Toast.makeText(context, R.string.privilege_health_restricted_settings_settings_unavailable,
                     Toast.LENGTH_LONG).show();
         }
-    }
-
-    @Nullable
-    private Intent getKernelSuManagerIntent(@NonNull Context context) {
-        Intent launchIntent = context.getPackageManager()
-                .getLaunchIntentForPackage(KernelSuDiagnostics.KERNELSU_PACKAGE);
-        if (launchIntent == null) {
-            launchIntent = context.getPackageManager()
-                    .getLaunchIntentForPackage(KernelSuDiagnostics.KERNELSU_NEXT_PACKAGE);
-        }
-        if (launchIntent != null) {
-            return launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        }
-        return null;
     }
 
     private void launchBatteryOptimizationSystemFlow(@NonNull Context context, boolean exempt) {

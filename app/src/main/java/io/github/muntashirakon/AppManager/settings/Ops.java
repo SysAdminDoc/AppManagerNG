@@ -55,6 +55,7 @@ import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.logcat.helper.ServiceHelper;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.NoOps;
+import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
 import io.github.muntashirakon.AppManager.runner.RunnerUtils;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.servermanager.AdbFailure;
@@ -362,6 +363,12 @@ public class Ops {
     @NoOps // Although we've used Ops checks, its overall usage does not affect anything
     @Status
     public static int init(@NonNull Context context, boolean force, @NonNull @Mode String mode) {
+        if (MODE_ROOT.equals(mode) || MODE_AUTO.equals(mode)) {
+            // Root, or Auto (which tries root first), was picked. Ask su again, since root may have
+            // been granted after it refused, and Magisk 31.1+ never asks, so granting it there and
+            // picking again is the only way.
+            RunnerUtils.retryRootGrant();
+        }
         return init(context, force, mode, false);
     }
 
@@ -409,6 +416,11 @@ public class Ops {
         try {
             if (MODE_ADB_OVER_TCP.equals(mode)) {
                 ServerConfig.setAdbPort(ServerConfig.DEFAULT_ADB_PORT);
+            }
+            if (MODE_ROOT.equals(mode) && RootManagerInfo.magiskGrantsAheadOfTime(context)) {
+                // Magisk 31.1+ never shows a prompt, so asking su again can't pop one up with nobody
+                // watching, and it's how root granted in Magisk since the last refusal gets used
+                RunnerUtils.retryRootGrant();
             }
             int status = connectUnattendedLocked(context, true, mode, false);
             if (status == STATUS_SUCCESS) {
@@ -555,7 +567,11 @@ public class Ops {
                     CharSequence reason = adbFailure.explain(context);
                     ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(reason));
                 } else {
-                    ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(R.string.failed_to_use_the_current_mode_of_operation));
+                    // su refused Root. Magisk 31.1+ never asks, so say where to grant it.
+                    int message = MODE_ROOT.equals(mode) && !sDirectRoot
+                            ? RootManagerInfo.getRootRefusedMessage(context)
+                            : R.string.failed_to_use_the_current_mode_of_operation;
+                    ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(message));
                 }
             }
             return status;

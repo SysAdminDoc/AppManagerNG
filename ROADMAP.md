@@ -59,14 +59,12 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Checked 2026-11-14 on the S25 (API 37, One UI CP2A.260605.016): Shizuku 13.6.0's server starts over ADB, Mode doctor sees it, the consent dialog works and NG's shizuku_am and shizuku_fs services connect, so Shizuku binds on Android 17. The first switch then died: the READ_LOGS self-grant changes NG's gids, Android killed NG with Settings resumed, and the mode was never saved. READ_LOGS now waits until every NG process is cached (DeferredLogAccess). Retested on the S25 the same day with that build: the switch sticks ("Selected: Shizuku. Active now: Shizuku (shell)"), READ_LOGS lands 2 seconds after Home, the kill hits the cached process (adj 700), and reopening lands back on Mode of operation. Shizuku on API 37 is done. Still owed: root plus Dhizuku on API 37, which need an emulator with about 10 GB of host RAM free (rules/android.md). `AppManagerNG_Magisk_API37` is set up on a copy of the API 37 google_apis image and is not patched yet.
   Complexity: S
 
-- [ ] P1: Root-detection retune for 2026 root managers
-  Why: upstream #1967 reports root not detected on Android 16, while Magisk 30.7 now preserves capabilities by default and KernelSU-Next moved probe paths again.
-  Evidence: upstream MuntashirAkon/AppManager#1967; Magisk 30.7 release notes; runner/RootManagerInfo.java.
-  Acceptance: root is detected on Android 16 with current Magisk and KernelSU-Next; drop-cap diagnostics give correct guidance for Magisk 30.7+; probe matrix is documented.
-  Today: #1967 closed with upstream v4.1.1, and NG already carries the KernelSU re-grant recovery from it (CHANGELOG, 2026-06-04). Magisk is now at v31.1 (2026-10-25), so the probe matrix should cover 31.1 too.
-  Unblocked 2026-11-07: the rooted API 36 Magisk AVD on disk gives a real Android 16 root runtime for the Magisk half today. The KernelSU-Next half needs a kernel it can load into, which is setup work, not a missing resource.
-  Research 2026-11-14: Magisk 31.1 removed the root prompt. Apps have to be turned on ahead of time in Magisk > Superuser > + (SuperuserGrantScreen), and hiding Magisk now means uninstalling its app. On 31.1 a first switch to Root gets refused with no prompt, and NG only shows the generic rollback toast (ModeOfOpsPreference `STATUS_FAILURE`). It should say where to grant it when com.topjohnwu.magisk is installed at versionCode 31100 or later, and the onboarding line about managers that "hide su until first request" needs the same note. SukiSU Ultra (`com.sukisu.ultra`, v4.3.0 2026-11-05, a KernelSU fork using /data/adb/ksu) is missing from the three package lists (RootManagerInfo, ModeDoctorPreferences, PrivilegeHealthPreferences' KernelSU launcher). Current releases: KernelSU-Next v3.4.2, APatch 11282. Magisk's versionCode is major * 1000 + minor * 100 (30700 for v30.7).
-  Complexity: M
+- [ ] P1: Check root detection on a live Android 16 root
+  Why: the 2026 root-manager retune (probe matrix in RootManagerInfo, the Magisk 31.1 grant toast and setup note, SukiSU Ultra as KernelSU) is covered by Robolectric only.
+  Evidence: runner/RootManagerInfo.java; RootManagerInfoTest; OpsRootRefusedTest; OnboardingFragment.pick().
+  Acceptance: on an API 36 AVD with Magisk 31.1, picking Root before granting it shows the Magisk > Superuser toast and the setup sheet's Open Magisk button opens Magisk. After AppManagerNG is added in Magisk > Superuser > +, Root works and Privilege health names Magisk from the /data/adb marker. KernelSU-Next gets the same check where a kernel can load it.
+  Today: 2026-11-14 there was no RAM to boot a Magisk AVD next to the other sessions' emulator, and both phones were leased. Check which Magisk the Hushfeed_Magisk_API36 AVD carries first, since the vault records 30.7 there.
+  Complexity: S
 
 - [ ] P1: Backup/restore round-trip integration tests
   Why: backup/restore has the highest reliability risk and still lacks end-to-end runtime coverage for no-crypto and AES paths.

@@ -3,7 +3,9 @@
 package io.github.muntashirakon.AppManager.onboarding;
 
 import android.Manifest;
+import android.app.Dialog;
 import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -18,18 +20,23 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import androidx.annotation.StringRes;
 import androidx.annotation.VisibleForTesting;
+import androidx.annotation.WorkerThread;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.color.MaterialColors;
+import com.topjohnwu.superuser.NoShellException;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.adb.AdbTcpipProbe;
 import io.github.muntashirakon.AppManager.dhizuku.DhizukuBridge;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
+import io.github.muntashirakon.AppManager.runner.RunnerUtils;
 import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Ops;
@@ -38,6 +45,9 @@ import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * First-run picker for the privilege level AppManagerNG should use (Auto / Root /
@@ -86,6 +96,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     @Override
     public void onDismiss(@NonNull android.content.DialogInterface dialog) {
         super.onDismiss(dialog);
+        dismissSheetDialogs();
         if (mOnDismissCallback != null) {
             // Defer to the next main-thread tick so the BottomSheet's exit animation
             // finishes before the follow-up dialog covers the same screen region.
@@ -112,6 +123,10 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     private CapabilitySnapshot mCapabilitySnapshot;
     private int mCapabilityProbeGeneration;
     private boolean mNotificationPermissionPromptShown;
+    /** A Root pick is being checked, so another tap on Root waits for its answer. */
+    private final RootPicks mRootPicks = new RootPicks();
+    /** Dialogs opened from the sheet, which close with it. */
+    private final List<Dialog> mSheetDialogs = new ArrayList<>();
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
@@ -614,6 +629,14 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         }
     }
 
+    private void openRootManager(@NonNull Intent intent) {
+        try {
+            startActivity(intent);
+        } catch (ActivityNotFoundException | SecurityException e) {
+            UIUtils.displayShortToast(R.string.no_apps_to_handle);
+        }
+    }
+
     private void openShizukuPinnedArchive() {
         try {
             startActivity(ShizukuBridge.getPinnedSafeManagerArchiveIntent());
@@ -702,15 +725,34 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     }
 
     private void showModeExplainer(@NonNull @Ops.Mode String mode, int titleRes, int explainerRes) {
-        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+        showOverSheet(new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
                 .setTitle(titleRes)
                 .setMessage(explainerRes)
                 .setPositiveButton(R.string.onboarding_explainer_pick_this, (d, w) -> pick(mode))
-                .setNegativeButton(R.string.close, null)
-                .show();
+                .setNegativeButton(R.string.close, null));
+    }
+
+    /**
+     * Shows a dialog that closes with the sheet. A slow Root check can close the sheet while one is
+     * up, and its buttons would then act on a sheet that's gone.
+     */
+    private void showOverSheet(@NonNull com.google.android.material.dialog.MaterialAlertDialogBuilder builder) {
+        Dialog dialog = builder.create();
+        mSheetDialogs.add(dialog);
+        dialog.setOnDismissListener(d -> mSheetDialogs.remove(dialog));
+        dialog.show();
+    }
+
+    private void dismissSheetDialogs() {
+        for (Dialog dialog : new ArrayList<>(mSheetDialogs)) {
+            dialog.dismiss();
+        }
+        mSheetDialogs.clear();
     }
 
     private void startWirelessAdbSetup() {
+        // Setting up wireless debugging is a pick too, so a Root check still running loses to it
+        mRootPicks.onPick(false);
         startWirelessAdbSetup(false, false);
     }
 
@@ -720,34 +762,31 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
 
     private void startWirelessAdbSetup(boolean skipUsbDebuggingPreflight, boolean skipTcpipPrompt) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            showOverSheet(new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
                     .setTitle(R.string.onboarding_mode_adb_wifi_title)
                     .setMessage(R.string.onboarding_mode_adb_wifi_requires_android_11)
                     .setPositiveButton(R.string.onboarding_mode_adb_tcp_title, (d, w) -> commit(Ops.MODE_ADB_OVER_TCP))
-                    .setNegativeButton(R.string.cancel, null)
-                    .show();
+                    .setNegativeButton(R.string.cancel, null));
             return;
         }
         if (!skipTcpipPrompt && mAdbTcpipSessionDetected) {
-            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            showOverSheet(new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
                     .setTitle(R.string.onboarding_adb_tcpip_detected_title)
                     .setMessage(R.string.onboarding_adb_tcpip_detected_message)
                     .setPositiveButton(R.string.onboarding_adb_tcpip_use_existing,
                             (d, w) -> startExistingAdbTcpipSession())
                     .setNeutralButton(R.string.onboarding_mode_adb_wifi_setup,
                             (d, w) -> startWirelessAdbSetup(false, true))
-                    .setNegativeButton(R.string.cancel, null)
-                    .show();
+                    .setNegativeButton(R.string.cancel, null));
             return;
         }
         if (!skipUsbDebuggingPreflight && !isUsbDebuggingEnabled()) {
-            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            showOverSheet(new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
                     .setTitle(R.string.onboarding_adb_wifi_enable_usb_debugging_title)
                     .setMessage(R.string.onboarding_adb_wifi_enable_usb_debugging_message)
                     .setPositiveButton(R.string.open, (d, w) -> openDeveloperOptions())
                     .setNeutralButton(R.string.action_continue, (d, w) -> startWirelessAdbSetup(true, true))
-                    .setNegativeButton(R.string.cancel, null)
-                    .show();
+                    .setNegativeButton(R.string.cancel, null));
             return;
         }
         FragmentActivity activity = requireActivity();
@@ -954,38 +993,125 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         }
     }
 
+    /**
+     * What to warn about when Root is picked, or 0 when root is already granted. It's an explicit
+     * pick, so su is asked again: root granted in the root manager since su refused (the only way
+     * on Magisk 31.1+, which never shows a prompt) is picked up without a restart.
+     */
+    @VisibleForTesting
+    @WorkerThread
+    @StringRes
+    static int checkRootPick(@NonNull Context context) {
+        try {
+            RunnerUtils.retryRootGrant();
+            if (Ops.hasRoot()) {
+                return 0;
+            }
+            return RootManagerInfo.waitsForMagiskGrant(context) ? R.string.onboarding_mode_root_pick_magisk_grant_first
+                    : R.string.onboarding_mode_root_pick_without_detection;
+        } catch (NoShellException e) {
+            // libsu couldn't start a shell at all, so there's no root to detect
+            Log.w(TAG, "Could not check for root", e);
+            return R.string.onboarding_mode_root_pick_without_detection;
+        }
+    }
+
+    /**
+     * Root taps share one su check, which can take seconds, and its answer is dropped when
+     * something else was picked after the last Root tap.
+     */
+    @VisibleForTesting
+    static final class RootPicks {
+        private int mPicks;
+        private int mLastRootPick;
+        private boolean mChecking;
+
+        /** Any pick. For Root, whether a su check has to start for it. */
+        boolean onPick(boolean root) {
+            ++mPicks;
+            if (!root) {
+                return false;
+            }
+            mLastRootPick = mPicks;
+            if (mChecking) {
+                return false;
+            }
+            mChecking = true;
+            return true;
+        }
+
+        /** The su check finished. Whether its answer still stands. */
+        boolean onChecked() {
+            mChecking = false;
+            return mLastRootPick == mPicks;
+        }
+    }
+
+    private void pickRoot() {
+        Context appContext = requireContext().getApplicationContext();
+        ThreadUtils.postOnBackgroundThread(() -> {
+            int warning = R.string.onboarding_mode_root_pick_without_detection;
+            try {
+                warning = checkRootPick(appContext);
+            } finally {
+                // Always answer, or every later Root tap would wait on a check that's gone
+                int checked = warning;
+                ThreadUtils.postOnMainThread(() -> onRootPickChecked(checked));
+            }
+        });
+    }
+
+    private void onRootPickChecked(@StringRes int warning) {
+        // A sheet that's closing still counts as added until the fragment manager removes it
+        Dialog sheet = getDialog();
+        if (!mRootPicks.onChecked() || !isAdded() || sheet == null || !sheet.isShowing()) return;
+        if (warning == 0) {
+            commit(Ops.MODE_ROOT);
+            return;
+        }
+        // Warn before committing to Root when su didn't grant it. Picking it anyway is
+        // fine (some setups hide su until the first request), but the dialog lets the
+        // user back out without burning the onboarding-shown flag.
+        com.google.android.material.dialog.MaterialAlertDialogBuilder builder =
+                new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                        .setTitle(R.string.onboarding_mode_root_title)
+                        .setMessage(warning)
+                        .setPositiveButton(R.string.onboarding_explainer_pick_this,
+                                (d, w) -> commit(Ops.MODE_ROOT))
+                        .setNegativeButton(R.string.cancel, null);
+        Intent magisk = warning == R.string.onboarding_mode_root_pick_magisk_grant_first
+                ? RootManagerInfo.getMagiskLaunchIntent(requireContext()) : null;
+        if (magisk != null) {
+            builder.setNeutralButton(R.string.onboarding_mode_root_open_magisk,
+                    (d, w) -> openRootManager(magisk));
+        }
+        showOverSheet(builder);
+    }
+
     private void pick(@NonNull @Ops.Mode String mode) {
-        // Warn the user before committing to Root mode if su isn't detected on this
-        // device — picking it anyway is fine (some setups hide su until first
-        // request) but the explainer dialog gives them a chance to bail without
-        // burning the onboarding-shown flag.
-        if (Ops.MODE_ROOT.equals(mode) && !Ops.hasRoot()) {
-            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
-                    .setTitle(R.string.onboarding_mode_root_title)
-                    .setMessage(R.string.onboarding_mode_root_pick_without_detection)
-                    .setPositiveButton(R.string.onboarding_explainer_pick_this, (d, w) -> commit(mode))
-                    .setNegativeButton(R.string.cancel, null)
-                    .show();
+        boolean root = Ops.MODE_ROOT.equals(mode);
+        if (mRootPicks.onPick(root)) {
+            pickRoot();
+        }
+        if (root) {
             return;
         }
         if (Ops.MODE_ADB_WIFI.equals(mode)) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-                new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                showOverSheet(new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
                         .setTitle(R.string.onboarding_mode_adb_wifi_title)
                         .setMessage(R.string.onboarding_mode_adb_wifi_requires_android_11)
                         .setPositiveButton(R.string.onboarding_mode_adb_tcp_title, (d, w) -> commit(Ops.MODE_ADB_OVER_TCP))
-                        .setNegativeButton(R.string.cancel, null)
-                        .show();
+                        .setNegativeButton(R.string.cancel, null));
                 return;
             }
             if (!isWirelessDebuggingActive() || !ServerConfig.hasPairedAdbDevice()) {
-                new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                showOverSheet(new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
                         .setTitle(R.string.onboarding_mode_adb_wifi_title)
                         .setMessage(R.string.onboarding_mode_adb_wifi_setup_prompt)
                         .setPositiveButton(R.string.onboarding_mode_adb_wifi_setup, (d, w) -> startWirelessAdbSetup())
                         .setNeutralButton(R.string.onboarding_mode_adb_wifi_pick_only, (d, w) -> commit(mode))
-                        .setNegativeButton(R.string.cancel, null)
-                        .show();
+                        .setNegativeButton(R.string.cancel, null));
                 return;
             }
         }
@@ -1046,6 +1172,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
 
     @Override
     public void onDestroyView() {
+        dismissSheetDialogs();
         mWirelessSetupCallback = null;
         mBoundView = null;
         super.onDestroyView();

@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 public class NormalShellTest {
     static final List<String> sCalls = new ArrayList<>();
     static Shell sCachedShell;
+    static FakeShell sLastBuilt;
     /**
      * The application's static initializer hands libsu a real builder before any test runs, and
      * libsu requires its own implementation, so the shadows only take over inside a test.
@@ -53,6 +54,7 @@ public class NormalShellTest {
         sRecording = false;
         sCalls.clear();
         sCachedShell = null;
+        sLastBuilt = null;
     }
 
     @Test
@@ -81,6 +83,28 @@ public class NormalShellTest {
 
         assertFalse(shell.isRoot());
         assertEquals(Arrays.asList("getCachedShell", "build flags=" + Shell.FLAG_NON_ROOT_SHELL), sCalls);
+    }
+
+    @Test
+    public void closingAShellItBuiltClosesThatShell() {
+        // Dropping a root shell su refused closes it, or every retry would leave an sh behind
+        NormalShell shell = new NormalShell(false);
+        FakeShell built = sLastBuilt;
+
+        shell.close();
+
+        assertTrue(built.mClosed);
+    }
+
+    @Test
+    public void closingNeverClosesLibsusMainShell() {
+        FakeShell main = new FakeShell(Shell.NON_ROOT_SHELL);
+        sCachedShell = main;
+        NormalShell shell = new NormalShell(false);
+
+        shell.close();
+
+        assertFalse(main.mClosed);
     }
 
     @Test
@@ -166,7 +190,8 @@ public class NormalShellTest {
         @Override
         public Shell build() {
             sCalls.add("build flags=" + mFlags);
-            return new FakeShell((mFlags & Shell.FLAG_NON_ROOT_SHELL) != 0 ? Shell.NON_ROOT_SHELL : Shell.ROOT_SHELL);
+            sLastBuilt = new FakeShell((mFlags & Shell.FLAG_NON_ROOT_SHELL) != 0 ? Shell.NON_ROOT_SHELL : Shell.ROOT_SHELL);
+            return sLastBuilt;
         }
 
         @Override
@@ -177,6 +202,7 @@ public class NormalShellTest {
 
     static final class FakeShell extends Shell {
         private final int mStatus;
+        boolean mClosed;
 
         FakeShell(int status) {
             mStatus = status;
@@ -212,6 +238,7 @@ public class NormalShellTest {
 
         @Override
         public void close() {
+            mClosed = true;
         }
     }
 }
