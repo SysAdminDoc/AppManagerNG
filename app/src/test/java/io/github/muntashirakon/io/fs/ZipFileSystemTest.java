@@ -5,6 +5,7 @@ package io.github.muntashirakon.io.fs;
 import android.net.Uri;
 import android.system.OsConstants;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -19,15 +20,25 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.zip.CRC32;
+import java.util.zip.Deflater;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
@@ -1033,6 +1044,135 @@ public class ZipFileSystemTest {
         assertTrue("ZIP entry should report a regular-file mode", OsConstants.S_ISREG(mode));
         assertEquals("read-only ZIP entry should expose 0444 permissions", 0444, mode & 0777);
         unmountTracked(fsId);
+    }
+
+    @Test
+    public void readHeadStopsAtTheStartOfAZipEntry() throws IOException {
+        assertReadHeadStopsEarly("application/zip");
+    }
+
+    @Test
+    public void readHeadStopsAtTheStartOfAnApkEntry() throws IOException {
+        assertReadHeadStopsEarly("application/vnd.android.package-archive");
+    }
+
+    private void assertReadHeadStopsEarly(String type) throws IOException {
+        byte[] text = sampleText(256 * 1024);
+        // The entry inflates to the text and then reaches a block no inflater accepts, so only a
+        // read that stops early comes back
+        File zip = writeRawDeflatedZip("head.txt", text, deflateThenBreak(text));
+        Path mountPoint = Paths.get("/tmp/am_mount_point_head_" + System.nanoTime());
+        int fsId = mountTracked(mountPoint.getUri(), Paths.get(zip), type);
+        VirtualFileSystem fs = Objects.requireNonNull(VirtualFileSystem.getFileSystem(fsId));
+        assertThrows("a full read fails", IOException.class,
+                () -> fs.copyAtMost("/head.txt", new ByteArrayOutputStream(), Long.MAX_VALUE));
+
+        assertArrayEquals(Arrays.copyOf(text, 10240), fs.readHead("/head.txt", 10240));
+        unmountTracked(fsId);
+    }
+
+    @Test
+    public void readHeadReturnsAnEntryThatFitsWhole() throws IOException {
+        byte[] exact = sampleText(10240);
+        File zip = File.createTempFile("am_head_short", ".zip");
+        temporaryArchives.add(zip);
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zip))) {
+            zos.putNextEntry(new ZipEntry("exact.txt"));
+            zos.write(exact);
+            zos.closeEntry();
+            zos.putNextEntry(new ZipEntry("empty.txt"));
+            zos.closeEntry();
+        }
+        Path mountPoint = Paths.get("/tmp/am_mount_point_head_" + System.nanoTime());
+        int fsId = mountTracked(mountPoint.getUri(), Paths.get(zip), "application/zip");
+        VirtualFileSystem fs = Objects.requireNonNull(VirtualFileSystem.getFileSystem(fsId));
+
+        assertArrayEquals(exact, fs.readHead("/exact.txt", 10240));
+        assertEquals(0, fs.readHead("/empty.txt", 10240).length);
+        unmountTracked(fsId);
+    }
+
+    @Test
+    public void readHeadSeesWhatWasWrittenSinceMounting() throws IOException {
+        File zip = File.createTempFile("am_head_rw", ".zip");
+        temporaryArchives.add(zip);
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zip))) {
+            zos.putNextEntry(new ZipEntry("note.txt"));
+            zos.write("before".getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+        }
+        Path mountPoint = Paths.get("/tmp/am_mount_point_head_" + System.nanoTime());
+        int fsId = mountTracked(mountPoint.getUri(), Paths.get(zip), "application/zip",
+                getRWOptions((fs, cachedFile) -> false));
+        VirtualFileSystem fs = Objects.requireNonNull(VirtualFileSystem.getFileSystem(fsId));
+        try (OutputStream os = mountPoint.findFile("note.txt").openOutputStream()) {
+            os.write("after".getBytes(StandardCharsets.UTF_8));
+        }
+        assertNotNull(mountPoint.createNewFile("new.txt", null));
+
+        assertEquals("after", new String(fs.readHead("/note.txt", 10240), StandardCharsets.UTF_8));
+        assertEquals(0, fs.readHead("/new.txt", 10240).length);
+        unmountTracked(fsId);
+    }
+
+    private static byte[] sampleText(int size) {
+        StringBuilder sb = new StringBuilder(size + 16);
+        for (int i = 0; sb.length() < size; ++i) {
+            sb.append("line ").append(i).append('\n');
+        }
+        return Arrays.copyOf(sb.toString().getBytes(StandardCharsets.US_ASCII), size);
+    }
+
+    /**
+     * Raw deflate data for {@code data}, flushed to a byte boundary without ending the stream,
+     * followed by a final block of the reserved type, which every inflater refuses.
+     */
+    private static byte[] deflateThenBreak(byte[] data) {
+        Deflater deflater = new Deflater(Deflater.DEFAULT_COMPRESSION, true);
+        deflater.setInput(data);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        byte[] buffer = new byte[64 * 1024];
+        int written;
+        do {
+            written = deflater.deflate(buffer, 0, buffer.length, Deflater.SYNC_FLUSH);
+            out.write(buffer, 0, written);
+        } while (written == buffer.length);
+        deflater.end();
+        // BFINAL = 1, BTYPE = 11
+        out.write(0x07);
+        return out.toByteArray();
+    }
+
+    /**
+     * A zip holding one deflated entry whose data is {@code deflated} as given, with the size and
+     * CRC of {@code original}.
+     */
+    private File writeRawDeflatedZip(String name, byte[] original, byte[] deflated) throws IOException {
+        CRC32 crc = new CRC32();
+        crc.update(original);
+        byte[] nameBytes = name.getBytes(StandardCharsets.UTF_8);
+        ByteBuffer zip = ByteBuffer.allocate(30 + nameBytes.length + deflated.length + 46 + nameBytes.length + 22)
+                .order(ByteOrder.LITTLE_ENDIAN);
+        // Local file header: version 2.0, no flags, deflated, 1980-01-01
+        zip.putInt(0x04034b50).putShort((short) 20).putShort((short) 0).putShort((short) 8)
+                .putShort((short) 0).putShort((short) 0x21).putInt((int) crc.getValue())
+                .putInt(deflated.length).putInt(original.length).putShort((short) nameBytes.length)
+                .putShort((short) 0).put(nameBytes).put(deflated);
+        int centralDirectoryOffset = zip.position();
+        zip.putInt(0x02014b50).putShort((short) 20).putShort((short) 20).putShort((short) 0)
+                .putShort((short) 8).putShort((short) 0).putShort((short) 0x21).putInt((int) crc.getValue())
+                .putInt(deflated.length).putInt(original.length).putShort((short) nameBytes.length)
+                // Extra, comment, disk, internal attributes, external attributes, local header offset
+                .putShort((short) 0).putShort((short) 0).putShort((short) 0).putShort((short) 0)
+                .putInt(0).putInt(0).put(nameBytes);
+        int centralDirectorySize = zip.position() - centralDirectoryOffset;
+        zip.putInt(0x06054b50).putShort((short) 0).putShort((short) 0).putShort((short) 1)
+                .putShort((short) 1).putInt(centralDirectorySize).putInt(centralDirectoryOffset)
+                .putShort((short) 0);
+        File file = File.createTempFile("am_head", ".zip");
+        temporaryArchives.add(file);
+        Files.write(file.toPath(), zip.array());
+        return file;
     }
 
     private int mountTracked(Uri mountPoint, Path file, String type) throws IOException {

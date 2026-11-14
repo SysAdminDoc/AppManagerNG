@@ -2,19 +2,27 @@
 
 package io.github.muntashirakon.io;
 
+import android.net.Uri;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.util.Pair;
+import androidx.documentfile.provider.VirtualDocumentFile;
 
 import com.j256.simplemagic.ContentInfo;
 import com.j256.simplemagic.ContentInfoUtil;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 
 import io.github.muntashirakon.AppManager.fm.ContentType2;
+import io.github.muntashirakon.AppManager.fm.FmProvider;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.io.fs.VirtualFileSystem;
 
 class PathContentInfoImpl extends PathContentInfo {
     public static final String TAG = PathContentInfoImpl.class.getSimpleName();
@@ -57,7 +65,7 @@ class PathContentInfoImpl extends PathContentInfo {
         String ext = path.getExtension();
         ContentInfo extInfo = ext != null ? ContentInfoUtil.findExtensionMatch(ext) : null;
         ContentType2 extType2 = ext != null ? ContentType2.fromFileExtension(ext) : null;
-        try (InputStream is = path.openInputStream()) {
+        try (InputStream is = openForSniff(path)) {
             ContentInfo contentInfo = sContentInfoUtil.findMatch(is);
             if (contentInfo != null) {
                 if (contentInfo.isPartial()) {
@@ -82,6 +90,24 @@ class PathContentInfoImpl extends PathContentInfo {
             return fromContentType2(extType2);
         }
         return fromContentType2(ContentType2.OTHER);
+    }
+
+    /**
+     * A file inside an open archive is read only as far as the sniff looks, even when it's shared
+     * through this app's own provider. Opening it whole would extract all of it into the archive's
+     * cache first, however large it is.
+     */
+    @NonNull
+    private static InputStream openForSniff(@NonNull Path path) throws IOException {
+        Uri uri = FmProvider.unwrap(path.getUri());
+        if (VirtualFileSystem.SCHEME.equals(uri.getScheme())) {
+            Pair<Integer, String> location = VirtualDocumentFile.parseUri(uri);
+            VirtualFileSystem fs = location != null ? VirtualFileSystem.getFileSystem(location.first) : null;
+            if (fs != null && location.second != null) {
+                return new ByteArrayInputStream(fs.readHead(location.second, ContentInfoUtil.DEFAULT_READ_SIZE));
+            }
+        }
+        return path.openInputStream();
     }
 
     private static PathContentInfoImpl withPartialOverride(@NonNull PathContentInfoImpl contentInfo, @Nullable ContentType2 contentType2) {
