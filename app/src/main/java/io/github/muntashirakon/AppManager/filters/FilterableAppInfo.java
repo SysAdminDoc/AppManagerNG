@@ -21,6 +21,7 @@ import android.os.UserHandleHidden;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.content.pm.PackageInfoCompat;
 
 import java.io.IOException;
@@ -75,7 +76,6 @@ import io.github.muntashirakon.AppManager.usage.PackageUsageInfo;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
-import io.github.muntashirakon.AppManager.utils.ExUtils;
 import io.github.muntashirakon.AppManager.utils.KeyStoreUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
 
@@ -247,13 +247,26 @@ public class FilterableAppInfo implements IFilterableAppInfo {
     @Override
     @NonNull
     public List<AppOpsManagerCompat.OpEntry> getAppOps() {
-        if (mAppOpEntries == null && isInstalled()) {
-            List<AppOpsManagerCompat.PackageOps> packageOps = ExUtils.exceptionAsNull(() -> new AppOpsManagerCompat().getOpsForPackage(mApplicationInfo.uid, getPackageName(), null));
-            if (packageOps != null && packageOps.size() == 1) {
-                mAppOpEntries = packageOps.get(0).getOps();
+        // Filter runs can overlap, so the field is read once and never set back to null.
+        List<AppOpsManagerCompat.OpEntry> ops = mAppOpEntries;
+        if (ops == null) {
+            ops = lookUpAppOps();
+            if (ops == null) {
+                return Collections.emptyList();
             }
-        } else mAppOpEntries = Collections.emptyList();
-        return mAppOpEntries;
+            mAppOpEntries = ops;
+        }
+        return ops;
+    }
+
+    /** The app's ops, empty when it isn't installed, and null when they can't be read, so the next call tries again. */
+    @VisibleForTesting
+    @Nullable
+    List<AppOpsManagerCompat.OpEntry> lookUpAppOps() {
+        if (!isInstalled()) {
+            return Collections.emptyList();
+        }
+        return AppOpsManagerCompat.getOpsForPackageOrNull(mApplicationInfo.uid, getPackageName());
     }
 
     @Override

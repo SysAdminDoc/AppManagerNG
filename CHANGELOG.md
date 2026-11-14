@@ -29,6 +29,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The Russian translation now covers nearly the whole app, about 3,580 of 3,900 strings, thanks to antiframe (issue #31). Every string was checked against the English original before it went in, and the 30 that no longer match it (missing or extra placeholders, usually from an older English wording) stay in English until they're redone.
 
 ### Fixed
+- The Finder's App ops filter no longer crashes, and an app no longer matches or misses depending on how many times the filter already ran. An app whose details can't be read (it was just uninstalled, or belongs to another user) counts as having no app ops, trackers, components or permissions, and they show up once it can be read again.
 - A watched permission set to Always deny gets taken back right away when someone grants it in Settings, in root, ADB and Shizuku modes (issue #15). Android doesn't tell apps about a permission granted there, and it pauses apps in the background, so the grant used to stick until the next check. The privileged server now watches those apps itself and starts the check the moment one changes. No-root mode still checks at the usual times.
 - An install that waited in the queue drops its "Added to queue" notification once it starts (issue #22). The notification used to stay next to the result, so a finished install still looked queued.
 - The installer no longer says "Added to queue" when it's brought back with nothing new to install (issue #22).

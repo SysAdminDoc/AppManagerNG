@@ -765,13 +765,6 @@ Sources and reasoning: RESEARCH.md (2026-11-13). The four crash fixes come first
 
 ### P1
 
-- [ ] P1: Make the Finder's app-op filter safe on every call
-  Why: `getAppOps()` resets its cache to an empty list on every call after the first, because its `else` branch also runs when the cache is already filled. It returns null when the ops lookup fails, although the getter is `@NonNull`. The AppOps Finder filter then calls `ops.isEmpty()` on that null, and an app's match depends on how many times the getter already ran.
-  Evidence: `main/ApplicationItem.java:590-600`, `filters/FilterableAppInfo.java:249-257`, `filters/options/AppOpsOption.java:92-95`. `getAllComponents` and `getUsedPermissions` in `ApplicationItem.java` (returns at :630 and :670) also return null without package info. Upstream fixed the same code in 84603ef98.
-  Touches: those three files and a host test.
-  Acceptance: each getter returns the same non-null list on its first and second call, and an empty list when package info or the ops lookup is missing. A host test covers both classes for app ops, components and permissions, and the AppOps filter never throws for an app with no ops.
-  Complexity: S
-
 - [ ] P1: Stop the audio player crashing on a negative or unknown position
   Why: Material's Slider throws when its value falls outside its range. The audio player checks only the upper bound, and rewinding 10 seconds near the start asks for a negative position. Upstream #2064 (2026-10-11) is this crash, "Slider value(-13.0)".
   Evidence: `viewer/audio/AudioPlayerDialogFragment.java:184-186` (upper bound only), `:259` (`seekTo(pos - 10 * 1000)`), `:381-383` (the range comes from the duration, which can be unknown).
