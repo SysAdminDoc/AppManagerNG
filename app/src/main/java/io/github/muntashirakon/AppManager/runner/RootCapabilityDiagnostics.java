@@ -27,7 +27,8 @@ import io.github.muntashirakon.AppManager.settings.Ops;
 public final class RootCapabilityDiagnostics {
     private static final int ROOT_UID = 0;
     private static final int UNKNOWN_UID = -1;
-    private static final int MAGISK_DROP_CAP_OPT_IN_VERSION_CODE = 30007;
+    // `magisk -V` prints the build's versionCode, which is 30700 for v30.7 (30600 for v30.6)
+    private static final int MAGISK_DROP_CAP_OPT_IN_VERSION_CODE = 30700;
     private static final String PROBE_COMMAND =
             "echo UID=$(id -u 2>/dev/null); "
                     + "grep '^CapEff:' /proc/$$/status 2>/dev/null; "
