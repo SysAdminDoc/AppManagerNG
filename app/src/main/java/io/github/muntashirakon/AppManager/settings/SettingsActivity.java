@@ -13,6 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.widget.SearchView;
+import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentContainerView;
 import androidx.fragment.app.FragmentManager;
@@ -25,6 +26,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -68,10 +70,17 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
     @Nullable
     public SearchView searchView;
     @NonNull
-    private List<String> mKeys = Collections.emptyList();
-    @NonNull
     private final SettingsKeyPath mSavedKeys = new SettingsKeyPath();
+    /**
+     * While authentication is pending: the pages to open once it finishes, from a link that came
+     * meanwhile or the path a recreate brought. A recreate before then has to save these.
+     */
+    @Nullable
+    private ArrayList<String> mPathBeforeAuthentication;
     private int mLevel = 0;
+    /** The page that fills an empty right pane, which the user never picked, so it isn't saved. */
+    @Nullable
+    private String mUnsavedDefaultKey;
     private boolean mDualPaneMode;
     @Nullable
     private MaterialToolbar mSecondaryToolbar;
@@ -143,12 +152,15 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
 
         if (savedInstanceState != null) {
             clearBackStack();
-            mSavedKeys.restore(savedInstanceState.getStringArrayList(SAVED_KEYS));
         }
-        setKeysFromIntent(getIntent());
+        mSavedKeys.restore(mPathBeforeAuthentication != null ? mPathBeforeAuthentication
+                : getPathToOpen(savedInstanceState));
+        mPathBeforeAuthentication = null;
 
         getSupportFragmentManager().addFragmentOnAttachListener((fragmentManager, fragment) -> {
-            if (!(fragment instanceof MainPreferences)) {
+            // Pages count, dialogs don't: pages show theirs on this manager too, and the back
+            // stack never undoes a dialog's step, so the next page saved one level too deep
+            if (!(fragment instanceof MainPreferences) && !(fragment instanceof DialogFragment)) {
                 ++mLevel;
             }
         });
@@ -160,7 +172,7 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
 
         String defaultPref = getKey(mLevel);
         if (defaultPref == null && mDualPaneMode) {
-            defaultPref = "custom_locale";
+            defaultPref = mUnsavedDefaultKey = "custom_locale";
         }
         FragmentTransaction initialTransaction = MotionUtils.maybeSetDefaultFragmentAnimations(this,
                 getSupportFragmentManager().beginTransaction());
@@ -175,10 +187,16 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
     @Override
     protected void onNewIntent(@NonNull Intent intent) {
         super.onNewIntent(intent);
-        if (setKeysFromIntent(intent)) {
-            // Clear old items
-            mSavedKeys.clear();
+        List<String> link = getLinkPath(intent);
+        if (link != null) {
+            if (isAuthenticationPending()) {
+                // Opened once authentication finishes. onAuthenticated reads the first intent.
+                mPathBeforeAuthentication = new ArrayList<>(link);
+                return;
+            }
+            // Clear old items. Popping the back stack drops saved keys, so the link goes in after.
             clearBackStack();
+            mSavedKeys.restore(link);
             Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.main_layout);
             if (fragment instanceof MainPreferences) {
                 ((MainPreferences) fragment).setPrefKey(getKey(mLevel = 0));
@@ -208,6 +226,18 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
         if (pref.getFragment() == null) {
             return false;
         }
+        boolean fromList = caller instanceof MainPreferences;
+        if (fromList) {
+            // A pick in the list starts a new path. Dual pane has no back stack to bring the
+            // level back down, so without this every pick there was saved one level deeper
+            mLevel = 0;
+        }
+        boolean shownByDefault = fromList && Objects.equals(pref.getKey(), mUnsavedDefaultKey);
+        mUnsavedDefaultKey = null;
+        // Opening a saved or linked path, the page gets the next key on it. A tap by the user starts
+        // a new path, or tapping a parent page again went straight back into its child
+        boolean followingPath = caller instanceof PreferenceFragment
+                && ((PreferenceFragment) caller).isOpeningPrefKey();
         FragmentManager fragmentManager = getSupportFragmentManager();
         Bundle args = pref.getExtras();
         Fragment fragment = fragmentManager.getFragmentFactory().instantiate(getClassLoader(), pref.getFragment());
@@ -215,13 +245,20 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
             // Inject dual pane mode
             args.putBoolean(PreferenceFragment.PREF_SECONDARY, mDualPaneMode);
             // Inject subKey to the arguments
-            String subKey = getKey(mLevel + 1);
+            String subKey = followingPath ? getKey(mLevel + 1) : null;
             if (subKey != null && Objects.equals(pref.getKey(), getKey(mLevel))) {
                 args.putString(PreferenceFragment.PREF_KEY, subKey);
             }
-            // Save current key
+        }
+        // Every page saves its key, plain fragments too (Mode of operation, the language list),
+        // or a recreate reopens the page before it
+        if (!shownByDefault) {
             Log.d(TAG, "Save level: %d, Key: %s", mLevel, pref.getKey());
-            mSavedKeys.save(mLevel, pref.getKey());
+            if (followingPath) {
+                mSavedKeys.save(mLevel, pref.getKey());
+            } else {
+                mSavedKeys.pick(mLevel, pref.getKey());
+            }
         }
         fragment.setArguments(args);
         // The line below is kept because this is how it is handled in AndroidX library
@@ -239,30 +276,56 @@ public class SettingsActivity extends BaseActivity implements PreferenceFragment
 
     @Override
     protected void onSaveInstanceState(@NonNull Bundle outState) {
-        outState.putStringArrayList(SAVED_KEYS, mSavedKeys.toList());
+        if (!isAuthenticationPending()) {
+            outState.putStringArrayList(SAVED_KEYS, mSavedKeys.toList());
+        } else {
+            // Nothing is open yet. Saving the empty path lost the link when the lock screen or
+            // the startup dialog was rotated, so hand on the pages still to open.
+            List<String> path = mPathBeforeAuthentication != null ? mPathBeforeAuthentication
+                    : getLinkPath(getIntent());
+            if (path != null) {
+                outState.putStringArrayList(SAVED_KEYS, new ArrayList<>(path));
+            }
+        }
         super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        if (isAuthenticationPending()) {
+            // Kept for onSaveInstanceState, in case it's recreated again before authentication
+            List<String> path = getPathToOpen(savedInstanceState);
+            mPathBeforeAuthentication = path != null ? new ArrayList<>(path) : null;
+        }
+    }
+
+    /**
+     * The pages to open: the path a recreate saved, else the link this activity was opened with.
+     * A saved path wins even when it's shorter than the link, as the user went back from those.
+     */
+    @Nullable
+    private List<String> getPathToOpen(@Nullable Bundle savedInstanceState) {
+        if (savedInstanceState != null && savedInstanceState.containsKey(SAVED_KEYS)) {
+            return savedInstanceState.getStringArrayList(SAVED_KEYS);
+        }
+        return getLinkPath(getIntent());
     }
 
     @Nullable
     private String getKey(int level) {
-        String key = mSavedKeys.get(level);
-        if (key != null) {
-            return key;
-        }
-        if (mKeys.size() > level) {
-            return mKeys.get(level);
-        }
-        return null;
+        return mSavedKeys.get(level);
     }
 
-    private boolean setKeysFromIntent(@NonNull Intent intent) {
+    /** The pages a settings link opens, or null when the intent isn't a settings link. */
+    @Nullable
+    private static List<String> getLinkPath(@NonNull Intent intent) {
         Uri uri = intent.getData();
         if (uri != null && SelfUriManager.APP_MANAGER_SCHEME.equals(uri.getScheme())
                 && SelfUriManager.SETTINGS_HOST.equals(uri.getHost()) && uri.getPath() != null) {
-            mKeys = Objects.requireNonNull(uri.getPathSegments());
-            return true;
+            return uri.getPathSegments();
         }
-        return false;
+        return null;
     }
 
     /**

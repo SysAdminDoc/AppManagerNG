@@ -48,6 +48,17 @@ final class SettingsKeyPath {
     }
 
     /**
+     * Records a page the user tapped at {@code level}. That starts a new path even when it's the
+     * page already saved there: the pages below it were closed, and keeping their keys sent a
+     * second tap on a parent page straight back into the child (dual pane has no back stack to
+     * drop them).
+     */
+    void pick(int level, @Nullable String key) {
+        save(level, key);
+        mKeys.subList(level + 1, mKeys.size()).clear();
+    }
+
+    /**
      * Follows the back stack. Only a shallower stack drops keys, for the pages that were closed.
      * A deeper one can't: the fragment manager reports a push after the new page has started,
      * and a page being restored saves the next key on the path when it starts. Dropping keys
@@ -59,10 +70,6 @@ final class SettingsKeyPath {
             mKeys.subList(Math.max(depth, 0), mKeys.size()).clear();
         }
         mDepth = depth;
-    }
-
-    void clear() {
-        mKeys.clear();
     }
 
     @NonNull

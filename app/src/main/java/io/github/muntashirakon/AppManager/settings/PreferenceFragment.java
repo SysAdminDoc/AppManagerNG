@@ -25,6 +25,7 @@ public abstract class PreferenceFragment extends PreferenceFragmentCompat {
 
     @Nullable
     private String mPrefKey;
+    private boolean mOpeningPrefKey;
 
     @CallSuper
     @Override
@@ -72,6 +73,14 @@ public abstract class PreferenceFragment extends PreferenceFragmentCompat {
         updateUi();
     }
 
+    /**
+     * Whether the click being handled is this page opening the key it was given (a saved or linked
+     * path), not a tap by the user.
+     */
+    boolean isOpeningPrefKey() {
+        return mOpeningPrefKey;
+    }
+
     public <T extends androidx.preference.Preference> T requirePreference(CharSequence key) {
         return Objects.requireNonNull(findPreference(key));
     }
@@ -91,8 +100,16 @@ public abstract class PreferenceFragment extends PreferenceFragmentCompat {
             Preference prefToNavigate = findPreference(mPrefKey);
             if (prefToNavigate != null) {
                 scrollToPreference(prefToNavigate);
-                if (prefToNavigate.getFragment() != null) {
-                    prefToNavigate.performClick();
+                if (prefToNavigate.getFragment() != null && prefToNavigate.isEnabled()) {
+                    // Opened once. Kept, every onStart opened it again, and in dual pane that
+                    // replaced the page picked since with this one
+                    mPrefKey = null;
+                    mOpeningPrefKey = true;
+                    try {
+                        prefToNavigate.performClick();
+                    } finally {
+                        mOpeningPrefKey = false;
+                    }
                 }
             }
         }
