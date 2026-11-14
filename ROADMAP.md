@@ -749,13 +749,6 @@ Sources and reasoning: RESEARCH.md (2026-11-13). The four crash fixes come first
 
 ### P1
 
-- [ ] P1: Keep every install sent while the app lock screen is up
-  Why: when another app sends an APK while AppManagerNG's app lock screen is showing, `onNewIntent` replaces the activity's intent and queues it, and `onAuthenticated` later queues `getIntent()`, which is now the second APK. The first install is lost and the second runs twice.
-  Evidence: `apk/installer/PackageInstallerActivity.java:629-660` (`setIntent`, then `enqueue`), `:324-341` (`onAuthenticated` queues `getIntent()`), `:215-224` and `:286` (a plain `LinkedList` with no dedupe). `BaseActivity.java:76-97` holds `onAuthenticated` until authentication finishes, and the activity is `singleInstance`. Upstream fixed the same race in c4c81f492.
-  Touches: `PackageInstallerActivity.java`, `PackageInstallerActivityTest.java`.
-  Acceptance: one intent at launch and a second through `onNewIntent` before authentication each install once, in order. A test in `PackageInstallerActivityTest` covers it.
-  Complexity: S
-
 - [ ] P1: Follow Android 17's wireless debugging port when it moves
   Why: on Android 17, adbd advertises `_adb-tls-connect` through NsdManager under one name stored in `persist.adb.wifi.guid`, with an `api` TXT record, and no longer sets `service.adb.tls.port`. Android 14+ NSD answers a resolve from its cache and doesn't report a known name moving to a new port, which is what hid Local sync shares that came back on a new port in the #22 drain. libadb's `AdbMdns` resolves each name once, so when Wireless debugging restarts on a new port under the same name, NG can keep dialing the old one.
   Evidence: `daemon/mdns.cpp` and `daemon/adb_wifi.cpp` at android-17.0.0_r1 (`use_tls_lifecycle` is on in the cp2a release config). `adb/AdbUtils.java:72-79` and `:160-178` scan with `AdbMdns`. `sync/lan/LanSyncDiscovery.java` already follows each service with `registerServiceInfoCallback` on API 34+.
@@ -764,6 +757,13 @@ Sources and reasoning: RESEARCH.md (2026-11-13). The four crash fixes come first
   Complexity: M
 
 ### P2
+
+- [ ] P2: Keep the install queue when the installer is recreated after unlocking
+  Why: the queue is a plain list on `PackageInstallerActivity`, and `handleNewIntent` calls `setIntent` with each APK or confirmation it handles. When the activity is recreated after the lock screen was passed (a rotation, or the process stopped while a confirmation waits), `onAuthenticated` queues `getIntent()` again. That's the last intent handled, so every other APK still waiting is dropped, and on the confirmation path a confirmation that was already handled is launched again. The manifest gives the activity no `configChanges`, so a rotation does recreate it.
+  Evidence: `apk/installer/PackageInstallerActivity.java` (`mApkQueue`, `setIntent` in `handleNewIntent`, `onAuthenticated`). Found by the 2026-11-13 review of the lock-screen fix, which only covers recreation before unlocking.
+  Touches: `PackageInstallerActivity.java` (save the queued sources and senders in `onSaveInstanceState` or keep the queue in `PackageInstallerViewModel`, and don't queue `getIntent()` again on a restore), `PackageInstallerActivityTest.java`.
+  Acceptance: with two APKs queued and the first one's dialog up, recreating the activity keeps both, each installs once, and a confirmation that was handled isn't launched again. A Robolectric test recreates the activity at each step.
+  Complexity: M
 
 - [ ] P2: Keep one audio player across a rotation
   Why: `AudioPlayerActivity.onCreate` shows a new `AudioPlayerDialogFragment` every time, including when Android recreates the activity after a rotation, so the restored dialog and a new one stack. The restored one builds a fresh `MediaPlayer` while the ViewModel's prepared LiveData still says true, so it calls `startPlayingMedia()` on a player that never had a data source.

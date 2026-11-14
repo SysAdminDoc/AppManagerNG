@@ -4,14 +4,20 @@ package io.github.muntashirakon.AppManager.apk.installer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import android.app.Activity;
+import android.app.Instrumentation;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
+import android.content.pm.PackageInstaller;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Parcel;
 
 import org.junit.Test;
@@ -19,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
+import org.robolectric.android.controller.ActivityController;
 import org.robolectric.shadows.ShadowToast;
 
 import java.io.File;
@@ -31,6 +38,8 @@ import java.util.List;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.ApkSource;
 import io.github.muntashirakon.AppManager.apk.CachedApkSource;
+import io.github.muntashirakon.AppManager.settings.Ops;
+import io.github.muntashirakon.AppManager.utils.Utils;
 
 @RunWith(RobolectricTestRunner.class)
 public class PackageInstallerActivityTest {
@@ -235,6 +244,228 @@ public class PackageInstallerActivityTest {
         assertEquals(false, PackageInstallerActivity.isDowngrade(packageInfo(12), packageInfo(13)));
         assertEquals(false, PackageInstallerActivity.isDowngrade(null, packageInfo(7)));
         assertEquals(false, PackageInstallerActivity.isDowngrade(packageInfo(12), null));
+    }
+
+    @Test
+    public void installsSentWhileTheLockScreenIsUpEachRunOnceInOrder() {
+        Uri first = Uri.parse("content://example.test/apk/first.apk");
+        Uri second = Uri.parse("content://example.test/apk/second.apk");
+        Context context = RuntimeEnvironment.getApplication();
+        Ops.setAuthenticated(context, false);
+        Intent launch = new Intent(Intent.ACTION_VIEW).setDataAndType(first, MIME_APK)
+                .setClass(context, PackageInstallerActivity.class);
+        ActivityController<PackageInstallerActivity> controller =
+                Robolectric.buildActivity(PackageInstallerActivity.class, launch).create();
+        try {
+            PackageInstallerActivity activity = controller.get();
+
+            // Another app sends an APK while the app lock screen is still up
+            activity.onNewIntent(new Intent(Intent.ACTION_VIEW).setDataAndType(second, MIME_APK));
+            assertFalse("nothing is queued before the lock screen is passed", activity.hasNext());
+            assertNull(ShadowToast.getLatestToast());
+
+            // The lock screen is passed. The first APK used to be lost and the second queued twice.
+            activity.onAuthenticated(null);
+
+            List<Uri> queued = new ArrayList<>();
+            for (ApkQueueItem item : activity.queuedItems()) {
+                queued.add(item.getApkSource().getUri());
+            }
+            assertEquals(Arrays.asList(first, second), queued);
+            assertEquals(context.getString(R.string.added_to_queue), ShadowToast.getTextOfLatestToast());
+        } finally {
+            controller.destroy();
+            Ops.setAuthenticated(context, false);
+        }
+    }
+
+    @Test
+    public void anApkSentWhileLockedIsCreditedToTheAppThatSentIt() throws Exception {
+        Uri first = Uri.parse("content://example.test/apk/first.apk");
+        Uri second = Uri.parse("content://example.test/apk/second.apk");
+        Context context = RuntimeEnvironment.getApplication();
+        Ops.setAuthenticated(context, false);
+        Intent launch = new Intent(Intent.ACTION_VIEW).setDataAndType(first, MIME_APK)
+                .setClass(context, PackageInstallerActivity.class);
+        ActivityController<PackageInstallerActivity> controller =
+                Robolectric.buildActivity(PackageInstallerActivity.class, launch).create();
+        try {
+            PackageInstallerActivity activity = controller.get();
+            String launcher = Utils.getRealReferrer(activity);
+            assertNotEquals("com.example.sender", launcher);
+            deliverFrom(activity, new Intent(Intent.ACTION_VIEW).setDataAndType(second, MIME_APK),
+                    "com.example.sender");
+
+            activity.onAuthenticated(null);
+
+            // Android forgets who sent a new intent once onNewIntent returns, so asking after the
+            // lock screen credited the second APK to whoever launched the installer
+            assertEquals(Arrays.asList(first, second), queuedUris(activity));
+            assertEquals(Arrays.asList(launcher, "com.example.sender"), queuedSenders(activity));
+        } finally {
+            controller.destroy();
+            Ops.setAuthenticated(context, false);
+        }
+    }
+
+    @Test
+    public void installsSentWhileLockedSurviveTheActivityBeingRecreated() throws Exception {
+        Uri first = Uri.parse("content://example.test/apk/first.apk");
+        Uri second = Uri.parse("content://example.test/apk/second.apk");
+        Uri third = Uri.parse("content://example.test/apk/third.apk");
+        Context context = RuntimeEnvironment.getApplication();
+        Ops.setAuthenticated(context, false);
+        Intent launch = new Intent(Intent.ACTION_VIEW).setDataAndType(first, MIME_APK)
+                .setClass(context, PackageInstallerActivity.class);
+        ActivityController<PackageInstallerActivity> locked =
+                Robolectric.buildActivity(PackageInstallerActivity.class, launch).create();
+        ActivityController<PackageInstallerActivity> lockedAgain = null;
+        ActivityController<PackageInstallerActivity> unlocked = null;
+        try {
+            String launcher = Utils.getRealReferrer(locked.get());
+            deliverFrom(locked.get(), new Intent(Intent.ACTION_VIEW).setDataAndType(second, MIME_APK),
+                    "com.example.second");
+            // Rotated, or the process stopped in the background, with the lock screen still up
+            Bundle state = new Bundle();
+            locked.saveInstanceState(state);
+            locked.destroy();
+            locked = null;
+            state = parceled(state);
+            lockedAgain = Robolectric.buildActivity(PackageInstallerActivity.class, launch)
+                    .create(state).start().restoreInstanceState(state);
+            deliverFrom(lockedAgain.get(), new Intent(Intent.ACTION_VIEW).setDataAndType(third, MIME_APK),
+                    "com.example.third");
+            // And again, before the lock screen was passed
+            Bundle stateAgain = new Bundle();
+            lockedAgain.saveInstanceState(stateAgain);
+            lockedAgain.destroy();
+            lockedAgain = null;
+            Bundle restored = parceled(stateAgain);
+
+            // The lock screen is passed by the time it comes back. Not started, so the installer
+            // doesn't take the first APK off the queue before it's checked.
+            Ops.setAuthenticated(context, true);
+            unlocked = Robolectric.buildActivity(PackageInstallerActivity.class, launch)
+                    .create(restored).restoreInstanceState(restored);
+            PackageInstallerActivity activity = unlocked.get();
+
+            assertEquals(Arrays.asList(first, second, third), queuedUris(activity));
+            assertEquals(Arrays.asList(launcher, "com.example.second", "com.example.third"), queuedSenders(activity));
+        } finally {
+            if (locked != null) locked.destroy();
+            if (lockedAgain != null) lockedAgain.destroy();
+            if (unlocked != null) unlocked.destroy();
+            Ops.setAuthenticated(context, false);
+        }
+    }
+
+    @Test
+    public void installsKeptAcrossARotationAreQueuedOnceWhenTheLockScreenIsPassed() throws Exception {
+        Uri first = Uri.parse("content://example.test/apk/first.apk");
+        Uri second = Uri.parse("content://example.test/apk/second.apk");
+        Context context = RuntimeEnvironment.getApplication();
+        Ops.setAuthenticated(context, false);
+        Intent launch = new Intent(Intent.ACTION_VIEW).setDataAndType(first, MIME_APK)
+                .setClass(context, PackageInstallerActivity.class);
+        ActivityController<PackageInstallerActivity> locked =
+                Robolectric.buildActivity(PackageInstallerActivity.class, launch).create();
+        ActivityController<PackageInstallerActivity> rotated = null;
+        try {
+            String launcher = Utils.getRealReferrer(locked.get());
+            deliverFrom(locked.get(), new Intent(Intent.ACTION_VIEW).setDataAndType(second, MIME_APK),
+                    "com.example.second");
+            Bundle state = new Bundle();
+            locked.saveInstanceState(state);
+            locked.destroy();
+            locked = null;
+            state = parceled(state);
+            // Rotated with the lock screen up: onRestoreInstanceState reads the held APK back
+            rotated = Robolectric.buildActivity(PackageInstallerActivity.class, launch)
+                    .create(state).restoreInstanceState(state);
+            PackageInstallerActivity activity = rotated.get();
+
+            // Then the lock screen is passed, and onAuthenticated gets that same saved state
+            Ops.setAuthenticated(context, true);
+            activity.onAuthenticated(state);
+
+            assertEquals(Arrays.asList(first, second), queuedUris(activity));
+            assertEquals(Arrays.asList(launcher, "com.example.second"), queuedSenders(activity));
+            // Nothing is left held, or the next rotation would queue it again
+            Bundle after = new Bundle();
+            rotated.saveInstanceState(after);
+            assertFalse(after.containsKey("held_intents"));
+        } finally {
+            if (locked != null) locked.destroy();
+            if (rotated != null) rotated.destroy();
+            Ops.setAuthenticated(context, false);
+        }
+    }
+
+    @Test
+    public void anApkSentWhileLockedStillOpensTheInstallerWhenAConfirmationLaunchedIt() throws Exception {
+        Uri apk = Uri.parse("content://example.test/apk/sent.apk");
+        Context context = RuntimeEnvironment.getApplication();
+        Ops.setAuthenticated(context, false);
+        // An install this app started finished while the installer was closed, and Android wants
+        // the user to confirm it
+        Intent launch = new Intent(PackageInstallerActivity.ACTION_PACKAGE_INSTALLED)
+                .setClass(context, PackageInstallerActivity.class)
+                .putExtra(PackageInstaller.EXTRA_PACKAGE_NAME, "com.example.done");
+        ActivityController<PackageInstallerActivity> controller =
+                Robolectric.buildActivity(PackageInstallerActivity.class, launch).create();
+        try {
+            PackageInstallerActivity activity = controller.get();
+            deliverFrom(activity, new Intent(Intent.ACTION_VIEW).setDataAndType(apk, MIME_APK),
+                    "com.example.sender");
+
+            activity.onAuthenticated(null);
+
+            // The APK used to be queued on an installer that never set itself up, and the
+            // confirmation's outcome then closed it with the APK still waiting
+            assertEquals(Collections.singletonList(apk), queuedUris(activity));
+            assertFalse(activity.isFinishing());
+            assertNotNull(activity.getSupportFragmentManager().findFragmentByTag(InstallerDialogFragment.TAG));
+        } finally {
+            controller.destroy();
+            Ops.setAuthenticated(context, false);
+        }
+    }
+
+    /** How Android delivers a new intent: it names the sender only while onNewIntent runs. */
+    private static void deliverFrom(Activity activity, Intent intent, String sender) throws Exception {
+        Class<?> referrerIntent = Class.forName("com.android.internal.content.ReferrerIntent");
+        Object delivered = referrerIntent.getConstructor(Intent.class, String.class).newInstance(intent, sender);
+        Instrumentation.class.getMethod("callActivityOnNewIntent", Activity.class, referrerIntent)
+                .invoke(new Instrumentation(), activity, delivered);
+    }
+
+    private static List<Uri> queuedUris(PackageInstallerActivity activity) {
+        List<Uri> uris = new ArrayList<>();
+        for (ApkQueueItem item : activity.queuedItems()) {
+            uris.add(item.getApkSource().getUri());
+        }
+        return uris;
+    }
+
+    private static List<String> queuedSenders(PackageInstallerActivity activity) {
+        List<String> senders = new ArrayList<>();
+        for (ApkQueueItem item : activity.queuedItems()) {
+            InstallerOptions options = InstallerOptions.getDefault();
+            item.setInstallerOptions(options);
+            senders.add(options.getOriginatingPackage());
+        }
+        return senders;
+    }
+
+    private static Bundle parceled(Bundle state) {
+        Parcel parcel = Parcel.obtain();
+        try {
+            parcel.writeBundle(state);
+            parcel.setDataPosition(0);
+            return parcel.readBundle(PackageInstallerActivityTest.class.getClassLoader());
+        } finally {
+            parcel.recycle();
+        }
     }
 
     private static File newCacheFile() throws IOException {
