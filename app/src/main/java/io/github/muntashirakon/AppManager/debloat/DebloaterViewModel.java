@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.debloat;
 
+import android.annotation.SuppressLint;
 import android.app.Application;
 import android.os.UserHandleHidden;
 import android.text.TextUtils;
@@ -363,6 +364,7 @@ public class DebloaterViewModel extends AndroidViewModel {
         return loaded;
     }
 
+    @SuppressLint("WrongThreadInterprocedural") // AdvancedSearchView's matcher is pure and does not touch the widget.
     @WorkerThread
     @NonNull
     private static List<DebloatObject> filter(@NonNull List<DebloatObject> allDebloatObjects,
