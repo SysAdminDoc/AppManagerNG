@@ -223,7 +223,8 @@ public class PackageInstallerRetryTest {
         protected static boolean isActualMiuiVersionAtLeast(@NonNull String targetVersion,
                                                             @NonNull String targetVersionBeta) {
             if (sHyperOs) {
-                // What reading a HyperOS build's version as a MIUI one does (MiuiUtils.getMiuiVersionInfo)
+                // What reading a HyperOS build's version as a MIUI one did before MiuiUtils could
+                // tell them apart, which a privileged HyperOS retry must never depend on
                 throw new IllegalStateException("Stable version must begin with `V`");
             }
             return sMiui;

@@ -59,6 +59,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - An app you install again after the list showed it from a backup no longer stays listed as uninstalled after a refresh, however many backups of it you have. Backups left by a user who's since been removed count once, from the newest, so a refresh no longer lists that user twice.
 - Tapping a row for an app that turns out to be installed after all opens its details and reads the row again from Android, instead of patching it in place.
 - On MIUI and HyperOS, an install or restore that Android turned down on the first try no longer comes back as failed while the automatic retry is still running. The retry now happens inside the same install, so the result you see is the last try's, and a confirmation you dismissed on the earlier try can't be taken for it. Ported from upstream App Manager (f3db2698a).
+- On HyperOS without root or ADB, an install that Android stopped (a cancelled prompt counts) no longer sits there without ever saying how it ended. HyperOS still calls itself MIUI but numbers its builds differently, and reading that number as a MIUI version failed.
 
 ## v0.7.0, 2026-11-08
 

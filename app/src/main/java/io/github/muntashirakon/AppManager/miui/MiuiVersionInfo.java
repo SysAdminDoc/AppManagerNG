@@ -30,7 +30,7 @@ public class MiuiVersionInfo {
             return null;
         }
         String[] splits = version.split("\\.");
-        return splits[0] + '.' + splits[1];
+        return splits.length > 1 ? splits[0] + '.' + splits[1] : splits[0];
     }
 
     @Nullable

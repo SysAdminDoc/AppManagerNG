@@ -1717,8 +1717,8 @@ public final class PackageInstallerCompat {
         finalStatus = VerifierRefusal.classify(finalStatus, statusMessage);
         if (finalStatus == STATUS_FAILURE_ABORTED && mSessionId == sessionId) {
             boolean privileged = SelfPermissions.checkSelfPermission(Manifest.permission.INSTALL_PACKAGES);
-            // The MIUI retry is only for unprivileged installs, and reading the MIUI version can
-            // throw on a HyperOS build, so a privileged install never asks for it
+            // The MIUI retry is only for unprivileged installs, so a privileged install never reads
+            // the MIUI version, and nothing here runs before the watchers count down that could throw
             boolean affectedMiui = !privileged && MiuiUtils.isActualMiuiVersionAtLeast("12.5", "20.2.0");
             PackageInstallerRetryPolicy.Action retryAction = PackageInstallerRetryPolicy.getAction(finalStatus,
                     statusMessage, privileged, affectedMiui, MiuiUtils.isHyperOs(), mAttemptNumber);

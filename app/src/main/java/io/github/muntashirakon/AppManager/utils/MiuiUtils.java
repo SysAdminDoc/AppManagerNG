@@ -10,11 +10,14 @@ import android.text.TextUtils;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.SystemProperties;
 import io.github.muntashirakon.AppManager.miui.MiuiVersionInfo;
 
 // Copyright 2020 Aefyr
 public class MiuiUtils {
+    private static final String TAG = MiuiUtils.class.getSimpleName();
+
     @Nullable
     private static MiuiVersionInfo sMiuiVersionInfo;
 
@@ -39,10 +42,13 @@ public class MiuiUtils {
             return sMiuiVersionInfo = new MiuiVersionInfo(versionString, null, true);
         }
         if (!versionString.startsWith("V")) {
-            throw new IllegalStateException("Stable version must begin with `V`");
+            // HyperOS keeps the MIUI version name but numbers its builds OS2.0.1.0.VNAMIXM,
+            // which says nothing about a MIUI version
+            Log.w(TAG, "Not a MIUI build number: %s", versionString);
+            return null;
         }
         versionString = versionString.substring(1);
-        int firstNoDigitIndex = -1;
+        int firstNoDigitIndex = versionString.length();
         final int len = versionString.length();
         for (char cp, i = 0; i < len; ++i) {
             cp = versionString.charAt(i);
