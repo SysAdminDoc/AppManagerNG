@@ -81,6 +81,9 @@ dependencyCheck {
         if (System.getenv('NVD_API_KEY')) {
             apiKey = System.getenv('NVD_API_KEY')
         }
+        // The plugin's default is no pause between page requests, and NVD answers a burst of them
+        // with 503 until the refresh gives up. NVD asks clients to wait six seconds between requests.
+        delay = 6000
     }
     data {
         // The release gate passes the database directory whose age it checked, so the refresh and
