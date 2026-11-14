@@ -68,6 +68,26 @@ public class SettingsKeyPathTest {
     }
 
     @Test
+    public void tappingTheSamePageAgainStartsANewPath() {
+        SettingsKeyPath path = new SettingsKeyPath();
+        path.save(0, "appearance");
+        path.save(1, "language_files");
+
+        path.pick(0, "appearance");
+
+        assertEquals(Collections.singletonList("appearance"), path.toList());
+    }
+
+    @Test
+    public void tappingPastTheEndLeavesTheSkippedLevelsEmpty() {
+        SettingsKeyPath path = new SettingsKeyPath();
+
+        path.pick(1, "installer");
+
+        assertEquals(Arrays.asList(null, "installer"), path.toList());
+    }
+
+    @Test
     public void savingPastTheEndLeavesTheSkippedLevelsEmpty() {
         SettingsKeyPath path = new SettingsKeyPath();
 
