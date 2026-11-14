@@ -15,6 +15,12 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Acceptance: on the S22 or S25, in ADB mode and again in Shizuku mode, grant a permission watched as Always deny from Android's Settings. It's revoked within a few seconds and the notification says so. Reboot, start the server again and repeat once.
   Complexity: S
 
+- [ ] P2: Check the isolated thumbnail process on a phone and on API 21 and 22
+  Why: file manager thumbnails now come from an isolated `:thumbnails` process. Robolectric can't start a real isolated process, render a PDF, or run API 21 and 22, so those parts have only run as unit tests on API 23 and 36.
+  Touches: nothing unless it fails (`fm/icons/IsolatedThumbnails.java`, `ThumbnailDecoderService`, the isolated-process early return in `AppManager`).
+  Acceptance: on the S22 or S25, open a folder holding a PNG, a JPEG, an SVG, a PDF, a TTF, an EPUB with a cover, an .apks or .apkm bundle, a J2ME .jar and an .odt. Each gets its thumbnail, and `adb shell ps -A -o USER,NAME | grep thumbnails` shows the process under a `u0_i` user. A truncated PNG, random bytes renamed to .pdf and a zip bomb renamed to .epub get the generic icon, scrolling never stalls, and the app doesn't crash. Thirty seconds after the last thumbnail the `:thumbnails` process is gone. Repeat the folder on an API 21 and an API 22 emulator, where fonts get the generic icon by design.
+  Complexity: S
+
 - [ ] P2: Let ADB mode start in a work profile
   Why: in a managed profile the app reaches adbd and launches its server, but never binds the privileged service, so the splash sits on "Checking the configured operation mode" until the startup check times out and only then offers recovery buttons.
   Evidence: API 35 emulator, `pm create-user --profileOf 0 --managed`, release build in user 10: `:priv:10` started on port 62011 as uid 1010209, then the app logged `RemoteException: Binder not running` from `ipc/LocalServices.bindAmService`.
@@ -314,13 +320,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
 
 ### P1
 
-- [ ] P1: Decode untrusted file thumbnails in an isolated process
-  Why: image, PDF, font, eBook, and archive thumbnails pass attacker-controlled files to decoders inside the permission-bearing app process.
-  Evidence: upstream App Manager #2011 maintainer security analysis; upstream commit `8fbd0ef76` isolates PDF rendering but leaves the broader decoder set; Android `<service android:isolatedProcess="true">` documentation; `fm/icons/FmIconFetcher.java`; `fm/icons/FmIcons.java:322-410`; `app/src/main/AndroidManifest.xml`.
-  Touches: a non-exported isolated decoder service and binder contract, `fm/icons/FmIconFetcher.java`, `fm/icons/FmIcons.java`, manifest, malformed-file fixtures, process-death tests.
-  Acceptance: thumbnail work receives only duplicated read-only file descriptors plus explicit pixel, byte, and time budgets; the service has no app permissions and cannot open arbitrary paths; malformed input, timeout, OOM, or decoder-process death returns the generic icon without crashing or blocking the file list; API 21 through 23 and a current API are covered.
-  Complexity: L
-
 - [ ] P1: Enforce user-owned signer policies before installer commit
   Why: AppManagerNG can inspect certificates and detect changes after installation, but it cannot reject an unrecognized signer against a user-approved package policy before a session is committed.
   Evidence: InstallerX 26.05 signer-policy release; Obtainium #2922; AppVerifier; Inure feature matrix; upstream App Manager #2055; `permission/monitor/SigningCertSnapshotStore.java`; `apk/signing/SignerInfo.java`; `apk/installer/PackageInstallerActivity.java`.
@@ -337,6 +336,13 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Complexity: M
 
 ### P2
+
+- [ ] P2: Move APK icons and embedded media art into the isolated thumbnail process
+  Why: images, SVGs, PDFs, fonts, EPUB covers, APK bundle icons, J2ME icons and ODF previews now decode in the isolated `:thumbnails` process, but three thumbnail paths still read untrusted files in the app process. A plain APK's icon (and the base APK's icon in an .apks without icon.png) goes through `PackageManager.getPackageArchiveInfo`, and cover art embedded in audio and video files is decoded with `BitmapFactory.decodeByteArray` with no size limit. Before that, `FmIcons.getUsableFile` copies an APK only root can read, or one inside an opened archive, into the global FileCache with no size cap, from both thumbnail threads, and that cache isn't thread-safe.
+  Evidence: `fm/icons/FmIconFetcher.java` (`FmIcons.generateApkIcon`, `FmIcons.getApksBaseIcon`), `fm/icons/FmIcons.java` (`getUsableFile`), `compat/ThumbnailUtilsCompat.java:48-50` and `:84-86`.
+  Touches: `fm/icons/ThumbnailDecoder.java` (new kinds), `FmIconFetcher.java`, an APK resource-table and icon reader that works from a file descriptor (the isolated process can't hand PackageManager a path), `MediaMetadataRetriever.setDataSource(FileDescriptor)` inside the decoder.
+  Acceptance: no file manager thumbnail decodes file contents in the app process; APK icons and embedded art come back through `IsolatedThumbnails` within the same byte, pixel and time budgets; malformed APKs and media files give the generic icon; an APK that has to be copied first goes through a per-call cache with the same 64 MB cap; unit tests cover each new kind and its malformed input.
+  Complexity: L
 
 - [ ] P2: Apply App Details tab lists in arrival order
   Why: the Components, Other and Permissions tabs hand each list from the view model to a background thread before it reaches the adapter, so two lists posted close together (a reload right after a change, or a search while a reload runs) can land in the wrong order and leave the older one on screen. The Overlays tab now applies its list on the main thread as it arrives.

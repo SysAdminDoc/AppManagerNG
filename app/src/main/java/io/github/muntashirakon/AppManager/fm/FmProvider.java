@@ -53,6 +53,18 @@ public class FmProvider extends ContentProvider {
         return getContentUri(Uri.fromFile(file));
     }
 
+    /**
+     * @return what one of this provider's URIs stands for, so this app can read it directly
+     * rather than through itself; any other URI as it is
+     */
+    @NonNull
+    public static Uri unwrap(@NonNull Uri uri) {
+        if (ContentResolver.SCHEME_CONTENT.equals(uri.getScheme()) && AUTHORITY.equals(uri.getAuthority())) {
+            return getFileProviderPathInternal(uri);
+        }
+        return uri;
+    }
+
     @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
     @NonNull
     static Uri getContentUri(@NonNull Uri uri) {

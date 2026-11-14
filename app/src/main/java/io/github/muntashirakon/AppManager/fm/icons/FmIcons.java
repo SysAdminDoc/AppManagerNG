@@ -2,32 +2,22 @@
 
 package io.github.muntashirakon.AppManager.fm.icons;
 
-import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Color;
-import android.graphics.Matrix;
-import android.graphics.Typeface;
-import android.graphics.pdf.PdfRenderer;
 import android.net.Uri;
 import android.provider.DocumentsContract;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.VisibleForTesting;
 import androidx.core.util.Pair;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.ApkFile;
@@ -35,7 +25,6 @@ import io.github.muntashirakon.AppManager.apk.UriApkSource;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.filecache.FileCache;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
-import io.github.muntashirakon.AppManager.utils.FileUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.io.Path;
 
@@ -43,8 +32,6 @@ import io.github.muntashirakon.io.Path;
 // Others are freelanced.
 final class FmIcons {
     private static final String TAG = FmIcons.class.getSimpleName();
-    private static final int MAX_PDF_THUMBNAIL_SIDE_PX = 2048;
-    private static final int MAX_PDF_THUMBNAIL_PIXELS = 4 * 1024 * 1024;
 
     private static final int DRAWABLE_APK = R.drawable.ic_android;
     private static final int DRAWABLE_ARCHIVE = R.drawable.ic_archive;
@@ -319,114 +306,6 @@ final class FmIcons {
     }
 
     @Nullable
-    public static Bitmap generateFontBitmap(@NonNull Path path) {
-        String extension = path.getExtension();
-        String text = extension != null ? extension.substring(0, Math.min(extension.length(), 4))
-                .toUpperCase(Locale.ROOT) : "FONT";
-        Pair<File, Boolean> file = getUsableFile(path);
-        if (file == null) {
-            return null;
-        }
-        try {
-            Typeface typeface = Typeface.createFromFile(file.first);
-            return UIUtils.generateBitmapFromText(text, typeface);
-        } finally {
-            if (file.second) {
-                file.first.delete();
-            }
-        }
-    }
-
-    @Nullable
-    public static Bitmap generatePdfBitmap(@NonNull Context context, @NonNull Uri uri) {
-        try (PdfRenderer renderer = new PdfRenderer(FileUtils.getFdFromUri(context, uri, "r"));
-             PdfRenderer.Page page = renderer.openPage(0)) {
-            int srcWidth = page.getWidth();
-            int srcHeight = page.getHeight();
-            if (srcWidth <= 0 || srcHeight <= 0) {
-                return null;
-            }
-            int[] targetSize = getBoundedPdfThumbnailSize(srcWidth, srcHeight);
-            int destWidth = targetSize[0];
-            int destHeight = targetSize[1];
-            Bitmap bitmap = Bitmap.createBitmap(destWidth, destHeight, Bitmap.Config.ARGB_8888);
-            bitmap.eraseColor(Color.WHITE);
-            Matrix matrix = new Matrix();
-            matrix.postScale((float) destWidth / srcWidth, (float) destHeight / srcHeight);
-            page.render(bitmap, null, matrix, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
-            return bitmap;
-        } catch (IOException | RuntimeException e) {
-            Log.e(TAG, "Could not generate PDF thumbnail.", e);
-            return null;
-        }
-    }
-
-    @VisibleForTesting
-    @NonNull
-    static int[] getBoundedPdfThumbnailSize(int srcWidth, int srcHeight) {
-        float scale = Math.min(1f, (float) MAX_PDF_THUMBNAIL_SIDE_PX / Math.max(srcWidth, srcHeight));
-        long pixels = (long) srcWidth * srcHeight;
-        if (pixels > MAX_PDF_THUMBNAIL_PIXELS) {
-            scale = Math.min(scale, (float) Math.sqrt((double) MAX_PDF_THUMBNAIL_PIXELS / pixels));
-        }
-        return new int[]{
-                Math.max(1, Math.round(srcWidth * scale)),
-                Math.max(1, Math.round(srcHeight * scale))
-        };
-    }
-
-    @Nullable
-    public static Bitmap generateEpubCover(@NonNull Path path) {
-        Pair<File, Boolean> file = getUsableFile(path);
-        if (file == null) {
-            return null;
-        }
-        try {
-            return EpubCoverGenerator.generateFromFile(file.first);
-        } finally {
-            if (file.second) {
-                file.first.delete();
-            }
-        }
-    }
-
-    @Nullable
-    public static Bitmap generateJ2meIcon(@NonNull Path path) {
-        Pair<File, Boolean> file = getUsableFile(path);
-        if (file == null) {
-            return null;
-        }
-        try {
-            return J2meIconExtractor.generateFromFile(file.first);
-        } finally {
-            if (file.second) {
-                file.first.delete();
-            }
-        }
-    }
-
-    @Nullable
-    public static Bitmap getOpenDocumentThumbnail(@NonNull Path path) {
-        Pair<File, Boolean> file = getUsableFile(path);
-        if (file == null) {
-            return null;
-        }
-        try (ZipFile zipFile = new ZipFile(file.first)) {
-            ZipEntry coverEntry = zipFile.getEntry("Thumbnails/thumbnail.png");
-            if (coverEntry != null) {
-                return BitmapFactory.decodeStream(zipFile.getInputStream(coverEntry));
-            }
-        } catch (IOException e) {
-            Log.w(TAG, e);
-        } finally {
-            if (file.second) {
-                file.first.delete();
-            }
-        }
-        return null;
-    }
-
-    @Nullable
     public static Bitmap generateApkIcon(@NonNull Path path) {
         Pair<File, Boolean> file = getUsableFile(path);
         if (file == null) {
@@ -441,38 +320,17 @@ final class FmIcons {
         }
     }
 
+    /**
+     * The icon of an APKS file's base APK. The file's own icon.png is read by the isolated
+     * thumbnail decoder first.
+     */
     @Nullable
-    public static Bitmap getApkmIcon(@NonNull Path path) {
+    public static Bitmap getApksBaseIcon(@NonNull Path path) {
         Pair<File, Boolean> file = getUsableFile(path);
         if (file == null) {
             return null;
         }
-        try (ZipFile zipFile = new ZipFile(file.first)) {
-            ZipEntry iconEntry = zipFile.getEntry("icon.png");
-            if (iconEntry != null) {
-                return BitmapFactory.decodeStream(zipFile.getInputStream(iconEntry));
-            }
-        } catch (IOException e) {
-            Log.w(TAG, e);
-        } finally {
-            if (file.second) {
-                file.first.delete();
-            }
-        }
-        return null;
-    }
-
-    @Nullable
-    public static Bitmap getApksIcon(@NonNull Path path) {
-        Pair<File, Boolean> file = getUsableFile(path);
-        if (file == null) {
-            return null;
-        }
-        try (ZipFile zipFile = new ZipFile(file.first)) {
-            ZipEntry iconEntry = zipFile.getEntry("icon.png");
-            if (iconEntry != null) {
-                return BitmapFactory.decodeStream(zipFile.getInputStream(iconEntry));
-            }
+        try {
             // Load as ApkFile
             UriApkSource apkSource = new UriApkSource(Uri.fromFile(file.first), path.getType());
             try (ApkFile apkFile = apkSource.resolve()) {
@@ -504,8 +362,12 @@ final class FmIcons {
         return null;
     }
 
+    /**
+     * The file itself if this process can read it, otherwise a copy in the cache, flagged
+     * {@code true} so the caller deletes it.
+     */
     @Nullable
-    private static Pair<File, Boolean> getUsableFile(@NonNull Path path) {
+    static Pair<File, Boolean> getUsableFile(@NonNull Path path) {
         File f = path.getFile();
         if (f == null) {
             try {

@@ -3,19 +3,24 @@
 package io.github.muntashirakon.AppManager.fm.icons;
 
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.media.ThumbnailUtils;
 import android.util.Size;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.j256.simplemagic.ContentType;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.ThumbnailUtilsCompat;
@@ -25,8 +30,6 @@ import io.github.muntashirakon.AppManager.fm.FmProvider;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.io.PathContentInfo;
-import io.github.muntashirakon.svg.SVG;
-import io.github.muntashirakon.svg.SVGParser;
 import io.github.muntashirakon.util.UiUtils;
 import io.github.muntashirakon.AppManager.logs.Log;
 
@@ -55,11 +58,37 @@ public class FmIconFetcher implements ImageLoader.ImageFetcherInterface {
         add("application/vnd.oasis.opendocument.text-web");
     }};
 
+    /**
+     * Thumbnails can take seconds each, so they get their own threads instead of the shared pool
+     * the file list loads on. Two at a time also matches how many the isolated decoder takes at once.
+     */
+    private static final class ThumbnailThreads {
+        static final ThreadPoolExecutor EXECUTOR;
+
+        static {
+            AtomicInteger count = new AtomicInteger();
+            EXECUTOR = new ThreadPoolExecutor(IsolatedThumbnails.MAX_CONCURRENT_CALLS,
+                    IsolatedThumbnails.MAX_CONCURRENT_CALLS, 30, TimeUnit.SECONDS, new LinkedBlockingQueue<>(),
+                    runnable -> {
+                        Thread thread = new Thread(runnable, "FmThumbnail-" + count.incrementAndGet());
+                        thread.setDaemon(true);
+                        return thread;
+                    });
+            EXECUTOR.allowCoreThreadTimeOut(true);
+        }
+    }
+
     @NonNull
     private final FmItem mFmItem;
 
     public FmIconFetcher(@NonNull FmItem fmItem) {
         mFmItem = fmItem;
+    }
+
+    @NonNull
+    @Override
+    public Executor getExecutor() {
+        return ThumbnailThreads.EXECUTOR;
     }
 
     @NonNull
@@ -76,9 +105,24 @@ public class FmIconFetcher implements ImageLoader.ImageFetcherInterface {
         int length = UiUtils.dpToPx(ContextUtils.getContext(), 40);
         ImageLoader.DefaultImage defaultImage = new ImageLoader.DefaultImageDrawableRes("drawable_" + drawableRes, drawableRes, padding);
         Size size = new Size(length, length);
+        try {
+            return fetchImage(tag, mimeType, drawableRes, padding, size, defaultImage);
+        } catch (Exception | StackOverflowError | OutOfMemoryError e) {
+            // A file that breaks its preview (an APK icon nested deep enough to use up the stack,
+            // say) still gets its type's icon
+            Log.w(TAG, "Could not make a thumbnail for %s", e, mFmItem.path);
+            return new ImageLoader.ImageFetcherResult(tag, null, defaultImage);
+        }
+    }
+
+    @NonNull
+    private ImageLoader.ImageFetcherResult fetchImage(@NonNull String tag, @Nullable String mimeType,
+                                                      @DrawableRes int drawableRes, int padding,
+                                                      @NonNull Size size,
+                                                      @NonNull ImageLoader.DefaultImage defaultImage) {
         if (OPEN_DOCUMENT_FORMAT_MIME_TYPES.contains(mimeType)) {
             // Open document format
-            Bitmap bitmap = FmIcons.getOpenDocumentThumbnail(mFmItem.path);
+            Bitmap bitmap = decodeIsolated(ThumbnailDecoder.KIND_OPEN_DOCUMENT, null);
             if (bitmap != null) {
                 return new ImageLoader.ImageFetcherResult(tag, getThumbnail(bitmap, size, true),
                         false, true, defaultImage);
@@ -93,13 +137,17 @@ public class FmIconFetcher implements ImageLoader.ImageFetcherInterface {
                             false, true, defaultImage);
                 }
             } else if (ContentType2.APKM.getMimeType().equals(mimeType)) {
-                Bitmap bitmap = FmIcons.getApkmIcon(mFmItem.path);
+                Bitmap bitmap = decodeIsolated(ThumbnailDecoder.KIND_APK_BUNDLE, null);
                 if (bitmap != null) {
                     return new ImageLoader.ImageFetcherResult(tag, getThumbnail(bitmap, size, true),
                             false, true, defaultImage);
                 }
             } else {
-                Bitmap bitmap = FmIcons.getApksIcon(mFmItem.path);
+                Bitmap bitmap = decodeIsolated(ThumbnailDecoder.KIND_APK_BUNDLE, null);
+                if (bitmap == null) {
+                    // No icon.png: the base APK's icon, read like a plain APK's
+                    bitmap = FmIcons.getApksBaseIcon(mFmItem.path);
+                }
                 if (bitmap != null) {
                     return new ImageLoader.ImageFetcherResult(tag, getThumbnail(bitmap, size, true),
                             false, true, defaultImage);
@@ -107,7 +155,7 @@ public class FmIconFetcher implements ImageLoader.ImageFetcherInterface {
             }
         } else if (FmIcons.isArchive(drawableRes)) {
             if (ContentType.JAVA_ARCHIVE.getMimeType().equals(mimeType)) {
-                Bitmap bitmap = FmIcons.generateJ2meIcon(mFmItem.path);
+                Bitmap bitmap = decodeIsolated(ThumbnailDecoder.KIND_J2ME, null);
                 if (bitmap != null) {
                     return new ImageLoader.ImageFetcherResult(tag, getThumbnail(bitmap, size, true),
                             false, true, defaultImage);
@@ -128,42 +176,31 @@ public class FmIconFetcher implements ImageLoader.ImageFetcherInterface {
                 Log.w(TAG, e);
             }
         } else if (FmIcons.isImage(drawableRes)) {
-            if (ContentType.SVG.getMimeType().equals(mimeType)) {
-                // Load SVG image
-                try (InputStream is = mFmItem.path.openInputStream()) {
-                    SVG svg = SVGParser.getSVGFromInputStream(is);
-                    Bitmap bitmap = svg.getBitmap();
-                    return new ImageLoader.ImageFetcherResult(tag, getThumbnail(bitmap, size, true), false, true, defaultImage);
-                } catch (Exception th) {
-                    // There can be runtime exceptions
-                    Log.w(TAG, th);
-                }
-            } else {
-                byte[] bytes = mFmItem.path.getContentAsBinary();
-                if (bytes.length > 0) {
-                    Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                    if (bitmap != null) {
-                        return new ImageLoader.ImageFetcherResult(tag, getThumbnail(bitmap, size, true),
-                                false, true, defaultImage);
-                    }
-                }
+            boolean svg = ContentType.SVG.getMimeType().equals(mimeType);
+            Bitmap bitmap = decodeIsolated(svg ? ThumbnailDecoder.KIND_SVG : ThumbnailDecoder.KIND_IMAGE, null);
+            if (bitmap != null) {
+                return new ImageLoader.ImageFetcherResult(tag, getThumbnail(bitmap, size, true),
+                        false, true, defaultImage);
             }
         } else if (FmIcons.isEbook(drawableRes)) {
             if (ContentType.EPUB.getMimeType().equals(mimeType)) {
-                Bitmap bitmap = FmIcons.generateEpubCover(mFmItem.path);
+                Bitmap bitmap = decodeIsolated(ThumbnailDecoder.KIND_EPUB, null);
                 if (bitmap != null) {
                     return new ImageLoader.ImageFetcherResult(tag, getThumbnail(bitmap, size, true),
                             false, true, defaultImage);
                 }
             }
         } else if (FmIcons.isFont(drawableRes)) {
-            Bitmap bitmap = FmIcons.generateFontBitmap(mFmItem.path);
+            String extension = mFmItem.path.getExtension();
+            String text = extension != null ? extension.substring(0, Math.min(extension.length(), 4))
+                    .toUpperCase(Locale.ROOT) : "FONT";
+            Bitmap bitmap = decodeIsolated(ThumbnailDecoder.KIND_FONT, text);
             if (bitmap != null) {
                 return new ImageLoader.ImageFetcherResult(tag, bitmap,
                         false, true, defaultImage);
             }
         } else if (FmIcons.isPdf(drawableRes)) {
-            Bitmap bitmap = FmIcons.generatePdfBitmap(ContextUtils.getContext(), FmProvider.getContentUri(mFmItem.path));
+            Bitmap bitmap = decodeIsolated(ThumbnailDecoder.KIND_PDF, null);
             if (bitmap != null) {
                 return new ImageLoader.ImageFetcherResult(tag, getThumbnail(bitmap, size, true),
                         false, true, defaultImage);
@@ -186,6 +223,15 @@ public class FmIconFetcher implements ImageLoader.ImageFetcherInterface {
             }
         }
         return new ImageLoader.ImageFetcherResult(tag, null, defaultImage);
+    }
+
+    /**
+     * Decodes the file in the isolated thumbnail process, never in this one: the file can come
+     * from anywhere.
+     */
+    @Nullable
+    private Bitmap decodeIsolated(int kind, @Nullable String label) {
+        return IsolatedThumbnails.getInstance().decode(mFmItem.path, kind, label);
     }
 
     private Bitmap getThumbnail(@NonNull Bitmap bitmap, @NonNull Size size, boolean recycle) {

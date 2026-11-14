@@ -2,68 +2,56 @@
 
 package io.github.muntashirakon.AppManager.fm.icons;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
-import java.io.File;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 import io.github.muntashirakon.compat.xml.Xml;
-import io.github.muntashirakon.AppManager.logs.Log;
 
+/**
+ * Finds an eBook's cover image. Runs in the isolated thumbnail process.
+ */
 final class EpubCoverGenerator {
-    private static final String TAG = EpubCoverGenerator.class.getSimpleName();
-
+    /**
+     * @return the cover image's bytes, or {@code null} if the book doesn't name one
+     */
     @Nullable
-    public static Bitmap generateFromFile(@NonNull File file) {
-        try(ZipFile zipFile = new ZipFile(file)) {
-            String opfFile = getOpfFileLocation(zipFile, zipFile.getEntry("META-INF/container.xml"));
-            if (opfFile == null) {
-                return null;
-            }
-            String coverId = getCoverId(zipFile, zipFile.getEntry(opfFile));
-            if (coverId == null) {
-                return null;
-            }
-            String coverImage = getCover(zipFile, zipFile.getEntry(opfFile), coverId);
-            if (coverImage == null) {
-                return null;
-            }
-            int parentSeparator = opfFile.lastIndexOf('/');
-            String parent = parentSeparator != -1 ? opfFile.substring(0, parentSeparator) : null;
-            String coverImageLocation;
-            if (parent != null) {
-                coverImageLocation = parent + "/" + coverImage;
-            } else coverImageLocation = coverImage;
-            ZipEntry coverEntry = zipFile.getEntry(coverImageLocation);
-            if (coverEntry != null) {
-                return BitmapFactory.decodeStream(zipFile.getInputStream(coverEntry));
-            }
-        } catch (IOException e) {
-            Log.w(TAG, e);
+    static byte[] readCover(@NonNull BoundedZipReader zip) throws IOException {
+        String opfFile = getOpfFileLocation(zip.read("META-INF/container.xml", ThumbnailDecoder.MAX_METADATA_BYTES));
+        if (opfFile == null) {
+            return null;
         }
-        return null;
+        byte[] opf = zip.read(opfFile, ThumbnailDecoder.MAX_METADATA_BYTES);
+        String coverId = getCoverId(opf);
+        if (coverId == null) {
+            return null;
+        }
+        String coverImage = getCover(opf, coverId);
+        if (coverImage == null) {
+            return null;
+        }
+        int parentSeparator = opfFile.lastIndexOf('/');
+        String parent = parentSeparator != -1 ? opfFile.substring(0, parentSeparator) : null;
+        String coverImageLocation;
+        if (parent != null) {
+            coverImageLocation = parent + "/" + coverImage;
+        } else coverImageLocation = coverImage;
+        return zip.read(coverImageLocation, ThumbnailDecoder.MAX_ENTRY_BYTES);
     }
 
     @Nullable
-    private static String getOpfFileLocation(@NonNull ZipFile zipFile, @Nullable ZipEntry zipEntry) {
-        if (zipEntry == null) {
+    private static String getOpfFileLocation(@Nullable byte[] container) {
+        if (container == null) {
             return null;
         }
         try {
-            XmlPullParser parser = Xml.newFastPullParser();
-            parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
-            parser.setInput(zipFile.getInputStream(zipEntry), StandardCharsets.UTF_8.name());
-            parser.nextTag();
+            XmlPullParser parser = newParser(container);
             parser.require(XmlPullParser.START_TAG, null, "container");
             int event = parser.next();
             while (event != XmlPullParser.END_DOCUMENT) {
@@ -81,15 +69,12 @@ final class EpubCoverGenerator {
     }
 
     @Nullable
-    private static String getCoverId(@NonNull ZipFile zipFile, @Nullable ZipEntry zipEntry) {
-        if (zipEntry == null) {
+    private static String getCoverId(@Nullable byte[] opf) {
+        if (opf == null) {
             return null;
         }
         try {
-            XmlPullParser parser = Xml.newFastPullParser();
-            parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
-            parser.setInput(zipFile.getInputStream(zipEntry), StandardCharsets.UTF_8.name());
-            parser.nextTag();
+            XmlPullParser parser = newParser(opf);
             parser.require(XmlPullParser.START_TAG, null, "package");
             int event = parser.next();
             while (event != XmlPullParser.END_DOCUMENT) {
@@ -107,15 +92,9 @@ final class EpubCoverGenerator {
     }
 
     @Nullable
-    private static String getCover(@NonNull ZipFile zipFile, @Nullable ZipEntry zipEntry, @NonNull String coverId) {
-        if (zipEntry == null) {
-            return null;
-        }
+    private static String getCover(@NonNull byte[] opf, @NonNull String coverId) {
         try {
-            XmlPullParser parser = Xml.newFastPullParser();
-            parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
-            parser.setInput(zipFile.getInputStream(zipEntry), StandardCharsets.UTF_8.name());
-            parser.nextTag();
+            XmlPullParser parser = newParser(opf);
             parser.require(XmlPullParser.START_TAG, null, "package");
             int event = parser.next();
             while (event != XmlPullParser.END_DOCUMENT) {
@@ -138,5 +117,14 @@ final class EpubCoverGenerator {
         } catch (IOException | XmlPullParserException ignore) {
         }
         return null;
+    }
+
+    @NonNull
+    private static XmlPullParser newParser(@NonNull byte[] xml) throws IOException, XmlPullParserException {
+        XmlPullParser parser = Xml.newFastPullParser();
+        parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
+        parser.setInput(new ByteArrayInputStream(xml), StandardCharsets.UTF_8.name());
+        parser.nextTag();
+        return parser;
     }
 }
