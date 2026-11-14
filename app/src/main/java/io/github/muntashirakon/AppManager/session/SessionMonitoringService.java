@@ -101,9 +101,23 @@ public class SessionMonitoringService extends Service {
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setContentIntent(defaultIntent)
                 .addAction(stopServiceAction);
-        ForegroundService.start(this, NotificationUtils.nextNotificationId(null), builder.build(),
-                ForegroundService.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
-        if (screenLockEnabled && Prefs.Privacy.isAutoLockEnabled()) {
+        boolean autoLock = screenLockEnabled && Prefs.Privacy.isAutoLockEnabled();
+        if (!ForegroundService.start(this, NotificationUtils.nextNotificationId(null), builder.build(),
+                ForegroundService.FOREGROUND_SERVICE_TYPE_DATA_SYNC)) {
+            // With the app lock on, its notification holds the Lock app button, and auto-lock needs the service too.
+            // Without it, the service is only the "Run AppManagerNG in the background" setting.
+            if (autoLock) {
+                ForegroundService.tellRefused(R.string.auto_lock_refused);
+            } else if (screenLockEnabled) {
+                ForegroundService.tellRefused(R.string.session_lock_refused);
+            } else {
+                ForegroundService.tellRefused(R.string.persistent_session_refused);
+            }
+            mIsWorking = false;
+            stopSelfResult(startId);
+            return START_NOT_STICKY;
+        }
+        if (autoLock) {
             IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_ON);
             filter.addAction(Intent.ACTION_SCREEN_OFF);
             filter.addAction(Intent.ACTION_USER_PRESENT);

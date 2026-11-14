@@ -117,10 +117,13 @@ public class LogcatRecordingService extends ForegroundService {
     public int onStartCommand(Intent intent, int flags, int startId) {
         // Update widget
         WidgetHelper.updateWidgets(getApplicationContext());
-        mProgressHandler = new NotificationProgressHandler(this,
+        NotificationProgressHandler progressHandler = new NotificationProgressHandler(this,
                 new NotificationProgressHandler.NotificationManagerInfo(CHANNEL_ID, "Logcat Recorder", NotificationManagerCompat.IMPORTANCE_DEFAULT),
                 NotificationUtils.HIGH_PRIORITY_NOTIFICATION_INFO,
                 null);
+        // Stopped by Android in the background, the recording ends the usual way and saves what it has
+        progressHandler.setRefusedMessage(R.string.log_recording_refused);
+        mProgressHandler = progressHandler;
         Intent stopRecordingIntent = new Intent();
         stopRecordingIntent.setAction(ACTION_STOP_RECORDING);
         // Have to make this unique for God knows what reason

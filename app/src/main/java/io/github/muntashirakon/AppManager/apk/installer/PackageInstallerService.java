@@ -56,7 +56,6 @@ import io.github.muntashirakon.AppManager.main.MainActivity;
 import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler;
 import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler.NotificationInfo;
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
-import io.github.muntashirakon.AppManager.progress.QueuedProgressHandler;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
 import io.github.muntashirakon.AppManager.sync.lan.LanSyncInstallTracker;
 import io.github.muntashirakon.AppManager.types.ForegroundService;
@@ -86,7 +85,7 @@ public class PackageInstallerService extends ForegroundService {
 
     @Nullable
     private OnInstallFinished mOnInstallFinished;
-    private QueuedProgressHandler mProgressHandler;
+    private NotificationProgressHandler mProgressHandler;
     private NotificationInfo mNotificationInfo;
     private PowerManager.WakeLock mWakeLock;
     // "Added to queue" notifications still showing, by the token put on their intent (main thread only)
@@ -159,6 +158,7 @@ public class PackageInstallerService extends ForegroundService {
     @Override
     public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
         if (isWorking()) {
+            mProgressHandler.onStartedAgain(this);
             return super.onStartCommand(intent, flags, startId);
         }
         mProgressHandler = new NotificationProgressHandler(
@@ -325,6 +325,11 @@ public class PackageInstallerService extends ForegroundService {
         }
         mNotificationInfo.setTitle(title);
         mProgressHandler.onProgressStart(-1, 0, mNotificationInfo);
+    }
+
+    @Override
+    protected void onStoppedUnfinished(boolean queueDropped) {
+        mProgressHandler.onStoppedUnfinished(getText(R.string.package_installer), queueDropped);
     }
 
     @Override

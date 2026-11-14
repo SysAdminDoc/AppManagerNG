@@ -69,6 +69,7 @@ public class WifiWaitService extends Service {
     static final long APPROVAL_WAIT_MILLIS = TimeUnit.MINUTES.toMillis(10);
     @VisibleForTesting
     static final String APPROVAL_NOTIFICATION_TAG = "wireless_debugging_approval";
+    private static final String REFUSED_NOTIFICATION_TAG = "wireless_debugging_refused";
     public static final String CHANNEL_ID = BuildConfig.APPLICATION_ID + ".channel.WIFI_WAIT_SERVICE";
 
     @VisibleForTesting
@@ -185,12 +186,19 @@ public class WifiWaitService extends Service {
                 .setOngoing(true)
                 .build();
         // Android 15 doesn't let a boot receiver start a data sync service
-        ForegroundService.start(this, NotificationUtils.nextNotificationId(null),
+        boolean foreground = ForegroundService.start(this, NotificationUtils.nextNotificationId(null),
                 notification, ForegroundService.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
 
         mLastStartId = startId;
 
         if (!isWirelessAdbMode() || LocalServer.alive(getApplicationContext())) {
+            finishService();
+            return START_NOT_STICKY;
+        }
+        if (!foreground) {
+            // Waiting unseen in the background would get the service stopped partway, so say so now. This runs at
+            // boot, where a toast goes by unseen, so it's a notification.
+            postRefusedNotification();
             finishService();
             return START_NOT_STICKY;
         }
@@ -369,6 +377,21 @@ public class WifiWaitService extends Service {
                 .setContentText(text)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
                 .setContentIntent(openSettings)
+                .setAutoCancel(true)
+                .build());
+    }
+
+    private void postRefusedNotification() {
+        Intent launch = getPackageManager().getLaunchIntentForPackage(getPackageName());
+        PendingIntent openApp = launch != null ? PendingIntentCompat.getActivity(this, 0, launch,
+                PendingIntent.FLAG_UPDATE_CURRENT, false) : null;
+        CharSequence text = getText(R.string.wifi_wait_refused);
+        NotificationUtils.displayHighPriorityNotification(this, REFUSED_NOTIFICATION_TAG, builder -> builder
+                .setSmallIcon(R.drawable.ic_default_notification)
+                .setContentTitle(getText(R.string.wireless_debugging))
+                .setContentText(text)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
+                .setContentIntent(openApp)
                 .setAutoCancel(true)
                 .build());
     }
