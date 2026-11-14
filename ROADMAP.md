@@ -15,6 +15,12 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Acceptance: on the S22 or S25, in ADB mode and again in Shizuku mode, grant a permission watched as Always deny from Android's Settings. It's revoked within a few seconds and the notification says so. Reboot, start the server again and repeat once.
   Complexity: S
 
+- [ ] P2: Check an archived app's row on the S22
+  Why: 6be4b000e lists archived apps under the name and icon Android kept for them, with Archived at the front of the row's details line. The unit tests cover it, but the row hasn't been seen on a phone: the S22 was leased to other work both times it came up.
+  Touches: nothing unless it fails (`main/MainListUidFormatter.java`, `main/MainViewModel.java`).
+  Acceptance: on the S22, with the latest floss debug build installed, the archived `com.example.archiveprobe` (installed with `adb install --user 0 -i com.android.vending`, then `pm archive --user 0`) shows in the main list as its label and icon with "Archived ·" leading the details line, and TalkBack's text for the row starts with Archived. Afterwards clear the list's search, close the keyboard and `adb uninstall com.example.archiveprobe`, which is still on the phone from the first try.
+  Complexity: S
+
 - [ ] P2: Check the isolated thumbnail process on a phone and on API 21 and 22
   Why: file manager thumbnails now come from an isolated `:thumbnails` process. Robolectric can't start a real isolated process, render a PDF, or run API 21 and 22, so those parts have only run as unit tests on API 23 and 36.
   Touches: nothing unless it fails (`fm/icons/IsolatedThumbnails.java`, `ThumbnailDecoderService`, the isolated-process early return in `AppManager`).
