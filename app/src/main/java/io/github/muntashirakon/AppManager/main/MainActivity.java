@@ -71,6 +71,7 @@ import io.github.muntashirakon.AppManager.batchops.struct.BatchNetPolicyOptions;
 import io.github.muntashirakon.AppManager.batchops.struct.IBatchOpOptions;
 import io.github.muntashirakon.AppManager.compat.NetworkPolicyManagerCompat;
 import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
+import io.github.muntashirakon.AppManager.db.AppsDb;
 import io.github.muntashirakon.AppManager.debloat.DebloaterActivity;
 import io.github.muntashirakon.AppManager.filters.FinderActivity;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryActivity;
@@ -96,6 +97,7 @@ import io.github.muntashirakon.AppManager.utils.DateUtils;
 import io.github.muntashirakon.AppManager.utils.ExportFilenameUtils;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 import io.github.muntashirakon.AppManager.utils.StoragePermission;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.dialog.SearchableFlagsDialogBuilder;
 import io.github.muntashirakon.dialog.SearchableSingleChoiceDialogBuilder;
@@ -130,6 +132,9 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     @Nullable
     private android.os.Parcelable mPendingListState;
     private boolean mImeVisibleBeforeLeave;
+    // The saved data notice while it's on screen, so a resume doesn't show it twice
+    @Nullable
+    private Snackbar mDbNotice;
     private SwipeRefreshLayout mSwipeRefresh;
     private MultiSelectionView mMultiSelectionView;
     private View mEmptyState;
@@ -415,6 +420,8 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
         });
         maybeShowInterruptedBatchOpRecovery();
         ChangelogAutoDisplay.showIfPending(this);
+        // onResume came first if the app lock was up, before there was a screen to show it on
+        showDbNoticeIfAny();
     }
 
     private void maybeShowInterruptedBatchOpRecovery() {
@@ -755,6 +762,7 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     protected void onResume() {
         super.onResume();
         if (viewModel != null) viewModel.onResume();
+        showDbNoticeIfAny();
         // T21-G: prune expired OS-revert events so the attention-badge tracker
         // cannot grow unbounded across long-lived sessions.
         OsRevertCountTracker.getInstance().evictExpired(System.currentTimeMillis(),
@@ -1194,6 +1202,51 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
                 }
             }
         });
+        snackbar.show();
+    }
+
+    /**
+     * Shows a message about saved data that had to wait while notifications were off. Only once the main screen is
+     * up: before the app lock is passed there's no layout to show it in.
+     */
+    private void showDbNoticeIfAny() {
+        if (viewModel == null || mDbNotice != null) {
+            return;
+        }
+        Context context = getApplicationContext();
+        ThreadUtils.postOnBackgroundThread(() -> {
+            String notice = AppsDb.peekUnseenNotice(context);
+            if (notice != null) {
+                ThreadUtils.postOnMainThread(() -> showDbNotice(notice));
+            }
+        });
+    }
+
+    /** Shows the message until it's dismissed. It's only removed then, so a screen closed first loses nothing. */
+    private void showDbNotice(@NonNull String notice) {
+        View root = findViewById(R.id.coordinator_layout);
+        if (mDbNotice != null || root == null || isFinishing() || isDestroyed()) {
+            return;
+        }
+        Snackbar snackbar = Snackbar.make(root, notice, Snackbar.LENGTH_INDEFINITE);
+        snackbar.setTextMaxLines(8);
+        snackbar.setAction(android.R.string.ok, v -> {
+            // Dismissing is all it does
+        });
+        snackbar.addCallback(new Snackbar.Callback() {
+            @Override
+            public void onDismissed(Snackbar dismissed, int event) {
+                if (mDbNotice == dismissed) {
+                    mDbNotice = null;
+                }
+                // Pushed aside by another snackbar, it comes back on the next resume
+                if (event == DISMISS_EVENT_ACTION || event == DISMISS_EVENT_SWIPE) {
+                    Context context = getApplicationContext();
+                    ThreadUtils.postOnBackgroundThread(() -> AppsDb.dismissUnseenNotice(context, notice));
+                }
+            }
+        });
+        mDbNotice = snackbar;
         snackbar.show();
     }
 

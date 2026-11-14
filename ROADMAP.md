@@ -31,14 +31,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
 
 ## Unblocked from Roadmap_Blocked.md (2026-11-07)
 
-- [ ] P0: Replace destructive AppsDb fallback with a complete, preservation-tested migration ladder
-  Why: schema 12 still has no 1→2 migration and still enables destructive forward and downgrade fallbacks, though the database holds filters, history, favorites, freeze choices and backup state that can't all be rebuilt.
-  Evidence: `db/AppsDb.java` (version 12, `.addMigrations(M_2_3 ... M_11_12)` at line 144, both destructive fallbacks at lines 151 and 152), exported schemas `1.json` through `12.json`, `app/src/androidTest/java/io/github/muntashirakon/AppManager/db/AppsDbMigrationTest.java`.
-  Touches: `db/AppsDb.java` (add 1→2 and remove unrestricted destructive fallbacks), `app/src/androidTest/java/io/github/muntashirakon/AppManager/db/AppsDbMigrationTest.java` (every start version through current plus downgrade/failure cases), exported Room schemas, database-open recovery UI/logging.
-  Acceptance: fixtures from every schema version 1 through 12 open at the current schema and keep representative rows from every durable table. An unknown or missing path, or a downgrade, fails closed with the original DB copied intact to a recoverable location and never recreates tables silently.
-  Unblocked 2026-11-07: `MigrationTestHelper` runs on the API 23 to 37.1 emulator images on disk and on the S22 and S25, so the upgrade and fail-closed checks can run now.
-  Complexity: M
-
 - [ ] P1: Validate privileged-mode binding on Android 17
   Why: app-list enumeration on API 37 is verified and pinned by `PackageEnumerationInstrumentedTest`. What remains is whether Shizuku, Dhizuku, and root bind on API 37, or fail with a surfaced, actionable reason.
   Evidence: servermanager/ privileged-mode binding; settings/Ops.java.

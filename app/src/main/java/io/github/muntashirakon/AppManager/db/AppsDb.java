@@ -2,12 +2,28 @@
 
 package io.github.muntashirakon.AppManager.db;
 
+import android.content.Context;
+import android.database.sqlite.SQLiteAccessPermException;
+import android.database.sqlite.SQLiteCantOpenDatabaseException;
+import android.database.sqlite.SQLiteDatabaseLockedException;
+import android.database.sqlite.SQLiteDiskIOException;
+import android.database.sqlite.SQLiteException;
+import android.database.sqlite.SQLiteFullException;
+import android.database.sqlite.SQLiteOutOfMemoryException;
+import android.database.sqlite.SQLiteReadOnlyDatabaseException;
+
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
+import androidx.annotation.WorkerThread;
 import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
 import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
+
+import java.io.File;
+import java.io.IOException;
 
 import io.github.muntashirakon.AppManager.db.dao.AppDao;
 import io.github.muntashirakon.AppManager.db.dao.AppNoteDao;
@@ -30,12 +46,31 @@ import io.github.muntashirakon.AppManager.db.entity.OpHistory;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.logs.Log;
 
-@Database(entities = {App.class, AppNote.class, LogFilter.class, Backup.class, OpHistory.class, FmFavorite.class, FreezeType.class, CachedScanResult.class, AppUpdateChangeReport.class}, version = 13)
+@Database(entities = {App.class, AppNote.class, LogFilter.class, Backup.class, OpHistory.class, FmFavorite.class, FreezeType.class, CachedScanResult.class, AppUpdateChangeReport.class}, version = AppsDb.VERSION)
 public abstract class AppsDb extends RoomDatabase {
     private static final String TAG = AppsDb.class.getSimpleName();
 
+    static final int VERSION = 13;
+    static final String NAME = "apps.db";
+
     private static AppsDb sAppsDb;
 
+    /** v2 adds the storage, data usage, usage stats and keystore columns to {@code app}. */
+    public static final Migration M_1_2 = new Migration(1, 2) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("ALTER TABLE `app` ADD COLUMN `has_keystore` INTEGER NOT NULL DEFAULT false");
+            db.execSQL("ALTER TABLE `app` ADD COLUMN `uses_saf` INTEGER NOT NULL DEFAULT false");
+            db.execSQL("ALTER TABLE `app` ADD COLUMN `ssaid` TEXT DEFAULT ''");
+            db.execSQL("ALTER TABLE `app` ADD COLUMN `code_size` INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("ALTER TABLE `app` ADD COLUMN `data_size` INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("ALTER TABLE `app` ADD COLUMN `mobile_data` INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("ALTER TABLE `app` ADD COLUMN `wifi_data` INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("ALTER TABLE `app` ADD COLUMN `open_count` INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("ALTER TABLE `app` ADD COLUMN `screen_time` INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("ALTER TABLE `app` ADD COLUMN `last_usage_time` INTEGER NOT NULL DEFAULT 0");
+        }
+    };
     public static final Migration M_2_3 = new Migration(2, 3) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase db) {
@@ -143,31 +178,157 @@ public abstract class AppsDb extends RoomDatabase {
         }
     };
 
-    static final Migration[] MIGRATIONS = {M_2_3, M_3_4, M_4_5, M_5_6, M_6_7, M_7_8, M_8_9, M_9_10, M_10_11,
-            M_11_12, M_12_13};
+    static final Migration[] MIGRATIONS = {M_1_2, M_2_3, M_3_4, M_4_5, M_5_6, M_6_7, M_7_8, M_8_9, M_9_10,
+            M_10_11, M_11_12, M_12_13};
 
     public static synchronized AppsDb getInstance() {
         // Synchronized: a concurrent first-caller could otherwise build a second
         // RoomDatabase, run its migrations, and leak it when sAppsDb is overwritten.
         if (sAppsDb == null) {
-            sAppsDb = Room.databaseBuilder(ContextUtils.getContext(), AppsDb.class, "apps.db")
-                    .addMigrations(MIGRATIONS)
-                    // No M_1_2 migration is registered, so an on-disk v1 apps.db (or any
-                    // other unfound forward path) would otherwise throw an unrecoverable
-                    // IllegalStateException on first access. apps.db is a rebuildable
-                    // cache of installed-app metadata (repopulated by the AppDb refresh
-                    // pass), so recreating it on a missing migration is safe and far
-                    // better than a permanently-broken DB.
-                    .fallbackToDestructiveMigration()
-                    .fallbackToDestructiveMigrationOnDowngrade()
-                    .build();
-            try {
-                sAppsDb.appDao().getAll();
-            } catch (Exception th) {
-                Log.w(TAG, th);
-            }
+            sAppsDb = open(ContextUtils.getContext(), NAME, MIGRATIONS);
         }
         return sAppsDb;
+    }
+
+    /**
+     * Opens the database without ever dropping what's in it. Notes, history, favorites, freeze choices and backup
+     * records can't all be rebuilt, so there's no destructive fallback.
+     * <ul>
+     * <li>Before Room touches a file that needs upgrading or can't be read, every file of it is copied to
+     * {@code files/db_recovery/}. Room switches the file to WAL before it migrates, so this is the only copy of it as
+     * it was. The copy is removed once the upgrade works.
+     * <li>A file Room can't open (a downgrade, a version with no migration path, a migration that fails or that
+     * Room's schema check rejects, or a file SQLite reports as corrupt) is replaced with a fresh database, and the
+     * user is told where the copy is.
+     * <li>If a copy can't be made, nothing is deleted and this run uses a database in memory.
+     * </ul>
+     */
+    @NonNull
+    static AppsDb open(@NonNull Context context, @NonNull String name, @NonNull Migration[] migrations) {
+        AppsDbRecovery.clearLeftovers(context, name);
+        File dbFile = context.getDatabasePath(name);
+        int onDisk = AppsDbRecovery.readVersion(dbFile);
+        if (!AppsDbRecovery.canMigrate(onDisk, VERSION, migrations)) {
+            return startOver(context, name, migrations, onDisk,
+                    "Version " + onDisk + " has no migration path to version " + VERSION, null);
+        }
+        File beforeUpgrade = null;
+        if (dbFile.isFile() && onDisk != 0 && onDisk != VERSION) {
+            try {
+                beforeUpgrade = AppsDbRecovery.preserveBeforeUpgrade(context, name, onDisk,
+                        "Copied before upgrading from version " + onDisk + " to " + VERSION);
+            } catch (IOException | RuntimeException e) {
+                Log.e(TAG, "Could not copy " + name + " before upgrading it, so it stays untouched and this run "
+                        + "keeps data in memory", e);
+                AppsDbRecovery.notifyUpgradeSkipped(context);
+                return inMemory(context);
+            }
+        }
+        AppsDb db = build(context, name, migrations);
+        try {
+            db.getOpenHelper().getWritableDatabase();
+        } catch (RuntimeException e) {
+            // Any failure lands here, a migration's own bug included: left to the caller it would fail every launch
+            if (isTransient(e)) {
+                // Disk, lock or permission trouble that a fresh file wouldn't fix: Room tries again on the next query.
+                // A failed upgrade rolls back and nothing here deletes the file, and the next launch copies it again
+                // before trying, so this copy would only take up space.
+                Log.w(TAG, e);
+                if (beforeUpgrade != null) {
+                    AppsDbRecovery.discard(beforeUpgrade);
+                }
+                AppsDbRecovery.countFailedOpen(context, name);
+                return db;
+            }
+            // Room's missing-migration, downgrade and schema-check failures, and SQL that fails in a migration. The
+            // upgrade ran in a transaction, and the copy holds the file as it was before Room opened it.
+            Log.e(TAG, "Could not open " + name, e);
+            db.close();
+            return startOver(context, name, migrations, onDisk, String.valueOf(e.getMessage()), beforeUpgrade);
+        }
+        if (beforeUpgrade != null) {
+            AppsDbRecovery.discard(beforeUpgrade);
+        }
+        AppsDbRecovery.clearFailedOpens(context, name);
+        return db;
+    }
+
+    /**
+     * Whether a fresh file wouldn't fix the failure. Android 5 to 9 wrap an error from opening the file in an
+     * {@link SQLiteException} ("Failed to change locale"), so the causes count too.
+     */
+    @VisibleForTesting
+    static boolean isTransient(@NonNull Throwable e) {
+        // Bounded, in case a cause chain loops
+        for (int depth = 0; e != null && depth < 16; e = e.getCause(), ++depth) {
+            if (e instanceof SQLiteDatabaseLockedException || e instanceof SQLiteDiskIOException
+                    || e instanceof SQLiteFullException || e instanceof SQLiteCantOpenDatabaseException
+                    || e instanceof SQLiteAccessPermException || e instanceof SQLiteReadOnlyDatabaseException
+                    || e instanceof SQLiteOutOfMemoryException) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @NonNull
+    private static AppsDb build(@NonNull Context context, @NonNull String name, @NonNull Migration[] migrations) {
+        return Room.databaseBuilder(context, AppsDb.class, name)
+                .openHelperFactory(AppsDbRecovery.corruptionGuard(context, name))
+                .addMigrations(migrations)
+                .build();
+    }
+
+    @NonNull
+    private static AppsDb inMemory(@NonNull Context context) {
+        return Room.inMemoryDatabaseBuilder(context, AppsDb.class).build();
+    }
+
+    /**
+     * Replaces the file with a fresh database once it's copied aside. {@code copy} is a copy already made of the
+     * file as it was, or null to make one now.
+     */
+    @NonNull
+    private static AppsDb startOver(@NonNull Context context, @NonNull String name, @NonNull Migration[] migrations,
+                                    int onDisk, @NonNull String reason, @Nullable File copy) {
+        if (copy != null) {
+            copy = AppsDbRecovery.keep(context, name, copy, reason);
+        }
+        if (copy == null) {
+            try {
+                copy = AppsDbRecovery.preserve(context, name, onDisk, reason);
+            } catch (IOException | RuntimeException e) {
+                Log.e(TAG, "Could not copy " + name + " aside, so it stays untouched and this run keeps data in "
+                        + "memory", e);
+                AppsDbRecovery.notifyUser(context, null, true);
+                return inMemory(context);
+            }
+        }
+        if (!AppsDbRecovery.deleteDatabaseFiles(context, name)) {
+            Log.e(TAG, "Could not delete all of " + name + " after copying it to " + copy + ", so this run keeps "
+                    + "data in memory");
+            AppsDbRecovery.notifyUser(context, copy, true);
+            return inMemory(context);
+        }
+        Log.w(TAG, "Started " + name + " over, the old file is in " + copy + ". " + reason);
+        AppsDbRecovery.notifyUser(context, copy, false);
+        return build(context, name, migrations);
+    }
+
+    /**
+     * A message about saved data that notifications couldn't show, or null. It stays until
+     * {@link #dismissUnseenNotice} is called with it, so a screen that closes before the user sees it loses nothing.
+     */
+    @WorkerThread
+    @Nullable
+    public static String peekUnseenNotice(@NonNull Context context) {
+        return AppsDbRecovery.peekUnseenNotice(context);
+    }
+
+    /** The user dismissed {@code notice}. A newer message saved since then stays. */
+    @WorkerThread
+    public static void dismissUnseenNotice(@NonNull Context context, @NonNull String notice) {
+        AppsDbRecovery.dismissUnseenNotice(context, notice);
     }
 
     public abstract AppDao appDao();
