@@ -5,6 +5,7 @@ import json
 import subprocess
 import tempfile
 import unittest
+import zipfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
@@ -15,8 +16,17 @@ SPEC = importlib.util.spec_from_file_location("run_dependency_cve_gate", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
 gate = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(gate)
+# The DEX and jar builders live with the reachability tests
+FIXTURES_SPEC = importlib.util.spec_from_file_location(
+    "test_dependency_cve_reachability", Path(__file__).resolve().parent / "test_dependency_cve_reachability.py")
+assert FIXTURES_SPEC is not None and FIXTURES_SPEC.loader is not None
+fixtures = importlib.util.module_from_spec(FIXTURES_SPEC)
+FIXTURES_SPEC.loader.exec_module(fixtures)
 
 NOW = datetime(2026, 9, 26, 12, 0, 0, tzinfo=timezone.utc)
+GUAVA = "pkg:maven/com.google.guava/guava@32.1.3-android"
+OUTPUT_NAMES = {*gate.REPORT_NAMES.values(), gate.REACHABILITY_JSON_NAME, gate.REACHABILITY_TEXT_NAME,
+                gate.RECEIPT_NAME}
 
 
 class DependencyCveGateTest(unittest.TestCase):
@@ -33,9 +43,9 @@ class DependencyCveGateTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.temp_dir.cleanup()
 
-    def _run_gate(self, env=None):
+    def _run_gate(self, env=None, apks=()):
         return gate.run_gate(["gradlew"], self.root, self.out_dir, data_dir=self.data_dir,
-                             env={} if env is None else env, clock=lambda: NOW)
+                             env={} if env is None else env, clock=lambda: NOW, apks=apks)
 
     def _write_feed(self, refreshed_at=None, database=True, record=None) -> None:
         self.data_dir.mkdir(parents=True, exist_ok=True)
@@ -54,16 +64,36 @@ class DependencyCveGateTest(unittest.TestCase):
         if record is not None:
             record_path.write_text(record, encoding="utf-8")
 
-    def _write_reports(self) -> None:
-        self.report_dir.mkdir(parents=True, exist_ok=True)
-        for name in gate.REPORT_NAMES.values():
-            (self.report_dir / name).write_text(f"fixture:{name}\n", encoding="utf-8")
+    def _write_reports(self, dependencies=(), directory=None) -> None:
+        # The JSON report is parsed, so it has to be a real one; the others are only copied.
+        directory = directory or self.report_dir
+        directory.mkdir(parents=True, exist_ok=True)
+        for report_format, name in gate.REPORT_NAMES.items():
+            content = (json.dumps({"dependencies": list(dependencies)}) if report_format == "JSON"
+                       else f"fixture:{name}\n")
+            (directory / name).write_text(content, encoding="utf-8")
 
     def _write_nested_reports(self) -> None:
-        nested_dir = self.report_dir / "dependency-check"
-        nested_dir.mkdir(parents=True, exist_ok=True)
-        for name in gate.REPORT_NAMES.values():
-            (nested_dir / name).write_text(f"fixture:{name}\n", encoding="utf-8")
+        self._write_reports(directory=self.report_dir / "dependency-check")
+
+    def _scanner_reporting(self, dependencies, exit_code=0):
+        def scanner(command, **kwargs):
+            self._write_reports(dependencies)
+            return subprocess.CompletedProcess(command, exit_code)
+        return scanner
+
+    def _write_config(self, name, content) -> None:
+        path = self.root / "config" / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+
+    def _write_apk(self, name, descriptors=("Lio/github/App;",), mapping=True) -> Path:
+        apk = self.root / name
+        with zipfile.ZipFile(apk, "w") as archive:
+            archive.writestr("classes.dex", fixtures.dex_with_types(list(descriptors)))
+        if mapping:
+            gate.mapping_for(apk).write_text("io.github.App -> a:\n", encoding="utf-8")
+        return apk
 
     def test_gate_passes_blocking_threshold_and_receipts_both_reports(self) -> None:
         def scanner(command, **kwargs):
@@ -80,8 +110,9 @@ class DependencyCveGateTest(unittest.TestCase):
         self.assertEqual("9.0", receipt["blockingCvss"])
         self.assertTrue(receipt["passed"])
         self.assertEqual(0, receipt["scannerExitCode"])
-        self.assertEqual({"HTML", "SARIF"}, {report["format"] for report in receipt["reports"]})
-        self.assertEqual(3, len(paths))
+        self.assertEqual(3, receipt["schemaVersion"])
+        self.assertEqual({"HTML", "SARIF", "JSON"}, {report["format"] for report in receipt["reports"]})
+        self.assertEqual(OUTPUT_NAMES, {path.name for path in paths})
         self.assertTrue(all(path.is_file() for path in paths))
 
     def test_scanner_failure_blocks_release_and_retains_diagnostic_reports(self) -> None:
@@ -106,7 +137,7 @@ class DependencyCveGateTest(unittest.TestCase):
         with mock.patch.object(gate.subprocess, "run", side_effect=scanner):
             paths = self._run_gate()
 
-        self.assertEqual(3, len(paths))
+        self.assertEqual(OUTPUT_NAMES, {path.name for path in paths})
         self.assertTrue((self.out_dir / gate.REPORT_NAMES["HTML"]).is_file())
         self.assertTrue((self.out_dir / gate.REPORT_NAMES["SARIF"]).is_file())
 
@@ -302,6 +333,80 @@ class DependencyCveGateTest(unittest.TestCase):
         stat = (self.data_dir / gate.DATABASE_NAME).stat()
         self.assertEqual(stat.st_size, record["databaseBytes"])
         self.assertEqual(stat.st_mtime_ns, record["databaseModifiedNs"])
+
+    def test_a_suppression_nobody_could_review_blocks_before_the_scan(self) -> None:
+        self._write_config("owasp-suppressions.xml",
+                           f'<suppressions xmlns="{fixtures.NS}"><suppress><notes>No tag.</notes>'
+                           '<packageUrl regex="true">^pkg:maven/a/b@1$</packageUrl><cve>CVE-2026-1</cve>'
+                           '</suppress></suppressions>')
+
+        with mock.patch.object(gate.subprocess, "run") as run:
+            with self.assertRaisesRegex(gate.GateError, r"suppression 1 \(CVE-2026-1\) has no disposition"):
+                self._run_gate()
+
+        run.assert_not_called()
+        self.assertFalse((self.out_dir / gate.RECEIPT_NAME).exists())
+
+    def test_a_disposition_the_scan_no_longer_matches_blocks_after_it(self) -> None:
+        self._write_config("dependency-cve-dispositions.json", json.dumps({"schemaVersion": 1, "dispositions": [
+            {"ids": ["CVE-2026-11822"], "disposition": "cpe-name-collision", "reason": "No SQLite of its own.",
+             "source": "https://example.org/advisory", "reviewed": "2026-11-14",
+             "packageUrl": r"^pkg:maven/androidx\.sqlite/sqlite-android@2\.5\.1$"}]}))
+
+        with mock.patch.object(gate.subprocess, "run", side_effect=self._scanner_reporting([])):
+            with self.assertRaisesRegex(gate.GateError, "matches no CVE-2026-11822 finding in this scan"):
+                self._run_gate()
+
+        receipt = json.loads((self.out_dir / gate.RECEIPT_NAME).read_text(encoding="utf-8"))
+        self.assertFalse(receipt["passed"])
+        self.assertEqual(1, len(receipt["reachability"]["validationProblems"]))
+
+    def test_a_critical_finding_the_scanner_let_through_still_blocks(self) -> None:
+        shipped = fixtures.dependency(GUAVA, "guava.jar", ["app:flossReleaseRuntimeClasspath"],
+                                      vulnerabilities=[fixtures.vulnerability("CVE-2026-1", 9.8)])
+
+        with mock.patch.object(gate.subprocess, "run", side_effect=self._scanner_reporting([shipped])):
+            with self.assertRaisesRegex(gate.GateError, "the scanner passed, but these findings"):
+                self._run_gate()
+
+        receipt = json.loads((self.out_dir / gate.RECEIPT_NAME).read_text(encoding="utf-8"))
+        self.assertFalse(receipt["passed"])
+        self.assertEqual(["CVE-2026-1 " + GUAVA], receipt["reachability"]["blocking"])
+        text = (self.out_dir / gate.REACHABILITY_TEXT_NAME).read_text(encoding="utf-8")
+        self.assertIn("FLOSS, packaged in the release APK (1, no APK checked)", text)
+
+    def test_each_release_apk_and_its_mapping_go_in_the_receipt(self) -> None:
+        floss = self._write_apk("AppManagerNG-reproducible-floss-release.apk")
+        full = self._write_apk("AppManagerNG-reproducible-full-release.apk")
+
+        with mock.patch.object(gate.subprocess, "run", side_effect=self._scanner_reporting([])):
+            self._run_gate(apks=[floss, full])
+
+        receipt = json.loads((self.out_dir / gate.RECEIPT_NAME).read_text(encoding="utf-8"))
+        self.assertTrue(receipt["passed"])
+        self.assertEqual([("floss", floss.name, "AppManagerNG-reproducible-floss-release-mapping.txt"),
+                          ("full", full.name, "AppManagerNG-reproducible-full-release-mapping.txt")],
+                         [(apk["flavor"], apk["apk"], apk["mapping"]) for apk in receipt["reachability"]["apks"]])
+        self.assertTrue(receipt["reachability"]["flavors"]["floss"]["apkChecked"])
+        self.assertTrue(receipt["reachability"]["flavors"]["full"]["apkChecked"])
+
+    def test_an_apk_without_a_flavor_a_mapping_or_alone_in_its_flavor_blocks_before_the_scan(self) -> None:
+        cases = {
+            "doesn't say which flavor": [self._write_apk("app-release.apk")],
+            "R8 mapping .* is unreadable": [self._write_apk("app-floss-release.apk", mapping=False)],
+            "two floss release APKs": [self._write_apk("a-floss-release.apk"), self._write_apk("b-floss-release.apk")],
+        }
+        for message, apks in cases.items():
+            with self.subTest(message=message):
+                with mock.patch.object(gate.subprocess, "run") as run:
+                    with self.assertRaisesRegex(gate.GateError, message):
+                        self._run_gate(apks=apks)
+                run.assert_not_called()
+
+    def test_each_apk_takes_its_own_flag(self) -> None:
+        args = gate.parse_args(["--out-dir", "out", "--apk", "a-floss-release.apk", "--apk", "b-full-release.apk"])
+
+        self.assertEqual([Path("a-floss-release.apk"), Path("b-full-release.apk")], args.apk)
 
     def test_the_default_database_lives_under_gradle_user_home(self) -> None:
         self.assertEqual(Path("/g") / "dependency-check-data" / gate.DATA_FORMAT_DIRECTORY,

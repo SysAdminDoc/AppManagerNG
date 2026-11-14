@@ -32,6 +32,12 @@ ext {
     hiddenapibypass_version = "6.1" // https://github.com/LSPosed/AndroidHiddenApiBypass
     json_version = "20251224" // JVM org.json implementation for local unit tests; Android supplies org.json at runtime
     guava_version = "32.1.3-android" // WorkManager exposes ListenableFuture; compile against Guava because runtime already packages it via smali/editor deps. Also constrains the smali-supplied runtime copy up from 31.1-android (GHSA-7g45-4rm6-3mm3, GHSA-5mg8-w23w-74h3)
+    // Guava held at 32.1.3 against GHSA-xxph-c9ww-hj94 (CVE-2026-102554): CompactHashMap, CompactHashSet and MapMakerInternalMap
+    // allocate without a bound while Java-deserializing, so a crafted stream ends in OutOfMemoryError (availability only). The fix
+    // is 33.7.2, but guava-android needs API 23 from 33.5.0. CompactHashMap ships, renamed by R8. NG never deserializes outside data
+    // itself, but on Android 12 and older an Intent's extras Bundle is unparceled whole on first access, so another app could crash
+    // NG with a crafted Serializable extra. NVD still had the CVE awaiting analysis with no CPE on 2026-11-14, so the CVE gate can't
+    // report it yet; give it a "held" disposition in config/dependency-cve-dispositions.json with this text once the gate lists it.
     protobuf_version = "3.25.5" // Constrains the jadx/aapt2-proto-supplied runtime copy up from 3.22.3 (GHSA-735f-pc8j-v9w8); not a direct dependency
     jadx_version = "1.4.7" // https://github.com/MuntashirAkon/jadx-android — CVE-2024-32653 affects jadx-gui's ADB launch action; AppManagerNG ships only jadx-core/dex-input
     jb_annotation_version = "26.1.0" // https://github.com/JetBrains/java-annotations (Compile-only)

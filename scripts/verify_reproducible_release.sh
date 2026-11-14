@@ -384,10 +384,20 @@ sbom_path="$PUBLISH_DIR/AppManagerNG-reproducible.cdx.json"
 "${PYTHON_BIN[@]}" scripts/generate-cyclonedx-sbom.py --check "$sbom_path"
 printf '%s\n' "$sbom_path" >> "$ASSET_LIST"
 
+# The gate reads each published APK's DEX and mapping to tell shipped findings from host-only ones.
+cve_apk_args=()
+for publish_apk in "$PUBLISH_DIR"/AppManagerNG-reproducible-*.apk; do
+    [[ -f "$publish_apk" ]] || continue
+    cve_apk_args+=(--apk "$publish_apk")
+done
 "${PYTHON_BIN[@]}" scripts/run_dependency_cve_gate.py \
     --gradle-cmd "$GRADLE_CMD" \
-    --out-dir "$PUBLISH_DIR"
+    --out-dir "$PUBLISH_DIR" \
+    "${cve_apk_args[@]}"
 printf '%s\n' \
     "$PUBLISH_DIR/dependency-check-report.html" \
     "$PUBLISH_DIR/dependency-check-report.sarif" \
+    "$PUBLISH_DIR/dependency-check-report.json" \
+    "$PUBLISH_DIR/dependency-cve-reachability.json" \
+    "$PUBLISH_DIR/dependency-cve-reachability.txt" \
     "$PUBLISH_DIR/dependency-cve-receipt.json" >> "$ASSET_LIST"
