@@ -20,8 +20,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.nio.channels.FileChannel;
@@ -1070,10 +1072,109 @@ public abstract class VirtualFileSystem {
         return ParcelFileDescriptor.open(getCachedFile(targetNode, write), mode);
     }
 
+    /**
+     * Copies a file to {@code out} without extracting it into this file system's cache, and stops
+     * once more than {@code maxBytes} have come through. The size an archive declares for an entry
+     * is the archive's word, so it isn't what's counted.
+     *
+     * @return {@code true} if the whole file fit in {@code maxBytes}; {@code false} once it's past,
+     * with {@code out} holding only part of it
+     */
+    @WorkerThread
+    public boolean copyAtMost(String path, @NonNull OutputStream out, long maxBytes) throws IOException {
+        if (!checkAccess(path, OsConstants.R_OK)) {
+            throw new IOException(path + " is inaccessible.");
+        }
+        Node<?> targetNode = getNode(path);
+        if (targetNode == null) {
+            throw new FileNotFoundException(path + " does not exist.");
+        }
+        if (!targetNode.isFile()) {
+            throw new IOException(path + " is not a file.");
+        }
+        CappedOutputStream capped = new CappedOutputStream(out, maxBytes);
+        try {
+            File cachedFile = findCachedFile(targetNode);
+            if (cachedFile != null) {
+                // Already extracted, or changed since the archive was opened
+                try (InputStream is = new FileInputStream(cachedFile)) {
+                    byte[] buffer = new byte[64 * 1024];
+                    int read;
+                    while ((read = is.read(buffer)) != -1) {
+                        capped.write(buffer, 0, read);
+                    }
+                }
+            } else if (targetNode.isPhysical()) {
+                copyFile(targetNode, capped);
+            }
+            // Otherwise it was created after the archive was opened and nothing was written to it
+        } catch (IOException e) {
+            // A reader may wrap the stream's own exception, so the stream says whether it was the cap
+            if (capped.isPastCap()) {
+                return false;
+            }
+            throw e;
+        }
+        return true;
+    }
+
+    /**
+     * Writes a file as it's stored in the archive, without caching it.
+     */
+    protected void copyFile(@NonNull Node<?> node, @NonNull OutputStream out) throws IOException {
+        try (InputStream is = getInputStream(node)) {
+            byte[] buffer = new byte[64 * 1024];
+            int read;
+            while ((read = is.read(buffer)) != -1) {
+                out.write(buffer, 0, read);
+            }
+        }
+    }
+
     @NonNull
     protected abstract InputStream getInputStream(@NonNull Node<?> node) throws IOException;
 
     protected abstract void cacheFile(@NonNull Node<?> src, @NonNull File sink) throws IOException;
+
+    private static final class CappedOutputStream extends FilterOutputStream {
+        private final long mMaxBytes;
+        private long mWritten;
+        private boolean mPastCap;
+
+        CappedOutputStream(@NonNull OutputStream out, long maxBytes) {
+            super(out);
+            mMaxBytes = maxBytes;
+        }
+
+        boolean isPastCap() {
+            return mPastCap;
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            count(1);
+            out.write(b);
+        }
+
+        @Override
+        public void write(@NonNull byte[] b, int off, int len) throws IOException {
+            count(len);
+            out.write(b, off, len);
+        }
+
+        @Override
+        public void close() {
+            // The caller owns the stream underneath
+        }
+
+        private void count(long bytes) throws IOException {
+            mWritten += bytes;
+            if (mWritten > mMaxBytes) {
+                mPastCap = true;
+                throw new IOException("More than " + mMaxBytes + " bytes");
+            }
+        }
+    }
 
     @Nullable
     protected File findCachedFile(@NonNull Node<?> node) {

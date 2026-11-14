@@ -26,6 +26,7 @@ import java.security.Security;
 import dalvik.system.ZipPathValidator;
 import io.github.muntashirakon.AppManager.apk.behavior.AutoFreezeOnLockReceiver;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerService;
+import io.github.muntashirakon.AppManager.compat.ProcessCompat;
 import io.github.muntashirakon.AppManager.debloat.DebloatDefinitionsUpdater;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryPruneScheduler;
 import io.github.muntashirakon.AppManager.i18n.LanguagePackManager;
@@ -60,6 +61,11 @@ public class AppManager extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        if (ProcessCompat.isIsolatedProcess()) {
+            // The thumbnail decoder's process: no permissions, no app data and no receivers, so
+            // none of the setup below can run there, and the decoder needs none of it.
+            return;
+        }
         if (BuildConfig.DEBUG) {
             StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
                     .detectAll()
@@ -104,6 +110,9 @@ public class AppManager extends Application {
     @Override
     public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
+        if (ProcessCompat.isIsolatedProcess()) {
+            return;
+        }
         int nightModeMask = getNightModeMask(newConfig);
         if (nightModeMask == mNightModeMask) {
             return;
@@ -128,7 +137,8 @@ public class AppManager extends Application {
     @SuppressWarnings("deprecation") // addHiddenApiExemptions deprecated in HiddenApiBypass 6.2+; replace when that ships
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && !Utils.isRoboUnitTest()) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && !Utils.isRoboUnitTest()
+                && !ProcessCompat.isIsolatedProcess()) {
             HiddenApiBypass.addHiddenApiExemptions("L");
         }
     }

@@ -26,6 +26,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.util.Calendar;
 import java.util.List;
@@ -150,7 +151,7 @@ class ApkFileSystem extends VirtualFileSystem {
             }
             return targetNode.isPhysical() ? -1 : 0;
         }
-        return ((CentralDirectoryRecord) targetNode.getObject()).getSize();
+        return ((CentralDirectoryRecord) targetNode.getObject()).getUncompressedSize();
     }
 
     @Override
@@ -175,14 +176,22 @@ class ApkFileSystem extends VirtualFileSystem {
 
     @Override
     protected void cacheFile(@NonNull Node<?> src, @NonNull File sink) throws IOException {
-        CentralDirectoryRecord cdRecord = (CentralDirectoryRecord) src.getObject();
+        try (FileOutputStream os = new FileOutputStream(sink)) {
+            copyFile(src, os);
+        }
+    }
+
+    @Override
+    protected void copyFile(@NonNull Node<?> node, @NonNull OutputStream out) throws IOException {
+        // getInputStream() extracts the entry into the cache first, so this reads the record directly
+        CentralDirectoryRecord cdRecord = (CentralDirectoryRecord) node.getObject();
         if (cdRecord == null || mApk == null || mApkSections == null) {
-            throw new FileNotFoundException("Class definition for " + src.getFullPath() + " is not found.");
+            throw new FileNotFoundException("Class definition for " + node.getFullPath() + " is not found.");
         }
         DataSource lfhSection = mApk.slice(0, mApkSections.getZipCentralDirectoryOffset());
-        try (FileOutputStream os = new FileOutputStream(sink)) {
-            DataSink out = DataSinks.asDataSink(os);
-            LocalFileRecord.outputUncompressedData(lfhSection, cdRecord, lfhSection.size(), out);
+        try {
+            DataSink sink = DataSinks.asDataSink(out);
+            LocalFileRecord.outputUncompressedData(lfhSection, cdRecord, lfhSection.size(), sink);
         } catch (ZipFormatException e) {
             throw new IOException(e);
         }

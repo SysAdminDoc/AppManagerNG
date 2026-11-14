@@ -1905,6 +1905,12 @@
         <service
             android:name=".self.filecache.InternalCacheCleanerService"
             android:exported="false" />
+        <!-- Decodes file manager thumbnails from untrusted files, with no permissions of its own -->
+        <service
+            android:name=".fm.icons.ThumbnailDecoderService"
+            android:exported="false"
+            android:isolatedProcess="true"
+            android:process=":thumbnails" />
         <service
             android:name=".session.SessionMonitoringService"
             android:exported="false"

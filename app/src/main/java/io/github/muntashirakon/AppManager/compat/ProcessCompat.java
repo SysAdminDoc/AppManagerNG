@@ -2,10 +2,12 @@
 
 package io.github.muntashirakon.AppManager.compat;
 
+import android.os.Build;
 import android.os.RemoteException;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,6 +49,29 @@ public final class ProcessCompat {
      * Last uid used for fully isolated sandboxed processes (with no permissions of their own)
      */
     public static final int LAST_ISOLATED_UID = 99999;
+
+    private static final int PER_USER_RANGE = 100000;
+
+    /**
+     * Whether this process is an isolated one, which has no permissions or app data of its own.
+     * The thumbnail decoder runs in one.
+     */
+    public static boolean isIsolatedProcess() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            return android.os.Process.isIsolated();
+        }
+        return isIsolatedUid(android.os.Process.myUid());
+    }
+
+    /**
+     * Whether the uid belongs to an isolated process, in any user.
+     */
+    @VisibleForTesting
+    static boolean isIsolatedUid(int uid) {
+        int appId = uid % PER_USER_RANGE;
+        return (appId >= FIRST_ISOLATED_UID && appId <= LAST_ISOLATED_UID)
+                || (appId >= FIRST_APP_ZYGOTE_ISOLATED_UID && appId <= LAST_APP_ZYGOTE_ISOLATED_UID);
+    }
 
     public static Process exec(@Nullable String[] cmd, @Nullable String[] env, @Nullable File dir) throws IOException {
         if (LocalServices.alive()) {

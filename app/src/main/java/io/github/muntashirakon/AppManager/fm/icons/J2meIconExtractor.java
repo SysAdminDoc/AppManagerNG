@@ -2,48 +2,38 @@
 
 package io.github.muntashirakon.AppManager.fm.icons;
 
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import java.io.File;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import io.github.muntashirakon.AppManager.logs.Log;
 
-class J2meIconExtractor {
-    private static final String TAG = J2meIconExtractor.class.getSimpleName();
-
+/**
+ * Finds a J2ME app's icon. Runs in the isolated thumbnail process.
+ */
+final class J2meIconExtractor {
+    /**
+     * @return the icon's bytes, or {@code null} if the file isn't a J2ME JAR or names no icon
+     */
     @Nullable
-    public static Bitmap generateFromFile(@NonNull File file) {
-        try(ZipFile zipFile = new ZipFile(file)) {
-            String iconFile = getIconLocation(zipFile, zipFile.getEntry("META-INF/MANIFEST.MF"));
-            if (iconFile == null) {
-                // Not a J2ME JAR
-                return null;
-            }
-            ZipEntry iconEntry = zipFile.getEntry(iconFile);
-            if (iconEntry != null) {
-                return BitmapFactory.decodeStream(zipFile.getInputStream(iconEntry));
-            }
-        } catch (IOException e) {
-            Log.w(TAG, e);
+    static byte[] readIcon(@NonNull BoundedZipReader zip) throws IOException {
+        String iconFile = getIconLocation(zip.read("META-INF/MANIFEST.MF", ThumbnailDecoder.MAX_METADATA_BYTES));
+        if (iconFile == null) {
+            // Not a J2ME JAR
+            return null;
         }
-        return null;
+        return zip.read(iconFile, ThumbnailDecoder.MAX_ENTRY_BYTES);
     }
 
     @Nullable
-    private static String getIconLocation(@NonNull ZipFile zipFile, @Nullable ZipEntry zipEntry) {
-        if (zipEntry == null) {
+    private static String getIconLocation(@Nullable byte[] manifestBytes) {
+        if (manifestBytes == null) {
             return null;
         }
         try {
-            Manifest manifest = new Manifest(zipFile.getInputStream(zipEntry));
+            Manifest manifest = new Manifest(new ByteArrayInputStream(manifestBytes));
             Attributes attributes = manifest.getMainAttributes();
             // The logic is derived from J2ME Loader (ru.woesss.j2me.jar.Descriptor#getIcon())
             String icon = attributes.getValue("MIDlet-Icon");
@@ -61,13 +51,10 @@ class J2meIconExtractor {
                 }
             }
             icon = icon.trim();
-            if (icon.isEmpty()) {
-                return null;
-            }
-            while (icon.charAt(0) == '/') {
+            while (!icon.isEmpty() && icon.charAt(0) == '/') {
                 icon = icon.substring(1);
             }
-            return icon;
+            return icon.isEmpty() ? null : icon;
         } catch (IOException ignore) {
         }
         return null;
