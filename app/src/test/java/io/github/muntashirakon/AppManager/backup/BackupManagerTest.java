@@ -16,9 +16,13 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.regex.Pattern;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
+import io.github.muntashirakon.AppManager.apk.signing.SignerPin;
+import io.github.muntashirakon.AppManager.apk.signing.SignerPinStore;
 import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
 import io.github.muntashirakon.AppManager.backup.struct.BackupOpOptions;
 import io.github.muntashirakon.AppManager.backup.struct.DeleteOpOptions;
@@ -218,6 +222,36 @@ public class BackupManagerTest {
         });
 
         assertTrue(exception.getMessage().contains("Could not read APK archive."));
+    }
+
+    @Test
+    public void aRestoreThatMustUninstallTheAppChecksItsSignerPinFirst() throws Throwable {
+        // The first restore installs the app. Robolectric's copy has no signing certificate, so it
+        // doesn't match the backup's, and an APK restore past the skipped signature check has to
+        // uninstall it before installing the backup's APK
+        testRestoreV4Default();
+        String packageName = "dnsfilter.android";
+        char[] key = new char[64];
+        Arrays.fill(key, 'b');
+        String pinned = new String(key);
+        SignerPinStore pins = new SignerPinStore(ContextUtils.getContext());
+        pins.put(packageName, new SignerPin(Collections.singletonList(pinned), 1));
+        try {
+            RestoreOpOptions options = new RestoreOpOptions(packageName, 0, null,
+                    1110 | BackupFlags.BACKUP_NO_SIGNATURE_CHECK);
+            BackupException refused = assertThrows(BackupException.class,
+                    () -> new BackupManager().restore(options, null));
+
+            StringBuilder messages = new StringBuilder();
+            for (Throwable th = refused; th != null; th = th.getCause()) {
+                messages.append(th.getMessage()).append('\n');
+            }
+            assertTrue(messages.toString(), messages.toString().contains(packageName + " is pinned to "
+                    + SignerPin.format(pinned)));
+            assertNotNull(ContextUtils.getContext().getPackageManager().getPackageInfo(packageName, 0));
+        } finally {
+            pins.clear();
+        }
     }
 
     @Test

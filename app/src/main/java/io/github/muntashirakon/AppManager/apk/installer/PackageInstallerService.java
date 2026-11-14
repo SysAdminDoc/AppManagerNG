@@ -13,6 +13,7 @@ import static io.github.muntashirakon.AppManager.apk.installer.PackageInstallerC
 import static io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat.STATUS_FAILURE_SESSION_COMMIT;
 import static io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat.STATUS_FAILURE_SESSION_CREATE;
 import static io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat.STATUS_FAILURE_SESSION_WRITE;
+import static io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat.STATUS_FAILURE_SIGNER_PIN;
 import static io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat.STATUS_FAILURE_STORAGE;
 import static io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat.STATUS_SUCCESS;
 import static io.github.muntashirakon.AppManager.history.ops.OpHistoryManager.HISTORY_TYPE_INSTALLER;
@@ -475,6 +476,8 @@ public class PackageInstallerService extends ForegroundService {
                 return context.getString(R.string.installer_error_session_abandon);
             case STATUS_FAILURE_INCOMPATIBLE_ROM:
                 return context.getString(R.string.installer_error_lidl_rom);
+            case STATUS_FAILURE_SIGNER_PIN:
+                return context.getString(R.string.installer_error_signer_pin);
         }
         return context.getString(R.string.installer_error_generic);
     }
@@ -507,6 +510,8 @@ public class PackageInstallerService extends ForegroundService {
                 return context.getString(R.string.installer_recovery_session_abandon);
             case STATUS_FAILURE_INCOMPATIBLE_ROM:
                 return context.getString(R.string.installer_recovery_incompatible_rom);
+            case STATUS_FAILURE_SIGNER_PIN:
+                return context.getString(R.string.installer_recovery_signer_pin);
             default:
                 return context.getString(R.string.installer_recovery_generic);
         }

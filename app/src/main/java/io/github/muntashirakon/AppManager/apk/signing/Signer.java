@@ -6,11 +6,13 @@ import android.os.Build;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.WorkerThread;
 
 import com.android.apksig.ApkSigner;
 import com.android.apksig.ApkVerifier;
 
 import java.io.File;
+import java.io.IOException;
 import java.security.KeyStoreException;
 import java.security.Principal;
 import java.security.PrivateKey;
@@ -29,6 +31,8 @@ import aosp.libcore.util.HexEncoding;
 import io.github.muntashirakon.AppManager.crypto.ks.KeyPair;
 import io.github.muntashirakon.AppManager.crypto.ks.KeyStoreManager;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.self.filecache.FileCache;
+import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
@@ -44,6 +48,49 @@ public class Signer {
         } catch (Exception e) {
             // Signing not configured
             return false;
+        }
+    }
+
+    /** An APK signed by {@link #signCopy(File, FileCache)}. */
+    public static final class SignedApk {
+        @NonNull
+        public final File apk;
+        /** The v4 signature, when that scheme is on. */
+        @Nullable
+        public final File idsig;
+
+        SignedApk(@NonNull File apk, @Nullable File idsig) {
+            this.apk = apk;
+            this.idsig = idsig;
+        }
+    }
+
+    /**
+     * Signs a copy of {@code in} with this app's key, using the schemes and alignment set in
+     * Settings, and verifies it: what the installer does to an APK it was told to sign.
+     *
+     * @param cache holds the signed copy and its v4 signature
+     * @throws IOException when there is no key, or signing or its verification fails
+     */
+    @WorkerThread
+    @NonNull
+    public static SignedApk signCopy(@NonNull File in, @NonNull FileCache cache) throws IOException {
+        File out = cache.createCachedFile("apk");
+        SigSchemes sigSchemes = Prefs.Signing.getSigSchemes();
+        boolean zipAlign = Prefs.Signing.zipAlign();
+        try {
+            Signer signer = getInstance(sigSchemes);
+            File idsig = null;
+            if (signer.isV4SchemeEnabled()) {
+                idsig = cache.createCachedFile("idsig");
+                signer.setIdsigFile(idsig);
+            }
+            if (signer.sign(in, out, -1, zipAlign) && verify(sigSchemes, out, idsig)) {
+                return new SignedApk(out, idsig);
+            }
+            throw new IOException("Failed to sign " + in);
+        } catch (SignatureException | RuntimeException e) {
+            throw new IOException(e);
         }
     }
 

@@ -40,6 +40,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import io.github.muntashirakon.AppManager.apk.signing.SignerPin;
+import io.github.muntashirakon.AppManager.apk.signing.SignerPinStore;
 import io.github.muntashirakon.AppManager.db.AppsDb;
 import io.github.muntashirakon.AppManager.db.entity.FmFavorite;
 import io.github.muntashirakon.AppManager.db.entity.FreezeType;
@@ -365,6 +367,84 @@ public class SnapshotBundleTest {
             clearPortableTables(db);
             return null;
         });
+    }
+
+    @Test
+    public void signerPinsRoundTripAndTheImportKeepsAPinThisDeviceHas() throws Exception {
+        runOnBackground(() -> {
+            Context context = ApplicationProvider.getApplicationContext();
+            SignerPinStore store = new SignerPinStore(context);
+            store.clear();
+            store.put("com.example.kept", new SignerPin(Collections.singletonList(hex('a')), 1));
+            store.put("com.example.lost", new SignerPin(Collections.singletonList(hex('b')), 2));
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            SnapshotBundle.ExportResult exported = SnapshotBundle.writeTo(context, out);
+            assertEquals(2, exported.signerPinsCount);
+            SnapshotBundle.ManifestSummary manifest = SnapshotBundle.readManifestOnly(
+                    new ByteArrayInputStream(out.toByteArray()));
+            assertEquals(2, manifest.signerPinsCount);
+            assertTrue(manifest.hasSignerPins());
+
+            // This device has since pinned the kept app to another key, and lost the other pin.
+            store.clear();
+            store.put("com.example.kept", new SignerPin(Collections.singletonList(hex('c')), 3));
+
+            SnapshotBundle.ImportOptions skip = onlyPortableSections();
+            skip.restoreSignerPins = false;
+            assertEquals(0, SnapshotBundle.readFrom(context,
+                    new ByteArrayInputStream(out.toByteArray()), skip).signerPinsRestored);
+            assertNull(store.get("com.example.lost"));
+
+            SnapshotBundle.ImportResult imported = SnapshotBundle.readFrom(context,
+                    new ByteArrayInputStream(out.toByteArray()), onlyPortableSections());
+            assertEquals(1, imported.signerPinsRestored);
+            assertTrue(store.get("com.example.kept").isSameSet(Collections.singletonList(hex('c'))));
+            assertEquals(3, store.get("com.example.kept").pinnedAt);
+            assertTrue(store.get("com.example.lost").isSameSet(Collections.singletonList(hex('b'))));
+            assertEquals(2, store.get("com.example.lost").pinnedAt);
+
+            store.clear();
+            AppsDb.getInstance().opHistoryDao().deleteAll();
+            return null;
+        });
+    }
+
+    @Test
+    public void importSignerPinsSkipsInvalidEntriesAndTakesTheFirstPerPackage() throws Exception {
+        runOnBackground(() -> {
+            Context context = ApplicationProvider.getApplicationContext();
+            SignerPinStore store = new SignerPinStore(context);
+            store.clear();
+            String json = new JSONObject()
+                    .put("entries", new JSONArray()
+                            .put(SignerPinStore.toJson(new SignerPin(Collections.singletonList(hex('a')), 1))
+                                    .put("package_name", "com.first"))
+                            .put(SignerPinStore.toJson(new SignerPin(Collections.singletonList(hex('b')), 2))
+                                    .put("package_name", "com.first"))
+                            .put(new JSONObject().put("package_name", "com.bad")
+                                    .put("cert_shas256", new JSONArray().put("not-a-digest")))
+                            .put(SignerPinStore.toJson(new SignerPin(Collections.singletonList(hex('b')), 3)))
+                            .put(SignerPinStore.toJson(new SignerPin(Collections.singletonList(hex('b')), 4))
+                                    .put("package_name", "  ")))
+                    .toString();
+
+            assertEquals(1, SnapshotBundle.importSignerPins(context, json));
+            Map<String, SignerPin> pins = store.readAll();
+            assertEquals(Collections.singleton("com.first"), pins.keySet());
+            assertTrue(pins.get("com.first").isSameSet(Collections.singletonList(hex('a'))));
+
+            store.clear();
+            AppsDb.getInstance().opHistoryDao().deleteAll();
+            return null;
+        });
+    }
+
+    @NonNull
+    private static String hex(char c) {
+        char[] chars = new char[64];
+        Arrays.fill(chars, c);
+        return new String(chars);
     }
 
     // -----------------------------------------------------------------------
@@ -789,6 +869,7 @@ public class SnapshotBundleTest {
         options.restoreLogFilters = false;
         options.restoreFmFavorites = false;
         options.restoreFreezeTypes = false;
+        options.restoreSignerPins = false;
         options.mergePrefs = merge;
         return options;
     }

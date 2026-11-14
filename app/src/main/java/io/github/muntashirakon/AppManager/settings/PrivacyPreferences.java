@@ -51,12 +51,16 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.StaticDataset;
 import io.github.muntashirakon.AppManager.accessibility.toast.ToastHistoryActivity;
+import io.github.muntashirakon.AppManager.apk.signing.SignerPin;
+import io.github.muntashirakon.AppManager.apk.signing.SignerPinEditor;
+import io.github.muntashirakon.AppManager.apk.signing.SignerPinStore;
 import io.github.muntashirakon.AppManager.db.AppsDb;
 import io.github.muntashirakon.AppManager.db.entity.AppUpdateChangeReport;
 import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterActivity;
@@ -339,6 +343,11 @@ public class PrivacyPreferences extends PreferenceFragment {
             }
             return true;
         });
+        // Signer pins: what an install of a pinned app has to be signed by
+        requirePreference("signer_pins").setOnPreferenceClickListener(preference -> {
+            showSignerPins();
+            return true;
+        });
         // App Change Auditor: component + tracker deltas, sharing the same feed
         // as permission and signing-cert monitors.
         requirePreference("app_change_feed").setOnPreferenceClickListener(preference -> {
@@ -401,6 +410,65 @@ public class PrivacyPreferences extends PreferenceFragment {
             mImportSnapshot.launch(new String[]{MIME_ZIP, "application/octet-stream", "*/*"});
             return true;
         });
+    }
+
+    private void showSignerPins() {
+        Context appContext = requireContext().getApplicationContext();
+        SignerPinStore store = new SignerPinStore(appContext);
+        ThreadUtils.postOnBackgroundThread(() -> {
+            Map<String, SignerPin> pins;
+            try {
+                pins = store.readAll();
+            } catch (SignerPinStore.UnreadableException e) {
+                pins = null;
+            }
+            Map<String, SignerPin> finalPins = pins;
+            ThreadUtils.postOnMainThread(() -> {
+                if (isAdded()) {
+                    showSignerPinsDialog(appContext, store, finalPins);
+                }
+            });
+        });
+    }
+
+    /**
+     * @param pins every pin, or {@code null} when the list can't be read
+     */
+    private void showSignerPinsDialog(@NonNull Context appContext, @NonNull SignerPinStore store,
+                                      @Nullable Map<String, SignerPin> pins) {
+        StringBuilder message = new StringBuilder();
+        if (pins == null) {
+            message.append(getString(R.string.signer_pins_unreadable));
+        } else if (pins.isEmpty()) {
+            message.append(getString(R.string.signer_pins_none));
+        } else {
+            for (Map.Entry<String, SignerPin> pin : pins.entrySet()) {
+                if (message.length() > 0) {
+                    message.append("\n\n");
+                }
+                message.append(pin.getKey()).append('\n').append(SignerPin.formatAll(pin.getValue().certSha256));
+            }
+        }
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(pins != null ? getString(R.string.signer_pins_title_count, pins.size())
+                        : getString(R.string.pref_signer_pins))
+                .setMessage(message)
+                .setNegativeButton(R.string.close, null);
+        if (pins == null || !pins.isEmpty()) {
+            builder.setNeutralButton(R.string.signer_pins_clear_all, (dialog, which) ->
+                    ThreadUtils.postOnBackgroundThread(() -> {
+                        int result;
+                        try {
+                            SignerPinEditor.clearAll(appContext, store);
+                            result = R.string.signer_pins_cleared;
+                        } catch (IOException e) {
+                            result = R.string.signer_pins_clear_failed;
+                        }
+                        int finalResult = result;
+                        ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(finalResult));
+                    }));
+        }
+        builder.show();
     }
 
     private void showAppChangeFeed() {
@@ -744,7 +812,8 @@ public class PrivacyPreferences extends PreferenceFragment {
                     finalResult.opHistoryCount,
                     finalResult.logFiltersCount,
                     finalResult.fmFavoritesCount,
-                    finalResult.freezeTypesCount);
+                    finalResult.freezeTypesCount,
+                    finalResult.signerPinsCount);
         });
     }
 
@@ -763,12 +832,14 @@ public class PrivacyPreferences extends PreferenceFragment {
                 getString(R.string.snapshot_section_op_history, manifest.opHistoryCount),
                 getString(R.string.snapshot_section_log_filters, manifest.logFiltersCount),
                 getString(R.string.snapshot_section_fm_favorites, manifest.fmFavoritesCount),
-                getString(R.string.snapshot_section_freeze_types, manifest.freezeTypesCount)
+                getString(R.string.snapshot_section_freeze_types, manifest.freezeTypesCount),
+                getString(R.string.signer_pins_title_count, manifest.signerPinsCount)
         };
         boolean[] available = {
                 manifest.hasPrefs(), manifest.hasProfiles(), manifest.hasRules(),
                 manifest.hasTags(), manifest.hasOpHistory(),
-                manifest.hasLogFilters(), manifest.hasFmFavorites(), manifest.hasFreezeTypes()
+                manifest.hasLogFilters(), manifest.hasFmFavorites(), manifest.hasFreezeTypes(),
+                manifest.hasSignerPins()
         };
         boolean[] checked = available.clone();
 
@@ -804,6 +875,7 @@ public class PrivacyPreferences extends PreferenceFragment {
                     options.restoreLogFilters = checked[5];
                     options.restoreFmFavorites = checked[6];
                     options.restoreFreezeTypes = checked[7];
+                    options.restoreSignerPins = checked[8];
                     Context appContext = context.getApplicationContext();
                     Toast.makeText(appContext, R.string.snapshot_import_in_progress,
                             Toast.LENGTH_SHORT).show();
@@ -897,7 +969,8 @@ public class PrivacyPreferences extends PreferenceFragment {
                     finalResult.opHistoryRestored,
                     finalResult.logFiltersRestored,
                     finalResult.fmFavoritesRestored,
-                    finalResult.freezeTypesRestored);
+                    finalResult.freezeTypesRestored,
+                    finalResult.signerPinsRestored);
         });
     }
 

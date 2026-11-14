@@ -29,6 +29,8 @@ public final class SingleAppActionHistoryItem implements IJsonSerializer {
     public static final String ACTION_FORCE_STOP = "force_stop";
     public static final String ACTION_KILL = "kill";
     public static final String ACTION_SERVER_CONTROL = "server_control";
+    public static final String ACTION_SIGNER_PIN = "signer_pin";
+    public static final String ACTION_SIGNER_UNPIN = "signer_unpin";
 
     @NonNull
     private final String mAction;

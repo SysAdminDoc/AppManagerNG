@@ -84,6 +84,9 @@ import io.github.muntashirakon.AppManager.db.entity.LogFilter;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
 import io.github.muntashirakon.AppManager.tags.AppNoteStore;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
+import io.github.muntashirakon.AppManager.apk.signing.SignerPin;
+import io.github.muntashirakon.AppManager.apk.signing.SignerPinEditor;
+import io.github.muntashirakon.AppManager.apk.signing.SignerPinStore;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.profiles.ProfileManager;
 import io.github.muntashirakon.AppManager.rules.RulesStorageManager;
@@ -137,6 +140,8 @@ public final class SnapshotBundle {
     static final String ENTRY_FM_FAVORITES = "fm_favorites.json";
     @VisibleForTesting
     static final String ENTRY_FREEZE_TYPES = "freeze_types.json";
+    /** Per-package signer pins; an import only adds pins for packages that have none. */
+    static final String ENTRY_SIGNER_PINS = "signer_pins.json";
 
     /**
      * SharedPreferences names that must NEVER be exported. {@code keystore} holds
@@ -214,6 +219,7 @@ public final class SnapshotBundle {
         int logFiltersCount = 0;
         int fmFavoritesCount = 0;
         int freezeTypesCount = 0;
+        int signerPinsCount = 0;
         List<String> contents = new ArrayList<>();
         List<String> excluded = new ArrayList<>();
 
@@ -326,14 +332,19 @@ public final class SnapshotBundle {
             freezeTypesCount = freezeTypes.count;
             if (freezeTypesCount > 0) contents.add("freeze_types");
 
+            SectionExport signerPins = tryExport("signer pins", () -> exportSignerPins(appContext));
+            writeStringEntry(zos, ENTRY_SIGNER_PINS, signerPins.json);
+            signerPinsCount = signerPins.count;
+            if (signerPinsCount > 0) contents.add("signer_pins");
+
             // Manifest last so we can record final counts
             String manifest = buildManifestJson(appContext, contents, prefsCount,
                     profilesCount, rulesCount, opHistoryCount, logFiltersCount,
-                    fmFavoritesCount, freezeTypesCount, excluded);
+                    fmFavoritesCount, freezeTypesCount, signerPinsCount, excluded);
             writeStringEntry(zos, ENTRY_MANIFEST, manifest);
         }
         return new ExportResult(prefsCount, profilesCount, rulesCount, opHistoryCount,
-                logFiltersCount, fmFavoritesCount, freezeTypesCount);
+                logFiltersCount, fmFavoritesCount, freezeTypesCount, signerPinsCount);
     }
 
     /**
@@ -637,6 +648,7 @@ public final class SnapshotBundle {
         byte[] logFiltersBytes;
         byte[] fmFavoritesBytes;
         byte[] freezeTypesBytes;
+        byte[] signerPinsBytes;
         final List<PendingFile> pendingPrefs = new ArrayList<>();
         final List<PendingFile> pendingProfiles = new ArrayList<>();
         final List<PendingFile> pendingRules = new ArrayList<>();
@@ -720,6 +732,8 @@ public final class SnapshotBundle {
                     bundle.fmFavoritesBytes = bytes;
                 } else if (ENTRY_FREEZE_TYPES.equals(name)) {
                     bundle.freezeTypesBytes = bytes;
+                } else if (ENTRY_SIGNER_PINS.equals(name)) {
+                    bundle.signerPinsBytes = bytes;
                 }
                 zis.closeEntry();
             }
@@ -746,6 +760,7 @@ public final class SnapshotBundle {
         reconcile(manifest, "log_filters", manifest.logFiltersCount, countEntries(bundle.logFiltersBytes), false);
         reconcile(manifest, "fm_favorites", manifest.fmFavoritesCount, countEntries(bundle.fmFavoritesBytes), false);
         reconcile(manifest, "freeze_types", manifest.freezeTypesCount, countEntries(bundle.freezeTypesBytes), false);
+        reconcile(manifest, "signer_pins", manifest.signerPinsCount, countEntries(bundle.signerPinsBytes), false);
         return bundle;
     }
 
@@ -877,10 +892,15 @@ public final class SnapshotBundle {
         logFiltersRestored = dbCounts[1];
         fmFavoritesRestored = dbCounts[2];
         freezeTypesRestored = dbCounts[3];
+        int signerPinsRestored = 0;
+        if (options.restoreSignerPins && bundle.signerPinsBytes != null) {
+            signerPinsRestored = importSignerPins(appContext,
+                    new String(bundle.signerPinsBytes, StandardCharsets.UTF_8));
+        }
 
         return new ImportResult(manifest, sha256, prefsRestored, profilesRestored, tagsRestored,
                 rulesRestored, opHistoryRestored, logFiltersRestored, fmFavoritesRestored,
-                freezeTypesRestored);
+                freezeTypesRestored, signerPinsRestored);
     }
 
     @VisibleForTesting
@@ -911,6 +931,7 @@ public final class SnapshotBundle {
                                     int logFiltersCount,
                                     int fmFavoritesCount,
                                     int freezeTypesCount,
+                                    int signerPinsCount,
                                     @NonNull List<String> excluded) {
         long now = System.currentTimeMillis();
         try {
@@ -935,6 +956,7 @@ public final class SnapshotBundle {
             counts.put("log_filters", logFiltersCount);
             counts.put("fm_favorites", fmFavoritesCount);
             counts.put("freeze_types", freezeTypesCount);
+            counts.put("signer_pins", signerPinsCount);
             manifest.put("counts", counts);
             JSONArray excludedArr = new JSONArray();
             for (String e : excluded) excludedArr.put(e);
@@ -1145,6 +1167,21 @@ public final class SnapshotBundle {
     }
 
     @NonNull
+    private static SectionExport exportSignerPins(@NonNull Context appContext) {
+        JSONArray arr = new JSONArray();
+        Map<String, SignerPin> pins;
+        try {
+            pins = new SignerPinStore(appContext).readAll();
+            for (Map.Entry<String, SignerPin> pin : pins.entrySet()) {
+                arr.put(SignerPinStore.toJson(pin.getValue()).put("package_name", pin.getKey()));
+            }
+        } catch (IOException | JSONException e) {
+            throw new IllegalStateException(e.getMessage(), e);
+        }
+        return new SectionExport(wrapSection(arr), pins.size());
+    }
+
+    @NonNull
     private static String wrapSection(@NonNull JSONArray entries) {
         try {
             return new JSONObject()
@@ -1225,6 +1262,32 @@ public final class SnapshotBundle {
             }
         }
         return restored;
+    }
+
+    /**
+     * Import signer pins for packages that have none on this device. A pin already here is never
+     * replaced, since changing one is a reviewed action of its own.
+     */
+    @WorkerThread
+    @VisibleForTesting
+    static int importSignerPins(@NonNull Context appContext, @NonNull String json) {
+        JSONArray entries = parseEntries(json, "signer pins");
+        if (entries == null) return 0;
+        Map<String, SignerPin> pins = new LinkedHashMap<>();
+        for (int i = 0; i < entries.length(); ++i) {
+            JSONObject o = entries.optJSONObject(i);
+            String pkg = o != null ? getNonBlankString(o, "package_name") : null;
+            SignerPin pin = pkg != null ? SignerPinStore.parsePin(o) : null;
+            if (pin != null && !pins.containsKey(pkg)) {
+                pins.put(pkg, pin);
+            }
+        }
+        try {
+            return SignerPinEditor.restore(appContext, new SignerPinStore(appContext), pins).size();
+        } catch (IOException e) {
+            Log.w(TAG, "Could not restore signer pins from the snapshot.", e);
+            return 0;
+        }
     }
 
     /** Import per-package freeze methods without overwriting the device's existing choices. */
@@ -1725,6 +1788,7 @@ public final class SnapshotBundle {
         public boolean restoreLogFilters = true;
         public boolean restoreFmFavorites = true;
         public boolean restoreFreezeTypes = true;
+        public boolean restoreSignerPins = true;
         public boolean mergePrefs = true;
         public boolean mergeRules = true;
     }
@@ -1737,9 +1801,10 @@ public final class SnapshotBundle {
         public final int logFiltersCount;
         public final int fmFavoritesCount;
         public final int freezeTypesCount;
+        public final int signerPinsCount;
 
         ExportResult(int prefsCount, int profilesCount, int rulesCount, int opHistoryCount,
-                     int logFiltersCount, int fmFavoritesCount, int freezeTypesCount) {
+                     int logFiltersCount, int fmFavoritesCount, int freezeTypesCount, int signerPinsCount) {
             this.prefsCount = prefsCount;
             this.profilesCount = profilesCount;
             this.rulesCount = rulesCount;
@@ -1747,6 +1812,7 @@ public final class SnapshotBundle {
             this.logFiltersCount = logFiltersCount;
             this.fmFavoritesCount = fmFavoritesCount;
             this.freezeTypesCount = freezeTypesCount;
+            this.signerPinsCount = signerPinsCount;
         }
     }
 
@@ -1764,10 +1830,12 @@ public final class SnapshotBundle {
         public final int logFiltersRestored;
         public final int fmFavoritesRestored;
         public final int freezeTypesRestored;
+        public final int signerPinsRestored;
 
         ImportResult(@NonNull ManifestSummary manifest, @NonNull String sha256, int prefsRestored,
                      int profilesRestored, int tagsRestored, int rulesRestored, int opHistoryRestored,
-                     int logFiltersRestored, int fmFavoritesRestored, int freezeTypesRestored) {
+                     int logFiltersRestored, int fmFavoritesRestored, int freezeTypesRestored,
+                     int signerPinsRestored) {
             this.manifest = manifest;
             this.sha256 = sha256;
             this.prefsRestored = prefsRestored;
@@ -1778,6 +1846,7 @@ public final class SnapshotBundle {
             this.logFiltersRestored = logFiltersRestored;
             this.fmFavoritesRestored = fmFavoritesRestored;
             this.freezeTypesRestored = freezeTypesRestored;
+            this.signerPinsRestored = signerPinsRestored;
         }
     }
 
@@ -1800,6 +1869,7 @@ public final class SnapshotBundle {
         public final int logFiltersCount;
         public final int fmFavoritesCount;
         public final int freezeTypesCount;
+        public final int signerPinsCount;
         /** The keys of the manifest's counts object; only these are checked against the payload. */
         @NonNull
         final Set<String> declaredCounts;
@@ -1809,7 +1879,7 @@ public final class SnapshotBundle {
                         int sourceVersionCode, @NonNull List<String> contents,
                         int prefsCount, int profilesCount, int rulesCount, int opHistoryCount,
                         int logFiltersCount, int fmFavoritesCount, int freezeTypesCount,
-                        @NonNull Set<String> declaredCounts) {
+                        int signerPinsCount, @NonNull Set<String> declaredCounts) {
             this.schemaVersion = schemaVersion;
             this.format = format;
             this.generatedAt = generatedAt;
@@ -1824,6 +1894,7 @@ public final class SnapshotBundle {
             this.logFiltersCount = logFiltersCount;
             this.fmFavoritesCount = fmFavoritesCount;
             this.freezeTypesCount = freezeTypesCount;
+            this.signerPinsCount = signerPinsCount;
             this.declaredCounts = declaredCounts;
         }
 
@@ -1859,6 +1930,10 @@ public final class SnapshotBundle {
             return contents.contains("freeze_types") && freezeTypesCount > 0;
         }
 
+        public boolean hasSignerPins() {
+            return contents.contains("signer_pins") && signerPinsCount > 0;
+        }
+
         @NonNull
         public static ManifestSummary parse(@NonNull String json) throws SnapshotImportException {
             try {
@@ -1880,7 +1955,7 @@ public final class SnapshotBundle {
                     }
                 }
                 int prefsCount = 0, profilesCount = 0, rulesCount = 0, opHistoryCount = 0;
-                int logFiltersCount = 0, fmFavoritesCount = 0, freezeTypesCount = 0;
+                int logFiltersCount = 0, fmFavoritesCount = 0, freezeTypesCount = 0, signerPinsCount = 0;
                 JSONObject counts = obj.optJSONObject("counts");
                 Set<String> declaredCounts = new HashSet<>();
                 if (counts != null) {
@@ -1894,10 +1969,11 @@ public final class SnapshotBundle {
                     logFiltersCount = counts.optInt("log_filters", 0);
                     fmFavoritesCount = counts.optInt("fm_favorites", 0);
                     freezeTypesCount = counts.optInt("freeze_types", 0);
+                    signerPinsCount = counts.optInt("signer_pins", 0);
                 }
                 return new ManifestSummary(schema, format, ts, pkg, ver, code,
                         contents, prefsCount, profilesCount, rulesCount, opHistoryCount,
-                        logFiltersCount, fmFavoritesCount, freezeTypesCount,
+                        logFiltersCount, fmFavoritesCount, freezeTypesCount, signerPinsCount,
                         Collections.unmodifiableSet(declaredCounts));
             } catch (JSONException e) {
                 throw new SnapshotImportException("Manifest is not valid JSON: " + e.getMessage());

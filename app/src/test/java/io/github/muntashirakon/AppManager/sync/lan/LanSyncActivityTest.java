@@ -76,6 +76,8 @@ import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerActivity;
+import io.github.muntashirakon.AppManager.apk.signing.SignerPin;
+import io.github.muntashirakon.AppManager.apk.signing.SignerPinStore;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.types.PackageChangeReceiver;
@@ -758,6 +760,43 @@ public class LanSyncActivityTest {
             assertTrue(received.hasAllFiles());
         } finally {
             host.stop();
+            LanSyncInstallTracker.resetForTesting();
+        }
+    }
+
+    @Test
+    public void aReplaceTheSignerPinRefusesNeverUninstallsTheOldApp() throws Exception {
+        LanSyncActivity activity = mController.get();
+        LanSyncViewModel viewModel = new ViewModelProvider(activity).get(LanSyncViewModel.class);
+        List<String> uninstalled = Collections.synchronizedList(new ArrayList<>());
+        viewModel.setUninstaller((packageName, label) -> {
+            uninstalled.add(packageName);
+            return null;
+        }, Runnable::run);
+        // Pinned to the key of the copy installed here, which the new copy isn't signed by
+        SignerPinStore pins = new SignerPinStore(viewModel.getApplication());
+        pins.put("ademar.textlauncher", new SignerPin(Collections.singletonList(ApkSignatureGateTest.DNSFILTER_SIGNER),
+                1));
+        SyncFixtures.Catalog catalog = new SyncFixtures.Catalog();
+        LanSyncHost host = textLauncherHost(viewModel, catalog);
+        try {
+            LanSyncViewModel.AppRow row = connectAndWaitForRow(viewModel, host.start());
+            viewModel.replace(row);
+
+            String toast = waitFor(() -> ShadowToast.getTextOfLatestToast());
+            assertTrue(toast, toast.startsWith(activity.getString(R.string.lan_sync_replace_pin_refused,
+                    "Text Launcher", "")));
+            assertTrue(toast, toast.contains("ademar.textlauncher is pinned to"));
+            assertTrue("The installed copy stays", uninstalled.isEmpty());
+            assertNull("Nothing goes to the installer", shadowOf(activity).getNextStartedActivity());
+            waitFor(() -> viewModel.getTask().getValue() == null ? Boolean.TRUE : null);
+            ReceivedApkStore.Entry received = ReceivedApkStore.of(viewModel.getApplication())
+                    .find(ReceivedApkStore.keyOf(row.remote));
+            assertNotNull("The new copy waits in Received APKs", received);
+            assertTrue(received.hasAllFiles());
+        } finally {
+            host.stop();
+            pins.clear();
             LanSyncInstallTracker.resetForTesting();
         }
     }

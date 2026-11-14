@@ -13,6 +13,7 @@ import static io.github.muntashirakon.AppManager.apk.installer.PackageInstallerC
 import static io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat.STATUS_FAILURE_SESSION_COMMIT;
 import static io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat.STATUS_FAILURE_SESSION_CREATE;
 import static io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat.STATUS_FAILURE_SESSION_WRITE;
+import static io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat.STATUS_FAILURE_SIGNER_PIN;
 import static io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat.STATUS_FAILURE_STORAGE;
 import static io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat.STATUS_SUCCESS;
 
@@ -416,6 +417,10 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                         null, false, STATUS_SUCCESS);
             }
         });
+        // A reinstall a signer pin refuses never uninstalls the app; this is the dialog the install
+        // would have ended with
+        mModel.signerPinRefusalLiveData().observe(this, refusal -> showInstallationFinishedDialog(
+                mModel.getPackageName(), STATUS_FAILURE_SIGNER_PIN, null, "STATUS_FAILURE_SIGNER_PIN: " + refusal));
         // Init fragment
         mInstallerDialogFragment = new InstallerDialogFragment();
         mInstallerDialogFragment.setCancelable(false);
@@ -1112,7 +1117,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         if (!SelfPermissions.checkSelfOrRemotePermission(Manifest.permission.DELETE_PACKAGES)) {
             mMultiplexer.enableUninstall(true);
         }
-        mModel.uninstallPackage();
+        mModel.uninstallPackage(mInstallerOptions.isSignApkFiles());
     }
 
     /**
@@ -1575,6 +1580,8 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                 return getString(R.string.installer_error_session_abandon);
             case STATUS_FAILURE_INCOMPATIBLE_ROM:
                 return getString(R.string.installer_error_lidl_rom);
+            case STATUS_FAILURE_SIGNER_PIN:
+                return getString(R.string.installer_error_signer_pin);
         }
         return getString(R.string.installer_error_generic);
     }

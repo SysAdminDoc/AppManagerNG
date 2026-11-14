@@ -63,7 +63,6 @@ import java.util.zip.ZipFile;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.StaticDataset;
-import io.github.muntashirakon.AppManager.apk.signing.SigSchemes;
 import io.github.muntashirakon.AppManager.apk.signing.Signer;
 import io.github.muntashirakon.AppManager.apk.splitapk.ApksMetadata;
 import io.github.muntashirakon.AppManager.apk.splitapk.SplitLabelResolver;
@@ -71,7 +70,6 @@ import io.github.muntashirakon.AppManager.fm.FmProvider;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.VMRuntime;
 import io.github.muntashirakon.AppManager.self.filecache.FileCache;
-import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
@@ -950,25 +948,11 @@ public final class ApkFile implements AutoCloseable {
         private File getSignedFile() throws IOException {
             File realFile = getRealCachedFile();
             if (Paths.exists(mSignedFile)) return mSignedFile;
-            mSignedFile = mFileCache.createCachedFile("apk");
-            SigSchemes sigSchemes = Prefs.Signing.getSigSchemes();
-            boolean zipAlign = Prefs.Signing.zipAlign();
-            try {
-                Signer signer = Signer.getInstance(sigSchemes);
-                if (signer.isV4SchemeEnabled()) {
-                    mIdsigFile = mFileCache.createCachedFile("idsig");
-                    signer.setIdsigFile(mIdsigFile);
-                }
-                if (signer.sign(realFile, mSignedFile, -1, zipAlign)
-                        && Signer.verify(sigSchemes, mSignedFile, mIdsigFile)) {
-                    return mSignedFile;
-                }
-                throw new IOException("Failed to sign " + realFile);
-            } catch (IOException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new IOException(e);
-            }
+            // Only a copy that was signed and verified is kept, so a failed attempt isn't reused
+            Signer.SignedApk signed = Signer.signCopy(realFile, mFileCache);
+            mSignedFile = signed.apk;
+            mIdsigFile = signed.idsig;
+            return mSignedFile;
         }
 
         /**
