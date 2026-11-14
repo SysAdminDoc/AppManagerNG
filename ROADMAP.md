@@ -318,16 +318,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
 
 ## Research-Driven Additions (2026-08-23)
 
-### P1
-
-- [ ] P1: Classify dependency CVEs by shipped reachability
-  Why: the aggregate CVE report mixes packaged runtime, transformed wrappers, host tools, and test dependencies, leaving 962 result rows across 79 artifacts without a reliable shipped-risk boundary.
-  Evidence: `build/reports/dependency-check/dependency-check-report.sarif` from 2026-08-22; `scripts/run_dependency_cve_gate.py`; root `build.gradle`; `config/owasp-suppressions.xml`; CVE-2026-11822 and CVE-2026-11824 mappings to AndroidX wrappers and host `sqlite-jdbc`.
-  Touches: `scripts/run_dependency_cve_gate.py`, Gradle dependency-report inputs, reproducible-release evidence, SBOM/APK reachability join, SARIF/HTML outputs, suppression validation tests.
-  Acceptance: the gate produces separate packaged-release and host/build/test sections for FLOSS and full; every blocking finding records module, configuration, resolved artifact, and APK or SBOM reachability evidence; host-only and CPE-name-collision findings cannot be presented as shipped APK code; CVSS policy still fails closed for reachable findings; stale or blanket suppressions fail validation. The six August 2026 SQLite CVEs (CVE-2026-51296, -51297, -51300, -51302, -51303, -51304) are documented upstream as fabricated and must carry that disposition rather than being re-investigated each release.
-  Research 2026-11-13: Guava 32.1.3-android is inside GHSA-xxph-c9ww-hj94 (fixed after 33.7.1), and the fix can't be taken at minSdk 21 because Guava 33.5.0 needs API 23. Record it as held with its reachability: NG would have to Java-deserialize Guava types from untrusted input.
-  Complexity: M
-
 ### P2
 
 - [ ] P2: Move APK icons and embedded media art into the isolated thumbnail process

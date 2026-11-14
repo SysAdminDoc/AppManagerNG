@@ -59,9 +59,10 @@ def dependencyCheckFailBuildOnCvss = Float.parseFloat(
         (findProperty('dependencyCheckFailBuildOnCvss') ?: '11.0').toString())
 
 dependencyCheck {
-    formats = ['HTML', 'SARIF']
+    // JSON is what scripts/run_dependency_cve_gate.py reads to split shipped from host-only findings
+    formats = ['HTML', 'SARIF', 'JSON']
     // Ad-hoc local runs default to report-only (11.0). The maintainer release scripts
-    // always pass -PdependencyCheckFailBuildOnCvss=9.0 and preserve both reports.
+    // always pass -PdependencyCheckFailBuildOnCvss=9.0 and preserve the reports.
     failBuildOnCVSS = dependencyCheckFailBuildOnCvss
     // Dependency-Check 13 requires an NVD API key for online updates. Keep keyed
     // environments current. The release gate (scripts/run_dependency_cve_gate.py) refuses a

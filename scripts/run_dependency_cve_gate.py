@@ -6,6 +6,10 @@ The scan is only as current as Dependency-Check's local vulnerability database, 
 refuses to scan with a database of unknown or excessive age. With ``NVD_API_KEY`` set it first
 refreshes the database and records when that succeeded. Without a key it accepts only a database
 whose recorded refresh is younger than ``MAX_FEED_AGE_HOURS``.
+
+Every suppression and disposition is checked before the scan, and again against what the scan
+found. The findings are then sorted by whether each flavor's release APK carries them (see
+``dependency_cve_reachability``), with the R8 mapping and DEX of each ``--apk`` as evidence.
 """
 
 from __future__ import annotations
@@ -14,6 +18,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -21,13 +26,23 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Callable, Mapping, Sequence
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import dependency_cve_reachability as reachability  # noqa: E402
+
 
 BLOCKING_CVSS = "9.0"
 REPORT_NAMES = {
     "HTML": "dependency-check-report.html",
     "SARIF": "dependency-check-report.sarif",
+    # Read for the reachability split; the other two are for people.
+    "JSON": "dependency-check-report.json",
 }
 RECEIPT_NAME = "dependency-cve-receipt.json"
+REACHABILITY_JSON_NAME = "dependency-cve-reachability.json"
+REACHABILITY_TEXT_NAME = "dependency-cve-reachability.txt"
+SUPPRESSIONS_PATH = Path("config") / "owasp-suppressions.xml"
+DISPOSITIONS_PATH = Path("config") / "dependency-cve-dispositions.json"
+LOCKFILE_PATH = Path("app") / "gradle.lockfile"
 
 # A week keeps a keyless release inside the NVD's normal publication rhythm while still allowing
 # a release to be cut from a machine that refreshed a few days earlier.
@@ -205,6 +220,46 @@ def resolve_gradle_command(gradle_command: Sequence[str], repo_root: Path) -> li
     return resolved
 
 
+def load_policy(repo_root: Path) -> tuple[list, list]:
+    """Reads the suppressions and dispositions, refusing any a reviewer couldn't stand behind."""
+    try:
+        rules = reachability.load_suppressions(repo_root / SUPPRESSIONS_PATH)
+        dispositions = reachability.load_dispositions(repo_root / DISPOSITIONS_PATH)
+    except reachability.ReachabilityError as exc:
+        raise GateError(str(exc)) from exc
+    problems = reachability.check_suppressions(rules) + reachability.check_dispositions(dispositions)
+    if problems:
+        raise GateError("fix the CVE suppressions and dispositions before scanning:\n  "
+                        + "\n  ".join(problems))
+    return rules, dispositions
+
+
+def apk_flavor(apk: Path) -> str:
+    match = re.search(r"(?:^|-)(" + "|".join(reachability.FLAVORS) + r")-release\.apk$", apk.name)
+    if not match:
+        raise GateError(f"{apk.name} doesn't say which flavor it is; the gate takes release APKs "
+                        "named like AppManagerNG-reproducible-floss-release.apk")
+    return match.group(1)
+
+
+def mapping_for(apk: Path) -> Path:
+    """The R8 mapping published beside an APK (see verify_reproducible_release.sh)."""
+    return apk.with_name(apk.stem + "-mapping.txt")
+
+
+def load_apk_evidence(apks: Sequence[Path]) -> dict:
+    evidence = {}
+    for apk in apks:
+        flavor = apk_flavor(apk)
+        if flavor in evidence:
+            raise GateError(f"two {flavor} release APKs were given: {evidence[flavor].apk.name} and {apk.name}")
+        try:
+            evidence[flavor] = reachability.ApkEvidence.load(apk, mapping_for(apk))
+        except reachability.ReachabilityError as exc:
+            raise GateError(str(exc)) from exc
+    return evidence
+
+
 def run_gate(
     gradle_command: Sequence[str],
     repo_root: Path,
@@ -213,6 +268,7 @@ def run_gate(
     data_dir: Path | None = None,
     env: Mapping[str, str] | None = None,
     clock: Callable[[], datetime] = _utc_now,
+    apks: Sequence[Path] = (),
 ) -> list[Path]:
     gradle_command = resolve_gradle_command(gradle_command, repo_root)
     env = os.environ if env is None else env
@@ -222,8 +278,13 @@ def run_gate(
     nested_report_paths = [report_dir / "dependency-check" / name for name in REPORT_NAMES.values()]
     for report in (*report_paths, *nested_report_paths):
         report.unlink(missing_ok=True)
-    for name in (*REPORT_NAMES.values(), RECEIPT_NAME):
+    for name in (*REPORT_NAMES.values(), REACHABILITY_JSON_NAME, REACHABILITY_TEXT_NAME, RECEIPT_NAME):
         (out_dir / name).unlink(missing_ok=True)
+
+    # A rule nobody could have reviewed, or an APK that can't be read, stops the gate before it
+    # spends a scan.
+    rules, dispositions = load_policy(repo_root)
+    evidence = load_apk_evidence(apks)
 
     # Settle the database's age before any advisory is evaluated. A blocked feed leaves no
     # receipt, because nothing was scanned.
@@ -271,18 +332,44 @@ def run_gate(
         })
         published_paths.append(destination)
 
+    try:
+        findings, purls = reachability.load_report(out_dir / REPORT_NAMES["JSON"])
+        lockfile = reachability.load_lockfile(repo_root / LOCKFILE_PATH)
+    except reachability.ReachabilityError as exc:
+        raise GateError(str(exc)) from exc
+    problems = (reachability.check_suppressions_against_scan(rules, purls, findings)
+                + reachability.check_dispositions_against_scan(dispositions, purls, findings))
+    classification = reachability.classify(findings, rules, dispositions, lockfile, evidence,
+                                           float(BLOCKING_CVSS))
+    classification["validationProblems"] = problems
+    reachability_json = out_dir / REACHABILITY_JSON_NAME
+    reachability_json.write_text(json.dumps(classification, indent=2) + "\n", encoding="utf-8")
+    reachability_text = out_dir / REACHABILITY_TEXT_NAME
+    reachability_text.write_text(reachability.render_text(classification), encoding="utf-8")
+    published_paths += [reachability_json, reachability_text]
+    blocking = [f"{entry['id']} in {entry['artifact']}" for entry in classification["blocking"]]
+
     receipt_path = out_dir / RECEIPT_NAME
     receipt_path.write_text(
         json.dumps(
             {
-                "schemaVersion": 2,
+                "schemaVersion": 3,
                 "scanner": "OWASP Dependency-Check",
                 "gradleTask": "dependencyCheckAggregate",
                 "blockingCvss": BLOCKING_CVSS,
-                "passed": result.returncode == 0,
+                "passed": result.returncode == 0 and not problems and not blocking,
                 "scannerExitCode": result.returncode,
                 "vulnerabilityFeed": feed,
                 "reports": reports,
+                "reachability": {
+                    "outputs": [{"name": path.name, "sha256": _sha256(path)}
+                                for path in (reachability_json, reachability_text)],
+                    "apks": [{"flavor": flavor, "apk": item.apk.name, "sha256": _sha256(item.apk),
+                              "mapping": item.mapping.name, "mappingSha256": _sha256(item.mapping)}
+                             for flavor, item in sorted(evidence.items())],
+                    **reachability.summarize(classification),
+                    "validationProblems": problems,
+                },
             },
             indent=2,
         )
@@ -295,6 +382,13 @@ def run_gate(
             "dependency CVE gate failed; reports were retained, but release is blocked "
             "until the scanner succeeds with no unsuppressed CVSS 9.0+ findings"
         )
+    if problems:
+        raise GateError("the scan shows CVE suppressions or dispositions that no longer fit; "
+                        "release is blocked until they're fixed:\n  " + "\n  ".join(problems))
+    if blocking:
+        # The scanner and this classification disagree, so neither is trusted to pass.
+        raise GateError(f"the scanner passed, but these findings are unsuppressed at CVSS {BLOCKING_CVSS} "
+                        "or more; release is blocked:\n  " + "\n  ".join(blocking))
     return published_paths
 
 
@@ -305,6 +399,9 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser.add_argument("--repo-root", type=Path, default=repo_root)
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--report-dir", type=Path)
+    parser.add_argument("--apk", type=Path, action="append", default=[],
+                        help="a release APK whose R8 mapping sits beside it as <name>-mapping.txt; "
+                             "give one per flavor")
     return parser.parse_args(argv)
 
 
@@ -315,8 +412,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     report_dir = args.report_dir
     if report_dir is not None and not report_dir.is_absolute():
         report_dir = repo_root / report_dir
+    apks = [apk if apk.is_absolute() else repo_root / apk for apk in args.apk]
     try:
-        paths = run_gate([args.gradle_cmd], repo_root, out_dir, report_dir)
+        paths = run_gate([args.gradle_cmd], repo_root, out_dir, report_dir, apks=apks)
     except GateError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
