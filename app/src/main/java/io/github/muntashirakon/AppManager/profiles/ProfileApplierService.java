@@ -29,7 +29,6 @@ import io.github.muntashirakon.AppManager.intercept.IntentCompat;
 import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler;
 import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler.NotificationManagerInfo;
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
-import io.github.muntashirakon.AppManager.progress.QueuedProgressHandler;
 import io.github.muntashirakon.AppManager.profiles.struct.ProfileApplierResult;
 import io.github.muntashirakon.AppManager.profiles.trigger.RoutineScheduler;
 import io.github.muntashirakon.AppManager.self.SelfBatteryOptimization;
@@ -55,7 +54,7 @@ public class ProfileApplierService extends ForegroundService {
         return intent;
     }
 
-    private QueuedProgressHandler mProgressHandler;
+    private NotificationProgressHandler mProgressHandler;
     private NotificationProgressHandler.NotificationInfo mNotificationInfo;
     private PowerManager.WakeLock mWakeLock;
 
@@ -72,7 +71,10 @@ public class ProfileApplierService extends ForegroundService {
 
     @Override
     public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
-        if (isWorking()) return super.onStartCommand(intent, flags, startId);
+        if (isWorking()) {
+            mProgressHandler.onStartedAgain(this);
+            return super.onStartCommand(intent, flags, startId);
+        }
         NotificationManagerInfo notificationManagerInfo = new NotificationManagerInfo(CHANNEL_ID,
                 "Profile Applier", NotificationManagerCompat.IMPORTANCE_LOW);
         mProgressHandler = new NotificationProgressHandler(this,
@@ -181,6 +183,11 @@ public class ProfileApplierService extends ForegroundService {
         // Set profile name in the ongoing notification
         mNotificationInfo.setTitle(item != null ? item.getProfileName() : null);
         mProgressHandler.onProgressStart(-1, 0, mNotificationInfo);
+    }
+
+    @Override
+    protected void onStoppedUnfinished(boolean queueDropped) {
+        mProgressHandler.onStoppedUnfinished(getText(R.string.profiles), queueDropped);
     }
 
     @Override

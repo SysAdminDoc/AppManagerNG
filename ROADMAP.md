@@ -765,13 +765,6 @@ Sources and reasoning: RESEARCH.md (2026-11-13). The four crash fixes come first
 
 ### P1
 
-- [ ] P1: Keep running when Android refuses a foreground service start
-  Why: `ForegroundService.start()` calls `ServiceCompat.startForeground` with no guard, so a `SecurityException` or `ForegroundServiceStartNotAllowedException` kills the app mid-operation. Upstream #2066 (2026-10-17) is that crash on Android 17 (PixelOS) during Advanced pause, then Freeze, from the specialUse freeze service.
-  Evidence: `types/ForegroundService.java:36-40`. Callers: `accessibility/topapp/TopAppOverlayService.java:154`, `apk/behavior/FreezeUnfreezeService.java:134`, `progress/NotificationProgressHandler.java:112`, `servermanager/WifiWaitService.java:188`, `session/SessionMonitoringService.java:104`. `adb/AdbPairingService.java:237` and `:309` start their own.
-  Touches: `ForegroundService.java`, the callers above, tests.
-  Acceptance: a refused start stops that service cleanly, logs why and tells the user in a toast or notification. The operation it was started for either finishes without the service or reports that it didn't run, never half done without a word. A Robolectric test that makes `startForeground` throw shows no crash for each caller.
-  Complexity: M
-
 - [ ] P1: Keep every install sent while the app lock screen is up
   Why: when another app sends an APK while AppManagerNG's app lock screen is showing, `onNewIntent` replaces the activity's intent and queues it, and `onAuthenticated` later queues `getIntent()`, which is now the second APK. The first install is lost and the second runs twice.
   Evidence: `apk/installer/PackageInstallerActivity.java:629-660` (`setIntent`, then `enqueue`), `:324-341` (`onAuthenticated` queues `getIntent()`), `:215-224` and `:286` (a plain `LinkedList` with no dedupe). `BaseActivity.java:76-97` holds `onAuthenticated` until authentication finishes, and the activity is `singleInstance`. Upstream fixed the same race in c4c81f492.

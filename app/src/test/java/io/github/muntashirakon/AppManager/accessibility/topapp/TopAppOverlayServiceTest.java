@@ -165,6 +165,22 @@ public class TopAppOverlayServiceTest {
     }
 
     @Test
+    public void aStartReachingARefusedOverlayTriesTheForegroundAgain() {
+        TopAppOverlayService service = mController.get();
+        shadowOf(service).setThrowInStartForeground(new IllegalStateException("refused"));
+        mController.create().startCommand(0, 1);
+        // Only its own start: one already on its way keeps the service up
+        assertEquals(1, shadowOf(service).getStopSelfResultId());
+
+        // That start has to reach startForeground() too, or Android ends the app
+        shadowOf(service).setThrowInStartForeground(null);
+        service.onStartCommand(new Intent(service, TopAppOverlayService.class), 0, 2);
+
+        assertNotNull(shadowOf(service).getLastForegroundNotification());
+        assertSame("allowed this time, the bubble comes up", service, mMultiplexer.getTopAppListener());
+    }
+
+    @Test
     public void losingTheOverlayPermissionStopsTheBubbleAndSaysWhy() {
         TopAppOverlayService service = startService();
         ShadowLooper.idleMainLooper();

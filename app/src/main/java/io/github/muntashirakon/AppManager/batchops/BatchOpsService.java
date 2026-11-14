@@ -33,7 +33,6 @@ import io.github.muntashirakon.AppManager.main.MainActivity;
 import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler;
 import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler.NotificationManagerInfo;
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
-import io.github.muntashirakon.AppManager.progress.QueuedProgressHandler;
 import io.github.muntashirakon.AppManager.self.SelfBatteryOptimization;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.types.ForegroundService;
@@ -101,7 +100,7 @@ public class BatchOpsService extends ForegroundService {
         return sServiceWorking.get();
     }
 
-    private QueuedProgressHandler mProgressHandler;
+    private NotificationProgressHandler mProgressHandler;
     private NotificationProgressHandler.NotificationInfo mNotificationInfo;
     private PowerManager.WakeLock mWakeLock;
     private volatile boolean mJournalPending;
@@ -123,7 +122,10 @@ public class BatchOpsService extends ForegroundService {
 
     @Override
     public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
-        if (isWorking()) return super.onStartCommand(intent, flags, startId);
+        if (isWorking()) {
+            mProgressHandler.onStartedAgain(this);
+            return super.onStartCommand(intent, flags, startId);
+        }
         sServiceWorking.set(true);
         BatchQueueItem item = getQueueItem(intent);
         NotificationManagerInfo notificationManagerInfo = new NotificationManagerInfo(CHANNEL_ID,
@@ -214,6 +216,12 @@ public class BatchOpsService extends ForegroundService {
         int op = item != null ? item.getOp() : BatchOpsManager.OP_NONE;
         mNotificationInfo.setTitle(getDesiredOpTitle(this, op)).setOperationName(getHeader(item));
         mProgressHandler.onProgressStart(-1, 0, mNotificationInfo);
+    }
+
+    @Override
+    protected void onStoppedUnfinished(boolean queueDropped) {
+        // The journal is marked interrupted in onDestroy, so the app offers to pick the operation up again
+        mProgressHandler.onStoppedUnfinished(mNotificationInfo.getOperationName(), queueDropped);
     }
 
     @Override

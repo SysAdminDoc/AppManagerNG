@@ -11,8 +11,10 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 
 import androidx.annotation.DrawableRes;
+import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationChannelCompat;
 import androidx.core.app.NotificationCompat;
@@ -25,11 +27,14 @@ import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.types.ForegroundService;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
+import io.github.muntashirakon.AppManager.utils.Utils;
 
 public class NotificationProgressHandler extends QueuedProgressHandler {
     private static final String TAG_PROGRESS = null;
@@ -56,7 +61,17 @@ public class NotificationProgressHandler extends QueuedProgressHandler {
     private NotificationInfo mLastProgressNotification = null;
     private volatile int mLastMax = MAX_INDETERMINATE;
     private volatile float mLastProgress = 0;
-    private boolean mAttachedToService;
+    // These three are written on the main thread and read by jobs on their own threads
+    private volatile boolean mAttachedToService;
+    // Android wouldn't put the service in the foreground, so its progress goes out as a normal notification
+    private volatile boolean mRefused;
+    private volatile boolean mDetached;
+    // A sub-progress handler follows its parent's service, which takes its notification down with its own
+    @Nullable
+    private final NotificationProgressHandler mParent;
+    private final Set<NotificationProgressHandler> mChildren = new CopyOnWriteArraySet<>();
+    @StringRes
+    private int mRefusedMessage = R.string.foreground_service_refused_keep_open;
     // Queue notifications still showing, by the message that posted them (main thread only)
     private final Map<Object, Integer> mQueueNotificationIds = new IdentityHashMap<>();
 
@@ -64,6 +79,16 @@ public class NotificationProgressHandler extends QueuedProgressHandler {
                                        @NonNull NotificationManagerInfo progressNotificationManagerInfo,
                                        @NonNull NotificationManagerInfo completionNotificationManagerInfo,
                                        @Nullable NotificationManagerInfo queueNotificationManagerInfo) {
+        this(context, progressNotificationManagerInfo, completionNotificationManagerInfo, queueNotificationManagerInfo,
+                null);
+    }
+
+    private NotificationProgressHandler(@NonNull Context context,
+                                        @NonNull NotificationManagerInfo progressNotificationManagerInfo,
+                                        @NonNull NotificationManagerInfo completionNotificationManagerInfo,
+                                        @Nullable NotificationManagerInfo queueNotificationManagerInfo,
+                                        @Nullable NotificationProgressHandler parent) {
+        mParent = parent;
         mContext = context;
         mProgressNotificationManagerInfo = progressNotificationManagerInfo;
         mCompletionNotificationManagerInfo = completionNotificationManagerInfo;
@@ -97,11 +122,17 @@ public class NotificationProgressHandler extends QueuedProgressHandler {
         }
     }
 
+    /**
+     * What the toast says when Android won't put the service in the foreground. Set it before {@link #onAttach}.
+     */
+    public void setRefusedMessage(@StringRes int message) {
+        mRefusedMessage = message;
+    }
+
     @Override
     public void onAttach(@Nullable Service service, @NonNull Object message) {
         mLastProgressNotification = (NotificationInfo) message;
         if (service != null) {
-            mAttachedToService = true;
             Notification notification = mLastProgressNotification
                     .getBuilder(mContext, mProgressNotificationManagerInfo)
                     .setLocalOnly(true)
@@ -109,9 +140,69 @@ public class NotificationProgressHandler extends QueuedProgressHandler {
                     .setOnlyAlertOnce(true)
                     .setProgress(0, 0, false)
                     .build();
-            ForegroundService.start(service, mProgressNotificationId, notification,
+            // Refused, the work still runs and its progress goes out as a normal notification, but Android may stop
+            // a service that isn't in the foreground once the app leaves the screen
+            mAttachedToService = ForegroundService.start(service, mProgressNotificationId, notification,
                     ForegroundService.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+            mRefused = !mAttachedToService;
+            // The toast asks the user to stay in the app, which means nothing to someone who isn't in it, as when a
+            // routine applies a profile. If Android does stop the work, onStoppedUnfinished() says so.
+            if (mRefused && Utils.isAppInForeground()) {
+                ForegroundService.tellRefused(mRefusedMessage);
+            }
         }
+    }
+
+    /**
+     * The service got another start while it works, as when something is queued. After a refused
+     * {@link #onAttach}, every such start has to try the foreground again, or Android ends the app once the start's
+     * time runs out. It tries quietly, and if Android agrees this time the progress notification becomes the
+     * service's own.
+     */
+    @MainThread
+    public void onStartedAgain(@NonNull Service service) {
+        if (!mRefused || mLastProgressNotification == null) {
+            return;
+        }
+        // Built from the last update, text included, so the progress doesn't lose its text until the next one
+        Notification notification = progressBuilder(mLastMax, mLastProgress).setOngoing(true).build();
+        mAttachedToService = ForegroundService.start(service, mProgressNotificationId, notification,
+                ForegroundService.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+        mRefused = !mAttachedToService;
+    }
+
+    /**
+     * Android stopped the service before its work was done (see
+     * {@link ForegroundService#onStoppedUnfinished(boolean)}). Takes down the progress and anything still shown as
+     * queued, and says what may not have finished.
+     */
+    @MainThread
+    public void onStoppedUnfinished(@Nullable CharSequence operationName, boolean queueDropped) {
+        mDetached = true;
+        mProgressNotificationManager.cancel(TAG_PROGRESS, mProgressNotificationId);
+        for (NotificationProgressHandler child : mChildren) {
+            // Each app's own progress in a batch, which stops updating now that this one is detached
+            child.mProgressNotificationManager.cancel(TAG_PROGRESS, child.mProgressNotificationId);
+        }
+        mChildren.clear();
+        if (mQueueNotificationManager != null) {
+            for (Integer id : mQueueNotificationIds.values()) {
+                mQueueNotificationManager.cancel(TAG_QUEUE, id);
+            }
+        }
+        mQueueNotificationIds.clear();
+        Notification notification = new NotificationInfo()
+                .setAutoCancel(true)
+                .setTime(System.currentTimeMillis())
+                .setOperationName(operationName)
+                .setTitle(mContext.getString(R.string.foreground_service_stopped_title))
+                .setBody(mContext.getString(queueDropped ? R.string.foreground_service_stopped_with_queue
+                        : R.string.foreground_service_stopped))
+                .setStyle(new NotificationCompat.BigTextStyle())
+                .getBuilder(mContext, mCompletionNotificationManagerInfo)
+                .build();
+        notify(mContext, mCompletionNotificationManager, TAG_ALERT, NotificationUtils.nextNotificationId(TAG_ALERT),
+                notification);
     }
 
     @Override
@@ -128,16 +219,27 @@ public class NotificationProgressHandler extends QueuedProgressHandler {
         }
         mLastMax = max;
         mLastProgress = current;
-        CharSequence progressText = progressTextInterface.getProgressText(this);
-        boolean indeterminate = max == -1;
+        if (isDetached()) {
+            // The service is gone, and a job it left running mustn't put its progress back up
+            return;
+        }
+        // Ongoing only while it's the service's own notification: a plain one left by a killed process could
+        // otherwise never be dismissed
+        NotificationCompat.Builder builder = progressBuilder(max, current).setOngoing(!isRefused());
+        notify(mContext, mProgressNotificationManager, TAG_PROGRESS, mProgressNotificationId, builder.build());
+    }
+
+    @NonNull
+    private NotificationCompat.Builder progressBuilder(int max, float current) {
+        boolean indeterminate = max == MAX_INDETERMINATE;
         int newMax = Math.max(max, 0);
         int newCurrent = max < 0 ? 0 : (int) current;
-        NotificationCompat.Builder builder = mLastProgressNotification
+        NotificationCompat.Builder builder = Objects.requireNonNull(mLastProgressNotification)
                 .getBuilder(mContext, mProgressNotificationManagerInfo)
                 .setLocalOnly(true)
-                .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setProgress(newMax, newCurrent, indeterminate);
+        CharSequence progressText = progressTextInterface.getProgressText(this);
         if (progressText != null) {
             if (max > 0) {
                 builder.setContentText(progressText);
@@ -147,11 +249,22 @@ public class NotificationProgressHandler extends QueuedProgressHandler {
                 builder.setContentText(mContext.getString(R.string.operation_running));
             }
         }
-        notify(mContext, mProgressNotificationManager, TAG_PROGRESS, mProgressNotificationId, builder.build());
+        return builder;
+    }
+
+    private boolean isRefused() {
+        return mParent != null ? mParent.mRefused : mRefused;
+    }
+
+    private boolean isDetached() {
+        return mDetached || (mParent != null && mParent.mDetached);
     }
 
     @Override
     public void onResult(@Nullable Object message) {
+        if (mParent != null) {
+            mParent.mChildren.remove(this);
+        }
         if (!mAttachedToService) {
             mProgressNotificationManager.cancel(TAG_PROGRESS, mProgressNotificationId);
         } else {
@@ -171,6 +284,7 @@ public class NotificationProgressHandler extends QueuedProgressHandler {
     public void onDetach(@Nullable Service service) {
         if (service != null) {
             mAttachedToService = false;
+            mDetached = true;
             mProgressNotificationManager.cancel(TAG_PROGRESS, mProgressNotificationId);
         }
     }
@@ -178,8 +292,10 @@ public class NotificationProgressHandler extends QueuedProgressHandler {
     @Override
     @NonNull
     public ProgressHandler newSubProgressHandler() {
-        return new NotificationProgressHandler(mContext, mProgressNotificationManagerInfo,
-                mCompletionNotificationManagerInfo, null);
+        NotificationProgressHandler child = new NotificationProgressHandler(mContext, mProgressNotificationManagerInfo,
+                mCompletionNotificationManagerInfo, null, this);
+        mChildren.add(child);
+        return child;
     }
 
     @Override
@@ -333,6 +449,11 @@ public class NotificationProgressHandler extends QueuedProgressHandler {
         public NotificationInfo setOperationName(@Nullable CharSequence operationName) {
             this.operationName = operationName;
             return this;
+        }
+
+        @Nullable
+        public CharSequence getOperationName() {
+            return operationName;
         }
 
         public NotificationInfo setStyle(@Nullable NotificationCompat.Style style) {

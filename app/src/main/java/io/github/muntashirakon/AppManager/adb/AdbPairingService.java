@@ -39,6 +39,7 @@ import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.types.ForegroundService;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.adb.android.AdbMdns;
 
@@ -84,6 +85,9 @@ public class AdbPairingService extends Service {
 
     private NotificationCompat.Builder mNotificationBuilder;
     private boolean mStartedSearching = false;
+    // Main thread only
+    private boolean mInForeground;
+    private int mLastStartId;
     private AdbUtils.Scanner mAdbMdnsPairing;
     private long mSearchStartedAt;
     private PortSearchFactory mPortSearchFactory = listener -> {
@@ -150,9 +154,15 @@ public class AdbPairingService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        mLastStartId = startId;
         if (intent == null || intent.getAction() == null) {
             // Invalid intent
             return START_NOT_STICKY;
+        }
+        if (!mInForeground) {
+            // Each start from startForegroundService() must reach startForeground(), even one that stops the service
+            // or only updates it, or Android ends the app. A refused call counts as well.
+            goForeground();
         }
         switch (intent.getAction()) {
             // Not redelivered: a restarted process has no one waiting on the pairing, and the
@@ -218,6 +228,17 @@ public class AdbPairingService extends Service {
         if (mStartedSearching) {
             return;
         }
+        PendingIntent stopPendingIntent = getStopIntent();
+        NotificationCompat.Action stopAction = new NotificationCompat.Action.Builder(null, getString(R.string.adb_pairing_stop_searching), stopPendingIntent).build();
+        mNotificationBuilder.setContentText(getText(R.string.adb_pairing_searching_for_port))
+                .clearActions()
+                .addAction(stopAction);
+        // The search lives in this notification, so without it there's nothing for the user to follow
+        if (!goForeground()) {
+            ForegroundService.tellRefused(R.string.adb_pairing_refused);
+            stopPairingService();
+            return;
+        }
         mStartedSearching = true;
         int generation = ++mSearchGeneration;
         restartSearchTimeout();
@@ -229,13 +250,6 @@ public class AdbPairingService extends Service {
                 ThreadUtils.postOnMainThread(() -> onPairingPortFound(generation, port));
             }
         });
-        PendingIntent stopPendingIntent = getStopIntent();
-        NotificationCompat.Action stopAction = new NotificationCompat.Action.Builder(null, getString(R.string.adb_pairing_stop_searching), stopPendingIntent).build();
-        mNotificationBuilder.setContentText(getText(R.string.adb_pairing_searching_for_port))
-                .clearActions()
-                .addAction(stopAction);
-        ServiceCompat.startForeground(this, NOTIFICATION_ID, mNotificationBuilder.build(),
-                FOREGROUND_SERVICE_TYPE_DATA_SYNC);
         mSearchStartedAt = SystemClock.elapsedRealtime();
         mAdbMdnsPairing.start();
     }
@@ -306,8 +320,8 @@ public class AdbPairingService extends Service {
         AdbPairingSession.pairing(port);
         mNotificationBuilder.setContentText(getString(R.string.adb_pairing_pairing_in_progress))
                 .clearActions();
-        ServiceCompat.startForeground(this, NOTIFICATION_ID, mNotificationBuilder.build(),
-                FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+        // Refused or not, the pairing goes ahead: it takes seconds and reports its result either way
+        goForeground();
         ThreadUtils.postOnBackgroundThread(() -> {
             boolean isSuccess;
             boolean timedOut = false;
@@ -323,7 +337,7 @@ public class AdbPairingService extends Service {
             if (isSuccess) {
                 AdbPairingSession.succeeded(port);
                 mNotificationBuilder.setContentText(getString(R.string.paired_successfully)).clearActions();
-                stopSelf();
+                ThreadUtils.postOnMainThread(this::finishPaired);
             } else {
                 if (timedOut) {
                     AdbPairingSession.timedOut(port);
@@ -370,7 +384,34 @@ public class AdbPairingService extends Service {
         cancelPairing();
         stopSearching();
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
-        stopSelf();
+        mInForeground = false;
+        // A start that came in meanwhile keeps the service up to handle it. Stopping anyway while it waits for
+        // startForeground() would end the app.
+        stopSelfResult(mLastStartId);
+    }
+
+    /**
+     * Leaves "Paired successfully" up and stops for the latest start, read now rather than when the pairing began. A
+     * start the service handled during the pairing, such as a search asked for from the code screen, must not keep it
+     * running, and only one still on its way does.
+     */
+    @MainThread
+    private void finishPaired() {
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_DETACH);
+        mInForeground = false;
+        stopSelfResult(mLastStartId);
+    }
+
+    /**
+     * Shows the notification as it stands, as the service's own.
+     *
+     * @return {@code false} if Android refused
+     */
+    @MainThread
+    private boolean goForeground() {
+        mInForeground = ForegroundService.start(this, NOTIFICATION_ID, mNotificationBuilder.build(),
+                FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+        return mInForeground;
     }
 
     @NonNull

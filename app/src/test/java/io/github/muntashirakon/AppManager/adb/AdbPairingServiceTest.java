@@ -11,6 +11,7 @@ import static org.robolectric.Shadows.shadowOf;
 
 import android.Manifest;
 import android.app.Application;
+import android.app.ForegroundServiceStartNotAllowedException;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.Service;
@@ -26,6 +27,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ServiceController;
 import org.robolectric.shadows.ShadowBuild;
 import org.robolectric.shadows.ShadowLooper;
+import org.robolectric.shadows.ShadowToast;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -66,6 +68,58 @@ public class AdbPairingServiceTest {
             String text = pairingPortText(app, 37002);
             assertNotNull(text);
             assertTrue(text, text.contains("37002"));
+        } finally {
+            controller.destroy();
+        }
+    }
+
+    @Test
+    public void aRefusedPairingSearchNeverStartsAndCancelsTheSession() {
+        Application app = ApplicationProvider.getApplicationContext();
+        shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
+        ShadowToast.reset();
+        ServiceController<AdbPairingService> controller = Robolectric.buildService(AdbPairingService.class).create();
+        AdbPairingService service = controller.get();
+        try {
+            int generation = service.getSearchGeneration();
+            // The session is shared by every test, so it must not start out cancelled already
+            AdbPairingSession.searching();
+            assertEquals(AdbPairingState.Status.SEARCHING, AdbPairingSession.getCurrentState().getStatus());
+            // Android 12+ refuses a foreground start from the background (upstream #2066)
+            shadowOf(service).setThrowInStartForeground(new ForegroundServiceStartNotAllowedException(
+                    "Service.startForeground() not allowed due to mAllowStartForeground false"));
+
+            service.onStartCommand(AdbPairingService.getStartSearchingIntent(app), 0, 1);
+            shadowOf(Looper.getMainLooper()).idle();
+
+            assertEquals("no search was started", generation, service.getSearchGeneration());
+            assertTrue(shadowOf(service).isStoppedBySelf());
+            assertEquals("stopped for the start it was given", 1, shadowOf(service).getStopSelfResultId());
+            assertEquals(app.getString(R.string.adb_pairing_refused), ShadowToast.getTextOfLatestToast());
+            assertEquals(AdbPairingState.Status.CANCELLED, AdbPairingSession.getCurrentState().getStatus());
+        } finally {
+            controller.destroy();
+        }
+    }
+
+    @Test
+    public void aStopSentToAServiceOutOfTheForegroundStillCallsStartForeground() {
+        Application app = ApplicationProvider.getApplicationContext();
+        shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
+        ServiceController<AdbPairingService> controller = Robolectric.buildService(AdbPairingService.class).create();
+        AdbPairingService service = controller.get();
+        try {
+            // As after a refused pairing: the Stop and swipe-away intents come through startForegroundService(),
+            // and Android ends the app if the service stops without calling startForeground() for them
+            assertEquals(0, shadowOf(service).getLastForegroundNotificationId());
+
+            service.onStartCommand(AdbPairingService.getStopSearchingIntent(app), 0, 5);
+            shadowOf(Looper.getMainLooper()).idle();
+
+            // The stop removes the notification again, but the id shows startForeground() ran
+            assertEquals("startForeground was called for the stop", 1, shadowOf(service).getLastForegroundNotificationId());
+            assertTrue(shadowOf(service).isForegroundStopped());
+            assertEquals(5, shadowOf(service).getStopSelfResultId());
         } finally {
             controller.destroy();
         }
@@ -135,6 +189,41 @@ public class AdbPairingServiceTest {
             assertFalse(shadowOf(service).isStoppedBySelf());
             ShadowLooper.idleMainLooper(2, TimeUnit.MINUTES);
             assertTrue(shadowOf(service).isStoppedBySelf());
+        } finally {
+            pairingEnds.countDown();
+            controller.destroy();
+        }
+    }
+
+    @Test(timeout = 60_000)
+    public void aSearchAskedForDuringThePairingDoesNotKeepThePairedServiceRunning() throws Exception {
+        Application app = ApplicationProvider.getApplicationContext();
+        shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
+        ServiceController<AdbPairingService> controller = Robolectric.buildService(AdbPairingService.class).create();
+        AdbPairingService service = controller.get();
+        CountDownLatch pairingEnds = new CountDownLatch(1);
+        service.setPairer((host, port, code) -> pairingEnds.await());
+        try {
+            service.onStartCommand(AdbPairingService.getStartSearchingIntent(app), 0, 1);
+            AdbPairingRequest request = AdbPairingRequest.create(37005, "123456");
+            assertNotNull(request);
+            service.onStartCommand(AdbPairingService.getStartPairingIntent(app, request), 0, 2);
+            // Tapping "Pairing in progress" opens the code screen, which asks for a search. The one already running
+            // takes it, so this start leaves nothing behind to stop the service later.
+            service.onStartCommand(AdbPairingService.getStartSearchingIntent(app), 0, 3);
+
+            pairingEnds.countDown();
+            long deadline = System.currentTimeMillis() + 20_000;
+            while (!(shadowOf(service).isStoppedBySelf() && pairedText(app) != null)
+                    && System.currentTimeMillis() < deadline) {
+                Thread.sleep(20);
+                shadowOf(Looper.getMainLooper()).idle();
+            }
+
+            assertEquals("stopped for the start handled last", 3, shadowOf(service).getStopSelfResultId());
+            assertTrue(shadowOf(service).isForegroundStopped());
+            assertFalse("the success notification is left up", shadowOf(service).getNotificationShouldRemoved());
+            assertNotNull(pairedText(app));
         } finally {
             pairingEnds.countDown();
             controller.destroy();
@@ -218,6 +307,16 @@ public class AdbPairingServiceTest {
             }
         }
         return false;
+    }
+
+    private static String pairedText(Context context) {
+        NotificationManager manager = context.getSystemService(NotificationManager.class);
+        Notification notification = shadowOf(manager).getNotification(NOTIFICATION_ID);
+        if (notification == null) {
+            return null;
+        }
+        CharSequence text = notification.extras.getCharSequence(Notification.EXTRA_TEXT);
+        return text != null && context.getString(R.string.paired_successfully).contentEquals(text) ? text.toString() : null;
     }
 
     private static String pairingPortText(Context context, int port) {

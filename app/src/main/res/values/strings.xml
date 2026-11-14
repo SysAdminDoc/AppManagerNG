@@ -3369,6 +3369,17 @@
     <string name="top_app_overlay_started">Top app bubble is on.</string>
     <string name="top_app_overlay_stopped">Top app bubble is off.</string>
     <string name="top_app_overlay_failed">Could not show the top app bubble.</string>
+    <string name="foreground_service_refused_keep_open">Android won\'t let this task run in the background. Stay in AppManagerNG until it finishes, or it may stop partway.</string>
+    <string name="foreground_service_stopped_title">Didn\'t finish</string>
+    <string name="foreground_service_stopped">Android stopped this in the background, so it may not have finished. Check the result before you run it again.</string>
+    <string name="foreground_service_stopped_with_queue">Android stopped this in the background, so it may not have finished, and what was waiting in the queue didn\'t start. Run those again from AppManagerNG.</string>
+    <string name="log_recording_refused">Android won\'t let AppManagerNG record logs in the background, so the recording stops soon after you leave the app. What it caught until then is saved.</string>
+    <string name="freeze_on_lock_refused">Android didn\'t let AppManagerNG wait for your phone to lock, so apps you unfroze for now won\'t freeze again on their own. Tap each app\'s Tap to freeze notification when you\'re done.</string>
+    <string name="auto_lock_refused">Android didn\'t let AppManagerNG watch for your phone locking, so the app won\'t lock itself. It stays unlocked until Android closes it.</string>
+    <string name="session_lock_refused">Android didn\'t let AppManagerNG show its notification, so there\'s no Lock app button this time. The app locks again once Android closes it.</string>
+    <string name="persistent_session_refused">Android didn\'t let AppManagerNG keep running in the background, so it may take a moment longer to open next time.</string>
+    <string name="wifi_wait_refused">Android didn\'t let AppManagerNG wait for Wi-Fi in the background, so it won\'t reconnect to wireless debugging on its own. Open the app to connect.</string>
+    <string name="adb_pairing_refused">Android didn\'t let AppManagerNG search for the pairing port, so pairing stopped. Try again with the app open. If it keeps happening, set AppManagerNG\'s battery use to Unrestricted.</string>
     <string name="top_app_overlay_needs_overlay">Allow display over other apps so the bubble can show, then turn it on again.</string>
     <string name="top_app_overlay_needs_usage_access">Allow usage access so the bubble can see the top app, then turn it on again. The accessibility service works too, and also catches ads drawn as overlays.</string>
     <string name="top_app_overlay_needs_accessibility">Turn on the accessibility service so the bubble can see the top app, then turn it on again.</string>

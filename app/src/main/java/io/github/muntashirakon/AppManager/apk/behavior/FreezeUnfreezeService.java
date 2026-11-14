@@ -66,6 +66,7 @@ public class FreezeUnfreezeService extends Service {
     @Nullable
     private ScreenLockChecker mScreenLockChecker;
     private boolean mDestroyed;
+    private boolean mScreenLockedReceiverRegistered;
     // Set first thing in onDestroy. A freeze pass checks it between packages, because onDestroy waits
     // for a running pass when it closes the checker and must not wait for all of them.
     private volatile boolean mStopping;
@@ -131,12 +132,20 @@ public class FreezeUnfreezeService extends Service {
                 .setSubText(getText(R.string.freeze_unfreeze))
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .addAction(stopServiceAction);
-        ForegroundService.start(this, NotificationUtils.nextNotificationId(null), builder.build(),
-                ForegroundService.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+        if (!ForegroundService.start(this, NotificationUtils.nextNotificationId(null), builder.build(),
+                ForegroundService.FOREGROUND_SERVICE_TYPE_DATA_SYNC)) {
+            // Each app's "Tap to freeze" notification stays, so freezing it by hand still works
+            ForegroundService.tellRefused(R.string.freeze_on_lock_refused);
+            // A start already on its way tries again rather than landing in a service that's stopping
+            mIsWorking = false;
+            stopSelfResult(startId);
+            return START_NOT_STICKY;
+        }
         IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_ON);
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         filter.addAction(Intent.ACTION_USER_PRESENT);
         ContextCompat.registerReceiver(this, mScreenLockedReceiver, filter, ContextCompat.RECEIVER_EXPORTED);
+        mScreenLockedReceiverRegistered = true;
         return START_NOT_STICKY;
     }
 
@@ -151,7 +160,10 @@ public class FreezeUnfreezeService extends Service {
     @Override
     public void onDestroy() {
         mStopping = true;
-        unregisterReceiver(mScreenLockedReceiver);
+        if (mScreenLockedReceiverRegistered) {
+            unregisterReceiver(mScreenLockedReceiver);
+            mScreenLockedReceiverRegistered = false;
+        }
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE);
         if (mCheckLockResult != null) {
             mCheckLockResult.cancel(true);

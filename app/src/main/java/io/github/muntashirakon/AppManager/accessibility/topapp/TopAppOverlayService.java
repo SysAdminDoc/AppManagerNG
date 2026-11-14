@@ -147,18 +147,22 @@ public class TopAppOverlayService extends Service implements AccessibilityMultip
         mTracker = new TopAppTracker(resolveIgnoredPackages(this));
         mHistory = TopAppHistory.getInstance(this);
         // Here and not in onStartCommand: a stop can't then land between a foreground start and startForeground.
+        mNotificationId = NotificationUtils.nextNotificationId(null);
+        // Refused, onStartCommand says the bubble couldn't start and stops
+        goForeground();
+        mBubble = new TopAppBubble(this, this::openAppDetails);
+        updateTile();
+    }
+
+    private void goForeground() {
         try {
             NotificationUtils.getNewNotificationManager(this, CHANNEL_ID, getString(R.string.top_app_overlay_title),
                     NotificationManagerCompat.IMPORTANCE_LOW);
-            mNotificationId = NotificationUtils.nextNotificationId(null);
-            ForegroundService.start(this, mNotificationId, buildNotification(Collections.emptyMap()),
+            mForeground = ForegroundService.start(this, mNotificationId, buildNotification(Collections.emptyMap()),
                     ForegroundService.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
-            mForeground = true;
         } catch (RuntimeException e) {
             Log.w(TAG, "Could not go foreground.", e);
         }
-        mBubble = new TopAppBubble(this, this::openAppDetails);
-        updateTile();
     }
 
     /** Quick Settings tiles start at API 24, and below that even loading the tile's class would throw. */
@@ -170,8 +174,15 @@ public class TopAppOverlayService extends Service implements AccessibilityMultip
 
     @Override
     public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
+        if (!mForeground) {
+            // A start from startForegroundService() that reaches a refused service still has to reach
+            // startForeground(), even one that only stops it, or Android ends the app. A refused call counts too.
+            goForeground();
+        }
+        // Stopping with stopSelfResult(): a start already on its way keeps the service up to handle it, where
+        // stopSelf() would stop it before that start reached startForeground()
         if (intent != null && ACTION_STOP.equals(intent.getAction())) {
-            stopSelf();
+            stopSelfResult(startId);
             return START_NOT_STICKY;
         }
         if (mBubbleShown) {
@@ -179,7 +190,7 @@ public class TopAppOverlayService extends Service implements AccessibilityMultip
         }
         if (!mForeground || !mBubble.show()) {
             UIUtils.displayLongToast(R.string.top_app_overlay_failed);
-            stopSelf();
+            stopSelfResult(startId);
             return START_NOT_STICKY;
         }
         mBubbleShown = true;
