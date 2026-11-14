@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.debloat;
 import android.content.Intent;
 import android.net.Uri;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.google.gson.annotations.SerializedName;
@@ -28,6 +29,21 @@ public class SuggestionObject {
     private String mRepo;
 
     private int[] mUsers;
+
+    /**
+     * A new suggestion with this one's definition and no users filled in yet.
+     */
+    @NonNull
+    SuggestionObject copyDefinition() {
+        SuggestionObject copy = new SuggestionObject();
+        copy.suggestionId = suggestionId;
+        copy.packageName = packageName;
+        copy.mLabel = mLabel;
+        copy.mReason = mReason;
+        copy.mSource = mSource;
+        copy.mRepo = mRepo;
+        return copy;
+    }
 
     public String getLabel() {
         return mLabel;

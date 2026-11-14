@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.test.shadows;
 
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.os.RemoteException;
@@ -24,6 +25,16 @@ public class ShadowPackageManagerCompat {
     public static PackageInfo getPackageInfo(@NonNull String packageName, int flags, int userId)
             throws RemoteException, PackageManager.NameNotFoundException {
         return ContextUtils.getContext().getPackageManager().getPackageInfo(packageName, flags);
+    }
+
+    @Implementation
+    @NonNull
+    public static ApplicationInfo getApplicationInfo(String packageName, int flags, int userId)
+            throws RemoteException, PackageManager.NameNotFoundException {
+        // The real call asks the system's package service, which Robolectric doesn't provide.
+        // Robolectric's package manager knows the packages a test installs. Packages only the
+        // apps database knows about aren't on the test device.
+        return ContextUtils.getContext().getPackageManager().getApplicationInfo(packageName, flags);
     }
 
     @Implementation
