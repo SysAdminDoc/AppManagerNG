@@ -4861,4 +4861,11 @@ Components removed: %8$s</string>
     <string name="lan_sync_trouble_afwall">In AFWall+, tick the LAN rule for AppManagerNG. If the devices still can\'t see each other, turn AFWall+ off while you sync.</string>
     <string name="lan_sync_trouble_huawei">Huawei\'s firewall has separate switches for mobile data and Wi-Fi. Turn on the Wi-Fi one for AppManagerNG.</string>
     <string name="lan_sync_trouble_same_wifi">Both devices need to be on the same Wi-Fi. Guest networks often keep devices apart.</string>
+    <string name="apps_db_recovered_title">Saved app data couldn\'t be opened</string>
+    <string name="apps_db_recovered_text">AppManagerNG couldn\'t read its saved notes, history and favorites, so it started fresh. The old file is kept in %1$s.</string>
+    <string name="apps_db_in_memory_text">AppManagerNG couldn\'t read its saved notes, history and favorites or copy them somewhere safe, so it left them untouched. Changes you make now are lost when the app closes.</string>
+    <string name="apps_db_copied_in_memory_text">AppManagerNG couldn\'t read its saved notes, history and favorites. A copy is in %1$s, but the old file couldn\'t be replaced, so changes you make now are lost when the app closes.</string>
+    <string name="apps_db_corrupt_kept_text">AppManagerNG\'s saved notes, history and favorites look damaged, and they couldn\'t be copied somewhere safe, so the file was left as it is. Some of them may not load.</string>
+    <string name="apps_db_upgrade_skipped_text">AppManagerNG needs to update its saved notes, history and favorites, but couldn\'t copy them somewhere safe first, so it left them untouched. Changes you make now are lost when the app closes. Freeing up some storage may help.</string>
+    <string name="apps_db_open_failing_text">AppManagerNG couldn\'t open its saved notes, history and favorites the last three times it started. Nothing was deleted. Freeing up some storage or restarting the phone may fix it.</string>
 </resources>

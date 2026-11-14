@@ -6,6 +6,8 @@
     <include domain="file" path="." />
     <exclude domain="file" path="conf" />
     <exclude domain="file" path="profiles" />
+    <!-- Copies of the apps database, kept out like the database itself -->
+    <exclude domain="file" path="db_recovery" />
 
     <include domain="sharedpref" path="." />
     <exclude domain="sharedpref" path="WebViewChromiumPrefs.xml" />

@@ -299,6 +299,16 @@ public class AppsDbMigrationTest {
         migrated.close();
     }
 
+    /** Every exported version walks the shipped migrations to the current schema and passes Room's validation. */
+    @Test
+    public void everyOlderVersionMigratesToTheCurrentSchema() throws IOException {
+        for (int version = 1; version < AppsDb.VERSION; ++version) {
+            String name = TEST_DB + "-from-" + version;
+            helper.createDatabase(name, version).close();
+            helper.runMigrationsAndValidate(name, AppsDb.VERSION, true, AppsDb.MIGRATIONS).close();
+        }
+    }
+
     @Test
     public void migrate11To12_runtimeRoomOpenSucceeds() throws IOException {
         helper.createDatabase(TEST_DB, 11).close();
