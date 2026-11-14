@@ -60,13 +60,13 @@ public class RootCapabilityDiagnosticsTest {
                 "UID=2000",
                 "CapEff:\t0000000000003000",
                 "MAGISK_VERSION=v30.7",
-                "MAGISK_VERSION_CODE=30007",
+                "MAGISK_VERSION_CODE=30700",
                 "MAGISKPOLICY_STATUS=available",
                 "MAGISKPOLICY_RULE=allow magisk * * *"));
 
         assertEquals(RootCapabilityDiagnostics.State.PRESENT, result.state);
         assertEquals("v30.7", result.magiskVersion);
-        assertEquals("30007", result.magiskVersionCode);
+        assertEquals("30700", result.magiskVersionCode);
         assertTrue(result.isMagiskDropCapOptInVersion());
         assertEquals(RootCapabilityDiagnostics.MagiskPolicyState.MATCHED, result.magiskPolicyState);
         assertEquals(1, result.magiskPolicyRules.size());
@@ -79,7 +79,7 @@ public class RootCapabilityDiagnosticsTest {
                 "UID=2000",
                 "CapEff:\t0000000000000000",
                 "MAGISK_VERSION=v30.7",
-                "MAGISK_VERSION_CODE=30007",
+                "MAGISK_VERSION_CODE=30700",
                 "MAGISKPOLICY_STATUS=available"));
 
         assertEquals(RootCapabilityDiagnostics.MagiskPolicyState.NO_MATCH, result.magiskPolicyState);
@@ -87,7 +87,13 @@ public class RootCapabilityDiagnosticsTest {
 
     @Test
     public void isMagiskDropCapOptInVersion_usesV307Floor() {
-        assertFalse(RootCapabilityDiagnostics.isMagiskDropCapOptInVersion("30006"));
-        assertTrue(RootCapabilityDiagnostics.isMagiskDropCapOptInVersion("30007"));
+        // Magisk's versionCode is major * 1000 + minor * 100 (app/gradle.properties at each tag)
+        assertFalse(RootCapabilityDiagnostics.isMagiskDropCapOptInVersion("30000"));
+        assertFalse("v30.1 still dropped capabilities by default",
+                RootCapabilityDiagnostics.isMagiskDropCapOptInVersion("30100"));
+        assertFalse("v30.6 still dropped capabilities by default",
+                RootCapabilityDiagnostics.isMagiskDropCapOptInVersion("30600"));
+        assertTrue(RootCapabilityDiagnostics.isMagiskDropCapOptInVersion("30700"));
+        assertTrue(RootCapabilityDiagnostics.isMagiskDropCapOptInVersion("31100"));
     }
 }
