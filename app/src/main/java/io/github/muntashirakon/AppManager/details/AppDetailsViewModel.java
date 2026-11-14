@@ -125,6 +125,8 @@ import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
 import io.github.muntashirakon.AppManager.utils.FreezeUtils;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
+import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.io.IoUtils;
 
@@ -620,32 +622,9 @@ public class AppDetailsViewModel extends AndroidViewModel {
                     mPermissions.postValue(filterAndSortPermissions(mPermissionItems));
                 }
                 break;
-            case AppDetailsFragment.OVERLAYS: {
-                List<AppDetailsOverlayItem> appDetailsItems;
-                synchronized (mOverlays) {
-                    // mOverlays has no backing list; its value is null until loadOverlays() posts.
-                    List<AppDetailsOverlayItem> base = mOverlays.getValue();
-                    if (base == null) {
-                        base = Collections.emptyList();
-                    }
-                    if (!TextUtils.isEmpty(mSearchQuery)) {
-                        appDetailsItems = AdvancedSearchView.matches(mSearchQuery, base,
-                                (ChoiceGenerator<AppDetailsOverlayItem>) item -> lowercaseIfNotRegex(item.name,
-                                        mSearchType), mSearchType);
-                    } else appDetailsItems = new ArrayList<>(base);
-                }
-                Collections.sort(appDetailsItems, (o1, o2) -> {
-                    switch (mSortOrderOverlays) {
-                        case AppDetailsFragment.SORT_BY_NAME:
-                            return o1.name.compareToIgnoreCase(o2.name);
-                        case AppDetailsFragment.SORT_BY_PRIORITY:
-                            return Integer.compare(o1.getPriority(), o2.getPriority());
-                    }
-                    return 0;
-                });
-                mOverlays.postValue(new ArrayList<>(appDetailsItems));
+            case AppDetailsFragment.OVERLAYS:
+                mOverlayList.refilter();
                 break;
-            }
             case AppDetailsFragment.APP_INFO:
             case AppDetailsFragment.CONFIGURATIONS:
             case AppDetailsFragment.FEATURES:
@@ -2603,11 +2582,16 @@ public class AppDetailsViewModel extends AndroidViewModel {
     @NonNull
     private final MutableLiveData<List<AppDetailsOverlayItem>> mOverlays = new MutableLiveData<>();
 
+    @NonNull
+    private final OverlayList<AppDetailsOverlayItem> mOverlayList = new OverlayList<>(this::filterAndSortOverlays,
+            mOverlays::postValue);
+
     @WorkerThread
     private void loadOverlays() {
+        long read = mOverlayList.startRead();
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || mPackageName == null || mExternalApk
                 || !SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.CHANGE_OVERLAY_PACKAGES)) {
-            mOverlays.postValue(Collections.emptyList());
+            mOverlayList.finishRead(read, Collections.emptyList());
             return;
         }
         final List<OverlayInfo> overlays = ExUtils.requireNonNullElse(() -> OverlayManagerCompact
@@ -2617,7 +2601,59 @@ public class AppDetailsViewModel extends AndroidViewModel {
         for (OverlayInfo overlay : overlays) {
             overlayItems.add(new AppDetailsOverlayItem(overlay));
         }
-        mOverlays.postValue(overlayItems);
+        mOverlayList.finishRead(read, overlayItems);
+    }
+
+    @NonNull
+    private List<AppDetailsOverlayItem> filterAndSortOverlays(@NonNull List<AppDetailsOverlayItem> all) {
+        List<AppDetailsOverlayItem> appDetailsItems;
+        if (!TextUtils.isEmpty(mSearchQuery)) {
+            appDetailsItems = AdvancedSearchView.matches(mSearchQuery, all,
+                    (ChoiceGenerator<AppDetailsOverlayItem>) item -> lowercaseIfNotRegex(item.name,
+                            mSearchType), mSearchType);
+        } else appDetailsItems = all;
+        Collections.sort(appDetailsItems, (o1, o2) -> {
+            switch (mSortOrderOverlays) {
+                case AppDetailsFragment.SORT_BY_NAME:
+                    return o1.name.compareToIgnoreCase(o2.name);
+                case AppDetailsFragment.SORT_BY_PRIORITY:
+                    return Integer.compare(o1.getPriority(), o2.getPriority());
+            }
+            return 0;
+        });
+        return appDetailsItems;
+    }
+
+    @NonNull
+    private final OverlayToggler mOverlayToggler = new OverlayToggler(command -> mExecutor.execute(command),
+            this::applyOverlayState, this::loadOverlays);
+
+    /**
+     * Turns an overlay on or off, then shows every overlay's state as the overlay manager reports
+     * it, whether the change went through or not.
+     *
+     * @return {@code false} when this overlay is still being changed, in which case nothing is done
+     */
+    @AnyThread
+    public boolean setOverlayEnabled(@NonNull String overlayPackage, boolean enable) {
+        return mOverlayToggler.setEnabled(overlayPackage, enable, success -> {
+            if (!success) {
+                ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.failed));
+            }
+        });
+    }
+
+    @AnyThread
+    public boolean isOverlayChanging(@NonNull String overlayPackage) {
+        return mOverlayToggler.isChanging(overlayPackage);
+    }
+
+    @WorkerThread
+    private boolean applyOverlayState(@NonNull String overlayPackage, boolean enable) throws RemoteException {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            return false;
+        }
+        return OverlayManagerCompact.getOverlayManager().setEnabled(overlayPackage, enable, mUserId);
     }
 
     /**

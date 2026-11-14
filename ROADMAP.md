@@ -321,13 +321,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Acceptance: thumbnail work receives only duplicated read-only file descriptors plus explicit pixel, byte, and time budgets; the service has no app permissions and cannot open arbitrary paths; malformed input, timeout, OOM, or decoder-process death returns the generic icon without crashing or blocking the file list; API 21 through 23 and a current API are covered.
   Complexity: L
 
-- [ ] P1: Re-read authoritative App Details state after mutations
-  Why: successful privileged cache clears leave stale storage totals, and successful overlay toggles can rebind the cached pre-operation state.
-  Evidence: upstream App Manager #2023; `details/info/AppInfoFragment.java:3073-3098`; `details/AppDetailsOverlaysFragment.java:227-232`; `details/struct/AppDetailsOverlayItem.java:73-75`.
-  Touches: `details/AppDetailsViewModel.java`, `details/info/AppInfoFragment.java`, `details/AppDetailsOverlaysFragment.java`, overlay and storage state models, tests.
-  Acceptance: cache totals reload only after a confirmed successful clear; failure preserves the last confirmed totals; overlay controls are disabled while work is in flight, duplicate taps serialize, and success or failure re-queries `IOverlayManager`; detached completions do not touch views; tests cover both mutation types and failure rollback.
-  Complexity: M
-
 - [ ] P1: Enforce user-owned signer policies before installer commit
   Why: AppManagerNG can inspect certificates and detect changes after installation, but it cannot reject an unrecognized signer against a user-approved package policy before a session is committed.
   Evidence: InstallerX 26.05 signer-policy release; Obtainium #2922; AppVerifier; Inure feature matrix; upstream App Manager #2055; `permission/monitor/SigningCertSnapshotStore.java`; `apk/signing/SignerInfo.java`; `apk/installer/PackageInstallerActivity.java`.
@@ -344,6 +337,13 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Complexity: M
 
 ### P2
+
+- [ ] P2: Apply App Details tab lists in arrival order
+  Why: the Components, Other and Permissions tabs hand each list from the view model to a background thread before it reaches the adapter, so two lists posted close together (a reload right after a change, or a search while a reload runs) can land in the wrong order and leave the older one on screen. The Overlays tab now applies its list on the main thread as it arrives.
+  Evidence: `details/AppDetailsComponentsFragment.java:554,1025`; `details/AppDetailsOtherFragment.java:199`; `details/AppDetailsPermissionsFragment.java:494,938,960` (`ThreadUtils.postOnBackgroundThread` inside `setDefaultList`); `details/AppDetailsOverlaysFragment.java` for the fixed shape.
+  Touches: those three fragments' adapters, the permission checks they run before showing a list (move them to the view model or compute them once per load), tests.
+  Acceptance: each tab applies lists in the order LiveData delivers them; no permission or binder call runs on the main thread; a test posts two lists back to back and sees the second on screen.
+  Complexity: M
 
 - [ ] P2: Show Disabled, Frozen, and Suspended as text in app rows
   Why: upstream #2006 reports difficulty distinguishing state colors, while the compact V2 row still encodes suspension as `°` and announces only installed or uninstalled state.
