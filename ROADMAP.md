@@ -903,3 +903,10 @@ Sources and reasoning: RESEARCH.md (2026-11-13). The four crash fixes come first
   Touches: `AppArchiveManager`, the privileged-server path for other users, `ApplicationItem.isKnownArchived`, `ShadowArchivedPackages`, a work-profile check on API 35 or later.
   Acceptance: with root, ADB or Shizuku, a row archived only for another user shows that user's archived name and icon; in no-root mode it keeps the package name as now; a test covers both modes.
   Complexity: M
+
+- [ ] P3: A settings link to a key with no page leaves the two-pane right side empty
+  Why: in dual pane, Settings fills an empty right pane with Language only when the path has no first key. A link whose first key doesn't exist or is a plain switch (`app-manager://settings/bogus`) skips that fill, opens nothing, and leaves the right pane blank. A bare `app-manager://settings/` sent after startup resets the saved path while the right pane keeps its page, so a later recreate shows Language instead.
+  Evidence: `settings/SettingsActivity.java` (`defaultPref` in `onAuthenticated`, `onNewIntent`). Found by the 2026-11-14 review of the settings restore fix. HEAD before that fix behaved the same.
+  Touches: `SettingsActivity`, `SettingsActivityRecreateTest`.
+  Acceptance: in dual pane a link that opens no page falls back to the default fill, an empty link leaves the saved path alone, and both have a Robolectric case.
+  Complexity: S
