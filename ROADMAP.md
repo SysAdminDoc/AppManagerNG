@@ -765,13 +765,6 @@ Sources and reasoning: RESEARCH.md (2026-11-13). The four crash fixes come first
 
 ### P1
 
-- [ ] P1: Stop the audio player crashing on a negative or unknown position
-  Why: Material's Slider throws when its value falls outside its range. The audio player checks only the upper bound, and rewinding 10 seconds near the start asks for a negative position. Upstream #2064 (2026-10-11) is this crash, "Slider value(-13.0)".
-  Evidence: `viewer/audio/AudioPlayerDialogFragment.java:184-186` (upper bound only), `:259` (`seekTo(pos - 10 * 1000)`), `:381-383` (the range comes from the duration, which can be unknown).
-  Touches: `AudioPlayerDialogFragment.java`, a Robolectric test.
-  Acceptance: the slider value is clamped to its range, rewind never seeks below 0, and an unknown duration disables the slider instead of setting an empty range. A test drives a negative position and one past the end with no crash.
-  Complexity: S
-
 - [ ] P1: Keep running when Android refuses a foreground service start
   Why: `ForegroundService.start()` calls `ServiceCompat.startForeground` with no guard, so a `SecurityException` or `ForegroundServiceStartNotAllowedException` kills the app mid-operation. Upstream #2066 (2026-10-17) is that crash on Android 17 (PixelOS) during Advanced pause, then Freeze, from the specialUse freeze service.
   Evidence: `types/ForegroundService.java:36-40`. Callers: `accessibility/topapp/TopAppOverlayService.java:154`, `apk/behavior/FreezeUnfreezeService.java:134`, `progress/NotificationProgressHandler.java:112`, `servermanager/WifiWaitService.java:188`, `session/SessionMonitoringService.java:104`. `adb/AdbPairingService.java:237` and `:309` start their own.
@@ -794,6 +787,13 @@ Sources and reasoning: RESEARCH.md (2026-11-13). The four crash fixes come first
   Complexity: M
 
 ### P2
+
+- [ ] P2: Keep one audio player across a rotation
+  Why: `AudioPlayerActivity.onCreate` shows a new `AudioPlayerDialogFragment` every time, including when Android recreates the activity after a rotation, so the restored dialog and a new one stack. The restored one builds a fresh `MediaPlayer` while the ViewModel's prepared LiveData still says true, so it calls `startPlayingMedia()` on a player that never had a data source.
+  Evidence: `viewer/audio/AudioPlayerActivity.java:31-32`, `viewer/audio/AudioPlayerDialogFragment.java:110-118` (new player plus the prepared observer).
+  Touches: `AudioPlayerActivity.java` (show only when `savedInstanceState == null` or no fragment has the tag), `AudioPlayerDialogFragment.java` (prepare the current track again on a new player), a Robolectric test.
+  Acceptance: rotating while a track plays leaves one dialog that keeps playing the same track from about the same spot. A test recreates the activity and finds one fragment with that tag.
+  Complexity: S
 
 - [ ] P2: Judge Shizuku on Android 17 by whether the server answers
   Why: NG warns every Shizuku user on Android 17 and points them at Wireless ADB, because `MIN_ANDROID_17_COMPATIBLE_VERSION` is null. That's right for the official 13.6.0, which shows an empty authorized-apps list there. It's noise for anyone on a Shizuku-API server that works, such as Porter's compatibility mode (SD Maid SE 2.2.0, 2026-09-29) or one of the forks awesome-shizuku lists.

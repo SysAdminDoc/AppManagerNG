@@ -2255,6 +2255,7 @@
     <string name="audio_player_unknown_title">Unknown title</string>
     <string name="audio_player_unknown_artist">Unknown artist</string>
     <string name="audio_player_unknown_album">Unknown album</string>
+    <string name="audio_player_unknown_length" translatable="false">--:--</string>
     <string name="undo">Undo</string>
     <string name="omit_sensitive_info">Omit sensitive info</string>
     <string name="omit_sensitive_info_summary">Omit sensitive info like web urls, phone numbers or emails.</string>

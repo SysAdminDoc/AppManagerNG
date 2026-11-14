@@ -20,6 +20,7 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.annotation.VisibleForTesting;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -38,6 +39,7 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
     private static final String ARG_URI_LIST = "uris";
     private static final String ARG_CLOSE_ACTIVITY = "close";
     private static final long PROGRESS_UPDATE_INTERVAL_MS = 250L;
+    private static final int SKIP_MS = 10 * 1000;
 
     @NonNull
     public static AudioPlayerDialogFragment getInstance(@NonNull Uri[] uriList, boolean closeActivity) {
@@ -69,6 +71,11 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
     private boolean mShouldCheckRepeat = true;
 
     private MediaPlayer mMediaPlayer;
+    /**
+     * True once the current track is prepared. The view model resets and prepares the player on a background thread,
+     * and a seek or a length read in the middle of that puts the player in its error state, so the track never plays.
+     */
+    private boolean mPrepared;
     private AudioPlayerViewModel mViewModel;
     private PowerManager.WakeLock mWakeLock;
 
@@ -112,6 +119,7 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
             if (!prepared) {
                 return;
             }
+            mPrepared = true;
             startPlayingMedia();
             mShouldCheckRepeat = true;
         });
@@ -181,10 +189,14 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
             @Override
             public void run() {
                 if (mediaPlayerInitialized()) {
-                    final int currentPosition = mMediaPlayer.getCurrentPosition();
-                    if (currentPosition <= mSlider.getValueTo()) {
-                        mSlider.setValue(currentPosition);
+                    int duration = mMediaPlayer.getDuration();
+                    if (duration > 0 && (!mSlider.isEnabled() || duration != (int) mSlider.getValueTo())) {
+                        // Streams and some VBR files only learn their length, or correct it, after playback starts.
+                        applyDuration(duration);
                     }
+                    // Right after a seek some players report the target, which can be a little below zero.
+                    final int currentPosition = Math.max(0, mMediaPlayer.getCurrentPosition());
+                    setSliderPosition(mSlider, currentPosition);
 
                     mProgressView.setText(getFormattedTime(currentPosition, mIsTimeReversed));
                     mUpdateHandler.postDelayed(this, PROGRESS_UPDATE_INTERVAL_MS);
@@ -206,7 +218,9 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
                 }
         });
         mPlayPauseButton.setOnLongClickListener(v -> {
-            mMediaPlayer.seekTo(0);
+            if (mediaPlayerInitialized()) {
+                mMediaPlayer.seekTo(0);
+            }
             return true;
         });
 
@@ -256,7 +270,7 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
         // Rewind: Click -> -10 sec, Long click -> Play previous item
         mRewindButton.setOnClickListener(v -> {
             if (mediaPlayerInitialized()) {
-                mMediaPlayer.seekTo(mMediaPlayer.getCurrentPosition() - 10 * 1000);
+                mMediaPlayer.seekTo(skipTarget(mMediaPlayer.getCurrentPosition(), -SKIP_MS, mMediaPlayer.getDuration()));
             }
         });
         mRewindButton.setOnLongClickListener(v -> {
@@ -267,7 +281,7 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
         // Forward: Click -> +10 sec, Long click -> Play next item
         mForwardButton.setOnClickListener(v -> {
             if (mediaPlayerInitialized()) {
-                mMediaPlayer.seekTo(mMediaPlayer.getCurrentPosition() + 10 * 1000);
+                mMediaPlayer.seekTo(skipTarget(mMediaPlayer.getCurrentPosition(), SKIP_MS, mMediaPlayer.getDuration()));
             }
         });
         mForwardButton.setOnLongClickListener(v -> {
@@ -324,18 +338,25 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
 
     private String getFormattedTime(long millis, boolean isTimeReversed) {
         if (!mediaPlayerInitialized()) {
-            return "00:00";
+            return formatTime(0, -1, false);
         }
-        long minutes = (millis / 1000) / 60;
-        long seconds = (millis / 1000) % 60;
-        String secondsStr = Long.toString(seconds);
-        String secs = (secondsStr.length() >= 2) ? secondsStr.substring(0, 2) : "0" + secondsStr;
-        if (!isTimeReversed) return minutes + ":" + secs;
-        return "-" + getFormattedTime(mMediaPlayer.getDuration() - millis, false);
+        return formatTime(millis, mMediaPlayer.getDuration(), isTimeReversed);
+    }
+
+    /** "m:ss", or the time left as "-m:ss" when {@code remaining} is asked for and the length is known. */
+    @VisibleForTesting
+    @NonNull
+    static String formatTime(long millis, int durationMs, boolean remaining) {
+        if (remaining && durationMs > 0) {
+            return "-" + formatTime(durationMs - millis, durationMs, false);
+        }
+        long totalSeconds = Math.max(0L, millis) / 1000;
+        long seconds = totalSeconds % 60;
+        return (totalSeconds / 60) + ":" + (seconds < 10 ? "0" : "") + seconds;
     }
 
     private boolean mediaPlayerInitialized() {
-        if (mMediaPlayer == null) {
+        if (mMediaPlayer == null || !mPrepared) {
             return false;
         }
         try {
@@ -350,6 +371,7 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
         if (mMediaPlayer == null) {
             return;
         }
+        mPrepared = false;
         mMediaPlayer.release();
         mMediaPlayer = null;
     }
@@ -374,21 +396,64 @@ public class AudioPlayerDialogFragment extends CapsuleBottomSheetDialogFragment 
         mInfoView.setSelected(true);
 
         mShouldCheckRepeat = false;
+        // Nothing touches the player until it's prepared, and the controls show a track that isn't loaded yet.
+        mPrepared = false;
+        stopProgressUpdates();
+        applyDuration(-1);
+        mProgressView.setText(formatTime(0, -1, false));
         mViewModel.prepareMediaPlayer(mMediaPlayer, meta.uri);
     }
 
     private void startPlayingMedia() {
-        int duration = mMediaPlayer.getDuration();
-        mSlider.setValueFrom(0);
-        mSlider.setValueTo(duration);
-
-        mDurationView.setText(getFormattedTime(duration, mIsTimeReversed));
+        applyDuration(mMediaPlayer.getDuration());
 
         mMediaPlayer.seekTo(0);
         resumeMediaPlayer();
         startProgressUpdates();
 
         setPlayPauseButtonState(R.drawable.ic_pause, R.string.audio_player_pause);
+    }
+
+    /**
+     * Sets up the slider and the length label for a track of this length, or -1 if unknown. The skip buttons stay on:
+     * their long press changes the track, and a skip without a known length only stops at the start.
+     */
+    private void applyDuration(int duration) {
+        setSliderRange(mSlider, duration);
+        mDurationView.setText(duration > 0 ? formatTime(duration, duration, false)
+                : getString(R.string.audio_player_unknown_length));
+    }
+
+    /**
+     * Gives the slider the track's length, or disables it when the length isn't known (a stream, or a file the
+     * player can't measure). The value goes back to the start too, since the last track's position can be past the
+     * new end, and Material's Slider throws on a value outside its range.
+     */
+    @VisibleForTesting
+    static void setSliderRange(@NonNull Slider slider, int durationMs) {
+        boolean known = durationMs > 0;
+        slider.setValueFrom(0);
+        slider.setValueTo(known ? durationMs : 1);
+        slider.setValue(0);
+        slider.setEnabled(known);
+    }
+
+    /** Moves an enabled slider to a position, kept inside its range. */
+    @VisibleForTesting
+    static void setSliderPosition(@NonNull Slider slider, int positionMs) {
+        if (slider.isEnabled()) {
+            slider.setValue(Math.max(slider.getValueFrom(), Math.min(slider.getValueTo(), positionMs)));
+        }
+    }
+
+    /** Where a skip lands: never before the start, and never past the end when the length is known. */
+    @VisibleForTesting
+    static int skipTarget(int positionMs, int deltaMs, int durationMs) {
+        long target = Math.max(0L, (long) positionMs + deltaMs);
+        if (durationMs > 0) {
+            target = Math.min(target, durationMs);
+        }
+        return (int) Math.min(target, Integer.MAX_VALUE);
     }
 
     private void startProgressUpdates() {
