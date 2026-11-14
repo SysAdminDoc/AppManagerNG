@@ -30,6 +30,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - The Finder's App ops filter no longer crashes, and an app no longer matches or misses depending on how many times the filter already ran. An app whose details can't be read (it was just uninstalled, or belongs to another user) counts as having no app ops, trackers, components or permissions, and they show up once it can be read again.
+- The audio player no longer crashes when you skip back near the start of a track. Skips stay inside the track. For a stream or any file whose length Android can't tell, the progress bar turns off and the length shows --:-- until it's known. While the next track loads, dragging the progress bar or tapping skip waits instead of stopping that track from ever playing.
 - A watched permission set to Always deny gets taken back right away when someone grants it in Settings, in root, ADB and Shizuku modes (issue #15). Android doesn't tell apps about a permission granted there, and it pauses apps in the background, so the grant used to stick until the next check. The privileged server now watches those apps itself and starts the check the moment one changes. No-root mode still checks at the usual times.
 - An install that waited in the queue drops its "Added to queue" notification once it starts (issue #22). The notification used to stay next to the result, so a finished install still looked queued.
 - The installer no longer says "Added to queue" when it's brought back with nothing new to install (issue #22).
