@@ -2604,6 +2604,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
         mOverlayList.finishRead(read, overlayItems);
     }
 
+    @SuppressLint({"SwitchIntDef", "WrongThreadInterprocedural"}) // The Overlays tab offers only these two sorts. AdvancedSearchView's matcher is pure and does not touch the widget.
     @NonNull
     private List<AppDetailsOverlayItem> filterAndSortOverlays(@NonNull List<AppDetailsOverlayItem> all) {
         List<AppDetailsOverlayItem> appDetailsItems;
@@ -2617,6 +2618,10 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 case AppDetailsFragment.SORT_BY_NAME:
                     return o1.name.compareToIgnoreCase(o2.name);
                 case AppDetailsFragment.SORT_BY_PRIORITY:
+                    // Android 8 has overlays but doesn't report their priority
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
+                        return 0;
+                    }
                     return Integer.compare(o1.getPriority(), o2.getPriority());
             }
             return 0;

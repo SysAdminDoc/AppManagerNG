@@ -612,7 +612,7 @@
         errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/info/AppInfoFragment.java"
-            line="2444"
+            line="2459"
             column="31"/>
     </issue>
 
@@ -33504,7 +33504,7 @@
         errorLine2="                                                             ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/struct/AppDetailsOverlayItem.java"
-            line="77"
+            line="73"
             column="62"/>
     </issue>
 
@@ -33515,7 +33515,7 @@
         errorLine2="                  ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/struct/AppDetailsOverlayItem.java"
-            line="89"
+            line="85"
             column="19"/>
     </issue>
 
@@ -33526,7 +33526,7 @@
         errorLine2="           ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/struct/AppDetailsOverlayItem.java"
-            line="101"
+            line="97"
             column="12"/>
     </issue>
 
@@ -33537,7 +33537,7 @@
         errorLine2="                                     ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsOverlaysFragment.java"
-            line="140"
+            line="139"
             column="38"/>
     </issue>
 
@@ -33570,7 +33570,7 @@
         errorLine2="                                                                                     ~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="243"
+            line="245"
             column="86"/>
     </issue>
 
@@ -33581,7 +33581,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="355"
+            line="357"
             column="12"/>
     </issue>
 
@@ -33592,7 +33592,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="366"
+            line="368"
             column="12"/>
     </issue>
 
@@ -33603,7 +33603,7 @@
         errorLine2="           ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="460"
+            line="462"
             column="12"/>
     </issue>
 
@@ -33614,7 +33614,7 @@
         errorLine2="                               ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="526"
+            line="528"
             column="32"/>
     </issue>
 
@@ -33625,7 +33625,7 @@
         errorLine2="           ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="534"
+            line="536"
             column="12"/>
     </issue>
 
@@ -33636,7 +33636,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="794"
+            line="773"
             column="12"/>
     </issue>
 
@@ -33647,7 +33647,7 @@
         errorLine2="                                                                       ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="820"
+            line="799"
             column="72"/>
     </issue>
 
@@ -33658,7 +33658,7 @@
         errorLine2="                                                                        ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="859"
+            line="838"
             column="73"/>
     </issue>
 
@@ -33669,7 +33669,7 @@
         errorLine2="                                          ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="892"
+            line="871"
             column="43"/>
     </issue>
 
@@ -33680,7 +33680,7 @@
         errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="903"
+            line="882"
             column="26"/>
     </issue>
 
@@ -33691,7 +33691,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="938"
+            line="917"
             column="29"/>
     </issue>
 
@@ -33702,7 +33702,7 @@
         errorLine2="                                          ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="970"
+            line="949"
             column="43"/>
     </issue>
 
@@ -33713,7 +33713,7 @@
         errorLine2="                                                ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="1006"
+            line="985"
             column="49"/>
     </issue>
 
@@ -33724,7 +33724,7 @@
         errorLine2="                                                    ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="1043"
+            line="1022"
             column="53"/>
     </issue>
 
@@ -33735,7 +33735,7 @@
         errorLine2="                                ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="1185"
+            line="1164"
             column="33"/>
     </issue>
 
@@ -33746,7 +33746,7 @@
         errorLine2="                                ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="1219"
+            line="1198"
             column="33"/>
     </issue>
 
@@ -33757,7 +33757,7 @@
         errorLine2="                                           ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="1249"
+            line="1228"
             column="44"/>
     </issue>
 
@@ -33768,7 +33768,7 @@
         errorLine2="                                               ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="1285"
+            line="1264"
             column="48"/>
     </issue>
 
@@ -33779,7 +33779,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="1428"
+            line="1407"
             column="12"/>
     </issue>
 
@@ -33790,7 +33790,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="1522"
+            line="1501"
             column="12"/>
     </issue>
 
@@ -33801,7 +33801,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="1537"
+            line="1516"
             column="12"/>
     </issue>
 
@@ -33812,7 +33812,7 @@
         errorLine2="                         ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="2048"
+            line="2027"
             column="26"/>
     </issue>
 
@@ -33823,7 +33823,7 @@
         errorLine2="                                  ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="2161"
+            line="2140"
             column="35"/>
     </issue>
 
@@ -33834,7 +33834,7 @@
         errorLine2="           ~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="2201"
+            line="2180"
             column="12"/>
     </issue>
 
@@ -33845,7 +33845,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="2460"
+            line="2439"
             column="12"/>
     </issue>
 
@@ -33856,7 +33856,7 @@
         errorLine2="                                        ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/AppDetailsViewModel.java"
-            line="2652"
+            line="2693"
             column="41"/>
     </issue>
 
@@ -33867,7 +33867,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/details/info/AppInfoFragment.java"
-            line="2785"
+            line="2800"
             column="13"/>
     </issue>
 
@@ -38300,7 +38300,7 @@
         errorLine2="           ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/debloat/DebloatObject.java"
-            line="44"
+            line="45"
             column="12"/>
     </issue>
 
@@ -38311,7 +38311,7 @@
         errorLine2="           ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/debloat/DebloatObject.java"
-            line="62"
+            line="63"
             column="12"/>
     </issue>
 
@@ -38322,7 +38322,7 @@
         errorLine2="           ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/debloat/DebloatObject.java"
-            line="148"
+            line="183"
             column="12"/>
     </issue>
 
@@ -38388,7 +38388,7 @@
         errorLine2="                         ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/debloat/DebloaterViewModel.java"
-            line="81"
+            line="168"
             column="26"/>
     </issue>
 
@@ -38399,7 +38399,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/debloat/DebloaterViewModel.java"
-            line="87"
+            line="176"
             column="12"/>
     </issue>
 
@@ -38410,7 +38410,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/debloat/DebloaterViewModel.java"
-            line="115"
+            line="204"
             column="12"/>
     </issue>
 
@@ -47925,7 +47925,7 @@
         errorLine2="                  ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/StaticDataset.java"
-            line="49"
+            line="53"
             column="19"/>
     </issue>
 
@@ -47936,7 +47936,7 @@
         errorLine2="                  ~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/StaticDataset.java"
-            line="92"
+            line="96"
             column="19"/>
     </issue>
 
@@ -47947,7 +47947,7 @@
         errorLine2="                               ~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/StaticDataset.java"
-            line="105"
+            line="109"
             column="32"/>
     </issue>
 
@@ -47958,7 +47958,7 @@
         errorLine2="                               ~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/StaticDataset.java"
-            line="122"
+            line="126"
             column="32"/>
     </issue>
 
@@ -47969,18 +47969,7 @@
         errorLine2="                               ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/StaticDataset.java"
-            line="130"
-            column="32"/>
-    </issue>
-
-    <issue
-        id="UnknownNullness"
-        message="Unknown nullability; explicitly declare as `@Nullable` or `@NonNull` to improve Kotlin interoperability; see https://developer.android.com/kotlin/interop#nullability_annotations"
-        errorLine1="    public static synchronized List&lt;DebloatObject> getDebloatObjectsWithInstalledInfo(@NonNull Context context) {"
-        errorLine2="                               ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/io/github/muntashirakon/AppManager/StaticDataset.java"
-            line="142"
+            line="134"
             column="32"/>
     </issue>
 
@@ -48013,7 +48002,7 @@
         errorLine2="           ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/debloat/SuggestionObject.java"
-            line="16"
+            line="17"
             column="12"/>
     </issue>
 
@@ -48024,7 +48013,7 @@
         errorLine2="           ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/debloat/SuggestionObject.java"
-            line="18"
+            line="19"
             column="12"/>
     </issue>
 
@@ -48035,7 +48024,7 @@
         errorLine2="           ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/debloat/SuggestionObject.java"
-            line="32"
+            line="48"
             column="12"/>
     </issue>
 
@@ -48046,7 +48035,7 @@
         errorLine2="           ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/debloat/SuggestionObject.java"
-            line="36"
+            line="52"
             column="12"/>
     </issue>
 
@@ -48057,7 +48046,7 @@
         errorLine2="           ~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/debloat/SuggestionObject.java"
-            line="49"
+            line="65"
             column="12"/>
     </issue>
 
@@ -48068,7 +48057,7 @@
         errorLine2="           ~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/debloat/SuggestionObject.java"
-            line="59"
+            line="75"
             column="12"/>
     </issue>
 
