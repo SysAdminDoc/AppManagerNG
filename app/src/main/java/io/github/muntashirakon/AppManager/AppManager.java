@@ -72,7 +72,11 @@ public class AppManager extends Application {
                     .penaltyLog()
                     .build());
         }
-        Thread.setDefaultUncaughtExceptionHandler(new AMExceptionHandler(this));
+        if (!Utils.isRoboUnitTest()) {
+            // Every Robolectric test makes a new Application in the same JVM, and each handler
+            // keeps the one before it, so the chain would hold every test's app and resources.
+            Thread.setDefaultUncaughtExceptionHandler(new AMExceptionHandler(this));
+        }
         mNightModeMask = getNightModeMask(getResources().getConfiguration());
         configureActivityEmbeddingSplits();
         // Before the locale is applied, so an imported language file is already in place
