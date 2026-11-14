@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 import io.github.muntashirakon.AppManager.R;
-import io.github.muntashirakon.AppManager.apk.ApkFile;
 import io.github.muntashirakon.AppManager.apk.installer.InstallerOptions;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat;
 import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
@@ -460,25 +459,6 @@ class RestoreOp implements Closeable {
                 @Override
                 public void onStartInstall(int sessionId, String packageName) {
                 }
-
-                // MIUI-begin: MIUI 12.5+ workaround
-                @Override
-                public void onAnotherAttemptInMiui(@Nullable ApkFile apkFile) {
-                    // This works because the parent install method still remains active until a final status is
-                    // received after all the attempts are finished, which is, then, returned to the parent.
-                    packageInstaller.install(allApks, mPackageName, options);
-                }
-                // MIUI-end
-
-                // HyperOS-begin: HyperOS 2.0+ workaround
-                @Override
-                public void onSecondAttemptInHyperOsWithoutInstaller(@Nullable ApkFile apkFile) {
-                    // This works because the parent install method still remains active until a final status is
-                    // received after all the attempts are finished, which is, then, returned to the parent.
-                    options.setInstallerName("com.android.shell");
-                    packageInstaller.install(allApks, mPackageName, options);
-                }
-                // HyperOS-end
 
                 @Override
                 public void onFinishedInstall(int sessionId, String packageName, int result, @Nullable String blockingPackage, @Nullable String statusMessage) {
