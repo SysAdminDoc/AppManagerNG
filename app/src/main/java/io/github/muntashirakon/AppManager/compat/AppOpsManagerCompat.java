@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.Callable;
 
 import aosp.libcore.util.EmptyArray;
 import dev.rikka.tools.refine.Refine;
@@ -735,6 +736,22 @@ public class AppOpsManagerCompat {
             return packageOpsList.get(0).getOps();
         }
         return Collections.emptyList();
+    }
+
+    /**
+     * The package's configured ops, or null when they can't be read (no service yet, a dead one, or one that refuses),
+     * so a caller that keeps the answer can tell a failure from an app with no ops and ask again later.
+     */
+    @Nullable
+    public static List<OpEntry> getOpsForPackageOrNull(int uid, @NonNull String packageName) {
+        return getOpsForPackageOrNull(AppOpsManagerCompat::new, uid, packageName);
+    }
+
+    @VisibleForTesting
+    @Nullable
+    static List<OpEntry> getOpsForPackageOrNull(@NonNull Callable<AppOpsManagerCompat> appOpsManager, int uid,
+                                                @NonNull String packageName) {
+        return ExUtils.exceptionAsNull(() -> getConfiguredOpsForPackage(appOpsManager.call(), packageName, uid));
     }
 
     private final IAppOpsService mAppOpsService;

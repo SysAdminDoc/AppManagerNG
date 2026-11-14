@@ -75,7 +75,6 @@ import io.github.muntashirakon.AppManager.usage.PackageUsageInfo;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
-import io.github.muntashirakon.AppManager.utils.ExUtils;
 import io.github.muntashirakon.AppManager.utils.FreezeUtils;
 import io.github.muntashirakon.AppManager.utils.KeyStoreUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
@@ -478,7 +477,7 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
             return;
         }
         try {
-            mPackageInfo = PackageManagerCompat.getPackageInfo(packageName,
+            PackageInfo packageInfo = PackageManagerCompat.getPackageInfo(packageName,
                     PackageManager.GET_META_DATA | GET_SIGNING_CERTIFICATES
                             | PackageManager.GET_ACTIVITIES | PackageManager.GET_RECEIVERS
                             | PackageManager.GET_PROVIDERS | PackageManager.GET_SERVICES
@@ -486,11 +485,17 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
                             | PackageManager.GET_URI_PERMISSION_PATTERNS
                             | MATCH_DISABLED_COMPONENTS | MATCH_UNINSTALLED_PACKAGES
                             | MATCH_STATIC_SHARED_AND_SDK_LIBRARIES, userId);
-            mApplicationInfo = Objects.requireNonNull(mPackageInfo.applicationInfo);
+            if (packageInfo.applicationInfo == null) {
+                return;
+            }
+            // Both or neither, so no getter sees package info without its application info
+            mApplicationInfo = packageInfo.applicationInfo;
+            mPackageInfo = packageInfo;
             // Update dynamic info
             isStopped = (mApplicationInfo.flags & ApplicationInfo.FLAG_STOPPED) != 0;
             isDisabled = FreezeUtils.isFrozen(mApplicationInfo);
-        } catch (RemoteException | PackageManager.NameNotFoundException ignore) {
+        } catch (RemoteException | PackageManager.NameNotFoundException | SecurityException ignore) {
+            // SecurityException: another user's app without INTERACT_ACROSS_USERS
         }
     }
 
@@ -573,30 +578,53 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
     @NonNull
     @Override
     public Map<ComponentInfo, Integer> getTrackerComponents() {
-        if (mTrackerComponents == null) {
+        Map<ComponentInfo, Integer> trackerComponents = mTrackerComponents;
+        if (trackerComponents == null) {
             Map<ComponentInfo, Integer> allComponents = getAllComponents();
-            Map<ComponentInfo, Integer> trackerComponents = new LinkedHashMap<>();
+            trackerComponents = new LinkedHashMap<>();
             for (ComponentInfo itemInfo : allComponents.keySet()) {
                 if (ComponentUtils.isTracker(itemInfo.name)) {
                     trackerComponents.put(itemInfo, allComponents.get(itemInfo));
                 }
             }
-            mTrackerComponents = trackerComponents;
+            // Without package info the components are only missing for now, so the next call tries again.
+            if (mAllComponents != null) {
+                mTrackerComponents = trackerComponents;
+            }
         }
-        return mTrackerComponents;
+        return trackerComponents;
     }
 
     @NonNull
     @Override
     public List<AppOpsManagerCompat.OpEntry> getAppOps() {
-        fetchPackageInfo();
-        if (mApplicationInfo != null && mAppOpEntries == null && isInstalled()) {
-            List<AppOpsManagerCompat.PackageOps> packageOps = ExUtils.exceptionAsNull(() -> new AppOpsManagerCompat().getOpsForPackage(mApplicationInfo.uid, getPackageName(), null));
-            if (packageOps != null && packageOps.size() == 1) {
-                mAppOpEntries = packageOps.get(0).getOps();
+        // Filter runs can overlap, so the field is read once and never set back to null.
+        List<AppOpsManagerCompat.OpEntry> ops = mAppOpEntries;
+        if (ops == null) {
+            ops = lookUpAppOps();
+            if (ops == null) {
+                return Collections.emptyList();
             }
-        } else mAppOpEntries = Collections.emptyList();
-        return mAppOpEntries;
+            mAppOpEntries = ops;
+        }
+        return ops;
+    }
+
+    /**
+     * The app's ops, empty when it isn't installed, and null while its package info or its ops can't be read, so the
+     * next call tries again.
+     */
+    @VisibleForTesting
+    @Nullable
+    List<AppOpsManagerCompat.OpEntry> lookUpAppOps() {
+        fetchPackageInfo();
+        if (mApplicationInfo == null) {
+            return null;
+        }
+        if (!isInstalled()) {
+            return Collections.emptyList();
+        }
+        return AppOpsManagerCompat.getOpsForPackageOrNull(mApplicationInfo.uid, getPackageName());
     }
 
     @NonNull
@@ -627,7 +655,7 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
             }
             mAllComponents = components;
         }
-        return mAllComponents;
+        return mAllComponents != null ? mAllComponents : Collections.emptyMap();
     }
 
     @NonNull
@@ -667,7 +695,7 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
             }
             mUsedPermissions = new ArrayList<>(usedPermissions);
         }
-        return mUsedPermissions;
+        return mUsedPermissions != null ? mUsedPermissions : Collections.emptyList();
     }
 
     @NonNull
