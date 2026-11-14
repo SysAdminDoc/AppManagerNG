@@ -59,6 +59,7 @@ public abstract class BaseActivity extends PerProcessActivity {
     private BiometricPrompt mBiometricPrompt;
     @Nullable
     private Bundle mSavedInstanceState;
+    private boolean mAuthenticationPending;
 
     private final ActivityResultLauncher<Intent> mKeyStoreActivity = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -83,6 +84,7 @@ public abstract class BaseActivity extends PerProcessActivity {
             initPermissionChecks(false);
             return;
         }
+        mAuthenticationPending = true;
         if (Boolean.TRUE.equals(BuildExpiryChecker.buildExpired())) {
             // Build has expired
             BuildExpiryChecker.getBuildExpiredDialog(this, (dialog, which) -> doAuthenticate(savedInstanceState)).show();
@@ -98,6 +100,14 @@ public abstract class BaseActivity extends PerProcessActivity {
     }
 
     protected abstract void onAuthenticated(@Nullable Bundle savedInstanceState);
+
+    /**
+     * Whether this activity was created but {@link #onAuthenticated} hasn't run yet, as while the
+     * app lock screen or the permission request is up. {@link #onNewIntent} can run meanwhile.
+     */
+    protected final boolean isAuthenticationPending() {
+        return mAuthenticationPending;
+    }
 
     @CallSuper
     @Override
@@ -237,6 +247,7 @@ public abstract class BaseActivity extends PerProcessActivity {
         mViewModel.setAuthenticating(false);
         if (mAlertDialog != null) mAlertDialog.dismiss();
         Ops.setAuthenticated(this, true);
+        mAuthenticationPending = false;
         onAuthenticated(savedInstanceState);
         InternalCacheCleanerService.scheduleAlarm(getApplicationContext());
     }

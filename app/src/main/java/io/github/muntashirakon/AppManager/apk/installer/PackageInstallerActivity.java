@@ -50,6 +50,7 @@ import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.pm.PackageInfoCompat;
+import androidx.core.os.BundleCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import java.io.File;
@@ -150,6 +151,21 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     // redelivered after a restart carries a stale one and simply gets the usual prompt.
     private static final String BATCH_INSTALL_TOKEN = UUID.randomUUID().toString();
     public static final String ACTION_PACKAGE_INSTALLED = BuildConfig.APPLICATION_ID + ".action.PACKAGE_INSTALLED";
+    private static final String STATE_HELD_INTENTS = "held_intents";
+    private static final String STATE_HELD_SENDERS = "held_senders";
+
+    /** An intent sent while the lock screen was up, with the app that sent it. */
+    private static final class HeldIntent {
+        @NonNull
+        final Intent intent;
+        @Nullable
+        final String sender;
+
+        HeldIntent(@NonNull Intent intent, @Nullable String sender) {
+            this.intent = intent;
+            this.sender = sender;
+        }
+    }
 
     @NonNull
     public static Intent getBatchInstallInstance(@NonNull Context context, @NonNull ArrayList<Uri> uris) {
@@ -209,11 +225,20 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         }
     }
 
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    @NonNull
+    List<ApkQueueItem> queuedItems() {
+        synchronized (mApkQueue) {
+            return new ArrayList<>(mApkQueue);
+        }
+    }
+
     /**
+     * @param sender The app that sent the intent, worked out while it was being delivered
      * @return how many items the intent added
      */
-    private int enqueue(@NonNull Intent intent) {
-        List<ApkQueueItem> items = queueItemsFrom(intent, Utils.getRealReferrer(this));
+    private int enqueue(@NonNull Intent intent, @Nullable String sender) {
+        List<ApkQueueItem> items = queueItemsFrom(intent, sender);
         synchronized (mApkQueue) {
             mApkQueue.addAll(items);
             if (isBatchRequest(intent)) {
@@ -287,6 +312,12 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     // Queued items that came in a batch built by this app. Batch mode follows the item, so an APK
     // another app sends while a batch is running still gets the prompt. Guarded by mApkQueue.
     private final Set<ApkQueueItem> mBatchItems = Collections.newSetFromMap(new IdentityHashMap<>());
+    // Intents sent while the app lock screen was up, in order, each with the app that sent it.
+    // They're handled after the one that launched the installer, once onAuthenticated has queued
+    // it, and they're kept in the saved state if the activity is recreated before that.
+    private final List<HeldIntent> mIntentsWhileLocked = new ArrayList<>();
+    private boolean mHeldIntentsRestored;
+    private boolean mAuthenticated;
     private final ActivityResultLauncher<Intent> mConfirmIntentLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
                 // User did some interaction and the installer screen is closed now
@@ -322,14 +353,18 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
 
     @Override
     protected void onAuthenticated(@Nullable Bundle savedInstanceState) {
+        mAuthenticated = true;
+        restoreIntentsSentWhileLocked(savedInstanceState);
         final Intent intent = getIntent();
         if (intent == null) {
             triggerCancel();
             return;
         }
         Log.d(TAG, "On create, intent: %s", intent);
-        if (ACTION_PACKAGE_INSTALLED.equals(intent.getAction())) {
-            onNewIntent(intent);
+        boolean launchedForConfirmation = ACTION_PACKAGE_INSTALLED.equals(intent.getAction());
+        if (launchedForConfirmation && !heldIntentsAskToInstall()) {
+            handleNewIntent(intent, null);
+            handleIntentsSentWhileLocked();
             return;
         }
         mCallerWantsResult = intent.getBooleanExtra(Intent.EXTRA_RETURN_RESULT, false);
@@ -338,7 +373,15 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                 new Intent(this, PackageInstallerService.class), mServiceConnection, BIND_AUTO_CREATE)) {
             throw new RuntimeException("Unable to bind PackageInstallerService");
         }
-        enqueue(intent);
+        if (launchedForConfirmation) {
+            // APKs sent while the lock screen was up still need the rest of the installer. Queue
+            // them first: a confirmation that can't be shown closes an installer with nothing queued.
+            handleIntentsSentWhileLocked();
+            handleNewIntent(intent, null);
+        } else {
+            enqueue(intent, Utils.getRealReferrer(this));
+            handleIntentsSentWhileLocked();
+        }
         mModel.packageInfoLiveData().observe(this, newPackageInfo -> {
             if (newPackageInfo == null) {
                 if (mBatchInstall) {
@@ -504,6 +547,45 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         outState.clear();
         super.onSaveInstanceState(outState);
+        if (!mIntentsWhileLocked.isEmpty()) {
+            ArrayList<Intent> intents = new ArrayList<>(mIntentsWhileLocked.size());
+            ArrayList<String> senders = new ArrayList<>(mIntentsWhileLocked.size());
+            for (HeldIntent held : mIntentsWhileLocked) {
+                intents.add(held.intent);
+                senders.add(held.sender);
+            }
+            outState.putParcelableArrayList(STATE_HELD_INTENTS, intents);
+            outState.putStringArrayList(STATE_HELD_SENDERS, senders);
+        }
+    }
+
+    @Override
+    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        // Still locked, the activity may be saved again before onAuthenticated gets to them
+        restoreIntentsSentWhileLocked(savedInstanceState);
+    }
+
+    private void restoreIntentsSentWhileLocked(@Nullable Bundle savedInstanceState) {
+        if (savedInstanceState == null || mHeldIntentsRestored) {
+            return;
+        }
+        mHeldIntentsRestored = true;
+        savedInstanceState.setClassLoader(getClassLoader());
+        List<Intent> intents = BundleCompat.getParcelableArrayList(savedInstanceState, STATE_HELD_INTENTS,
+                Intent.class);
+        List<String> senders = savedInstanceState.getStringArrayList(STATE_HELD_SENDERS);
+        if (intents == null || senders == null || intents.size() != senders.size()) {
+            return;
+        }
+        List<HeldIntent> restored = new ArrayList<>(intents.size());
+        for (int i = 0; i < intents.size(); ++i) {
+            Intent intent = intents.get(i);
+            intent.setExtrasClassLoader(getClassLoader());
+            restored.add(new HeldIntent(intent, senders.get(i)));
+        }
+        // They were sent before anything that arrived since the activity was recreated
+        mIntentsWhileLocked.addAll(0, restored);
     }
 
     @UiThread
@@ -629,6 +711,40 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         Log.d(TAG, "New intent called: %s", intent);
+        // Android names the app that sent a new intent only while onNewIntent runs
+        String sender = Utils.getRealReferrer(this);
+        if (!mAuthenticated && isAuthenticationPending()) {
+            // setIntent would replace the launch intent before onAuthenticated queues it
+            mIntentsWhileLocked.add(new HeldIntent(intent, sender));
+            return;
+        }
+        handleNewIntent(intent, sender);
+    }
+
+    private boolean heldIntentsAskToInstall() {
+        for (HeldIntent held : mIntentsWhileLocked) {
+            Intent intent = held.intent;
+            if (ACTION_PACKAGE_INSTALLED.equals(intent.getAction())) {
+                continue;
+            }
+            List<Uri> uris = IntentCompat.getDataUris(intent);
+            if ((uris != null && !uris.isEmpty()) || IntentCompat.getUnwrappedParcelableExtra(intent,
+                    EXTRA_APK_FILE_LINK, ApkSource.class) != null) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void handleIntentsSentWhileLocked() {
+        List<HeldIntent> intents = new ArrayList<>(mIntentsWhileLocked);
+        mIntentsWhileLocked.clear();
+        for (HeldIntent held : intents) {
+            handleNewIntent(held.intent, held.sender);
+        }
+    }
+
+    private void handleNewIntent(@NonNull Intent intent, @Nullable String sender) {
         setIntent(intent);
         // Check for action first
         if (ACTION_PACKAGE_INSTALLED.equals(intent.getAction())) {
@@ -665,7 +781,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
             return;
         }
         // New APK files added, or nothing at all when the installer is just brought back
-        if (enqueue(intent) > 0) {
+        if (enqueue(intent, sender) > 0) {
             UIUtils.displayShortToast(R.string.added_to_queue);
         }
     }
