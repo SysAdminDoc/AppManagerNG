@@ -43,7 +43,6 @@ public class SelfPermissions {
                 Manifest.permission.DUMP,
                 ManifestCompat.permission.GET_APP_OPS_STATS,
                 ManifestCompat.permission.INTERACT_ACROSS_USERS,
-                Manifest.permission.READ_LOGS,
                 Manifest.permission.WRITE_SECURE_SETTINGS
         };
         int userId = UserHandleHidden.myUserId();
@@ -55,6 +54,10 @@ public class SelfPermissions {
                     Log.w("SelfPermissions", "Could not grant self permission %s.", e, permission);
                 }
             }
+        }
+        if (!checkSelfPermission(Manifest.permission.READ_LOGS)) {
+            // Granting it kills the app (it adds the log groups), so it waits until nothing is open
+            DeferredLogAccess.owe();
         }
         // Grant usage stats permission (both permission and app op needs to be granted)
         if (FeatureController.isUsageAccessEnabled()) {

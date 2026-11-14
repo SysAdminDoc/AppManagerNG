@@ -35,6 +35,7 @@ import io.github.muntashirakon.AppManager.misc.AMExceptionHandler;
 import io.github.muntashirakon.AppManager.misc.ProfilingTriggerHelper;
 import io.github.muntashirakon.AppManager.oneclickops.ClearCacheAppWidget;
 import io.github.muntashirakon.AppManager.scanner.TrackerDatabaseFreshnessChecker;
+import io.github.muntashirakon.AppManager.self.DeferredLogAccess;
 import io.github.muntashirakon.AppManager.self.PackageEventSync;
 import io.github.muntashirakon.AppManager.usage.DataUsageAppWidget;
 import io.github.muntashirakon.AppManager.usage.ScreenTimeAppWidget;
@@ -82,6 +83,7 @@ public class AppManager extends Application {
         // Before the locale is applied, so an imported language file is already in place
         LanguagePackManager.installOnStartup(this);
         AppearanceUtils.init(this);
+        DeferredLogAccess.register(this);
         registerAutoFreezeOnLockReceiver();
         Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
         Security.addProvider(new JavaKeyStoreProvider());
