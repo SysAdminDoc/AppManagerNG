@@ -509,34 +509,8 @@ public final class PackageInstallerCompat {
         @WorkerThread
         void onStartInstall(int sessionId, String packageName);
 
-        // MIUI-begin: MIUI 12.5+ workaround
-
-        /**
-         * MIUI 12.5+ may require more than one tries in order to have successful installations.
-         * This is only needed during APK installations, not APK uninstallations or install-existing
-         * attempts.
-         *
-         * @param apkFile Underlying APK file if available.
-         */
-        @WorkerThread
-        default void onAnotherAttemptInMiui(@Nullable ApkFile apkFile) {
-        }
-        // MIUI-end
-
-        // HyperOS-begin: HyperOS 2.0+ workaround
-
-        /**
-         * In HyperOS 2.0+, the installer for the system apps must be another system app. The
-         * overridden method must set the package installer to a valid system app. This is only
-         * needed during APK installations, not APK uninstallations or install-existing attempts.
-         *
-         * @param apkFile Underlying APK file if available.
-         */
-        @WorkerThread
-        default void onSecondAttemptInHyperOsWithoutInstaller(@Nullable ApkFile apkFile) {
-        }
-        // HyperOS-end
-
+        // The MIUI and HyperOS retries are run by install() itself (PackageInstallerRetryPolicy),
+        // so this hears only the last attempt's result
         @WorkerThread
         void onFinishedInstall(int sessionId, String packageName, int result, @Nullable String blockingPackage,
                                @Nullable String statusMessage);
@@ -599,6 +573,13 @@ public final class PackageInstallerCompat {
                 case ACTION_INSTALL_COMPLETED:
                     // Either it failed to create a session or the installation was completed,
                     // regardless of the status: success or failure
+                    if (sessionId != mSessionId || mInstallCompleted) {
+                        // An earlier attempt's session (a retry reuses this receiver, and a
+                        // dismissed confirmation reports its own session), or a second report
+                        Log.w(TAG, "Ignoring a completion for session %d, the current one is %d.",
+                                sessionId, mSessionId);
+                        break;
+                    }
                     mFinalStatus = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, STATUS_FAILURE_INVALID);
                     String blockingPackage = intent.getStringExtra(PackageInstaller.EXTRA_OTHER_PACKAGE_NAME);
                     mStatusMessage = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
@@ -618,7 +599,8 @@ public final class PackageInstallerCompat {
     private IPackageInstaller mPackageInstaller;
     private PackageInstaller.Session mSession;
     // MIUI-added: Multiple attempts may be required
-    int mAttempts = 1;
+    private volatile PackageInstallerRetryPolicy.Action mRetryAction = PackageInstallerRetryPolicy.Action.FINISH;
+    private int mAttemptNumber = 1;
     private final Context mContext;
     private final boolean mHasInstallPackagePermission;
     private static final String PREFS_INSTALLER = "installer_state";
@@ -695,6 +677,13 @@ public final class PackageInstallerCompat {
     public boolean install(@NonNull ApkFile apkFile, @NonNull List<String> selectedSplitIds,
                            @NonNull InstallerOptions options, @Nullable ProgressHandler progressHandler) {
         ThreadUtils.ensureWorkerThread();
+        return installWithRetries(options, attemptOptions ->
+                installApkAttempt(apkFile, selectedSplitIds, attemptOptions, progressHandler));
+    }
+
+    @WorkerThread
+    private boolean installApkAttempt(@NonNull ApkFile apkFile, @NonNull List<String> selectedSplitIds,
+                                      @NonNull InstallerOptions options, @Nullable ProgressHandler progressHandler) {
         ObbInstallStager obbStager = null;
         try {
             mApkFile = apkFile;
@@ -887,6 +876,13 @@ public final class PackageInstallerCompat {
     public boolean install(@NonNull Path[] apkFiles, @NonNull String packageName, @NonNull InstallerOptions options,
                            @Nullable ProgressHandler progressHandler) {
         ThreadUtils.ensureWorkerThread();
+        return installWithRetries(options, attemptOptions ->
+                installPathsAttempt(apkFiles, packageName, attemptOptions, progressHandler));
+    }
+
+    @WorkerThread
+    private boolean installPathsAttempt(@NonNull Path[] apkFiles, @NonNull String packageName,
+                                        @NonNull InstallerOptions options, @Nullable ProgressHandler progressHandler) {
         try {
             mApkFile = null;
             mPackageName = Objects.requireNonNull(packageName);
@@ -1626,6 +1622,72 @@ public final class PackageInstallerCompat {
         return false;
     }
 
+    /** One install attempt, which reports its result through {@link #installCompleted}. */
+    private interface InstallAttempt {
+        @WorkerThread
+        boolean run(@NonNull InstallerOptions options);
+    }
+
+    /**
+     * Runs an install and every vendor retry it needs, and returns the last attempt's result.
+     * The retries used to start from the listener after this call had already been told the
+     * first attempt failed, so a restore gave up while its retry was still installing.
+     */
+    // Ported from upstream App Manager f3db2698a ("Installer: fix race condition in MIUI/HyperOS retries")
+    @WorkerThread
+    private boolean installWithRetries(@NonNull InstallerOptions options, @NonNull InstallAttempt attempt) {
+        InstallerOptions attemptOptions = copyOptions(options);
+        mAttemptNumber = 1;
+        while (true) {
+            resetAttemptState();
+            boolean successful = attempt.run(attemptOptions);
+            if (!prepareRetry(attemptOptions)) {
+                return successful;
+            }
+        }
+    }
+
+    /** What one attempt leaves behind and the next must not read as its own. */
+    private void resetAttemptState() {
+        mSessionId = -1;
+        mFinalStatus = STATUS_FAILURE_INVALID;
+        mStatusMessage = null;
+        mInstallCompleted = false;
+        mRetryAction = PackageInstallerRetryPolicy.Action.FINISH;
+    }
+
+    /** A retry changes the installer, so it works on a copy and the caller's options stay as given. */
+    @NonNull
+    static InstallerOptions copyOptions(@NonNull InstallerOptions options) {
+        InstallerOptions copy = InstallerOptions.getDefault();
+        copy.copy(options);
+        return copy;
+    }
+
+    static void applyRetryOptions(@NonNull PackageInstallerRetryPolicy.Action retryAction,
+                                  @NonNull InstallerOptions options) {
+        // HyperOS-begin: system-app retries must use another system app as installer.
+        if (retryAction == PackageInstallerRetryPolicy.Action.RETRY_WITH_SHELL_INSTALLER) {
+            options.setInstallerName("com.android.shell");
+        }
+        // HyperOS-end
+    }
+
+    private boolean prepareRetry(@NonNull InstallerOptions options) {
+        PackageInstallerRetryPolicy.Action retryAction = mRetryAction;
+        if (retryAction == PackageInstallerRetryPolicy.Action.FINISH) {
+            return false;
+        }
+        ++mAttemptNumber;
+        applyRetryOptions(retryAction, options);
+        if (retryAction == PackageInstallerRetryPolicy.Action.RETRY_WITH_SHELL_INSTALLER) {
+            Log.i(TAG, "HyperOS: Retrying %s with the shell installer (attempt %d).", mPackageName, mAttemptNumber);
+        } else {
+            Log.i(TAG, "MIUI: Retrying %s (attempt %d).", mPackageName, mAttemptNumber);
+        }
+        return true;
+    }
+
     /**
      * Reports a failure the installer found on its own, with the reason. It runs synchronously:
      * every caller returns right after and the receivers are unregistered on the way out, so the
@@ -1653,44 +1715,21 @@ public final class PackageInstallerCompat {
                                   @Nullable String statusMessage) {
         ThreadUtils.ensureWorkerThread();
         finalStatus = VerifierRefusal.classify(finalStatus, statusMessage);
-        if (finalStatus == STATUS_FAILURE_ABORTED
-                && mSessionId == sessionId
-                && mOnInstallListener != null) {
+        if (finalStatus == STATUS_FAILURE_ABORTED && mSessionId == sessionId) {
             boolean privileged = SelfPermissions.checkSelfPermission(Manifest.permission.INSTALL_PACKAGES);
-            // MIUI-begin: In MIUI 12.5 and 20.2.0, it might be required to try installing the APK files more than once.
-            if (!privileged
-                    && MiuiUtils.isActualMiuiVersionAtLeast("12.5", "20.2.0")
-                    && Objects.equals(statusMessage, "INSTALL_FAILED_ABORTED: Permission denied")
-                    && mAttempts <= 3) {
-                // Try once more
-                ++mAttempts;
-                Log.i(TAG, "MIUI: Installation attempt no %d for package %s", mAttempts, mPackageName);
+            // The MIUI retry is only for unprivileged installs, and reading the MIUI version can
+            // throw on a HyperOS build, so a privileged install never asks for it
+            boolean affectedMiui = !privileged && MiuiUtils.isActualMiuiVersionAtLeast("12.5", "20.2.0");
+            PackageInstallerRetryPolicy.Action retryAction = PackageInstallerRetryPolicy.getAction(finalStatus,
+                    statusMessage, privileged, affectedMiui, MiuiUtils.isHyperOs(), mAttemptNumber);
+            if (retryAction != PackageInstallerRetryPolicy.Action.FINISH) {
+                // install() starts the next attempt once this one has unwound
+                Log.i(TAG, "Attempt %d for %s aborted: %s", mAttemptNumber, mPackageName, statusMessage);
+                mRetryAction = retryAction;
                 mInteractionWatcher.countDown();
                 mInstallWatcher.countDown();
-                // Remove old broadcast receivers
-                unregisterReceiver();
-                mOnInstallListener.onAnotherAttemptInMiui(mApkFile);
                 return;
             }
-            // MIUI-end
-            // HyperOS-begin: In HyperOS 2.0, installer package needs to be altered
-            if (privileged
-                    && MiuiUtils.isHyperOs()
-                    && statusMessage != null
-                    && statusMessage.startsWith("INSTALL_FAILED_HYPEROS_ISOLATION_VIOLATION: ")
-                    && mAttempts <= 2) {
-                // Try a second time with installer set to shell
-                ++mAttempts;
-                Log.i(TAG, "HyperOS: %s", statusMessage);
-                Log.i(TAG, "HyperOS: Second attempt for %s", mPackageName);
-                mInteractionWatcher.countDown();
-                mInstallWatcher.countDown();
-                // Remove old broadcast receivers
-                unregisterReceiver();
-                mOnInstallListener.onSecondAttemptInHyperOsWithoutInstaller(mApkFile);
-                return;
-            }
-            // HyperOS-end
         }
         // No need to check package name since it's been checked before
         if (finalStatus == STATUS_FAILURE_SESSION_CREATE || (mSessionId == sessionId)) {

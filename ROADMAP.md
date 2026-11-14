@@ -21,6 +21,12 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Acceptance: on the S22, with the latest floss debug build installed, the archived `com.example.archiveprobe` (installed with `adb install --user 0 -i com.android.vending`, then `pm archive --user 0`) shows in the main list as its label and icon with "Archived ·" leading the details line, and TalkBack's text for the row starts with Archived. Afterwards clear the list's search, close the keyboard and `adb uninstall com.example.archiveprobe`, which is still on the phone from the first try.
   Complexity: S
 
+- [ ] P2: Check a no-root restore on the S22 (upstream #1286)
+  Why: upstream's #1286 crash was a no-root restore on a Samsung phone throwing a SecurityException from `createSession`, because the session was opened in the backup's installer's name. NG opens it in its own name, and the MIUI and HyperOS retry now runs inside the install call (upstream f3db2698a). Both are covered by Robolectric (`PackageInstallerSessionInstallerTest`, `PackageInstallerRetryTest`), but no restore has run on a phone since: the S22 was leased to other work.
+  Touches: nothing unless it fails (`apk/installer/PackageInstallerCompat.java`, `backup/RestoreOp.java`).
+  Acceptance: on the S22 in no-root mode, with the latest floss debug build, a probe app installed with `adb install --user 0 -i com.android.vending` is backed up (APK only), uninstalled, and restored from that backup. Android's install prompt is approved from a fresh dump, the restore reports success, the app is installed again, and logcat shows no SecurityException from `createSession`. Afterwards uninstall the probe, delete its backup and put the app's mode back to what it was.
+  Complexity: S
+
 - [ ] P2: Check the isolated thumbnail process on a phone and on API 21 and 22
   Why: file manager thumbnails now come from an isolated `:thumbnails` process. Robolectric can't start a real isolated process, render a PDF, or run API 21 and 22, so those parts have only run as unit tests on API 23 and 36.
   Touches: nothing unless it fails (`fm/icons/IsolatedThumbnails.java`, `ThumbnailDecoderService`, the isolated-process early return in `AppManager`).
@@ -66,14 +72,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Acceptance: a local emulator suite installs a fixture app, backs it up with no-crypto and AES modes, uninstalls it, restores it, and asserts data equality.
   Today: `app/src/androidTest` has seven classes and none of them runs a backup round trip. This also covers INIT-D5 (backup round-trip emulator coverage).
   Unblocked 2026-11-07: every emulator image on disk has room for a fixture-app backup and restore, so this is test work with nothing missing.
-  Complexity: M
-
-- [ ] P1: Port upstream restore fixes from v4.1.0 milestone
-  Why: upstream v4.1.0 planning includes restore fixes such as non-root restore SecurityException handling on Samsung/API 34; NG's restore path predates those fixes.
-  Evidence: upstream MuntashirAkon/AppManager#1286; backup/RestoreOp.java; apk/installer/; compat/PackageManagerCompat.java.
-  Acceptance: the #1286 reproduction succeeds; ported fixes are listed in CHANGELOG.md with upstream attribution.
-  Today: upstream v4.1.0 (2026-06-29) and v4.1.1 (2026-09-04) are both out, and the `backup/RestoreOp.java` history shows no upstream restore port yet.
-  Unblocked 2026-11-07: the fixes are public to port, the S22 and S25 are Samsung phones on current One UI, and the API 34 emulator image covers the API 34 half of the reproduction.
   Complexity: M
 
 - [ ] P1: Port upstream's native run_server for the local privileged channel
