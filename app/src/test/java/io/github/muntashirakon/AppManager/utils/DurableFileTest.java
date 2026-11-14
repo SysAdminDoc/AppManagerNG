@@ -122,6 +122,23 @@ public class DurableFileTest {
     }
 
     @Test
+    public void onlyABackupWithNothingAtTheBaseIsUnrestored() throws IOException {
+        assertFalse(mFile.hasUnrestoredBackup());
+        Files.write(new File(mDir, "store.json" + DurableFile.BACKUP_SUFFIX).toPath(),
+                "first".getBytes(StandardCharsets.UTF_8));
+        assertTrue(mFile.hasUnrestoredBackup());
+
+        mFile.recover();
+
+        assertFalse(mFile.hasUnrestoredBackup());
+        assertEquals("first", mFile.read(MAX_BYTES));
+        Files.write(new File(mDir, "store.json" + DurableFile.BACKUP_SUFFIX).toPath(),
+                "older".getBytes(StandardCharsets.UTF_8));
+        // The base is there, so the backup is only cleanup left over
+        assertFalse(mFile.hasUnrestoredBackup());
+    }
+
+    @Test
     public void deleteRemovesEveryArtefact() throws IOException {
         write("first");
         Files.write(new File(mDir, "store.json" + DurableFile.NEW_SUFFIX).toPath(),

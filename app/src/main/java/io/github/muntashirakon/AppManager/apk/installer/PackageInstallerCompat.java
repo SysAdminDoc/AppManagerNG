@@ -45,6 +45,8 @@ import androidx.core.app.PendingIntentCompat;
 import androidx.core.content.ContextCompat;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -55,6 +57,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
@@ -67,6 +70,9 @@ import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.ApkFile;
 import io.github.muntashirakon.AppManager.apk.ApkUtils;
+import io.github.muntashirakon.AppManager.apk.signing.Signer;
+import io.github.muntashirakon.AppManager.apk.signing.SignerPinCheck;
+import io.github.muntashirakon.AppManager.apk.signing.SignerPinStore;
 import io.github.muntashirakon.AppManager.compat.DeveloperVerificationCompat;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
@@ -75,7 +81,9 @@ import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
 import io.github.muntashirakon.AppManager.runner.Runner;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
+import io.github.muntashirakon.AppManager.self.filecache.FileCache;
 import io.github.muntashirakon.AppManager.settings.Ops;
+import io.github.muntashirakon.AppManager.sync.lan.ApkSigners;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.BroadcastUtils;
@@ -120,6 +128,7 @@ public final class PackageInstallerCompat {
             STATUS_FAILURE_SESSION_COMMIT,
             STATUS_FAILURE_SESSION_ABANDON,
             STATUS_FAILURE_INCOMPATIBLE_ROM,
+            STATUS_FAILURE_SIGNER_PIN,
     })
     @Retention(RetentionPolicy.SOURCE)
     public @interface Status {
@@ -179,6 +188,11 @@ public final class PackageInstallerCompat {
      * The operation failed because the current ROM is incompatible with PackageInstaller
      */
     public static final int STATUS_FAILURE_INCOMPATIBLE_ROM = -7;
+    /**
+     * The operation failed because the APK isn't signed by the key the user pinned for the package,
+     * or the pin list can't be read. See {@link SignerPinCheck}.
+     */
+    public static final int STATUS_FAILURE_SIGNER_PIN = -8;
 
     @SuppressLint({"NewApi", "UniqueConstants", "InlinedApi"})
     @IntDef(flag = true, value = {
@@ -548,6 +562,9 @@ public final class PackageInstallerCompat {
     private int mSessionId = -1;
     @Nullable
     private String mSessionSha256;
+    // What the session has to hash to when a signer pin was checked; null when none applied
+    @Nullable
+    private String mSignerPinSha256;
     @Status
     private int mFinalStatus = STATUS_FAILURE_INVALID;
     @Nullable
@@ -699,12 +716,7 @@ public final class PackageInstallerCompat {
                     return false;
                 }
             }
-            List<ApkFile.Entry> selectedEntries = new ArrayList<>();
-            for (ApkFile.Entry entry : apkFile.getEntries()) {
-                if (selectedSplitIds.contains(entry.id)) {
-                    selectedEntries.add(entry);
-                }
-            }
+            List<ApkFile.Entry> selectedEntries = selectedEntriesOf(apkFile, selectedSplitIds);
             Log.d(TAG, "Install: selected entries: %s", selectedSplitIds);
             // Gate on storage before anything large is written: the declared entry sizes are enough
             // to decide, and reading them does not extract or sign anything.
@@ -730,6 +742,11 @@ public final class PackageInstallerCompat {
                     Log.e(TAG, "Install: Cannot retrieve the selected APK files.", e);
                     return false;
                 }
+            }
+            // The pin is checked against the same streams the session is written from below.
+            boolean signApkFiles = options.isSignApkFiles();
+            if (!checkSignerPins(mPackageName, () -> checkPins(mContext, mPackageName, selectedEntries, signApkFiles))) {
+                return false;
             }
             // Extract and validate the OBB files before anything is mutated. The live per-user OBB
             // generation is only replaced once the APK session itself has succeeded, so a failure
@@ -781,6 +798,9 @@ public final class PackageInstallerCompat {
             mSessionSha256 = finishDigest(sessionDigest);
             if (mPkgInstallerReceiver != null) {
                 mPkgInstallerReceiver.setSessionSha256(mSessionSha256);
+            }
+            if (!sessionMatchesSignerPinCheck()) {
+                return abandon();
             }
             InstallSessionDetails.register(mSessionId, new InstallSessionDetails(mAppLabel, mApkName, baseApk));
             Log.d(TAG, "Install: Running installation...");
@@ -899,6 +919,9 @@ public final class PackageInstallerCompat {
             if (!checkStorage(InstallStorageCheck.estimate(apkSizes, 0, allRequestedUsers.length))) {
                 return false;
             }
+            if (!checkSignerPins(packageName, () -> checkPins(mContext, packageName, apkFiles, false))) {
+                return false;
+            }
             userId = allRequestedUsers[0];
             String originatingPackage = options.isSetOriginatingPackage() ? options.getOriginatingPackage() : null;
             Uri originatingUri = options.isSetOriginatingPackage() ? options.getOriginatingUri() : null;
@@ -932,6 +955,9 @@ public final class PackageInstallerCompat {
             if (mPkgInstallerReceiver != null) {
                 mPkgInstallerReceiver.setSessionSha256(mSessionSha256);
             }
+            if (!sessionMatchesSignerPinCheck()) {
+                return abandon();
+            }
             InstallSessionDetails.register(mSessionId, new InstallSessionDetails(mAppLabel, mApkName,
                     baseApkOf(apkFiles)));
             // Commit
@@ -956,6 +982,269 @@ public final class PackageInstallerCompat {
             }
         }
         return base != null ? base.getFile() : null;
+    }
+
+    /**
+     * The package already-resolved session files declare, read from the first one the parser can
+     * open. A file the app can't open itself, such as one staged where only the privileged service
+     * can read, is parsed from a private copy.
+     *
+     * @return the package, or {@code null} when no file could be read for it
+     */
+    @WorkerThread
+    @Nullable
+    private static String declaredPackageOf(@NonNull Context context, @NonNull Path[] apkFiles) {
+        PackageManager pm = context.getPackageManager();
+        for (Path apkFile : apkFiles) {
+            File file = apkFile.getFile();
+            PackageInfo info = file != null ? pm.getPackageArchiveInfo(file.getAbsolutePath(), 0) : null;
+            if (info == null) {
+                info = parseCopyOf(pm, apkFile);
+            }
+            if (info != null) {
+                return info.packageName;
+            }
+        }
+        return null;
+    }
+
+    @WorkerThread
+    @Nullable
+    private static PackageInfo parseCopyOf(@NonNull PackageManager pm, @NonNull Path apkFile) {
+        // The package it declares decides which pins apply, so it's parsed from a copy no other app
+        // can swap, the same way the pin check reads its copies
+        File copy = null;
+        try {
+            try (InputStream in = apkFile.openInputStream()) {
+                copy = SignerPinCheck.privateCopyOf(in);
+            } catch (IOException | SecurityException e) {
+                // A content URI whose read grant is gone throws SecurityException. Closing the
+                // source can also fail after the whole copy is written.
+                Log.w(TAG, "Install: could not read %s for its package.", e, apkFile.getName());
+                return null;
+            }
+            return pm.getPackageArchiveInfo(copy.getAbsolutePath(), 0);
+        } finally {
+            if (copy != null) {
+                SignerPinCheck.deleteCopy(copy);
+            }
+        }
+    }
+
+    @NonNull
+    private static List<ApkFile.Entry> selectedEntriesOf(@NonNull ApkFile apkFile,
+                                                         @NonNull List<String> selectedSplitIds) {
+        List<ApkFile.Entry> selectedEntries = new ArrayList<>();
+        for (ApkFile.Entry entry : apkFile.getEntries()) {
+            if (selectedSplitIds.contains(entry.id)) {
+                selectedEntries.add(entry);
+            }
+        }
+        return selectedEntries;
+    }
+
+    @NonNull
+    private static List<SignerPinCheck.Source> pinSourcesOf(@NonNull List<ApkFile.Entry> entries,
+                                                            boolean signApkFiles) {
+        List<SignerPinCheck.Source> sources = new ArrayList<>(entries.size());
+        for (ApkFile.Entry entry : entries) {
+            sources.add(new SignerPinCheck.Source() {
+                @NonNull
+                @Override
+                public String getName() {
+                    return entry.getFileName();
+                }
+
+                @NonNull
+                @Override
+                public InputStream openInputStream() throws IOException {
+                    return entry.getInputStream(signApkFiles);
+                }
+            });
+        }
+        return sources;
+    }
+
+    @NonNull
+    private static List<SignerPinCheck.Source> pinSourcesOf(@NonNull Path[] apkFiles, boolean signApkFiles) {
+        List<SignerPinCheck.Source> sources = new ArrayList<>(apkFiles.length);
+        for (Path apkFile : apkFiles) {
+            sources.add(new SignerPinCheck.Source() {
+                @NonNull
+                @Override
+                public String getName() {
+                    return apkFile.getName();
+                }
+
+                @NonNull
+                @Override
+                public InputStream openInputStream() throws IOException {
+                    return signApkFiles ? openSignedCopy(apkFile) : apkFile.openInputStream();
+                }
+            });
+        }
+        return sources;
+    }
+
+    /**
+     * A session-only cache that fails like a read when its folder can't be made (a full disk, say),
+     * so the check refuses the install instead of crashing the thread it runs on.
+     */
+    @NonNull
+    private static FileCache newFileCache() throws IOException {
+        try {
+            return new FileCache();
+        } catch (IllegalStateException e) {
+            throw new IOException("Could not create the file cache", e);
+        }
+    }
+
+    /**
+     * A signed copy of {@code apkFile}, signed the way the installer signs an APK it was told to
+     * sign. The copies are deleted when the stream is closed.
+     */
+    @WorkerThread
+    @NonNull
+    private static InputStream openSignedCopy(@NonNull Path apkFile) throws IOException {
+        FileCache cache = newFileCache();
+        boolean handedOver = false;
+        try {
+            File copy;
+            try (InputStream in = apkFile.openInputStream()) {
+                copy = cache.getCachedFile(in, "apk");
+            }
+            InputStream signed = new FilterInputStream(new FileInputStream(Signer.signCopy(copy, cache).apk)) {
+                @Override
+                public void close() throws IOException {
+                    try {
+                        super.close();
+                    } finally {
+                        cache.close();
+                    }
+                }
+            };
+            handedOver = true;
+            return signed;
+        } finally {
+            if (!handedOver) {
+                cache.close();
+            }
+        }
+    }
+
+    /**
+     * Checks the signer pins the way {@link #install(ApkFile, List, InstallerOptions, ProgressHandler)}
+     * would, without installing. Run it before anything is removed to make room for that install,
+     * such as uninstalling an app signed by another key: the install would be refused after the app
+     * and its data were already gone.
+     *
+     * @return why the install would be refused, or {@code null} when the pins allow it
+     */
+    @WorkerThread
+    @Nullable
+    public static String signerPinRefusal(@NonNull Context context, @NonNull ApkFile apkFile,
+                                          @NonNull List<String> selectedSplitIds, boolean signApkFiles) {
+        String packageName = Objects.requireNonNull(apkFile.getPackageName());
+        List<ApkFile.Entry> entries = selectedEntriesOf(apkFile, selectedSplitIds);
+        return signerPinRefusal(() -> checkPins(context, packageName, entries, signApkFiles));
+    }
+
+    /**
+     * The same check for {@link #install(Path[], String, InstallerOptions)}.
+     *
+     * @return why the install would be refused, or {@code null} when the pins allow it
+     */
+    @WorkerThread
+    @Nullable
+    public static String signerPinRefusal(@NonNull Context context, @NonNull Path[] apkFiles,
+                                          @NonNull String packageName) {
+        return signerPinRefusal(context, apkFiles, packageName, false);
+    }
+
+    /**
+     * The same check for files handed to the installer screen, which installs them as an
+     * {@link ApkFile}.
+     *
+     * @param signApkFiles whether the installer will sign them first, so the pin is checked
+     *                     against signed copies
+     * @return why the install would be refused, or {@code null} when the pins allow it
+     */
+    @WorkerThread
+    @Nullable
+    public static String signerPinRefusal(@NonNull Context context, @NonNull Path[] apkFiles,
+                                          @NonNull String packageName, boolean signApkFiles) {
+        return signerPinRefusal(() -> checkPins(context, packageName, apkFiles, signApkFiles));
+    }
+
+    /** One signer pin check: the SHA-256 of the checked APKs, or {@code null} when nothing is pinned. */
+    private interface PinCheck {
+        @WorkerThread
+        @Nullable
+        String run() throws SignerPinCheck.Blocked;
+    }
+
+    @WorkerThread
+    @Nullable
+    private static String checkPins(@NonNull Context context, @NonNull String packageName,
+                                    @NonNull List<ApkFile.Entry> entries, boolean signApkFiles)
+            throws SignerPinCheck.Blocked {
+        return SignerPinCheck.check(Collections.singletonList(packageName), pinSourcesOf(entries, signApkFiles),
+                new SignerPinStore(context), ApkSigners.VERIFIED_FILE_READER);
+    }
+
+    @WorkerThread
+    @Nullable
+    private static String checkPins(@NonNull Context context, @NonNull String packageName,
+                                    @NonNull Path[] apkFiles, boolean signApkFiles)
+            throws SignerPinCheck.Blocked {
+        return SignerPinCheck.check(packageName, () -> declaredPackageOf(context, apkFiles),
+                pinSourcesOf(apkFiles, signApkFiles), new SignerPinStore(context), ApkSigners.VERIFIED_FILE_READER);
+    }
+
+    @WorkerThread
+    @Nullable
+    private static String signerPinRefusal(@NonNull PinCheck check) {
+        try {
+            check.run();
+            return null;
+        } catch (SignerPinCheck.Blocked e) {
+            Log.w(TAG, "Install: %s", e.getMessage());
+            return e.getMessage();
+        }
+    }
+
+    /**
+     * Refuses the install when a pinned package's APKs aren't signed by its pin. Runs before a
+     * session is opened, so a refused install leaves nothing behind.
+     */
+    @WorkerThread
+    private boolean checkSignerPins(@NonNull String packageName, @NonNull PinCheck check) {
+        mSignerPinSha256 = null;
+        try {
+            mSignerPinSha256 = check.run();
+            if (mSignerPinSha256 != null) {
+                Log.i(TAG, "Install: %s satisfies its signer pin.", packageName);
+            }
+            return true;
+        } catch (SignerPinCheck.Blocked e) {
+            Log.w(TAG, "Install: %s", e.getMessage());
+            callFinish(STATUS_FAILURE_SIGNER_PIN, "STATUS_FAILURE_SIGNER_PIN: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * The session has to hold exactly the bytes the signer pin was checked against; a file that
+     * changed in between is never committed.
+     */
+    private boolean sessionMatchesSignerPinCheck() {
+        if (mSignerPinSha256 == null || mSignerPinSha256.equals(mSessionSha256)) {
+            return true;
+        }
+        Log.w(TAG, "Install: the APKs changed after their signer pin was checked.");
+        callFinish(STATUS_FAILURE_SIGNER_PIN,
+                "STATUS_FAILURE_SIGNER_PIN: The APK files changed after their signer was checked.");
+        return false;
     }
 
     private boolean commit(int userId) {

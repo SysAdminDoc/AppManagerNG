@@ -40,7 +40,10 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
+import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
+import io.github.muntashirakon.io.Path;
+import io.github.muntashirakon.io.Paths;
 
 /**
  * Holds both sides of local sync for the screen: sharing this device (the host) and talking to
@@ -914,33 +917,51 @@ public class LanSyncViewModel extends AndroidViewModel {
     }
 
     /**
-     * The new copy goes to the installer only once the old one is gone. When the uninstall fails,
-     * the installed app stays as it was and the new copy waits in Received APKs.
+     * The new copy goes to the installer only once the old one is gone. When the new copy's signer
+     * pin would refuse it or the uninstall fails, the installed app stays as it was and the new
+     * copy waits in Received APKs.
      */
     @WorkerThread
     private void uninstallThenInstall(@NonNull LanSyncDownloader.Result result) {
         try {
             mTask.postValue(getApplication().getString(R.string.lan_sync_uninstalling, result.label));
-            String failure;
-            try {
-                failure = mUninstaller.uninstall(result.packageName, result.label);
-            } catch (RuntimeException e) {
-                Log.w(TAG, "Could not uninstall %s", e, result.packageName);
-                failure = describe(e);
+            // Checked first: a refused install after the uninstall would leave neither copy
+            String failure = signerPinRefusal(result);
+            int message = R.string.lan_sync_replace_pin_refused;
+            if (failure == null) {
+                message = R.string.lan_sync_replace_uninstall_failed;
+                try {
+                    failure = mUninstaller.uninstall(result.packageName, result.label);
+                } catch (RuntimeException e) {
+                    Log.w(TAG, "Could not uninstall %s", e, result.packageName);
+                    failure = describe(e);
+                }
             }
             if (failure != null) {
                 if (result.owned) {
                     // Only the bundle made for the installer goes, the received files stay
                     LanSyncDownloader.deleteQuietly(result.file);
                 }
-                mMessage.postValue(getApplication().getString(R.string.lan_sync_replace_uninstall_failed,
-                        result.label, failure));
+                mMessage.postValue(getApplication().getString(message, result.label, failure));
                 return;
             }
             mReady.postValue(Collections.singletonList(result));
         } finally {
             mTask.postValue(null);
         }
+    }
+
+    @WorkerThread
+    @Nullable
+    private String signerPinRefusal(@NonNull LanSyncDownloader.Result result) {
+        Path[] apks = new Path[result.apks.size()];
+        for (int i = 0; i < apks.length; ++i) {
+            apks[i] = Paths.get(result.apks.get(i));
+        }
+        // The installer screen signs them first when that's on, so the pin is checked against
+        // what it will install
+        return PackageInstallerCompat.signerPinRefusal(getApplication(), apks, result.packageName,
+                Prefs.Installer.canSignApk());
     }
 
     @WorkerThread

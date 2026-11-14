@@ -320,13 +320,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
 
 ### P1
 
-- [ ] P1: Enforce user-owned signer policies before installer commit
-  Why: AppManagerNG can inspect certificates and detect changes after installation, but it cannot reject an unrecognized signer against a user-approved package policy before a session is committed.
-  Evidence: InstallerX 26.05 signer-policy release; Obtainium #2922; AppVerifier; Inure feature matrix; upstream App Manager #2055; `permission/monitor/SigningCertSnapshotStore.java`; `apk/signing/SignerInfo.java`; `apk/installer/PackageInstallerActivity.java`.
-  Touches: schema extension for `SigningCertSnapshotStore`, signer-policy model, installer preflight, App Details certificate actions, snapshot export/import, audit history, tests.
-  Acceptance: a user can pin the installed or reviewed SHA-256 signer set for a package; strict policy blocks a fresh install or update before session commit when the candidate signer and valid rotation lineage do not satisfy the pin; the blocked result names both fingerprints and never consults a remote database; changing a pin is a separate reviewed action and is recorded; policies survive restart and snapshot round-trip.
-  Complexity: M
-
 - [ ] P1: Classify dependency CVEs by shipped reachability
   Why: the aggregate CVE report mixes packaged runtime, transformed wrappers, host tools, and test dependencies, leaving 962 result rows across 79 artifacts without a reliable shipped-risk boundary.
   Evidence: `build/reports/dependency-check/dependency-check-report.sarif` from 2026-08-22; `scripts/run_dependency_cve_gate.py`; root `build.gradle`; `config/owasp-suppressions.xml`; CVE-2026-11822 and CVE-2026-11824 mappings to AndroidX wrappers and host `sqlite-jdbc`.
@@ -830,6 +823,27 @@ Sources and reasoning: RESEARCH.md (2026-11-13). The four crash fixes come first
   Complexity: S
 
 ### P3
+
+- [ ] P3: Name a snapshot section that failed to export
+  Why: a section whose serializer throws (log filters, file-manager favorites, freeze methods, signer pins) is bundled empty and counted 0, and the manifest's `excluded` list doesn't mention it. A damaged signer pin list exports as "signer pins: 0", which reads as if there were none.
+  Evidence: `snapshot/SnapshotBundle.java` `tryExport` and `writeTo`.
+  Touches: `SnapshotBundle.writeTo`, the manifest's `excluded`, the export toast, the import preview, tests.
+  Acceptance: a section that fails to serialize is listed in `excluded` by name, the export toast says it was left out, and the import preview shows it as missing instead of empty.
+  Complexity: S
+
+- [ ] P3: Tie a reinstall's signer pin check to the bytes it installs
+  Why: a reinstall checks the pin, uninstalls, then the installer service reads the APK again. An APK opened from a file another app can write could be swapped in between. The install-time check still refuses a wrong signer, so the pin holds, but by then the old app and its data are gone. LAN sync Replace has a second gap of the same kind: its check signs the copies when signing is on in Settings, but the installer screen it hands off to lets the user turn signing on or off in its options after the uninstall already ran.
+  Evidence: `PackageInstallerViewModel.uninstallUnlessSignerPinRefuses`, `PackageInstallerCompat.install(ApkFile, ...)` `checkSignerPins` and `sessionMatchesSignerPinCheck`; `LanSyncViewModel.signerPinRefusal` then `PackageInstallerActivity` `displayInstallerOptions`.
+  Touches: the reinstall flow, `PackageInstallerCompat` (accept an expected SHA-256), the LAN hand-off (carry the checked signing choice and hash, or uninstall from inside the installer), tests.
+  Acceptance: the hash from the pre-uninstall check travels with the reinstall, and the session is refused unless its bytes match it. A LAN Replace installs with the signing choice its check used. A test swaps the file between the check and the install and sees the refusal name the change.
+  Complexity: S
+
+- [ ] P3: Stop a reinstall's uninstall result from replaying after rotation
+  Why: `mPackageUninstalledLiveData` is a plain `MutableLiveData`, so turning the phone after a reinstall's uninstall hands the new activity `true` again and `install()` runs a second time.
+  Evidence: `PackageInstallerViewModel` `mPackageUninstalledLiveData`; `PackageInstallerActivity` `packageUninstalledLiveData().observe`.
+  Touches: `PackageInstallerViewModel`, `PackageInstallerActivity`, a Robolectric recreate test.
+  Acceptance: after an uninstall result is handled, recreating the activity doesn't start another install or show the failure dialog again.
+  Complexity: S
 
 - [ ] P3: Add cooldown and batch delivery to notification filter rules
   Why: BuzzKill builds its rules around a cooldown (let one through, then mute repeats from that app for a while) and batch delivery (hold matches and deliver them together). NG's filter has Allow, Silent, Vibrate and Block, and fork #32 asked for taming noisy apps.

@@ -31,10 +31,13 @@ import androidx.annotation.UiThread;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.pm.PackageInfoCompat;
 
+import com.android.apksig.ApkVerifier;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.chip.Chip;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.security.cert.CertificateEncodingException;
@@ -45,9 +48,17 @@ import java.util.Locale;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.apk.signing.SignerInfo;
+import io.github.muntashirakon.AppManager.apk.signing.SignerPin;
+import io.github.muntashirakon.AppManager.apk.signing.SignerPinEditor;
+import io.github.muntashirakon.AppManager.apk.signing.SignerPinReview;
+import io.github.muntashirakon.AppManager.apk.signing.SignerPinStore;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsFeatureItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsLibraryItem;
+import io.github.muntashirakon.AppManager.sync.lan.ApkSignatureGate;
+import io.github.muntashirakon.AppManager.sync.lan.ApkSigners;
+import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -105,7 +116,8 @@ public class AppDetailsOtherFragment extends AppDetailsFragment {
 
     @Override
     public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
-        inflater.inflate(R.menu.fragment_app_details_refresh_actions, menu);
+        inflater.inflate(mNeededProperty == SIGNATURES ? R.menu.fragment_app_details_signatures_actions
+                : R.menu.fragment_app_details_refresh_actions, menu);
     }
 
     @Override
@@ -115,7 +127,114 @@ public class AppDetailsOtherFragment extends AppDetailsFragment {
             refreshDetails();
             return true;
         }
+        if (id == R.id.action_signer_pin) {
+            reviewSignerPin();
+            return true;
+        }
         return false;
+    }
+
+    /**
+     * Compares the package's signer pin with the verified signers of the APK on screen, the
+     * installed one or one being reviewed, and offers what can be changed.
+     */
+    private void reviewSignerPin() {
+        if (viewModel == null || viewModel.getPackageName() == null) return;
+        String packageName = viewModel.getPackageName();
+        int userId = viewModel.getUserId();
+        ApkVerifier.Result result = viewModel.getApkVerifierResult();
+        SignerPinStore store = new SignerPinStore(requireContext());
+        ThreadUtils.postOnBackgroundThread(() -> {
+            SignerPin pin;
+            try {
+                pin = store.get(packageName);
+            } catch (SignerPinStore.UnreadableException e) {
+                ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(R.string.signer_pin_unreadable));
+                return;
+            }
+            ApkSignatureGate.SignerDigests signers = result != null && result.isVerified()
+                    ? ApkSigners.fromSignerInfo(new SignerInfo(result)) : null;
+            SignerPinReview review = SignerPinReview.of(pin, signers);
+            ThreadUtils.postOnMainThread(() -> {
+                if (isAdded()) {
+                    showSignerPinReview(store, packageName, userId, review);
+                }
+            });
+        });
+    }
+
+    @UiThread
+    private void showSignerPinReview(@NonNull SignerPinStore store, @NonNull String packageName, int userId,
+                                     @NonNull SignerPinReview review) {
+        String pinned = review.pin != null ? SignerPin.formatAll(review.pin.certSha256) : null;
+        String candidate = review.candidate != null ? SignerPin.formatAll(review.candidate) : null;
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.signer_pin)
+                .setNegativeButton(R.string.close, null);
+        switch (review.state) {
+            case SignerPinReview.UNVERIFIED:
+                builder.setMessage(pinned != null
+                        ? getString(R.string.signer_pin_unverified_pinned, packageName, pinned)
+                        : getString(R.string.signer_pin_unverified));
+                break;
+            case SignerPinReview.UNPINNED:
+                builder.setMessage(getString(R.string.signer_pin_unpinned_message, packageName, candidate))
+                        .setPositiveButton(R.string.signer_pin_action_pin, (dialog, which) ->
+                                applySignerPin(store, packageName, userId, review.pin,
+                                        Objects.requireNonNull(review.candidate)));
+                break;
+            case SignerPinReview.MATCHES:
+                builder.setMessage(getString(R.string.signer_pin_matches_message, packageName, pinned));
+                break;
+            case SignerPinReview.ROTATED:
+            case SignerPinReview.DIFFERENT:
+                builder.setMessage(getString(review.state == SignerPinReview.ROTATED
+                                ? R.string.signer_pin_rotated_message : R.string.signer_pin_different_message,
+                                packageName, pinned, candidate))
+                        .setPositiveButton(R.string.signer_pin_action_replace, (dialog, which) ->
+                                applySignerPin(store, packageName, userId, review.pin,
+                                        Objects.requireNonNull(review.candidate)));
+                break;
+        }
+        SignerPin shown = review.pin;
+        if (shown != null) {
+            builder.setNeutralButton(R.string.signer_pin_action_unpin, (dialog, which) ->
+                    ThreadUtils.postOnBackgroundThread(() -> {
+                        int message;
+                        try {
+                            SignerPinEditor.unpin(ContextUtils.getContext(), store, packageName, userId, shown);
+                            message = R.string.signer_pin_removed;
+                        } catch (SignerPinStore.ChangedException e) {
+                            message = R.string.signer_pin_changed;
+                        } catch (SignerPinStore.UnreadableException e) {
+                            message = R.string.signer_pin_unreadable;
+                        } catch (IOException e) {
+                            message = R.string.signer_pin_failed;
+                        }
+                        int finalMessage = message;
+                        ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(finalMessage));
+                    }));
+        }
+        builder.show();
+    }
+
+    private static void applySignerPin(@NonNull SignerPinStore store, @NonNull String packageName, int userId,
+                                       @Nullable SignerPin shown, @NonNull List<String> digests) {
+        ThreadUtils.postOnBackgroundThread(() -> {
+            int message;
+            try {
+                SignerPinEditor.pin(ContextUtils.getContext(), store, packageName, userId, shown, digests);
+                message = R.string.signer_pin_saved;
+            } catch (SignerPinStore.ChangedException e) {
+                message = R.string.signer_pin_changed;
+            } catch (SignerPinStore.UnreadableException e) {
+                message = R.string.signer_pin_unreadable;
+            } catch (IOException e) {
+                message = R.string.signer_pin_failed;
+            }
+            int finalMessage = message;
+            ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(finalMessage));
+        });
     }
 
     @Override

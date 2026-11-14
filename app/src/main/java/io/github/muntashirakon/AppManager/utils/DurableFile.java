@@ -83,6 +83,15 @@ public final class DurableFile {
     }
 
     /**
+     * Whether an interrupted write left the previous content in the backup with nothing at the
+     * base path, and {@link #recover()} couldn't put it back. A reader that takes a missing file as
+     * empty has to take this as unreadable instead.
+     */
+    public boolean hasUnrestoredBackup() {
+        return mBackup.exists() && !mBase.exists();
+    }
+
+    /**
      * @param maxBytes hard ceiling on the accepted file size; a larger file is treated as corrupt.
      * @return the file content, or {@code null} when there is nothing valid to read.
      */

@@ -9,6 +9,7 @@ import static io.github.muntashirakon.AppManager.compat.PackageManagerCompat.MAT
 
 import android.annotation.SuppressLint;
 import android.app.Application;
+import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
@@ -45,6 +46,7 @@ import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.io.IoUtils;
+import io.github.muntashirakon.lifecycle.SingleLiveEvent;
 
 public class PackageInstallerViewModel extends AndroidViewModel {
     private final PackageManager mPm;
@@ -61,6 +63,8 @@ public class PackageInstallerViewModel extends AndroidViewModel {
     private Future<?> mPackageInfoResult;
     private final MutableLiveData<PackageInfo> mPackageInfoLiveData = new MutableLiveData<>();
     private final MutableLiveData<Boolean> mPackageUninstalledLiveData = new MutableLiveData<>();
+    // An event: it must not show again when the screen is recreated
+    private final SingleLiveEvent<String> mSignerPinRefusalLiveData = new SingleLiveEvent<>();
     private final Set<String> mSelectedSplits = new HashSet<>();
     @Nullable
     private Set<String> mBaseNativeAbis;
@@ -117,12 +121,47 @@ public class PackageInstallerViewModel extends AndroidViewModel {
         });
     }
 
-    public void uninstallPackage() {
+    @NonNull
+    public LiveData<String> signerPinRefusalLiveData() {
+        return mSignerPinRefusalLiveData;
+    }
+
+    /**
+     * Uninstalls the app so the selected APKs can replace it. When a signer pin would refuse them,
+     * the app and its data stay and the refusal is posted instead.
+     */
+    public void uninstallPackage(boolean signApkFiles) {
+        ApkFile apkFile = mApkFile;
+        List<String> selectedSplits = getSelectedSplitsForInstallation();
         ThreadUtils.postOnBackgroundThread(() -> {
-            PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
-            installer.setAppLabel(mAppLabel);
-            mPackageUninstalledLiveData.postValue(installer.uninstall(mPackageName, UserHandleHidden.USER_ALL, false));
+            String refusal = uninstallUnlessSignerPinRefuses(getApplication(), apkFile, selectedSplits, signApkFiles,
+                    () -> {
+                        PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
+                        installer.setAppLabel(mAppLabel);
+                        mPackageUninstalledLiveData.postValue(
+                                installer.uninstall(mPackageName, UserHandleHidden.USER_ALL, false));
+                    });
+            if (refusal != null) {
+                mSignerPinRefusalLiveData.postValue(refusal);
+            }
         });
+    }
+
+    /**
+     * @return the signer pin refusal, in which case {@code uninstall} didn't run, or {@code null}
+     * after it ran
+     */
+    @WorkerThread
+    @Nullable
+    @VisibleForTesting
+    static String uninstallUnlessSignerPinRefuses(@NonNull Context context, @NonNull ApkFile apkFile,
+                                                  @NonNull List<String> selectedSplits, boolean signApkFiles,
+                                                  @NonNull Runnable uninstall) {
+        String refusal = PackageInstallerCompat.signerPinRefusal(context, apkFile, selectedSplits, signApkFiles);
+        if (refusal == null) {
+            uninstall.run();
+        }
+        return refusal;
     }
 
     public PackageInfo getNewPackageInfo() {

@@ -113,6 +113,12 @@
         app:iconSpaceReserved="false" />
 
     <Preference
+        app:key="signer_pins"
+        app:title="@string/pref_signer_pins"
+        app:summary="@string/pref_signer_pins_summary"
+        app:iconSpaceReserved="false" />
+
+    <Preference
         app:key="app_change_feed"
         app:title="@string/app_change_feed_title"
         app:summary="@string/app_change_feed_summary"

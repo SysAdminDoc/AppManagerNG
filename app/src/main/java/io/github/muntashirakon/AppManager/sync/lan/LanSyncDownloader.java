@@ -59,6 +59,11 @@ public final class LanSyncDownloader {
          */
         @NonNull
         public final String entryKey;
+        /**
+         * The received APK files {@link #file} was made from, base first.
+         */
+        @NonNull
+        public final List<File> apks;
 
         Result(@NonNull File file, @NonNull String mimeType, boolean owned, @NonNull ReceivedApkStore.Entry entry) {
             this.file = file;
@@ -67,6 +72,7 @@ public final class LanSyncDownloader {
             this.packageName = entry.app.packageName;
             this.label = entry.app.label;
             this.entryKey = entry.key;
+            this.apks = entry.files();
         }
     }
 

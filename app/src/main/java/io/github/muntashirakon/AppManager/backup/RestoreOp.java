@@ -402,20 +402,6 @@ class RestoreOp implements Closeable {
                 }
             }
         }
-        if (!isVerified) {
-            // Signature verification failed but still here because signature check is disabled.
-            // The only way to restore is to reinstall the app
-            synchronized (sLock) {
-                PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
-                // uninstall() returns true on success; the guard was inverted, so it
-                // aborted the restore exactly when the required uninstall SUCCEEDED and
-                // silently continued (re-installing over a still-present, signature-
-                // mismatched package) when it FAILED. Throw only on actual failure.
-                if (!installer.uninstall(mPackageName, mUserId, false)) {
-                    throw new BackupException("An uninstallation was necessary but couldn't perform it.");
-                }
-            }
-        }
         // Setup package staging directory
         Path packageStagingDirectory = Paths.get(PackageUtils.PACKAGE_STAGING_DIRECTORY);
         try {
@@ -500,6 +486,25 @@ class RestoreOp implements Closeable {
                 }
             });
             try {
+                if (!isVerified) {
+                    // Signature verification failed but still here because signature check is disabled.
+                    // The only way to restore is to reinstall the app. The signer pins are checked on
+                    // the extracted APKs first: the install would refuse them after the app and its
+                    // data were already gone.
+                    String refusal = PackageInstallerCompat.signerPinRefusal(ContextUtils.getContext(), allApks,
+                            mPackageName);
+                    if (refusal != null) {
+                        throw new BackupException("Couldn't perform a re-installation: " + refusal);
+                    }
+                    PackageInstallerCompat installer = PackageInstallerCompat.getNewInstance();
+                    // uninstall() returns true on success; the guard was inverted, so it
+                    // aborted the restore exactly when the required uninstall SUCCEEDED and
+                    // silently continued (re-installing over a still-present, signature-
+                    // mismatched package) when it FAILED. Throw only on actual failure.
+                    if (!installer.uninstall(mPackageName, mUserId, false)) {
+                        throw new BackupException("An uninstallation was necessary but couldn't perform it.");
+                    }
+                }
                 if (!packageInstaller.install(allApks, mPackageName, options)) {
                     String statusMessage;
                     if (!isVerified) {

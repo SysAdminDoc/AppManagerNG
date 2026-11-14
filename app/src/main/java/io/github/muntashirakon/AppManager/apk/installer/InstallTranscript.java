@@ -254,6 +254,8 @@ public final class InstallTranscript {
                 return "STATUS_FAILURE_SESSION_ABANDON";
             case PackageInstallerCompat.STATUS_FAILURE_INCOMPATIBLE_ROM:
                 return "STATUS_FAILURE_INCOMPATIBLE_ROM";
+            case PackageInstallerCompat.STATUS_FAILURE_SIGNER_PIN:
+                return "STATUS_FAILURE_SIGNER_PIN";
             default:
                 return "STATUS_UNKNOWN";
         }
