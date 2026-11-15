@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.apk.installer;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -9,14 +10,19 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.net.Uri;
 import android.os.Looper;
+import android.os.Parcel;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.core.app.ApplicationProvider;
 
+import org.json.JSONObject;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -28,6 +34,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipFile;
 
 import io.github.muntashirakon.AppManager.apk.ApkFile;
@@ -116,6 +126,209 @@ public class InstallerLoadGenerationTest {
 
         assertNull(model.getNewPackageInfo());
         assertNull(model.packageInfoLiveData().getValue());
+    }
+
+    @Test
+    public void aResultPostedJustBeforeTheNextItemStartedLoadingIsNotDelivered() throws Exception {
+        PackageInstallerViewModel model = new PackageInstallerViewModel(ApplicationProvider.getApplicationContext());
+        List<PackageInfo> delivered = observe(model);
+        int first = model.startLoad();
+        assertTrue(model.publish(first, loaded("first", "com.example.first", null), null));
+
+        // Next is tapped before the posted result reaches the screen
+        model.startLoad();
+        shadowOf(Looper.getMainLooper()).idle();
+
+        assertTrue(delivered.isEmpty());
+    }
+
+    @Test
+    public void aFailurePostedJustBeforeTheNextItemStartedLoadingIsNotDelivered() {
+        PackageInstallerViewModel model = new PackageInstallerViewModel(ApplicationProvider.getApplicationContext());
+        List<PackageInfo> delivered = observe(model);
+        int first = model.startLoad();
+        assertTrue(model.publishFailure(first));
+
+        model.startLoad();
+        shadowOf(Looper.getMainLooper()).idle();
+
+        // Batch mode would have skipped the next item as unreadable
+        assertTrue(delivered.isEmpty());
+    }
+
+    @Test
+    public void theNewestOfTwoQuickResultsIsDelivered() throws Exception {
+        PackageInstallerViewModel model = new PackageInstallerViewModel(ApplicationProvider.getApplicationContext());
+        List<PackageInfo> delivered = observe(model);
+        int first = model.startLoad();
+        assertTrue(model.publish(first, loaded("first", "com.example.first", null), null));
+        int second = model.startLoad();
+        PackageInstallerViewModel.LoadedPackage newer = loaded("second", "com.example.second", null);
+        assertTrue(model.publish(second, newer, null));
+
+        shadowOf(Looper.getMainLooper()).idle();
+
+        assertEquals(1, delivered.size());
+        assertSame(newer.newPackageInfo, delivered.get(0));
+    }
+
+    @Test
+    public void aLoadCancelledForTheNextItemDoesNotReportItsFailureForThatItem() throws Exception {
+        PackageInstallerViewModel model = new PackageInstallerViewModel(ApplicationProvider.getApplicationContext());
+        List<PackageInfo> delivered = observe(model);
+        BlockingApkSource first = new BlockingApkSource();
+        BlockingApkSource second = new BlockingApkSource();
+        model.getPackageInfo(ApkQueueItem.fromApkSource(first));
+        assertTrue(first.entered.await(30, TimeUnit.SECONDS));
+
+        // Next: the interrupt makes the first load fail at once
+        model.getPackageInfo(ApkQueueItem.fromApkSource(second));
+        first.awaitFinished();
+        shadowOf(Looper.getMainLooper()).idle();
+        assertTrue(delivered.isEmpty());
+
+        // The item on screen still reports its own failure
+        second.fail.countDown();
+        awaitDelivery(delivered);
+        second.awaitFinished();
+        shadowOf(Looper.getMainLooper()).idle();
+        assertEquals(1, delivered.size());
+        assertNull(delivered.get(0));
+    }
+
+    @Test
+    public void installingAnExistingPackageKeepsTheNameItIsInstalledUnder() throws Exception {
+        // A renamed package (original-package) stays installed under its old name, which its APK doesn't
+        // declare, and install-existing has to ask for that name
+        Context context = ApplicationProvider.getApplicationContext();
+        File apk = installedApk();
+        // Parsed before the install: once a package is installed from this path, Robolectric answers
+        // getPackageArchiveInfo with the installed PackageInfo instead of parsing the APK as Android does
+        PackageInfo parsed = context.getPackageManager().getPackageArchiveInfo(apk.getAbsolutePath(), 0);
+        assertNotNull(parsed);
+        PackageInfo installed = new PackageInfo();
+        installed.packageName = "com.example.renamed";
+        installed.applicationInfo = new ApplicationInfo();
+        installed.applicationInfo.packageName = installed.packageName;
+        installed.applicationInfo.sourceDir = apk.getAbsolutePath();
+        installed.applicationInfo.publicSourceDir = apk.getAbsolutePath();
+        shadowOf(context.getPackageManager()).installPackage(installed);
+        shadowOf(context.getPackageManager()).setPackageArchiveInfo(apk.getAbsolutePath(), parsed);
+        PackageInstallerViewModel model = new PackageInstallerViewModel(ApplicationProvider.getApplicationContext());
+        List<PackageInfo> delivered = observe(model);
+        ApkQueueItem item = ApkQueueItem.fromIntent(
+                new Intent(Intent.ACTION_VIEW, Uri.parse("package:com.example.renamed")), null).get(0);
+
+        try {
+            model.getPackageInfo(item);
+            awaitDelivery(delivered);
+
+            assertNotNull("The installed package couldn't be read", delivered.get(0));
+            assertEquals("io.github.muntashirakon.AppManager", delivered.get(0).packageName);
+            assertEquals("com.example.renamed", model.getPackageName());
+            assertEquals("com.example.renamed", item.getPackageName());
+        } finally {
+            model.onCleared();
+        }
+    }
+
+    @NonNull
+    private static List<PackageInfo> observe(@NonNull PackageInstallerViewModel model) {
+        List<PackageInfo> delivered = new ArrayList<>();
+        model.packageInfoLiveData().observeForever(delivered::add);
+        return delivered;
+    }
+
+    private static void awaitDelivery(@NonNull List<PackageInfo> delivered) throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+        while (delivered.isEmpty()) {
+            assertTrue("Nothing reached the screen", System.nanoTime() < deadline);
+            Thread.sleep(10);
+            shadowOf(Looper.getMainLooper()).idle();
+        }
+    }
+
+    /**
+     * Resolves nothing: blocks until told to fail or interrupted, then fails.
+     */
+    private static final class BlockingApkSource extends ApkSource {
+        final CountDownLatch entered = new CountDownLatch(1);
+        final CountDownLatch fail = new CountDownLatch(1);
+        private final CountDownLatch mThrown = new CountDownLatch(1);
+        volatile Thread worker;
+
+        @NonNull
+        @Override
+        public ApkFile resolve() throws ApkFile.ApkFileException {
+            worker = Thread.currentThread();
+            entered.countDown();
+            try {
+                fail.await();
+            } catch (InterruptedException e) {
+                throw new ApkFile.ApkFileException("Interrupted", e);
+            } finally {
+                mThrown.countDown();
+            }
+            throw new ApkFile.ApkFileException("Unreadable");
+        }
+
+        /**
+         * Waits until the load that called {@link #resolve()} has finished, failure handling included, and its
+         * pool thread is idle again.
+         */
+        void awaitFinished() throws InterruptedException {
+            assertTrue("The load didn't fail", mThrown.await(30, TimeUnit.SECONDS));
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
+            Thread thread = worker;
+            assertNotNull(thread);
+            while (true) {
+                Thread.State state = thread.getState();
+                if (state == Thread.State.WAITING || state == Thread.State.TIMED_WAITING
+                        || state == Thread.State.TERMINATED) {
+                    return;
+                }
+                assertTrue("The load didn't finish", System.nanoTime() < deadline);
+                Thread.sleep(10);
+            }
+        }
+
+        @Nullable
+        @Override
+        public ApkFile resolveIfOpen() {
+            return null;
+        }
+
+        @NonNull
+        @Override
+        public ApkSource toCachedSource() {
+            return this;
+        }
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public void writeToParcel(@NonNull Parcel dest, int flags) {
+            throw new UnsupportedOperationException();
+        }
+
+        @NonNull
+        @Override
+        public JSONObject serializeToJson() {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    /**
+     * A base APK in a folder of its own: an installed package's other APKs beside it are read as its splits.
+     */
+    @NonNull
+    private File installedApk() throws IOException {
+        File apk = new File(temporaryFolder.newFolder("installed"), "base.apk");
+        assertTrue(baseApk("installed-source.apk").renameTo(apk));
+        return apk;
     }
 
     @NonNull

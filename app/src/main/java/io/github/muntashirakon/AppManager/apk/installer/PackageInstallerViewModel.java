@@ -71,7 +71,7 @@ public class PackageInstallerViewModel extends AndroidViewModel {
     private int mTrackerCount;
     @Nullable
     private Future<?> mPackageInfoResult;
-    private final MutableLiveData<PackageInfo> mPackageInfoLiveData = new MutableLiveData<>();
+    private final LoadLiveData mPackageInfoLiveData = new LoadLiveData();
     private final MutableLiveData<Boolean> mPackageUninstalledLiveData = new MutableLiveData<>();
     // An event: it must not show again when the screen is recreated
     private final SingleLiveEvent<String> mSignerPinRefusalLiveData = new SingleLiveEvent<>();
@@ -109,11 +109,13 @@ public class PackageInstallerViewModel extends AndroidViewModel {
 
     @AnyThread
     public void getPackageInfo(ApkQueueItem apkQueueItem) {
+        // The new number comes first: the interrupt can make the previous load fail at once, and a load that
+        // still held the current number would report that failure for this item
+        int generation = startLoad();
         if (mPackageInfoResult != null) {
             mPackageInfoResult.cancel(true);
         }
         mSelectedSplits.clear();
-        int generation = startLoad();
         mPackageInfoResult = ThreadUtils.postOnBackgroundThread(() -> {
             try {
                 // Three possibilities: 1. Install-existing, 2. ApkFile, 3. Uri
@@ -133,14 +135,25 @@ public class PackageInstallerViewModel extends AndroidViewModel {
                 }
             } catch (Throwable th) { // ApkFileException extends Throwable, not Exception
                 Log.e("PIVM", "Couldn't fetch package info", th);
-                synchronized (mApkFileLock) {
-                    // A load that was replaced or whose screen is gone fails quietly
-                    if (isCurrentLoad(generation)) {
-                        mPackageInfoLiveData.postValue(null);
-                    }
-                }
+                publishFailure(generation);
             }
         });
+    }
+
+    /**
+     * Tells the screen the load failed, unless a newer load started or the screen is gone: those fail quietly.
+     *
+     * @return {@code false} when the load was stale and nothing was published
+     */
+    @VisibleForTesting
+    boolean publishFailure(int generation) {
+        synchronized (mApkFileLock) {
+            if (!isCurrentLoad(generation)) {
+                return false;
+            }
+            mPackageInfoLiveData.post(generation, null);
+            return true;
+        }
     }
 
     /**
@@ -186,8 +199,40 @@ public class PackageInstallerViewModel extends AndroidViewModel {
                 apkQueueItem.setAppLabel(loaded.appLabel);
             }
             // Posted under the lock, so a newer load can't post first and then be overwritten
-            mPackageInfoLiveData.postValue(loaded.newPackageInfo);
+            mPackageInfoLiveData.post(generation, loaded.newPackageInfo);
             return true;
+        }
+    }
+
+    /**
+     * Package info for the screen. A posted value reaches the main thread later, so one posted just before Next
+     * was tapped would arrive once the next item's load had started and show, or batch install, the previous
+     * package as the next one. Only the value posted last, by a load that is still current, gets through.
+     */
+    private final class LoadLiveData extends MutableLiveData<PackageInfo> {
+        @GuardedBy("mApkFileLock")
+        private int mPostedGeneration;
+        @GuardedBy("mApkFileLock")
+        @Nullable
+        private PackageInfo mPosted;
+
+        @GuardedBy("mApkFileLock")
+        void post(int generation, @Nullable PackageInfo packageInfo) {
+            mPostedGeneration = generation;
+            mPosted = packageInfo;
+            postValue(packageInfo);
+        }
+
+        @Override
+        public void setValue(@Nullable PackageInfo value) {
+            synchronized (mApkFileLock) {
+                // Coalesced posts hand over the newest value. An older one only arrives here when a newer
+                // post came in while it was being handed over, and that newer one follows right after.
+                if (value != mPosted || !isCurrentLoad(mPostedGeneration)) {
+                    return;
+                }
+            }
+            super.setValue(value);
         }
     }
 
@@ -444,7 +489,7 @@ public class PackageInstallerViewModel extends AndroidViewModel {
         } catch (PackageManager.NameNotFoundException ignore) {
             installedPackageInfo = null;
         }
-        return describe(apkSource, apkFile, newPackageInfo, installedPackageInfo);
+        return describe(apkSource, apkFile, newPackageInfo, installedPackageInfo, newPackageInfo.packageName);
     }
 
     @WorkerThread
@@ -458,13 +503,15 @@ public class PackageInstallerViewModel extends AndroidViewModel {
             return null;
         }
         PackageInfo newPackageInfo = loadNewPackageInfo(apkFile);
-        return describe(apkSource, apkFile, newPackageInfo, installedPackageInfo);
+        // Installed under this name, which a renamed package's APK (original-package) doesn't declare
+        return describe(apkSource, apkFile, newPackageInfo, installedPackageInfo, packageName);
     }
 
     @WorkerThread
     @Nullable
     private LoadedPackage describe(@NonNull ApkSource apkSource, @NonNull ApkFile apkFile,
-                                   @NonNull PackageInfo newPackageInfo, @Nullable PackageInfo installedPackageInfo) {
+                                   @NonNull PackageInfo newPackageInfo, @Nullable PackageInfo installedPackageInfo,
+                                   @NonNull String packageName) {
         String appLabel = mPm.getApplicationLabel(newPackageInfo.applicationInfo).toString();
         Drawable appIcon = mPm.getApplicationIcon(newPackageInfo.applicationInfo);
         int trackerCount = ComponentUtils.getTrackerComponentsCountForPackage(newPackageInfo);
@@ -474,8 +521,7 @@ public class PackageInstallerViewModel extends AndroidViewModel {
         Set<String> baseNativeAbis = loadBaseNativeAbis(apkFile);
         boolean signatureDifferent = installedPackageInfo != null
                 && PackageUtils.isSignatureDifferent(newPackageInfo, installedPackageInfo);
-        return new LoadedPackage(apkSource, newPackageInfo, installedPackageInfo, newPackageInfo.packageName,
-                appLabel, appIcon, trackerCount, baseNativeAbis, signatureDifferent);
+        return new LoadedPackage(apkSource, newPackageInfo, installedPackageInfo, packageName, appLabel, appIcon, trackerCount, baseNativeAbis, signatureDifferent);
     }
 
     /**

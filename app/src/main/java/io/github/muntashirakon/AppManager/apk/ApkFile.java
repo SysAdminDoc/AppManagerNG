@@ -751,7 +751,10 @@ public final class ApkFile implements AutoCloseable {
                         throw new IllegalArgumentException("Manifest doesn't contain any package name.");
                     }
                     String newPackageName = manifestAttrs.get(ATTR_PACKAGE);
-                    if (mPackageName.equals(newPackageName)) {
+                    // The file at publicSourceDir is the base APK whatever it declares: a renamed package
+                    // (original-package) stays installed under its old name, which its APK doesn't carry
+                    if (mPackageName.equals(newPackageName)
+                            || apk.getAbsolutePath().equals(mCacheFilePath.getAbsolutePath())) {
                         if (mBaseEntry != null) {
                             throw new RuntimeException("Duplicate base apk found.");
                         }
