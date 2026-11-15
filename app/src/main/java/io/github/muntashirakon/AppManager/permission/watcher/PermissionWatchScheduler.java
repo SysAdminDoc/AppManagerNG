@@ -95,6 +95,19 @@ public final class PermissionWatchScheduler {
         }
     }
 
+    /**
+     * Puts the schedule back, if it's on, after it ended FAILED. A FAILED schedule never runs again, and UPDATE leaves
+     * it as it is.
+     */
+    public static void revive(@NonNull Context context) {
+        int intervalMinutes = Prefs.Privacy.getPermissionWatcherIntervalMinutes();
+        WorkManager workManager = getWorkManager(context);
+        if (workManager != null && shouldSchedule(intervalMinutes)) {
+            workManager.enqueueUniquePeriodicWork(UNIQUE_WORK_NAME, ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE,
+                    buildPeriodicRequest(intervalMinutes));
+        }
+    }
+
     /** After a restart: the schedule is put back, and with it on, every rule is checked once right away. */
     public static void onBoot(@NonNull Context context) {
         int intervalMinutes = Prefs.Privacy.getPermissionWatcherIntervalMinutes();

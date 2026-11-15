@@ -47,6 +47,19 @@ public final class OpHistoryPruneScheduler {
                 ExistingPeriodicWorkPolicy.UPDATE, buildPeriodicRequest());
     }
 
+    /**
+     * Puts the schedule back, if it's on, after it ended FAILED. A FAILED schedule never runs again, and UPDATE leaves
+     * it as it is.
+     */
+    public static void revive(@NonNull Context context) {
+        WorkManager workManager = getWorkManager(context);
+        if (workManager == null || !shouldSchedule(Prefs.Privacy.getOpHistoryRetentionDays())) {
+            return;
+        }
+        workManager.enqueueUniquePeriodicWork(UNIQUE_WORK_NAME,
+                ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE, buildPeriodicRequest());
+    }
+
     public static void cancel(@NonNull Context context) {
         WorkManager workManager = getWorkManager(context);
         if (workManager == null) {

@@ -18,6 +18,7 @@ import androidx.work.Configuration;
 import androidx.work.ListenableWorker;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkInfo;
+import androidx.work.WorkQuery;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 import androidx.work.impl.Processor;
@@ -41,20 +42,33 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowLog;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.github.muntashirakon.AppManager.backup.schedule.AutoBackupScheduler;
 import io.github.muntashirakon.AppManager.backup.schedule.AutoBackupWorker;
+import io.github.muntashirakon.AppManager.history.ops.OpHistoryPruneScheduler;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryPruneWorker;
+import io.github.muntashirakon.AppManager.permission.watcher.PermissionWatchScheduler;
 import io.github.muntashirakon.AppManager.permission.watcher.PermissionWatchWorker;
+import io.github.muntashirakon.AppManager.profiles.trigger.ProfileTrigger;
+import io.github.muntashirakon.AppManager.profiles.trigger.ProfileTriggerStore;
+import io.github.muntashirakon.AppManager.profiles.trigger.RoutineScheduler;
 import io.github.muntashirakon.AppManager.profiles.trigger.RoutineWorker;
+import io.github.muntashirakon.AppManager.self.FailedScheduleRevival;
 import io.github.muntashirakon.AppManager.self.PackageEventSyncWorker;
+import io.github.muntashirakon.AppManager.settings.Prefs;
 
 /**
  * Runs periodic work through WorkManager 2.10.5 itself. Each periodic worker is stood in for by a subclass whose run
@@ -165,6 +179,152 @@ public class ScheduledWorkerTest {
         assertKeepsItsSchedule(ThrowingPackageEventSync.class);
     }
 
+    @Test
+    public void aWorkerWhoseErrorCantBeLoggedStillKeepsItsSchedule() throws InterruptedException {
+        PrintStream stream = ShadowLog.stream;
+        // Prints each logged throwable as android.util.Log does on a device, so the log call reads the broken message
+        ShadowLog.stream = new PrintStream(new ByteArrayOutputStream());
+        try {
+            WorkSpec spec = enqueueDaily(UnloggableErrorWorker.class);
+            long slot = spec.calculateNextRunTime();
+            mNow.set(slot);
+            runNow(spec);
+            assertEquals(1, sRuns.get());
+            assertEquals(WorkInfo.State.ENQUEUED, specOf(spec).state);
+            boolean noted = false;
+            for (ShadowLog.LogItem item : ShadowLog.getLogsForTag(UnloggableErrorWorker.class.getSimpleName())) {
+                if (item.type == Log.ERROR && item.msg.contains("couldn't be logged")) {
+                    noted = true;
+                }
+            }
+            assertTrue("the stop is still noted", noted);
+
+            mNow.set(slot + ONE_DAY);
+            runNow(specOf(spec));
+            assertEquals("it runs again the next day", 2, sRuns.get());
+            assertEquals(WorkInfo.State.ENQUEUED, specOf(spec).state);
+        } finally {
+            ShadowLog.stream = stream;
+        }
+    }
+
+    @Test
+    public void aScheduledBackupThatFailedBeforeComesBackAtStart() throws Exception {
+        boolean enabled = Prefs.BackupRestore.isScheduledAutoBackupEnabled();
+        Prefs.BackupRestore.setScheduledAutoBackupEnabled(true);
+        try {
+            assertRevivedAtStart(AutoBackupScheduler.WORK_TAG, () -> AutoBackupScheduler.schedule(mContext),
+                    AutoBackupWorker.class);
+        } finally {
+            Prefs.BackupRestore.setScheduledAutoBackupEnabled(enabled);
+        }
+    }
+
+    @Test
+    public void aHistoryPruneThatFailedBeforeComesBackAtStart() throws Exception {
+        int days = Prefs.Privacy.getOpHistoryRetentionDays();
+        Prefs.Privacy.setOpHistoryRetentionDays(30);
+        try {
+            assertRevivedAtStart(OpHistoryPruneScheduler.WORK_TAG, () -> OpHistoryPruneScheduler.schedule(mContext),
+                    OpHistoryPruneWorker.class);
+        } finally {
+            Prefs.Privacy.setOpHistoryRetentionDays(days);
+        }
+    }
+
+    @Test
+    public void aPermissionWatchThatFailedBeforeComesBackAtStart() throws Exception {
+        int minutes = Prefs.Privacy.getPermissionWatcherIntervalMinutes();
+        Prefs.Privacy.setPermissionWatcherIntervalMinutes(60);
+        try {
+            assertRevivedAtStart(PermissionWatchScheduler.WORK_TAG,
+                    () -> PermissionWatchScheduler.scheduleOrCancel(mContext), PermissionWatchWorker.class);
+        } finally {
+            Prefs.Privacy.setPermissionWatcherIntervalMinutes(minutes);
+        }
+    }
+
+    @Test
+    public void aRoutineThatFailedBeforeComesBackAtStart() throws Exception {
+        ProfileTriggerStore store = new ProfileTriggerStore(mContext);
+        ProfileTrigger trigger = new ProfileTrigger.Builder("profile-1", ProfileTrigger.TYPE_TIME_OF_DAY)
+                .id("Revived-Routine")
+                .enabled(true)
+                .timeOfDay(3, 0)
+                .build();
+        store.put(trigger);
+        try {
+            assertRevivedAtStart(RoutineScheduler.WORK_TAG, () -> RoutineScheduler.schedule(mContext, trigger),
+                    RoutineWorker.class);
+        } finally {
+            store.remove(trigger.id);
+        }
+    }
+
+    @Test
+    public void aScheduleThatsOffStaysStoppedAtStart() throws Exception {
+        boolean enabled = Prefs.BackupRestore.isScheduledAutoBackupEnabled();
+        Prefs.BackupRestore.setScheduledAutoBackupEnabled(true);
+        try {
+            AutoBackupScheduler.schedule(mContext);
+            mExecutor.drain();
+            WorkInfo scheduled = onlyPeriodic(AutoBackupScheduler.WORK_TAG);
+            mDb.workSpecDao().setState(WorkInfo.State.FAILED, scheduled.getId().toString());
+            Prefs.BackupRestore.setScheduledAutoBackupEnabled(false);
+
+            reviveAtStart();
+
+            assertEquals(WorkInfo.State.FAILED, onlyPeriodic(AutoBackupScheduler.WORK_TAG).getState());
+        } finally {
+            Prefs.BackupRestore.setScheduledAutoBackupEnabled(enabled);
+        }
+    }
+
+    /**
+     * Stands in for a schedule that ended FAILED before {@link ScheduledWorker}: saving it again leaves it stopped,
+     * and the pass at start puts it back.
+     */
+    private void assertRevivedAtStart(@NonNull String tag, @NonNull Runnable schedule,
+                                      @NonNull Class<? extends ListenableWorker> workerClass) throws Exception {
+        schedule.run();
+        mExecutor.drain();
+        WorkInfo scheduled = onlyPeriodic(tag);
+        assertEquals(WorkInfo.State.ENQUEUED, scheduled.getState());
+        mDb.workSpecDao().setState(WorkInfo.State.FAILED, scheduled.getId().toString());
+
+        // What Settings and every start do, and what kept the schedule stopped
+        schedule.run();
+        mExecutor.drain();
+        assertEquals(WorkInfo.State.FAILED, onlyPeriodic(tag).getState());
+
+        reviveAtStart();
+
+        WorkInfo revived = onlyPeriodic(tag);
+        assertEquals(WorkInfo.State.ENQUEUED, revived.getState());
+        assertEquals(workerClass.getName(), mDb.workSpecDao().getWorkSpec(revived.getId().toString()).workerClassName);
+    }
+
+    private void reviveAtStart() throws Exception {
+        Future<List<WorkInfo>> failed = mWm.getWorkInfos(WorkQuery.fromStates(WorkInfo.State.FAILED));
+        mExecutor.drain();
+        FailedScheduleRevival.revive(mContext, failed.get());
+        mExecutor.drain();
+    }
+
+    @NonNull
+    private WorkInfo onlyPeriodic(@NonNull String tag) throws Exception {
+        Future<List<WorkInfo>> infos = mWm.getWorkInfosByTag(tag);
+        mExecutor.drain();
+        List<WorkInfo> periodic = new ArrayList<>();
+        for (WorkInfo info : infos.get()) {
+            if (info.getPeriodicityInfo() != null) {
+                periodic.add(info);
+            }
+        }
+        assertEquals("one schedule under " + tag, 1, periodic.size());
+        return periodic.get(0);
+    }
+
     private void assertKeepsItsSchedule(@NonNull Class<? extends ScheduledWorker> workerClass)
             throws InterruptedException {
         WorkSpec spec = enqueueDaily(workerClass);
@@ -233,6 +393,26 @@ public class ScheduledWorkerTest {
         @Override
         public Result doWork() {
             throw countAndThrow(new OutOfMemoryError("Test"));
+        }
+    }
+
+    public static class UnloggableErrorWorker extends ScheduledWorker {
+        public UnloggableErrorWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
+            super(context, workerParams);
+        }
+
+        @NonNull
+        @Override
+        protected Result doScheduledWork() {
+            throw countAndThrow(new UnprintableError());
+        }
+    }
+
+    /** An error whose message can't be read, so printing its stack trace throws. */
+    private static final class UnprintableError extends Error {
+        @Override
+        public String getMessage() {
+            throw new IllegalStateException("No message");
         }
     }
 

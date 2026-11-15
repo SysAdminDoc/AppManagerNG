@@ -27,6 +27,7 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -79,6 +80,23 @@ public final class RoutineScheduler {
     }
 
     public static void schedule(@NonNull Context context, @NonNull ProfileTrigger trigger) {
+        enqueue(context, trigger, ExistingPeriodicWorkPolicy.UPDATE);
+    }
+
+    /**
+     * Puts back the schedule of each routine that's on and whose tag is in {@code failedTags}, the tags of periodic
+     * work that ended FAILED. A FAILED schedule never runs again, and UPDATE leaves it as it is.
+     */
+    public static void revive(@NonNull Context context, @NonNull Set<String> failedTags) {
+        for (ProfileTrigger trigger : new ProfileTriggerStore(context).all()) {
+            if (trigger.enabled && failedTags.contains(workTagForTrigger(trigger.id))) {
+                enqueue(context, trigger, ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE);
+            }
+        }
+    }
+
+    private static void enqueue(@NonNull Context context, @NonNull ProfileTrigger trigger,
+                                @NonNull ExistingPeriodicWorkPolicy policy) {
         if (trigger.type == ProfileTrigger.TYPE_ON_BOOT || isPackageEventTrigger(trigger.type)) {
             return;
         }
@@ -91,7 +109,7 @@ public final class RoutineScheduler {
                 .addTag(workTagForTrigger(trigger.id))
                 .build();
         WorkManager.getInstance(context.getApplicationContext()).enqueueUniquePeriodicWork(
-                uniqueWorkName(trigger.id), ExistingPeriodicWorkPolicy.UPDATE, request);
+                uniqueWorkName(trigger.id), policy, request);
     }
 
     public static void enqueueBootTriggers(@NonNull Context context) {

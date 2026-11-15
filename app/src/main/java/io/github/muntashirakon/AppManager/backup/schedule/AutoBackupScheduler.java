@@ -83,6 +83,20 @@ public final class AutoBackupScheduler {
     }
 
     public static void schedule(@NonNull Context context) {
+        enqueue(context, ExistingPeriodicWorkPolicy.UPDATE);
+    }
+
+    /**
+     * Puts the schedule back, if it's on, after it ended FAILED. A FAILED schedule never runs again, and UPDATE leaves
+     * it as it is.
+     */
+    public static void revive(@NonNull Context context) {
+        if (Prefs.BackupRestore.isScheduledAutoBackupEnabled()) {
+            enqueue(context, ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE);
+        }
+    }
+
+    private static void enqueue(@NonNull Context context, @NonNull ExistingPeriodicWorkPolicy policy) {
         int hour = Prefs.BackupRestore.getScheduledBackupHour();
         int minute = Prefs.BackupRestore.getScheduledBackupMinute();
         PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
@@ -95,7 +109,7 @@ public final class AutoBackupScheduler {
                 .addTag(WORK_TAG)
                 .build();
         WorkManager.getInstance(context.getApplicationContext())
-                .enqueueUniquePeriodicWork(UNIQUE_WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, request);
+                .enqueueUniquePeriodicWork(UNIQUE_WORK_NAME, policy, request);
         refreshCatchUpRun(context);
     }
 

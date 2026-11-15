@@ -37,6 +37,7 @@ import io.github.muntashirakon.AppManager.misc.ProfilingTriggerHelper;
 import io.github.muntashirakon.AppManager.oneclickops.ClearCacheAppWidget;
 import io.github.muntashirakon.AppManager.scanner.TrackerDatabaseFreshnessChecker;
 import io.github.muntashirakon.AppManager.self.DeferredLogAccess;
+import io.github.muntashirakon.AppManager.self.FailedScheduleRevival;
 import io.github.muntashirakon.AppManager.self.PackageEventSync;
 import io.github.muntashirakon.AppManager.usage.DataUsageAppWidget;
 import io.github.muntashirakon.AppManager.usage.ScreenTimeAppWidget;
@@ -99,6 +100,7 @@ public class AppManager extends Application {
             if (PackageEventSync.isMainProcess(this)) {
                 // Folder access a backup or import took and nothing uses any more
                 ThreadUtils.postOnBackgroundThread(() -> BackupDestinationGrants.pruneStale(this));
+                ThreadUtils.postOnBackgroundThread(() -> FailedScheduleRevival.reviveFailedSchedules(this));
             }
         }
     }

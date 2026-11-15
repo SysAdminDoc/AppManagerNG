@@ -26,8 +26,22 @@ public abstract class ScheduledWorker extends Worker {
         try {
             return doScheduledWork();
         } catch (Throwable th) {
-            Log.e(getClass().getSimpleName(), "This run stopped on an uncaught error. The schedule goes on.", th);
+            logStop(th);
             return Result.failure();
+        }
+    }
+
+    private void logStop(@NonNull Throwable th) {
+        try {
+            Log.e(getClass().getSimpleName(), "This run stopped on an uncaught error. The schedule goes on.", th);
+        } catch (Throwable logFailure) {
+            // Logging builds strings, so after a real OutOfMemoryError it can fail too, as it does for an error whose
+            // message can't be read. Thrown from here, it would end the schedule all the same.
+            try {
+                android.util.Log.e(getClass().getSimpleName(), "This run stopped on an error that couldn't be logged.");
+            } catch (Throwable ignored) {
+                // Nothing is left to report it with
+            }
         }
     }
 
