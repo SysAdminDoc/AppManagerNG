@@ -140,6 +140,26 @@ public final class MutationRecorder {
         }
     }
 
+    /** A state write that can fail. */
+    public interface Write<E extends Exception> {
+        void run() throws E;
+    }
+
+    /**
+     * Runs {@code write} and finishes every image begun for it: as written when it returns, as failed when it
+     * throws, which it still does.
+     */
+    public static <E extends Exception> void around(@NonNull List<Pending> pending, @NonNull Write<E> write)
+            throws E {
+        boolean written = false;
+        try {
+            write.run();
+            written = true;
+        } finally {
+            finishAll(pending, written);
+        }
+    }
+
     @NonNull
     public static List<String> targetsOf(@NonNull int[] values) {
         List<String> targets = new ArrayList<>(values.length);

@@ -4,10 +4,12 @@ package io.github.muntashirakon.AppManager.history.ops;
 
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.os.RemoteException;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import java.util.ArrayList;
@@ -27,8 +29,8 @@ import io.github.muntashirakon.AppManager.utils.FreezeUtils;
  * <li>{@link #KIND_FREEZE}: {@link #UNFROZEN}, or the methods holding the app frozen joined by {@code +} in the order
  * disabled, suspended, hidden.
  * <li>{@link #KIND_PERMISSION}: {@link #GRANTED} or {@link #DENIED}; the target is the permission name.
- * <li>{@link #KIND_APP_OP}: the op's effective mode as a number, which is its default when nothing is set (the
- * service drops an entry set back to its default, so this round-trips); the target is the op number.
+ * <li>{@link #KIND_APP_OP}: the op's mode as {@code checkOperation} answers it, which is its default when nothing is
+ * set (the service drops an entry set back to its default, so this round-trips); the target is the op number.
  * <li>{@link #KIND_NET_POLICY}: the UID policy flags as a number.
  * </ul>
  */
@@ -67,16 +69,9 @@ public final class MutationState {
                     int result = PermissionCompat.checkPermission(target, packageName, userId);
                     return result == PackageManager.PERMISSION_GRANTED ? GRANTED : DENIED;
                 }
-                case KIND_APP_OP: {
-                    int op = Integer.parseInt(target);
-                    ApplicationInfo info = applicationInfo(packageName, userId);
-                    List<AppOpsManagerCompat.OpEntry> entries = AppOpsManagerCompat.getOpsForPackageOrNull(info.uid,
-                            packageName);
-                    if (entries == null) {
-                        return null;
-                    }
-                    return String.valueOf(AppOpsManagerCompat.getModeFromOpEntriesOrDefault(op, entries));
-                }
+                case KIND_APP_OP:
+                    return readAppOp(new AppOpsManagerCompat(), Integer.parseInt(target),
+                            applicationInfo(packageName, userId).uid, packageName);
                 case KIND_NET_POLICY:
                     return String.valueOf(NetworkPolicyManagerCompat.getUidPolicy(
                             applicationInfo(packageName, userId).uid));
@@ -87,6 +82,19 @@ public final class MutationState {
             // Any failure to read means the state is unknown, never that it's off
             return null;
         }
+    }
+
+    /**
+     * The mode {@code checkOperation} answers. The service keeps a mode under the op's switch (GPS's lives on
+     * coarse location) and as a UID mode on Android 6 and later, which the package's own entries don't
+     * show before Android 8. checkOperation reads both the way the writes store them, and it's the value
+     * {@code PermUtils.setAppOpMode} compares before writing.
+     */
+    @VisibleForTesting
+    @NonNull
+    public static String readAppOp(@NonNull AppOpsManagerCompat appOps, int op, int uid, @NonNull String packageName)
+            throws RemoteException {
+        return String.valueOf(appOps.checkOperation(op, uid, packageName));
     }
 
     @NonNull

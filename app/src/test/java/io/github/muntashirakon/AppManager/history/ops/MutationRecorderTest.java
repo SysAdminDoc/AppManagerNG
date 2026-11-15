@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.history.ops;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import androidx.annotation.NonNull;
@@ -14,6 +15,7 @@ import org.robolectric.RobolectricTestRunner;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -145,6 +147,36 @@ public class MutationRecorderTest {
                 Arrays.asList(MutationState.freezeValue(true, false, false),
                         MutationState.freezeValue(false, true, false),
                         MutationState.freezeValue(false, false, true)));
+    }
+
+    @Test
+    public void aroundFinishesEveryImageAsWrittenOrAsFailedAndStillThrows() {
+        String location = "android.permission.ACCESS_FINE_LOCATION";
+        mState.put(CAMERA, MutationState.DENIED);
+        mState.put(location, MutationState.DENIED);
+        MutationRecorder recorder = recorder();
+
+        MutationRecorder.around(recorder.beginAll(PKG, 0, MutationState.KIND_PERMISSION,
+                Arrays.asList(CAMERA, location), MutationState.GRANTED), () -> {
+            mState.put(CAMERA, MutationState.GRANTED);
+            mState.put(location, MutationState.GRANTED);
+        });
+        IllegalStateException e = assertThrows(IllegalStateException.class, () -> MutationRecorder.around(
+                Collections.singletonList(recorder.begin(PKG, 0, MutationState.KIND_PERMISSION, CAMERA,
+                        MutationState.DENIED)), () -> {
+                    throw new IllegalStateException("refused");
+                }));
+
+        assertEquals("refused", e.getMessage());
+        assertEquals(3, mStored.size());
+        for (int i = 0; i < 2; ++i) {
+            assertEquals(MutationState.DENIED, mStored.get(i).beforeValue);
+            assertEquals(MutationState.GRANTED, mStored.get(i).postValue);
+            assertEquals(MutationJournal.RESULT_APPLIED, mStored.get(i).result);
+        }
+        assertEquals(MutationState.GRANTED, mStored.get(2).beforeValue);
+        assertEquals(MutationState.GRANTED, mStored.get(2).postValue);
+        assertEquals(MutationJournal.RESULT_FAILED, mStored.get(2).result);
     }
 
     @NonNull

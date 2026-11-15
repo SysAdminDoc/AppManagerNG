@@ -134,6 +134,8 @@ import io.github.muntashirakon.io.IoUtils;
 
 public class AppDetailsViewModel extends AndroidViewModel {
     public static final String TAG = AppDetailsViewModel.class.getSimpleName();
+    private static final String OPERATION_RESET_APP_OPS = "app_ops_reset";
+    private static final String OPERATION_IGNORE_DANGEROUS_APP_OPS = "app_ops_ignore_dangerous";
 
     private final PackageManager mPackageManager;
     private final Object mBlockerLocker = new Object();
@@ -794,6 +796,36 @@ public class AppDetailsViewModel extends AndroidViewModel {
         return images;
     }
 
+    /** The ops a package has set away from their defaults, each once, or none when they can't be read. */
+    @NonNull
+    private static int[] setOps(@Nullable List<AppOpsManagerCompat.OpEntry> entries) {
+        if (entries == null) {
+            return new int[0];
+        }
+        List<Integer> ops = new ArrayList<>(entries.size());
+        for (AppOpsManagerCompat.OpEntry entry : entries) {
+            int op = entry.getOp();
+            if (entry.getMode() != AppOpsManagerCompat.opToDefaultMode(op) && !ops.contains(op)) {
+                ops.add(op);
+            }
+        }
+        return ArrayUtils.convertToIntArray(ops);
+    }
+
+    /** Resets every app op with an image of each op that was set, so per-app rollback can set them again. */
+    @VisibleForTesting
+    @WorkerThread
+    static void resetAppOpsWithImages(@NonNull MutationRecorder recorder, @NonNull String packageName, int userId,
+                                      @NonNull int[] setOps, @NonNull MutationRecorder.Write<RemoteException> reset)
+            throws RemoteException {
+        List<MutationRecorder.Pending> images = new ArrayList<>(setOps.length);
+        for (int op : setOps) {
+            images.add(recorder.begin(packageName, userId, MutationState.KIND_APP_OP, String.valueOf(op),
+                    String.valueOf(AppOpsManagerCompat.opToDefaultMode(op))));
+        }
+        MutationRecorder.around(images, reset);
+    }
+
     @WorkerThread
     private void recordComponentRuleHistory(@NonNull String componentName,
                                             @NonNull RuleType type,
@@ -1362,9 +1394,13 @@ public class AppDetailsViewModel extends AndroidViewModel {
     public boolean resetAppOps() {
         beginAppOpsMutation();
         if (mExternalApk) return false;
-        if (getPackageInfoInternal() == null || mPackageName == null) return false;
+        PackageInfo packageInfo = getPackageInfoInternal();
+        if (packageInfo == null || mPackageName == null) return false;
         try {
-            mAppOpsManager.resetAllModes(mUserId, mPackageName);
+            String packageName = mPackageName;
+            resetAppOpsWithImages(newMutationRecorder(OPERATION_RESET_APP_OPS), packageName, mUserId,
+                    setOps(AppOpsManagerCompat.getOpsForPackageOrNull(packageInfo.applicationInfo.uid, packageName)),
+                    () -> mAppOpsManager.resetAllModes(mUserId, packageName));
             mExecutor.submit(this::loadAppOps);
             // Save values to the blocking rules
             mExecutor.submit(() -> {
@@ -1423,14 +1459,19 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 recordAppOpsUidImpact(e);
                 return false;
             }
+            MutationRecorder recorder = newMutationRecorder(OPERATION_IGNORE_DANGEROUS_APP_OPS);
             for (AppDetailsAppOpItem appOpItem : mAppOpItems) {
                 if (!opItems.contains(appOpItem.getOp())) {
                     continue;
                 }
                 try {
-                    PermUtils.setAppOpMode(mAppOpsManager, appOpItem.getOp(), mPackageName,
-                            packageInfo.applicationInfo.uid, AppOpsManager.MODE_IGNORED,
-                            AppOpsUidGuard.MutationSource.IGNORE_DANGEROUS, null);
+                    int op = appOpItem.getOp();
+                    MutationRecorder.around(Collections.singletonList(recorder.begin(mPackageName, mUserId,
+                                    MutationState.KIND_APP_OP, String.valueOf(op),
+                                    String.valueOf(AppOpsManager.MODE_IGNORED))),
+                            () -> PermUtils.setAppOpMode(mAppOpsManager, op, mPackageName,
+                                    packageInfo.applicationInfo.uid, AppOpsManager.MODE_IGNORED,
+                                    AppOpsUidGuard.MutationSource.IGNORE_DANGEROUS, null));
                     appOpItem.invalidate(mAppOpsManager, packageInfo);
                 } catch (PermissionException e) {
                     Log.e(TAG, e);

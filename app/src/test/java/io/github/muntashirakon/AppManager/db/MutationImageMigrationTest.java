@@ -13,6 +13,8 @@ import android.database.sqlite.SQLiteDatabase;
 
 import androidx.annotation.NonNull;
 import androidx.sqlite.db.SupportSQLiteDatabase;
+import androidx.sqlite.db.SupportSQLiteOpenHelper;
+import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory;
 import androidx.test.core.app.ApplicationProvider;
 
 import org.json.JSONArray;
@@ -74,6 +76,38 @@ public class MutationImageMigrationTest {
         assertEquals(1, longOf(db, "SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' "
                 + "AND name = 'mutation_image_append_only'"));
         assertAppendOnly(db);
+    }
+
+    /** Opening through AppsDb adds the trigger on its own, so this runs the migration with nothing else. */
+    @Test
+    public void theMigrationAloneMakesTheTableAppendOnly() throws Exception {
+        createFromSchema(13).close();
+        SupportSQLiteOpenHelper helper = new FrameworkSQLiteOpenHelperFactory().create(
+                SupportSQLiteOpenHelper.Configuration.builder(mContext)
+                        .name(DB_NAME)
+                        .callback(new SupportSQLiteOpenHelper.Callback(13) {
+                            @Override
+                            public void onCreate(@NonNull SupportSQLiteDatabase db) {
+                            }
+
+                            @Override
+                            public void onUpgrade(@NonNull SupportSQLiteDatabase db, int oldVersion,
+                                                  int newVersion) {
+                            }
+                        })
+                        .build());
+        try {
+            SupportSQLiteDatabase db = helper.getWritableDatabase();
+            assertEquals(0, longOf(db, "SELECT COUNT(*) FROM sqlite_master WHERE name = 'mutation_image'"));
+
+            AppsDb.M_13_14.migrate(db);
+
+            assertEquals(1, longOf(db, "SELECT COUNT(*) FROM sqlite_master WHERE type = 'trigger' "
+                    + "AND name = 'mutation_image_append_only'"));
+            assertAppendOnly(db);
+        } finally {
+            helper.close();
+        }
     }
 
     @Test

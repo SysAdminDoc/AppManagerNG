@@ -250,20 +250,37 @@ public final class MutationJournal {
         return new String(out);
     }
 
+    /** Reads a key file: the key, or null when the file isn't exactly one key long. */
+    @VisibleForTesting
+    interface KeyReader {
+        @Nullable
+        byte[] read(@NonNull File file) throws IOException;
+    }
+
     /**
      * The install's key, made on first use. A key that can't be saved still signs this run's rows; they won't
      * verify after a restart, which only sends them to manual review.
      */
     @NonNull
     static byte[] loadKey(@NonNull Context context) {
+        return loadKey(new File(context.getFilesDir(), KEY_FILE), MutationJournal::readKey);
+    }
+
+    /**
+     * Only a file of the wrong length is replaced. One that can't be read now may read fine after a restart, so
+     * it's kept, and this run signs with a key it doesn't save rather than cut every stored row off for good.
+     */
+    @VisibleForTesting
+    @NonNull
+    static byte[] loadKey(@NonNull File file, @NonNull KeyReader reader) {
         synchronized (sLock) {
             if (sKey != null) {
                 return sKey;
             }
-            File file = new File(context.getFilesDir(), KEY_FILE);
+            boolean keepFile = false;
             try {
                 if (file.isFile()) {
-                    byte[] stored = readKey(file);
+                    byte[] stored = reader.read(file);
                     if (stored != null) {
                         sKey = stored;
                         return sKey;
@@ -271,23 +288,28 @@ public final class MutationJournal {
                     Log.w(TAG, "The journal key has the wrong length, so earlier images won't verify");
                 }
             } catch (IOException e) {
-                Log.w(TAG, "Could not read the journal key, so earlier images won't verify", e);
+                Log.w(TAG, "Could not read the journal key; it's kept, and this run's images won't verify after "
+                        + "a restart", e);
+                keepFile = true;
             }
             byte[] key = new byte[KEY_BYTES];
             new SecureRandom().nextBytes(key);
-            try {
-                writeKey(file, key);
-            } catch (IOException e) {
-                Log.e(TAG, "Could not save the journal key; this run's images won't verify after a restart", e);
+            if (!keepFile) {
+                try {
+                    writeKey(file, key);
+                } catch (IOException e) {
+                    Log.e(TAG, "Could not save the journal key; this run's images won't verify after a restart", e);
+                }
             }
             sKey = key;
             return sKey;
         }
     }
 
-    /** The key, or null when the file isn't exactly one key long. */
+    /** The key, or null when the file isn't exactly one key long. A file that changes while it's read throws. */
+    @VisibleForTesting
     @Nullable
-    private static byte[] readKey(@NonNull File file) throws IOException {
+    static byte[] readKey(@NonNull File file) throws IOException {
         if (file.length() != KEY_BYTES) {
             return null;
         }
@@ -297,11 +319,14 @@ public final class MutationJournal {
             while (read < KEY_BYTES) {
                 int count = in.read(key, read, KEY_BYTES - read);
                 if (count < 0) {
-                    return null;
+                    throw new IOException("The journal key got shorter while it was read");
                 }
                 read += count;
             }
-            return in.read() < 0 ? key : null;
+            if (in.read() >= 0) {
+                throw new IOException("The journal key got longer while it was read");
+            }
+            return key;
         }
     }
 

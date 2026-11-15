@@ -998,3 +998,12 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Touches: those writers, `MutationState.java` (a component kind: enabled state plus blocking rule), `PerAppRollbackManager.java`, tests.
   Acceptance: WHEN any writer listed above changes a freeze state, permission, app op, network policy or component, the system SHALL store a mutation image with the same fields and chain as the hooked writers, and per-app revert SHALL put that target back only while its current value equals the recorded post value. A component image SHALL restore the previous enabled state and blocking rule. WHEN a freeze moves from one frozen state to another, revert SHALL either restore it through a sequence that ends in the recorded before value or keep it in manual review with that reason shown.
   Complexity: L
+
+### P3
+
+- [ ] P3: Check each revert step again when BatchOpsService runs it
+  Why: per-app revert reads every image step's target once, in `PerAppRollbackManager.start`, and queues them all at that moment. BatchOpsService runs them one after another later, without reading again. A change made between the queue and the run gets overwritten, and two steps whose targets share one stored value (app ops under the same switch, such as fine and coarse location) each pass their check before either runs, so the second undoes the first.
+  Evidence: `history/ops/PerAppRollbackManager.java` `start` and `stillHolds` (the only check); `batchops/BatchOpsService` applies the queued item with no expected value.
+  Touches: `PerAppRollbackManager.java`, `BatchQueueItem` (an expected value per target), `BatchOpsService`/`BatchOpsManager`, tests.
+  Acceptance: WHEN BatchOpsService is about to apply a revert step and the target's current value no longer equals the image's recorded post value, the system SHALL skip that step and report it as changed elsewhere. WHEN two selected steps write targets that share one stored mode, the system SHALL run only the first and list the other in manual review with that reason.
+  Complexity: M

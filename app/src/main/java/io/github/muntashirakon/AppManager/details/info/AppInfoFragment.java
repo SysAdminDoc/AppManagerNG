@@ -234,6 +234,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     public static final String TAG = "AppInfoFragment";
 
     private static final String PACKAGE_NAME_AURORA_STORE = "com.aurora.store";
+    private static final String OPERATION_NET_POLICY = "net_policy";
     private static final String ACTION_MANAGE_HEALTH_PERMISSIONS =
             "android.health.connect.action.MANAGE_HEALTH_PERMISSIONS";
     private static final String ACTION_CREDENTIAL_PROVIDER_SETTINGS =
@@ -758,9 +759,18 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             flags |= flag;
         }
         int policyFlags = flags;
+        String packageName = mApplicationInfo != null && mApplicationInfo.uid == uid
+                ? mApplicationInfo.packageName : null;
         ThreadUtils.postOnBackgroundThread(() -> {
             try {
-                NetworkPolicyManagerCompat.setUidPolicy(uid, policyFlags);
+                if (packageName != null) {
+                    setNetPolicyWithImage(MutationRecorder.forSystem(MutationRecorder.newExecutionId(),
+                                    MutationRecorder.singleOperation(OPERATION_NET_POLICY)), packageName,
+                            UserHandleHidden.getUserId(uid), policyFlags,
+                            () -> NetworkPolicyManagerCompat.setUidPolicy(uid, policyFlags));
+                } else {
+                    NetworkPolicyManagerCompat.setUidPolicy(uid, policyFlags);
+                }
                 ThreadUtils.postOnMainThread(() -> {
                     if (mMainModel != null && mApplicationInfo != null && mApplicationInfo.uid == uid) {
                         mMainModel.getTagsAlteredLiveData().setValue(true);
@@ -772,6 +782,15 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 ThreadUtils.postOnMainThread(() -> displayShortToast(R.string.failed));
             }
         });
+    }
+
+    /** Writes a UID's network policy with an image of it, so per-app rollback can put the old policy back. */
+    @VisibleForTesting
+    @WorkerThread
+    static void setNetPolicyWithImage(@NonNull MutationRecorder recorder, @NonNull String packageName, int userId,
+                                      int policyFlags, @NonNull MutationRecorder.Write<RuntimeException> write) {
+        MutationRecorder.around(Collections.singletonList(recorder.begin(packageName, userId,
+                MutationState.KIND_NET_POLICY, "", String.valueOf(policyFlags))), write);
     }
 
     @VisibleForTesting

@@ -28,6 +28,8 @@ import org.robolectric.RobolectricTestRunner;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.db.AppsDb;
@@ -256,6 +258,29 @@ public class MutationJournalTest {
         assertEquals(32, key.length);
         assertEquals(32, file.length());
         assertNotEquals(0, anyBits(key));
+    }
+
+    /** A read that fails may work after a restart, so the stored key has to survive it. */
+    @Test
+    public void aKeyFileThatCantBeReadIsKeptAndThisRunSignsWithAnother() throws Exception {
+        File file = keyFile();
+        File dir = file.getParentFile();
+        if (dir != null && !dir.mkdirs() && !dir.isDirectory()) {
+            fail("could not make " + dir);
+        }
+        try (FileOutputStream out = new FileOutputStream(file)) {
+            out.write(KEY);
+        }
+
+        byte[] key = MutationJournal.loadKey(file, f -> {
+            throw new IOException("busy");
+        });
+
+        assertEquals(32, key.length);
+        assertFalse(Arrays.equals(KEY, key));
+        assertArrayEquals(KEY, MutationJournal.readKey(file));
+        MutationJournal.forgetCachedKey();
+        assertArrayEquals(KEY, MutationJournal.loadKey(mContext));
     }
 
     @Test
