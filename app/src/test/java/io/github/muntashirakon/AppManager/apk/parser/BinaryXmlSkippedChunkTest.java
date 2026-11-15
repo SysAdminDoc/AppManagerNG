@@ -41,9 +41,13 @@ public class BinaryXmlSkippedChunkTest {
     private static final int[] UNKNOWN = {0x0000, 0x0200, 0x01ff};
     /** Types Android skips only once the nodes have started: an unused node type, a string pool, a resource map. */
     private static final int[] UNKNOWN_AMONG_NODES = {0x0105, 0x017f, 0x0001, 0x0180};
+    private static final String[] MANIFESTS = {"xml/framework_ref_api35.bin.xml", "xml/HMS_Core_Android_Manifest.bin.xml"};
     private static final int RES_STRING_POOL_TYPE = 0x0001;
+    private static final int RES_XML_START_NAMESPACE_TYPE = 0x0100;
+    private static final int RES_XML_END_NAMESPACE_TYPE = 0x0101;
     private static final int RES_XML_START_ELEMENT_TYPE = 0x0102;
     private static final int RES_XML_END_ELEMENT_TYPE = 0x0103;
+    private static final int RES_XML_CDATA_TYPE = 0x0104;
     private static final int RES_XML_RESOURCE_MAP_TYPE = 0x0180;
     private static final int ATTR_VERSION_NAME = 0x0101021c;
     /** A private attribute the API 35 table names, so moving android:versionName onto it shows in the output. */
@@ -201,6 +205,64 @@ public class BinaryXmlSkippedChunkTest {
             byte[] damaged = withChunk(data, firstNode(data), RES_XML_END_ELEMENT_TYPE, 16, 24);
             damaged = withChunk(damaged, rootEnd(damaged), RES_XML_END_ELEMENT_TYPE, 16, 24);
             assertEquals(fixture, expected, AndroidBinXmlDecoder.decode(damaged));
+        }
+    }
+
+    /** Android stops reading at the root element's end, so nothing after it is checked or shown. */
+    @Test
+    public void nothingAfterTheRootElementIsRead() throws IOException {
+        for (String fixture : MANIFESTS) {
+            byte[] data = resource(fixture);
+            String expected = AndroidBinXmlDecoder.decode(data);
+            int after = afterRootElement(data);
+            byte[] start = chunk(data, secondElement(data));
+            byte[] end = chunk(data, chunkOfType(data, RES_XML_END_ELEMENT_TYPE));
+            assertEquals(fixture + " with a second root", expected,
+                    AndroidBinXmlDecoder.decode(inserted(inserted(data, after, end), after, start)));
+            byte[] brokenElement = withChunk(data, after, RES_XML_START_ELEMENT_TYPE, 16, 36);
+            // Five attributes in an element with room for none
+            ByteBuffer.wrap(brokenElement).order(ByteOrder.LITTLE_ENDIAN).putShort(after + 16 + 12, (short) 5);
+            assertEquals(fixture + " with a broken element", expected, AndroidBinXmlDecoder.decode(brokenElement));
+            assertEquals(fixture + " with text", expected,
+                    AndroidBinXmlDecoder.decode(withChunk(data, after, RES_XML_CDATA_TYPE, 16, 28)));
+        }
+    }
+
+    /**
+     * nextNode refuses a namespace, element or CDATA node too short for its extension (8, 20, 8 and
+     * 12 bytes), a stray end element included.
+     */
+    @Test
+    public void aNodeTooShortForItsTypeIsRefused() throws IOException {
+        byte[] data = resource("xml/framework_ref_api35.bin.xml");
+        int[][] typeAndSize = {
+                {RES_XML_START_NAMESPACE_TYPE, 16}, {RES_XML_START_NAMESPACE_TYPE, 20},
+                {RES_XML_END_NAMESPACE_TYPE, 16}, {RES_XML_END_NAMESPACE_TYPE, 20},
+                {RES_XML_START_ELEMENT_TYPE, 32},
+                {RES_XML_END_ELEMENT_TYPE, 16}, {RES_XML_END_ELEMENT_TYPE, 20},
+                {RES_XML_CDATA_TYPE, 24},
+        };
+        for (int[] node : typeAndSize) {
+            for (int at : new int[]{firstNode(data), secondElement(data)}) {
+                assertThrows(String.format("0x%04x of %d bytes at %d", node[0], node[1], at), IOException.class,
+                        () -> AndroidBinXmlDecoder.decode(withChunk(data, at, node[0], 16, node[1])));
+            }
+        }
+    }
+
+    /** ResXMLTree::setTo reads a document only up to the size its header gives. */
+    @Test
+    public void bytesPastTheDocumentAreIgnored() throws IOException {
+        byte[] data = resource("xml/framework_ref_api35.bin.xml");
+        String expected = AndroidBinXmlDecoder.decode(data);
+        byte[] tail = new byte[24];
+        ByteBuffer.wrap(tail).order(ByteOrder.LITTLE_ENDIAN).putShort((short) RES_XML_START_ELEMENT_TYPE)
+                .putShort((short) 16).putInt(1000);
+        // Nothing to drop, and a chunk to drop, which copies the document
+        for (byte[] document : new byte[][]{data, withChunk(data, firstNode(data), 0x0200, 16, 16)}) {
+            byte[] padded = Arrays.copyOf(document, document.length + tail.length);
+            System.arraycopy(tail, 0, padded, document.length, tail.length);
+            assertEquals(expected, AndroidBinXmlDecoder.decode(padded));
         }
     }
 

@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.apk.parser;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -107,13 +108,15 @@ public class BinaryXmlMalformedInputTest {
         int over = BinaryXmlBounds.MAX_DEPTH + 1;
         for (int[] runs : new int[][]{
                 {-5_000, over, -over},
-                {1, -1, -5_000, over, -over},
                 {-5_000, 5_000 + over, -(5_000 + over)},
         }) {
             IOException e = assertThrows(Arrays.toString(runs), IOException.class,
                     () -> AndroidBinXmlDecoder.decode(elements(runs)));
             assertTrue(e.getMessage(), e.getMessage().contains("nested"));
         }
+        // After the root's end, which Android doesn't read past, none of it reaches ARSCLib
+        String afterRoot = AndroidBinXmlDecoder.decode(elements(1, -1, -5_000, over, -over));
+        assertEquals(afterRoot, 1, afterRoot.split("<e", -1).length - 1);
         int limit = BinaryXmlBounds.MAX_DEPTH;
         assertTrue(AndroidBinXmlDecoder.decode(elements(-5_000, limit, -limit)).contains("<e>"));
     }

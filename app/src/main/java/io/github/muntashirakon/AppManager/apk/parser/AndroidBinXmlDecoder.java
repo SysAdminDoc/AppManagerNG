@@ -46,6 +46,8 @@ public class AndroidBinXmlDecoder {
     private static final int ATTR_TARGET_SDK_VERSION = 0x01010270;
     /** aapt2 writes compile metadata into manifests compiled against this API level and later. */
     private static final int FIRST_API_WITH_METADATA = 28;
+    /** Build.VERSION_CODES.CUR_DEVELOPMENT, the level Android gives a codename. */
+    private static final int CUR_DEVELOPMENT = 10_000;
 
     public static boolean isBinaryXml(@NonNull ByteBuffer buffer) {
         buffer.order(ByteOrder.LITTLE_ENDIAN);
@@ -284,7 +286,9 @@ public class AndroidBinXmlDecoder {
     /**
      * Whether {@code document} is a manifest whose {@code uses-sdk} targets an API level older than
      * the compile metadata aapt2 writes. As in Android, the last {@code uses-sdk} counts, a missing
-     * target means the minimum, and a missing minimum means 1. A codename counts as new.
+     * target means the minimum, and a missing minimum means 1. A string value is a codename, digits
+     * or not, and counts as new. A reference Android would resolve, which can't be resolved here,
+     * counts as missing.
      */
     private static boolean targetsBeforeMetadata(@NonNull ResXmlDocument document) {
         ResXmlElement root = document.getDocumentElement();
@@ -294,20 +298,36 @@ public class AndroidBinXmlDecoder {
         int level = 1;
         Iterator<ResXmlElement> usesSdks = root.getElements(TAG_USES_SDK);
         while (usesSdks.hasNext()) {
-            int min = 1;
+            Integer min = null;
             Integer target = null;
             Iterator<ResXmlAttribute> it = usesSdks.next().getAttributes();
             while (it.hasNext()) {
                 ResXmlAttribute attribute = it.next();
                 if (attribute.getNameId() == ATTR_MIN_SDK_VERSION) {
-                    min = apiLevel(attribute);
+                    min = sdkLevel(attribute);
                 } else if (attribute.getNameId() == ATTR_TARGET_SDK_VERSION) {
-                    target = apiLevel(attribute);
+                    target = sdkLevel(attribute);
                 }
             }
-            level = target != null ? target : min;
+            level = target != null ? target : min != null ? min : 1;
         }
         return level != FrameworkTables.UNKNOWN_API && level < FIRST_API_WITH_METADATA;
+    }
+
+    /**
+     * A {@code uses-sdk} level the way ParsingPackageUtils reads it: a string is a codename, so
+     * current development; a number is itself; anything else is null.
+     */
+    @Nullable
+    private static Integer sdkLevel(@NonNull ResXmlAttribute attribute) {
+        ValueType type = attribute.getValueType();
+        if (type == ValueType.STRING) {
+            return CUR_DEVELOPMENT;
+        }
+        if (type == ValueType.DEC || type == ValueType.HEX) {
+            return apiLevel(attribute);
+        }
+        return null;
     }
 
     private static int apiLevel(@NonNull ResXmlAttribute attribute) {

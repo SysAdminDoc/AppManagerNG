@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
@@ -161,6 +163,68 @@ public class FrameworkTableDecodeTest {
                 + " android:versionName=\"1.7\">" + usesSdk + "</manifest>");
         replaceResourceId(manifest, ATTR_VERSION_NAME, id);
         return AndroidBinXmlDecoder.decode(manifest);
+    }
+
+    /**
+     * Android reads a uses-sdk value stored as a string as a codename, digits or not, meaning a
+     * preview SDK. A reference it resolves first, which the decoder can't, so an unresolved target
+     * counts as missing and the minimum stands in for it, as Android does for a missing one.
+     */
+    @Test
+    public void aStringSdkVersionIsACodenameAndAReferenceTargetFallsBackToTheMinimum() throws IOException {
+        String stringTarget = decodeWithUsesSdk(
+                "<uses-sdk android:minSdkVersion=\"21\" android:targetSdkVersion=\"QZ\"/>", "QZ", "21");
+        assertEquals(stringTarget, "21", value(stringTarget, "android:targetSdkVersion"));
+        assertEquals(stringTarget, "1.7", value(stringTarget, "android:isSplitRequired"));
+
+        String stringMin = decodeWithUsesSdk("<uses-sdk android:minSdkVersion=\"QZ\"/>", "QZ", "21");
+        assertEquals(stringMin, "21", value(stringMin, "android:minSdkVersion"));
+        assertEquals(stringMin, "1.7", value(stringMin, "android:isSplitRequired"));
+
+        String reference = " android:targetSdkVersion=\"@android:integer/config_mediumAnimTime\"/>";
+        String oldMin = decodeWithUsesSdk("<uses-sdk android:minSdkVersion=\"21\"" + reference, null, null);
+        assertEquals(oldMin, "1.7", value(oldMin, "android:r0x01010591"));
+        assertFalse(oldMin, oldMin.contains("isSplitRequired"));
+        String newMin = decodeWithUsesSdk("<uses-sdk android:minSdkVersion=\"28\"" + reference, null, null);
+        assertEquals(newMin, "1.7", value(newMin, "android:isSplitRequired"));
+    }
+
+    /**
+     * A manifest whose android:versionName is moved onto {@link #PLATFORM_PRIVATE_ATTR}, with the one
+     * string {@code from} in its pool rewritten to {@code to} of the same length.
+     */
+    @NonNull
+    private static String decodeWithUsesSdk(@NonNull String usesSdk, @Nullable String from, @Nullable String to)
+            throws IOException {
+        byte[] manifest = AndroidBinXmlEncoder.encodeString("<manifest"
+                + " xmlns:android=\"http://schemas.android.com/apk/res/android\" package=\"org.example\""
+                + " android:versionName=\"1.7\">" + usesSdk + "</manifest>");
+        replaceResourceId(manifest, ATTR_VERSION_NAME, PLATFORM_PRIVATE_ATTR);
+        if (from != null && to != null) {
+            replaceText(manifest, from, to);
+        }
+        return AndroidBinXmlDecoder.decode(manifest);
+    }
+
+    /** Rewrites the one place {@code from} is stored, as UTF-8 or UTF-16, to {@code to} of the same length. */
+    private static void replaceText(@NonNull byte[] data, @NonNull String from, @NonNull String to) {
+        assertEquals(from.length(), to.length());
+        for (Charset charset : new Charset[]{StandardCharsets.UTF_8, StandardCharsets.UTF_16LE}) {
+            byte[] needle = from.getBytes(charset);
+            byte[] replacement = to.getBytes(charset);
+            int found = -1;
+            for (int i = 0; i + needle.length <= data.length; ++i) {
+                if (Arrays.equals(Arrays.copyOfRange(data, i, i + needle.length), needle)) {
+                    assertEquals("more than one " + from, -1, found);
+                    found = i;
+                }
+            }
+            if (found >= 0) {
+                System.arraycopy(replacement, 0, data, found, replacement.length);
+                return;
+            }
+        }
+        throw new AssertionError(from + " is not in the document");
     }
 
     @Test

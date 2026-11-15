@@ -8,6 +8,7 @@ import androidx.annotation.Nullable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 
 /**
  * Checks a binary XML document's structure before ARSCLib reads it, and drops the chunks Android
@@ -32,10 +33,14 @@ import java.nio.ByteOrder;
  * refuses other chunks there.</li>
  * <li>An end element with no open element closes nothing. ARSCLib keeps it but stops counting
  * depth, which would let deeper nesting through.</li>
- * <li>Android stops reading a manifest at its root element's end, so a chunk after that which
- * Android would refuse is dropped rather than refused, along with everything after it when its
- * size can't be trusted.</li>
+ * <li>Android stops reading at the root element's end, so every chunk after it is dropped, never
+ * checked, except a namespace end that closes a namespace still open.</li>
+ * <li>Android reads a document only up to the size its header gives, so bytes past that are
+ * dropped too.</li>
  * </ul>
+ *
+ * <p>As in {@code ResXMLParser::nextNode}, a namespace, element or CDATA node too short for its
+ * extension is refused, a stray end element included.</p>
  */
 final class BinaryXmlBounds {
     static final int MAX_DEPTH = 256;
@@ -45,6 +50,7 @@ final class BinaryXmlBounds {
     private static final int RES_XML_TYPE = 0x0003;
     private static final int RES_XML_FIRST_CHUNK_TYPE = 0x0100;
     private static final int RES_XML_START_NAMESPACE_TYPE = 0x0100;
+    private static final int RES_XML_END_NAMESPACE_TYPE = 0x0101;
     private static final int RES_XML_START_ELEMENT_TYPE = 0x0102;
     private static final int RES_XML_END_ELEMENT_TYPE = 0x0103;
     private static final int RES_XML_CDATA_TYPE = 0x0104;
@@ -53,7 +59,10 @@ final class BinaryXmlBounds {
     private static final int CHUNK_HEADER_SIZE = 8;
     private static final int NODE_HEADER_SIZE = 16;
     private static final int STRING_POOL_HEADER_SIZE = 28;
+    private static final int NAMESPACE_EXTENSION_SIZE = 8;
     private static final int ELEMENT_EXTENSION_SIZE = 20;
+    private static final int END_ELEMENT_EXTENSION_SIZE = 8;
+    private static final int CDATA_EXTENSION_SIZE = 12;
     private static final int ATTRIBUTE_SIZE = 20;
     private static final int UTF8_FLAG = 1 << 8;
 
@@ -83,9 +92,10 @@ final class BinaryXmlBounds {
         // Counted first and copied second, so a file of tiny chunks needs no list as long as itself
         long dropped = walk(b, headerSize, (int) size, null);
         if (dropped == 0) {
-            return data;
+            // Android reads only the size the header gives
+            return size == data.length ? data : Arrays.copyOf(data, (int) size);
         }
-        byte[] out = new byte[(int) (data.length - dropped)];
+        byte[] out = new byte[(int) (size - dropped)];
         walk(b, headerSize, (int) size, out);
         return out;
     }
@@ -118,6 +128,7 @@ final class BinaryXmlBounds {
         int outPos = 0;
         long pos = headerSize;
         int depth = 0;
+        int openNamespaces = 0;
         boolean inNodes = false;
         boolean rootClosed = false;
         // Android ignores a tail too short to hold a chunk header
@@ -136,10 +147,13 @@ final class BinaryXmlBounds {
                 // Its size can't be trusted to find the next chunk, so the rest goes too
                 chunkSize = size - pos;
                 keep = false;
+            } else if (rootClosed) {
+                // Android has stopped reading. A namespace end that closes one still open stays so
+                // ARSCLib reads a whole document, and nothing else does.
+                keep = chunkType == RES_XML_END_NAMESPACE_TYPE && openNamespaces > 0 && !misaligned
+                        && chunkHeader >= NODE_HEADER_SIZE && chunkSize - chunkHeader >= extensionSize(chunkType);
             } else if (bad) {
                 throw new IOException("Bad chunk at offset " + pos);
-            } else if (rootClosed && (misaligned || chunkHeader < NODE_HEADER_SIZE)) {
-                keep = false;
             } else if (misaligned) {
                 throw new IOException("Chunk off a 4-byte boundary at offset " + pos);
             } else if (!inNodes) {
@@ -147,6 +161,9 @@ final class BinaryXmlBounds {
             } else if (chunkHeader < NODE_HEADER_SIZE) {
                 // nextNode validates every chunk as a node, the ones it skips too
                 throw new IOException("Bad node header at offset " + pos);
+            } else if (chunkSize - chunkHeader < extensionSize(chunkType)) {
+                // As nextNode does, a stray end element included
+                throw new IOException("Node too short for its type at offset " + pos);
             } else if (chunkType == RES_XML_END_ELEMENT_TYPE) {
                 keep = depth > 0;
             } else {
@@ -161,6 +178,10 @@ final class BinaryXmlBounds {
                 }
             } else if (chunkType == RES_STRING_POOL_TYPE) {
                 checkStringPool(b, at, chunkHeader, chunkSize);
+            } else if (chunkType == RES_XML_START_NAMESPACE_TYPE) {
+                ++openNamespaces;
+            } else if (chunkType == RES_XML_END_NAMESPACE_TYPE) {
+                openNamespaces = Math.max(0, openNamespaces - 1);
             } else if (chunkType == RES_XML_START_ELEMENT_TYPE) {
                 checkElement(b, at, chunkHeader, chunkSize);
                 if (++depth > MAX_DEPTH) {
@@ -174,8 +195,7 @@ final class BinaryXmlBounds {
             pos += chunkSize;
         }
         if (out != null) {
-            byte[] data = b.array();
-            System.arraycopy(data, copiedTo, out, outPos, data.length - copiedTo);
+            System.arraycopy(b.array(), copiedTo, out, outPos, size - copiedTo);
             ByteBuffer.wrap(out).order(ByteOrder.LITTLE_ENDIAN).putInt(4, (int) (size - dropped));
         }
         return dropped;
@@ -183,6 +203,23 @@ final class BinaryXmlBounds {
 
     private static boolean isNode(int chunkType) {
         return chunkType >= RES_XML_FIRST_CHUNK_TYPE && chunkType <= RES_XML_LAST_CHUNK_TYPE;
+    }
+
+    /** The extension nextNode requires after a node's header, 0 for a type it skips. */
+    private static int extensionSize(int chunkType) {
+        switch (chunkType) {
+            case RES_XML_START_NAMESPACE_TYPE:
+            case RES_XML_END_NAMESPACE_TYPE:
+                return NAMESPACE_EXTENSION_SIZE;
+            case RES_XML_START_ELEMENT_TYPE:
+                return ELEMENT_EXTENSION_SIZE;
+            case RES_XML_END_ELEMENT_TYPE:
+                return END_ELEMENT_EXTENSION_SIZE;
+            case RES_XML_CDATA_TYPE:
+                return CDATA_EXTENSION_SIZE;
+            default:
+                return 0;
+        }
     }
 
     private static void checkElement(@NonNull ByteBuffer b, int at, int header, long size) throws IOException {
