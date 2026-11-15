@@ -124,6 +124,8 @@ public final class AppearanceUtils {
         // stale Prefs value (case 1), or the in-app picker would silently fail to surface in
         // system Settings (case 2).
         reconcileLocalePreference();
+        // Set before the first activity, so it's created in the same day or night the theme is picked for
+        AppCompatDelegate.setDefaultNightMode(Prefs.Appearance.getNightMode());
         applyOnlyLocale(application);
         if (Prefs.Appearance.useSystemFont()) {
             TypefaceUtil.replaceFontsWithSystem(application);
@@ -196,7 +198,7 @@ public final class AppearanceUtils {
             }
             // Theme must be set first because the method below will add dynamic attributes to the theme
             DynamicColors.applyToActivityIfAvailable(activity);
-            if (Prefs.Appearance.isPureBlackTheme()) {
+            if (isPureBlackInEffect(activity)) {
                 // The dynamic overlay replaces every surface role with wallpaper-derived
                 // neutrals, silently turning "pure black" into a grey dynamic theme on
                 // API 31+. Re-pin the black surfaces; dynamic accents survive.
@@ -364,13 +366,7 @@ public final class AppearanceUtils {
                     }
                     break;
             }
-            if (Prefs.Appearance.isPureBlackTheme() && newNightMode != Configuration.UI_MODE_NIGHT_UNDEFINED) {
-                // AMOLED renders black surfaces (AppTheme_V2_Amoled) regardless of night mode.
-                // Force night-qualified resources so -night colors (search highlight, tracker
-                // badges, red) load too; otherwise the day-mode values render on black and become
-                // unreadable (e.g. near-white highlight under near-white text).
-                newNightMode = Configuration.UI_MODE_NIGHT_YES;
-            }
+            // Pure black only applies at night (see isPureBlackInEffect), so the night mode is never forced for it
             overrideConf.uiMode = newNightMode | (overrideConf.uiMode & ~Configuration.UI_MODE_NIGHT_MASK);
         }
 
@@ -392,6 +388,34 @@ public final class AppearanceUtils {
             locales.add(defaultLocales.get(i));
         }
         config.setLocales(new LocaleList(locales.toArray(new Locale[0])));
+    }
+
+    /**
+     * Whether the pure black theme applies now: it's turned on and the app is dark. In the day the normal light
+     * theme is used, and the choice is kept for the next time the app is dark.
+     */
+    public static boolean isPureBlackInEffect(@NonNull Context context) {
+        return Prefs.Appearance.isPureBlackTheme() && isNightInEffect(context);
+    }
+
+    /**
+     * Whether the app is dark now under its night mode setting, as the system's own setting, the time of day or
+     * battery saver decides when it follows one of those.
+     */
+    public static boolean isNightInEffect(@NonNull Context context) {
+        int nightMode = Prefs.Appearance.getNightMode();
+        if (nightMode == AppCompatDelegate.MODE_NIGHT_UNSPECIFIED) {
+            nightMode = AppCompatDelegate.getDefaultNightMode();
+        }
+        switch (mapNightModeOnce(context, nightMode)) {
+            case AppCompatDelegate.MODE_NIGHT_YES:
+                return true;
+            case AppCompatDelegate.MODE_NIGHT_NO:
+                return false;
+            default:
+                return (Resources.getSystem().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                        == Configuration.UI_MODE_NIGHT_YES;
+        }
     }
 
     @SuppressWarnings("deprecation")

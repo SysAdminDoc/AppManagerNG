@@ -51,6 +51,7 @@ import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
+import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
 import io.github.muntashirakon.AppManager.utils.FreezeUtils;
 import io.github.muntashirakon.AppManager.utils.LangUtils;
@@ -195,24 +196,20 @@ public final class Prefs {
             AppPref.set(AppPref.PrefKey.PREF_LAYOUT_ORIENTATION_INT, layoutDirection);
         }
 
+        /** The app's theme now. Pure black is only used while the app is dark. */
         @StyleRes
         public static int getAppTheme() {
-            switch (AppPref.getInt(AppPref.PrefKey.PREF_APP_THEME_CUSTOM_INT)) {
-                case 1: // Full black theme
-                    return io.github.muntashirakon.AppManager.R.style.AppTheme_V2_Amoled;
-                default: // Normal theme
-                    return io.github.muntashirakon.AppManager.R.style.AppTheme_V2;
-            }
+            return AppearanceUtils.isPureBlackInEffect(ContextUtils.getContext())
+                    ? io.github.muntashirakon.AppManager.R.style.AppTheme_V2_Amoled
+                    : io.github.muntashirakon.AppManager.R.style.AppTheme_V2;
         }
 
+        /** The theme for screens with a transparent background now. Pure black is only used while the app is dark. */
         @StyleRes
         public static int getTransparentAppTheme() {
-            switch (AppPref.getInt(AppPref.PrefKey.PREF_APP_THEME_CUSTOM_INT)) {
-                case 1: // Full black theme
-                    return io.github.muntashirakon.AppManager.R.style.AppTheme_TransparentBackground_Black;
-                default: // Normal theme
-                    return io.github.muntashirakon.AppManager.R.style.AppTheme_TransparentBackground;
-            }
+            return AppearanceUtils.isPureBlackInEffect(ContextUtils.getContext())
+                    ? io.github.muntashirakon.AppManager.R.style.AppTheme_TransparentBackground_Black
+                    : io.github.muntashirakon.AppManager.R.style.AppTheme_TransparentBackground;
         }
 
         public static boolean isPremiumPreviewEnabled() {

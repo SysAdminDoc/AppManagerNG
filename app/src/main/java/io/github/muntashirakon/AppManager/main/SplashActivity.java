@@ -59,6 +59,7 @@ import io.github.muntashirakon.AppManager.settings.StartupInitState;
 import io.github.muntashirakon.AppManager.settings.StartupInitUiState;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
+import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 import io.github.muntashirakon.io.Path;
 
 @SuppressLint("CustomSplashScreen")
@@ -97,7 +98,7 @@ public class SplashActivity extends AppCompatActivity {
 
     @Override
     protected final void onCreate(@Nullable Bundle savedInstanceState) {
-        setTheme(Prefs.Appearance.isPureBlackTheme() ? R.style.AppTheme_Splash_Black : R.style.AppTheme_Splash);
+        setTheme(AppearanceUtils.isPureBlackInEffect(this) ? R.style.AppTheme_Splash_Black : R.style.AppTheme_Splash);
         SplashScreen.installSplashScreen(this);
         EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);

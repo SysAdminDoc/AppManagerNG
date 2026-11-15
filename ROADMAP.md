@@ -489,17 +489,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
 
 ### P1
 
-- [ ] P1 — Treat Pure black as a night-only palette
-  Category: Accessibility
-  Where: `app/src/main/java/io/github/muntashirakon/AppManager/settings/AppearancePreferences.java:44-70`; `app/src/main/java/io/github/muntashirakon/AppManager/settings/Prefs.java:199-235`; `app/src/main/java/io/github/muntashirakon/AppManager/utils/appearance/AppearanceUtils.java:189-221,365-370`; `app/src/main/res/values/themes-v2.xml:93-127,249`
-  Problem: Enabling Pure black in Night mode, then applying Day, produces a persistent black surface with Day text and icon colors.
-  Evidence: The headless API 35 reproduction persisted across a cold launch; sampled preference titles were about 1.22:1 and icons about 2.12:1 against black.
-  Fix: Gate AMOLED themes and overlays by effective night state, keep the stored preference for future Night use, and bind preference text and icons to semantic on-surface colors.
-  Acceptance: Night to Pure black to Day remains readable after recreation and cold launch; Day uses the normal light palette, Night uses true black, Follow system and Battery follow effective state, text reaches 4.5:1, and controls and icons reach 3:1 with and without dynamic color.
-  Confidence: Verified
-  Effort: M
-
-
 - [ ] P2 — Represent complete routes in Settings search
   Category: Navigation
   Where: `app/src/main/java/io/github/muntashirakon/AppManager/settings/SettingsSearchIndex.java:50-105`; `app/src/main/java/io/github/muntashirakon/AppManager/settings/SettingsActivity.java:184-193,215-243,332-343`; `app/src/main/java/io/github/muntashirakon/AppManager/settings/PreferenceFragment.java:88-97`; `app/src/main/res/xml/preferences_main.xml:16-21,37-55,132-137`
