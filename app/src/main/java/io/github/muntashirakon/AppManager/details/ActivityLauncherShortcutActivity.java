@@ -13,6 +13,7 @@ import android.os.UserHandleHidden;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -57,6 +58,36 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
     }
 
+    /** Starts the target as the given user and returns the activity manager's start result. */
+    @VisibleForTesting
+    interface TargetStarter {
+        int start(@NonNull Intent intent, @UserIdInt int userId) throws Exception;
+    }
+
+    @VisibleForTesting
+    static TargetStarter sTargetStarter = ActivityManagerCompat::startActivity;
+
+    /**
+     * The intent that starts the shortcut's target, or null when {@code shortcutIntent} isn't one of ours. It's
+     * built from the component alone: the system stamps this activity's own intent with
+     * {@link Intent#FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS}, since the trampoline is kept out of Recents, and
+     * passing its flags on kept the target out of Recents too.
+     */
+    @VisibleForTesting
+    @Nullable
+    static Intent getTargetIntent(@NonNull Intent shortcutIntent) {
+        String packageName = shortcutIntent.getStringExtra(EXTRA_PKG);
+        String className = shortcutIntent.getStringExtra(EXTRA_CLS);
+        if (!Intent.ACTION_CREATE_SHORTCUT.equals(shortcutIntent.getAction()) || packageName == null
+                || className == null) {
+            return null;
+        }
+        // The same flags a shortcut that starts the target directly carries
+        return new Intent()
+                .setComponent(new ComponentName(packageName, className))
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+    }
+
     private Intent mIntent;
     private String mPackageName;
     private ComponentName mComponentName;
@@ -66,13 +97,7 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
 
     @Override
     protected void onAuthenticated(@Nullable Bundle savedInstanceState) {
-        Intent intent = getIntent();
-        if (!Intent.ACTION_CREATE_SHORTCUT.equals(intent.getAction()) || !intent.hasExtra(EXTRA_PKG) || !intent.hasExtra(EXTRA_CLS)) {
-            // Invalid intent
-            finishActivity(0);
-            return;
-        }
-        unfreezeAndLaunchActivity(intent);
+        unfreezeAndLaunchActivity(getIntent());
     }
 
     @Override
@@ -87,19 +112,18 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
     }
 
     private void unfreezeAndLaunchActivity(@NonNull Intent intent) {
-        mIntent = new Intent(intent);
-        mPackageName = Objects.requireNonNull(mIntent.getStringExtra(EXTRA_PKG));
-        String className = Objects.requireNonNull(mIntent.getStringExtra(EXTRA_CLS));
-        mComponentName = new ComponentName(mPackageName, className);
-        mIntent.setAction(null);
-        mIntent.setComponent(mComponentName);
-        mUserId = mIntent.getIntExtra(EXTRA_USR, UserHandleHidden.myUserId());
+        Intent targetIntent = getTargetIntent(intent);
+        if (targetIntent == null) {
+            // Invalid intent
+            close();
+            return;
+        }
+        mIntent = targetIntent;
+        mComponentName = Objects.requireNonNull(targetIntent.getComponent());
+        mPackageName = mComponentName.getPackageName();
+        mUserId = intent.getIntExtra(EXTRA_USR, UserHandleHidden.myUserId());
         mCanLaunchViaAssist = SelfPermissions.checkSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS);
-        mIsLaunchViaAssist = mIntent.getBooleanExtra(EXTRA_AST, false) && mCanLaunchViaAssist;
-        mIntent.removeExtra(EXTRA_PKG);
-        mIntent.removeExtra(EXTRA_CLS);
-        mIntent.removeExtra(EXTRA_AST);
-        mIntent.removeExtra(EXTRA_USR);
+        mIsLaunchViaAssist = intent.getBooleanExtra(EXTRA_AST, false) && mCanLaunchViaAssist;
         // Check for frozen
         ApplicationInfo info = ExUtils.exceptionAsNull(() -> PackageManagerCompat.getApplicationInfo(mPackageName, 0, mUserId));
         if (info != null && FreezeUtils.isFrozen(info)) {
@@ -120,11 +144,11 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
                         } catch (Exception e) {
                             ThreadUtils.postOnMainThread(() -> {
                                 UIUtils.displayShortToast(R.string.failed);
-                                finishActivity(0);
+                                close();
                             });
                         }
                     }))
-                    .setNegativeButton(R.string.cancel, (dialog, which) -> finishActivity(0))
+                    .setNegativeButton(R.string.cancel, (dialog, which) -> close())
                     .show();
         } else {
             // Try launching it anyway (we don't care about failure)
@@ -135,19 +159,39 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
     private void launchActivity() {
         if (mIsLaunchViaAssist && !SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.START_ANY_ACTIVITY)) {
             launchActivityViaAssist();
-        } else {
-            try {
-                finishActivity(0);
-                ActivityManagerCompat.startActivity(mIntent, mUserId);
-            } catch (Exception e) {
-                Log.e(TAG, "Could not launch shortcut target.", e);
-                UIUtils.displayLongToast(R.string.shortcut_target_unavailable);
-                // Try assist instead
-                if (mCanLaunchViaAssist) {
-                    launchActivityViaAssist();
-                } else finishActivity(0);
-            }
+            return;
         }
+        if (startTarget()) {
+            close();
+            return;
+        }
+        UIUtils.displayLongToast(R.string.shortcut_target_unavailable);
+        // Try assist instead
+        if (mCanLaunchViaAssist) {
+            launchActivityViaAssist();
+        } else close();
+    }
+
+    /** Whether the target started. A negative start result is a refusal, such as a class that no longer exists. */
+    private boolean startTarget() {
+        try {
+            int result = sTargetStarter.start(mIntent, mUserId);
+            if (result >= 0) {
+                return true;
+            }
+            Log.w(TAG, "Could not launch shortcut target: start result %d", result);
+        } catch (Exception e) {
+            Log.e(TAG, "Could not launch shortcut target.", e);
+        }
+        return false;
+    }
+
+    /**
+     * The trampoline lives in a task of its own, so it closes that task with it. {@code finishActivity(0)}, used
+     * before, only finishes an activity this one started for a result, which left it open.
+     */
+    private void close() {
+        finishAndRemoveTask();
     }
 
     private void launchActivityViaAssist() {
@@ -159,7 +203,7 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
                     .setCancelable(false)
                     .setOnDismissListener((dialog) -> {
                         waitForInteraction.countDown();
-                        finishActivity(0);
+                        close();
                     })
                     .setNegativeButton(R.string.close, null)
                     .show());
@@ -169,7 +213,7 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
             }
         });
         if (launched) {
-            finishActivity(0);
+            close();
         }
     }
 }

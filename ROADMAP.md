@@ -438,13 +438,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
 
 ### P1
 
-- [ ] P1: Keep shortcut-launched targets in Recents
-  Why: the shortcut trampoline is excluded from Recents and no-history, then calls `finishActivity(0)`, which can leave the launched target without the normal task lifecycle users expect.
-  Evidence: upstream App Manager #2054; Android Tasks and Recents documentation; shortcut-management guidance; `details/ActivityLauncherShortcutActivity.java`; its manifest entry.
-  Touches: shortcut trampoline lifecycle, target launch-intent construction, manifest task flags, shortcut regression tests, API 21 through 37 device checks.
-  Acceptance: the trampoline calls `finish()` or `finishAndRemoveTask()` on itself after a successful handoff and never relies on request code 0; a target launched from an AppManagerNG shortcut appears in Recents with the target app's normal label and task behavior unless that target itself opts out; repeated launches do not create duplicate orphan tasks; cancellation and missing-target paths close cleanly.
-  Complexity: M
-
 - [ ] P1: Stabilize scheduled backup work on Android 15 and later
   Why: WorkManager 2.10.5 retains connectivity and periodic-work defects fixed in 2.11.1 and 2.11.2, while taking 2.11 directly would raise its minimum SDK from 21 to 23.
   Evidence: AndroidX WorkManager release notes; AndroidX version ledger; the pinned version in `versions.gradle`; scheduled backup workers and network-backed SAF support.
@@ -1014,3 +1007,23 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Touches: `PerAppRollbackManager.java`, `BatchQueueItem` (an expected value per target), `BatchOpsService`/`BatchOpsManager`, tests.
   Acceptance: WHEN BatchOpsService is about to apply a revert step and the target's current value no longer equals the image's recorded post value, the system SHALL skip that step and report it as changed elsewhere. WHEN two selected steps write targets that share one stored mode, the system SHALL run only the first and list the other in manual review with that reason.
   Complexity: M
+
+## Found While Fixing Shortcut Launches (2026-11-15)
+
+### P1
+
+- [ ] P1: Check shortcut-launched targets in Recents on a phone
+  Why: the trampoline now builds the target's intent from its component alone and closes itself with `finishAndRemoveTask()` on every path. Host tests cover that, but Recents and task reuse are system behavior Robolectric doesn't model.
+  Evidence: `details/ActivityLauncherShortcutActivity.java`, `ActivityLauncherShortcutActivityTest`; AOSP `ActivityRecord` adds `FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS` to the intent of an activity declared `excludeFromRecents`, which the trampoline used to copy.
+  Touches: nothing unless it fails.
+  Acceptance: WHEN a home-screen shortcut made from App Details' activity list starts another app's activity on the S22 or S25 and Home is pressed, the system SHALL show that app in Recents under its own label; tapping the shortcut again SHALL bring back that task instead of adding a second one; a shortcut whose app was uninstalled SHALL show the "target unavailable" message and leave nothing over the launcher. The same run on an API 23 emulator covers the oldest version Robolectric can't.
+  Complexity: S
+
+### P2
+
+- [ ] P2: Apply the stored night mode before the first screen of a cold start is created
+  Why: `AppearanceUtils.ActivityAppearanceCallback.onActivityPostCreated` calls `AppCompatDelegate.setDefaultNightMode` only after a screen exists. In a fresh process AppCompat's default is still unset when the first screen is created, so when Day or Night is picked in Appearance and the system is in the other mode, that call changes the mode and AppCompat recreates the screen. Its `onCreate` work runs twice on that cold start.
+  Evidence: a Robolectric run of `ActivityLauncherShortcutActivityTest` on 2026-11-15 recreated the activity from `AppCompatDelegateImpl.updateAppConfiguration`, reached through `onActivityPostCreated` and then `onStart`, and started its target three times until the test set the night mode first. `setDefaultNightMode` is called nowhere else except `settings/AppearancePreferences.java:57`. Not yet seen on a phone.
+  Touches: `AppearanceUtils.init` or `App.onCreate` (set the stored mode once at process start), a Robolectric test.
+  Acceptance: WHEN the process starts with Day or Night picked in Appearance, the system SHALL create the first screen once, already in that mode, and a test SHALL build an activity with AppCompat's default night mode unset and assert `onCreate` ran once.
+  Complexity: S
