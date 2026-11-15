@@ -1018,3 +1018,49 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Touches: `launchActivityViaAssist` (count the latch down when the activity is finishing or destroyed, or when `show()` throws), `ActivityManagerCompat.startActivityViaAssist`, a Robolectric test with a fake callback runner.
   Acceptance: WHEN the trampoline is finishing or destroyed while an assist launch waits for the user, the system SHALL restore the previous `assistant` value within a second, and a test SHALL finish the activity mid-wait and assert the setting was restored.
   Complexity: S
+
+## Found While Verifying Backup, History and Shortcut Fixes (2026-11-15)
+
+### P3
+
+- [ ] P3: Key the encrypted-backup record by volume as well as folder
+  Why: `BackupCryptoRecord` keys a v4 backup as `<pkg>/<userId>[_<name>]` with no volume, so an encrypted v4 backup on one volume makes a plain backup of the same name on another volume look swapped, and the restore refuses it. The Room key `(backup_name, package_name)` also folds rows together, so `AppDb.deleteAllBackups` can carry over only one encrypted mode where several backups shared a name.
+  Evidence: refute pass on eaf89bb94 (2026-11-15). `BackupCryptoRecord.relativeDirOf`, `db/entity/Backup` primary key.
+  Touches: `backup/BackupCryptoRecord.java`, `db/utils/AppDb.java`, `EncryptedBackupModeTest`.
+  Acceptance: WHEN two v4 backups with the same package, user and name sit on different volumes, one encrypted and one plain, the system SHALL restore the plain one and still refuse a plain info file in the encrypted one's folder, and a test SHALL cover both volumes.
+  Complexity: S
+
+- [ ] P3: Forget a backup's encryption record only when its folder is really gone
+  Why: `BackupItems.BackupItem.delete()` calls `BackupCryptoRecord.forget` even when the folder doesn't exist. Someone with file access can move an encrypted backup out, delete its entry in the app, move it back and edit its info file to say it isn't encrypted, and the restore no longer refuses it.
+  Evidence: refute pass on eaf89bb94 (2026-11-15). `BackupItems.java` `delete()`.
+  Touches: `backup/BackupItems.java`, `EncryptedBackupModeTest`.
+  Acceptance: WHEN delete() runs on a backup whose folder is missing or couldn't be removed, the system SHALL keep its record, and a test SHALL delete an absent folder, put an encrypted backup back with a plain info file and see the restore stop.
+  Complexity: S
+
+- [ ] P3: Act on a failed encryption-record write instead of only logging it
+  Why: `BackupCryptoRecord.record`, `forget` and `keepEncryptedModes` log a failed `commit()` and carry on, and Android keeps the unsaved value in memory, so the check passes for the rest of the process and the record is gone after a restart. `keepEncryptedModes` also checks `contains` and then writes in two steps, so a backup committed in between can have its mode overwritten by the old table row.
+  Evidence: refute pass on eaf89bb94 (2026-11-15). `BackupCryptoRecord.java` lines 48-90.
+  Touches: `backup/BackupCryptoRecord.java`, `db/utils/AppDb.java`, `EncryptedBackupModeTest`.
+  Acceptance: WHEN a record write fails, the system SHALL restore the in-memory value and fail the backup commit (or the list rebuild) with a logged error the user sees; WHEN a backup commits while the table's modes are being kept, the newer mode SHALL win; tests SHALL use a preferences double whose commit fails and one that interleaves a commit.
+  Complexity: S
+
+- [ ] P3: Stage backup converters' plain entries in private storage
+  Why: the OAndBackup, Swift Backup and Titanium Backup converters write plain temporary entries through the global `FileCache`, which sits in the external cache. They delete them in `finally`, but other apps can read them during the conversion on older Android versions, which the 2026-11-15 staging fix closed for normal backups.
+  Evidence: refute pass on 40cde5d78 (2026-11-15). `OABConverter.java`, `SBConverter.java`, `TBConverter.java` cleanup blocks.
+  Touches: `backup/convert/*Converter.java`, `self/filecache/FileCache.java`, the converter tests.
+  Acceptance: WHEN a converter writes a temporary plain entry, the system SHALL put it under `FileCache.getPrivateStagingDir()` and remove it whether the conversion works or not, and each converter test SHALL assert nothing lands in the external cache.
+  Complexity: S
+
+- [ ] P3: Tell a shortcut start that Android 11 and 12 canceled from one that went through
+  Why: on Android 11 and 12 `ActivityLauncherShortcutActivity` counts `START_SWITCHES_CANCELED` as a start that will happen later, but a background-activity-launch abort returns the same code without queuing anything, so the shortcut shows no failure and nothing opens. Before Android 8 an aborted start returns `START_SUCCESS`, so the result code can't tell there either.
+  Evidence: refute pass on 8ef00c65d (2026-11-15). `ActivityLauncherShortcutActivity.java` lines 185-200.
+  Touches: `details/ActivityLauncherShortcutActivity.java`, `ActivityLauncherShortcutActivityTest`.
+  Acceptance: WHEN a shortcut start returns a switches-canceled result and the target activity hasn't resumed within the app switch window, the system SHALL show the could-not-open toast, and a test SHALL cover a canceled start that never resumes and one that resumes late.
+  Complexity: S
+
+- [ ] P3: Test the shortcut trampoline's real unlock path
+  Why: the test for a start that waits on the lock screen sets `mAuthenticationPending` by reflection after an authenticated setup, so it never runs `onCreate`, the authentication callback and `completeAuthentication` in order, or a recreation in between.
+  Evidence: refute pass on 8ef00c65d (2026-11-15). `ActivityLauncherShortcutActivityTest`.
+  Touches: `ActivityLauncherShortcutActivityTest`.
+  Acceptance: WHEN the trampoline is launched while authentication is required, a Robolectric test SHALL drive `onCreate`, the authentication result and a recreation through the activity controller with no reflection, and SHALL see exactly one start and the trampoline finish.
+  Complexity: S
