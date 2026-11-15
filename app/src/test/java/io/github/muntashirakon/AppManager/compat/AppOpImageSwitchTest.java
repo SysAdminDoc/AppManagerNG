@@ -78,7 +78,8 @@ public class AppOpImageSwitchTest {
         return (IAppOpsService) Proxy.newProxyInstance(IAppOpsService.class.getClassLoader(),
                 new Class<?>[]{IAppOpsService.class}, (proxy, method, args) -> {
                     switch (method.getName()) {
-                        case "checkOperation": {
+                        case "checkOperation":
+                        case "checkOperationRaw": {
                             int code = AppOpsManagerCompat.opToSwitch((int) args[0]);
                             Integer mode = uidModes.get(code);
                             return mode != null ? mode : AppOpsManagerCompat.opToDefaultMode(code);

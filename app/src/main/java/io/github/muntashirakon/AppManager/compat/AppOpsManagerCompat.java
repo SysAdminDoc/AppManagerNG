@@ -785,6 +785,32 @@ public class AppOpsManagerCompat {
     }
 
     /**
+     * Get the mode stored for the operation, the one {@link #setMode(int, int, String, int)} wrote. On Android 10 and
+     * later {@link #checkOperation(int, int, String)} turns {@link AppOpsManager#MODE_FOREGROUND} into allowed or
+     * ignored depending on whether the app is in the foreground right now, so compare against this one instead.
+     *
+     * @param op          One of the OP_*
+     * @param uid         User ID for the package(s)
+     * @param packageName Name of the package
+     * @return One of the MODE_*
+     */
+    @AppOpsManagerCompat.Mode
+    public int checkOperationRaw(int op, int uid, @NonNull String packageName) throws RemoteException {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                return mAppOpsService.checkOperationRaw(op, uid, packageName, null);
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                return mAppOpsService.checkOperationRaw(op, uid, packageName);
+            }
+        } catch (NoSuchMethodError e) {
+            Log.w("AppOpsManagerCompat", "No raw app op read on this build, using the evaluated mode", e);
+        }
+        // Before Android 10 the evaluated mode is the stored mode
+        return mAppOpsService.checkOperation(op, uid, packageName);
+    }
+
+    /**
      * Same as {@link AppOpsManager#checkOpNoThrow(String, int, String)}. To be used with App Manager itself.
      */
     @AppOpsManagerCompat.Mode

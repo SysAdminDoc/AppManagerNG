@@ -85,16 +85,17 @@ public final class MutationState {
     }
 
     /**
-     * The mode {@code checkOperation} answers. The service keeps a mode under the op's switch (GPS's lives on
-     * coarse location) and as a UID mode on Android 6 and later, which the package's own entries don't
-     * show before Android 8. checkOperation reads both the way the writes store them, and it's the value
-     * {@code PermUtils.setAppOpMode} compares before writing.
+     * The mode the service has stored. It keeps a mode under the op's switch (GPS's lives on coarse
+     * location) and as a UID mode on Android 6 and later, which the package's own entries don't show
+     * before Android 8. The raw check reads both the way the writes store them, and it's the value
+     * {@code PermUtils.setAppOpMode} compares before writing. The plain check won't do: on Android 10
+     * and later it turns a foreground-only mode into allowed or ignored by where the app is right now.
      */
     @VisibleForTesting
     @NonNull
     public static String readAppOp(@NonNull AppOpsManagerCompat appOps, int op, int uid, @NonNull String packageName)
             throws RemoteException {
-        return String.valueOf(appOps.checkOperation(op, uid, packageName));
+        return String.valueOf(appOps.checkOperationRaw(op, uid, packageName));
     }
 
     @NonNull

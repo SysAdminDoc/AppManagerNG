@@ -479,7 +479,7 @@ public final class PackageUtils {
         int uid = PackageUtils.getAppUid(new UserPackagePair(packageName, userHandle));
         for (int appOp : appOps) {
             try {
-                if (appOpsManager.checkOperation(appOp, uid, packageName) != mode) {
+                if (appOpsManager.checkOperationRaw(appOp, uid, packageName) != mode) {
                     filteredAppOps.add(appOp);
                 }
             } catch (Exception e) {

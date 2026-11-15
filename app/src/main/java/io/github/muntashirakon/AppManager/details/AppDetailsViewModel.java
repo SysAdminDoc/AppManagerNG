@@ -796,17 +796,35 @@ public class AppDetailsViewModel extends AndroidViewModel {
         return images;
     }
 
-    /** The ops a package has set away from their defaults, each once, or none when they can't be read. */
+    /** Reads the mode the service has stored for one op of the package being reset. */
+    @VisibleForTesting
+    interface ModeReader {
+        int read(int op) throws RemoteException;
+    }
+
+    /**
+     * The ops a package has set away from their defaults, each once. Before Android 8 the package's entries leave
+     * out UID modes, which Android 6 and later write, and the entries can fail to load. Either way every op is read
+     * one at a time instead, so the reset doesn't drop an op that rollback would need to set again.
+     */
+    @VisibleForTesting
     @NonNull
-    private static int[] setOps(@Nullable List<AppOpsManagerCompat.OpEntry> entries) {
-        if (entries == null) {
-            return new int[0];
+    static int[] setOps(@Nullable List<AppOpsManagerCompat.OpEntry> entries, int sdkInt,
+                        @NonNull ModeReader modes) throws RemoteException {
+        List<Integer> ops = new ArrayList<>();
+        if (entries != null) {
+            for (AppOpsManagerCompat.OpEntry entry : entries) {
+                int op = entry.getOp();
+                if (entry.getMode() != AppOpsManagerCompat.opToDefaultMode(op) && !ops.contains(op)) {
+                    ops.add(op);
+                }
+            }
         }
-        List<Integer> ops = new ArrayList<>(entries.size());
-        for (AppOpsManagerCompat.OpEntry entry : entries) {
-            int op = entry.getOp();
-            if (entry.getMode() != AppOpsManagerCompat.opToDefaultMode(op) && !ops.contains(op)) {
-                ops.add(op);
+        if (entries == null || sdkInt < Build.VERSION_CODES.O) {
+            for (int op : AppOpsManagerCompat.getAllOps()) {
+                if (!ops.contains(op) && modes.read(op) != AppOpsManagerCompat.opToDefaultMode(op)) {
+                    ops.add(op);
+                }
             }
         }
         return ArrayUtils.convertToIntArray(ops);
@@ -1398,8 +1416,10 @@ public class AppDetailsViewModel extends AndroidViewModel {
         if (packageInfo == null || mPackageName == null) return false;
         try {
             String packageName = mPackageName;
+            int uid = packageInfo.applicationInfo.uid;
             resetAppOpsWithImages(newMutationRecorder(OPERATION_RESET_APP_OPS), packageName, mUserId,
-                    setOps(AppOpsManagerCompat.getOpsForPackageOrNull(packageInfo.applicationInfo.uid, packageName)),
+                    setOps(AppOpsManagerCompat.getOpsForPackageOrNull(uid, packageName), Build.VERSION.SDK_INT,
+                            op -> mAppOpsManager.checkOperationRaw(op, uid, packageName)),
                     () -> mAppOpsManager.resetAllModes(mUserId, packageName));
             mExecutor.submit(this::loadAppOps);
             // Save values to the blocking rules

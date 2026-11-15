@@ -739,6 +739,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 || mApplicationInfo == null || mApplicationInfo.uid != uid) {
             return;
         }
+        // The dialog's own app, so a save after the page moved on still images the policy it changes
+        String packageName = mApplicationInfo.packageName;
         Integer[] policies = new Integer[netPolicyMap.size()];
         CharSequence[] policyStrings = new String[netPolicyMap.size()];
         for (int i = 0; i < netPolicyMap.size(); ++i) {
@@ -749,28 +751,23 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 .setTitle(R.string.net_policy)
                 .showSelectAll(false)
                 .setNegativeButton(R.string.cancel, null)
-                .setPositiveButton(R.string.save, (dialog, which, selections) -> saveNetPolicy(uid, selections))
+                .setPositiveButton(R.string.save, (dialog, which, selections) ->
+                        saveNetPolicy(uid, packageName, selections))
                 .show();
     }
 
-    private void saveNetPolicy(int uid, @NonNull List<Integer> selections) {
+    private void saveNetPolicy(int uid, @NonNull String packageName, @NonNull List<Integer> selections) {
         int flags = 0;
         for (int flag : selections) {
             flags |= flag;
         }
         int policyFlags = flags;
-        String packageName = mApplicationInfo != null && mApplicationInfo.uid == uid
-                ? mApplicationInfo.packageName : null;
         ThreadUtils.postOnBackgroundThread(() -> {
             try {
-                if (packageName != null) {
-                    setNetPolicyWithImage(MutationRecorder.forSystem(MutationRecorder.newExecutionId(),
-                                    MutationRecorder.singleOperation(OPERATION_NET_POLICY)), packageName,
-                            UserHandleHidden.getUserId(uid), policyFlags,
-                            () -> NetworkPolicyManagerCompat.setUidPolicy(uid, policyFlags));
-                } else {
-                    NetworkPolicyManagerCompat.setUidPolicy(uid, policyFlags);
-                }
+                setNetPolicyWithImage(MutationRecorder.forSystem(MutationRecorder.newExecutionId(),
+                                MutationRecorder.singleOperation(OPERATION_NET_POLICY)), packageName,
+                        UserHandleHidden.getUserId(uid), policyFlags,
+                        () -> NetworkPolicyManagerCompat.setUidPolicy(uid, policyFlags));
                 ThreadUtils.postOnMainThread(() -> {
                     if (mMainModel != null && mApplicationInfo != null && mApplicationInfo.uid == uid) {
                         mMainModel.getTagsAlteredLiveData().setValue(true);

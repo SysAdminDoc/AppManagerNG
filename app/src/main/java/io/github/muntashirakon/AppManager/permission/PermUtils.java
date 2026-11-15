@@ -428,7 +428,8 @@ public class PermUtils {
                                        @Nullable AppOpsUidGuard.ReviewedPlan reviewedPlan)
             throws PermissionException {
         try {
-            int currentMode = appOpsManager.checkOperation(appOp, uid, packageName);
+            // The stored mode: an evaluated foreground-only mode would read as allowed or ignored
+            int currentMode = appOpsManager.checkOperationRaw(appOp, uid, packageName);
             if (currentMode == mode) {
                 return false;
             }
