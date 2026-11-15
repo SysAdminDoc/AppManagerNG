@@ -22,6 +22,8 @@ import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
  */
 @RunWith(RobolectricTestRunner.class)
 public class AppOpsResetSetOpsTest {
+    private static final int OP_COARSE_LOCATION = 0;
+    private static final int OP_FINE_LOCATION = 1;
     private static final int OP_CAMERA = 26;
 
     private static int cameraDenied(int op) {
@@ -42,6 +44,21 @@ public class AppOpsResetSetOpsTest {
     public void entriesThatCantBeReadFallBackToReadingEachOp() throws Exception {
         int[] ops = AppDetailsViewModel.setOps(null, Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
                 AppOpsResetSetOpsTest::cameraDenied);
+
+        assertArrayEquals(new int[]{OP_CAMERA}, ops);
+    }
+
+    @Test
+    public void anOpThatCantBeReadIsSkippedAndTheRestStillCount() throws Exception {
+        int[] ops = AppDetailsViewModel.setOps(null, Build.VERSION_CODES.UPSIDE_DOWN_CAKE, op -> {
+            if (op == OP_COARSE_LOCATION) {
+                throw new IllegalArgumentException("Unknown operation number " + op);
+            }
+            if (op == OP_FINE_LOCATION) {
+                throw new SecurityException("uid 10031 does not have android.permission.UPDATE_APP_OPS_STATS");
+            }
+            return cameraDenied(op);
+        });
 
         assertArrayEquals(new int[]{OP_CAMERA}, ops);
     }

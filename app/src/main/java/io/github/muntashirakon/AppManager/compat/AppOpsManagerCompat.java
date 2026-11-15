@@ -800,6 +800,19 @@ public class AppOpsManagerCompat {
      */
     @AppOpsManagerCompat.Mode
     public int checkOperationRaw(int op, int uid, @NonNull String packageName) throws RemoteException {
+        int mode = readOperationRaw(op, uid, packageName);
+        if (mode != AppOpsManager.MODE_IGNORED || Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            return mode;
+        }
+        // Both checks answer ignored for an op under a restriction, whatever is stored: a suspended app's camera,
+        // microphone and audio ops, the camera and microphone privacy toggles, and user restrictions. The op lists
+        // hold what is stored. They list UID modes only from Android 8.
+        Integer stored = readStoredMode(op, uid, packageName);
+        return stored != null ? stored : mode;
+    }
+
+    @AppOpsManagerCompat.Mode
+    private int readOperationRaw(int op, int uid, @NonNull String packageName) throws RemoteException {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 return mAppOpsService.checkOperationRaw(op, uid, packageName, null);
@@ -813,6 +826,28 @@ public class AppOpsManagerCompat {
         }
         // Before Android 10 the evaluated mode is the stored mode
         return mAppOpsService.checkOperation(op, uid, packageName);
+    }
+
+    /**
+     * The mode stored under the op's switch, read the way the service picks it: a UID mode that isn't the default,
+     * then the package's own mode, then the default. Null when the lists can't be read.
+     */
+    @Nullable
+    private Integer readStoredMode(int op, int uid, @NonNull String packageName) {
+        int switchOp = opToSwitch(op);
+        try {
+            for (AppOpsManagerCompat.PackageOps packageOps : getOpsForPackage(uid, packageName, new int[]{switchOp})) {
+                for (AppOpsManagerCompat.OpEntry entry : packageOps.getOps()) {
+                    if (entry.getOp() == switchOp) {
+                        return entry.getMode();
+                    }
+                }
+            }
+            return opToDefaultMode(switchOp);
+        } catch (RemoteException | SecurityException e) {
+            Log.w(TAG, "Could not read the stored mode of op %d for %s", e, op, packageName);
+            return null;
+        }
     }
 
     /**

@@ -25,6 +25,7 @@ import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import com.android.internal.app.IAppOpsService;
 
@@ -83,10 +84,12 @@ public class HiddenApiFallbacksTest {
 
     /**
      * An app-ops service built against an interface that lacks the raw read, as on a build whose hidden
-     * interface changed: the call fails to link and the plain check answers instead.
+     * interface changed: the call fails to link and the plain check answers instead. The camera is stored as
+     * ignored, and the op list says so too.
      */
     @NonNull
     private static IAppOpsService serviceWithoutRawReads() {
+        Map<Integer, Integer> uidModes = Collections.singletonMap(OP_CAMERA, AppOpsManager.MODE_IGNORED);
         return (IAppOpsService) Proxy.newProxyInstance(IAppOpsService.class.getClassLoader(),
                 new Class<?>[]{IAppOpsService.class}, (proxy, method, args) -> {
                     switch (method.getName()) {
@@ -94,6 +97,8 @@ public class HiddenApiFallbacksTest {
                             throw new NoSuchMethodError("checkOperationRaw");
                         case "checkOperation":
                             return AppOpsManager.MODE_IGNORED;
+                        case "getUidOps":
+                            return AppOpsListFixtures.opList(null, (int) args[0], uidModes, (int[]) args[1]);
                         default:
                             return defaultValue(method);
                     }

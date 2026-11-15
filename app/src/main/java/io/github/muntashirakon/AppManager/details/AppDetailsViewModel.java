@@ -805,12 +805,13 @@ public class AppDetailsViewModel extends AndroidViewModel {
     /**
      * The ops a package has set away from their defaults, each once. Before Android 8 the package's entries leave
      * out UID modes, which Android 6 and later write, and the entries can fail to load. Either way every op is read
-     * one at a time instead, so the reset doesn't drop an op that rollback would need to set again.
+     * one at a time instead, so the reset doesn't drop an op that rollback would need to set again. An op that can't
+     * be read, such as a vendor op this build doesn't know, goes without an image rather than stopping the reset.
      */
     @VisibleForTesting
     @NonNull
     static int[] setOps(@Nullable List<AppOpsManagerCompat.OpEntry> entries, int sdkInt,
-                        @NonNull ModeReader modes) throws RemoteException {
+                        @NonNull ModeReader modes) {
         List<Integer> ops = new ArrayList<>();
         if (entries != null) {
             for (AppOpsManagerCompat.OpEntry entry : entries) {
@@ -822,7 +823,17 @@ public class AppDetailsViewModel extends AndroidViewModel {
         }
         if (entries == null || sdkInt < Build.VERSION_CODES.O) {
             for (int op : AppOpsManagerCompat.getAllOps()) {
-                if (!ops.contains(op) && modes.read(op) != AppOpsManagerCompat.opToDefaultMode(op)) {
+                if (ops.contains(op)) {
+                    continue;
+                }
+                int mode;
+                try {
+                    mode = modes.read(op);
+                } catch (RemoteException | SecurityException | IllegalArgumentException e) {
+                    Log.w(TAG, "Could not read app op %d before the reset, so it has no image", e, op);
+                    continue;
+                }
+                if (mode != AppOpsManagerCompat.opToDefaultMode(op)) {
                     ops.add(op);
                 }
             }

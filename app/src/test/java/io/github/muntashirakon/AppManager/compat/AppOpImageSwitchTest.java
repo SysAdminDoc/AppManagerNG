@@ -72,7 +72,10 @@ public class AppOpImageSwitchTest {
         assertEquals(MutationJournal.RESULT_APPLIED, written.result);
     }
 
-    /** UID modes stored under each op's switch, read back through it, as AppOpsService does. */
+    /**
+     * UID modes stored under each op's switch, read back through it and listed from the same store, as
+     * AppOpsService does.
+     */
     @NonNull
     private static IAppOpsService switchingService(@NonNull Map<Integer, Integer> uidModes) {
         return (IAppOpsService) Proxy.newProxyInstance(IAppOpsService.class.getClassLoader(),
@@ -84,6 +87,8 @@ public class AppOpImageSwitchTest {
                             Integer mode = uidModes.get(code);
                             return mode != null ? mode : AppOpsManagerCompat.opToDefaultMode(code);
                         }
+                        case "getUidOps":
+                            return AppOpsListFixtures.opList(null, (int) args[0], uidModes, (int[]) args[1]);
                         case "setUidMode":
                             uidModes.put(AppOpsManagerCompat.opToSwitch((int) args[0]), (int) args[2]);
                             return null;
