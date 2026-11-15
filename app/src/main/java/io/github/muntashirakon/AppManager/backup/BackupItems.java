@@ -6,7 +6,10 @@ import static io.github.muntashirakon.AppManager.backup.BackupManager.KEYSTORE_P
 
 import android.annotation.UserIdInt;
 import android.content.ContentResolver;
+import android.database.Cursor;
 import android.net.Uri;
+import android.os.Bundle;
+import android.provider.DocumentsContract;
 import android.util.Base64;
 
 import androidx.annotation.NonNull;
@@ -185,11 +188,12 @@ public class BackupItems {
      */
     @WorkerThread
     public static boolean holdsBackups(@NonNull Uri destination) {
+        if (ContentResolver.SCHEME_CONTENT.equals(destination.getScheme())) {
+            return folderHoldsBackups(ContextUtils.getContext().getContentResolver(), destination);
+        }
         try {
             for (Path path : getBaseDirectory(destination, false).listFiles(Path::isDirectory)) {
-                String name = path.getName();
-                if (!SaveLogHelper.SAVED_LOGS_DIR.equals(name) && !APK_SAVING_DIRECTORY.equals(name)
-                        && !".tmp".equals(name)) {
+                if (mayHoldBackups(path.getName())) {
                     return true;
                 }
             }
@@ -197,6 +201,46 @@ public class BackupItems {
         } catch (IOException | RuntimeException e) {
             return true;
         }
+    }
+
+    /**
+     * Asks the folder's provider directly. A document file listing turns a provider that can't be reached, as an
+     * unplugged drive or a network folder that's offline, into an empty folder.
+     */
+    @VisibleForTesting
+    @WorkerThread
+    static boolean folderHoldsBackups(@NonNull ContentResolver resolver, @NonNull Uri folder) {
+        Uri children;
+        try {
+            List<String> segments = folder.getPathSegments();
+            String documentId = segments.size() >= 4 && "document".equals(segments.get(2))
+                    ? DocumentsContract.getDocumentId(folder) : DocumentsContract.getTreeDocumentId(folder);
+            children = DocumentsContract.buildChildDocumentsUriUsingTree(folder, documentId);
+        } catch (IllegalArgumentException e) {
+            return true;
+        }
+        try (Cursor cursor = resolver.query(children, new String[]{DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+                DocumentsContract.Document.COLUMN_MIME_TYPE}, null, null, null)) {
+            if (cursor == null) {
+                return true;
+            }
+            while (cursor.moveToNext()) {
+                if (DocumentsContract.Document.MIME_TYPE_DIR.equals(cursor.getString(1))
+                        && mayHoldBackups(cursor.getString(0))) {
+                    return true;
+                }
+            }
+            // A network folder can answer before it has listed everything
+            Bundle extras = cursor.getExtras();
+            return extras != null && extras.getBoolean(DocumentsContract.EXTRA_LOADING, false);
+        } catch (RuntimeException e) {
+            return true;
+        }
+    }
+
+    private static boolean mayHoldBackups(@Nullable String folderName) {
+        return folderName != null && !SaveLogHelper.SAVED_LOGS_DIR.equals(folderName)
+                && !APK_SAVING_DIRECTORY.equals(folderName) && !".tmp".equals(folderName);
     }
 
     private static void collectBackupItems(@NonNull Path baseDirectory, @Nullable Uri destination,

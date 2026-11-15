@@ -13,6 +13,7 @@ import android.content.UriPermission;
 import android.net.Uri;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.After;
@@ -23,6 +24,10 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.util.ReflectionHelpers;
 import org.robolectric.util.ReflectionHelpers.ClassParameter;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -33,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.StorageUtils;
 
 @RunWith(RobolectricTestRunner.class)
@@ -286,6 +292,112 @@ public class BackupDestinationGrantsTest {
         assertEquals(Collections.singleton(SECOND.toString()), owned().keySet());
     }
 
+    @Test
+    public void foldersAddedToTheListDontPileUp() {
+        // The volume list's add button takes the folder, then the list makes it the backup folder
+        mStore.limit = 3;
+        for (int i = 0; i < 20; ++i) {
+            Uri added = tree("added" + i);
+            BackupDestinationGrants.acquire(mContext, added, MODES, BackupDestinationGrants.PURPOSE_DESTINATION);
+            Uri previous = BackupDestinationGrants.useDestination(mContext, StorageUtils.getFixedTreeUri(added));
+            BackupDestinationGrants.releaseIfUnused(mContext, previous);
+        }
+
+        assertEquals(Collections.singletonList(tree("added19")), mStore.uris());
+        assertFalse(mStore.evicted);
+    }
+
+    @Test
+    public void anImportFolderMadeTheBackupFolderIsKeptWhileItHoldsBackups() {
+        BackupDestinationGrants.acquire(mContext, IMPORTS, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
+        BackupDestinationGrants.useDestination(mContext, StorageUtils.getFixedTreeUri(IMPORTS));
+        assertEquals(Integer.valueOf(BackupDestinationGrants.PURPOSE_DESTINATION), owned().get(IMPORTS.toString()));
+        mHoldingBackups.add(StorageUtils.getFixedTreeUri(IMPORTS).toString());
+
+        // The import ending doesn't take it either
+        BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS);
+        Uri previous = BackupDestinationGrants.selectDestination(mContext, SECOND, MODES);
+        BackupDestinationGrants.releaseIfUnused(mContext, previous);
+
+        assertEquals(List.of(IMPORTS, SECOND), mStore.uris());
+    }
+
+    @Test
+    public void twoImportsFromOneFolderKeepItUntilBothEnd() {
+        BackupDestinationGrants.acquire(mContext, IMPORTS, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
+        BackupDestinationGrants.importQueued(IMPORTS);
+        BackupDestinationGrants.acquire(mContext, IMPORTS, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
+        BackupDestinationGrants.importQueued(IMPORTS);
+
+        BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS);
+        assertEquals(Collections.singletonList(IMPORTS), mStore.uris());
+
+        BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS);
+        assertEquals(Collections.emptyList(), mStore.uris());
+        assertFalse(owned().containsKey(IMPORTS.toString()));
+    }
+
+    @Test
+    public void aFailedImportKeepsTheFolderForARetryUntilTheNextStart() {
+        BackupDestinationGrants.acquire(mContext, IMPORTS, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
+        BackupDestinationGrants.importQueued(IMPORTS);
+        BackupDestinationGrants.importQueued(IMPORTS);
+
+        BackupDestinationGrants.importFailed(IMPORTS);
+        BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS);
+        assertEquals(Collections.singletonList(IMPORTS), mStore.uris());
+
+        BackupDestinationGrants.startNewProcessForTesting();
+        BackupDestinationGrants.pruneStale(mContext);
+        assertEquals(Collections.emptyList(), mStore.uris());
+    }
+
+    @Test
+    public void aFolderPickedAgainWhileTheStartupSweepRunsIsKept() {
+        BackupDestinationGrants.acquire(mContext, FIRST, MODES, BackupDestinationGrants.PURPOSE_DESTINATION);
+        BackupDestinationGrants.startNewProcessForTesting();
+        // The sweep asks a network folder whether it holds backups, and meanwhile the user picks it for an import
+        BackupDestinationGrants.setBackupProbeForTesting(uri -> {
+            BackupDestinationGrants.acquire(mContext, FIRST, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
+            return false;
+        });
+
+        BackupDestinationGrants.pruneStale(mContext);
+
+        assertEquals(Collections.singletonList(FIRST), mStore.uris());
+    }
+
+    @Test
+    public void theNewBackupFolderIsOnDiskBeforeTheOldOneIsLetGo() {
+        BackupDestinationGrants.selectDestination(mContext, FIRST, MODES);
+        Uri previous = BackupDestinationGrants.selectDestination(mContext, SECOND, MODES);
+        String saved = StorageUtils.getFixedTreeUri(SECOND).toString();
+        List<Boolean> onDiskAtRelease = new ArrayList<>();
+        mStore.onRelease = () -> onDiskAtRelease.add(savedOnDisk(saved));
+
+        BackupDestinationGrants.releaseIfUnused(mContext, previous);
+
+        assertEquals(Collections.singletonList(true), onDiskAtRelease);
+    }
+
+    private boolean savedOnDisk(@NonNull String value) {
+        // AppPref keeps the context it was first made with, which in a test run can be an earlier test's
+        File[] files = new File(ContextUtils.getContext().getDataDir(), "shared_prefs").listFiles();
+        if (files == null) {
+            return false;
+        }
+        try {
+            for (File file : files) {
+                if (new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8).contains(value)) {
+                    return true;
+                }
+            }
+        } catch (IOException e) {
+            throw new AssertionError(e);
+        }
+        return false;
+    }
+
     @NonNull
     private Map<String, Integer> owned() {
         return BackupDestinationGrants.ownedForTesting(mContext);
@@ -307,6 +419,8 @@ public class BackupDestinationGrantsTest {
         int limit = Integer.MAX_VALUE;
         boolean evicted;
         boolean dieOnTake;
+        @Nullable
+        Runnable onRelease;
 
         void grant(@NonNull Uri uri) {
             grants.put(uri, MODES);
@@ -339,6 +453,9 @@ public class BackupDestinationGrantsTest {
 
         @Override
         public void release(@NonNull Uri uri, int modes) {
+            if (onRelease != null) {
+                onRelease.run();
+            }
             if (grants.remove(uri) == null) {
                 throw new SecurityException("No permission grant found for " + uri);
             }

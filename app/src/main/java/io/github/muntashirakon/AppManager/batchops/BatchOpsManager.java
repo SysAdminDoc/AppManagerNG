@@ -744,6 +744,7 @@ public class BatchOpsManager {
             Path backupPath = Paths.get(importDirectory);
             if (!backupPath.isDirectory()) {
                 log("====> op=IMPORT_BACKUP, Not a directory.");
+                BackupDestinationGrants.importFailed(importDirectory);
                 return new Result(Collections.emptyList(), false);
             }
             Path[] files = ConvertUtils.getRelevantImportFiles(backupPath, options.getImportType());
@@ -776,9 +777,14 @@ public class BatchOpsManager {
             log("====> op=IMPORT_BACKUP", th);
         }
         executor.awaitCompletion();
-        if (listed && failedPkgList.isEmpty()) {
-            // Nothing is left to retry, so the folder's access can go. A failed import keeps it for a retry.
-            BackupDestinationGrants.releaseAfterImport(ContextUtils.getContext(), importDirectory);
+        if (importDirectory != null) {
+            if (listed && failedPkgList.isEmpty()) {
+                // Nothing is left to retry, so the folder's access can go
+                BackupDestinationGrants.releaseAfterImport(ContextUtils.getContext(), importDirectory);
+            } else {
+                // A failed import keeps it for a retry
+                BackupDestinationGrants.importFailed(importDirectory);
+            }
         }
         return new Result(failedPkgList);
     }

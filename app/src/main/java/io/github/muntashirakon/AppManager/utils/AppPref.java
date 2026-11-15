@@ -18,6 +18,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.WorkerThread;
 import androidx.appcompat.app.AppCompatDelegate;
 
 import java.lang.annotation.Retention;
@@ -378,6 +379,18 @@ public class AppPref {
 
     public static void set(PrefKey key, Object value) {
         getInstance().setPref(key, value);
+    }
+
+    /**
+     * Waits until the writes of this key are on disk. A write here is only queued, so something that can't be undone
+     * once the new value counts waits for it first. Call it off the main thread.
+     *
+     * @return whether the value reached the disk
+     */
+    @WorkerThread
+    public static boolean awaitWrites(@NonNull PrefKey key) {
+        // An empty commit is queued behind the earlier writes and returns once they're done
+        return getInstance().getPreferencesForKey(PrefKey.sKeys[PrefKey.indexOf(key)]).edit().commit();
     }
 
     @NonNull

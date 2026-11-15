@@ -23,7 +23,7 @@ import org.json.JSONObject;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -38,6 +38,7 @@ import io.github.muntashirakon.AppManager.backup.schedule.AutoBackupWorker;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.StorageUtils;
 
 /**
@@ -76,8 +77,16 @@ public final class BackupDestinationGrants {
     }
 
     private static final Object LOCK = new Object();
-    /** Grants taken by this process, which the flow that took them lets go. The startup sweep leaves them alone. */
-    private static final Set<String> sTakenThisProcess = Collections.synchronizedSet(new HashSet<>());
+    /**
+     * Grants taken by this process, which the flow that took them lets go, each with the take it came from, so a
+     * release can tell the folder was picked again meanwhile. The startup sweep leaves them alone. Guarded by LOCK.
+     */
+    private static final Map<String, Long> sTakenThisProcess = new HashMap<>();
+    private static long sTakes;
+    /** Imports queued from each folder, by tree key, so one ending keeps the access the next needs. Guarded by LOCK. */
+    private static final Map<String, Integer> sQueuedImports = new HashMap<>();
+    /** Folders an import failed from in this process, which keep their access for a retry. Guarded by LOCK. */
+    private static final Set<String> sFailedImports = new HashSet<>();
     @Nullable
     private static GrantStore sStoreForTesting;
     @Nullable
@@ -131,7 +140,7 @@ public final class BackupDestinationGrants {
                 }
                 throw e instanceof SecurityException ? (SecurityException) e : new SecurityException(e.getMessage(), e);
             }
-            sTakenThisProcess.add(key);
+            sTakenThisProcess.put(key, ++sTakes);
         }
     }
 
@@ -149,7 +158,7 @@ public final class BackupDestinationGrants {
         // Held across both steps, so a release running meanwhile sees the new folder as in use
         synchronized (LOCK) {
             acquire(context, treeUri, modes, PURPOSE_DESTINATION);
-            return useDestination(destination);
+            return useDestination(context, destination);
         }
     }
 
@@ -160,11 +169,26 @@ public final class BackupDestinationGrants {
      */
     @AnyThread
     @NonNull
-    public static Uri useDestination(@NonNull Uri destination) {
+    public static Uri useDestination(@NonNull Context context, @NonNull Uri destination) {
         synchronized (LOCK) {
             Uri previous = Prefs.Storage.getVolumePath();
             if (!previous.equals(destination)) {
                 Prefs.Storage.setVolumePath(destination.toString());
+            }
+            // Access taken for an import now belongs to a backup folder, kept while it holds backups
+            String treeKey = treeKey(destination);
+            if (treeKey != null) {
+                Map<String, Integer> owned = readOwned(context);
+                boolean changed = false;
+                for (Map.Entry<String, Integer> entry : owned.entrySet()) {
+                    if (entry.getValue() == PURPOSE_IMPORT && treeKey.equals(treeKey(Uri.parse(entry.getKey())))) {
+                        entry.setValue(PURPOSE_DESTINATION);
+                        changed = true;
+                    }
+                }
+                if (changed) {
+                    writeOwned(context, owned);
+                }
             }
             return previous;
         }
@@ -193,7 +217,39 @@ public final class BackupDestinationGrants {
     }
 
     /**
-     * Lets go of the access taken for an import once it ends, unless the folder is also a backup folder.
+     * Notes an import from this folder was queued, so an earlier import from it that ends keeps the access this one
+     * needs. Each is matched by {@link #releaseAfterImport(Context, Uri)} or {@link #importFailed(Uri)}.
+     */
+    @AnyThread
+    public static void importQueued(@NonNull Uri importDirectory) {
+        String treeKey = treeKey(importDirectory);
+        if (treeKey == null) {
+            return;
+        }
+        synchronized (LOCK) {
+            Integer queued = sQueuedImports.get(treeKey);
+            sQueuedImports.put(treeKey, queued == null ? 1 : queued + 1);
+        }
+    }
+
+    /**
+     * An import from this folder failed. Its access is kept for a retry and let go on a later start of the app.
+     */
+    @AnyThread
+    public static void importFailed(@NonNull Uri importDirectory) {
+        String treeKey = treeKey(importDirectory);
+        if (treeKey == null) {
+            return;
+        }
+        synchronized (LOCK) {
+            importEnded(treeKey);
+            sFailedImports.add(treeKey);
+        }
+    }
+
+    /**
+     * Lets go of the access taken for an import once it ends, unless another import from the folder is queued, one
+     * failed and may be retried, or the folder is also a backup folder.
      */
     @WorkerThread
     public static void releaseAfterImport(@NonNull Context context, @NonNull Uri importDirectory) {
@@ -202,6 +258,9 @@ public final class BackupDestinationGrants {
             return;
         }
         synchronized (LOCK) {
+            if (!importEnded(treeKey) || sFailedImports.contains(treeKey)) {
+                return;
+            }
             Map<String, Integer> owned = readOwned(context);
             for (Map.Entry<String, Integer> entry : owned.entrySet()) {
                 Uri uri = Uri.parse(entry.getKey());
@@ -236,7 +295,7 @@ public final class BackupDestinationGrants {
                 if (!persisted.contains(key)) {
                     it.remove();
                     changed = true;
-                } else if (!sTakenThisProcess.contains(key)) {
+                } else if (!sTakenThisProcess.containsKey(key)) {
                     candidates.add(key);
                 }
             }
@@ -275,12 +334,19 @@ public final class BackupDestinationGrants {
         if (candidates.isEmpty() || isBackupRunning()) {
             return;
         }
+        // A new backup folder is only queued for the disk, and a restart before it lands goes back to the old one
+        if (!AppPref.awaitWrites(AppPref.PrefKey.PREF_BACKUP_VOLUME_STR)) {
+            Log.w(TAG, "The backup folder wasn't saved, so no folder access is let go");
+            return;
+        }
         for (String key : candidates) {
             Uri uri = Uri.parse(key);
             String treeKey = treeKey(uri);
             Integer purpose;
+            Long taken;
             synchronized (LOCK) {
                 purpose = readOwned(context).get(key);
+                taken = sTakenThisProcess.get(key);
             }
             if (purpose == null || treeKey == null || isReferenced(context, treeKey)) {
                 continue;
@@ -292,12 +358,24 @@ public final class BackupDestinationGrants {
             synchronized (LOCK) {
                 Map<String, Integer> owned = readOwned(context);
                 // Picked again or put to use meanwhile
-                if (!Objects.equals(owned.get(key), purpose) || isReferenced(context, treeKey) || isBackupRunning()) {
+                if (!Objects.equals(owned.get(key), purpose) || !Objects.equals(sTakenThisProcess.get(key), taken)
+                        || isReferenced(context, treeKey) || isBackupRunning()) {
                     continue;
                 }
                 release(context, owned, uri);
             }
         }
+    }
+
+    /** @return whether no other import from the folder is queued */
+    private static boolean importEnded(@NonNull String treeKey) {
+        Integer queued = sQueuedImports.get(treeKey);
+        if (queued == null || queued <= 1) {
+            sQueuedImports.remove(treeKey);
+            return true;
+        }
+        sQueuedImports.put(treeKey, queued - 1);
+        return false;
     }
 
     private static void dropUnusable(@NonNull GrantStore store, @NonNull Uri uri) {
@@ -462,7 +540,11 @@ public final class BackupDestinationGrants {
     /** What a new process sees: nothing taken by it yet. */
     @VisibleForTesting
     static void startNewProcessForTesting() {
-        sTakenThisProcess.clear();
+        synchronized (LOCK) {
+            sTakenThisProcess.clear();
+            sQueuedImports.clear();
+            sFailedImports.clear();
+        }
     }
 
     @VisibleForTesting

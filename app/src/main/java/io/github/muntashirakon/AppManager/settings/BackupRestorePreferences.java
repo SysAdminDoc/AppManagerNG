@@ -109,9 +109,9 @@ public class BackupRestorePreferences extends PreferenceFragment {
                     if (treeUri == null) return;
                     int takeFlags = data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION
                             | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                    requireContext().getContentResolver().takePersistableUriPermission(treeUri, takeFlags);
-                    // A folder added to the list stays until the user removes it, so its access is never let go
-                    BackupDestinationGrants.disown(requireContext(), treeUri);
+                    // Let go once it isn't the backup folder and holds no backups, so added folders don't pile up
+                    BackupDestinationGrants.acquire(requireContext(), treeUri, takeFlags,
+                            BackupDestinationGrants.PURPOSE_DESTINATION);
                 } catch (SecurityException e) {
                     UIUtils.displayLongToast(R.string.backup_folder_access_failed);
                 } finally {
@@ -797,6 +797,8 @@ public class BackupRestorePreferences extends PreferenceFragment {
         BatchBackupImportOptions options = new BatchBackupImportOptions(backupType, uri, removeImported);
         BatchQueueItem item = BatchQueueItem.getBatchOpQueue(BatchOpsManager.OP_IMPORT_BACKUPS,
                 input.getFailedPackages(), input.getAssociatedUsers(), options);
+        // An import from the same folder that ends first keeps the access this one needs
+        BackupDestinationGrants.importQueued(uri);
         Intent intent = BatchOpsService.getServiceIntent(mActivity, item);
         ContextCompat.startForegroundService(mActivity, intent);
     }
@@ -844,7 +846,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
                         return;
                     }
                     mBackupVolume = selectedBackupVolume;
-                    Uri lastBackupVolume = BackupDestinationGrants.useDestination(mBackupVolume);
+                    Uri lastBackupVolume = BackupDestinationGrants.useDestination(mActivity, mBackupVolume);
                     if (!lastBackupVolume.equals(mBackupVolume)) {
                         Context appContext = mActivity.getApplicationContext();
                         ThreadUtils.postOnBackgroundThread(() ->
