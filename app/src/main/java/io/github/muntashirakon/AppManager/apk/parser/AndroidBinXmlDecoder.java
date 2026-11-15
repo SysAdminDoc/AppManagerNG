@@ -287,8 +287,8 @@ public class AndroidBinXmlDecoder {
      * Whether {@code document} is a manifest whose {@code uses-sdk} targets an API level older than
      * the compile metadata aapt2 writes. As in Android, the last {@code uses-sdk} counts, a missing
      * target means the minimum, and a missing minimum means 1. A string value is a codename, digits
-     * or not, and counts as new. A reference Android would resolve, which can't be resolved here,
-     * counts as missing.
+     * or not, and counts as new. Any other value is its raw number, 0 and negatives included. A
+     * reference Android would resolve, which can't be resolved here, counts as missing.
      */
     private static boolean targetsBeforeMetadata(@NonNull ResXmlDocument document) {
         ResXmlElement root = document.getDocumentElement();
@@ -311,12 +311,14 @@ public class AndroidBinXmlDecoder {
             }
             level = target != null ? target : min != null ? min : 1;
         }
-        return level != FrameworkTables.UNKNOWN_API && level < FIRST_API_WITH_METADATA;
+        return level < FIRST_API_WITH_METADATA;
     }
 
     /**
      * A {@code uses-sdk} level the way ParsingPackageUtils reads it: a string is a codename, so
-     * current development; a number is itself; anything else is null.
+     * current development. Every other value it takes as {@code val.data}, unchecked, so 0 or a
+     * negative number stays itself and an unresolved {@code ?attr} is its attribute id. A null
+     * value is missing, and so is a reference here, since only Android can resolve it.
      */
     @Nullable
     private static Integer sdkLevel(@NonNull ResXmlAttribute attribute) {
@@ -324,10 +326,10 @@ public class AndroidBinXmlDecoder {
         if (type == ValueType.STRING) {
             return CUR_DEVELOPMENT;
         }
-        if (type == ValueType.DEC || type == ValueType.HEX) {
-            return apiLevel(attribute);
+        if (type == ValueType.NULL || type == ValueType.REFERENCE || type == ValueType.DYNAMIC_REFERENCE) {
+            return null;
         }
-        return null;
+        return attribute.getData();
     }
 
     private static int apiLevel(@NonNull ResXmlAttribute attribute) {

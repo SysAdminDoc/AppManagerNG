@@ -190,6 +190,28 @@ public class FrameworkTableDecodeTest {
     }
 
     /**
+     * Android takes any value that isn't a string as its raw number, without a range check, so a
+     * target of 0 or below is old, and a theme attribute it can't resolve is its id, which is new.
+     */
+    @Test
+    public void aNumericSdkVersionIsTakenAsItIsAndAnAttributeTargetAsItsId() throws IOException {
+        for (String usesSdk : new String[]{
+                "<uses-sdk android:minSdkVersion=\"28\" android:targetSdkVersion=\"0\"/>",
+                "<uses-sdk android:minSdkVersion=\"28\" android:targetSdkVersion=\"-1\"/>",
+                "<uses-sdk android:minSdkVersion=\"0\"/>",
+        }) {
+            String xml = decodeWithUsesSdk(usesSdk, null, null);
+            assertEquals(xml, "1.7", value(xml, "android:r0x01010591"));
+            assertFalse(xml, xml.contains("isSplitRequired"));
+        }
+        String attribute = decodeWithUsesSdk(
+                "<uses-sdk android:minSdkVersion=\"21\" android:targetSdkVersion=\"?android:attr/label\"/>",
+                null, null);
+        assertTrue(attribute, value(attribute, "android:targetSdkVersion").startsWith("?"));
+        assertEquals(attribute, "1.7", value(attribute, "android:isSplitRequired"));
+    }
+
+    /**
      * A manifest whose android:versionName is moved onto {@link #PLATFORM_PRIVATE_ATTR}, with the one
      * string {@code from} in its pool rewritten to {@code to} of the same length.
      */

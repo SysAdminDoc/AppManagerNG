@@ -988,6 +988,13 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Acceptance: WHEN decoding an installed system app whose compile SDK equals the device's SDK, the system SHALL take private framework names from the device's `/system/framework/framework-res.apk` instead of the bundled AOSP table; other apps keep the bundled tables; a device table that can't be read falls back to raw IDs, never to another table's name.
   Complexity: M
 
+- [ ] P3: Decode elements whose attribute records are shorter than 20 bytes
+  Why: Android reads attribute N at `attributeStart + attributeSize * N` and only checks that the run fits inside the element, so a file with a record size under 20 installs and parses there. `BinaryXmlBounds.checkElement` refuses it, so the manifest viewer shows an error for an APK Android accepts.
+  Evidence: `apk/parser/BinaryXmlBounds.java` `checkElement` (`attributeSize < ATTRIBUTE_SIZE`); AOSP `ResXMLTree::validateNode` and `ResXMLParser::getAttribute*`.
+  Touches: `BinaryXmlBounds.java` (rewrite such an element to 20-byte records in its copy, or confirm how ARSCLib strides), tests.
+  Acceptance: WHEN a start element has attributes and a record size under 20 whose run still fits inside the element, the system SHALL decode each attribute from the same bytes Android reads for it, and SHALL keep refusing a run that doesn't fit.
+  Complexity: M
+
 ## Found While Storing Mutation Images (2026-11-15)
 
 ### P2

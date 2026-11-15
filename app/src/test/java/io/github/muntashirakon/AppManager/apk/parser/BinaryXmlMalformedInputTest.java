@@ -121,6 +121,25 @@ public class BinaryXmlMalformedInputTest {
         assertTrue(AndroidBinXmlDecoder.decode(elements(-5_000, limit, -limit)).contains("<e>"));
     }
 
+    /**
+     * Android checks where an element's attributes would sit even when it has none, and only then
+     * ignores their record size.
+     */
+    @Test
+    public void attributesPlacedPastTheirElementAreRefusedEvenWhenThereAreNone() throws IOException {
+        // The start element follows the 8-byte document header and the 36-byte pool; its attribute
+        // start comes after its 16-byte node header, namespace and name
+        int attributeStart = 8 + 36 + 16 + 8;
+        byte[] past = elements(1, -1);
+        ByteBuffer.wrap(past).order(ByteOrder.LITTLE_ENDIAN).putShort(attributeStart, (short) 0xffff);
+        IOException e = assertThrows(IOException.class, () -> AndroidBinXmlDecoder.decode(past));
+        assertTrue(e.getMessage(), e.getMessage().contains("Attributes outside"));
+
+        byte[] noRecordSize = elements(1, -1);
+        ByteBuffer.wrap(noRecordSize).order(ByteOrder.LITTLE_ENDIAN).putShort(attributeStart + 2, (short) 0);
+        assertTrue(AndroidBinXmlDecoder.decode(noRecordSize).contains("<e"));
+    }
+
     @Test(timeout = 120_000)
     public void manySiblingsAndNamespacesStillDecode() throws IOException {
         StringBuilder wide = new StringBuilder("<root>");

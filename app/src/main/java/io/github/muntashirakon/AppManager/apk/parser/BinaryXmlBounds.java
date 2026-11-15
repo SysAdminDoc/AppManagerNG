@@ -229,8 +229,10 @@ final class BinaryXmlBounds {
         int attributeStart = u16(b, at + header + 8);
         int attributeSize = u16(b, at + header + 10);
         int attributeCount = u16(b, at + header + 12);
-        if (attributeCount > 0 && (attributeSize < ATTRIBUTE_SIZE
-                || header + attributeStart + (long) attributeCount * attributeSize > size)) {
+        // Android checks the bounds even when there are no attributes. The minimum stride is this
+        // decoder's own rule: ARSCLib reads each attribute as a whole 20-byte record.
+        if (header + attributeStart + (long) attributeCount * attributeSize > size
+                || attributeCount > 0 && attributeSize < ATTRIBUTE_SIZE) {
             throw new IOException("Attributes outside their element at offset " + at);
         }
     }
