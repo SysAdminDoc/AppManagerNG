@@ -145,9 +145,12 @@ public final class PackageEventSync {
             // An update can reset what the user set, so watched permissions are checked whatever the monitors say.
             checkWatchedPermissions(context, packageName, userId);
             // An update normally keeps the app's UID, and a reinstall comes as a removal and an install. The internet
-            // rule is put back anyway: that changes nothing while it's in force, costs nothing for an app without
-            // one, and covers an update Android hands a new UID.
-            applyInternetRule(context, packageName);
+            // rule is put back only where the update moved the UID, so an update doesn't start root or ADB.
+            try {
+                InternetAccess.applySoonWhereTheUidMoved(context, packageName);
+            } catch (Exception e) {
+                Log.w(TAG, "Could not check the internet rule of %s.", e, packageName);
+            }
             runUpdateMonitors(context, packageName);
             enqueueRoutines(context, ProfileTrigger.TYPE_ON_APP_UPDATE, packageName);
         }

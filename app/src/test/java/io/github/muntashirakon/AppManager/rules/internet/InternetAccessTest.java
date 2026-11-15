@@ -646,18 +646,98 @@ public class InternetAccessTest {
     }
 
     @Test
-    public void anAppUpdatedInOneUserIsPutBackInEveryUser() {
-        // An update normally keeps the UID, and putting the rule back covers one that doesn't
+    public void anUpdateThatKeepsTheUidPutsNothingBack() {
+        // Putting back a rule that's already on the app's UID would start root or ADB for nothing
         mUids.put(APP + ":10", 1010100);
         InternetAccess.setBlocked(APP, 0, true);
         InternetAccess.setBlocked(APP, 10, true);
         mEnqueued.clear();
 
         PackageEventSync.monitorsForTesting().onUpdated(ApplicationProvider.getApplicationContext(), APP, 0);
+
+        assertEquals(Collections.emptyList(), mEnqueued);
+    }
+
+    @Test
+    public void anUpdateThatMovesTheUidIsPutBackInEveryUserItMoved() {
+        // The app ID is shared by every user, so a new one moves the UID in each
+        mUids.put(APP + ":10", 1010100);
+        InternetAccess.setBlocked(APP, 0, true);
+        InternetAccess.setBlocked(APP, 10, true);
+        mEnqueued.clear();
+        mUids.put(APP + ":0", 10101);
+        mUids.put(APP + ":10", 1010101);
+
+        PackageEventSync.monitorsForTesting().onUpdated(ApplicationProvider.getApplicationContext(), APP, 0);
         PackageEventSync.monitorsForTesting().onUpdated(ApplicationProvider.getApplicationContext(), OTHER_APP, 0);
 
         assertEquals(new HashSet<>(Arrays.asList("internet_rules_package:" + APP + ":0",
                 "internet_rules_package:" + APP + ":10")), new HashSet<>(mEnqueued));
+    }
+
+    @Test
+    public void anUpdatePutsTheRuleBackOnlyInTheUserWhereTheUidMoved() {
+        InternetAccess.setBlocked(APP, 0, true);
+        // Not installed in user 10 yet, so that block waits for the app, which then comes along unseen
+        InternetAccess.setBlocked(APP, 10, true);
+        assertEquals(InternetRule.NO_UID, savedRule(APP, 10).getUid());
+        mUids.put(APP + ":10", 1010100);
+        mEnqueued.clear();
+
+        PackageEventSync.monitorsForTesting().onUpdated(ApplicationProvider.getApplicationContext(), APP, 0);
+
+        assertEquals(Collections.singletonList("internet_rules_package:" + APP + ":10"), mEnqueued);
+    }
+
+    @Test
+    public void anUpdateWhoseUidCantBeReadIsPutBack() {
+        InternetAccess.setBlocked(APP, 0, true);
+        mEnqueued.clear();
+        InternetAccess.setUidResolverForTesting((packageName, userId) -> {
+            throw new RemoteException("Binder died");
+        });
+
+        PackageEventSync.monitorsForTesting().onUpdated(ApplicationProvider.getApplicationContext(), APP, 0);
+
+        assertEquals(Collections.singletonList("internet_rules_package:" + APP + ":0"), mEnqueued);
+    }
+
+    @Test
+    public void aWishSavedDuringAFailedChangeIsTheOneReported() {
+        // An import can save a new wish while the firewall call is out
+        mFirewall.beforeChange = () -> {
+            try (ComponentsBlocker cb = ComponentsBlocker.getMutableInstance(APP, 0)) {
+                cb.setInternetRule(new InternetRule(APP, 0, false, APP_UID));
+            }
+        };
+        mFirewall.failure = new IllegalStateException("No such chain");
+
+        InternetAccess.Status status = InternetAccess.setBlocked(APP, 0, true);
+
+        assertTrue(status.saved);
+        assertFalse("the wish saved now is allowed", status.blocked);
+        assertTrue(status.holdsUid);
+        assertFalse(status.inForce);
+        assertEquals(Unavailable.PLATFORM, status.unavailable.reason);
+        assertEquals(new InternetRule(APP, 0, false, APP_UID), savedRule(APP, 0));
+    }
+
+    @Test
+    public void aRuleDroppedDuringAFailedChangeIsNotReadAsInForce() {
+        // The change failed, so a deny may be on the UID with nothing saved to say so
+        mFirewall.beforeChange = () -> {
+            try (ComponentsBlocker cb = ComponentsBlocker.getMutableInstance(APP, 0)) {
+                cb.deleteInternetRule(0);
+            }
+        };
+        mFirewall.remoteFailure = true;
+
+        InternetAccess.Status status = InternetAccess.setBlocked(APP, 0, true);
+
+        assertNull(savedRule(APP, 0));
+        assertFalse(status.saved);
+        assertFalse(status.inForce);
+        assertEquals(Unavailable.NO_PRIVILEGED_MODE, status.unavailable.reason);
     }
 
     @Test
@@ -745,6 +825,9 @@ public class InternetAccessTest {
         /** A ROM without the hidden calls fails when they're linked. */
         @Nullable
         LinkageError linkageError;
+        /** Runs at the start of each change, while the call is out. */
+        @Nullable
+        Runnable beforeChange;
         int changes;
 
         @Nullable
@@ -761,6 +844,7 @@ public class InternetAccessTest {
         @Override
         public void setDenied(int uid, boolean deny) throws RemoteException {
             ++changes;
+            if (beforeChange != null) beforeChange.run();
             if (remoteFailure) throw new RemoteException("Binder died");
             if (failure != null) throw failure;
             if (linkageError != null) throw linkageError;

@@ -34,7 +34,7 @@ import io.github.muntashirakon.AppManager.utils.ContextUtils;
 /**
  * Keeps each app's saved internet rule and the device's firewall in step. The saved rule is the wish; the firewall
  * forgets it on every restart and whenever the app gets a new UID, so it's put back after a restart, after the app is
- * installed, updated or removed, and whenever the privileged mode comes up.
+ * installed or removed, after an update that moved its UID, and whenever the privileged mode comes up.
  */
 public final class InternetAccess {
     private static final String TAG = "InternetAccess";
@@ -367,6 +367,29 @@ public final class InternetAccess {
     }
 
     /**
+     * Asks for the app's rule to be put back in each user where the UID the rule holds isn't the app's UID now, as
+     * after an update. An update normally keeps the UID, and putting back a rule that's already on it would start
+     * root or ADB for nothing.
+     */
+    @WorkerThread
+    public static void applySoonWhereTheUidMoved(@NonNull Context context, @NonNull String packageName) {
+        for (InternetRule rule : readRules(packageName)) {
+            int userId = rule.getUserId();
+            boolean moved;
+            try {
+                moved = sUidResolver.getUid(packageName, userId) != rule.getUid();
+            } catch (RemoteException | RuntimeException e) {
+                // Can't tell, so the worker finds out
+                Log.w(TAG, "Couldn't read the UID of %s in user %d", e, packageName, userId);
+                moved = true;
+            }
+            if (moved) {
+                sWorkSink.enqueue(context, uniqueWorkName(packageName, userId), buildRequest(packageName, userId));
+            }
+        }
+    }
+
+    /**
      * Whether an internet rule may be saved, read without opening every rules file, so it's fine on the main
      * thread. The app change sync stays scheduled while this is true.
      */
@@ -454,14 +477,15 @@ public final class InternetAccess {
 
     /**
      * Where the app stands after a failed change, read from the rule saved now. A failed block may already have taken
-     * its UID back off the rule.
+     * its UID back off the rule, and something else, such as an import, may have changed or dropped the rule.
      */
     @NonNull
     private static Status failedStatus(@NonNull String packageName, @UserIdInt int userId,
                                        @NonNull Unavailable unavailable) {
         InternetRule rule = readRule(packageName, userId);
         if (rule == null) {
-            return new Status(false, false, true, false, unavailable);
+            // Nothing is saved, but the change failed, so a deny may still be on the app's UID
+            return new Status(false, false, false, false, unavailable);
         }
         return new Status(true, rule.isBlocked(), false, rule.getUid() != InternetRule.NO_UID, unavailable);
     }
