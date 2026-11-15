@@ -1,5 +1,6 @@
 /build
 *.apk
 !src/test/resources/**/*.apk
+!src/main/resources/io/github/muntashirakon/AppManager/apk/parser/frameworks/*.apk
 .cxx
 *~

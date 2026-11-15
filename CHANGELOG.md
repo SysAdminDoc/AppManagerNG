@@ -78,6 +78,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - If releasing one waiting install fails while Android stops the installer, the other waiting installs are still released.
 - In a batch install, a package that finishes opening, or fails to, just as the installer moves on to the next one can't stand in for the next package anymore. It used to be shown and installed as the next item, or make the installer skip the next item as unreadable.
 - App Info, the manifest viewer, backups and installing for another user now work for an app that's installed under an older package name than its APK declares (a renamed app, usually a system app). They couldn't find its base APK, so App Info wouldn't open it and a backup didn't record its splits. Installing such an app for another user also asks for the name it's installed under now.
+- The manifest viewer and the code editor no longer give an attribute or resource the name it only has in a newer Android version (upstream App Manager #2040). A manifest now decodes with the framework table of the Android version its app was built against. When that version isn't recorded, or the versions it could be disagree about an ID, you see the raw ID (`android:r0x01120017`, `@0x01050010`) instead of a wrong name. Damaged binary XML, such as elements nested hundreds deep or strings running past the end of the file, now gets a short error everywhere it's read, the installer included, instead of a stalled screen or a crash.
 
 ## v0.7.0, 2026-11-08
 

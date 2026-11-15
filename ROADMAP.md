@@ -446,14 +446,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Research 2026-11-13: upstream's unreleased Actions engine (434037c40, 2026-10-12) tracks `RevertMode` and `ActionConflict` and refuses to revert over an outside change, the same check this item asks for. Borrow its conflict cases, not the engine (RESEARCH.md, Rejected Ideas).
   Complexity: L
 
-- [ ] P1: Decode binary XML with an API-correct framework table
-  Why: the decoder always loads the newest Android framework resources, so an old numeric resource ID can be labelled as a different modern attribute.
-  Evidence: upstream App Manager #2040; `apk/parser/AndroidBinXmlDecoder.java`; Android resource-table evolution across API levels.
-  Touches: `AndroidBinXmlDecoder.java`, compiled-against API metadata discovery, framework table selection and cache, raw-ID rendering, old-manifest fixtures, tests.
-  Acceptance: the decoder uses the APK's compiled-against API metadata when present; when it is absent, a name is emitted only if every plausible framework table agrees, otherwise the hexadecimal resource ID is preserved; fixtures compiled against at least API 21, 28, 35, and 37 assert stable attribute names and values; malformed tables still produce a bounded parse error.
-  Research 2026-11-13: API 37 adds `PackageManager.parseAndroidManifest(ParcelFileDescriptor)`, a platform answer to check the decoder against on API 37. Upstream #2060 (2026-10-03) failed on a chunk of type 0, but its sample APK returns 403, so it can't be a fixture.
-  Complexity: M
-
 - [ ] P1: Keep shortcut-launched targets in Recents
   Why: the shortcut trampoline is excluded from Recents and no-history, then calls `finishActivity(0)`, which can leave the launched target without the normal task lifecycle users expect.
   Evidence: upstream App Manager #2054; Android Tasks and Recents documentation; shortcut-management guidance; `details/ActivityLauncherShortcutActivity.java`; its manifest entry.
@@ -971,3 +963,37 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Touches: `RestoreStaging.stage`, `BackupItems.decryptWritesCopies`, `crypto/OpenPGPCrypto.java`, `RestoreStagingTest`.
   Acceptance: WHEN an OpenPGP backup's decrypted size exceeds the free space, the system SHALL stop before writing any app data with a message naming the space needed, either by reading the literal data's declared length or by decrypting with a running space check, and a test with a highly compressible payload SHALL cover it.
   Complexity: S
+
+## Found While Fixing Binary XML Decoding (2026-11-15)
+
+### P1
+
+- [ ] P1: Skip unknown chunks inside binary XML the way Android does
+  Why: Android's `ResXMLParser::nextNode` logs and skips a chunk it doesn't know inside the element stream, but ARSCLib refuses it ("Unexpected chunk: NULL(0x0000)"), so a manifest that installs fine can't be shown, parsed by the installer, or read for its attributes. A probe on a compiled fixture showed ARSCLib skips such a chunk only before the root element.
+  Evidence: upstream App Manager #2060 (a chunk of type 0); `apk/parser/BinaryXmlBounds.java`; ARSCLib 1.4.0 `ResXmlElement` reading; `frameworks/base/libs/androidfw/ResourceTypes.cpp` `nextNode` and `setTo`.
+  Touches: `BinaryXmlBounds.java` (or a normalizing step beside it), `AndroidBinXmlDecoder.readDocument`, its callers in `ApkUtils` and `ManifestParser`, tests.
+  Acceptance: WHEN a binary XML document holds a chunk of a type Android skips (anything but a namespace, element, or CDATA node once the element stream has started), the system SHALL decode the document as if that chunk weren't there, in the viewer, the installer's manifest parser, and `getManifestAttributes`; a skipped chunk whose header is shorter than a node header, or whose size runs past its parent, is still refused with a bounded error as Android refuses it; tests insert type 0x0000, 0x0200 and 0x01ff chunks before the root and between elements of a compiled fixture.
+  Complexity: S
+
+### P2
+
+- [ ] P2: Decode an APK's other XML files with that APK's compile SDK
+  Why: only a manifest records the SDK its app was built against, so a layout or other XML opened from inside an APK decodes under the no-metadata rules and shows private framework references as raw IDs even when the APK's own manifest pins the table.
+  Evidence: `editor/CodeEditorViewModel.java` calls `AndroidBinXmlDecoder.decode(bytes)` with no SDK; `AndroidBinXmlDecoder.decode(ByteBuffer, int)` already takes one.
+  Touches: `CodeEditorViewModel.java`, the file manager's path into an APK, tests.
+  Acceptance: WHEN a binary XML file opened from inside an APK is decoded, the system SHALL pass that APK's manifest compile SDK to the decoder, so its private framework references get names exactly when its manifest's would; a standalone file keeps the no-metadata rules; a test decodes a layout from a fixture APK built against API 35 and sees `@*android:dimen/status_bar_height` or `@android:dimen/status_bar_height`.
+  Complexity: S
+
+### P3
+
+- [ ] P3: Check the decoder against `PackageManager.parseAndroidManifest` on API 37
+  Why: API 37 parses a manifest itself, which gives the decoder a platform answer to compare its names and values against.
+  Touches: an instrumented test, an API 37 emulator or a phone on API 37.
+  Acceptance: WHEN running on API 37 or later, an instrumented check SHALL compare the decoder's attribute names and values for the `framework_ref` fixtures and three installed apps against `parseAndroidManifest` and list every difference; each naming difference gets its own fix or ROADMAP item.
+  Complexity: S
+
+- [ ] P3: Use the device's own framework table for system apps built against it
+  Why: OEM system apps are built against the device's `framework-res.apk`, whose private IDs differ from AOSP's, so the bundled AOSP tables can name them wrongly. Today such an app's private IDs show by name whenever its compile SDK has no disputed set covering them.
+  Touches: `FrameworkTables.java`, `AndroidBinXmlDecoder.java`, the manifest viewer's load path, tests.
+  Acceptance: WHEN decoding an installed system app whose compile SDK equals the device's SDK, the system SHALL take private framework names from the device's `/system/framework/framework-res.apk` instead of the bundled AOSP table; other apps keep the bundled tables; a device table that can't be read falls back to raw IDs, never to another table's name.
+  Complexity: M

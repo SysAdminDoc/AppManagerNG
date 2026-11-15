@@ -30,7 +30,6 @@ import com.android.apksig.zip.ZipFormatException;
 import com.reandroid.arsc.chunk.xml.ResXmlAttribute;
 import com.reandroid.arsc.chunk.xml.ResXmlDocument;
 import com.reandroid.arsc.chunk.xml.ResXmlElement;
-import com.reandroid.arsc.io.BlockReader;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -252,11 +251,12 @@ public final class ApkUtils {
     @NonNull
     public static HashMap<String, String> getManifestAttributes(@NonNull ByteBuffer manifestBytes)
             throws ApkFile.ApkFileException {
-        try (BlockReader reader = new BlockReader(AndroidBinXmlDecoder.toByteArray(manifestBytes))) {
+        try {
             HashMap<String, String> manifestAttrs = new HashMap<>();
-            ResXmlDocument xmlBlock = new ResXmlDocument();
+            ResXmlDocument xmlBlock;
             try {
-                xmlBlock.readBytes(reader);
+                // Bounds-checked first, so a hostile manifest can't exhaust memory or the stack
+                xmlBlock = AndroidBinXmlDecoder.readDocument(AndroidBinXmlDecoder.toByteArray(manifestBytes));
             } catch (IOException e) {
                 throw new ApkFile.ApkFileException(e);
             }

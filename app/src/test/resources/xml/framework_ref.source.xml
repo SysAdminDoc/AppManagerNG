@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="org.example.fixture" android:versionCode="7" android:versionName="1.7">
+    <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="21" />
+    <application android:label="Fixture" android:allowBackup="false" android:theme="@android:style/Theme.Material.Light">
+        <activity android:name=".Main" android:label="@*android:dimen/status_bar_height" android:launchMode="singleTask" android:screenOrientation="portrait" android:configChanges="orientation|keyboardHidden|screenSize" android:windowSoftInputMode="stateHidden|adjustResize" android:exported="true">
+            <intent-filter android:priority="5">
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

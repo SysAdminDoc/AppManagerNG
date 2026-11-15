@@ -11,7 +11,6 @@ import androidx.annotation.VisibleForTesting;
 import com.reandroid.arsc.chunk.xml.ResXmlAttribute;
 import com.reandroid.arsc.chunk.xml.ResXmlDocument;
 import com.reandroid.arsc.chunk.xml.ResXmlElement;
-import com.reandroid.arsc.io.BlockReader;
 import com.reandroid.arsc.value.ValueType;
 
 import java.io.IOException;
@@ -173,9 +172,9 @@ public class ManifestParser {
 
     @NonNull
     private ResXmlElement readManifestElement() throws IOException {
-        try (BlockReader reader = new BlockReader(AndroidBinXmlDecoder.toByteArray(mManifestBytes))) {
-            ResXmlDocument xmlBlock = new ResXmlDocument();
-            xmlBlock.readBytes(reader);
+        try {
+            // Bounds-checked first, so a hostile manifest can't exhaust memory or the stack
+            ResXmlDocument xmlBlock = AndroidBinXmlDecoder.readDocument(AndroidBinXmlDecoder.toByteArray(mManifestBytes));
             xmlBlock.setPackageBlock(AndroidBinXmlDecoder.getFrameworkPackageBlock());
             ResXmlElement resManifestElement = xmlBlock.getDocumentElement();
             if (resManifestElement == null || !TAG_MANIFEST.equals(resManifestElement.getName())) {
