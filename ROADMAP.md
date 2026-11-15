@@ -1202,3 +1202,28 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Touches: `BatchOpsManager.java`, a batch ops test.
   Acceptance: WHEN listing the import folder throws, the system SHALL return an unsuccessful result and keep the folder's access; a test SHALL cover it.
   Complexity: S
+
+## Found While Verifying Pure Black and Scheduled Backup Fixes (2026-11-15)
+
+### P3
+
+- [ ] P3: Re-theme the code editor when the night setting changes
+  Why: the code editor declares `uiMode` in its `configChanges` and has no `onConfigurationChanged`, so with Follow system, turning the system's dark mode on or off while the editor is open leaves it in the old colors until it's reopened. Pure black now depends on whether the app is dark, so the editor can also keep a black surface in the day.
+  Evidence: `AndroidManifest.xml` `.editor.CodeEditorActivity` and its `.editor.EditorActivity` alias both list `uiMode`; `editor/CodeEditorActivity.java` handles no configuration change.
+  Touches: the manifest entries, `CodeEditorActivity.java` (recreate on a night change while keeping the unsaved text, or keep `uiMode` handled and re-apply the theme).
+  Acceptance: WHEN the night mode in effect changes while the editor is open, the system SHALL show the editor in the new palette without losing unsaved text; a Robolectric test SHALL cover it.
+  Complexity: S
+
+- [ ] P3: Keep the floating windows black when dynamic colors and Pure black are both on
+  Why: `AppearanceUtils.getThemedContext` wraps the black transparent theme in dynamic colors and never applies `ThemeOverlay.AppTheme.V2.AmoledSurfaces` after it, so the top app bubble and the tracker window get the wallpaper's dark surfaces instead of black. Activities apply the overlay after dynamic colors, so these two windows don't match the rest of the app.
+  Evidence: `utils/appearance/AppearanceUtils.java` `getThemedContext`; callers `accessibility/topapp/TopAppBubble.java` and `accessibility/activity/TrackerWindow.java`.
+  Touches: `AppearanceUtils.java`, `PureBlackThemeTest`.
+  Acceptance: WHEN Pure black is in effect with dynamic colors on, the system SHALL resolve colorSurface and colorBackground to black in the themed context those windows use; a test SHALL cover it.
+  Complexity: S
+
+- [ ] P3: Clear the scheduled backup's "waiting for a network" status in any language
+  Why: turning scheduled backups off clears the status only when the saved text equals today's "waiting for a network" string, so after a language change the old text stays. The worker also checks that no backup is running and then writes the waiting status, so a run that starts in between can have its status overwritten.
+  Evidence: `backup/schedule/AutoBackupScheduler.java` compares `auto_backup_result_waiting_for_network` with the saved result; `backup/schedule/AutoBackupWorker.java` checks `isRunning()` before `recordRunResult`.
+  Touches: `AutoBackupScheduler.java`, `AutoBackupWorker.java` (save a status code beside the text, and write the waiting status under the run claim), `ScheduledBackupNetworkTest`.
+  Acceptance: WHEN scheduled backups are turned off after the app language changed while a run waited for a network, the system SHALL clear the waiting status; WHEN a run starts while another waits, the system SHALL keep the running run's status; tests SHALL cover both.
+  Complexity: S

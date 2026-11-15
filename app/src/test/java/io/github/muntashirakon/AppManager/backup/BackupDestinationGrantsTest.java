@@ -11,6 +11,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.UriPermission;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -20,12 +22,16 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.android.controller.ServiceController;
+import org.robolectric.annotation.Config;
 import org.robolectric.util.ReflectionHelpers;
 import org.robolectric.util.ReflectionHelpers.ClassParameter;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -36,10 +42,19 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
+import io.github.muntashirakon.AppManager.backup.convert.ImportType;
+import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
+import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
+import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
+import io.github.muntashirakon.AppManager.batchops.struct.BatchBackupImportOptions;
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.types.ForegroundService;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.StorageUtils;
+import io.github.muntashirakon.test.shadows.ShadowCpuUtils;
 
 @RunWith(RobolectricTestRunner.class)
 public class BackupDestinationGrantsTest {
@@ -353,6 +368,62 @@ public class BackupDestinationGrantsTest {
     }
 
     @Test
+    @Config(shadows = ShadowCpuUtils.class)
+    public void everyImportTheBatchServiceTakesKeepsTheFolderUntilTheLastEnds() throws Exception {
+        BackupDestinationGrants.acquire(mContext, IMPORTS, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
+        ServiceController<BatchOpsService> controller = Robolectric.buildService(BatchOpsService.class).create();
+        BatchOpsService service = controller.get();
+        Looper looper = serviceLooper(service);
+        // Keeps both imports waiting, so only the ends below count
+        CountDownLatch gate = holdThread(looper);
+        try {
+            // One from the settings page and one replayed from history or retried reach the service the same way
+            service.onStartCommand(importIntent(IMPORTS), 0, 1);
+            service.onStartCommand(importIntent(IMPORTS), 0, 2);
+
+            BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS);
+            assertEquals(Collections.singletonList(IMPORTS), mStore.uris());
+
+            BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS);
+            assertEquals(Collections.emptyList(), mStore.uris());
+        } finally {
+            controller.destroy();
+            gate.countDown();
+            looper.getThread().join(5000);
+        }
+    }
+
+    @Test
+    public void aQueuedImportKeepsTheOldBackupFolderWhenAnotherIsPicked() {
+        BackupDestinationGrants.selectDestination(mContext, FIRST, MODES);
+        BackupDestinationGrants.acquire(mContext, FIRST, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
+        BackupDestinationGrants.importQueued(FIRST);
+        Uri previous = BackupDestinationGrants.selectDestination(mContext, SECOND, MODES);
+
+        // The import hasn't reached the batch service yet, so nothing counts as running
+        BackupDestinationGrants.releaseIfUnused(mContext, previous);
+        assertEquals(List.of(FIRST, SECOND), mStore.uris());
+
+        BackupDestinationGrants.releaseAfterImport(mContext, FIRST);
+        BackupDestinationGrants.startNewProcessForTesting();
+        BackupDestinationGrants.pruneStale(mContext);
+        assertEquals(Collections.singletonList(SECOND), mStore.uris());
+    }
+
+    @Test
+    public void aFailedImportKeepsTheOldBackupFolderForARetryWhenAnotherIsPicked() {
+        BackupDestinationGrants.selectDestination(mContext, FIRST, MODES);
+        BackupDestinationGrants.acquire(mContext, FIRST, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
+        BackupDestinationGrants.importQueued(FIRST);
+        BackupDestinationGrants.importFailed(FIRST);
+        Uri previous = BackupDestinationGrants.selectDestination(mContext, SECOND, MODES);
+
+        BackupDestinationGrants.releaseIfUnused(mContext, previous);
+
+        assertEquals(List.of(FIRST, SECOND), mStore.uris());
+    }
+
+    @Test
     public void aFolderPickedAgainWhileTheStartupSweepRunsIsKept() {
         BackupDestinationGrants.acquire(mContext, FIRST, MODES, BackupDestinationGrants.PURPOSE_DESTINATION);
         BackupDestinationGrants.startNewProcessForTesting();
@@ -368,6 +439,28 @@ public class BackupDestinationGrantsTest {
     }
 
     @Test
+    public void anotherFolderPickedWhileTheStartupSweepRunsIsKept() {
+        BackupDestinationGrants.acquire(mContext, FIRST, MODES, BackupDestinationGrants.PURPOSE_DESTINATION);
+        BackupDestinationGrants.acquire(mContext, SECOND, MODES, BackupDestinationGrants.PURPOSE_DESTINATION);
+        BackupDestinationGrants.startNewProcessForTesting();
+        // While the sweep asks the first folder it reaches, the user picks the other one for an import
+        List<Uri> picked = new ArrayList<>();
+        BackupDestinationGrants.setBackupProbeForTesting(uri -> {
+            if (picked.isEmpty()) {
+                Uri other = uri.equals(StorageUtils.getFixedTreeUri(FIRST)) ? SECOND : FIRST;
+                BackupDestinationGrants.acquire(mContext, other, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
+                picked.add(other);
+            }
+            return false;
+        });
+
+        BackupDestinationGrants.pruneStale(mContext);
+
+        assertEquals(1, picked.size());
+        assertEquals(picked, mStore.uris());
+    }
+
+    @Test
     public void theNewBackupFolderIsOnDiskBeforeTheOldOneIsLetGo() {
         BackupDestinationGrants.selectDestination(mContext, FIRST, MODES);
         Uri previous = BackupDestinationGrants.selectDestination(mContext, SECOND, MODES);
@@ -378,6 +471,37 @@ public class BackupDestinationGrantsTest {
         BackupDestinationGrants.releaseIfUnused(mContext, previous);
 
         assertEquals(Collections.singletonList(true), onDiskAtRelease);
+    }
+
+    @NonNull
+    private Intent importIntent(@NonNull Uri directory) {
+        BatchBackupImportOptions options = new BatchBackupImportOptions(ImportType.OAndBackup, directory, false);
+        return BatchOpsService.getServiceIntent(mContext, BatchQueueItem.getBatchOpQueue(
+                BatchOpsManager.OP_IMPORT_BACKUPS, new ArrayList<>(), new ArrayList<>(), options));
+    }
+
+    @NonNull
+    private static Looper serviceLooper(@NonNull ForegroundService service) throws ReflectiveOperationException {
+        Field field = ForegroundService.class.getDeclaredField("mServiceLooper");
+        field.setAccessible(true);
+        return (Looper) field.get(service);
+    }
+
+    /** Keeps the service's thread busy until the returned latch opens, so starts sent meanwhile wait in its queue. */
+    @NonNull
+    private static CountDownLatch holdThread(@NonNull Looper looper) throws InterruptedException {
+        CountDownLatch gate = new CountDownLatch(1);
+        CountDownLatch holding = new CountDownLatch(1);
+        new Handler(looper).post(() -> {
+            holding.countDown();
+            try {
+                gate.await(10, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        });
+        assertTrue("the service's thread picked up the hold", holding.await(5, TimeUnit.SECONDS));
+        return gate;
     }
 
     private boolean savedOnDisk(@NonNull String value) {

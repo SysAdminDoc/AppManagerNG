@@ -23,8 +23,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.backup.BackupDestinationGrants;
 import io.github.muntashirakon.AppManager.backup.DefaultAppRoleRestoreActivity;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager.BatchOpsInfo;
+import io.github.muntashirakon.AppManager.batchops.struct.BatchBackupImportOptions;
 import io.github.muntashirakon.AppManager.history.ops.OperationJournalMetadata;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.intercept.IntentCompat;
@@ -122,12 +124,18 @@ public class BatchOpsService extends ForegroundService {
 
     @Override
     public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
+        BatchQueueItem item = getQueueItem(intent);
+        // Every import comes through here, the settings page, a replay from history and a retry alike, so an earlier
+        // import from the same folder that ends first keeps the access this one needs
+        if (item != null && item.getOp() == BatchOpsManager.OP_IMPORT_BACKUPS
+                && item.getOptions() instanceof BatchBackupImportOptions) {
+            BackupDestinationGrants.importQueued(((BatchBackupImportOptions) item.getOptions()).getDirectory());
+        }
         if (isWorking()) {
             mProgressHandler.onStartedAgain(this);
             return super.onStartCommand(intent, flags, startId);
         }
         sServiceWorking.set(true);
-        BatchQueueItem item = getQueueItem(intent);
         NotificationManagerInfo notificationManagerInfo = new NotificationManagerInfo(CHANNEL_ID,
                 "Batch Ops Progress", NotificationManagerCompat.IMPORTANCE_LOW);
         mProgressHandler = new NotificationProgressHandler(this,

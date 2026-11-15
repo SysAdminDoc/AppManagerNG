@@ -230,9 +230,10 @@ public class BackupItems {
                     return true;
                 }
             }
-            // A network folder can answer before it has listed everything
+            // A network folder can answer before it has listed everything, or with an error and no rows
             Bundle extras = cursor.getExtras();
-            return extras != null && extras.getBoolean(DocumentsContract.EXTRA_LOADING, false);
+            return extras != null && (extras.getBoolean(DocumentsContract.EXTRA_LOADING, false)
+                    || extras.getString(DocumentsContract.EXTRA_ERROR) != null);
         } catch (RuntimeException e) {
             return true;
         }

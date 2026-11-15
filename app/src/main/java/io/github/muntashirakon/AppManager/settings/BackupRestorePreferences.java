@@ -797,8 +797,6 @@ public class BackupRestorePreferences extends PreferenceFragment {
         BatchBackupImportOptions options = new BatchBackupImportOptions(backupType, uri, removeImported);
         BatchQueueItem item = BatchQueueItem.getBatchOpQueue(BatchOpsManager.OP_IMPORT_BACKUPS,
                 input.getFailedPackages(), input.getAssociatedUsers(), options);
-        // An import from the same folder that ends first keeps the access this one needs
-        BackupDestinationGrants.importQueued(uri);
         Intent intent = BatchOpsService.getServiceIntent(mActivity, item);
         ContextCompat.startForegroundService(mActivity, intent);
     }

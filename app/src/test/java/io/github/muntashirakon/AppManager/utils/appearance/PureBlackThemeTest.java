@@ -144,6 +144,7 @@ public class PureBlackThemeTest {
                                 com.google.android.material.R.attr.colorOnSurface), ground, 4.5);
                         check(failures, mode, "colorOnSurfaceVariant", resolveColor(screen,
                                 com.google.android.material.R.attr.colorOnSurfaceVariant), ground, 4.5);
+                        check(failures, mode, "usage chart labels", chartLabelColor(screen), ground, 4.5);
                         check(failures, mode, "colorControlNormal", resolveColor(screen,
                                 androidx.appcompat.R.attr.colorControlNormal), ground, 3);
                         check(failures, mode, "colorPrimary", resolveColor(screen,
@@ -186,6 +187,17 @@ public class PureBlackThemeTest {
         if (ratio < minimum) {
             failures.add(String.format(Locale.ROOT, "%s: %s #%08X on #%08X is %.2f:1, needs %.1f:1", mode, what,
                     foreground, ground, ratio, minimum));
+        }
+    }
+
+    /** The color the usage chart draws its axis labels in, read the way BarChartView reads it. */
+    private static int chartLabelColor(@NonNull Context context) {
+        TypedArray a = context.obtainStyledAttributes(null, R.styleable.BarChartView, R.attr.barChartViewStyle,
+                R.style.Widget_AppTheme_BarChartView);
+        try {
+            return a.getColor(R.styleable.BarChartView_textColor, 0);
+        } finally {
+            a.recycle();
         }
     }
 

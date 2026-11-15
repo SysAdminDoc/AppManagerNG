@@ -172,11 +172,6 @@ public class AutoBackupWorker extends Worker {
     }
 
     /**
-     * Ends a scheduled run that can't back up yet. A retry of periodic work would move every later
-     * run to whenever this one finally ends, so the scheduled run ends here and keeps its time of
-     * day, and a one-time run backs up in its place. That one-time run tries again itself.
-     */
-    /**
      * Whether two results are both success, both retry or both failure. Result's subclasses are restricted API, and a
      * success can carry output data, so neither instanceof nor equals will do.
      */
@@ -184,6 +179,11 @@ public class AutoBackupWorker extends Worker {
         return result.getClass() == kind.getClass();
     }
 
+    /**
+     * Ends a scheduled run that can't back up yet. A retry of periodic work would move every later
+     * run to whenever this one finally ends, so the scheduled run ends here and keeps its time of
+     * day, and a one-time run backs up in its place. That one-time run tries again itself.
+     */
     @NonNull
     private static Result holdScheduledRun(@NonNull Context context, boolean catchUp) {
         if (catchUp) {

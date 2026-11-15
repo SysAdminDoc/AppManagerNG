@@ -101,6 +101,17 @@ public class BackupFolderProviderTest {
     }
 
     @Test
+    public void aFolderTheProviderCouldntListCountsAsHoldingBackups() {
+        MatrixCursor failed = children();
+        Bundle extras = new Bundle();
+        extras.putString(DocumentsContract.EXTRA_ERROR, "The server didn't answer");
+        failed.setExtras(extras);
+        FolderProvider.sChildren = failed;
+
+        assertTrue(BackupItems.holdsBackups(StorageUtils.getFixedTreeUri(TREE)));
+    }
+
+    @Test
     public void aUriThatIsntAFolderCountsAsHoldingBackups() {
         assertTrue(BackupItems.holdsBackups(DocumentsContract.buildDocumentUri(AUTHORITY, "primary:Backups")));
     }

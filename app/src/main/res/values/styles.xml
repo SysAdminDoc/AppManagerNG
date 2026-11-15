@@ -50,8 +50,8 @@
         <item name="gridLineCount">6</item>
         <item name="gridLabelsOnLeft">true</item>
 
-        <!-- Label appearance -->
-        <item name="textColor">?attr/colorOutline</item>
+        <!-- Label appearance. Labels are text, so they need 4.5:1, which colorOutline doesn't promise -->
+        <item name="textColor">?attr/colorOnSurfaceVariant</item>
         <item name="textSize">@dimen/font_size_medium</item>
         <item name="yAxisFormat">@null</item>
         <item name="emptyText">@string/no_usage_in_this_time_range</item>

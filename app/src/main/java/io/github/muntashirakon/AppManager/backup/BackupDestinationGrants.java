@@ -206,19 +206,22 @@ public final class BackupDestinationGrants {
             return;
         }
         List<String> candidates = new ArrayList<>();
+        long listedAt;
         synchronized (LOCK) {
+            listedAt = sTakes;
             for (String key : readOwned(context).keySet()) {
                 if (treeKey.equals(treeKey(Uri.parse(key)))) {
                     candidates.add(key);
                 }
             }
         }
-        releaseStale(context, candidates);
+        releaseStale(context, candidates, listedAt);
     }
 
     /**
      * Notes an import from this folder was queued, so an earlier import from it that ends keeps the access this one
-     * needs. Each is matched by {@link #releaseAfterImport(Context, Uri)} or {@link #importFailed(Uri)}.
+     * needs. The batch service calls it for every import it takes. Each is matched by
+     * {@link #releaseAfterImport(Context, Uri)} or {@link #importFailed(Uri)}.
      */
     @AnyThread
     public static void importQueued(@NonNull Uri importDirectory) {
@@ -280,7 +283,9 @@ public final class BackupDestinationGrants {
     @WorkerThread
     public static void pruneStale(@NonNull Context context) {
         List<String> candidates = new ArrayList<>();
+        long listedAt;
         synchronized (LOCK) {
+            listedAt = sTakes;
             Map<String, Integer> owned = readOwned(context);
             if (owned.isEmpty()) {
                 return;
@@ -303,7 +308,7 @@ public final class BackupDestinationGrants {
                 writeOwned(context, owned);
             }
         }
-        releaseStale(context, candidates);
+        releaseStale(context, candidates, listedAt);
     }
 
     /**
@@ -330,7 +335,10 @@ public final class BackupDestinationGrants {
         }
     }
 
-    private static void releaseStale(@NonNull Context context, @NonNull List<String> candidates) {
+    /**
+     * @param listedAt The take count when the candidates were listed. A candidate picked again after that is kept.
+     */
+    private static void releaseStale(@NonNull Context context, @NonNull List<String> candidates, long listedAt) {
         if (candidates.isEmpty() || isBackupRunning()) {
             return;
         }
@@ -343,10 +351,8 @@ public final class BackupDestinationGrants {
             Uri uri = Uri.parse(key);
             String treeKey = treeKey(uri);
             Integer purpose;
-            Long taken;
             synchronized (LOCK) {
-                purpose = readOwned(context).get(key);
-                taken = sTakenThisProcess.get(key);
+                purpose = takenSince(key, listedAt) || importNeeds(treeKey) ? null : readOwned(context).get(key);
             }
             if (purpose == null || treeKey == null || isReferenced(context, treeKey)) {
                 continue;
@@ -358,13 +364,27 @@ public final class BackupDestinationGrants {
             synchronized (LOCK) {
                 Map<String, Integer> owned = readOwned(context);
                 // Picked again or put to use meanwhile
-                if (!Objects.equals(owned.get(key), purpose) || !Objects.equals(sTakenThisProcess.get(key), taken)
+                if (!Objects.equals(owned.get(key), purpose) || takenSince(key, listedAt) || importNeeds(treeKey)
                         || isReferenced(context, treeKey) || isBackupRunning()) {
                     continue;
                 }
                 release(context, owned, uri);
             }
         }
+    }
+
+    /** Whether the folder was picked again after the candidates were listed. Call with LOCK held. */
+    private static boolean takenSince(@NonNull String key, long listedAt) {
+        Long taken = sTakenThisProcess.get(key);
+        return taken != null && taken > listedAt;
+    }
+
+    /**
+     * Whether an import from the folder is queued, or failed and may be retried. A queued one may not have reached the
+     * batch service yet, so a running backup doesn't cover it. Call with LOCK held.
+     */
+    private static boolean importNeeds(@Nullable String treeKey) {
+        return treeKey != null && (sQueuedImports.containsKey(treeKey) || sFailedImports.contains(treeKey));
     }
 
     /** @return whether no other import from the folder is queued */
