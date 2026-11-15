@@ -648,6 +648,13 @@ Sources and reasoning: RESEARCH.md (2026-11-13). The four crash fixes come first
 
 ### P2
 
+- [ ] P2: Lift a deny left on a UID when an internet block change fails
+  Why: when a block or unblock fails partway (`InternetAccess.java` `failedStatus`, called from the SecurityException, RemoteException and platform catches around line 313-322), the saved rule is dropped and the status says a deny may still be on the UID. Nothing records that UID, so `applyAll()` never lifts the deny before a reboot, and `Status.canChange()` returns false, so the app's INTERNET switch stays locked with the app offline.
+  Evidence: found by the 2026-11-15 review of the internet block UID tracking. Predates that change.
+  Touches: `rules/internet/InternetAccess.java` (record the UID a failed change may have left denied, have `applyAll` clear it once a privileged mode is up, and let the switch unblock it), `InternetAccessTest.java`.
+  Acceptance: WHEN a block change fails after the deny may have reached the UID, the system SHALL keep that UID on record, SHALL lift the deny at the next `applyAll` with a privileged mode, and SHALL leave the INTERNET switch usable to turn the block off. A Robolectric test drives a failed change, then `applyAll`, and reads the firewall seam.
+  Complexity: M
+
 - [ ] P2: Keep the install queue when the installer is recreated after unlocking
   Why: the queue is a plain list on `PackageInstallerActivity`, and `handleNewIntent` calls `setIntent` with each APK or confirmation it handles. When the activity is recreated after the lock screen was passed (a rotation, or the process stopped while a confirmation waits), `onAuthenticated` queues `getIntent()` again. That's the last intent handled, so every other APK still waiting is dropped, and on the confirmation path a confirmation that was already handled is launched again. The manifest gives the activity no `configChanges`, so a rotation does recreate it.
   Evidence: `apk/installer/PackageInstallerActivity.java` (`mApkQueue`, `setIntent` in `handleNewIntent`, `onAuthenticated`). Found by the 2026-11-13 review of the lock-screen fix, which only covers recreation before unlocking.

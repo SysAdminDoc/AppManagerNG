@@ -136,22 +136,61 @@ public class AutoBackupWorker extends Worker {
         boolean catchUp = getInputData().getBoolean(KEY_CATCH_UP, false);
         if (!manual && !hasUsableNetwork(context, Prefs.BackupRestore.getScheduledBackupNetworkType())) {
             Log.i(TAG, "Scheduled auto-backup is waiting for a network it can use");
-            // Settings refreshes the diagnostics when it opens
-            AutoBackupScheduler.recordRunOrigin(origin);
-            AutoBackupScheduler.recordRunResult(context.getString(R.string.auto_backup_result_waiting_for_network));
-            if (catchUp) {
-                return Result.retry();
+            if (!isRunning()) {
+                // A backup that's running keeps its own status. Settings refreshes the diagnostics
+                // when it opens.
+                AutoBackupScheduler.recordRunOrigin(origin);
+                AutoBackupScheduler.recordRunResult(context.getString(
+                        R.string.auto_backup_result_waiting_for_network));
             }
-            // A retry would move the schedule to whenever the network came back, so the scheduled
-            // run ends here and keeps its time of day, and a one-time run backs up in its place.
-            AutoBackupScheduler.enqueueCatchUpRun(context);
-            return Result.success();
+            return holdScheduledRun(context, catchUp);
         }
-        if (!manual && !catchUp && !isRunning()) {
-            // This run backs up, so a catch-up still waiting from an earlier one isn't needed
-            AutoBackupScheduler.cancelCatchUpRun(context);
+        if (!claimRun(origin)) {
+            // Periodic and "Run now" runs use different unique work names, so WorkManager can start
+            // one while another runs. The run in flight backs up the same due packages.
+            Log.w(TAG, "Auto-backup already running; skipping this run (origin=" + origin + ")");
+            AutoBackupScheduler.recordRunResult(context.getString(R.string.auto_backup_result_already_running));
+            AutoBackupScheduler.refreshDiagnostics(context);
+            return manual ? Result.success() : holdScheduledRun(context, catchUp);
         }
-        return runBackup(context, manual, origin);
+        try {
+            Result result = runBackup(context, manual, origin);
+            if (isSameKind(result, Result.success())) {
+                if (!catchUp) {
+                    // This run backed up, so a catch-up still waiting from an earlier one isn't needed
+                    AutoBackupScheduler.cancelCatchUpRun(context);
+                }
+                return result;
+            }
+            if (isSameKind(result, Result.retry()) && !manual) {
+                return holdScheduledRun(context, catchUp);
+            }
+            return result;
+        } finally {
+            releaseRun();
+        }
+    }
+
+    /**
+     * Ends a scheduled run that can't back up yet. A retry of periodic work would move every later
+     * run to whenever this one finally ends, so the scheduled run ends here and keeps its time of
+     * day, and a one-time run backs up in its place. That one-time run tries again itself.
+     */
+    /**
+     * Whether two results are both success, both retry or both failure. Result's subclasses are restricted API, and a
+     * success can carry output data, so neither instanceof nor equals will do.
+     */
+    private static boolean isSameKind(@NonNull Result result, @NonNull Result kind) {
+        return result.getClass() == kind.getClass();
+    }
+
+    @NonNull
+    private static Result holdScheduledRun(@NonNull Context context, boolean catchUp) {
+        if (catchUp) {
+            return Result.retry();
+        }
+        AutoBackupScheduler.enqueueCatchUpRun(context);
+        return Result.success();
     }
 
     /**
@@ -159,12 +198,15 @@ public class AutoBackupWorker extends Worker {
      * network from its capabilities from Android 9 on, and those don't show that Android blocks
      * this app's network, so the constraint can pass while the network is blocked (b/465016918,
      * fixed in 2.11.1, and b/445324855, fixed in 2.11.2; both need minSdk 23). The run checks for
-     * itself on every version, through the network info that does show the block.
+     * itself on every version, through the network info that does show the block. A run set to
+     * unmetered networks also checks that the network it would use isn't metered, since the setting
+     * can change after a catch-up run is queued.
      */
     @VisibleForTesting
     @SuppressWarnings("deprecation") // NetworkInfo is what reports the block for this app
     static boolean hasUsableNetwork(@NonNull Context context, int networkType) {
-        if (AutoBackupScheduler.sanitizeNetworkType(networkType) == AutoBackupScheduler.NETWORK_NOT_REQUIRED) {
+        int type = AutoBackupScheduler.sanitizeNetworkType(networkType);
+        if (type == AutoBackupScheduler.NETWORK_NOT_REQUIRED) {
             return true;
         }
         ConnectivityManager cm = ContextCompat.getSystemService(context, ConnectivityManager.class);
@@ -172,32 +214,28 @@ public class AutoBackupWorker extends Worker {
             return true;
         }
         NetworkInfo info;
+        boolean metered;
         try {
             info = cm.getActiveNetworkInfo();
+            metered = type == AutoBackupScheduler.NETWORK_UNMETERED && cm.isActiveNetworkMetered();
         } catch (SecurityException e) {
             // Some builds refuse the call (b/480123154). The constraint decides, as it did before.
             Log.w(TAG, "Couldn't read the network state", e);
             return true;
         }
-        return info != null && info.isConnected();
+        return info != null && info.isConnected() && !metered;
     }
 
     /**
-     * Runs one backup in the single run slot. Split from {@link #doWork()} so a test can count
-     * the runs that get past the checks before it.
+     * Runs one backup. {@link #doWork()} holds the single run slot around it. Split out so a test
+     * can count the runs that get past the checks before it.
+     *
+     * @param manual whether someone started the run by hand
+     * @param origin what started the run, as recorded with it
      */
     @VisibleForTesting
     @NonNull
     Result runBackup(@NonNull Context context, boolean manual, @NonNull String origin) {
-        if (!claimRun(origin)) {
-            // Another auto-backup run is already in flight. Skip the manual one; reschedule the
-            // periodic one so its due packages still get backed up once the current run finishes.
-            Log.w(TAG, "Auto-backup already running; skipping this run (manual=" + manual + ")");
-            String message = context.getString(R.string.auto_backup_result_already_running);
-            AutoBackupScheduler.recordRunResult(message);
-            AutoBackupScheduler.refreshDiagnostics(context);
-            return manual ? Result.success() : Result.retry();
-        }
         try {
             String runningMessage = context.getString(R.string.auto_backup_running);
             try {
@@ -205,9 +243,9 @@ public class AutoBackupWorker extends Worker {
                         runningMessage, 0, 0, true)).get();
             } catch (Exception fgErr) {
                 // Promoting to a foreground service can fail (background-restricted
-                // app, OEM FGS limits). Surface that distinctly and RETRY rather than
-                // logging it as a generic "backup failed" and dropping this periodic
-                // occurrence — Result.failure() on periodic work waits a full interval.
+                // app, OEM FGS limits). Surface that distinctly and retry rather than
+                // logging it as a generic "backup failed". doWork turns a scheduled
+                // run's retry into a catch-up run, so the schedule keeps its time.
                 if (fgErr instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
                 }
@@ -313,8 +351,6 @@ public class AutoBackupWorker extends Worker {
             AutoBackupScheduler.refreshDiagnostics(context);
             postResultNotification(context, message, true);
             return Result.failure();
-        } finally {
-            sRunning.set(false);
         }
     }
 

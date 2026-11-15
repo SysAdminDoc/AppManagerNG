@@ -5,15 +5,20 @@ package io.github.muntashirakon.AppManager.backup.schedule;
 import android.content.Context;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.annotation.VisibleForTesting;
+import androidx.work.BackoffPolicy;
 import androidx.work.Constraints;
 import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.ExistingWorkPolicy;
 import androidx.work.NetworkType;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -29,11 +34,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.main.ApplicationItem;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
@@ -53,6 +61,9 @@ public final class AutoBackupScheduler {
     public static final int NETWORK_CONNECTED = 1;
     public static final int NETWORK_UNMETERED = 2;
 
+    @VisibleForTesting
+    static final long CATCH_UP_BACKOFF_MINUTES = 15;
+    private static final String TAG = AutoBackupScheduler.class.getSimpleName();
     private static final long DAILY_INTERVAL_MILLIS = TimeUnit.DAYS.toMillis(1);
     private static final int MAX_PERSISTED_SKIPPED_PACKAGES = 100;
     private static final String JSON_PACKAGE = "package";
@@ -85,6 +96,7 @@ public final class AutoBackupScheduler {
                 .build();
         WorkManager.getInstance(context.getApplicationContext())
                 .enqueueUniquePeriodicWork(UNIQUE_WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, request);
+        refreshCatchUpRun(context);
     }
 
     public static void cancel(@NonNull Context context) {
@@ -96,22 +108,64 @@ public final class AutoBackupScheduler {
         wm.cancelUniqueWork(UNIQUE_WORK_NAME);
         wm.cancelUniqueWork(MANUAL_WORK_NAME);
         wm.cancelUniqueWork(CATCH_UP_WORK_NAME);
+        if (context.getString(R.string.auto_backup_result_waiting_for_network)
+                .equals(Prefs.BackupRestore.getScheduledBackupLastResult())) {
+            // Nothing waits any more
+            Prefs.BackupRestore.setScheduledBackupLastResult(context.getString(R.string.auto_backup_result_disabled));
+        }
     }
 
     /**
-     * Queues a one-time run in place of a scheduled run that couldn't use the network, under the
+     * Queues a one-time run in place of a scheduled run that couldn't back up, under the
      * schedule's own conditions, so the schedule keeps its time of day. One already waiting stays.
      */
     static void enqueueCatchUpRun(@NonNull Context context) {
-        OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(AutoBackupWorker.class)
+        WorkManager.getInstance(context.getApplicationContext())
+                .enqueueUniqueWork(CATCH_UP_WORK_NAME, ExistingWorkPolicy.KEEP, catchUpRequest(null));
+    }
+
+    /**
+     * Gives a catch-up run that's still waiting the schedule's current conditions, so a changed
+     * network or charging setting doesn't leave it waiting on the old ones.
+     */
+    static void refreshCatchUpRun(@NonNull Context context) {
+        WorkManager wm = WorkManager.getInstance(context.getApplicationContext());
+        ListenableFuture<List<WorkInfo>> infos = wm.getWorkInfosForUniqueWork(CATCH_UP_WORK_NAME);
+        infos.addListener(() -> {
+            try {
+                for (WorkInfo info : infos.get()) {
+                    if (!info.getState().isFinished()) {
+                        wm.updateWork(catchUpRequest(info.getId()));
+                    }
+                }
+            } catch (ExecutionException e) {
+                Log.w(TAG, "Couldn't refresh the waiting catch-up backup", e);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }, Runnable::run);
+    }
+
+    /**
+     * A catch-up run under the schedule's current conditions. It tries again every 15 minutes or
+     * so, a little longer each time, rather than the default doubling that soon waits for hours.
+     *
+     * @param id the catch-up run to update, or {@code null} for a new one
+     */
+    @NonNull
+    @VisibleForTesting
+    static OneTimeWorkRequest catchUpRequest(@Nullable UUID id) {
+        OneTimeWorkRequest.Builder builder = new OneTimeWorkRequest.Builder(AutoBackupWorker.class)
                 .setInputData(AutoBackupWorker.catchUpInputData())
                 .setConstraints(buildConstraints(
                         Prefs.BackupRestore.isScheduledBackupChargingRequired(),
                         Prefs.BackupRestore.getScheduledBackupNetworkType()))
-                .addTag(WORK_TAG)
-                .build();
-        WorkManager.getInstance(context.getApplicationContext())
-                .enqueueUniqueWork(CATCH_UP_WORK_NAME, ExistingWorkPolicy.KEEP, request);
+                .setBackoffCriteria(BackoffPolicy.LINEAR, CATCH_UP_BACKOFF_MINUTES, TimeUnit.MINUTES)
+                .addTag(WORK_TAG);
+        if (id != null) {
+            builder.setId(id);
+        }
+        return builder.build();
     }
 
     /** Drops a catch-up run once a scheduled run backs up in its place. */

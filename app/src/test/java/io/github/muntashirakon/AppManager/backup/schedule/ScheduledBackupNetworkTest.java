@@ -16,6 +16,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.room.Room;
 import androidx.test.core.app.ApplicationProvider;
+import androidx.work.BackoffPolicy;
 import androidx.work.Configuration;
 import androidx.work.ListenableWorker;
 import androidx.work.NetworkType;
@@ -52,10 +53,13 @@ import org.robolectric.shadows.ShadowNetworkInfo;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.settings.Prefs;
@@ -73,6 +77,9 @@ public class ScheduledBackupNetworkTest {
     private final ConnectivityManager mCm = mContext.getSystemService(ConnectivityManager.class);
     private final AtomicLong mNow = new AtomicLong(System.currentTimeMillis());
     private final AtomicInteger mBackups = new AtomicInteger();
+    // What each counted run returns
+    private final AtomicReference<ListenableWorker.Result> mRunResult =
+            new AtomicReference<>(ListenableWorker.Result.success());
     private final List<String> mScheduled = new CopyOnWriteArrayList<>();
     private QueueExecutor mExecutor;
     private WorkDatabase mDb;
@@ -95,6 +102,9 @@ public class ScheduledBackupNetworkTest {
     @After
     public void tearDown() {
         WorkManagerImpl.setDelegate(null);
+        if (mExecutor != null) {
+            mExecutor.shutdown();
+        }
         if (mDb != null) {
             mDb.close();
         }
@@ -218,6 +228,170 @@ public class ScheduledBackupNetworkTest {
     }
 
     @Test
+    @Config(sdk = 35)
+    public void aBackupStartedByHandDropsTheCatchUpStillWaiting() throws Exception {
+        setNetwork(blocked());
+        startProcess();
+        AutoBackupScheduler.schedule(mContext);
+        drain();
+        mNow.set(backupSpec().calculateNextRunTime());
+        runNow(backupSpec());
+        assertEquals(WorkInfo.State.ENQUEUED, catchUpSpec().state);
+
+        AutoBackupScheduler.enqueueManualRun(mContext, AutoBackupWorker.ORIGIN_SETTINGS);
+        drain();
+        runNow(manualSpec());
+        assertEquals(1, mBackups.get());
+        assertEquals("the backup covered what the catch-up would have", WorkInfo.State.CANCELLED,
+                catchUpSpec().state);
+    }
+
+    @Test
+    @Config(sdk = 35)
+    public void aCatchUpTriesAgainAQuarterHourLaterAndALittleLongerEachTime() throws Exception {
+        setNetwork(blocked());
+        startProcess();
+        AutoBackupScheduler.schedule(mContext);
+        drain();
+        long slot = backupSpec().calculateNextRunTime();
+        mNow.set(slot);
+        runNow(backupSpec());
+        WorkSpec catchUp = catchUpSpec();
+        assertEquals(BackoffPolicy.LINEAR, catchUp.backoffPolicy);
+        assertEquals(TimeUnit.MINUTES.toMillis(15), catchUp.backoffDelayDuration);
+
+        long firstTry = slot + TimeUnit.MINUTES.toMillis(1);
+        mNow.set(firstTry);
+        runNow(catchUp);
+        assertEquals(firstTry + TimeUnit.MINUTES.toMillis(15), catchUpSpec().calculateNextRunTime());
+        long secondTry = firstTry + TimeUnit.MINUTES.toMillis(15);
+        mNow.set(secondTry);
+        runNow(catchUpSpec());
+        assertEquals(2, catchUpSpec().runAttemptCount);
+        assertEquals(secondTry + TimeUnit.MINUTES.toMillis(30), catchUpSpec().calculateNextRunTime());
+        assertEquals(0, mBackups.get());
+    }
+
+    @Test
+    @Config(sdk = 35)
+    public void aScheduledRunWhileAnotherBacksUpKeepsItsTimeOfDay() throws Exception {
+        setNetwork(connected());
+        startProcess();
+        AutoBackupScheduler.schedule(mContext);
+        drain();
+        long slot = backupSpec().calculateNextRunTime();
+        assertTrue(AutoBackupWorker.claimRun(AutoBackupWorker.ORIGIN_SETTINGS));
+        try {
+            mNow.set(slot);
+            runNow(backupSpec());
+            WorkSpec spec = backupSpec();
+            assertEquals(0, mBackups.get());
+            assertEquals(WorkInfo.State.ENQUEUED, spec.state);
+            assertEquals(0, spec.runAttemptCount);
+            assertEquals("the schedule keeps its time of day", slot + ONE_DAY, spec.calculateNextRunTime());
+            assertEquals(WorkInfo.State.ENQUEUED, catchUpSpec().state);
+
+            // The catch-up waits for the run in flight too
+            mNow.set(slot + TimeUnit.MINUTES.toMillis(1));
+            runNow(catchUpSpec());
+            assertEquals(0, mBackups.get());
+            assertEquals(WorkInfo.State.ENQUEUED, catchUpSpec().state);
+            assertEquals(1, catchUpSpec().runAttemptCount);
+        } finally {
+            AutoBackupWorker.releaseRun();
+        }
+        // The run in flight ended without backing up, so the catch-up does it
+        mNow.set(slot + TimeUnit.MINUTES.toMillis(20));
+        runNow(catchUpSpec());
+        assertEquals(1, mBackups.get());
+        assertEquals(WorkInfo.State.SUCCEEDED, catchUpSpec().state);
+        assertEquals(slot + ONE_DAY, backupSpec().calculateNextRunTime());
+    }
+
+    @Test
+    @Config(sdk = 35)
+    public void aScheduledRunThatCantStartKeepsItsTimeOfDay() throws Exception {
+        // As when Android won't let the run become a foreground service
+        mRunResult.set(ListenableWorker.Result.retry());
+        setNetwork(connected());
+        startProcess();
+        AutoBackupScheduler.schedule(mContext);
+        drain();
+        long slot = backupSpec().calculateNextRunTime();
+        mNow.set(slot);
+        runNow(backupSpec());
+        WorkSpec spec = backupSpec();
+        assertEquals(WorkInfo.State.ENQUEUED, spec.state);
+        assertEquals(0, spec.runAttemptCount);
+        assertEquals(slot + ONE_DAY, spec.calculateNextRunTime());
+        assertEquals(WorkInfo.State.ENQUEUED, catchUpSpec().state);
+
+        mRunResult.set(ListenableWorker.Result.success());
+        mNow.set(slot + TimeUnit.MINUTES.toMillis(1));
+        runNow(catchUpSpec());
+        assertEquals(2, mBackups.get());
+        assertEquals(WorkInfo.State.SUCCEEDED, catchUpSpec().state);
+        assertEquals(slot + ONE_DAY, backupSpec().calculateNextRunTime());
+    }
+
+    @Test
+    @Config(sdk = 35)
+    public void aChangedNetworkSettingReachesTheWaitingCatchUp() throws Exception {
+        setNetwork(blocked());
+        startProcess();
+        AutoBackupScheduler.schedule(mContext);
+        drain();
+        mNow.set(backupSpec().calculateNextRunTime());
+        runNow(backupSpec());
+        WorkSpec waiting = catchUpSpec();
+        assertEquals(NetworkType.CONNECTED, waiting.constraints.getRequiredNetworkType());
+
+        Prefs.BackupRestore.setScheduledBackupNetworkType(AutoBackupScheduler.NETWORK_NOT_REQUIRED);
+        AutoBackupScheduler.scheduleOrCancel(mContext);
+        drain();
+        WorkSpec refreshed = catchUpSpec();
+        assertEquals(waiting.id, refreshed.id);
+        assertEquals(WorkInfo.State.ENQUEUED, refreshed.state);
+        assertEquals(NetworkType.NOT_REQUIRED, refreshed.constraints.getRequiredNetworkType());
+        assertEquals(BackoffPolicy.LINEAR, refreshed.backoffPolicy);
+
+        runNow(refreshed);
+        assertEquals("the blocked network no longer holds it back", 1, mBackups.get());
+        assertEquals(WorkInfo.State.SUCCEEDED, catchUpSpec().state);
+    }
+
+    @Test
+    @Config(sdk = 35)
+    public void turningTheScheduleOffEndsTheWait() throws Exception {
+        setNetwork(blocked());
+        startProcess();
+        AutoBackupScheduler.schedule(mContext);
+        drain();
+        mNow.set(backupSpec().calculateNextRunTime());
+        runNow(backupSpec());
+        assertEquals(mContext.getString(R.string.auto_backup_result_waiting_for_network),
+                Prefs.BackupRestore.getScheduledBackupLastResult());
+
+        Prefs.BackupRestore.setScheduledAutoBackupEnabled(false);
+        AutoBackupScheduler.scheduleOrCancel(mContext);
+        drain();
+        assertEquals(WorkInfo.State.CANCELLED, catchUpSpec().state);
+        assertEquals("settings no longer says it's waiting",
+                mContext.getString(R.string.auto_backup_result_disabled),
+                Prefs.BackupRestore.getScheduledBackupLastResult());
+    }
+
+    @Test
+    @Config(sdk = 35)
+    public void anUnmeteredSettingWaitsOffAMeteredNetwork() {
+        setNetwork(mobile());
+        assertFalse(AutoBackupWorker.hasUsableNetwork(mContext, AutoBackupScheduler.NETWORK_UNMETERED));
+        assertTrue(AutoBackupWorker.hasUsableNetwork(mContext, AutoBackupScheduler.NETWORK_CONNECTED));
+        setNetwork(connected());
+        assertTrue(AutoBackupWorker.hasUsableNetwork(mContext, AutoBackupScheduler.NETWORK_UNMETERED));
+    }
+
+    @Test
     @Config(sdk = {23, 28})
     public void olderVersionsWaitForAUsableNetworkToo() throws Exception {
         // WorkManager 2.10.5 reads the network from its capabilities from Android 9 on, which
@@ -271,6 +445,9 @@ public class ScheduledBackupNetworkTest {
 
     /** Starts a WorkManager the way a new process would, over the database file left behind. */
     private void startProcess() throws InterruptedException {
+        if (mExecutor != null) {
+            mExecutor.shutdown();
+        }
         mExecutor = new QueueExecutor();
         SerialExecutor serial = new SerialExecutorImpl(mExecutor);
         Executor executor = mExecutor;
@@ -288,10 +465,10 @@ public class ScheduledBackupNetworkTest {
             }
         };
         Configuration configuration = new Configuration.Builder()
-                .setExecutor(executor)
+                .setExecutor(mExecutor.workers)
                 .setTaskExecutor(executor)
                 .setClock(mNow::get)
-                .setWorkerFactory(new CountingWorkerFactory(mBackups))
+                .setWorkerFactory(new CountingWorkerFactory(mBackups, mRunResult))
                 .build();
         // Only an in-memory WorkDatabase allows queries on the test thread, and this one has to
         // outlive the WorkManager that writes it.
@@ -349,6 +526,13 @@ public class ScheduledBackupNetworkTest {
         return mDb.workSpecDao().getWorkSpec(ids.get(0));
     }
 
+    @NonNull
+    private WorkSpec manualSpec() {
+        List<String> ids = mDb.workNameDao().getWorkSpecIdsWithName(AutoBackupScheduler.MANUAL_WORK_NAME);
+        assertEquals(1, ids.size());
+        return mDb.workSpecDao().getWorkSpec(ids.get(0));
+    }
+
     private void drain() throws InterruptedException {
         mExecutor.drain();
     }
@@ -369,6 +553,14 @@ public class ScheduledBackupNetworkTest {
                 0, true, NetworkInfo.State.CONNECTED);
     }
 
+    /** Robolectric reports a mobile network as the metered one. */
+    @SuppressWarnings("deprecation")
+    @NonNull
+    private static NetworkInfo mobile() {
+        return ShadowNetworkInfo.newInstance(NetworkInfo.DetailedState.CONNECTED, ConnectivityManager.TYPE_MOBILE,
+                0, true, NetworkInfo.State.CONNECTED);
+    }
+
     /** A build that refuses to say what the network is. */
     @Implements(ConnectivityManager.class)
     public static class RefusingConnectivityManager extends ShadowConnectivityManager {
@@ -381,10 +573,23 @@ public class ScheduledBackupNetworkTest {
 
     /**
      * Runs WorkManager's tasks on the test thread. Coroutine timers post from their own thread, so
-     * the queue waits a moment before it calls itself empty.
+     * the queue waits a moment before it calls itself empty. Workers get a thread of their own, as
+     * WorkManager gives them, since a worker can wait on WorkManager's own queries.
      */
     private static final class QueueExecutor implements Executor {
         private final LinkedBlockingQueue<Runnable> mTasks = new LinkedBlockingQueue<>();
+        private final ExecutorService mWorkerThread = Executors.newSingleThreadExecutor();
+        private final AtomicInteger mWorkersRunning = new AtomicInteger();
+        final Executor workers = command -> {
+            mWorkersRunning.incrementAndGet();
+            mWorkerThread.execute(() -> {
+                try {
+                    command.run();
+                } finally {
+                    mWorkersRunning.decrementAndGet();
+                }
+            });
+        };
 
         @Override
         public void execute(@NonNull Runnable command) {
@@ -396,18 +601,28 @@ public class ScheduledBackupNetworkTest {
                 shadowOf(Looper.getMainLooper()).idle();
                 Runnable task = mTasks.poll(100, TimeUnit.MILLISECONDS);
                 if (task == null) {
+                    // A worker queues what it does before it counts itself done
+                    if (mWorkersRunning.get() > 0 || !mTasks.isEmpty()) {
+                        continue;
+                    }
                     return;
                 }
                 task.run();
             }
         }
+
+        void shutdown() {
+            mWorkerThread.shutdownNow();
+        }
     }
 
     private static final class CountingWorkerFactory extends WorkerFactory {
         private final AtomicInteger mBackups;
+        private final AtomicReference<ListenableWorker.Result> mResult;
 
-        CountingWorkerFactory(@NonNull AtomicInteger backups) {
+        CountingWorkerFactory(@NonNull AtomicInteger backups, @NonNull AtomicReference<ListenableWorker.Result> result) {
             mBackups = backups;
+            mResult = result;
         }
 
         @Nullable
@@ -422,7 +637,7 @@ public class ScheduledBackupNetworkTest {
                 @Override
                 Result runBackup(@NonNull Context context, boolean manual, @NonNull String origin) {
                     mBackups.incrementAndGet();
-                    return Result.success();
+                    return mResult.get();
                 }
             };
         }
