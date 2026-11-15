@@ -311,7 +311,10 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 // One flip at a time, each from where the last one left it, so a double tap flips twice
                 synchronized (mInternetToggleLock) {
                     InternetAccess.Status current = item.internetAccess;
-                    item.internetAccess = InternetAccess.setBlocked(packageName, userId, !current.blocked);
+                    // A tap queued behind another one may find the switch can't be used anymore
+                    if (current.canChange()) {
+                        item.internetAccess = InternetAccess.setBlocked(packageName, userId, !current.blocked);
+                    }
                 }
                 mPermOpResultLiveData.postValue(PermOpResult.successWithItem(property, item));
             } catch (Exception e) {

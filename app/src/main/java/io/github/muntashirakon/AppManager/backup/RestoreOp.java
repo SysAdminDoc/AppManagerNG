@@ -1205,10 +1205,11 @@ class RestoreOp implements Closeable {
             importer.applyRules(true);
             Context context = ContextUtils.getContext();
             for (InternetAccess.Status status : importer.getInternetRulesNotInForce()) {
-                // The block is saved, but the app can go online until it's in force
+                // The wish is saved, but the firewall doesn't match it until it's in force
                 String detail = status.describe(context);
                 if (detail != null) {
-                    addRestoreExtraWarning(context.getString(R.string.restore_internet_rule_warning, detail));
+                    addRestoreExtraWarning(context.getString(status.blocked ? R.string.restore_internet_rule_warning
+                            : R.string.restore_internet_allow_warning, detail));
                 }
             }
         } catch (IOException e) {

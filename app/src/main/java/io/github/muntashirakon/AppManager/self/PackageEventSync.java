@@ -111,7 +111,7 @@ public final class PackageEventSync {
 
     /** Who hears about each change. Tests swap it to record the calls. */
     @VisibleForTesting
-    interface Dispatcher {
+    public interface Dispatcher {
         void onAdded(@NonNull Context context, @NonNull String packageName, int userId);
 
         void onUpdated(@NonNull Context context, @NonNull String packageName, int userId);
@@ -187,6 +187,13 @@ public final class PackageEventSync {
     private static final List<BroadcastReceiver.PendingResult> sWaiting = new ArrayList<>();
 
     private PackageEventSync() {
+    }
+
+    /** The real listeners, so a test elsewhere can check what one change reaches. */
+    @VisibleForTesting
+    @NonNull
+    public static Dispatcher monitorsForTesting() {
+        return MONITORS;
     }
 
     @VisibleForTesting

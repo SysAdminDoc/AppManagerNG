@@ -1117,7 +1117,7 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Why: the INTERNET switch on the Permissions tab is covered by host tests against a fake firewall only. Nothing has run it against a real `FIREWALL_CHAIN_OEM_DENY_3` yet.
   Evidence: `rules/internet/PlatformInternetFirewall.java` calls `ConnectivityManager` hidden firewall methods that only exist on Android 14 and later; `rules/internet/InternetAccessTest.java` fakes them.
   Touches: an S22 or S25 on Android 14 or later, in root or ADB mode, with any app that loads a web page.
-  Acceptance: WHEN the INTERNET switch is turned off for an app on an Android 14+ phone in root or ADB mode, the app SHALL fail to connect and the row SHALL read Blocked; WHEN the phone restarts, the app SHALL be cut off again once `BOOT_COMPLETED` runs; WHEN the switch is turned back on, the app SHALL connect again; WHEN no privileged mode is running, the switch SHALL be disabled with the reason under it; WHEN the app is reinstalled while AppManagerNG is closed, the block SHALL be on its new UID within about 15 minutes. Screenshots of the row in each state go with the result.
+  Acceptance: WHEN the INTERNET switch is turned off for an app on an Android 14+ phone in root or ADB mode, the app SHALL fail to connect and the row SHALL read Blocked; WHEN the phone restarts, the app SHALL be cut off again once `BOOT_COMPLETED` runs; WHEN the switch is turned back on, the app SHALL connect again; WHEN no privileged mode is running, the switch SHALL be disabled with the reason under it; WHEN the app is reinstalled while AppManagerNG is closed, the block SHALL be on its new UID after the next app change check (about 15 minutes, or longer while the phone dozes). Screenshots of the row in each state go with the result.
   Complexity: S
 
 ### P2
@@ -1156,7 +1156,21 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Why: the boot receiver, the privileged mode coming up and the rule worker are what put blocks back after a restart, and none of them has a test. A broken hook there leaves every app online after a restart with nothing failing.
   Evidence: `rules/internet/InternetRuleWorker.java` (now `Ops.startUnattended`), the `applySoon(context, null, 0)` call in `self/BootReceiver.java` and the `applyAll` call in `ipc/LocalServices.java` when the privileged mode binds have no test calling them.
   Touches: `rules/internet/InternetRuleWorker.java`, `self/BootReceiver.java`, `ipc/LocalServices.java`, new tests.
-  Acceptance: WHEN the phone finishes booting, the system SHALL enqueue the all-rules work; WHEN the privileged mode binds, the system SHALL put every saved rule back; WHEN the worker runs with no rules saved, it SHALL not start a privileged mode; tests SHALL cover all three.
+  Acceptance: WHEN the phone finishes booting, the system SHALL enqueue the all-rules work; WHEN the privileged mode binds, the system SHALL put every saved rule back; WHEN the worker runs with no rules saved, or on Android 13 or older, it SHALL not start a privileged mode; tests SHALL cover all three.
+  Complexity: S
+
+- [ ] P3: Test the UID lookup for a hidden app
+  Why: the package manager lookup behind internet rules passes `MATCH_UNINSTALLED_PACKAGES` so a hidden or data-kept app still resolves to its UID, but every internet test swaps the resolver for a map. Dropping the flag would leave a hidden app's block on a stale UID with nothing failing.
+  Evidence: `rules/internet/InternetAccess.java` `PACKAGE_MANAGER_UIDS`; `InternetAccessTest` sets `setUidResolverForTesting` in `setUp`.
+  Touches: `rules/internet/InternetAccess.java`, a new test against a shadow package manager.
+  Acceptance: WHEN an app is installed but hidden in a user, the real resolver SHALL return its UID; a test SHALL cover it.
+  Complexity: S
+
+- [ ] P3: Test the INTERNET switch's toggle lock
+  Why: two quick taps on the switch run one after the other under `mInternetToggleLock`, and a queued tap re-checks `canChange()`, but no test drives `toggleInternetAccessAsync` twice.
+  Evidence: `details/AppDetailsViewModel.java` `toggleInternetAccessAsync`.
+  Touches: `details/AppDetailsViewModel.java`, a new view model test with a direct executor.
+  Acceptance: WHEN the switch is tapped twice before the first change finishes, the system SHALL apply both flips in order and SHALL skip a queued flip once the switch can't be used; a test SHALL cover both.
   Complexity: S
 
 - [ ] P3: Lock the rules file across users

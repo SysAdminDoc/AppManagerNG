@@ -46,6 +46,7 @@ import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
 import io.github.muntashirakon.AppManager.rules.internet.InternetFirewall.Unavailable;
 import io.github.muntashirakon.AppManager.rules.struct.InternetRule;
 import io.github.muntashirakon.AppManager.rules.struct.RuleEntry;
+import io.github.muntashirakon.AppManager.self.PackageEventSync;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
@@ -459,14 +460,122 @@ public class InternetAccessTest {
     }
 
     @Test
-    public void aSavedRuleCanOnlyBeChangedWhileTheFirewallAnswers() {
+    public void aSavedRuleCanBeChangedUnlessNoPrivilegedModeIsRunning() {
         assertFalse(waitingFor(Unavailable.NO_PRIVILEGED_MODE).canChange());
-        assertFalse(waitingFor(Unavailable.NO_PERMISSION).canChange());
-        assertFalse(waitingFor(Unavailable.ANDROID_VERSION).canChange());
+        assertTrue(waitingFor(Unavailable.NO_PERMISSION).canChange());
+        assertTrue(waitingFor(Unavailable.ANDROID_VERSION).canChange());
         assertTrue(waitingFor(Unavailable.PLATFORM).canChange());
         assertTrue(waitingFor(Unavailable.SHARED_UID).canChange());
         assertFalse("a new rule needs a firewall that works", new InternetAccess.Status(false, false, true,
                 new Unavailable(Unavailable.PLATFORM, null)).canChange());
+    }
+
+    @Test
+    public void onAnAndroidThatCantBlockASavedRuleCanStillBeRemoved() throws IOException {
+        // A rule imported from a backup made on Android 14 or later
+        mFirewall.unavailable = new Unavailable(Unavailable.ANDROID_VERSION, null);
+        File exported = writeExport(APP + "\t0\tINTERNET\ttrue\t-1\n");
+        assertEquals(1, importRulesNotInForce(exported, 0).size());
+
+        InternetAccess.Status status = InternetAccess.apply(APP, 0);
+
+        assertTrue(status.saved);
+        assertTrue(status.blocked);
+        assertTrue(status.canChange());
+        assertFalse("nothing to put back after app changes here",
+                InternetAccess.mightHaveRules(ContextUtils.getContext()));
+        assertFalse(InternetAccess.canHoldRules());
+
+        InternetAccess.Status allowed = InternetAccess.setBlocked(APP, 0, false);
+
+        assertFalse(allowed.saved);
+        assertNull(savedRule(APP, 0));
+        assertEquals(0, mFirewall.changes);
+    }
+
+    @Test
+    public void aRefusedBlockHoldsNoUidSoAllowingDropsIt() {
+        mFirewall.failure = new SecurityException("NETWORK_SETTINGS");
+
+        InternetAccess.Status status = InternetAccess.setBlocked(APP, 0, true);
+
+        assertEquals(Unavailable.NO_PERMISSION, status.unavailable.reason);
+        assertTrue(status.canChange());
+        assertEquals(InternetRule.NO_UID, savedRule(APP, 0).getUid());
+        int changes = mFirewall.changes;
+
+        InternetAccess.Status allowed = InternetAccess.setBlocked(APP, 0, false);
+
+        assertFalse(allowed.saved);
+        assertEquals("nothing to lift", changes, mFirewall.changes);
+        assertNull(savedRule(APP, 0));
+        assertFalse(InternetAccess.mightHaveRules(ContextUtils.getContext()));
+    }
+
+    @Test
+    public void onARomWithoutTheFirewallCallsAllowingAgainDropsTheRule() {
+        mFirewall.linkageError = new NoSuchMethodError("setUidFirewallRule");
+        InternetAccess.setBlocked(APP, 0, true);
+        assertEquals(InternetRule.NO_UID, savedRule(APP, 0).getUid());
+
+        InternetAccess.Status allowed = InternetAccess.setBlocked(APP, 0, false);
+
+        assertFalse(allowed.saved);
+        assertNull(savedRule(APP, 0));
+        assertFalse(InternetAccess.mightHaveRules(ContextUtils.getContext()));
+    }
+
+    @Test
+    public void theMarkerGoesWithARuleThatApplyDrops() {
+        Context context = ContextUtils.getContext();
+        mUids.put(OTHER_APP + ":0", APP_UID);
+        InternetAccess.setBlocked(APP, 0, true);
+        InternetAccess.setBlocked(OTHER_APP, 0, true);
+        // Held back by the other app, so the allowed rule stays saved
+        InternetAccess.setBlocked(APP, 0, false);
+        InternetAccess.setBlocked(OTHER_APP, 0, false);
+        assertTrue(InternetAccess.mightHaveRules(context));
+
+        InternetAccess.Status status = InternetAccess.apply(APP, 0);
+
+        assertFalse(status.saved);
+        assertTrue(mFirewall.denied.isEmpty());
+        assertFalse("the last rule is gone", InternetAccess.mightHaveRules(context));
+    }
+
+    @Test
+    public void aWishSavedWhileARuleGoesIntoForceIsTheOneApplied() {
+        // An import can save a new wish between reading the rule and putting it on the UID
+        boolean[] changed = {false};
+        InternetAccess.setUidResolverForTesting((packageName, userId) -> {
+            if (!changed[0]) {
+                changed[0] = true;
+                try (ComponentsBlocker cb = ComponentsBlocker.getMutableInstance(APP, 0)) {
+                    cb.setInternetRule(new InternetRule(APP, 0, false, InternetRule.NO_UID));
+                }
+            }
+            return APP_UID;
+        });
+
+        InternetAccess.Status status = InternetAccess.setBlocked(APP, 0, true);
+
+        assertTrue(changed[0]);
+        assertFalse(status.saved);
+        assertEquals("nothing was ever denied", 0, mFirewall.changes);
+        assertNull(savedRule(APP, 0));
+    }
+
+    @Test
+    public void anAppRemovedInOneUserIsPutBackInEveryUser() {
+        // Its app ID can go to the next app installed, in every user
+        mUids.put(APP + ":10", 1010100);
+        InternetAccess.setBlocked(APP, 0, true);
+        InternetAccess.setBlocked(APP, 10, true);
+
+        PackageEventSync.monitorsForTesting().onRemoved(ApplicationProvider.getApplicationContext(), APP, 0);
+
+        assertEquals(new HashSet<>(Arrays.asList("internet_rules_package:" + APP + ":0",
+                "internet_rules_package:" + APP + ":10")), new HashSet<>(mEnqueued));
     }
 
     @Test

@@ -32,6 +32,10 @@ public class InternetRuleWorker extends Worker {
             InternetAccess.forgetMarkerIfNoRules();
             return Result.success();
         }
+        if (!InternetAccess.canHoldRules()) {
+            // Below Android 14 a saved rule is only kept for a later version, so there's nothing to put back
+            return Result.success();
+        }
         // Nobody is there to answer a prompt. This also reconnects wireless debugging, as after a restart.
         int status = Ops.startUnattended(getApplicationContext());
         if (status != Ops.STATUS_SUCCESS) {

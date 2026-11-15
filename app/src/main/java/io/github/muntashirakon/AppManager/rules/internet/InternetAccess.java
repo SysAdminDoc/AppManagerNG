@@ -132,15 +132,16 @@ public final class InternetAccess {
         }
 
         /**
-         * Whether the switch can be used. A new wish needs a firewall that works. A saved one can also be changed
-         * when the firewall answered but didn't do what it was asked, or when a shared UID holds it back. Without
-         * a privileged mode nothing can be read or changed, so the switch is off until one is running.
+         * Whether the switch can be used. A new wish needs a firewall that works. Without a privileged mode nothing
+         * can be read or changed, so the switch is off until one is running. Otherwise a saved wish can always be
+         * changed: one that never reached a UID is dropped without the firewall, and any other change is saved
+         * until it can be made.
          */
         public boolean canChange() {
             if (unavailable == null) {
                 return true;
             }
-            return saved && (unavailable.reason == Unavailable.SHARED_UID || unavailable.reason == Unavailable.PLATFORM);
+            return saved && unavailable.reason != Unavailable.NO_PRIVILEGED_MODE;
         }
 
         /**
@@ -227,6 +228,10 @@ public final class InternetAccess {
                 replaceIfUnchanged(rule, null);
                 return new Status(false, false, true, unavailable);
             }
+            if (unavailable != null && unavailable.reason == Unavailable.ANDROID_VERSION) {
+                // Kept for a later Android, but there's nothing to put back after app changes here
+                return new Status(true, blocked, false, unavailable);
+            }
             noteRuleSaved();
             if (unavailable != null) {
                 return new Status(true, blocked, false, unavailable);
@@ -250,8 +255,19 @@ public final class InternetAccess {
                 }
                 if (blocked) {
                     // Saved first, so a crash between the two still leaves a record of the UID to let go
-                    replaceIfUnchanged(rule, rule.withUid(uid));
-                    firewall.setDenied(uid, true);
+                    InternetRule held = rule.withUid(uid);
+                    if (!replaceIfUnchanged(rule, held)) {
+                        // A new wish was saved meanwhile, as by an import, and that one goes into force instead
+                        return apply(packageName, userId);
+                    }
+                    try {
+                        firewall.setDenied(uid, true);
+                    } catch (SecurityException | LinkageError e) {
+                        // Refused, or the call doesn't exist, so nothing went on a new UID and the rule mustn't claim
+                        // it. An old UID was let go above, so allowing the app again then just drops the rule.
+                        replaceIfUnchanged(held, rule.withUid(oldUid == uid ? uid : InternetRule.NO_UID));
+                        throw e;
+                    }
                 } else {
                     String sharer = findOtherBlockedRule(uid, packageName, userId);
                     if (sharer != null) {
@@ -342,14 +358,27 @@ public final class InternetAccess {
     }
 
     /**
+     * Whether this device can hold per-app internet rules at all. Below Android 14 a saved rule is only kept for a
+     * later version, so nothing needs a privileged mode for it.
+     */
+    @WorkerThread
+    static boolean canHoldRules() {
+        Unavailable unavailable = sFirewall.check();
+        return unavailable == null || unavailable.reason != Unavailable.ANDROID_VERSION;
+    }
+
+    /**
      * Drops the marker once no rule is left, so the app change sync can stop if nothing else needs it.
      */
     @WorkerThread
     static void forgetMarkerIfNoRules() {
-        Context context = ContextUtils.getContext();
-        File marker = new File(context.getFilesDir(), RULES_MARKER);
-        if (marker.exists() && !hasAnyRule() && marker.delete()) {
-            rescheduleAppChangeSync(context);
+        // Under the lock, so a rule saved meanwhile can't find the marker still there and then lose it
+        synchronized (LOCK) {
+            Context context = ContextUtils.getContext();
+            File marker = new File(context.getFilesDir(), RULES_MARKER);
+            if (marker.exists() && !hasAnyRule() && marker.delete()) {
+                rescheduleAppChangeSync(context);
+            }
         }
     }
 
@@ -439,20 +468,32 @@ public final class InternetAccess {
      * Replaces the saved rule only if it's still {@code expected}, so a wish saved meanwhile isn't overwritten.
      *
      * @param replacement {@code null} to delete it
+     * @return {@code false} when another wish was saved meanwhile
      */
-    private static void replaceIfUnchanged(@NonNull InternetRule expected, @Nullable InternetRule replacement) {
+    private static boolean replaceIfUnchanged(@NonNull InternetRule expected, @Nullable InternetRule replacement) {
         int userId = expected.getUserId();
+        boolean deleted = false;
         try (RulesFile file = RulesFile.edit(expected.packageName, userId)) {
             InternetRule current = file.getInternetRule(userId);
-            if (!expected.equals(current) || expected.equals(replacement)) {
+            if (!expected.equals(current)) {
+                file.setReadOnly();
+                return false;
+            }
+            if (expected.equals(replacement)) {
                 // Nothing to write
                 file.setReadOnly();
             } else if (replacement == null) {
                 file.deleteInternetRule(userId);
+                deleted = true;
             } else {
                 file.setInternetRule(replacement);
             }
         }
+        if (deleted) {
+            // Closing saved the file, so the last rule may be gone now
+            forgetMarkerIfNoRules();
+        }
+        return true;
     }
 
     /**
