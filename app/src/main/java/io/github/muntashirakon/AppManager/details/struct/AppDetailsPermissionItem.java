@@ -15,6 +15,7 @@ import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.permission.PermUtils;
 import io.github.muntashirakon.AppManager.permission.Permission;
 import io.github.muntashirakon.AppManager.permission.PermissionException;
+import io.github.muntashirakon.AppManager.rules.internet.InternetAccess;
 import io.github.muntashirakon.AppManager.rules.struct.PermissionReferenceRule;
 
 /**
@@ -31,6 +32,9 @@ public class AppDetailsPermissionItem extends AppDetailsItem<PermissionInfo> {
     public final PermUtils.SettingItem settingItem;
     public boolean hasReference;
     public boolean referenceGranted;
+    /** Set on the INTERNET row of an installed app, where the app's network access can be turned off. */
+    @Nullable
+    public volatile InternetAccess.Status internetAccess;
 
     public AppDetailsPermissionItem(@NonNull PermissionInfo permissionInfo, @NonNull Permission permission, int flags) {
         super(permissionInfo);

@@ -64,6 +64,7 @@ import io.github.muntashirakon.AppManager.progress.ProgressHandler;
 import io.github.muntashirakon.AppManager.rules.PseudoRules;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
+import io.github.muntashirakon.AppManager.rules.struct.InternetRule;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.ssaid.SsaidSettings;
@@ -755,7 +756,7 @@ class BackupOp implements Closeable {
             Path rulesFile = mBackupItem.getRulesFile();
             try (OutputStream outputStream = rulesFile.openOutputStream();
                  ComponentsBlocker cb = ComponentsBlocker.getInstance(mPackageName, mUserId)) {
-                ComponentUtils.storeRules(outputStream, cb.getAll(), true);
+                ComponentUtils.storeRules(outputStream, InternetRule.withoutOtherUsers(cb.getAll(), mUserId), true);
             }
             if (!rulesFile.exists()) return;
             rulesFile = mBackupItem.encrypt(new Path[]{rulesFile})[0];

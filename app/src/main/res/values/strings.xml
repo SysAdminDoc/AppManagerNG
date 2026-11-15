@@ -4913,4 +4913,16 @@ Components removed: %8$s</string>
     <string name="apps_db_corrupt_kept_text">AppManagerNG\'s saved notes, history and favorites look damaged, and they couldn\'t be copied somewhere safe, so the file was left as it is. Some of them may not load.</string>
     <string name="apps_db_upgrade_skipped_text">AppManagerNG needs to update its saved notes, history and favorites, but couldn\'t copy them somewhere safe first, so it left them untouched. Changes you make now are lost when the app closes. Freeing up some storage may help.</string>
     <string name="apps_db_open_failing_text">AppManagerNG couldn\'t open its saved notes, history and favorites the last three times it started. Nothing was deleted. Freeing up some storage or restarting the phone may fix it.</string>
+    <string name="internet_access">Internet access</string>
+    <string name="internet_access_blocked">Blocked. After a restart the app can go online again until AppManagerNG puts the block back.</string>
+    <string name="internet_access_not_in_force">Saved, but not in force yet because %1$s.</string>
+    <string name="internet_access_unavailable">Blocking isn\'t possible because %1$s.</string>
+    <string name="internet_access_waiting_for_install">Saved. It goes into force once the app is installed in this user.</string>
+    <string name="internet_access_change_failed">Couldn\'t change internet access</string>
+    <string name="internet_access_reason_android_version">it needs Android 14 or later</string>
+    <string name="internet_access_reason_no_privileged_mode">it needs root, ADB or Shizuku running</string>
+    <string name="internet_access_reason_no_permission">the current mode can\'t change network settings</string>
+    <string name="internet_access_reason_platform">the device\'s firewall didn\'t keep the rule</string>
+    <string name="internet_access_reason_platform_error">the device\'s firewall refused it (%1$s)</string>
+    <string name="internet_access_reason_shared_uid">%1$s shares this app\'s UID and is still blocked</string>
 </resources>

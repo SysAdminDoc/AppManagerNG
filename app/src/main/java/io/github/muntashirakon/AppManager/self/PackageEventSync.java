@@ -51,6 +51,7 @@ import io.github.muntashirakon.AppManager.permission.monitor.SigningCertChangeMo
 import io.github.muntashirakon.AppManager.permission.watcher.PermissionWatchDb;
 import io.github.muntashirakon.AppManager.permission.watcher.PermissionWatchScheduler;
 import io.github.muntashirakon.AppManager.profiles.trigger.ProfileTrigger;
+import io.github.muntashirakon.AppManager.rules.internet.InternetAccess;
 import io.github.muntashirakon.AppManager.profiles.trigger.RoutineScheduler;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
@@ -135,6 +136,7 @@ public final class PackageEventSync {
                 Log.w(TAG, "Could not check whether %s came back.", e, packageName);
             }
             checkWatchedPermissions(context, packageName, userId);
+            applyInternetRule(context, packageName, userId);
             enqueueRoutines(context, ProfileTrigger.TYPE_ON_APP_INSTALL, packageName);
         }
 
@@ -142,12 +144,16 @@ public final class PackageEventSync {
         public void onUpdated(@NonNull Context context, @NonNull String packageName, int userId) {
             // An update can reset what the user set, so watched permissions are checked whatever the monitors say.
             checkWatchedPermissions(context, packageName, userId);
+            // An update can move the app to a new UID
+            applyInternetRule(context, packageName, userId);
             runUpdateMonitors(context, packageName);
             enqueueRoutines(context, ProfileTrigger.TYPE_ON_APP_UPDATE, packageName);
         }
 
         @Override
         public void onRemoved(@NonNull Context context, @NonNull String packageName, int userId) {
+            // Its UID can go to the next app installed, which mustn't inherit the block
+            applyInternetRule(context, packageName, userId);
             enqueueRoutines(context, ProfileTrigger.TYPE_ON_APP_UNINSTALL, packageName);
         }
     };
@@ -471,6 +477,14 @@ public final class PackageEventSync {
             }
         } catch (Exception e) {
             Log.w(TAG, "Could not check the watched permissions of %s.", e, packageName);
+        }
+    }
+
+    private static void applyInternetRule(@NonNull Context context, @NonNull String packageName, int userId) {
+        try {
+            InternetAccess.applySoon(context, packageName, userId);
+        } catch (Exception e) {
+            Log.w(TAG, "Could not put back the internet rule of %s.", e, packageName);
         }
     }
 

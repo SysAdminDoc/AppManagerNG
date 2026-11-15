@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat;
 
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryPruneScheduler;
 import io.github.muntashirakon.AppManager.permission.watcher.PermissionWatchScheduler;
+import io.github.muntashirakon.AppManager.rules.internet.InternetAccess;
 import io.github.muntashirakon.AppManager.self.filecache.InternalCacheCleanerService;
 import io.github.muntashirakon.AppManager.servermanager.WifiWaitService;
 import io.github.muntashirakon.AppManager.settings.Ops;
@@ -32,6 +33,8 @@ public class BootReceiver extends BroadcastReceiver {
             OpHistoryPruneScheduler.scheduleOrCancel(context);
             // A restart is when a permission is most likely to have changed out of sight.
             PermissionWatchScheduler.onBoot(context);
+            // The kernel forgets firewall rules on a restart, so apps have internet access until these are back
+            InternetAccess.applySoon(context, null, 0);
         } else if (Intent.ACTION_MY_PACKAGE_REPLACED.equals(action)) {
             RoutineScheduler.applyAll(context);
             OpHistoryPruneScheduler.scheduleOrCancel(context);

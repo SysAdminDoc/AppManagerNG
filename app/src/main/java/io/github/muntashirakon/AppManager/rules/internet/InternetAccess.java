@@ -1,0 +1,370 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package io.github.muntashirakon.AppManager.rules.internet;
+
+import android.annotation.UserIdInt;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.os.RemoteException;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
+import androidx.annotation.WorkerThread;
+import androidx.work.Data;
+import androidx.work.ExistingWorkPolicy;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
+
+import java.util.List;
+
+import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
+import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.rules.RulesStorageManager;
+import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
+import io.github.muntashirakon.AppManager.rules.internet.InternetFirewall.Unavailable;
+import io.github.muntashirakon.AppManager.rules.struct.InternetRule;
+import io.github.muntashirakon.AppManager.utils.ContextUtils;
+
+/**
+ * Keeps each app's saved internet rule and the device's firewall in step. The saved rule is the wish; the firewall
+ * forgets it on every restart and whenever the app gets a new UID, so it's put back after a restart, an install or
+ * update, and whenever the privileged mode comes up.
+ */
+public final class InternetAccess {
+    private static final String TAG = "InternetAccess";
+
+    public static final String WORK_TAG = "internet_rules";
+    @VisibleForTesting
+    static final String ALL_RULES_WORK_NAME = "internet_rules_all";
+    @VisibleForTesting
+    static final String PACKAGE_WORK_PREFIX = "internet_rules_package:";
+
+    /** Firewall changes and the rule writes that go with them happen one at a time. */
+    private static final Object LOCK = new Object();
+
+    /** Finds an app's UID in a user, or {@link InternetRule#NO_UID} when it isn't installed there. */
+    @VisibleForTesting
+    interface UidResolver {
+        int getUid(@NonNull String packageName, @UserIdInt int userId) throws RemoteException;
+    }
+
+    /** Where the requests go. Tests swap it so nothing reaches a real WorkManager. */
+    @VisibleForTesting
+    interface WorkSink {
+        void enqueue(@NonNull Context context, @NonNull String uniqueName, @NonNull OneTimeWorkRequest request);
+    }
+
+    private static final UidResolver PACKAGE_MANAGER_UIDS = (packageName, userId) -> {
+        try {
+            // A disabled app keeps its UID, so its rule stays on
+            return PackageManagerCompat.getApplicationInfo(packageName, PackageManagerCompat.MATCH_DISABLED_COMPONENTS
+                    | PackageManagerCompat.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES, userId).uid;
+        } catch (PackageManager.NameNotFoundException e) {
+            return InternetRule.NO_UID;
+        }
+    };
+
+    private static final WorkSink WORK_MANAGER_SINK = (context, uniqueName, request) -> {
+        try {
+            WorkManager.getInstance(context.getApplicationContext())
+                    .enqueueUniqueWork(uniqueName, ExistingWorkPolicy.REPLACE, request);
+        } catch (IllegalStateException e) {
+            Log.w(TAG, "WorkManager is unavailable, so internet rules wait for the next start.", e);
+        }
+    };
+
+    @NonNull
+    private static volatile InternetFirewall sFirewall = new PlatformInternetFirewall();
+    @NonNull
+    private static volatile UidResolver sUidResolver = PACKAGE_MANAGER_UIDS;
+    @NonNull
+    private static volatile WorkSink sWorkSink = WORK_MANAGER_SINK;
+
+    private InternetAccess() {
+    }
+
+    @VisibleForTesting
+    static void setFirewallForTesting(@Nullable InternetFirewall firewall) {
+        sFirewall = firewall != null ? firewall : new PlatformInternetFirewall();
+    }
+
+    @VisibleForTesting
+    static void setUidResolverForTesting(@Nullable UidResolver resolver) {
+        sUidResolver = resolver != null ? resolver : PACKAGE_MANAGER_UIDS;
+    }
+
+    @VisibleForTesting
+    static void setWorkSinkForTesting(@Nullable WorkSink sink) {
+        sWorkSink = sink != null ? sink : WORK_MANAGER_SINK;
+    }
+
+    /**
+     * Where an app's internet access stands in one user.
+     */
+    public static final class Status {
+        /** A rule is saved for the app in this user. */
+        public final boolean saved;
+        /** The saved wish. Without a rule the app is allowed. */
+        public final boolean blocked;
+        /** The device does what the wish says right now. */
+        public final boolean inForce;
+        /** Why the wish isn't in force, or why a new one can't be made. */
+        @Nullable
+        public final Unavailable unavailable;
+
+        @VisibleForTesting
+        Status(boolean saved, boolean blocked, boolean inForce, @Nullable Unavailable unavailable) {
+            this.saved = saved;
+            this.blocked = blocked;
+            this.inForce = inForce;
+            this.unavailable = unavailable;
+        }
+
+        /**
+         * A saved wish can always be changed, so a rule that can't take effect can still be taken back. A new one
+         * needs a firewall that works.
+         */
+        public boolean canChange() {
+            return saved || unavailable == null;
+        }
+
+        @NonNull
+        @Override
+        public String toString() {
+            return "Status{saved=" + saved + ", blocked=" + blocked + ", inForce=" + inForce
+                    + ", unavailable=" + unavailable + '}';
+        }
+    }
+
+    /**
+     * Saves the wish and puts it into force if it can.
+     */
+    @WorkerThread
+    @NonNull
+    public static Status setBlocked(@NonNull String packageName, @UserIdInt int userId, boolean blocked) {
+        synchronized (LOCK) {
+            try (RulesFile file = RulesFile.edit(packageName, userId)) {
+                InternetRule old = file.getInternetRule(userId);
+                if (!blocked && old == null) {
+                    // Nothing to save
+                    file.setReadOnly();
+                } else if (!blocked && old.getUid() == InternetRule.NO_UID) {
+                    // Nothing was ever put on a UID, so there's nothing to undo
+                    file.deleteInternetRule(userId);
+                } else {
+                    // The old UID stays on the rule until the firewall lets it go
+                    int uid = old != null ? old.getUid() : InternetRule.NO_UID;
+                    file.setInternetRule(new InternetRule(packageName, userId, blocked, uid));
+                }
+            }
+            return apply(packageName, userId);
+        }
+    }
+
+    /**
+     * Puts the app's saved rule into force in one user and reports where it stands.
+     */
+    @WorkerThread
+    @NonNull
+    public static Status apply(@NonNull String packageName, @UserIdInt int userId) {
+        synchronized (LOCK) {
+            InternetRule rule = readRule(packageName, userId);
+            InternetFirewall firewall = sFirewall;
+            Unavailable unavailable = firewall.check();
+            if (rule == null) {
+                return new Status(false, false, true, unavailable);
+            }
+            boolean blocked = rule.isBlocked();
+            if (unavailable != null) {
+                return new Status(true, blocked, false, unavailable);
+            }
+            try {
+                int uid = sUidResolver.getUid(packageName, userId);
+                int oldUid = rule.getUid();
+                if (oldUid != InternetRule.NO_UID && oldUid != uid
+                        && findOtherBlockedRule(oldUid, packageName, userId) == null) {
+                    // A reinstall moved the app to a new UID, which may now belong to some other app
+                    firewall.setDenied(oldUid, false);
+                }
+                if (uid == InternetRule.NO_UID) {
+                    if (blocked) {
+                        // Kept for when the app comes back
+                        replaceIfUnchanged(rule, rule.withUid(InternetRule.NO_UID));
+                        return new Status(true, true, false, null);
+                    }
+                    replaceIfUnchanged(rule, null);
+                    return new Status(false, false, true, null);
+                }
+                if (blocked) {
+                    // Saved first, so a crash between the two still leaves a record of the UID to let go
+                    replaceIfUnchanged(rule, rule.withUid(uid));
+                    firewall.setDenied(uid, true);
+                } else {
+                    String sharer = findOtherBlockedRule(uid, packageName, userId);
+                    if (sharer != null) {
+                        // The firewall works on UIDs, so allowing this app would also allow the other one
+                        replaceIfUnchanged(rule, rule.withUid(uid));
+                        return new Status(true, false, false, new Unavailable(Unavailable.SHARED_UID, sharer));
+                    }
+                    firewall.setDenied(uid, false);
+                }
+                boolean denied = firewall.isDenied(uid);
+                if (denied != blocked) {
+                    Log.w(TAG, "The firewall reads %s as %s after it was asked for %s", packageName,
+                            denied ? "blocked" : "allowed", blocked ? "blocked" : "allowed");
+                    return new Status(true, blocked, false, new Unavailable(Unavailable.PLATFORM, null));
+                }
+                if (!blocked) {
+                    // Allowed and nothing left on any UID, so the rule has done its job
+                    replaceIfUnchanged(rule, null);
+                    return new Status(false, false, true, null);
+                }
+                return new Status(true, true, true, null);
+            } catch (SecurityException e) {
+                Log.w(TAG, "The firewall refused a change for %s", e, packageName);
+                Unavailable now = firewall.check();
+                return new Status(true, blocked, false, now != null ? now
+                        : new Unavailable(Unavailable.NO_PERMISSION, e.getMessage()));
+            } catch (RemoteException e) {
+                Log.w(TAG, "The privileged mode went away while changing %s", e, packageName);
+                return new Status(true, blocked, false, new Unavailable(Unavailable.NO_PRIVILEGED_MODE,
+                        e.getMessage()));
+            } catch (RuntimeException e) {
+                Log.w(TAG, "The firewall failed for %s", e, packageName);
+                return new Status(true, blocked, false, new Unavailable(Unavailable.PLATFORM,
+                        String.valueOf(e.getMessage())));
+            }
+        }
+    }
+
+    /**
+     * Puts every saved rule into force, as after a restart, when the kernel has forgotten all of them.
+     */
+    @WorkerThread
+    public static void applyAll() {
+        synchronized (LOCK) {
+            for (String packageName : ComponentUtils.getAllPackagesWithRules(ContextUtils.getContext())) {
+                for (InternetRule rule : readRules(packageName)) {
+                    Status status = apply(packageName, rule.getUserId());
+                    if (!status.inForce) {
+                        Log.w(TAG, "Internet rule for %s in user %d isn't in force: %s", packageName,
+                                rule.getUserId(), status);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Asks for one app's rule to be put back in the background, or every rule when {@code packageName} is
+     * {@code null}. An app without a rule is skipped.
+     */
+    @WorkerThread
+    public static void applySoon(@NonNull Context context, @Nullable String packageName, @UserIdInt int userId) {
+        if (packageName != null && readRule(packageName, userId) == null) {
+            return;
+        }
+        sWorkSink.enqueue(context, uniqueWorkName(packageName, userId), buildRequest(packageName, userId));
+    }
+
+    @WorkerThread
+    public static boolean hasAnyRule() {
+        for (String packageName : ComponentUtils.getAllPackagesWithRules(ContextUtils.getContext())) {
+            if (!readRules(packageName).isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static String uniqueWorkName(@Nullable String packageName, @UserIdInt int userId) {
+        return packageName == null ? ALL_RULES_WORK_NAME : PACKAGE_WORK_PREFIX + packageName + ":" + userId;
+    }
+
+    @NonNull
+    private static OneTimeWorkRequest buildRequest(@Nullable String packageName, @UserIdInt int userId) {
+        Data.Builder input = new Data.Builder().putInt(InternetRuleWorker.INPUT_USER, userId);
+        if (packageName != null) {
+            input.putString(InternetRuleWorker.INPUT_PACKAGE, packageName);
+        }
+        return new OneTimeWorkRequest.Builder(InternetRuleWorker.class)
+                .setInputData(input.build())
+                .addTag(WORK_TAG)
+                .build();
+    }
+
+    @Nullable
+    private static InternetRule readRule(@NonNull String packageName, @UserIdInt int userId) {
+        try (RulesFile file = RulesFile.read(packageName, userId)) {
+            return file.getInternetRule(userId);
+        }
+    }
+
+    @NonNull
+    private static List<InternetRule> readRules(@NonNull String packageName) {
+        try (RulesFile file = RulesFile.read(packageName, 0)) {
+            return file.getAll(InternetRule.class);
+        }
+    }
+
+    /**
+     * The package of another app whose saved rule blocks this UID, as apps sharing a UID do.
+     */
+    @Nullable
+    private static String findOtherBlockedRule(int uid, @NonNull String packageName, @UserIdInt int userId) {
+        for (String otherPackage : ComponentUtils.getAllPackagesWithRules(ContextUtils.getContext())) {
+            for (InternetRule rule : readRules(otherPackage)) {
+                if (rule.isBlocked() && rule.getUid() == uid
+                        && !(otherPackage.equals(packageName) && rule.getUserId() == userId)) {
+                    return otherPackage;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Replaces the saved rule only if it's still {@code expected}, so a wish saved meanwhile isn't overwritten.
+     *
+     * @param replacement {@code null} to delete it
+     */
+    private static void replaceIfUnchanged(@NonNull InternetRule expected, @Nullable InternetRule replacement) {
+        int userId = expected.getUserId();
+        try (RulesFile file = RulesFile.edit(expected.packageName, userId)) {
+            InternetRule current = file.getInternetRule(userId);
+            if (!expected.equals(current) || expected.equals(replacement)) {
+                // Nothing to write
+                file.setReadOnly();
+            } else if (replacement == null) {
+                file.deleteInternetRule(userId);
+            } else {
+                file.setInternetRule(replacement);
+            }
+        }
+    }
+
+    /**
+     * The app's rules file. Reading doesn't wait for a writer; editing holds the app's write lock until closed,
+     * and closing saves.
+     */
+    private static final class RulesFile extends RulesStorageManager {
+        @NonNull
+        static RulesFile read(@NonNull String packageName, @UserIdInt int userId) {
+            return new RulesFile(packageName, userId, false);
+        }
+
+        @NonNull
+        static RulesFile edit(@NonNull String packageName, @UserIdInt int userId) {
+            RulesFile file = new RulesFile(packageName, userId, true);
+            file.setMutable();
+            return file;
+        }
+
+        private RulesFile(@NonNull String packageName, @UserIdInt int userId, boolean lockBeforeLoad) {
+            super(packageName, userId, lockBeforeLoad);
+        }
+    }
+}

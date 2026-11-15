@@ -63,6 +63,17 @@
                 android:textIsSelectable="true"
                 tools:text="Group: android.permission-group.UNDEFINED" />
 
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/perm_firewall_status"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/premium_space_4"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?attr/colorPrimary"
+                android:visibility="gone"
+                tools:text="Blocked. After a restart the app can go online again until AppManagerNG puts the block back."
+                tools:visibility="visible" />
+
         </androidx.appcompat.widget.LinearLayoutCompat>
 
         <androidx.appcompat.widget.LinearLayoutCompat

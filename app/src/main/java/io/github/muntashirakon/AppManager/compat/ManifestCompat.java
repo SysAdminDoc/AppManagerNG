@@ -44,6 +44,7 @@ public final class ManifestCompat {
         @RequiresApi(Build.VERSION_CODES.Q)
         public static final String MANAGE_APPOPS = "android.permission.MANAGE_APPOPS";
         public static final String MANAGE_NETWORK_POLICY = "android.permission.MANAGE_NETWORK_POLICY";
+        public static final String NETWORK_SETTINGS = "android.permission.NETWORK_SETTINGS";
         @RequiresApi(Build.VERSION_CODES.S)
         public static final String MANAGE_NOTIFICATION_LISTENERS = "android.permission.MANAGE_NOTIFICATION_LISTENERS";
         @RequiresApi(Build.VERSION_CODES.P)

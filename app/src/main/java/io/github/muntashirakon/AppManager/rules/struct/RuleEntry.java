@@ -162,6 +162,8 @@ public abstract class RuleEntry {
                 return new SsaidRule(packageName, tokenizer);
             case FREEZE:
                 return new FreezeRule(packageName, tokenizer);
+            case INTERNET:
+                return new InternetRule(packageName, name, tokenizer);
             default:
                 throw new IllegalArgumentException("Invalid type=" + type.name());
         }

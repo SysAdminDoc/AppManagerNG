@@ -19,6 +19,7 @@ import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.IAMService;
 import io.github.muntashirakon.AppManager.misc.NoOps;
 import io.github.muntashirakon.AppManager.permission.watcher.PermissionWatchRelayClient;
+import io.github.muntashirakon.AppManager.rules.internet.InternetAccess;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
@@ -71,6 +72,8 @@ public class LocalServices {
                 sState.postValue(true);
                 // A new privileged process starts with nothing to watch
                 ThreadUtils.postOnBackgroundThread(() -> PermissionWatchRelayClient.push(ContextUtils.getContext()));
+                // Internet rules that waited for a privileged mode can go into force now
+                ThreadUtils.postOnBackgroundThread(InternetAccess::applyAll);
             } catch (RemoteException | RuntimeException e) {
                 // Don't leave one service running on its own
                 stopServices();

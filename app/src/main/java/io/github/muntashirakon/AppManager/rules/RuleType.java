@@ -22,4 +22,5 @@ public enum RuleType {
     URI_GRANT,
     SSAID,
     FREEZE,
+    INTERNET,
 }

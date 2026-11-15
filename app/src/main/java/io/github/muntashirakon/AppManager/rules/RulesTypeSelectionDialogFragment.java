@@ -54,6 +54,7 @@ public class RulesTypeSelectionDialogFragment extends DialogFragment {
             RuleType.PROVIDER,
             RuleType.APP_OP,
             RuleType.PERMISSION,
+            RuleType.INTERNET,
     };
 
     private FragmentActivity mActivity;

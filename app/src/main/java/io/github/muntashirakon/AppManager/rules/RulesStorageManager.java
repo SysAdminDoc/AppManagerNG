@@ -35,6 +35,7 @@ import io.github.muntashirakon.AppManager.rules.struct.AppOpRule;
 import io.github.muntashirakon.AppManager.rules.struct.BatteryOptimizationRule;
 import io.github.muntashirakon.AppManager.rules.struct.ComponentRule;
 import io.github.muntashirakon.AppManager.rules.struct.FreezeRule;
+import io.github.muntashirakon.AppManager.rules.struct.InternetRule;
 import io.github.muntashirakon.AppManager.rules.struct.MagiskDenyListRule;
 import io.github.muntashirakon.AppManager.rules.struct.MagiskHideRule;
 import io.github.muntashirakon.AppManager.rules.struct.NetPolicyRule;
@@ -301,6 +302,27 @@ public class RulesStorageManager implements Closeable {
 
     public void setFreezeType(@FreezeUtils.FreezeMethod int freezeType) {
         addUniqueEntry(new FreezeRule(packageName, freezeType));
+    }
+
+    public void setInternetRule(@NonNull InternetRule rule) {
+        addUniqueEntry(rule);
+    }
+
+    @Nullable
+    public InternetRule getInternetRule(@UserIdInt int userId) {
+        String name = String.valueOf(userId);
+        synchronized (mEntries) {
+            for (RuleEntry entry : mEntries) {
+                if (entry instanceof InternetRule && entry.name.equals(name)) {
+                    return (InternetRule) entry;
+                }
+            }
+        }
+        return null;
+    }
+
+    public void deleteInternetRule(@UserIdInt int userId) {
+        removeEntries(String.valueOf(userId), RuleType.INTERNET);
     }
 
     /**

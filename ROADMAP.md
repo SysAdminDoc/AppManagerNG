@@ -393,15 +393,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
 
 ## Research-Driven Additions (2026-09-05)
 
-### P1
-
-- [ ] P1: Revoke internet access per app through privileged network rules
-  Why: upstream shipped per-app INTERNET revocation in v4.1.1 and this fork has only metered-background net policy, which does not block connectivity.
-  Evidence: upstream v4.1.1 release notes (2026-09-04) describe eBPF rules applied in root and ADB mode from the Uses-permissions tab, with loss on reboot named as a known limitation; upstream #2044 reports access returning immediately after an install; `compat/NetworkPolicyManagerCompat.java` and `rules/struct/NetPolicyRule.java` cover metered background only; `self/BootReceiver.java:29-31` already re-applies routines on boot; `batchops/struct/BatchNetPolicyOptions.java`.
-  Touches: a new privileged network-rule executor, `rules/struct/`, `rules/RulesStorageManager.java`, the App Details uses-permissions tab, `batchops/BatchOpsManager.java`, `self/BootReceiver.java`, `profiles/`, host tests using a faked privileged executor.
-  Acceptance: a persisted rule type records package, UID, and rule state and round-trips through the existing rules import and export formats; the uses-permissions row for `android.permission.INTERNET` reflects stored state and is disabled with a stated reason when no privileged mode is active; rules are re-applied after a successful install or update and on `BOOT_COMPLETED`, and the UI reports any window before enforcement resumes rather than claiming enforcement it does not have; host tests cover apply, revert, post-install re-apply, boot re-apply, and privilege loss against a faked executor; an unsupported kernel or ROM produces an explained unavailable state rather than a silent no-op. If on-device verification needs a kernel floor that cannot be checked on the host, move the enforcement half to `Roadmap_Blocked.md` and keep the rule model here.
-  Complexity: L
-
 ### P2
 
 - [ ] P2: Log permission watcher drift to the app change feed
@@ -1116,4 +1107,40 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Evidence: refute pass on b07ad825f (2026-11-15). Predates this batch.
   Touches: `backup/convert/*Converter.java`, the converter tests.
   Acceptance: WHEN a converter writes a backup, the system SHALL set the crypto mode the result is written with, and each converter test SHALL check the mode in the written metadata.
+  Complexity: S
+
+## Found While Adding Internet Blocking (2026-11-15)
+
+### P1
+
+- [ ] P1: Check internet blocking on a phone
+  Why: the INTERNET switch on the Permissions tab is covered by host tests against a fake firewall only. Nothing has run it against a real `FIREWALL_CHAIN_OEM_DENY_3` yet.
+  Evidence: `rules/internet/PlatformInternetFirewall.java` calls `ConnectivityManager` hidden firewall methods that only exist on Android 14 and later; `rules/internet/InternetAccessTest.java` fakes them.
+  Touches: an S22 or S25 on Android 14 or later, in root or ADB mode, with any app that loads a web page.
+  Acceptance: WHEN the INTERNET switch is turned off for an app on an Android 14+ phone in root or ADB mode, the app SHALL fail to connect and the row SHALL read Blocked; WHEN the phone restarts, the app SHALL be cut off again once `BOOT_COMPLETED` runs; WHEN the switch is turned back on, the app SHALL connect again; WHEN no privileged mode is running, the switch SHALL be disabled with the reason under it. Screenshots of the row in each state go with the result.
+  Complexity: S
+
+### P2
+
+- [ ] P2: Block internet access from batch operations and profiles
+  Why: an INTERNET rule can only be set one app at a time from its Permissions tab. Batch operations and profiles still offer only the metered background network policy, which doesn't cut an app off.
+  Evidence: `batchops/struct/BatchNetPolicyOptions.java` and `profiles/` have no INTERNET rule; `rules/internet/InternetAccess.java` has `setBlocked(packageName, userId, blocked)`.
+  Touches: `batchops/BatchOpsManager.java`, `batchops/struct/`, `profiles/`, the batch op picker, a batch op test.
+  Acceptance: WHEN a batch operation or profile blocks or allows internet access for a set of apps, the system SHALL call `InternetAccess.setBlocked` for each one and report every app whose rule is saved but not in force, with the reason; a test against the fake firewall SHALL check both outcomes.
+  Complexity: M
+
+### P3
+
+- [ ] P3: Say when another app's block cuts this app off
+  Why: apps that share a UID share one firewall rule. Allowing one of them while another is still blocked shows the reason on the app you allowed, but the other apps in that UID show no rule at all while they're cut off.
+  Evidence: `rules/internet/InternetAccess.java` `findOtherBlockedRule` and the `SHARED_UID` reason; `details/AppDetailsViewModel.java` reads only the app's own rule.
+  Touches: `rules/internet/InternetAccess.java`, `details/AppDetailsPermissionsFragment.java`, `rules/internet/InternetAccessTest.java`.
+  Acceptance: WHEN an app without its own rule shares a UID with an app whose block is in force, its INTERNET row SHALL say which app's block cuts it off; a test SHALL cover it.
+  Complexity: S
+
+- [ ] P3: Lock the rules file across users
+  Why: every user's rules for a package live in one `conf/<package>.tsv`, but the lock that guards an edit is keyed by package and user. Two users editing the same package's rules at once can each write the file over the other's change.
+  Evidence: `rules/RulesStorageManager.java` builds its lock key from the package name plus the user id, and `getDesiredFile` names the file by package only. Predates the INTERNET rule, which made it reachable from boot and install work as well.
+  Touches: `rules/RulesStorageManager.java`, a concurrency test.
+  Acceptance: WHEN two users' rules for one package are edited at the same time, the system SHALL keep both changes; a test SHALL run two edits on separate threads and find both rules in the file.
   Complexity: S

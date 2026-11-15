@@ -56,6 +56,8 @@ import io.github.muntashirakon.AppManager.permission.watcher.WatchRule;
 import io.github.muntashirakon.AppManager.permission.watcher.WatchRuleMenu;
 import io.github.muntashirakon.AppManager.permissions.PermissionSettingsLauncher;
 import io.github.muntashirakon.AppManager.permissions.ReferenceAction;
+import io.github.muntashirakon.AppManager.rules.internet.InternetAccess;
+import io.github.muntashirakon.AppManager.rules.internet.InternetFirewall;
 import io.github.muntashirakon.AppManager.safety.AppOpsUidGuard;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
@@ -561,6 +563,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                         textView3 = itemView.findViewById(R.id.perm_protection_level);
                         textView4 = itemView.findViewById(R.id.perm_package_name);
                         textView5 = itemView.findViewById(R.id.perm_group);
+                        textView6 = itemView.findViewById(R.id.perm_firewall_status);
                         toggleSwitch = itemView.findViewById(R.id.perm_toggle_btn);
                         settingButton = itemView.findViewById(R.id.action_settings);
                         referenceButton = itemView.findViewById(R.id.action_reference);
@@ -876,7 +879,27 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             bindReferenceButton(holder.referenceButton, permissionItem.hasReference,
                     permissionItem.isReferenceDrifted(), canGrantOrRevokePermission, () ->
                             handlePermissionReferenceAction(permissionItem, canGrantOrRevokePermission));
-            if (canGrantOrRevokePermission) {
+            InternetAccess.Status internetAccess = permissionItem.internetAccess;
+            CharSequence firewallStatus = internetAccess != null ? describeInternetAccess(internetAccess) : null;
+            holder.textView6.setVisibility(firewallStatus != null ? View.VISIBLE : View.GONE);
+            holder.textView6.setText(firewallStatus);
+            // Only the internet row turns its switch off
+            holder.toggleSwitch.setEnabled(internetAccess == null || internetAccess.canChange());
+            if (internetAccess != null) {
+                // The switch is the app's network access, which the permission itself can't take away
+                holder.settingButton.setVisibility(View.GONE);
+                holder.toggleSwitch.setVisibility(View.VISIBLE);
+                holder.toggleSwitch.setChecked(!internetAccess.blocked);
+                if (internetAccess.canChange()) {
+                    holder.itemView.setOnClickListener(v -> {
+                        if (viewModel != null) viewModel.toggleInternetAccessAsync(mNeededProperty, permissionItem);
+                    });
+                } else {
+                    holder.itemView.setOnClickListener(null);
+                    holder.itemView.setClickable(false);
+                }
+            } else if (canGrantOrRevokePermission) {
+                holder.settingButton.setVisibility(View.GONE);
                 holder.toggleSwitch.setVisibility(View.VISIBLE);
                 holder.toggleSwitch.setChecked(permissionItem.isGranted());
                 holder.itemView.setOnClickListener(v -> {
@@ -924,6 +947,45 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             });
             holder.itemView.setLongClickable(longPressable);
             AppDetailsAdapterUtils.passLongPressToRow(holder.itemView, longPressable);
+        }
+
+        /**
+         * The line under the internet row, or {@code null} when the app simply has its access.
+         */
+        @Nullable
+        private CharSequence describeInternetAccess(@NonNull InternetAccess.Status status) {
+            if (status.unavailable != null) {
+                String reason = describeUnavailable(status.unavailable);
+                return getString(status.saved ? R.string.internet_access_not_in_force
+                        : R.string.internet_access_unavailable, reason);
+            }
+            if (!status.saved) {
+                return null;
+            }
+            if (!status.inForce) {
+                return getString(R.string.internet_access_waiting_for_install);
+            }
+            // A restart clears the firewall, and the app is online until the rule is back
+            return status.blocked ? getString(R.string.internet_access_blocked) : null;
+        }
+
+        @NonNull
+        private String describeUnavailable(@NonNull InternetFirewall.Unavailable unavailable) {
+            switch (unavailable.reason) {
+                case InternetFirewall.Unavailable.ANDROID_VERSION:
+                    return getString(R.string.internet_access_reason_android_version);
+                case InternetFirewall.Unavailable.NO_PRIVILEGED_MODE:
+                    return getString(R.string.internet_access_reason_no_privileged_mode);
+                case InternetFirewall.Unavailable.NO_PERMISSION:
+                    return getString(R.string.internet_access_reason_no_permission);
+                case InternetFirewall.Unavailable.SHARED_UID:
+                    return getString(R.string.internet_access_reason_shared_uid, unavailable.detail);
+                case InternetFirewall.Unavailable.PLATFORM:
+                default:
+                    return unavailable.detail != null
+                            ? getString(R.string.internet_access_reason_platform_error, unavailable.detail)
+                            : getString(R.string.internet_access_reason_platform);
+            }
         }
 
         private void bindReferenceButton(@NonNull MaterialButton button, boolean hasReference, boolean drifted,

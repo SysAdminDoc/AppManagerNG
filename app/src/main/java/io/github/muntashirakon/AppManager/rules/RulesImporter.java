@@ -6,6 +6,7 @@ import android.net.Uri;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 
 import java.io.BufferedReader;
@@ -20,6 +21,8 @@ import java.util.List;
 
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
+import io.github.muntashirakon.AppManager.rules.internet.InternetAccess;
+import io.github.muntashirakon.AppManager.rules.struct.InternetRule;
 import io.github.muntashirakon.AppManager.rules.struct.RuleEntry;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.io.Path;
@@ -122,13 +125,22 @@ public class RulesImporter implements Closeable {
         if (mPackagesToImport == null) mPackagesToImport = getPackages();
         for (int userId : mUserIds) {
             for (String packageName : mPackagesToImport) {
-                List<RuleEntry> rules = mStagedRules.get(packageName);
-                if (rules == null) continue;
+                List<RuleEntry> staged = mStagedRules.get(packageName);
+                if (staged == null) continue;
+                List<RuleEntry> rules = rulesForUser(staged, userId);
+                boolean hasInternetRule = false;
                 ComponentsBlocker cb = ComponentsBlocker.getInstance(packageName, userId);
                 try {
                     // Take the write lock, which reloads the saved rules, and only then add the imported ones
                     cb.setMutable();
                     for (RuleEntry rule : rules) {
+                        if (rule instanceof InternetRule) {
+                            // The UID a saved rule was put on still has to be let go, whatever the import says
+                            InternetRule saved = cb.getInternetRule(userId);
+                            rule = new InternetRule(packageName, userId, ((InternetRule) rule).isBlocked(),
+                                    saved != null ? saved.getUid() : InternetRule.NO_UID);
+                            hasInternetRule = true;
+                        }
                         cb.addEntry(rule);
                     }
                     // Apply component blocking rules
@@ -143,8 +155,39 @@ public class RulesImporter implements Closeable {
                     // Releases the lock without saving anything more
                     cb.setReadOnly();
                 }
+                if (hasInternetRule && commitChanges) {
+                    // Outside the rules lock, which putting the rule into force takes again
+                    InternetAccess.apply(packageName, userId);
+                }
             }
         }
+    }
+
+    /**
+     * The rows that go to one user. Internet rules belong to a user, so that user's own row wins; without one, the
+     * last row's wish is carried over. Either way the UID is dropped, since UIDs differ between users and devices.
+     */
+    @VisibleForTesting
+    @NonNull
+    static List<RuleEntry> rulesForUser(@NonNull List<RuleEntry> rules, int userId) {
+        List<RuleEntry> result = new ArrayList<>(rules.size());
+        InternetRule internetRule = null;
+        boolean ownRow = false;
+        for (RuleEntry rule : rules) {
+            if (!(rule instanceof InternetRule)) {
+                result.add(rule);
+                continue;
+            }
+            boolean own = ((InternetRule) rule).getUserId() == userId;
+            if (own || !ownRow) {
+                internetRule = (InternetRule) rule;
+                ownRow = own;
+            }
+        }
+        if (internetRule != null) {
+            result.add(internetRule.forUser(userId));
+        }
+        return result;
     }
 
     @Override

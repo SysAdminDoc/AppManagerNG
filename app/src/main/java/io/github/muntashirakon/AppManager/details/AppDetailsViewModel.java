@@ -112,6 +112,7 @@ import io.github.muntashirakon.AppManager.permission.RuntimePermission;
 import io.github.muntashirakon.AppManager.rules.RuleType;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
+import io.github.muntashirakon.AppManager.rules.internet.InternetAccess;
 import io.github.muntashirakon.AppManager.rules.struct.AppOpReferenceRule;
 import io.github.muntashirakon.AppManager.rules.struct.AppOpRule;
 import io.github.muntashirakon.AppManager.rules.struct.ComponentRule;
@@ -291,6 +292,27 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 mPermOpResultLiveData.postValue(PermOpResult.failure(property, item.isGranted()
                         ? R.string.failed_to_revoke_permission
                         : R.string.failed_to_grant_permission));
+            }
+        });
+    }
+
+    /**
+     * Flips the app's saved internet rule and reports where it stands on the row.
+     */
+    @AnyThread
+    public void toggleInternetAccessAsync(@AppDetailsFragment.Property int property,
+                                          @NonNull AppDetailsPermissionItem item) {
+        InternetAccess.Status current = item.internetAccess;
+        String packageName = mPackageName;
+        if (current == null || packageName == null) return;
+        int userId = mUserId;
+        mExecutor.execute(() -> {
+            try {
+                item.internetAccess = InternetAccess.setBlocked(packageName, userId, !current.blocked);
+                mPermOpResultLiveData.postValue(PermOpResult.successWithItem(property, item));
+            } catch (Exception e) {
+                Log.e(TAG, "Could not change internet access of %s.", e, packageName);
+                mPermOpResultLiveData.postValue(PermOpResult.failure(property, R.string.internet_access_change_failed));
             }
         });
     }
@@ -2395,6 +2417,10 @@ public class AppDetailsViewModel extends AndroidViewModel {
             AppDetailsPermissionItem appDetailsItem = new AppDetailsPermissionItem(permissionInfo, permission, flags);
             appDetailsItem.name = permissionName;
             appDetailsItem.setReference(getPermissionReference(permissionName));
+            if (!mExternalApk && Manifest.permission.INTERNET.equals(permissionName)) {
+                // Also puts a saved block back if the firewall has lost it
+                appDetailsItem.internetAccess = InternetAccess.apply(packageInfo.packageName, mUserId);
+            }
             return appDetailsItem;
         } catch (Throwable th) {
             Log.e(TAG, th);
