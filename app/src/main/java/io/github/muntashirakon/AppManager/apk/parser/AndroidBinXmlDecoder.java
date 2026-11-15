@@ -41,6 +41,11 @@ public class AndroidBinXmlDecoder {
     private static final String NEWLINE = "\n";
     private static final String TAG_MANIFEST = "manifest";
     private static final String ATTR_PLATFORM_BUILD_VERSION_CODE = "platformBuildVersionCode";
+    private static final String TAG_USES_SDK = "uses-sdk";
+    private static final int ATTR_MIN_SDK_VERSION = 0x0101020c;
+    private static final int ATTR_TARGET_SDK_VERSION = 0x01010270;
+    /** aapt2 writes compile metadata into manifests compiled against this API level and later. */
+    private static final int FIRST_API_WITH_METADATA = 28;
 
     public static boolean isBinaryXml(@NonNull ByteBuffer buffer) {
         buffer.order(ByteOrder.LITTLE_ENDIAN);
@@ -103,14 +108,19 @@ public class AndroidBinXmlDecoder {
     public static void decode(@NonNull ByteBuffer byteBuffer, @NonNull OutputStream os, int compileSdk)
             throws IOException {
         ResXmlDocument document = readDocument(toByteArray(byteBuffer));
-        int ownApi;
+        int api;
+        boolean oldManifest;
         try {
-            ownApi = compileSdkOf(document);
+            api = compileSdkOf(document);
+            if (api == FrameworkTables.UNKNOWN_API) {
+                api = Math.max(compileSdk, FrameworkTables.UNKNOWN_API);
+            }
+            oldManifest = api == FrameworkTables.UNKNOWN_API && targetsBeforeMetadata(document);
         } catch (RuntimeException e) {
             throw malformed(e);
         }
-        FrameworkTables.Choice choice = FrameworkTables.forApi(
-                ownApi != FrameworkTables.UNKNOWN_API ? ownApi : Math.max(compileSdk, FrameworkTables.UNKNOWN_API));
+        FrameworkTables.Choice choice = oldManifest ? FrameworkTables.forOldManifestWithoutMetadata()
+                : FrameworkTables.forApi(api);
         // Outside the parse error handling: a missing table is a packaging bug, not a bad file
         PackageBlock framework = choice.packageBlock();
         try (PrintStream out = new PrintStream(os, false, StandardCharsets.UTF_8.name())) {
@@ -269,6 +279,35 @@ public class AndroidBinXmlDecoder {
             }
         }
         return api;
+    }
+
+    /**
+     * Whether {@code document} is a manifest whose {@code uses-sdk} targets an API level older than
+     * the compile metadata aapt2 writes. As in Android, the last {@code uses-sdk} counts, a missing
+     * target means the minimum, and a missing minimum means 1. A codename counts as new.
+     */
+    private static boolean targetsBeforeMetadata(@NonNull ResXmlDocument document) {
+        ResXmlElement root = document.getDocumentElement();
+        if (root == null || !TAG_MANIFEST.equals(root.getName())) {
+            return false;
+        }
+        int level = 1;
+        Iterator<ResXmlElement> usesSdks = root.getElements(TAG_USES_SDK);
+        while (usesSdks.hasNext()) {
+            int min = 1;
+            Integer target = null;
+            Iterator<ResXmlAttribute> it = usesSdks.next().getAttributes();
+            while (it.hasNext()) {
+                ResXmlAttribute attribute = it.next();
+                if (attribute.getNameId() == ATTR_MIN_SDK_VERSION) {
+                    min = apiLevel(attribute);
+                } else if (attribute.getNameId() == ATTR_TARGET_SDK_VERSION) {
+                    target = apiLevel(attribute);
+                }
+            }
+            level = target != null ? target : min;
+        }
+        return level != FrameworkTables.UNKNOWN_API && level < FIRST_API_WITH_METADATA;
     }
 
     private static int apiLevel(@NonNull ResXmlAttribute attribute) {

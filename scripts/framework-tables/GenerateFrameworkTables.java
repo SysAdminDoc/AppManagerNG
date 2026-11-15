@@ -34,8 +34,9 @@ import java.util.regex.Pattern;
  * decoder uses when it has no closer table (ARSCLib bundles 23 to 36 itself);</li>
  * <li>{@code disputed-ids.txt}: for each API level, the table the decoder uses for it and the IDs
  * that some table of that level names differently; plus two sets for a file that carries no
- * compile metadata. {@code any} is for attribute names, where an ID the newest table exports is
- * disputed only by a table that exported it too (see {@link #disagreements}).
+ * compile metadata. {@code any} is for attribute names in files other than manifests targeting an
+ * API level before 28, where an ID the newest table exports is disputed only by a table that
+ * exported it too (see {@link #disagreements}).
  * {@code any references} is for reference values, where any two tables naming an ID differently
  * dispute it.</li>
  * </ul>
@@ -181,9 +182,11 @@ public class GenerateFrameworkTables {
      * exports (public) doesn't count as disputed by an {@code other} that kept it private. That
      * holds only for attribute names: aapt and aapt2 refuse an {@code android:} attribute that the
      * SDK doesn't export, and an exported name never changes in a later release, so only a
-     * platform build could mean the private entry, and platform builds carry compile metadata. A
-     * reference value can name a private entry in any build ({@code @*android:dimen/x}), so
-     * references are always checked without it.
+     * platform build could mean the private entry. Platform builds before API 28 carry no compile
+     * metadata (the Android 5.0 framework manifest sets its private 0x01010591), so the decoder
+     * uses {@code any} only for a manifest targeting API 28 or later, and {@code any references}
+     * for names too below that. A reference value can name a private entry in any build
+     * ({@code @*android:dimen/x}), so references are always checked without it.
      */
     private static TreeSet<Integer> disagreements(Map<Integer, String> table, Map<Integer, String> other,
                                                   boolean trustExported) {

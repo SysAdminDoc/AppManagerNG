@@ -40,6 +40,8 @@ public class FrameworkTableDecodeTest {
     /** android:backgroundPermission in the API 29 to 32 tables, autofillSaveCustomSubtitleMaxHeight from 33 on. */
     private static final int PRIVATE_ATTR_2040 = 0x01120017;
     private static final int RES_XML_RESOURCE_MAP_TYPE = 0x0180;
+    /** primaryUserOnly in the Android 5.0 framework table, android:isSplitRequired in the newest. */
+    private static final int PLATFORM_PRIVATE_ATTR = 0x01010591;
     /**
      * The decoder writes a framework reference without its package, as the existing expected outputs
      * do ({@code @style/Theme.Holo.Light}); an app reference prints as a raw ID, so a named one is
@@ -116,6 +118,49 @@ public class FrameworkTableDecodeTest {
         assertEquals(unknown, "1.7", value(unknown, "android:r0x01120017"));
         assertFalse(unknown, unknown.contains("autofillSaveCustomSubtitleMaxHeight"));
         assertFalse(unknown, unknown.contains("backgroundPermission"));
+    }
+
+    /**
+     * The platform builds its own manifests against its full table and wrote no compile metadata
+     * before API 28. The Android 5.0 framework manifest sets 0x01010591, private primaryUserOnly
+     * there and isSplitRequired in the newest table.
+     */
+    @Test
+    public void aManifestTargetingAnApiBeforeMetadataNamesNoDisputedAttribute() throws IOException {
+        for (String usesSdk : new String[]{
+                "<uses-sdk android:minSdkVersion=\"21\" android:targetSdkVersion=\"21\"/>",
+                "<uses-sdk android:minSdkVersion=\"21\" android:targetSdkVersion=\"27\"/>",
+                "<uses-sdk android:minSdkVersion=\"21\"/>",
+                "",
+        }) {
+            String xml = decodeWithVersionNameAt(usesSdk, PLATFORM_PRIVATE_ATTR);
+            assertEquals(xml, "1.7", value(xml, "android:r0x01010591"));
+            assertFalse(xml, xml.contains("isSplitRequired"));
+        }
+        // An app built with the public SDK can only have meant the public attribute
+        for (String usesSdk : new String[]{
+                "<uses-sdk android:minSdkVersion=\"21\" android:targetSdkVersion=\"28\"/>",
+                "<uses-sdk android:minSdkVersion=\"28\"/>",
+        }) {
+            String xml = decodeWithVersionNameAt(usesSdk, PLATFORM_PRIVATE_ATTR);
+            assertEquals(xml, "1.7", value(xml, "android:isSplitRequired"));
+        }
+        byte[] manifest = fixture("21");
+        replaceResourceId(manifest, ATTR_VERSION_NAME, PLATFORM_PRIVATE_ATTR);
+        String xml = AndroidBinXmlDecoder.decode(manifest);
+        assertEquals(xml, "1.7", value(xml, "android:r0x01010591"));
+        // Its public attributes keep their names
+        assertEquals(xml, "7", value(xml, "android:versionCode"));
+        assertEquals(xml, "21", value(xml, "android:targetSdkVersion"));
+    }
+
+    @NonNull
+    private static String decodeWithVersionNameAt(@NonNull String usesSdk, int id) throws IOException {
+        byte[] manifest = AndroidBinXmlEncoder.encodeString("<manifest"
+                + " xmlns:android=\"http://schemas.android.com/apk/res/android\" package=\"org.example\""
+                + " android:versionName=\"1.7\">" + usesSdk + "</manifest>");
+        replaceResourceId(manifest, ATTR_VERSION_NAME, id);
+        return AndroidBinXmlDecoder.decode(manifest);
     }
 
     @Test

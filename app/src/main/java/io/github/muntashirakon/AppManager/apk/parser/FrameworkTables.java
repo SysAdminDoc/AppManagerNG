@@ -93,6 +93,21 @@ final class FrameworkTables {
         return new Choice(section.table, section.disputed, section.disputed, false);
     }
 
+    /**
+     * The naming rules for a manifest that doesn't say what it was compiled against and targets an
+     * API level from before aapt2 wrote that down. An app built with the public SDK names only public
+     * attributes, which never change meaning, but the platform builds its own manifests against its
+     * full table, and before API 28 that table gave private attributes IDs a later SDK made public:
+     * the Android 5.0 framework manifest sets 0x01010591, its private primaryUserOnly, which the
+     * newest table calls isSplitRequired. So every ID two SDKs name differently is printed as hex,
+     * attribute names included.
+     */
+    @NonNull
+    static Choice forOldManifestWithoutMetadata() {
+        Data data = data();
+        return new Choice(NEWEST, data.anyReferences, data.anyReferences, false);
+    }
+
     /** The newest SDK's framework package, which also serves where no closer table exists. */
     @NonNull
     static PackageBlock newest() {

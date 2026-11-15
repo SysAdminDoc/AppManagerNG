@@ -975,6 +975,13 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Acceptance: WHEN a binary XML file opened from inside an APK is decoded, the system SHALL pass that APK's manifest compile SDK to the decoder, so its private framework references get names exactly when its manifest's would; a standalone file keeps the no-metadata rules; a test decodes a layout from a fixture APK built against API 35 and sees `@*android:dimen/status_bar_height` or `@android:dimen/status_bar_height`.
   Complexity: S
 
+- [ ] P2: Print enum and flag values as numbers when the SDKs disagree on their names
+  Why: a file with no compile metadata decodes with the newest table, which names an attribute's enum and flag values from that table's definition of the attribute. Some definitions changed between SDKs (in `android:permissionFlags`, 0x20 is `installerExemptIgnored` in one SDK and `allowedInPrivateComputeCore` in another), so a value can get a name it never had.
+  Evidence: `AndroidBinXmlDecoder.attributeValue` falls back to the plain value only when `canNameAttribute(nameId)` is false; `disputed-ids.txt` lists IDs, not the values defined under an attribute ID.
+  Touches: `scripts/framework-tables/GenerateFrameworkTables.java` (record attributes whose enum or flag values differ between SDKs), `disputed-ids.txt`, `FrameworkTables.java`, `AndroidBinXmlDecoder.java`, tests.
+  Acceptance: WHEN a file is decoded without a table pinned by its compile SDK and an attribute's enum or flag values differ between the SDKs it could have been built against, the system SHALL print that attribute's value as a number; attributes whose values agree keep their names; a test decodes `android:permissionFlags` 0x20 with no metadata and sees the number.
+  Complexity: M
+
 ### P3
 
 - [ ] P3: Check the decoder against `PackageManager.parseAndroidManifest` on API 37
