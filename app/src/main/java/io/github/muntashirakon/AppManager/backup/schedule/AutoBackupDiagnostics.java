@@ -40,7 +40,9 @@ final class AutoBackupDiagnostics {
                 AutoBackupScheduler.UNIQUE_WORK_NAME).get());
         WorkInfo manual = latest(workManager.getWorkInfosForUniqueWork(
                 AutoBackupScheduler.MANUAL_WORK_NAME).get());
-        if (scheduled == null && manual == null) {
+        WorkInfo catchUp = latest(workManager.getWorkInfosForUniqueWork(
+                AutoBackupScheduler.CATCH_UP_WORK_NAME).get());
+        if (scheduled == null && manual == null && catchUp == null) {
             return appendBatteryDiagnostics(appContext,
                     appContext.getString(R.string.auto_backup_diagnostics_no_work));
         }
@@ -55,6 +57,13 @@ final class AutoBackupDiagnostics {
             }
             sb.append(formatWork(appContext, appContext.getString(R.string.auto_backup_diagnostics_manual),
                     manual, findJob(appContext, manual)));
+        }
+        if (catchUp != null) {
+            if (sb.length() > 0) {
+                sb.append("; ");
+            }
+            sb.append(formatWork(appContext, appContext.getString(R.string.auto_backup_diagnostics_catch_up),
+                    catchUp, findJob(appContext, catchUp)));
         }
         return appendBatteryDiagnostics(appContext, sb.toString());
     }

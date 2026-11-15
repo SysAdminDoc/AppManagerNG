@@ -4091,6 +4091,7 @@
     <string name="auto_backup_diagnostics_no_work">No WorkManager request</string>
     <string name="auto_backup_diagnostics_scheduled">Scheduled</string>
     <string name="auto_backup_diagnostics_manual">Manual</string>
+    <string name="auto_backup_diagnostics_catch_up">Catch-up</string>
     <string name="auto_backup_diagnostics_work"><xliff:g id="label" example="Scheduled">%1$s</xliff:g>: <xliff:g id="state" example="enqueued">%2$s</xliff:g>, attempt <xliff:g id="attempt" example="0">%3$d</xliff:g>, stop: <xliff:g id="stop_reason" example="not stopped">%4$s</xliff:g></string>
     <string name="auto_backup_diagnostics_next">, next: <xliff:g id="time" example="5/18/26, 2:00 AM">%1$s</xliff:g></string>
     <string name="auto_backup_diagnostics_pending">, pending: <xliff:g id="reasons" example="charging constraint">%1$s</xliff:g></string>
@@ -4115,6 +4116,7 @@
     <string name="auto_backup_result_insufficient_storage">Skipped: not enough free space (estimated <xliff:g id="estimated" example="1.2 GB">%1$s</xliff:g>, free <xliff:g id="free" example="500 MB">%2$s</xliff:g>)</string>
     <string name="auto_backup_result_could_not_start">Couldn\'t start scheduled backup (background restricted); will retry.</string>
     <string name="auto_backup_result_already_running">A backup is already running; this run was skipped.</string>
+    <string name="auto_backup_result_waiting_for_network">Waiting for a network AppManagerNG can use. Data Saver or a battery restriction can block its network access. The backup runs once the network is usable.</string>
 
     <!-- Backup storage preflight -->
     <string name="backup_preflight_title">Storage check</string>

@@ -44,6 +44,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
+import org.robolectric.annotation.Implementation;
+import org.robolectric.annotation.Implements;
+import org.robolectric.shadows.ShadowConnectivityManager;
 import org.robolectric.shadows.ShadowNetworkInfo;
 
 import java.util.List;
@@ -54,6 +57,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 
 /**
@@ -103,88 +107,124 @@ public class ScheduledBackupNetworkTest {
 
     @Test
     @Config(sdk = 35)
-    public void aScheduledBackupWaitsForAUsableNetworkAndThenRunsOnce() throws Exception {
+    public void aBlockedScheduledBackupRunsOnceTheNetworkIsUsableAndKeepsItsTimeOfDay() throws Exception {
         setNetwork(blocked());
         startProcess();
         AutoBackupScheduler.schedule(mContext);
         drain();
         WorkSpec spec = backupSpec();
         assertEquals(NetworkType.CONNECTED, spec.constraints.getRequiredNetworkType());
-        long lastRun = Prefs.BackupRestore.getScheduledBackupLastRun();
+        long slot = spec.calculateNextRunTime();
 
         // The job fires because WorkManager thinks the constraint is met.
-        mNow.set(spec.calculateNextRunTime());
+        mNow.set(slot);
         runNow(spec);
         spec = backupSpec();
         assertEquals("no backup without a usable network", 0, mBackups.get());
         assertEquals(WorkInfo.State.ENQUEUED, spec.state);
         assertTrue(spec.isPeriodic());
         assertEquals(ONE_DAY, spec.intervalDuration);
-        assertEquals("it waits as a retry", 1, spec.runAttemptCount);
-        assertEquals(0, spec.getPeriodCount());
-        assertEquals("a wait isn't recorded as a run", lastRun, Prefs.BackupRestore.getScheduledBackupLastRun());
+        assertEquals(0, spec.runAttemptCount);
+        assertEquals("the schedule keeps its time of day", slot + ONE_DAY, spec.calculateNextRunTime());
+        assertEquals("settings shows the wait", mContext.getString(R.string.auto_backup_result_waiting_for_network),
+                Prefs.BackupRestore.getScheduledBackupLastResult());
+        WorkSpec catchUp = catchUpSpec();
+        assertEquals(WorkInfo.State.ENQUEUED, catchUp.state);
+        assertFalse(catchUp.isPeriodic());
+        assertEquals(NetworkType.CONNECTED, catchUp.constraints.getRequiredNetworkType());
+
+        // Still blocked when the catch-up fires, so it tries again later.
+        mNow.set(slot + TimeUnit.MINUTES.toMillis(1));
+        runNow(catchUp);
+        catchUp = catchUpSpec();
+        assertEquals(0, mBackups.get());
+        assertEquals(WorkInfo.State.ENQUEUED, catchUp.state);
+        assertEquals(1, catchUp.runAttemptCount);
 
         setNetwork(connected());
-        mNow.set(spec.calculateNextRunTime());
-        runNow(spec);
-        spec = backupSpec();
+        mNow.set(slot + TimeUnit.HOURS.toMillis(7));
+        runNow(catchUp);
         assertEquals(1, mBackups.get());
-        assertEquals(WorkInfo.State.ENQUEUED, spec.state);
-        assertEquals(0, spec.runAttemptCount);
-        assertEquals(1, spec.getPeriodCount());
-        assertEquals("the next run is a full period away", mNow.get() + ONE_DAY, spec.calculateNextRunTime());
+        assertEquals(WorkInfo.State.SUCCEEDED, catchUpSpec().state);
+        assertEquals("the backup didn't move the schedule", slot + ONE_DAY, backupSpec().calculateNextRunTime());
 
-        // Starting it again before that period ends doesn't back up again.
-        runNow(spec);
+        // Starting the schedule again before its time doesn't back up again.
+        runNow(backupSpec());
         assertEquals(1, mBackups.get());
-        assertEquals(1, backupSpec().getPeriodCount());
+
+        // The next day it backs up at its usual time.
+        mNow.set(slot + ONE_DAY);
+        runNow(backupSpec());
+        assertEquals(2, mBackups.get());
+        assertEquals(slot + 2 * ONE_DAY, backupSpec().calculateNextRunTime());
     }
 
     @Test
     @Config(sdk = 35)
-    public void aWaitingBackupKeepsItsPeriodAcrossProcessDeathAndReboot() throws Exception {
+    public void aWaitingBackupSurvivesProcessDeathAndReboot() throws Exception {
         setNetwork(blocked());
         startProcess();
         AutoBackupScheduler.schedule(mContext);
         drain();
-        WorkSpec spec = backupSpec();
-        mNow.set(spec.calculateNextRunTime());
-        runNow(spec);
-        WorkSpec waiting = backupSpec();
-        assertEquals(1, waiting.runAttemptCount);
+        long slot = backupSpec().calculateNextRunTime();
+        mNow.set(slot);
+        runNow(backupSpec());
+        WorkSpec waiting = catchUpSpec();
+        assertEquals(WorkInfo.State.ENQUEUED, waiting.state);
 
         // The process dies. Nothing gets to clean up, and the next one opens the same database.
         mDb.close();
         startProcess();
-        WorkSpec afterDeath = backupSpec();
+        WorkSpec afterDeath = catchUpSpec();
         assertEquals(waiting.id, afterDeath.id);
         assertEquals(WorkInfo.State.ENQUEUED, afterDeath.state);
-        assertTrue(afterDeath.isPeriodic());
-        assertEquals(ONE_DAY, afterDeath.intervalDuration);
-        assertEquals(1, afterDeath.runAttemptCount);
-        assertEquals(waiting.calculateNextRunTime(), afterDeath.calculateNextRunTime());
+        assertEquals(slot + ONE_DAY, backupSpec().calculateNextRunTime());
 
-        // A reboot leaves JobScheduler without the job. The startup check WorkManager runs after
-        // one finds it missing and hands the work back to its scheduler.
+        // A reboot leaves JobScheduler without the jobs. The startup check WorkManager runs after
+        // one finds them missing and hands the work back to its scheduler.
         mScheduled.clear();
         new ForceStopRunnable(mContext, mWm).forceStopRunnable();
         drain();
-        assertTrue("rescheduled after the reboot", mScheduled.contains(afterDeath.id));
-        WorkSpec afterReboot = backupSpec();
-        assertEquals(ONE_DAY, afterReboot.intervalDuration);
-        assertEquals(waiting.calculateNextRunTime(), afterReboot.calculateNextRunTime());
+        assertTrue("the catch-up is rescheduled after the reboot", mScheduled.contains(afterDeath.id));
+        assertTrue("so is the schedule", mScheduled.contains(backupSpec().id));
+        assertEquals(slot + ONE_DAY, backupSpec().calculateNextRunTime());
 
         setNetwork(connected());
-        mNow.set(afterReboot.calculateNextRunTime());
-        runNow(afterReboot);
+        mNow.set(slot + TimeUnit.HOURS.toMillis(3));
+        runNow(catchUpSpec());
         assertEquals(1, mBackups.get());
-        assertEquals(1, backupSpec().getPeriodCount());
+        assertEquals(WorkInfo.State.SUCCEEDED, catchUpSpec().state);
+        assertEquals(slot + ONE_DAY, backupSpec().calculateNextRunTime());
     }
 
     @Test
-    @Config(sdk = 23)
-    public void belowAndroid15TheScheduledBackupStillGoesByTheConstraint() throws Exception {
+    @Config(sdk = 35)
+    public void aScheduledRunThatBacksUpDropsTheCatchUpStillWaiting() throws Exception {
         setNetwork(blocked());
+        startProcess();
+        AutoBackupScheduler.schedule(mContext);
+        drain();
+        long slot = backupSpec().calculateNextRunTime();
+        mNow.set(slot);
+        runNow(backupSpec());
+        assertEquals(WorkInfo.State.ENQUEUED, catchUpSpec().state);
+
+        // The catch-up never got to run before the next day's slot, which has a usable network.
+        setNetwork(connected());
+        mNow.set(slot + ONE_DAY);
+        runNow(backupSpec());
+        assertEquals(1, mBackups.get());
+        assertEquals(WorkInfo.State.CANCELLED, catchUpSpec().state);
+    }
+
+    @Test
+    @Config(sdk = {23, 28})
+    public void olderVersionsWaitForAUsableNetworkToo() throws Exception {
+        // WorkManager 2.10.5 reads the network from its capabilities from Android 9 on, which
+        // don't show the block, so the run checks for itself on every version.
+        setNetwork(blocked());
+        assertFalse(AutoBackupWorker.hasUsableNetwork(mContext, AutoBackupScheduler.NETWORK_CONNECTED));
+        setNetwork(connected());
         assertTrue(AutoBackupWorker.hasUsableNetwork(mContext, AutoBackupScheduler.NETWORK_CONNECTED));
         startProcess();
         AutoBackupScheduler.schedule(mContext);
@@ -196,8 +236,14 @@ public class ScheduledBackupNetworkTest {
 
         mNow.set(spec.calculateNextRunTime());
         runNow(spec);
-        assertEquals("the run goes ahead as it did before", 1, mBackups.get());
+        assertEquals("a usable network backs up as before", 1, mBackups.get());
         assertEquals(1, backupSpec().getPeriodCount());
+    }
+
+    @Test
+    @Config(sdk = 35, shadows = RefusingConnectivityManager.class)
+    public void aRefusedNetworkReadLeavesItToTheConstraint() {
+        assertTrue(AutoBackupWorker.hasUsableNetwork(mContext, AutoBackupScheduler.NETWORK_CONNECTED));
     }
 
     @Test
@@ -296,6 +342,13 @@ public class ScheduledBackupNetworkTest {
         return mDb.workSpecDao().getWorkSpec(ids.get(0));
     }
 
+    @NonNull
+    private WorkSpec catchUpSpec() {
+        List<String> ids = mDb.workNameDao().getWorkSpecIdsWithName(AutoBackupScheduler.CATCH_UP_WORK_NAME);
+        assertEquals(1, ids.size());
+        return mDb.workSpecDao().getWorkSpec(ids.get(0));
+    }
+
     private void drain() throws InterruptedException {
         mExecutor.drain();
     }
@@ -314,6 +367,16 @@ public class ScheduledBackupNetworkTest {
     private static NetworkInfo connected() {
         return ShadowNetworkInfo.newInstance(NetworkInfo.DetailedState.CONNECTED, ConnectivityManager.TYPE_WIFI,
                 0, true, NetworkInfo.State.CONNECTED);
+    }
+
+    /** A build that refuses to say what the network is. */
+    @Implements(ConnectivityManager.class)
+    public static class RefusingConnectivityManager extends ShadowConnectivityManager {
+        @Implementation
+        @Override
+        protected NetworkInfo getActiveNetworkInfo() {
+            throw new SecurityException("Refused");
+        }
     }
 
     /**

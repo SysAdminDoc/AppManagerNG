@@ -51,7 +51,7 @@ release.
 | **Room** | 2.7.2 | 2.8.x | KMP support, performance improvements. No security-relevant changes at time of writing. |
 | **WebKit** | 1.14.0 | 1.15.x | CrUX-only WebView APIs. Minimal impact for NG's limited WebView use. |
 | **Sora Editor** | 0.24.6 | 0.25.x+ | Newer editor APIs. 0.24.6 is the final API-21-compatible release. |
-| **WorkManager** | 2.10.5 | 2.11.x | minSdk 23 required. Keep 2.10.x for API 21-22 compatibility. 2.11.1 stops the network constraint passing while Android 15 or later blocks the app's network (b/465016918, b/452081708). Scheduled backups check for that themselves in `AutoBackupWorker.hasUsableNetwork`. 2.11.2 keeps periodic work that throws on its schedule (b/443879071). |
+| **WorkManager** | 2.10.5 | 2.11.x | minSdk 23 required. Keep 2.10.x for API 21-22 compatibility. 2.11.1 and 2.11.2 stop the network constraint passing while Android blocks the app's network (b/465016918, b/445324855). Scheduled backups check for that themselves in `AutoBackupWorker.hasUsableNetwork` on every Android version. 2.11.2 also keeps periodic work that throws on its schedule (b/443879071). |
 | **AndroidX Core** | 1.17.0 | 1.19.0 | core-ktx 1.19.0 raises minSdk to 23. Core (non-ktx) 1.17.0 works with compileSdk 37. |
 
 ## Not pinned (compatible with minSdk 21)

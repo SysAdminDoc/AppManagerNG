@@ -50,6 +50,7 @@ import io.github.muntashirakon.AppManager.utils.NotificationUtils;
 public class AutoBackupWorker extends Worker {
     static final String KEY_MANUAL = "manual";
     static final String KEY_ORIGIN = "origin";
+    static final String KEY_CATCH_UP = "catch_up";
     // Where a run was started from. The worker records it with the run, so the status screen can
     // say what started the last backup.
     public static final String ORIGIN_SCHEDULE = "schedule";
@@ -71,6 +72,17 @@ public class AutoBackupWorker extends Worker {
     @NonNull
     static Data manualInputData(@NonNull String origin) {
         return new Data.Builder().putBoolean(KEY_MANUAL, true).putString(KEY_ORIGIN, origin).build();
+    }
+
+    /** A one-time run in place of a scheduled run that couldn't use the network. It counts as the schedule. */
+    @NonNull
+    static Data catchUpInputData() {
+        return new Data.Builder().putBoolean(KEY_CATCH_UP, true).build();
+    }
+
+    /** Whether a scheduled or "Run now" backup is running in this process. */
+    public static boolean isRunning() {
+        return sRunning.get();
     }
 
     /**
@@ -121,32 +133,52 @@ public class AutoBackupWorker extends Worker {
             AutoBackupScheduler.refreshDiagnostics(context);
             return Result.success();
         }
+        boolean catchUp = getInputData().getBoolean(KEY_CATCH_UP, false);
         if (!manual && !hasUsableNetwork(context, Prefs.BackupRestore.getScheduledBackupNetworkType())) {
-            // Nothing is recorded: the last run stays the last one that ran.
             Log.i(TAG, "Scheduled auto-backup is waiting for a network it can use");
-            return Result.retry();
+            // Settings refreshes the diagnostics when it opens
+            AutoBackupScheduler.recordRunOrigin(origin);
+            AutoBackupScheduler.recordRunResult(context.getString(R.string.auto_backup_result_waiting_for_network));
+            if (catchUp) {
+                return Result.retry();
+            }
+            // A retry would move the schedule to whenever the network came back, so the scheduled
+            // run ends here and keeps its time of day, and a one-time run backs up in its place.
+            AutoBackupScheduler.enqueueCatchUpRun(context);
+            return Result.success();
+        }
+        if (!manual && !catchUp && !isRunning()) {
+            // This run backs up, so a catch-up still waiting from an earlier one isn't needed
+            AutoBackupScheduler.cancelCatchUpRun(context);
         }
         return runBackup(context, manual, origin);
     }
 
     /**
-     * Whether a scheduled run may start under its network setting. WorkManager 2.10.5 lets the
-     * network constraint pass on Android 15 and later while the network is blocked for this app
-     * (b/465016918 and b/452081708, fixed in 2.11.1, which needs minSdk 23), so the run checks
-     * for itself there. Earlier versions rely on the constraint as before.
+     * Whether a scheduled run may start under its network setting. WorkManager 2.10.5 reads the
+     * network from its capabilities from Android 9 on, and those don't show that Android blocks
+     * this app's network, so the constraint can pass while the network is blocked (b/465016918,
+     * fixed in 2.11.1, and b/445324855, fixed in 2.11.2; both need minSdk 23). The run checks for
+     * itself on every version, through the network info that does show the block.
      */
     @VisibleForTesting
     @SuppressWarnings("deprecation") // NetworkInfo is what reports the block for this app
     static boolean hasUsableNetwork(@NonNull Context context, int networkType) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM
-                || AutoBackupScheduler.sanitizeNetworkType(networkType) == AutoBackupScheduler.NETWORK_NOT_REQUIRED) {
+        if (AutoBackupScheduler.sanitizeNetworkType(networkType) == AutoBackupScheduler.NETWORK_NOT_REQUIRED) {
             return true;
         }
         ConnectivityManager cm = ContextCompat.getSystemService(context, ConnectivityManager.class);
         if (cm == null) {
             return true;
         }
-        NetworkInfo info = cm.getActiveNetworkInfo();
+        NetworkInfo info;
+        try {
+            info = cm.getActiveNetworkInfo();
+        } catch (SecurityException e) {
+            // Some builds refuse the call (b/480123154). The constraint decides, as it did before.
+            Log.w(TAG, "Couldn't read the network state", e);
+            return true;
+        }
         return info != null && info.isConnected();
     }
 

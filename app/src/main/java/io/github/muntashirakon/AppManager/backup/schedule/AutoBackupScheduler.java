@@ -42,6 +42,7 @@ import io.github.muntashirakon.AppManager.utils.PackageUtils;
 public final class AutoBackupScheduler {
     public static final String UNIQUE_WORK_NAME = "scheduled_auto_backup";
     public static final String MANUAL_WORK_NAME = "manual_scheduled_auto_backup";
+    public static final String CATCH_UP_WORK_NAME = "catch_up_scheduled_auto_backup";
     public static final String WORK_TAG = "auto_backup";
     public static final int DEFAULT_HOUR = 2;
     public static final int DEFAULT_MINUTE = 0;
@@ -94,6 +95,28 @@ public final class AutoBackupScheduler {
         WorkManager wm = WorkManager.getInstance(context.getApplicationContext());
         wm.cancelUniqueWork(UNIQUE_WORK_NAME);
         wm.cancelUniqueWork(MANUAL_WORK_NAME);
+        wm.cancelUniqueWork(CATCH_UP_WORK_NAME);
+    }
+
+    /**
+     * Queues a one-time run in place of a scheduled run that couldn't use the network, under the
+     * schedule's own conditions, so the schedule keeps its time of day. One already waiting stays.
+     */
+    static void enqueueCatchUpRun(@NonNull Context context) {
+        OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(AutoBackupWorker.class)
+                .setInputData(AutoBackupWorker.catchUpInputData())
+                .setConstraints(buildConstraints(
+                        Prefs.BackupRestore.isScheduledBackupChargingRequired(),
+                        Prefs.BackupRestore.getScheduledBackupNetworkType()))
+                .addTag(WORK_TAG)
+                .build();
+        WorkManager.getInstance(context.getApplicationContext())
+                .enqueueUniqueWork(CATCH_UP_WORK_NAME, ExistingWorkPolicy.KEEP, request);
+    }
+
+    /** Drops a catch-up run once a scheduled run backs up in its place. */
+    static void cancelCatchUpRun(@NonNull Context context) {
+        WorkManager.getInstance(context.getApplicationContext()).cancelUniqueWork(CATCH_UP_WORK_NAME);
     }
 
     /**
