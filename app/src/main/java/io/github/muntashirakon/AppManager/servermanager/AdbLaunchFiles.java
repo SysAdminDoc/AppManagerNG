@@ -67,7 +67,7 @@ public final class AdbLaunchFiles {
     @WorkerThread
     static void stageServer(@NonNull Context context, @NonNull AbsAdbConnectionManager manager) throws IOException {
         byte[] jar = AssetsUtils.readAsset(context, Constants.JAR_NAME);
-        byte[] script = AssetsUtils.buildServerExecScript(context, SERVER_JAR, SERVER_JAR)
+        byte[] script = AssetsUtils.buildServerExecScript(context, SERVER_JAR)
                 .getBytes(StandardCharsets.UTF_8);
         long mtime = System.currentTimeMillis() / 1000;
         lockStagingDir(manager);

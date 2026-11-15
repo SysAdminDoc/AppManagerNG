@@ -543,20 +543,19 @@ class LocalServerManager {
         if (!Ops.hasRoot()) {
             throw new Exception("Root access denied");
         }
-        // Run the internal device-encrypted copy (index 1), not the external-storage copy.
-        // root can always read the app-private DE cache, and unlike external storage no other
-        // app can overwrite it — closing a local privilege-escalation where a malicious app
-        // with external-storage write access swaps the JAR/script that root then executes.
+        // Root runs am.jar and the script from the app's device-encrypted cache, which no other
+        // app and not the shell user can write, so nobody can swap what root then executes.
         // The native launcher sits in the app's library folder, which only the system can write.
         String command = ServerConfig.getRootServerRunnerCommand(mContext, localServerPort);
-        String scriptCommand = ServerConfig.getServerRunnerCommand(1, localServerPort);
+        String scriptCommand = ServerConfig.getRootScriptCommand(mContext, localServerPort);
         // + "\n" + "supolicy --live 'allow qti_init_shell zygote_exec file execute'";
         Log.d(TAG, "useRootStartServer: Launching privileged server.");
         Runner.Result result = Runner.runCommand(command);
 
         Log.d(TAG, "useRootStartServer: %s", result.getOutput());
-        if (!result.isSuccessful() && !command.equals(scriptCommand)) {
+        if (!result.isSuccessful() && !command.equals(scriptCommand) && launcherCouldNotRun(result.getExitCode())) {
             // A root that can't run files from the library folder can still run the script.
+            // When the launcher ran and failed, the script would only fail the same way.
             // Runner has logged the launcher's stderr already.
             Log.w(TAG, "useRootStartServer: The native launcher failed (exit %d), trying the script.",
                     result.getExitCode());
@@ -568,6 +567,15 @@ class LocalServerManager {
         }
         waitForServerReady(localServerPort);
         Log.d(TAG, "useRootStartServer: Server has started.");
+    }
+
+    /**
+     * Whether a shell's exit code says the launcher never ran: 126 when it couldn't be executed,
+     * 127 when it wasn't found. Any other code is the launcher's own answer.
+     */
+    @VisibleForTesting
+    static boolean launcherCouldNotRun(int exitCode) {
+        return exitCode == 126 || exitCode == 127;
     }
 
     private void waitForServerReady(int port) throws Exception {

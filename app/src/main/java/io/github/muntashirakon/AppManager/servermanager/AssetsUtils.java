@@ -99,9 +99,9 @@ class AssetsUtils {
     }
 
     @WorkerThread
-    static void writeServerExecScript(@NonNull Context context, @NonNull File destFile, @NonNull String jarPath,
-                                      @NonNull String execJarPath) throws IOException {
-        String script = buildServerExecScript(context, jarPath, execJarPath);
+    static void writeServerExecScript(@NonNull Context context, @NonNull File destFile, @NonNull String jarPath)
+            throws IOException {
+        String script = buildServerExecScript(context, jarPath);
         if (destFile.exists()) {
             destFile.delete();
         }
@@ -115,14 +115,11 @@ class AssetsUtils {
      * The launcher script with its variables filled in. Lines end in {@code \n} whatever the host,
      * since the result also gets pushed to the device as is.
      *
-     * @param jarPath     Where am.jar is when the launcher starts
-     * @param execJarPath Where the server runs it from. The launcher copies am.jar there first
-     *                    when the two differ.
+     * @param jarPath Where am.jar is. The server runs it from there, never from a copy.
      */
     @WorkerThread
     @NonNull
-    static String buildServerExecScript(@NonNull Context context, @NonNull String jarPath,
-                                        @NonNull String execJarPath) throws IOException {
+    static String buildServerExecScript(@NonNull Context context, @NonNull String jarPath) throws IOException {
         try (AssetFileDescriptor openFd = context.getAssets().openFd(ServerConfig.SERVER_RUNNER_EXEC_NAME);
              BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(openFd.createInputStream(),
                      StandardCharsets.UTF_8))) {
@@ -130,7 +127,6 @@ class AssetsUtils {
             StringBuilder vars = new StringBuilder();
             vars.append("SERVER_NAME=").append(Constants.SERVER_NAME).append("\n")
                     .append("JAR_PATH=").append(jarPath).append("\n")
-                    .append("EXEC_JAR_PATH=").append(execJarPath).append("\n")
                     .append("ARGS=").append(getServerArgs()).append("\n");
             StringBuilder script = new StringBuilder();
             String line;

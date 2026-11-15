@@ -70,9 +70,10 @@ public class ServerSeparationTest {
 
     @Test
     public void jarAndLogDontUseUpstreamsFiles() {
-        assertNotEquals("/data/local/tmp/am.jar", ServerConfig.ROOT_EXEC_JAR);
+        // Root runs am.jar from the app's own storage, so upstream's copy is never in its way
+        String rootCommand = ServerConfig.getRootServerRunnerCommand(ApplicationProvider.getApplicationContext(), 62001);
+        assertFalse(rootCommand, rootCommand.contains("/data/local/tmp/am.jar"));
         assertNotEquals("/data/local/tmp/am.txt", Constants.SERVER_LOG);
-        assertTrue(ServerConfig.ROOT_EXEC_JAR.startsWith("/data/local/tmp/"));
         assertTrue(Constants.SERVER_LOG.startsWith("/data/local/tmp/"));
     }
 

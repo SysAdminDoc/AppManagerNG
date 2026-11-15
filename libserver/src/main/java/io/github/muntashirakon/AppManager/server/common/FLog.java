@@ -4,11 +4,13 @@ package io.github.muntashirakon.AppManager.server.common;
 
 import android.system.ErrnoException;
 import android.system.Os;
+import android.system.OsConstants;
+import android.system.StructStat;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
 
-import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -46,6 +48,8 @@ public class FLog {
      */
     private static final CopyOnWriteArraySet<String> sSecrets = new CopyOnWriteArraySet<>();
     private static FileOutputStream fos;
+    @Nullable
+    private static FileDescriptor sLogFd;
     private static final AtomicInteger sBufferSize = new AtomicInteger();
     private static final AtomicInteger sErrorCount = new AtomicInteger();
 
@@ -73,18 +77,13 @@ public class FLog {
     private static void openFile() {
         try {
             if (writeLog && fos == null && sErrorCount.get() < 5) {
-                File file = new File(Constants.SERVER_LOG);
-                fos = new FileOutputStream(file);
-
+                fos = openPrivateLog(Constants.SERVER_LOG);
+                if (fos == null) {
+                    return;
+                }
                 fos.write("\n\n\n--------------------".getBytes());
                 fos.write(new Date().toString().getBytes());
                 fos.write("\n\n".getBytes());
-                chown(file.getAbsolutePath(), 2000, 2000);
-                // Owner only. This file records the privileged server's own diagnostics and
-                // lives in a world-traversable directory; 0755 made it readable by every app on
-                // the device. Nothing in the app reads it back — it is pulled over adb, as the
-                // shell uid it is chowned to.
-                chmod(file.getAbsolutePath(), 0600);
             }
         } catch (IOException | RuntimeException e) {
             handleInternalFailure("open", e);
@@ -92,19 +91,70 @@ public class FLog {
         }
     }
 
-    private static void chown(String path, int uid, int gid) {
+    /**
+     * Opens the log empty, owned by the shell user and readable by it alone. Nothing in the app
+     * reads it back; it is pulled over adb.
+     * <p>
+     * The log lives in /data/local/tmp, which the shell user owns, so whatever sits at that path
+     * may be a link the shell user planted. Opening, chowning and chmodding by name followed such
+     * a link, which let the shell user (or any app it lends Shizuku to) have root empty any file
+     * on the device and hand it to the shell user. So the open never follows a link, a file with
+     * another name or that isn't a plain file is left alone, and every later change goes through
+     * the open file rather than its name.
+     *
+     * @return The open log, or {@code null} when it isn't safe to write
+     */
+    @Nullable
+    private static FileOutputStream openPrivateLog(String path) {
+        FileDescriptor fd;
         try {
-            Os.chown(path, uid, gid);
+            // O_NONBLOCK keeps a FIFO planted at the path from holding the server up
+            fd = Os.open(path, OsConstants.O_WRONLY | OsConstants.O_CREAT | OsConstants.O_NOFOLLOW
+                    | OsConstants.O_NONBLOCK, 0600);
+        } catch (ErrnoException e) {
+            handleInternalFailure("open", e);
+            return null;
+        }
+        try {
+            if (!isPrivateLogFile(Os.fstat(fd))) {
+                handleInternalFailure("open", new IOException("Not a plain file with one name: " + path));
+                closeQuietly(fd);
+                return null;
+            }
+            Os.ftruncate(fd, 0);
+        } catch (ErrnoException e) {
+            handleInternalFailure("open", e);
+            closeQuietly(fd);
+            return null;
+        }
+        try {
+            Os.fchown(fd, 2000, 2000);
         } catch (ErrnoException e) {
             handleInternalFailure("chown", e);
         }
-    }
-
-    private static void chmod(String path, int mode) {
         try {
-            Os.chmod(path, mode);
+            Os.fchmod(fd, 0600);
         } catch (ErrnoException e) {
             handleInternalFailure("chmod", e);
+        }
+        // A stream made from a descriptor doesn't close it, so close() does
+        sLogFd = fd;
+        return new FileOutputStream(fd);
+    }
+
+    /**
+     * Whether an open log may be written: a plain file, not a device, FIFO or socket, and with no
+     * other name, since a hard link would make the log another file's contents.
+     */
+    static boolean isPrivateLogFile(StructStat stat) {
+        return OsConstants.S_ISREG(stat.st_mode) && stat.st_nlink == 1;
+    }
+
+    private static void closeQuietly(FileDescriptor fd) {
+        try {
+            Os.close(fd);
+        } catch (ErrnoException e) {
+            handleInternalFailure("close", e);
         }
     }
 
@@ -147,6 +197,10 @@ public class FLog {
             }
         } catch (IOException | RuntimeException e) {
             handleInternalFailure("close", e);
+        }
+        if (sLogFd != null) {
+            closeQuietly(sLogFd);
+            sLogFd = null;
         }
     }
 

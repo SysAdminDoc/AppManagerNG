@@ -49,11 +49,6 @@ public final class ServerConfig {
      * system extracts it into the app's library folder, which only the system can write.
      */
     static final String SERVER_RUNNER_NATIVE_NAME = "librun_server.so";
-    /**
-     * Where root runs am.jar from. Upstream's server runs /data/local/tmp/am.jar, which a shared
-     * name would overwrite under it.
-     */
-    static final String ROOT_EXEC_JAR = "/data/local/tmp/" + Constants.SERVER_NAME + ".jar";
     private static final String LOCAL_TOKEN = "l_token";
     /**
      * The handshake protocol the token was made for. Protocols up to 1.3.0 sent the token to
@@ -78,7 +73,7 @@ public final class ServerConfig {
         // Setup paths
         File serverRunnerJar = getServerJarFile(context);
         File deStorage = Objects.requireNonNull(serverRunnerJar.getParentFile());
-        File serverRunnerExec = new File(deStorage, SERVER_RUNNER_EXEC_NAME);
+        File serverRunnerExec = getServerScriptFile(context);
         SERVER_RUNNER_EXEC[0] = serverRunnerExec;
         SERVER_RUNNER_EXEC[1] = serverRunnerExec;
         SERVER_RUNNER_JAR[0] = serverRunnerJar;
@@ -86,7 +81,7 @@ public final class ServerConfig {
         // Copy JAR
         AssetsUtils.copyFile(context, Constants.JAR_NAME, serverRunnerJar, true);
         // Write script
-        AssetsUtils.writeServerExecScript(context, serverRunnerExec, serverRunnerJar.getAbsolutePath(), ROOT_EXEC_JAR);
+        AssetsUtils.writeServerExecScript(context, serverRunnerExec, serverRunnerJar.getAbsolutePath());
         // Update permission
         File deStorageRoot = deStorage.getParentFile();
         if (deStorageRoot != null) {
@@ -132,8 +127,18 @@ public final class ServerConfig {
     }
 
     /**
+     * run_server.sh beside am.jar, where {@link #init(Context)} writes it.
+     */
+    @AnyThread
+    @NonNull
+    static File getServerScriptFile(@NonNull Context context) {
+        return new File(getServerJarFile(context).getParentFile(), SERVER_RUNNER_EXEC_NAME);
+    }
+
+    /**
      * The command root mode runs: the native launcher in the app's library folder when the APK has
-     * one, and run_server.sh in the device-encrypted cache when it doesn't.
+     * one, and run_server.sh in the device-encrypted cache when it doesn't. Either way the server
+     * runs am.jar where it is in the app's own storage, which the shell user can't touch.
      */
     @AnyThread
     @NonNull
@@ -141,11 +146,21 @@ public final class ServerConfig {
                                                     @IntRange(from = 1, to = 65535) int localServerPort) {
         File launcher = getNativeServerRunner(context);
         if (launcher == null) {
-            return getServerRunnerCommand(1, localServerPort);
+            return getRootScriptCommand(context, localServerPort);
         }
         return buildNativeServerRunnerCommand(launcher.getAbsolutePath(), localServerPort, getLocalToken(),
-                getServerJarFile(context).getAbsolutePath(), ROOT_EXEC_JAR, Constants.SERVER_NAME,
-                AssetsUtils.getServerArgs());
+                getServerJarFile(context).getAbsolutePath(), Constants.SERVER_NAME, AssetsUtils.getServerArgs());
+    }
+
+    /**
+     * The command that starts the server through run_server.sh as root. Its path comes from the
+     * context, so it names the real script even before {@link #init(Context)} has run.
+     */
+    @AnyThread
+    @NonNull
+    public static String getRootScriptCommand(@NonNull Context context,
+                                              @IntRange(from = 1, to = 65535) int localServerPort) {
+        return "sh " + getServerScriptFile(context) + " " + localServerPort + " " + getLocalToken();
     }
 
     @AnyThread
@@ -166,10 +181,10 @@ public final class ServerConfig {
     @VisibleForTesting
     @NonNull
     static String buildNativeServerRunnerCommand(@NonNull String launcher, int port, @NonNull String token,
-                                                 @NonNull String jarPath, @NonNull String execJarPath,
-                                                 @NonNull String niceName, @NonNull String serverArgs) {
+                                                 @NonNull String jarPath, @NonNull String niceName,
+                                                 @NonNull String serverArgs) {
         return shellQuote(launcher) + " " + port + " " + shellQuote(token) + " " + shellQuote(jarPath) + " "
-                + shellQuote(execJarPath) + " " + shellQuote(niceName) + " " + shellQuote(serverArgs);
+                + shellQuote(niceName) + " " + shellQuote(serverArgs);
     }
 
     @NonNull

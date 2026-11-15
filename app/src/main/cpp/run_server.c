@@ -3,11 +3,13 @@
 // Native launcher for the local privileged server, run by root in place of run_server.sh.
 // Based on App Manager's run_server.c by Muntashir Al-Islam (upstream commits 07c7199 and b42efbb).
 //
-// USAGE: librun_server.so <port> <token> <jar_path> <exec_jar_path> <nice_name> <server_args>
+// USAGE: librun_server.so <port> <token> <jar_path> <nice_name> <server_args>
 //
-// It copies the server jar to exec_jar_path (a file directly in /data/local/tmp) without following
-// a link someone left there, then starts app_process in a new session and reports whether exec
-// worked. Nothing here goes through a shell.
+// It starts app_process on the server jar where the app keeps it, in a new session, and reports
+// whether exec worked. Nothing here goes through a shell. Upstream copies the jar into
+// /data/local/tmp first, but the shell user owns that folder and can rename a file of its own over
+// the copy before app_process opens it, so root would run the shell user's code. The app's own
+// storage has no such gap.
 
 // For pipe2
 #define _GNU_SOURCE
@@ -25,7 +27,6 @@
 
 #define JAR_MAIN_CLASS "io.github.muntashirakon.AppManager.server.ServerRunner"
 #define APP_PROCESS "/system/bin/app_process"
-#define EXEC_DIR "/data/local/tmp/"
 #define MAX_PATH_LEN 512
 #define MAX_TOKEN_LEN 256
 #define MAX_NAME_LEN 64
@@ -110,10 +111,16 @@ static int is_path(const char *s) {
     }
 }
 
-// A plain name directly in /data/local/tmp
-static int is_exec_jar_path(const char *s) {
-    size_t dir_len = strlen(EXEC_DIR);
-    return strncmp(s, EXEC_DIR, dir_len) == 0 && is_name(s + dir_len) && is_path(s);
+// A plain file, not a link to one. O_NONBLOCK keeps a FIFO from holding the launcher up.
+static int is_regular_file(const char *path) {
+    int fd = open(path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW | O_NONBLOCK);
+    if (fd < 0) {
+        return 0;
+    }
+    struct stat st;
+    int result = fstat(fd, &st) == 0 && S_ISREG(st.st_mode);
+    close(fd);
+    return result;
 }
 
 // The server's config after the port: empty, or ",key:value" pairs
@@ -149,71 +156,17 @@ static int write_all(int fd, const char *buf, size_t len) {
     return 0;
 }
 
-// Copies src to dst as a new file. A file or link already at dst is removed first and never written
-// through, and if one comes back before the copy is made, the copy fails.
-static int copy_file(const char *src, const char *dst) {
-    int fd_src = open(src, O_RDONLY | O_CLOEXEC | O_NOFOLLOW);
-    if (fd_src < 0) {
-        return -1;
-    }
-    if (unlink(dst) != 0 && errno != ENOENT) {
-        int saved = errno;
-        close(fd_src);
-        errno = saved;
-        return -1;
-    }
-    int fd_dst = open(dst, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, 0600);
-    if (fd_dst < 0) {
-        int saved = errno;
-        close(fd_src);
-        errno = saved;
-        return -1;
-    }
-    char buf[8192];
-    ssize_t n;
-    int result = 0;
-    while ((n = read(fd_src, buf, sizeof(buf))) != 0) {
-        if (n < 0) {
-            if (errno == EINTR) {
-                continue;
-            }
-            result = -1;
-            break;
-        }
-        if (write_all(fd_dst, buf, (size_t) n) != 0) {
-            result = -1;
-            break;
-        }
-    }
-    // Readable by app_process whatever user it ends up as, writable by no one else
-    if (result == 0 && fchmod(fd_dst, 0755) != 0) {
-        result = -1;
-    }
-    int saved = errno;
-    close(fd_src);
-    if (close(fd_dst) != 0 && result == 0) {
-        saved = errno;
-        result = -1;
-    }
-    if (result != 0) {
-        unlink(dst);
-        errno = saved;
-    }
-    return result;
-}
-
 int main(int argc, char *argv[]) {
-    if (argc != 7) {
-        fprintf(stderr, "USAGE: %s <port> <token> <jar_path> <exec_jar_path> <nice_name> <server_args>\n",
+    if (argc != 6) {
+        fprintf(stderr, "USAGE: %s <port> <token> <jar_path> <nice_name> <server_args>\n",
                 argc > 0 ? argv[0] : "librun_server.so");
         return 1;
     }
     const char *port = argv[1];
     const char *token = argv[2];
     const char *jar_path = argv[3];
-    const char *exec_jar_path = argv[4];
-    const char *nice_name = argv[5];
-    const char *server_args = argv[6];
+    const char *nice_name = argv[4];
+    const char *server_args = argv[5];
 
     if (!is_port(port)) {
         fprintf(stderr, "Error! Invalid port.\n");
@@ -227,8 +180,8 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error! Invalid jar path.\n");
         return 1;
     }
-    if (!is_exec_jar_path(exec_jar_path)) {
-        fprintf(stderr, "Error! The jar can only run from a file in %s\n", EXEC_DIR);
+    if (!is_regular_file(jar_path)) {
+        fprintf(stderr, "Error! The jar isn't a file: %s\n", jar_path);
         return 1;
     }
     if (!is_name(nice_name)) {
@@ -249,16 +202,10 @@ int main(int argc, char *argv[]) {
     snprintf(nice_name_arg, sizeof(nice_name_arg), "--nice-name=%s", nice_name);
 
     printf("Starting %s as %d:%d...\n", nice_name, (int) getuid(), (int) getgid());
-    if (strcmp(jar_path, exec_jar_path) != 0) {
-        if (copy_file(jar_path, exec_jar_path) != 0) {
-            fprintf(stderr, "Error! Could not copy jar file to the executable directory: %s\n", strerror(errno));
-            return 1;
-        }
-    }
     printf("Jar path: %s\n", jar_path);
     fflush(stdout);
 
-    if (setenv("CLASSPATH", exec_jar_path, 1) != 0) {
+    if (setenv("CLASSPATH", jar_path, 1) != 0) {
         fprintf(stderr, "Error! Could not set CLASSPATH: %s\n", strerror(errno));
         return 1;
     }

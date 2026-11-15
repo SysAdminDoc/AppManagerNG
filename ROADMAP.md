@@ -480,6 +480,13 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
 
 ### P1
 
+- [ ] P1: Stop root restores from staging APKs in /data/local/tmp
+  Category: Security
+  Where: `app/src/main/java/io/github/muntashirakon/AppManager/backup/RestoreOp.java:570-600`; `app/src/main/java/io/github/muntashirakon/AppManager/utils/PackageUtils.java:107,990-1014`
+  Problem: In root mode a restore creates the APK files in /data/local/tmp as root and then extracts the backup into them by name. The shell user owns that folder, so it can replace a created file with a link between `createNewFile` and `TarUtils.extract`, and root writes the APK's bytes through it into any file on the device. It can also swap the finished APK before the install session reads it. `ensurePackageStagingDirectoryPrivileged` also resets the folder to 0711, which changes the shell user's own folder for no reason the restore needs.
+  Fix: Stage restore APKs in the app's private staging (`mStaging.newDirectory("apk-")`), which the root fallback already uses when /data/local/tmp isn't writable, and stop chmodding /data/local/tmp. Check the installer still reads a private path in root mode (it streams the files into the session).
+  Acceptance: WHEN a backup with APKs is restored in root mode, the system SHALL create and write no file in /data/local/tmp and SHALL leave its mode and owner as they were, and the restore SHALL still install the app. A test pins the staging folder, and a rooted emulator run with a link planted in /data/local/tmp confirms nothing writes through it.
+
 - [ ] P2 — Represent complete routes in Settings search
   Category: Navigation
   Where: `app/src/main/java/io/github/muntashirakon/AppManager/settings/SettingsSearchIndex.java:50-105`; `app/src/main/java/io/github/muntashirakon/AppManager/settings/SettingsActivity.java:184-193,215-243,332-343`; `app/src/main/java/io/github/muntashirakon/AppManager/settings/PreferenceFragment.java:88-97`; `app/src/main/res/xml/preferences_main.xml:16-21,37-55,132-137`

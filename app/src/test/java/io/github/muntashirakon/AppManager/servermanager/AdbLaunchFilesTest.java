@@ -73,10 +73,11 @@ public class AdbLaunchFilesTest {
     @Test
     public void stagedLauncherPointsAtTheStagedJar() throws IOException {
         Context context = ApplicationProvider.getApplicationContext();
-        String script = AssetsUtils.buildServerExecScript(context, AdbLaunchFiles.SERVER_JAR, AdbLaunchFiles.SERVER_JAR);
+        String script = AssetsUtils.buildServerExecScript(context, AdbLaunchFiles.SERVER_JAR);
 
         assertTrue(script.contains("\nJAR_PATH=" + AdbLaunchFiles.SERVER_JAR + "\n"));
-        assertTrue(script.contains("\nEXEC_JAR_PATH=" + AdbLaunchFiles.SERVER_JAR + "\n"));
+        assertTrue(script.contains("\nexport CLASSPATH=${JAR_PATH}\n"));
+        assertFalse(script.contains("EXEC_JAR_PATH"));
         assertTrue(script.contains("\nSERVER_NAME=" + Constants.SERVER_NAME + "\n"));
         assertFalse(script.contains("%ENV_VARS%"));
         assertFalse(script.contains("\r"));
@@ -89,7 +90,7 @@ public class AdbLaunchFilesTest {
         File jar = tmp.newFile("am.jar");
         Files.write(jar.toPath(), bytes(333, 7));
 
-        String calls = runLauncher(posix(jar), posix(jar));
+        String calls = runLauncher(posix(jar));
 
         assertTrue(calls, calls.contains("CLASSPATH=" + posix(jar) + "\n"));
         assertTrue(calls, calls.contains("--nice-name=" + Constants.SERVER_NAME + "\n"));
@@ -103,7 +104,7 @@ public class AdbLaunchFilesTest {
         File jar = tmp.newFile("am.jar");
         Files.write(jar.toPath(), bytes(333, 7));
 
-        String calls = runLauncher(posix(jar), posix(jar));
+        String calls = runLauncher(posix(jar));
 
         // ServerRunner reads a second argument as an old server's pid, so the port used to be
         // taken for a process to kill, and the token went on the command line twice
@@ -114,26 +115,28 @@ public class AdbLaunchFilesTest {
     }
 
     @Test
-    public void launcherCopiesAJarFromElsewhereToItsOwnName() throws Exception {
+    public void launcherRunsAJarFromElsewhereWithoutCopyingIt() throws Exception {
+        // Root used to copy the app's jar into /data/local/tmp first, where the shell user could
+        // swap the copy for its own file before app_process opened it
         assumeTrue("needs a POSIX sh", shAvailable());
-        File jar = tmp.newFile("cached.jar");
+        File jar = new File(tmp.newFolder("cache"), Constants.JAR_NAME);
         Files.write(jar.toPath(), bytes(333, 7));
-        File exec = new File(tmp.getRoot(), Constants.SERVER_NAME + ".jar");
 
-        String calls = runLauncher(posix(jar), posix(exec));
+        String calls = runLauncher(posix(jar));
 
-        assertTrue(calls, calls.contains("CLASSPATH=" + posix(exec) + "\n"));
-        assertArrayEquals(Files.readAllBytes(jar.toPath()), Files.readAllBytes(exec.toPath()));
+        assertTrue(calls, calls.contains("CLASSPATH=" + posix(jar) + "\n"));
+        assertEquals(Arrays.asList("app_process", "cache", "calls.txt", "run_server.sh"), sortedNames(tmp.getRoot()));
+        assertEquals(Arrays.asList(Constants.JAR_NAME), sortedNames(jar.getParentFile()));
     }
 
     /**
      * Runs the real launcher with a stand-in app_process that records how it was called.
      */
-    private String runLauncher(String jarPath, String execJarPath) throws Exception {
+    private String runLauncher(String jarPath) throws Exception {
         Context context = ApplicationProvider.getApplicationContext();
         File root = tmp.getRoot();
         File script = new File(root, "run_server.sh");
-        Files.write(script.toPath(), AssetsUtils.buildServerExecScript(context, jarPath, execJarPath)
+        Files.write(script.toPath(), AssetsUtils.buildServerExecScript(context, jarPath)
                 .getBytes(StandardCharsets.UTF_8));
         File calls = new File(root, "calls.txt");
         File stub = new File(root, "app_process");
@@ -160,7 +163,7 @@ public class AdbLaunchFilesTest {
         assumeTrue("needs a POSIX sh", shAvailable());
         File jar = tmp.newFile("am.jar");
         Files.write(jar.toPath(), bytes(333, 7));
-        String launcher = runLauncher(posix(jar), posix(jar));
+        String launcher = runLauncher(posix(jar));
 
         byte[] bundled = bytes(4111, 3);
         File apk = tmp.newFile("base.apk");

@@ -8,7 +8,6 @@ fi
 
 SERVER_NAME=
 JAR_PATH=
-EXEC_JAR_PATH=
 %ENV_VARS%
 PORT="path:$1"
 TOKEN=",token:$2"
@@ -21,22 +20,11 @@ SELF_UID=$(id | grep -oE "uid=[0-9]+" | grep -oE "[0-9]+")
 SELF_GID=$(id | grep -oE "gid=[0-9]+" | grep -oE "[0-9]+")
 
 echo "Starting $SERVER_NAME as $SELF_UID:$SELF_GID..."
-if [ "${JAR_PATH}" != "${EXEC_JAR_PATH}" ]; then
-    # Copy am.jar to executable directory
-    cp -f ${JAR_PATH} ${EXEC_JAR_PATH}
-    if [ $? -ne 0 ]; then
-        # Copy failed
-        echo "Error! Could not copy jar file to the executable directory."
-        exit 1
-    fi
-    # Fix permission
-    chmod 755 ${EXEC_JAR_PATH}
-    chown $SELF_UID:$SELF_GID ${EXEC_JAR_PATH}
-fi
 # Debug log
 echo "Jar path: $JAR_PATH"
-# Save jar path to environment variable
-export CLASSPATH=${EXEC_JAR_PATH}
+# The server runs the jar where it is. A copy in a folder the shell user can write, like
+# /data/local/tmp, could be swapped for another file before app_process opens it.
+export CLASSPATH=${JAR_PATH}
 # Execute local server
 # Only the config: a second argument would be read as an old server's pid to kill
 exec app_process /system/bin --nice-name=${SERVER_NAME} ${JAR_MAIN_CLASS} "$ARGS" &
