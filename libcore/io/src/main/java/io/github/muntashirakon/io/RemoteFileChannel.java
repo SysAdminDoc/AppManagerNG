@@ -174,7 +174,15 @@ class RemoteFileChannel extends FileChannel {
                 synchronized (fdLock) {
                     if (!isOpen() || Thread.interrupted())
                         return -1;
-                    len = Os.write(write, src);
+                    // The service takes at most PIPE_CAPACITY bytes per call. A FIFO holds 16 pages, which is more
+                    // than that on a kernel with 16KB pages, so a bigger buffer went into it whole and was refused.
+                    final int limit = src.limit();
+                    src.limit(src.position() + Math.min(src.remaining(), PIPE_CAPACITY));
+                    try {
+                        len = Os.write(write, src);
+                    } finally {
+                        src.limit(limit);
+                    }
                     fs.pwrite(handle, len, offset).checkException();
                 }
                 if (offset >= 0) {
