@@ -127,9 +127,9 @@ public final class TarUtils {
                     tos.closeArchiveEntry();
                 }
                 tos.finish();
-            } finally {
-                os.close();
             }
+            // os is closed by tos and again as a resource above, which keeps the first error and adds the rest
+            // as suppressed. A finally that closed it once more replaced that error with its own.
             return sos.getFiles();
         }
     }

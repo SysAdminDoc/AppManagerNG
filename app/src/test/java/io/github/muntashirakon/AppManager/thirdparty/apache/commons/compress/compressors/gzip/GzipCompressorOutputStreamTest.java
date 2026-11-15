@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.compressors.gzip;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
 import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.ArchiveEntry;
 import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -20,10 +21,12 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 import io.github.muntashirakon.io.IoUtils;
 import io.github.muntashirakon.io.Path;
@@ -132,6 +135,48 @@ public class GzipCompressorOutputStreamTest {
         assertEquals(fileNames, actualFileNames);
         for (Path path : pathList) {
             junkFiles.add(path.getFile());
+        }
+    }
+
+    @Test
+    public void aFailedCloseKeepsTheWriteErrorAndASecondCloseDoesNothing() throws IOException {
+        BreakableStream out = new BreakableStream();
+        GzipCompressorOutputStream gos = new GzipCompressorOutputStream(out);
+        // The destination goes away after the header, as a backup folder can mid-write
+        out.broken = true;
+        byte[] data = new byte[64 * 1024];
+        new Random(1).nextBytes(data);
+        assertThrows(IOException.class, () -> gos.write(data));
+
+        IOException closeError = assertThrows(IOException.class, gos::close);
+        assertEquals("write failed", closeError.getMessage());
+        assertEquals(1, closeError.getSuppressed().length);
+        assertEquals("close failed", closeError.getSuppressed()[0].getMessage());
+        // Closing again, as an enclosing stream and try-with-resources do, used to finish the ended deflater and
+        // throw "Deflater has been closed", which replaced the write error above
+        gos.close();
+    }
+
+    private static final class BreakableStream extends OutputStream {
+        boolean broken;
+
+        @Override
+        public void write(int b) throws IOException {
+            write(new byte[]{(byte) b}, 0, 1);
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) throws IOException {
+            if (broken) {
+                throw new IOException("write failed");
+            }
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (broken) {
+                throw new IOException("close failed");
+            }
         }
     }
 }
