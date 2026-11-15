@@ -12,6 +12,7 @@ import static org.robolectric.Shadows.shadowOf;
 
 import android.Manifest;
 import android.app.Application;
+import android.app.Dialog;
 import android.content.ComponentName;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -270,6 +271,55 @@ public class ActivityLauncherShortcutActivityTest {
 
         waitFor(() -> USERS_ASSISTANT.equals(Settings.Secure.getString(mApp.getContentResolver(), ASSISTANT))
                 ? Boolean.TRUE : null, 1000);
+    }
+
+    @Test
+    public void aSecondTapWhileTheFirstWaitsStillGivesTheUsersAssistantBack() throws Exception {
+        installTargetThatOnlyTheAssistantCanStart();
+        String target = new ComponentName(PKG, CLS).flattenToShortString();
+
+        ActivityController<ActivityLauncherShortcutActivity> controller = Robolectric.buildActivity(
+                ActivityLauncherShortcutActivity.class, shortcut()).setup();
+        Dialog first = waitFor(ShadowDialog::getLatestDialog);
+
+        // The same shortcut again reaches the trampoline while it waits for the first tap
+        controller.newIntent(shortcut());
+        Dialog second = waitFor(() -> {
+            Dialog latest = ShadowDialog.getLatestDialog();
+            return latest != first && latest != null && latest.isShowing() ? latest : null;
+        });
+        assertFalse(first.isShowing());
+        // The first dialog went away for the second one, which keeps this screen open
+        assertFalse(controller.get().isFinishing());
+        assertEquals(target, Settings.Secure.getString(mApp.getContentResolver(), ASSISTANT));
+
+        // The target opens over the trampoline, and Android finishes it
+        controller.get().finish();
+        controller.pause().stop().destroy();
+
+        waitFor(() -> USERS_ASSISTANT.equals(Settings.Secure.getString(mApp.getContentResolver(), ASSISTANT))
+                ? Boolean.TRUE : null, 1000);
+        assertFalse(second.isShowing());
+    }
+
+    @Test
+    public void closingTheSecondTapsDialogClosesTheTrampolineAndGivesTheAssistantBack() throws Exception {
+        installTargetThatOnlyTheAssistantCanStart();
+
+        ActivityController<ActivityLauncherShortcutActivity> controller = Robolectric.buildActivity(
+                ActivityLauncherShortcutActivity.class, shortcut()).setup();
+        Dialog first = waitFor(ShadowDialog::getLatestDialog);
+        controller.newIntent(shortcut());
+        AlertDialog second = (AlertDialog) waitFor(() -> {
+            Dialog latest = ShadowDialog.getLatestDialog();
+            return latest != first && latest != null && latest.isShowing() ? latest : null;
+        });
+
+        second.getButton(DialogInterface.BUTTON_NEGATIVE).performClick();
+
+        waitFor(() -> USERS_ASSISTANT.equals(Settings.Secure.getString(mApp.getContentResolver(), ASSISTANT))
+                ? Boolean.TRUE : null, 1000);
+        assertTrue(controller.get().isFinishing());
     }
 
     @Test

@@ -4,7 +4,13 @@ package io.github.muntashirakon.AppManager.compat;
 
 import android.app.ActivityManager;
 import android.content.ComponentName;
+import android.content.ContentResolver;
+import android.provider.Settings;
 
+import androidx.annotation.Nullable;
+import androidx.test.core.app.ApplicationProvider;
+
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -13,6 +19,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -22,10 +29,73 @@ import io.github.muntashirakon.io.IoUtils;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 @RunWith(RobolectricTestRunner.class)
 public class ActivityManagerCompatTest {
+    private static final String USERS_ASSISTANT = "com.example.assistant/.VoiceService";
+    private static final String FIRST = "com.example.app/.FirstActivity";
+    private static final String SECOND = "com.example.app/.SecondActivity";
+
     private final ClassLoader classLoader = getClass().getClassLoader();
+    private final ContentResolver mResolver = ApplicationProvider.getApplicationContext().getContentResolver();
+
+    @After
+    public void forgetUnfinishedAssistantLaunches() throws ReflectiveOperationException {
+        Field targets = ActivityManagerCompat.class.getDeclaredField("sAssistantTargets");
+        targets.setAccessible(true);
+        ((List<?>) targets.get(null)).clear();
+        Field usersAssistant = ActivityManagerCompat.class.getDeclaredField("sUsersAssistant");
+        usersAssistant.setAccessible(true);
+        usersAssistant.set(null, null);
+    }
+
+    @Test
+    public void overlappingAssistantLaunchesGiveTheUsersAssistantBackWhenTheLastOneEnds() {
+        Settings.Secure.putString(mResolver, "assistant", USERS_ASSISTANT);
+
+        ActivityManagerCompat.lendAssistant(mResolver, FIRST);
+        assertEquals(FIRST, assistant());
+        // A second launch while the first still waits for the user
+        ActivityManagerCompat.lendAssistant(mResolver, SECOND);
+        assertEquals(SECOND, assistant());
+        // The first one ends first, and the launch still waiting keeps the assistant
+        ActivityManagerCompat.returnAssistant(mResolver, FIRST);
+        assertEquals(SECOND, assistant());
+        ActivityManagerCompat.returnAssistant(mResolver, SECOND);
+        assertEquals(USERS_ASSISTANT, assistant());
+
+        // The newer one ends first, and the older one has the assistant until it ends
+        ActivityManagerCompat.lendAssistant(mResolver, FIRST);
+        ActivityManagerCompat.lendAssistant(mResolver, SECOND);
+        ActivityManagerCompat.returnAssistant(mResolver, SECOND);
+        assertEquals(FIRST, assistant());
+        ActivityManagerCompat.returnAssistant(mResolver, FIRST);
+        assertEquals(USERS_ASSISTANT, assistant());
+
+        // A double tap launches the same target twice
+        ActivityManagerCompat.lendAssistant(mResolver, FIRST);
+        ActivityManagerCompat.lendAssistant(mResolver, FIRST);
+        ActivityManagerCompat.returnAssistant(mResolver, FIRST);
+        assertEquals(FIRST, assistant());
+        ActivityManagerCompat.returnAssistant(mResolver, FIRST);
+        assertEquals(USERS_ASSISTANT, assistant());
+    }
+
+    @Test
+    public void aUserWithNoAssistantGetsNoneBack() {
+        Settings.Secure.putString(mResolver, "assistant", null);
+
+        ActivityManagerCompat.lendAssistant(mResolver, FIRST);
+        assertEquals(FIRST, assistant());
+        ActivityManagerCompat.returnAssistant(mResolver, FIRST);
+        assertNull(assistant());
+    }
+
+    @Nullable
+    private String assistant() {
+        return Settings.Secure.getString(mResolver, "assistant");
+    }
 
     @Test
     public void parseRunningAppProcesses() throws IOException {

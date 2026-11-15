@@ -70,37 +70,76 @@ public final class ActivityManagerCompat {
         SelfPermissions.requireSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS);
         boolean canInjectEvents = SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.INJECT_EVENTS);
         ContentResolver resolver = context.getContentResolver();
-        // Backup assistant value
-        String assistantComponent = Settings.Secure.getString(resolver, "assistant");
+        String target = activity.flattenToShortString();
         if (canInjectEvents) {
             ThreadUtils.postOnBackgroundThread(() -> {
+                lendAssistant(resolver, target);
                 try {
-                    // Set assistant value to the target activity component
-                    Settings.Secure.putString(resolver, "assistant", activity.flattenToShortString());
                     // Run it as an assistant by injecting KEYCODE_ASSIST (219)
                     InputManagerCompat.sendKeyEvent(KeyEvent.KEYCODE_ASSIST, false);
                     // Wait until system opens the new assistant (i.e., activity), this is an empirical value
                     SystemClock.sleep(500);
                 } finally {
-                    // Restore assistant value
-                    Settings.Secure.putString(resolver, "assistant", assistantComponent);
+                    returnAssistant(resolver, target);
                 }
             });
         } else if (callback != null) {
             // Cannot launch event by default, use callback
             ThreadUtils.postOnBackgroundThread(() -> {
+                lendAssistant(resolver, target);
                 try {
-                    // Set assistant value to the target activity component
-                    Settings.Secure.putString(resolver, "assistant", activity.flattenToShortString());
-                    // Trigger callback
                     callback.onInteraction();
                 } finally {
-                    // Restore assistant value
-                    Settings.Secure.putString(resolver, "assistant", assistantComponent);
+                    returnAssistant(resolver, target);
                 }
             });
         } // else do nothing
         return canInjectEvents;
+    }
+
+    private static final String ASSISTANT = "assistant";
+    private static final Object sAssistantLock = new Object();
+    // Targets of the assistant launches under way, oldest first. Guarded by sAssistantLock.
+    private static final List<String> sAssistantTargets = new ArrayList<>();
+    // The user's own assistant while a launch is under way. Guarded by sAssistantLock.
+    @Nullable
+    private static String sUsersAssistant;
+
+    /**
+     * Points the assistant at {@code target}. Launches can overlap, as with a second tap while the first one waits
+     * for the user, so the user's own assistant is saved only when no launch is under way. Saving it again would
+     * save the earlier target as the value to give back.
+     */
+    @VisibleForTesting
+    @WorkerThread
+    static void lendAssistant(@NonNull ContentResolver resolver, @NonNull String target) {
+        synchronized (sAssistantLock) {
+            String current = Settings.Secure.getString(resolver, ASSISTANT);
+            Settings.Secure.putString(resolver, ASSISTANT, target);
+            if (sAssistantTargets.isEmpty()) {
+                sUsersAssistant = current;
+            }
+            sAssistantTargets.add(target);
+        }
+    }
+
+    /**
+     * Ends the launch of {@code target}. The assistant goes to the newest launch still under way, or back to the
+     * user's own once none is.
+     */
+    @VisibleForTesting
+    @WorkerThread
+    static void returnAssistant(@NonNull ContentResolver resolver, @NonNull String target) {
+        synchronized (sAssistantLock) {
+            sAssistantTargets.remove(target);
+            if (sAssistantTargets.isEmpty()) {
+                String usersAssistant = sUsersAssistant;
+                sUsersAssistant = null;
+                Settings.Secure.putString(resolver, ASSISTANT, usersAssistant);
+            } else {
+                Settings.Secure.putString(resolver, ASSISTANT, sAssistantTargets.get(sAssistantTargets.size() - 1));
+            }
+        }
     }
 
     @SuppressWarnings("deprecation")
