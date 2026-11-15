@@ -2,11 +2,14 @@
 
 package io.github.muntashirakon.AppManager.apk.installer;
 
+import static io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat.STATUS_FAILURE_INVALID;
 import static io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat.STATUS_FAILURE_SECURITY;
 import static io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat.STATUS_SUCCESS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -19,6 +22,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Looper;
 import android.service.notification.StatusBarNotification;
 
 import androidx.annotation.NonNull;
@@ -26,7 +30,9 @@ import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import androidx.test.core.app.ApplicationProvider;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
@@ -34,10 +40,18 @@ import org.robolectric.RuntimeEnvironment;
 import org.robolectric.android.controller.ServiceController;
 import org.robolectric.annotation.Config;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.zip.ZipFile;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.ApkSource;
@@ -45,10 +59,88 @@ import io.github.muntashirakon.AppManager.intercept.IntentCompat;
 import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler.NotificationInfo;
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
 import io.github.muntashirakon.AppManager.progress.QueuedProgressHandler;
+import io.github.muntashirakon.io.IoUtils;
 import io.github.muntashirakon.test.shadows.ShadowCpuUtils;
 
 @RunWith(RobolectricTestRunner.class)
 public class PackageInstallerServiceTest {
+    private static final String REVIEWED = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08";
+
+    @Rule
+    public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+    @Test
+    public void thePackageAsReviewedPassesTheCheck() {
+        assertNull(PackageInstallerService.describePayloadMismatch(REVIEWED, 4096, REVIEWED, 4096));
+        // Digests are compared without regard to case
+        assertNull(PackageInstallerService.describePayloadMismatch(REVIEWED.toUpperCase(), 4096, REVIEWED, 4096));
+        // Nothing was reviewed: install-existing, or a history entry older than the check
+        assertNull(PackageInstallerService.describePayloadMismatch(null, -1, REVIEWED, 4096));
+    }
+
+    @Test
+    public void aPackageThatChangedSinceTheReviewIsRefused() {
+        String otherDigest = REVIEWED.replace('9', '8');
+        String changedBytes = PackageInstallerService.describePayloadMismatch(REVIEWED, 4096, otherDigest, 4096);
+        String changedSize = PackageInstallerService.describePayloadMismatch(REVIEWED, 4096, REVIEWED, 4097);
+        String unreadable = PackageInstallerService.describePayloadMismatch(REVIEWED, 4096, null, -1);
+
+        assertNotNull(changedBytes);
+        assertTrue(changedBytes.contains(REVIEWED));
+        assertTrue(changedBytes.contains(otherDigest));
+        assertNotNull(changedSize);
+        assertTrue(changedSize.contains("4097"));
+        assertNotNull(unreadable);
+    }
+
+    @Test
+    @Config(shadows = ShadowCpuUtils.class)
+    public void theServiceRefusesAnInstallWhoseFileChangedAfterTheReview() throws IOException, InterruptedException {
+        Application app = ApplicationProvider.getApplicationContext();
+        shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
+        File shared = temporaryFolder.newFile("shared.apk");
+        try (ZipFile bundle = new ZipFile(new File(PackageInstallerServiceTest.class.getClassLoader()
+                .getResource("AppManager_v2.5.22.apks").getFile()));
+             InputStream in = bundle.getInputStream(bundle.getEntry("base.apk"));
+             OutputStream out = new FileOutputStream(shared)) {
+            IoUtils.copy(in, out);
+        }
+        ApkQueueItem item = ApkQueueItem.fromApkSource(ApkSource.getApkSource(Uri.fromFile(shared),
+                "application/vnd.android.package-archive"));
+        item.setAppLabel("Example");
+        item.setSelectedSplits(new ArrayList<>());
+        // What the user saw: same size, other bytes
+        item.setReviewedPayload(REVIEWED, shared.length());
+        Intent intent = new Intent(app, PackageInstallerService.class);
+        IntentCompat.putWrappedParcelableExtra(intent, PackageInstallerService.EXTRA_QUEUE_ITEM, item);
+
+        ServiceController<PackageInstallerService> controller = Robolectric.buildService(PackageInstallerService.class).create();
+        PackageInstallerService service = controller.get();
+        AtomicInteger status = new AtomicInteger(Integer.MIN_VALUE);
+        AtomicReference<String> message = new AtomicReference<>();
+        try {
+            service.onStartCommand(new Intent(app, PackageInstallerService.class), 0, 1);
+            service.setOnInstallFinished((packageName, result, blockingPackage, statusMessage) -> {
+                status.set(result);
+                message.set(statusMessage);
+            });
+
+            // The service handles each queued item on its worker thread, which may write history
+            Thread worker = new Thread(() -> service.onHandleIntent(intent));
+            worker.start();
+            worker.join(60_000);
+            assertFalse(worker.isAlive());
+            shadowOf(Looper.getMainLooper()).idle();
+
+            assertEquals(STATUS_FAILURE_INVALID, status.get());
+            assertNotNull(message.get());
+            assertTrue(message.get(), message.get().contains("changed after it was reviewed"));
+            assertTrue(message.get(), message.get().contains(REVIEWED));
+        } finally {
+            controller.destroy();
+        }
+    }
+
     @Test
     public void finalProgressNotificationUsesConcreteSuccessSubject() {
         Context context = RuntimeEnvironment.getApplication();

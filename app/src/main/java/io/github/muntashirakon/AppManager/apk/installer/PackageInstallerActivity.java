@@ -688,6 +688,11 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         int userId = mInstallerOptions.getUserId();
         mCurrentItem.setInstallerOptions(mInstallerOptions);
         mCurrentItem.setSelectedSplits(mModel.getSelectedSplitsForInstallation());
+        ApkFile reviewedApkFile = mModel.getApkFile();
+        if (!mCurrentItem.isInstallExisting() && reviewedApkFile != null) {
+            // The service installs only the bytes reviewed here and refuses a package that changed since
+            mCurrentItem.setReviewedPayload(reviewedApkFile.getPayloadSha256(), reviewedApkFile.getPayloadSize());
+        }
         mLastUserId = userId == UserHandleHidden.USER_ALL ? UserHandleHidden.myUserId() : userId;
         boolean canDisplayNotification = Utils.canDisplayNotification(this);
         boolean alwaysOnBackground = canDisplayNotification && Prefs.Installer.installInBackground();

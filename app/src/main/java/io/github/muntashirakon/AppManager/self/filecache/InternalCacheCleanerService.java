@@ -64,6 +64,11 @@ public class InternalCacheCleanerService extends ForegroundService {
         long lastAccessDate = System.currentTimeMillis() - 259_200_000;
         Path fileCache = Paths.getUnprivileged(FileSystemManager.getLocal().getFile(FileUtils.getCachePath(), "files"));
         int deleteCount = deleteFilesWithAccessDate(fileCache, lastAccessDate);
+        // Packages staged for review and install, left behind if the process died mid-install
+        Path stagingDir = Paths.getUnprivileged(FileCache.getPrivateStagingDir());
+        if (stagingDir.isDirectory()) {
+            deleteCount += deleteFilesWithAccessDate(stagingDir, lastAccessDate);
+        }
         Log.i(TAG, "Deleted " + deleteCount + " files and directories.");
     }
 

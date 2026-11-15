@@ -559,16 +559,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Confidence: Verified
   Effort: L
 
-- [ ] P1 — Install the exact APK bytes shown in review
-  Category: Security
-  Where: `app/src/main/AndroidManifest.xml:749-795`; `app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/ApkQueueItem.java:36-61`; `app/src/main/java/io/github/muntashirakon/AppManager/apk/UriApkSource.java:29-49`; `app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/PackageInstallerViewModel.java:86-107,211-234`; `app/src/main/java/io/github/muntashirakon/AppManager/apk/installer/PackageInstallerService.java:248-270`
-  Problem: A reviewed seekable `content://` APK can remain backed by a mutable provider file until the deferred installer rereads it.
-  Evidence: Seekable inputs can be represented by a live `/proc/self/fd` path; final staging computes a digest but never compares it with a review-time digest.
-  Fix: Ingest external APK and split inputs into immutable private staging before parsing, then bind size and SHA-256 to the queue item used for approval and installation.
-  Acceptance: Provider mutation after review cannot change installed bytes; the service rejects any size or digest mismatch; split membership, signer details, requested permissions, and installed payload all derive from the same staged files.
-  Confidence: Verified
-  Effort: M
-
 - [ ] P1 — Treat Pure black as a night-only palette
   Category: Accessibility
   Where: `app/src/main/java/io/github/muntashirakon/AppManager/settings/AppearancePreferences.java:44-70`; `app/src/main/java/io/github/muntashirakon/AppManager/settings/Prefs.java:199-235`; `app/src/main/java/io/github/muntashirakon/AppManager/utils/appearance/AppearanceUtils.java:189-221,365-370`; `app/src/main/res/values/themes-v2.xml:93-127,249`

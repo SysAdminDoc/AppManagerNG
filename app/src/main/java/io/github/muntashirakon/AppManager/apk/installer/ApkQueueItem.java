@@ -81,6 +81,11 @@ public class ApkQueueItem implements Parcelable, IJsonSerializer {
     private InstallerOptions mInstallerOptions;
     @Nullable
     private ArrayList<String> mSelectedSplits;
+    // SHA-256 and size of the package as the user reviewed it. Unset when nothing was reviewed: an
+    // install-existing request, or an op-history entry saved before these were recorded.
+    @Nullable
+    private String mReviewedSha256;
+    private long mReviewedSize = -1;
 
     private ApkQueueItem(@NonNull String packageName, boolean installExisting) {
         mPackageName = Objects.requireNonNull(packageName);
@@ -103,6 +108,8 @@ public class ApkQueueItem implements Parcelable, IJsonSerializer {
         mInstallerOptions = ParcelCompat.readParcelable(in, InstallerOptions.class.getClassLoader(), InstallerOptions.class);
         mSelectedSplits = new ArrayList<>();
         in.readStringList(mSelectedSplits);
+        mReviewedSha256 = in.readString();
+        mReviewedSize = in.readLong();
     }
 
     @Nullable
@@ -164,6 +171,24 @@ public class ApkQueueItem implements Parcelable, IJsonSerializer {
         mAppLabel = appLabel;
     }
 
+    /**
+     * Binds this item to the package bytes the user reviewed. The installer service refuses to install
+     * a package whose SHA-256 or size differs.
+     */
+    public void setReviewedPayload(@Nullable String sha256, long size) {
+        mReviewedSha256 = sha256;
+        mReviewedSize = sha256 != null ? size : -1;
+    }
+
+    @Nullable
+    public String getReviewedSha256() {
+        return mReviewedSha256;
+    }
+
+    public long getReviewedSize() {
+        return mReviewedSize;
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -179,6 +204,8 @@ public class ApkQueueItem implements Parcelable, IJsonSerializer {
         dest.writeParcelable(mApkSource, flags);
         dest.writeParcelable(mInstallerOptions, flags);
         dest.writeStringList(mSelectedSplits);
+        dest.writeString(mReviewedSha256);
+        dest.writeLong(mReviewedSize);
     }
 
     protected ApkQueueItem(@NonNull JSONObject jsonObject) throws JSONException {
@@ -193,6 +220,8 @@ public class ApkQueueItem implements Parcelable, IJsonSerializer {
         JSONObject installerOptions = jsonObject.optJSONObject("installer_options");
         mInstallerOptions = installerOptions != null ? InstallerOptions.DESERIALIZER.deserialize(installerOptions) : null;
         mSelectedSplits = JSONUtils.getArray(jsonObject.optJSONArray("selected_splits"));
+        mReviewedSha256 = JSONUtils.optString(jsonObject, "reviewed_sha256", null);
+        mReviewedSize = mReviewedSha256 != null ? jsonObject.optLong("reviewed_size", -1) : -1;
     }
 
     @NonNull
@@ -207,6 +236,9 @@ public class ApkQueueItem implements Parcelable, IJsonSerializer {
         jsonObject.put("apk_source", mApkSource != null ? mApkSource.serializeToJson() : null);
         jsonObject.put("installer_options", mInstallerOptions != null ? mInstallerOptions.serializeToJson() : null);
         jsonObject.put("selected_splits", JSONUtils.getJSONArray(mSelectedSplits));
+        // A replay from history installs only these bytes, so a file changed since then is refused
+        jsonObject.put("reviewed_sha256", mReviewedSha256);
+        jsonObject.put("reviewed_size", mReviewedSize);
         return jsonObject;
     }
 

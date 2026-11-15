@@ -7,7 +7,6 @@ import static io.github.muntashirakon.AppManager.apk.ApkUtils.getManifestAttribu
 import static io.github.muntashirakon.AppManager.apk.ApkUtils.getManifestFromApk;
 import static io.github.muntashirakon.AppManager.utils.UIUtils.getSmallerText;
 
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.net.Uri;
@@ -31,6 +30,8 @@ import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.collection.SparseArrayCompat;
 
+import aosp.libcore.util.HexEncoding;
+
 import com.google.android.material.color.MaterialColors;
 
 import org.json.JSONException;
@@ -38,7 +39,6 @@ import org.json.JSONException;
 import java.io.File;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -47,6 +47,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.DigestOutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -66,12 +69,12 @@ import io.github.muntashirakon.AppManager.StaticDataset;
 import io.github.muntashirakon.AppManager.apk.signing.Signer;
 import io.github.muntashirakon.AppManager.apk.splitapk.ApksMetadata;
 import io.github.muntashirakon.AppManager.apk.splitapk.SplitLabelResolver;
-import io.github.muntashirakon.AppManager.fm.FmProvider;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.VMRuntime;
 import io.github.muntashirakon.AppManager.self.filecache.FileCache;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
+import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
 import io.github.muntashirakon.AppManager.utils.LangUtils;
 import io.github.muntashirakon.io.IoUtils;
@@ -202,11 +205,15 @@ public final class ApkFile implements AutoCloseable {
     private final String mContainerType;
     @NonNull
     private final List<ZipEntry> mObbFiles = new ArrayList<>();
-    private final FileCache mFileCache = new FileCache();
+    // Internal storage: every file read or installed from here must stay the bytes that were reviewed
+    private final FileCache mFileCache = FileCache.newPrivateSessionCache();
     @NonNull
     private final File mCacheFilePath;
+    // SHA-256 and size of mCacheFilePath, the private copy every later read comes from. Null for an
+    // installed app's own APKs, which only the system can write.
     @Nullable
-    private ParcelFileDescriptor mFd;
+    private String mPayloadSha256;
+    private long mPayloadSize = -1;
     @Nullable
     private ZipFile mZipFile;
     private boolean mClosed;
@@ -269,31 +276,18 @@ public final class ApkFile implements AutoCloseable {
                 throw new ApkFileException(e);
             }
         } else {
-            // Open file descriptor if necessary
-            File cacheFilePath = null;
-            if (ContentResolver.SCHEME_FILE.equals(apkUri.getScheme())) {
-                // File scheme may not require an FD
-                cacheFilePath = new File(apkUri.getPath());
+            File privateFile = getPrivateLocalFile(context, apkUri);
+            if (privateFile != null) {
+                // Already in storage no other app can write to
+                mCacheFilePath = privateFile;
+            } else {
+                // A provider or a shared-storage file can change between reads, so read it once
+                // into a private copy. Review, signer checks and the install all read that copy.
+                mCacheFilePath = stagePrivateCopy(apkSource, extension);
             }
-            if (!FmProvider.AUTHORITY.equals(apkUri.getAuthority())) {
-                // Content scheme has a third-party authority
-                try {
-                    mFd = FileUtils.getFdFromUri(context, apkUri, "r");
-                    cacheFilePath = FileUtils.getFileFromFd(mFd);
-                } catch (FileNotFoundException e) {
-                    throw new ApkFileException(e);
-                } catch (SecurityException e) {
-                    Log.e(TAG, e);
-                }
-            }
-            if (cacheFilePath == null || !FileUtils.canReadUnprivileged(cacheFilePath)) {
-                // Cache manually
-                try {
-                    mCacheFilePath = mFileCache.getCachedFile(apkSource);
-                } catch (IOException | SecurityException e) {
-                    throw new ApkFileException("Could not cache the input file.", e);
-                }
-            } else mCacheFilePath = cacheFilePath;
+        }
+        if (mPayloadSha256 == null) {
+            recordPayloadDigest(mCacheFilePath);
         }
         String packageName = null;
         // Check for splits
@@ -382,13 +376,84 @@ public final class ApkFile implements AutoCloseable {
                 });
             } catch (Throwable th) {
                 IoUtils.closeQuietly(mZipFile);
-                IoUtils.closeQuietly(mFd);
                 IoUtils.closeQuietly(mFileCache);
                 throw th;
             }
         }
         if (packageName == null) throw new ApkFileException("Package name not found.");
         mPackageName = packageName;
+    }
+
+    /**
+     * The file behind a {@code file://} URI when it sits in this app's own data directory, which no
+     * other app can write to, or {@code null} for anything that has to be staged first.
+     */
+    @VisibleForTesting
+    @Nullable
+    static File getPrivateLocalFile(@NonNull Context context, @NonNull Uri uri) {
+        String path = uri.getPath();
+        if (!"file".equals(uri.getScheme()) || path == null) {
+            return null;
+        }
+        try {
+            File file = new File(path).getCanonicalFile();
+            File dataDir = new File(context.getApplicationInfo().dataDir).getCanonicalFile();
+            for (File parent = file.getParentFile(); parent != null; parent = parent.getParentFile()) {
+                if (parent.equals(dataDir)) {
+                    return file.isFile() ? file : null;
+                }
+            }
+        } catch (IOException | SecurityException ignore) {
+        }
+        return null;
+    }
+
+    /**
+     * Copies the source into this instance's private cache in one read and records the SHA-256 and
+     * size of exactly the bytes written.
+     */
+    @NonNull
+    private File stagePrivateCopy(@NonNull Path source, @NonNull String extension) throws ApkFileException {
+        File staged = null;
+        try {
+            staged = mFileCache.createCachedFile(extension);
+            long needed = source.length();
+            File stagingDir = staged.getParentFile();
+            if (needed > 0 && stagingDir != null && stagingDir.getUsableSpace() < needed) {
+                mFileCache.delete(staged);
+                throw new ApkFileException("Not enough free space to stage the package ("
+                        + Formatter.formatShortFileSize(ContextUtils.getContext(), needed) + " needed).");
+            }
+            MessageDigest digest = MessageDigest.getInstance(DigestUtils.SHA_256);
+            long size;
+            try (InputStream in = source.openInputStream();
+                 OutputStream out = new DigestOutputStream(new FileOutputStream(staged), digest)) {
+                size = IoUtils.copy(in, out);
+            }
+            mPayloadSha256 = HexEncoding.encodeToString(digest.digest(), false /* lowercase */);
+            mPayloadSize = size;
+            return staged;
+        } catch (IOException | SecurityException | NoSuchAlgorithmException e) {
+            mFileCache.delete(staged);
+            throw new ApkFileException("Could not cache the input file.", e);
+        }
+    }
+
+    private void recordPayloadDigest(@NonNull File file) throws ApkFileException {
+        try (InputStream in = new FileInputStream(file)) {
+            MessageDigest digest = MessageDigest.getInstance(DigestUtils.SHA_256);
+            byte[] buffer = new byte[64 * 1024];
+            long size = 0;
+            int read;
+            while ((read = in.read(buffer)) != -1) {
+                digest.update(buffer, 0, read);
+                size += read;
+            }
+            mPayloadSha256 = HexEncoding.encodeToString(digest.digest(), false /* lowercase */);
+            mPayloadSize = size;
+        } catch (IOException | NoSuchAlgorithmException e) {
+            throw new ApkFileException("Could not read the package file.", e);
+        }
     }
 
     @VisibleForTesting
@@ -656,6 +721,19 @@ public final class ApkFile implements AutoCloseable {
     }
 
     /**
+     * SHA-256 of the private package file that review and install both read, or {@code null} for an
+     * installed app's own APKs.
+     */
+    @Nullable
+    public String getPayloadSha256() {
+        return mPayloadSha256;
+    }
+
+    public long getPayloadSize() {
+        return mPayloadSize;
+    }
+
+    /**
      * Return the stable provenance label for the input container.
      */
     @NonNull
@@ -723,7 +801,6 @@ public final class ApkFile implements AutoCloseable {
             entry.close();
         }
         IoUtils.closeQuietly(mZipFile);
-        IoUtils.closeQuietly(mFd);
         IoUtils.closeQuietly(mFileCache);
         FileUtils.deleteSilently(mIdsigFile);
         // Ensure that entries are not accessible if accidentally accessed

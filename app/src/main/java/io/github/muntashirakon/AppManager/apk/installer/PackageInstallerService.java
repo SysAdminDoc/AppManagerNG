@@ -255,6 +255,19 @@ public class PackageInstallerService extends ForegroundService {
                                 apkQueueItem.getAppLabel(), null, "STATUS_FAILURE_INVALID: " + reason);
                         return;
                     }
+                    String mismatch = describePayloadMismatch(apkQueueItem.getReviewedSha256(),
+                            apkQueueItem.getReviewedSize(), apkFile.getPayloadSha256(), apkFile.getPayloadSize());
+                    if (mismatch != null) {
+                        Log.w(TAG, "Refusing an install that differs from the review: %s", mismatch);
+                        apkFile.close();
+                        OpHistoryManager.addHistoryItem(HISTORY_TYPE_INSTALLER, apkQueueItem, false,
+                                OperationJournalMetadata.forInstaller(this, apkQueueItem,
+                                        STATUS_FAILURE_INVALID, null, mismatch));
+                        String packageName = apkQueueItem.getPackageName();
+                        finishInstallation(packageName != null ? packageName : "Unknown Package", STATUS_FAILURE_INVALID,
+                                apkQueueItem.getAppLabel(), null, "STATUS_FAILURE_INVALID: " + mismatch);
+                        return;
+                    }
                     installer.install(apkFile, selectedSplitIds, options, mProgressHandler);
                 } finally {
                     // Delete the cached file
@@ -338,6 +351,25 @@ public class PackageInstallerService extends ForegroundService {
             return null;
         }
         return IntentCompat.getUnwrappedParcelableExtra(intent, EXTRA_QUEUE_ITEM, ApkQueueItem.class);
+    }
+
+    /**
+     * Why the package about to be installed is not the one the user reviewed, or {@code null} when it
+     * is, or when nothing was reviewed (install-existing, an op-history entry from before the check).
+     */
+    @VisibleForTesting
+    @Nullable
+    static String describePayloadMismatch(@Nullable String reviewedSha256, long reviewedSize,
+                                          @Nullable String actualSha256, long actualSize) {
+        if (reviewedSha256 == null) {
+            return null;
+        }
+        if (reviewedSha256.equalsIgnoreCase(actualSha256) && reviewedSize == actualSize) {
+            return null;
+        }
+        return "The package changed after it was reviewed. Open it again to review it. Reviewed "
+                + reviewedSize + " bytes, SHA-256 " + reviewedSha256 + "; found " + actualSize
+                + " bytes, SHA-256 " + actualSha256 + ".";
     }
 
     private void finishInstallation(@NonNull String packageName, int status,

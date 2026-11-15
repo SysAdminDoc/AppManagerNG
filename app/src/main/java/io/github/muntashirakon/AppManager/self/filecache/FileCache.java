@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
 import io.github.muntashirakon.io.IoUtils;
 import io.github.muntashirakon.io.Path;
@@ -46,9 +47,28 @@ public class FileCache implements Closeable {
         this(true);
     }
 
+    /**
+     * A session cache in the app's internal cache directory. The default cache prefers shared
+     * storage, which other apps holding the storage permission can write to up to Android 10; no
+     * other app can write here on any version, so a file staged here stays the bytes that were read.
+     */
+    @NonNull
+    public static FileCache newPrivateSessionCache() {
+        return new FileCache(true, getPrivateStagingDir());
+    }
+
+    @NonNull
+    public static File getPrivateStagingDir() {
+        return new File(ContextUtils.getContext().getCacheDir(), "staged");
+    }
+
     private FileCache(boolean sessionOnly) {
+        this(sessionOnly, new File(FileUtils.getCachePath(), "files"));
+    }
+
+    private FileCache(boolean sessionOnly, @NonNull File cacheDir) {
         mSessionOnly = sessionOnly;
-        mCacheDir = new File(FileUtils.getCachePath(), "files");
+        mCacheDir = cacheDir;
         if (!mCacheDir.exists()) {
             if (!mCacheDir.mkdirs()) {
                 throw new IllegalStateException("Could not create cache. Is this OS broken?");

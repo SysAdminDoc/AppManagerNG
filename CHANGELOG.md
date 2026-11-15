@@ -69,6 +69,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Add to profile no longer reads your saved profiles before its dialog can open. The dialog shows up right away and the list fills in once they've loaded.
 - The Finder doesn't look up each app's APK on disk as you scroll anymore. Whether an app is installed gets read once, while the list loads.
 - Persian showed blank text while backing up an app or installing a package, because those two translations were empty. They fall back to English now, and so do one empty Norwegian string and one Traditional Chinese string.
+- An APK or bundle opened from another app or from shared storage could be swapped for a different file between the install prompt and the install. The installer now copies it once into storage only AppManagerNG can write, and the prompt, the signer check and the install all read that copy. If the file it's about to install isn't the size and SHA-256 you reviewed, it stops and asks you to open the package again. Installing again from history checks the same way, so a file that changed since then won't go in.
 
 ## v0.7.0, 2026-11-08
 
