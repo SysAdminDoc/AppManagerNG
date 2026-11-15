@@ -45,6 +45,7 @@ import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 
 /**
  * The shortcut trampoline is kept out of Recents, and the system marks its intent that way. The target it starts
@@ -269,6 +270,27 @@ public class ActivityLauncherShortcutActivityTest {
 
         waitFor(() -> USERS_ASSISTANT.equals(Settings.Secure.getString(mApp.getContentResolver(), ASSISTANT))
                 ? Boolean.TRUE : null, 1000);
+    }
+
+    @Test
+    public void aColdStartCreatesTheFirstScreenOnceInTheStoredNightMode() {
+        int storedNightMode = Prefs.Appearance.getNightMode();
+        try {
+            // Robolectric's system is in day mode, so the stored Night differs from it
+            Prefs.Appearance.setNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+            // A fresh process: AppCompat has no night mode until the app sets one
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_UNSPECIFIED);
+            AppearanceUtils.init(mApp);
+
+            Robolectric.buildActivity(ActivityLauncherShortcutActivity.class, shortcut()).setup();
+            shadowOf(Looper.getMainLooper()).idle();
+
+            // Each creation of the trampoline starts its target, so a recreated first screen starts it again
+            assertEquals(1, mStarted.size());
+            assertEquals(AppCompatDelegate.MODE_NIGHT_YES, AppCompatDelegate.getDefaultNightMode());
+        } finally {
+            Prefs.Appearance.setNightMode(storedNightMode);
+        }
     }
 
     @Test

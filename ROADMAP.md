@@ -976,13 +976,6 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
 
 ### P2
 
-- [ ] P2: Apply the stored night mode before the first screen of a cold start is created
-  Why: `AppearanceUtils.ActivityAppearanceCallback.onActivityPostCreated` calls `AppCompatDelegate.setDefaultNightMode` only after a screen exists. In a fresh process AppCompat's default is still unset when the first screen is created, so when Day or Night is picked in Appearance and the system is in the other mode, that call changes the mode and AppCompat recreates the screen. Its `onCreate` work runs twice on that cold start.
-  Evidence: a Robolectric run of `ActivityLauncherShortcutActivityTest` on 2026-11-15 recreated the activity from `AppCompatDelegateImpl.updateAppConfiguration`, reached through `onActivityPostCreated` and then `onStart`, and started its target three times until the test set the night mode first. `setDefaultNightMode` is called nowhere else except `settings/AppearancePreferences.java:57`. Not yet seen on a phone.
-  Touches: `AppearanceUtils.init` or `App.onCreate` (set the stored mode once at process start), a Robolectric test.
-  Acceptance: WHEN the process starts with Day or Night picked in Appearance, the system SHALL create the first screen once, already in that mode, and a test SHALL build an activity with AppCompat's default night mode unset and assert `onCreate` ran once.
-  Complexity: S
-
 ## Found While Verifying Backup, History and Shortcut Fixes (2026-11-15)
 
 ### P3
