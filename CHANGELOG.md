@@ -37,6 +37,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The Backups and Profiles folders AppManagerNG shows in the system file picker can now be picked as a whole folder by apps that ask for one, still read-only. Android checks every file such an app opens against that folder, so it can't reach a file outside it, one behind a symbolic link that leads elsewhere, or one that's been deleted.
 
 ### Fixed
+- Resetting an app's ops now stops when not a single op can be read, such as in a mode without app-op access. It used to go ahead with nothing saved, so a rollback had nothing to put back.
+- Tapping the text of the untested Android notice in Settings now hides it the same way as tapping the rest of the row. Only notices with a link in them keep the link tappable.
+- The app list no longer writes one warning per app when the standby bucket call fails to link on a build whose hidden interface changed. That's logged once per run now, and the bucket shows as unknown.
+- Reading what an app op is stored as no longer crashes on an unexpected error from a vendor build. The plain answer is kept, and the first failure is logged.
 - A backup that includes an app's KeyStore entries now copies them into AppManagerNG's private storage while it packs them, and deletes the copies even when packing fails. They used to sit in the shared cache, where other apps could read them on older Android versions. An encrypted backup's plain metadata file is also written to private storage now, not next to the encrypted copy in the backup folder.
 - Denying the camera, microphone or another op that Android is already holding back (a privacy toggle, a suspended app, a device restriction) now saves the deny. The app read those ops as already denied and skipped the write, and the history image could record the wrong mode for a rollback to put back.
 - Resetting an app's ops no longer stops at the first op it can't read, such as a vendor op this build doesn't know. That op is skipped and logged, and the rest are still saved for rollback and reset.

@@ -1064,3 +1064,56 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Touches: `ActivityLauncherShortcutActivityTest`.
   Acceptance: WHEN the trampoline is launched while authentication is required, a Robolectric test SHALL drive `onCreate`, the authentication result and a recreation through the activity controller with no reflection, and SHALL see exactly one start and the trampoline finish.
   Complexity: S
+
+## Found While Verifying App-Op, Standby and Notice Fixes (2026-11-15)
+
+### P3
+
+- [ ] P3: Route the remaining hidden-API fallbacks through HiddenApiFallbacks
+  Why: a few accessors still swallow a linkage failure on their own, so a build whose hidden signature changed falls back silently or logs on every call instead of once per member.
+  Evidence: refute pass on b07ad825f (2026-11-15). `AppOpsManagerCompat.java` near line 280, `PackageManagerCompat.java` near line 917, `BackupCompat.java` lines 139 and 157, `PackageInfoCompat2.java` line 52 (through `ExUtils.exceptionAsNull`).
+  Touches: those four compat classes, `HiddenApiFallbacksTest`.
+  Acceptance: WHEN any of those calls fails with a `LinkageError`, the system SHALL log it once through `HiddenApiFallbacks.log` under a `Class#member` key and keep its current fallback answer; ordinary failures SHALL keep their own logging. A test SHALL cover one of them.
+  Complexity: S
+
+- [ ] P3: Pass a member name, not the service name, to HiddenApiFallbacks in SubscriptionManagerCompat
+  Why: `SubscriptionManagerCompat` line 218 logs its fallback under the service name, so the once-per-member key is wrong and two different members would share one line.
+  Evidence: refute pass on b07ad825f (2026-11-15).
+  Touches: `compat/SubscriptionManagerCompat.java`, `HiddenApiFallbacksTest`.
+  Acceptance: WHEN that call falls back, the system SHALL log it under `SubscriptionManagerCompat#<method>`, and a test SHALL check the key.
+  Complexity: XS
+
+- [ ] P3: Cache stored op modes per package while filtering the app list
+  Why: `PackageUtils.getFilteredAppOps` calls `checkOperationRaw` per op, and every op that reads as ignored now costs two more IPCs (`getUidOps`, then `getOpsForPackage`) to read what is stored. A list with many ignored ops on many apps makes a lot of extra calls.
+  Evidence: refute pass on b07ad825f (2026-11-15).
+  Touches: `utils/PackageUtils.java`, `compat/AppOpsManagerCompat.java`, a filter test.
+  Acceptance: WHEN the filter reads several ignored ops for one package, the system SHALL read that package's op lists at most once, and a test with a counting fake service SHALL check the call count.
+  Complexity: S
+
+- [ ] P3: Make two AppOpRestrictedModeTest cases fail without the fix they guard
+  Why: two cases in `AppOpRestrictedModeTest` pass on the code from before the restricted-mode fix too, so they don't guard against it coming back.
+  Evidence: refute pass on b07ad825f (2026-11-15).
+  Touches: `AppOpRestrictedModeTest`.
+  Acceptance: WHEN the stored-mode read in `checkOperationRaw` is removed, each of those two cases SHALL fail; the fixture SHALL store a mode that differs from what the checks answer.
+  Complexity: XS
+
+- [ ] P3: Stop the preview build notice from treating a tested SDK's codename build as untested
+  Why: `PlatformSupport` adds one to the SDK level when the codename isn't REL, so a preview build of an SDK that is already tested shows the untested-Android notice, and dismissing it stores the next level (38). The compile SDK test compares the constant to itself.
+  Evidence: refute pass on b07ad825f (2026-11-15).
+  Touches: `compat/PlatformSupport.java`, its test.
+  Acceptance: WHEN the device reports a preview codename for an SDK level that is tested, the system SHALL NOT show the notice, a dismissal SHALL store the level the notice was shown for, and the compile SDK test SHALL compare against the Gradle value.
+  Complexity: S
+
+- [ ] P3: Test that an unencrypted backup writes its metadata into the backup folder
+  Why: the private staging change covers encrypted backups. Nothing checks that a plain backup still writes `meta_v5.json` next to its files.
+  Evidence: refute pass on b07ad825f (2026-11-15).
+  Touches: a backup test.
+  Acceptance: WHEN a backup without encryption commits, a test SHALL find `meta_v5.json` in the backup folder and none left in private staging.
+  Complexity: XS
+
+- [ ] P3: Hand backup converters the crypto they read with
+  Why: the OAndBackup, Swift Backup and Titanium Backup converters never call `setCrypto`, so a converted backup's crypto mode depends on defaults rather than the source.
+  Evidence: refute pass on b07ad825f (2026-11-15). Predates this batch.
+  Touches: `backup/convert/*Converter.java`, the converter tests.
+  Acceptance: WHEN a converter writes a backup, the system SHALL set the crypto mode the result is written with, and each converter test SHALL check the mode in the written metadata.
+  Complexity: S

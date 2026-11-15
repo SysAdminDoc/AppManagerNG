@@ -13,6 +13,7 @@ import android.os.UserHandleHidden;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.RequiresPermission;
 import androidx.annotation.VisibleForTesting;
 
@@ -126,11 +127,33 @@ public final class UsageStatsManagerCompat {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
             return STANDBY_BUCKET_UNKNOWN;
         }
+        String callingPackage;
+        IUsageStatsManager service;
         try {
-            String callingPackage = SelfPermissions.getCallingPackage(Users.getSelfOrRemoteUid());
-            return getUsageStatsManager().getAppStandbyBucket(packageName, callingPackage, userId);
+            callingPackage = SelfPermissions.getCallingPackage(Users.getSelfOrRemoteUid());
+            service = getUsageStatsManager();
+        } catch (Throwable th) {
+            Log.w("UsageStatsManagerCompat", "getAppStandbyBucket failed", th);
+            return STANDBY_BUCKET_UNKNOWN;
+        }
+        return readStandbyBucket(service, packageName, callingPackage, userId);
+    }
+
+    /**
+     * A build whose hidden signature changed fails to link here on every row of the app list, so that's logged
+     * once per process. Other failures, such as a mode without usage access, are logged each time.
+     */
+    @VisibleForTesting
+    @RequiresApi(Build.VERSION_CODES.P)
+    static int readStandbyBucket(@NonNull IUsageStatsManager service, @NonNull String packageName,
+                                 @NonNull String callingPackage, @UserIdInt int userId) {
+        try {
+            return service.getAppStandbyBucket(packageName, callingPackage, userId);
         } catch (RemoteException e) {
             return ExUtils.rethrowFromSystemServer(e);
+        } catch (LinkageError e) {
+            HiddenApiFallbacks.log("UsageStatsManagerCompat", "getAppStandbyBucket", e);
+            return STANDBY_BUCKET_UNKNOWN;
         } catch (Throwable th) {
             Log.w("UsageStatsManagerCompat", "getAppStandbyBucket failed", th);
             return STANDBY_BUCKET_UNKNOWN;

@@ -4,15 +4,20 @@ package io.github.muntashirakon.AppManager.details;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
 import android.app.AppOpsManager;
 import android.os.Build;
+import android.os.Parcelable;
+import android.os.RemoteException;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 
@@ -58,6 +63,29 @@ public class AppOpsResetSetOpsTest {
                 throw new SecurityException("uid 10031 does not have android.permission.UPDATE_APP_OPS_STATS");
             }
             return cameraDenied(op);
+        });
+
+        assertArrayEquals(new int[]{OP_CAMERA}, ops);
+    }
+
+    @Test
+    public void whenNothingCanBeReadTheResetStops() {
+        assertThrows(RemoteException.class, () -> AppDetailsViewModel.setOps(null,
+                Build.VERSION_CODES.UPSIDE_DOWN_CAKE, op -> {
+                    throw new SecurityException("uid 10031 does not have android.permission.GET_APP_OPS_STATS");
+                }));
+    }
+
+    @Test
+    public void onAndroid7EntriesStillCountWhenNoOpCanBeRead() throws Exception {
+        Parcelable cameraIgnored = (Parcelable) Class.forName("android.app.AppOpsManager$OpEntry")
+                .getConstructor(int.class, int.class, Map.class)
+                .newInstance(OP_CAMERA, AppOpsManager.MODE_IGNORED, Collections.emptyMap());
+        List<AppOpsManagerCompat.OpEntry> entries = Collections.singletonList(
+                new AppOpsManagerCompat.OpEntry(cameraIgnored));
+
+        int[] ops = AppDetailsViewModel.setOps(entries, Build.VERSION_CODES.N_MR1, op -> {
+            throw new SecurityException("uid 10031 does not have android.permission.GET_APP_OPS_STATS");
         });
 
         assertArrayEquals(new int[]{OP_CAMERA}, ops);

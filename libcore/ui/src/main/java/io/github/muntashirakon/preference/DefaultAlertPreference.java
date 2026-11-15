@@ -4,7 +4,9 @@ package io.github.muntashirakon.preference;
 
 import android.content.Context;
 import android.os.Build;
+import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.View;
@@ -42,7 +44,16 @@ public class DefaultAlertPreference extends Preference {
         super.onBindViewHolder(holder);
         final TextView summaryView = (TextView) holder.findViewById(android.R.id.summary);
         if (summaryView != null) {
-            summaryView.setMovementMethod(LinkMovementMethod.getInstance());
+            if (hasLinks(summaryView.getText())) {
+                summaryView.setMovementMethod(LinkMovementMethod.getInstance());
+            } else {
+                // A movement method makes the text take every tap, so a row without links would never get its
+                // click. The holder may have shown a row with links before, so this is undone too.
+                summaryView.setMovementMethod(null);
+                summaryView.setClickable(false);
+                summaryView.setLongClickable(false);
+                summaryView.setFocusable(false);
+            }
         }
         View imageFrame = holder.findViewById(androidx.preference.R.id.icon_frame);
         if (imageFrame == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -59,6 +70,11 @@ public class DefaultAlertPreference extends Preference {
                 empty.setVisibility(View.GONE);
             }
         }
+    }
+
+    private static boolean hasLinks(@Nullable CharSequence text) {
+        return text instanceof Spanned
+                && ((Spanned) text).getSpans(0, text.length(), ClickableSpan.class).length > 0;
     }
 
     public void setAddSpaceBetweenIconAndText(boolean addSpaceBetweenIconAndText) {

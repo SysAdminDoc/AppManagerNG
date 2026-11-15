@@ -844,11 +844,21 @@ public class AppOpsManagerCompat {
                 }
             }
             return opToDefaultMode(switchOp);
-        } catch (RemoteException | SecurityException e) {
-            Log.w(TAG, "Could not read the stored mode of op %d for %s", e, op, packageName);
+        } catch (LinkageError e) {
+            HiddenApiFallbacks.log(TAG, "getOpsForPackage", e);
+            return null;
+        } catch (RemoteException | RuntimeException e) {
+            // A mode without GET_APP_OPS_STATS fails this for every ignored op of every app in a filtered list
+            if (!sStoredModeFailureLogged) {
+                sStoredModeFailureLogged = true;
+                Log.w(TAG, "Could not read the stored mode of op %d for %s, so raw reads keep their answer", e, op,
+                        packageName);
+            }
             return null;
         }
     }
+
+    private static volatile boolean sStoredModeFailureLogged;
 
     /**
      * Same as {@link AppOpsManager#checkOpNoThrow(String, int, String)}. To be used with App Manager itself.

@@ -101,6 +101,23 @@ public class AppOpRestrictedModeTest {
     }
 
     @Test
+    public void aVendorErrorFromTheListsKeepsTheRawAnswer() throws Exception {
+        IAppOpsService failing = service((method, args) -> {
+            switch (method.getName()) {
+                case "checkOperationRaw":
+                    return AppOpsManager.MODE_IGNORED;
+                case "getUidOps":
+                case "getOpsForPackage":
+                    throw new IllegalStateException("op lists are being rebuilt");
+                default:
+                    return defaultValue(method);
+            }
+        });
+
+        assertEquals(AppOpsManager.MODE_IGNORED, appOps(failing).checkOperationRaw(OP_CAMERA, UID, PACKAGE));
+    }
+
+    @Test
     @Config(sdk = Build.VERSION_CODES.N_MR1)
     public void beforeAndroid8TheAnswerStandsSinceUidModesArentListed() throws Exception {
         IAppOpsService service = service((method, args) -> {

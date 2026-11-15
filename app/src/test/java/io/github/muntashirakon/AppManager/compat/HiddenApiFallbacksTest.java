@@ -6,6 +6,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import android.app.AppOpsManager;
+import android.app.usage.IUsageStatsManager;
 import android.os.Process;
 import android.util.Log;
 
@@ -80,6 +81,27 @@ public class HiddenApiFallbacksTest {
         assertEquals(2, ShadowLog.getLogsForTag(HiddenApiFallbacks.TAG).size());
         assertEquals(Arrays.asList("PermissionCompat#grantRuntimePermission",
                 "PermissionCompat#grantRuntimePermission(deviceId)"), HiddenApiFallbacks.getMembers());
+    }
+
+    @Test
+    public void aStandbyBucketLinkageFailureIsLoggedOnce() {
+        IUsageStatsManager service = (IUsageStatsManager) Proxy.newProxyInstance(
+                IUsageStatsManager.class.getClassLoader(), new Class<?>[]{IUsageStatsManager.class},
+                (proxy, method, args) -> {
+                    if (method.getName().equals("getAppStandbyBucket")) {
+                        throw new NoSuchMethodError("getAppStandbyBucket");
+                    }
+                    return defaultValue(method);
+                });
+
+        assertEquals(UsageStatsManagerCompat.STANDBY_BUCKET_UNKNOWN,
+                UsageStatsManagerCompat.readStandbyBucket(service, PACKAGE, "android", 0));
+        assertEquals(UsageStatsManagerCompat.STANDBY_BUCKET_UNKNOWN,
+                UsageStatsManagerCompat.readStandbyBucket(service, PACKAGE, "android", 0));
+
+        assertEquals(1, ShadowLog.getLogsForTag(HiddenApiFallbacks.TAG).size());
+        assertEquals(Collections.singletonList("UsageStatsManagerCompat#getAppStandbyBucket"),
+                HiddenApiFallbacks.getMembers());
     }
 
     /**

@@ -807,11 +807,14 @@ public class AppDetailsViewModel extends AndroidViewModel {
      * out UID modes, which Android 6 and later write, and the entries can fail to load. Either way every op is read
      * one at a time instead, so the reset doesn't drop an op that rollback would need to set again. An op that can't
      * be read, such as a vendor op this build doesn't know, goes without an image rather than stopping the reset.
+     * When the entries didn't load and no op can be read either, nothing could be put back, so the reset stops.
+     *
+     * @throws RemoteException when the entries didn't load and no single op could be read
      */
     @VisibleForTesting
     @NonNull
     static int[] setOps(@Nullable List<AppOpsManagerCompat.OpEntry> entries, int sdkInt,
-                        @NonNull ModeReader modes) {
+                        @NonNull ModeReader modes) throws RemoteException {
         List<Integer> ops = new ArrayList<>();
         if (entries != null) {
             for (AppOpsManagerCompat.OpEntry entry : entries) {
@@ -822,6 +825,8 @@ public class AppDetailsViewModel extends AndroidViewModel {
             }
         }
         if (entries == null || sdkInt < Build.VERSION_CODES.O) {
+            int read = 0;
+            Exception lastFailure = null;
             for (int op : AppOpsManagerCompat.getAllOps()) {
                 if (ops.contains(op)) {
                     continue;
@@ -831,11 +836,18 @@ public class AppDetailsViewModel extends AndroidViewModel {
                     mode = modes.read(op);
                 } catch (RemoteException | SecurityException | IllegalArgumentException e) {
                     Log.w(TAG, "Could not read app op %d before the reset, so it has no image", e, op);
+                    lastFailure = e;
                     continue;
                 }
+                ++read;
                 if (mode != AppOpsManagerCompat.opToDefaultMode(op)) {
                     ops.add(op);
                 }
+            }
+            if (entries == null && read == 0 && lastFailure != null) {
+                RemoteException stop = new RemoteException("No app op could be read, so a reset couldn't be undone");
+                stop.initCause(lastFailure);
+                throw stop;
             }
         }
         return ArrayUtils.convertToIntArray(ops);
