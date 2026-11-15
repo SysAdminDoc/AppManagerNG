@@ -18,7 +18,9 @@ import java.util.Collections;
 import java.util.HashMap;
 
 import io.github.muntashirakon.AppManager.rules.RuleType;
+import io.github.muntashirakon.AppManager.rules.RulesStorageManager;
 import io.github.muntashirakon.AppManager.rules.struct.ComponentRule;
+import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
 
@@ -98,6 +100,27 @@ public class ComponentUtilsTest {
         for (String component : expectedHashMap.keySet()) {
             assertEquals(expectedHashMap.get(component), actualHashMap.get(component));
         }
+    }
+
+    @Test
+    public void rulesFilesAreListedByPackageName() throws IOException {
+        Path confDir = RulesStorageManager.getConfDir(ContextUtils.getContext());
+        confDir.mkdirs();
+        Path ruleFile = confDir.findOrCreateFile("com.example.listed.tsv", null);
+        try {
+            assertTrue(ComponentUtils.getAllPackagesWithRules(ContextUtils.getContext())
+                    .contains("com.example.listed"));
+        } finally {
+            ruleFile.delete();
+        }
+    }
+
+    @Test
+    public void ifwFilesAreListedByPackageName() {
+        assert classLoader != null;
+        Path ifwDir = Paths.get(classLoader.getResource("ifw").getFile());
+        assertEquals(Collections.singletonList("sample.package"),
+                ComponentUtils.getAllPackagesWithIfwRuleFiles(ifwDir));
     }
 
     private HashMap<String, RuleType> getExpectedHashMap() {

@@ -288,7 +288,7 @@ public final class ComponentUtils {
         Path confDir = RulesStorageManager.getConfDir(context);
         Path[] paths = confDir.listFiles((dir, name) -> name.endsWith(".tsv"));
         for (Path path : paths) {
-            packages.add(Paths.trimPathExtension(path.getUri().getLastPathSegment()));
+            packages.add(Paths.trimPathExtension(path.getName()));
         }
         return packages;
     }
@@ -313,8 +313,8 @@ public final class ComponentUtils {
             return packages;
         }
         for (Path path : paths) {
-            String fileName = path.getUri().getLastPathSegment();
-            if (fileName != null) {
+            String fileName = path.getName();
+            if (!fileName.isEmpty()) {
                 packages.add(Paths.trimPathExtension(fileName));
             }
         }
