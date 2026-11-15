@@ -15,14 +15,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
 import io.github.muntashirakon.AppManager.rules.struct.RuleEntry;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
-import io.github.muntashirakon.io.IoUtils;
 import io.github.muntashirakon.io.Path;
 
 /**
@@ -37,8 +36,12 @@ import io.github.muntashirakon.io.Path;
 public class RulesImporter implements Closeable {
     private static final String TAG = RulesImporter.class.getSimpleName();
 
+    /**
+     * Parsed rows by package, in file order. They're only added to a package's rules once its write lock is held,
+     * since taking the lock reloads the saved rules and would drop anything added before it.
+     */
     @NonNull
-    private final HashMap<String, ComponentsBlocker>[] mComponentsBlockers;
+    private final LinkedHashMap<String, List<RuleEntry>> mStagedRules = new LinkedHashMap<>();
     @NonNull
     private final List<RuleType> mTypesToImport;
     @Nullable
@@ -49,12 +52,6 @@ public class RulesImporter implements Closeable {
     public RulesImporter(@NonNull List<RuleType> typesToImport, @NonNull int[] userIds) {
         if (userIds.length == 0) {
             throw new IllegalArgumentException("Input must contain one or more user handles");
-        }
-        // Init CBs
-        //noinspection unchecked
-        mComponentsBlockers = new HashMap[userIds.length];
-        for (int i = 0; i < userIds.length; ++i) {
-            mComponentsBlockers[i] = new HashMap<>();
         }
         mTypesToImport = typesToImport;
         mUserIds = userIds;
@@ -86,15 +83,12 @@ public class RulesImporter implements Closeable {
     }
 
     /**
-     * Parse a single TSV rule line and stage it into every target user's
-     * {@link ComponentsBlocker}. A malformed line (unknown rule type, missing
-     * fields, an entry from a newer/legacy export format) makes
-     * {@link RuleEntry#unflattenFromString} throw {@link IllegalArgumentException};
-     * previously that aborted the whole loop, silently dropping every remaining
-     * (valid) rule — a fail-unsafe partial application, and on the
-     * background-thread import path an uncaught crash. Skip the offending line
-     * and keep importing the rest, matching the per-entry skip pattern already
-     * used by {@code ComponentUtils.readIFWRules}.
+     * Parse a single TSV rule line and stage it for every target user. A malformed line (unknown rule type, missing
+     * fields, an entry from a newer/legacy export format) makes {@link RuleEntry#unflattenFromString} throw
+     * {@link IllegalArgumentException}; previously that aborted the whole loop, silently dropping every remaining
+     * (valid) rule — a fail-unsafe partial application, and on the background-thread import path an uncaught crash.
+     * Skip the offending line and keep importing the rest, matching the per-entry skip pattern already used by
+     * {@code ComponentUtils.readIFWRules}.
      */
     void importRow(@NonNull String dataRow) {
         RuleEntry entry;
@@ -107,18 +101,16 @@ public class RulesImporter implements Closeable {
         if (!mTypesToImport.contains(entry.type)) {
             return;
         }
-        for (int i = 0; i < mUserIds.length; ++i) {
-            if (mComponentsBlockers[i].get(entry.packageName) == null) {
-                // Get a read-only instance, commit will be called manually
-                mComponentsBlockers[i].put(entry.packageName, ComponentsBlocker.getInstance(entry.packageName, mUserIds[i]));
-            }
-            //noinspection ConstantConditions Returned ComponentsBlocker will never be null here
-            mComponentsBlockers[i].get(entry.packageName).addEntry(entry);
+        List<RuleEntry> rules = mStagedRules.get(entry.packageName);
+        if (rules == null) {
+            rules = new ArrayList<>();
+            mStagedRules.put(entry.packageName, rules);
         }
+        rules.add(entry);
     }
 
     public List<String> getPackages() {
-        return new ArrayList<>(mComponentsBlockers[0].keySet());
+        return new ArrayList<>(mStagedRules.keySet());
     }
 
     public void setPackagesToImport(List<String> packageNames) {
@@ -128,24 +120,27 @@ public class RulesImporter implements Closeable {
     @WorkerThread
     public void applyRules(boolean commitChanges) {
         if (mPackagesToImport == null) mPackagesToImport = getPackages();
-        // When #setPackagesToImport(List<String>) is used, ComponentBlocker can be null
-        @Nullable ComponentsBlocker cb;
-        for (int i = 0; i < mUserIds.length; ++i) {
+        for (int userId : mUserIds) {
             for (String packageName : mPackagesToImport) {
-                cb = mComponentsBlockers[i].get(packageName);
-                if (cb == null) continue;
-                // Set mutable, otherwise changes may not be applied properly
-                cb.setMutable();
-                // Apply component blocking rules
-                cb.applyRules(true);
-                // Apply app op and permissions
-                cb.applyAppOpsAndPerms();
-                // Store the changes or discard them
-                if (commitChanges) {
-                    // Commit changes
-                    cb.commit();
-                } else {
-                    // Don't commit changes, discard the rules
+                List<RuleEntry> rules = mStagedRules.get(packageName);
+                if (rules == null) continue;
+                ComponentsBlocker cb = ComponentsBlocker.getInstance(packageName, userId);
+                try {
+                    // Take the write lock, which reloads the saved rules, and only then add the imported ones
+                    cb.setMutable();
+                    for (RuleEntry rule : rules) {
+                        cb.addEntry(rule);
+                    }
+                    // Apply component blocking rules
+                    cb.applyRules(true);
+                    // Apply app op and permissions
+                    cb.applyAppOpsAndPerms();
+                    // Store the changes or discard them
+                    if (commitChanges) {
+                        cb.commit();
+                    }
+                } finally {
+                    // Releases the lock without saving anything more
                     cb.setReadOnly();
                 }
             }
@@ -154,11 +149,6 @@ public class RulesImporter implements Closeable {
 
     @Override
     public void close() {
-        // When #setPackagesToImport(List<String>) is used, ComponentBlocker can be null
-        for (int i = 0; i < mUserIds.length; ++i) {
-            for (ComponentsBlocker cb : mComponentsBlockers[i].values()) {
-                IoUtils.closeQuietly(cb);
-            }
-        }
+        mStagedRules.clear();
     }
 }

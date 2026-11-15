@@ -37,6 +37,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The Backups and Profiles folders AppManagerNG shows in the system file picker can now be picked as a whole folder by apps that ask for one, still read-only. Android checks every file such an app opens against that folder, so it can't reach a file outside it, one behind a symbolic link that leads elsewhere, or one that's been deleted.
 
 ### Fixed
+- Importing rules, or restoring a backup's rules, now keeps the imported rules for an app that already had rules saved. They were dropped as the app's saved rules were reloaded, so only apps with no rules yet got them.
 - Resetting an app's ops now stops when not a single op can be read, such as in a mode without app-op access. It used to go ahead with nothing saved, so a rollback had nothing to put back.
 - Tapping the text of the untested Android notice in Settings now hides it the same way as tapping the rest of the row. Only notices with a link in them keep the link tappable.
 - The app list no longer writes one warning per app when the standby bucket call fails to link on a build whose hidden interface changed. That's logged once per run now, and the bucket shows as unknown.
