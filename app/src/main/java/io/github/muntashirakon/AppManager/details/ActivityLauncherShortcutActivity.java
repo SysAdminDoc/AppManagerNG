@@ -257,7 +257,7 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
             return;
         }
         // A dialog a newer launch replaces leaves this screen open for that one
-        if (!mAssistantPrompt.show(this, waitForInteraction, R.string.launch_activity_shortcut_dialog_message,
+        if (!mAssistantPrompt.show(this, waitForInteraction, R.string.launch_activity_dialog_message,
                 this::close)) {
             close();
         }

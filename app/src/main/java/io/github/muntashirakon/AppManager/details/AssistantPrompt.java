@@ -9,6 +9,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.AlertDialog;
+import androidx.lifecycle.DefaultLifecycleObserver;
+import androidx.lifecycle.LifecycleOwner;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -21,9 +23,9 @@ import io.github.muntashirakon.AppManager.logs.Log;
  * The dialog that asks the user to open the assistant while it points at an activity, and the launch that waits on
  * it. The launch gives the user's assistant back when its wait ends, so the wait has to end whenever nobody can
  * answer the dialog. A screen's dialog goes with the screen without calling its dismiss listener, so the screen
- * calls {@link #end()} when it goes. Main thread only.
+ * calls {@link #end()} when it goes, or ties the prompt to its stop with {@link #endWhenStopped}. Main thread only.
  */
-final class AssistantPrompt {
+final class AssistantPrompt implements DefaultLifecycleObserver {
     private static final String TAG = AssistantPrompt.class.getSimpleName();
 
     @Nullable
@@ -68,6 +70,20 @@ final class AssistantPrompt {
             wait.countDown();
             return false;
         }
+    }
+
+    /**
+     * Ends the prompt whenever {@code screen} stops: the activity opened over it through the assistant, or the user
+     * left it. Nobody answers the dialog then, and the wait would keep the assistant for the rest of its time.
+     */
+    @MainThread
+    void endWhenStopped(@NonNull LifecycleOwner screen) {
+        screen.getLifecycle().addObserver(this);
+    }
+
+    @Override
+    public void onStop(@NonNull LifecycleOwner owner) {
+        end();
     }
 
     /** Ends the wait that's showing, if there's one, and takes its dialog away without running its close action. */

@@ -32,6 +32,7 @@ import androidx.annotation.UiThread;
 import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.widget.PopupMenu;
 import androidx.appcompat.widget.TooltipCompat;
+import androidx.lifecycle.Lifecycle;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
@@ -119,6 +120,13 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
     @Nullable
     private com.google.android.material.button.MaterialButton mComponentGuideButton;
     private final AssistantPrompt mAssistantPrompt = new AssistantPrompt();
+
+    public AppDetailsComponentsFragment() {
+        // Leaving App Details, or the activity opening over it through the assistant, only stops this screen, and
+        // a rotation stops it before its view goes. The dialog stays up through all of them without calling its
+        // dismiss listener, and the activity stayed the user's assistant for the rest of the 10-minute wait.
+        mAssistantPrompt.endWhenStopped(this);
+    }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -232,19 +240,11 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
         }
     }
 
-    @Override
-    public void onDestroyView() {
-        // The dialog asking for the assistant goes with the screen, on a rotation for one, without calling its
-        // dismiss listener. The activity then stayed the user's assistant for the rest of the 10-minute wait.
-        mAssistantPrompt.end();
-        super.onDestroyView();
-    }
-
-    /** Asks the user to open the assistant, which now points at the activity, unless this screen is gone. */
+    /** Asks the user to open the assistant, which now points at the activity, unless this screen has stopped. */
     @MainThread
     @VisibleForTesting
     void askForTheAssistant(@NonNull Context context, @NonNull CountDownLatch waitForInteraction) {
-        if (getView() == null) {
+        if (!getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED)) {
             waitForInteraction.countDown();
             return;
         }

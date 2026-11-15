@@ -15,6 +15,8 @@ import android.os.Looper;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleRegistry;
 
 import org.junit.After;
 import org.junit.Before;
@@ -137,6 +139,42 @@ public class AssistantPromptTest {
     @Test
     public void appDetailsAsksNobodyOnceItsScreenIsGone() {
         AppDetailsComponentsFragment fragment = new AppDetailsComponentsFragment();
+        CountDownLatch wait = new CountDownLatch(1);
+
+        fragment.askForTheAssistant(mActivity, wait);
+
+        assertEquals(0, wait.getCount());
+        assertNull(ShadowDialog.getLatestDialog());
+    }
+
+    @Test
+    public void appDetailsEndsThePromptWhenItStops() {
+        AppDetailsComponentsFragment fragment = new AppDetailsComponentsFragment();
+        // Only the fragment's own lifecycle, which is what ties the prompt to it
+        LifecycleRegistry lifecycle = (LifecycleRegistry) fragment.getLifecycle();
+        lifecycle.setCurrentState(Lifecycle.State.RESUMED);
+        CountDownLatch wait = new CountDownLatch(1);
+
+        fragment.askForTheAssistant(mActivity, wait);
+        AlertDialog dialog = (AlertDialog) ShadowDialog.getLatestDialog();
+        assertNotNull(dialog);
+        assertTrue(dialog.isShowing());
+        assertEquals(1, wait.getCount());
+
+        // The activity opened over App Details through the assistant, or the user left it
+        lifecycle.setCurrentState(Lifecycle.State.CREATED);
+        shadowOf(Looper.getMainLooper()).idle();
+
+        assertEquals(0, wait.getCount());
+        assertFalse(dialog.isShowing());
+    }
+
+    @Test
+    public void appDetailsAsksNobodyOnceItHasStopped() {
+        AppDetailsComponentsFragment fragment = new AppDetailsComponentsFragment();
+        LifecycleRegistry lifecycle = (LifecycleRegistry) fragment.getLifecycle();
+        lifecycle.setCurrentState(Lifecycle.State.RESUMED);
+        lifecycle.setCurrentState(Lifecycle.State.CREATED);
         CountDownLatch wait = new CountDownLatch(1);
 
         fragment.askForTheAssistant(mActivity, wait);

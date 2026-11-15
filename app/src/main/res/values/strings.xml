@@ -3862,7 +3862,6 @@
     <string name="copy_profile_id">Copy profile ID</string>
     <string name="launch_activity_dialog_title">Launch activity: action required</string>
     <string name="launch_activity_dialog_message">AppManagerNG is trying to launch the activity via <b>Search assistant</b> (usually Google Assistant), but it cannot continue without the required permission. To open the activity, activate <b>Search assistant</b> manually, usually by long-pressing the Home button. Tap <b>Close</b> after launching the activity to restore your original assistant.</string>
-    <string name="launch_activity_shortcut_dialog_message">AppManagerNG is trying to launch the activity via <b>Search assistant</b> (usually Google Assistant), but it cannot continue without the required permission. To open the activity, activate <b>Search assistant</b> manually, usually by long-pressing the Home button. Your original assistant comes back when you tap <b>Close</b>, or on its own once the activity covers this screen.</string>
     <string name="finder_title">Finder</string>
     <string name="select_filter">Select a filter</string>
     <string name="size_in_bytes">Size (bytes)</string>

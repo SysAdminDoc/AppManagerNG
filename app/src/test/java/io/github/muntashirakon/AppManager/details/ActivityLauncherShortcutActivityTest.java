@@ -44,6 +44,7 @@ import java.util.concurrent.Callable;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
@@ -87,10 +88,18 @@ public class ActivityLauncherShortcutActivityTest {
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws ReflectiveOperationException {
         AppCompatDelegate.setDefaultNightMode(mNightModeBefore);
         ActivityLauncherShortcutActivity.sTargetStarter = mStarterBefore;
         Ops.setAuthenticated(mApp, mAuthenticatedBefore);
+        // A launch a test left waiting keeps its target in the shared record, and the next test's launch would
+        // then skip saving the user's assistant
+        Field targets = ActivityManagerCompat.class.getDeclaredField("sAssistantTargets");
+        targets.setAccessible(true);
+        ((List<?>) targets.get(null)).clear();
+        Field usersAssistant = ActivityManagerCompat.class.getDeclaredField("sUsersAssistant");
+        usersAssistant.setAccessible(true);
+        usersAssistant.set(null, null);
     }
 
     @Test

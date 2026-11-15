@@ -1251,3 +1251,21 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Touches: an instrumented test on the rooted emulator, or a seam for the open call.
   Acceptance: WHEN the log path is a symlink or a hard link, a test SHALL see the open refused; WHEN the root launch exits 127, a test SHALL see `run_server.sh` started.
   Complexity: M
+
+## Found While Verifying the Assistant Fix (2026-11-15)
+
+### P3
+
+- [ ] P3: Keep two overlapping assistant launches from pointing the assistant at the older target
+  Why: each launch lends the assistant on a pool thread. If the pool runs tap 1's worker after tap 2's, `sAssistantTargets` ends `[Y, X]` and the assistant points at X while the prompt for Y shows, so a long press in that moment opens the wrong activity.
+  Evidence: 2026-11-15 refute review of the shortcut and App Details assistant fixes (`ActivityManagerCompat.lendAssistant`, `ActivityLauncherShortcutActivity` launch path).
+  Touches: `ActivityManagerCompat.lendAssistant`/`returnAssistant` (order targets by launch round, not arrival), `ActivityManagerCompatTest`.
+  Acceptance: WHEN two launches lend the assistant and their workers run out of order, the system SHALL point the assistant at the newest launch's target, and a test SHALL run the workers in reverse order.
+  Complexity: S
+
+- [ ] P3: Test the assistant prompt failing in `show()` itself
+  Why: `AssistantPromptTest.aPromptThatCantBeShownEndsItsWait` makes the builder throw with message resource 0. The failure seen on devices is a `WindowManager.BadTokenException` from `show()` on a finishing activity, which the same catch handles but no test drives.
+  Evidence: `AssistantPrompt.show`, `AssistantPromptTest`.
+  Touches: `AssistantPromptTest` (show on a destroyed activity, or a context whose window token is gone).
+  Acceptance: WHEN `show()` throws `BadTokenException`, the system SHALL end that wait without running the close action, and a test SHALL cover it.
+  Complexity: S
