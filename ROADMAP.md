@@ -602,17 +602,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
 
 Sources and reasoning: RESEARCH.md (2026-09-30).
 
-### P1
-
-- [ ] P1: Check the wireless reconnect after a reboot on a phone
-  Why: the upstream wireless fixes are ported, and on the S22 on 2026-09-30 AppManagerNG paired, connected over Wireless debugging and came back on its own after Wi-Fi went off and on. The start at boot, which Android 15 only allows as a special use service, has host tests but hasn't run on a phone yet.
-  Evidence: `self/BootReceiver.java`, `servermanager/WifiWaitService.java`; upstream `22d439d61` (connect on boot).
-  Touches: nothing unless it fails.
-  Acceptance: with Wireless debugging as the mode, the network always allowed for Wireless debugging and the server stopped, `adb reboot` the S22 or S25 and unlock it; the server is running within two minutes of the unlock without the app being opened. Then join an access point Wireless debugging isn't allowed on yet: one system prompt and one AppManagerNG notification come up, not one per retry, and the server starts once the network is allowed. (Already seen on the S22 on 2026-11-15: the log shows the echo only as "(echo of the launch command, not logged)" and reaches "Success!", and the server came back over Wireless debugging from the app change job without the app being opened.)
-  Complexity: S
-
-### P2
-
 ### P3
 
 - [ ] P3: Schedule settings snapshot export to a chosen folder

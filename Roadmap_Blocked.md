@@ -30,3 +30,12 @@ Items here wait on something the code can't settle, like an owner decision or a 
   Blocker: no verifier exposes it yet. The change in `PackageUtils.getSignerInfo` is one line behind a version check once one does.
   Re-tested 2026-11-13: apksig-android's last commit is still 2023-05-01, Google's newest apksig (9.6.0-alpha03) has no v3.2 or ML-DSA classes, and AOSP's apksig hasn't changed since March 2025.
   Complexity: S
+
+## Hands at a phone
+
+- [ ] P1. Check the wireless reconnect after a reboot on a phone
+  Why: the upstream wireless fixes are ported, and on the S22 on 2026-09-30 AppManagerNG paired, connected over Wireless debugging and came back on its own after Wi-Fi went off and on. The start at boot, which Android 15 only allows as a special use service, has host tests but hasn't run on a phone yet.
+  Evidence: `self/BootReceiver.java`, `servermanager/WifiWaitService.java`; upstream `22d439d61` (connect on boot).
+  Acceptance: with Wireless debugging as the mode, the network always allowed for Wireless debugging and the server stopped, `adb reboot` the S22 or S25 and unlock it; the server is running within two minutes of the unlock without the app being opened. Then join an access point Wireless debugging isn't allowed on yet: one system prompt and one AppManagerNG notification come up, not one per retry, and the server starts once the network is allowed. (Already seen on the S22 on 2026-11-15: the log shows the echo only as "(echo of the launch command, not logged)" and reaches "Success!", and the server came back over Wireless debugging from the app change job without the app being opened.)
+  Blocker: both test phones unlock only with a pattern the owner draws, so after `adb reboot` the check waits for the owner at the phone. The access point half also needs a second Wi-Fi network that Wireless debugging hasn't been allowed on yet.
+  Complexity: S
