@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
+import io.github.muntashirakon.AppManager.backup.BackupDestinationGrants;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.db.entity.FmFavorite;
 import io.github.muntashirakon.AppManager.fm.dialogs.FilePropertiesDialogFragment;
@@ -184,6 +185,8 @@ public class FmActivity extends BaseActivity {
                     int takeFlags = data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION
                             | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                     getContentResolver().takePersistableUriPermission(treeUri, takeFlags);
+                    // The file manager keeps this folder now, so a backup folder change can't let it go
+                    BackupDestinationGrants.disown(this, treeUri);
                 } finally {
                     // Display backup volumes again
                     mViewModel.loadDrawerItems();

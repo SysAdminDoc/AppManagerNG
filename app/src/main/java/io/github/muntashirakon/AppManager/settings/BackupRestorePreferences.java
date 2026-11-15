@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.utils.KeyStoreUtils;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
+import io.github.muntashirakon.AppManager.backup.BackupDestinationGrants;
 import io.github.muntashirakon.AppManager.backup.BackupFlags;
 import io.github.muntashirakon.AppManager.backup.BackupPathExclusionPatterns;
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
@@ -62,7 +63,6 @@ import io.github.muntashirakon.AppManager.settings.crypto.ECCCryptoSelectionDial
 import io.github.muntashirakon.AppManager.settings.crypto.OpenPgpKeySelectionDialogFragment;
 import io.github.muntashirakon.AppManager.settings.crypto.RSACryptoSelectionDialogFragment;
 import io.github.muntashirakon.AppManager.shortcut.AutoBackupShortcutActivity;
-import io.github.muntashirakon.AppManager.utils.StorageUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.dialog.DialogTitleBuilder;
@@ -110,6 +110,10 @@ public class BackupRestorePreferences extends PreferenceFragment {
                     int takeFlags = data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION
                             | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                     requireContext().getContentResolver().takePersistableUriPermission(treeUri, takeFlags);
+                    // A folder added to the list stays until the user removes it, so its access is never let go
+                    BackupDestinationGrants.disown(requireContext(), treeUri);
+                } catch (SecurityException e) {
+                    UIUtils.displayLongToast(R.string.backup_folder_access_failed);
                 } finally {
                     // Display backup volumes again
                     mModel.loadStorageVolumes();
@@ -129,9 +133,14 @@ public class BackupRestorePreferences extends PreferenceFragment {
                     if ((takeFlags & Intent.FLAG_GRANT_WRITE_URI_PERMISSION) == 0) {
                         throw new SecurityException("Selected backup destination is not writable.");
                     }
-                    requireContext().getContentResolver().takePersistableUriPermission(treeUri, takeFlags);
-                    mBackupVolume = StorageUtils.getFixedTreeUri(treeUri);
-                    Prefs.Storage.setVolumePath(mBackupVolume.toString());
+                    Context appContext = requireContext().getApplicationContext();
+                    // The new folder's access is taken and checked before it replaces the old one
+                    Uri previous = BackupDestinationGrants.selectDestination(appContext, treeUri, takeFlags);
+                    mBackupVolume = Prefs.Storage.getVolumePath();
+                    if (!previous.equals(mBackupVolume)) {
+                        ThreadUtils.postOnBackgroundThread(() ->
+                                BackupDestinationGrants.releaseIfUnused(appContext, previous));
+                    }
                     mModel.reloadApps();
                     mModel.loadStorageVolumes();
                     UIUtils.displayShortToast(R.string.backup_network_destination_selected);
@@ -149,7 +158,14 @@ public class BackupRestorePreferences extends PreferenceFragment {
                 if (treeUri == null) return;
                 int takeFlags = data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION
                         | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                requireContext().getContentResolver().takePersistableUriPermission(treeUri, takeFlags);
+                try {
+                    // Let go once the import ends, unless the folder is also a backup folder
+                    BackupDestinationGrants.acquire(requireContext(), treeUri, takeFlags,
+                            BackupDestinationGrants.PURPOSE_IMPORT);
+                } catch (SecurityException e) {
+                    UIUtils.displayLongToast(R.string.backup_folder_access_failed);
+                    return;
+                }
                 startImportOperation(mImportType, treeUri, mDeleteBackupsAfterImport);
             });
 
@@ -824,10 +840,15 @@ public class BackupRestorePreferences extends PreferenceFragment {
                 .setSelection(mBackupVolume)
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.save, (dialog, which, selectedBackupVolume) -> {
+                    if (selectedBackupVolume == null) {
+                        return;
+                    }
                     mBackupVolume = selectedBackupVolume;
-                    Uri lastBackupVolume = Prefs.Storage.getVolumePath();
+                    Uri lastBackupVolume = BackupDestinationGrants.useDestination(mBackupVolume);
                     if (!lastBackupVolume.equals(mBackupVolume)) {
-                        Prefs.Storage.setVolumePath(mBackupVolume.toString());
+                        Context appContext = mActivity.getApplicationContext();
+                        ThreadUtils.postOnBackgroundThread(() ->
+                                BackupDestinationGrants.releaseIfUnused(appContext, lastBackupVolume));
                         mModel.reloadApps();
                     }
                 })

@@ -422,13 +422,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
 
 ### P1
 
-- [ ] P1: Reconcile persisted SAF grants when backup destinations change
-  Why: selecting a new backup or restore destination takes another persistable URI grant but never releases an abandoned one, eventually consuming Android's finite per-app grant pool.
-  Evidence: Android Storage Access Framework documentation; AOSP `UriGrantsManagerService`; `settings/BackupRestorePreferences.java:111,131,151`; current destination preference storage.
-  Touches: `BackupRestorePreferences.java`, a reference-counted active-destination resolver, startup repair, destination migration, fake DocumentsProvider tests.
-  Acceptance: the app acquires and verifies a replacement grant before switching preferences; it releases the old grant only when no active backup, restore, schedule, or profile references it; startup removes only provably stale grants owned by AppManagerNG; a failed replacement preserves the last working destination; tests cover shared URIs, revoked providers, process death during handoff, and repeated destination changes without grant growth.
-  Complexity: M
-
 ### P2
 
 - [ ] P2: Show storage composition and deltas in the App Change Feed
@@ -1196,4 +1189,29 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Evidence: WorkManager 2.11.2 release notes; `backup/schedule/AutoBackupScheduler.java` is scheduled only from `BackupRestorePreferences`; the five workers' `doWork`.
   Touches: the five periodic workers, a shared base or helper, a test on the WorkManager harness in `ScheduledBackupNetworkTest`.
   Acceptance: a test first shows a periodic worker that throws ends FAILED on 2.10.5; WHEN any of the five periodic workers throws, the system SHALL log it and keep the work ENQUEUED with its period; a test SHALL cover each worker.
+  Complexity: S
+
+## Found While Reconciling Backup Folder Grants (2026-11-15)
+
+### P3
+
+- [ ] P3: Keep the file manager from dropping the backup folder's access
+  Why: the file manager drawer's release action calls `releasePersistableUriPermission` on any folder it lists, including the one backups go to or one a backup tag policy points at. After that, backups to that folder fail until it's picked again.
+  Evidence: `fm/FmActivity.java` `FmDrawerViewModel.releaseUri`; `backup/BackupDestinationGrants.java` treats the backup folder and tag policy destinations as in use.
+  Touches: `FmActivity.java`, `BackupDestinationGrants.java` (a public in-use check), strings.
+  Acceptance: WHEN the user releases a folder in the file manager that is the backup folder or a tag policy destination, the system SHALL keep the access and say why; other folders SHALL be released as before; a Robolectric test SHALL cover both.
+  Complexity: S
+
+- [ ] P3: Let a failed backup import be retried after the app restarts
+  Why: a failed import keeps the folder's access for a retry, but the app's start lets go of import folders nothing references, so a retry from batch op history after a restart can't open the folder and the user has to pick it again.
+  Evidence: `batchops/BatchOpsManager.java` `opImportBackups` releases only after a clean import; `BackupDestinationGrants.pruneStale` releases unreferenced PURPOSE_IMPORT grants.
+  Touches: `BackupDestinationGrants.java` (keep import grants a pending retry references, with an age cap), batch op history.
+  Acceptance: WHEN an import failed and its retry is still offered, the system SHALL keep the folder's access across a restart for up to 7 days; WHEN the retry succeeds or the window passes, the system SHALL let it go; tests SHALL cover both.
+  Complexity: S
+
+- [ ] P3: Report a backup import that throws before listing as failed
+  Why: `opImportBackups` logs an exception thrown while opening or listing the folder and then returns an empty failure list, which reads as a successful import with nothing imported.
+  Evidence: `batchops/BatchOpsManager.java` `opImportBackups` catch block.
+  Touches: `BatchOpsManager.java`, a batch ops test.
+  Acceptance: WHEN listing the import folder throws, the system SHALL return an unsuccessful result and keep the folder's access; a test SHALL cover it.
   Complexity: S

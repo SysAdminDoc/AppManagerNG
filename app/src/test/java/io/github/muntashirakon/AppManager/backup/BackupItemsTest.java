@@ -396,6 +396,30 @@ public class BackupItemsTest {
         return backupItem;
     }
 
+    @Test
+    public void aFolderWithOnlyLogsAndSavedApksHoldsNoBackups() throws IOException {
+        Path appManager = testDir.findOrCreateDirectory("AppManager");
+        appManager.findOrCreateDirectory("saved_logs");
+        appManager.findOrCreateDirectory("apks");
+        appManager.findOrCreateDirectory(".tmp");
+
+        assertFalse(BackupItems.holdsBackups(testDir.getUri()));
+    }
+
+    @Test
+    public void aFolderWithABackupHoldsBackups() throws IOException {
+        Path appManager = testDir.findOrCreateDirectory("AppManager");
+        appManager.findOrCreateDirectory("apks");
+        appManager.findOrCreateDirectory(BackupItems.BACKUP_DIRECTORY);
+
+        assertTrue(BackupItems.holdsBackups(testDir.getUri()));
+    }
+
+    @Test
+    public void aFolderThatCantBeReadCountsAsHoldingBackups() {
+        assertTrue(BackupItems.holdsBackups(testDir.getUri().buildUpon().appendPath("missing").build()));
+    }
+
     private void assertMalformedChecksum(String filename, String contents) throws IOException {
         Path checksumFile = testDir.createNewFile(filename, null);
         writeString(checksumFile, contents);

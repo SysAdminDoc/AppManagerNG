@@ -26,6 +26,7 @@ import java.security.Security;
 import dalvik.system.ZipPathValidator;
 import io.github.muntashirakon.AppManager.apk.behavior.AutoFreezeOnLockReceiver;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerService;
+import io.github.muntashirakon.AppManager.backup.BackupDestinationGrants;
 import io.github.muntashirakon.AppManager.compat.ProcessCompat;
 import io.github.muntashirakon.AppManager.debloat.DebloatDefinitionsUpdater;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryPruneScheduler;
@@ -95,6 +96,10 @@ public class AppManager extends Application {
         ThreadUtils.postOnBackgroundThread(() -> PackageInstallerService.cleanupStaleInstallSessions(this));
         if (!Utils.isRoboUnitTest()) {
             PackageEventSync.start(this);
+            if (PackageEventSync.isMainProcess(this)) {
+                // Folder access a backup or import took and nothing uses any more
+                ThreadUtils.postOnBackgroundThread(() -> BackupDestinationGrants.pruneStale(this));
+            }
         }
     }
 

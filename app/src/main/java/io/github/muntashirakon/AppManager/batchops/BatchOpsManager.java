@@ -44,6 +44,7 @@ import io.github.muntashirakon.AppManager.apk.dexopt.DexOptOptions;
 import io.github.muntashirakon.AppManager.apk.dexopt.DexOptimizer;
 import io.github.muntashirakon.AppManager.apk.installer.AppArchiveManager;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat;
+import io.github.muntashirakon.AppManager.backup.BackupDestinationGrants;
 import io.github.muntashirakon.AppManager.backup.BackupExtrasCoverage;
 import io.github.muntashirakon.AppManager.backup.BackupException;
 import io.github.muntashirakon.AppManager.backup.DefaultAppRoleBackupHelper;
@@ -734,16 +735,19 @@ public class BatchOpsManager {
     private Result opImportBackups(@NonNull BatchOpsInfo info) {
         final List<UserPackagePair> failedPkgList = Collections.synchronizedList(new ArrayList<>());
         MultithreadedExecutor executor = MultithreadedExecutor.getNewInstance();
+        Uri importDirectory = null;
+        boolean listed = false;
         try {
             int userId = UserHandleHidden.myUserId();
             BatchBackupImportOptions options = (BatchBackupImportOptions) Objects.requireNonNull(info.options);
-            Uri uri = options.getDirectory();
-            Path backupPath = Paths.get(uri);
+            importDirectory = options.getDirectory();
+            Path backupPath = Paths.get(importDirectory);
             if (!backupPath.isDirectory()) {
                 log("====> op=IMPORT_BACKUP, Not a directory.");
                 return new Result(Collections.emptyList(), false);
             }
             Path[] files = ConvertUtils.getRelevantImportFiles(backupPath, options.getImportType());
+            listed = true;
             fixProgress(files.length);
             float lastProgress = mProgressHandler != null ? mProgressHandler.getLastProgress() : 0;
             AtomicInteger i = new AtomicInteger(0);
@@ -772,6 +776,10 @@ public class BatchOpsManager {
             log("====> op=IMPORT_BACKUP", th);
         }
         executor.awaitCompletion();
+        if (listed && failedPkgList.isEmpty()) {
+            // Nothing is left to retry, so the folder's access can go. A failed import keeps it for a retry.
+            BackupDestinationGrants.releaseAfterImport(ContextUtils.getContext(), importDirectory);
+        }
         return new Result(failedPkgList);
     }
 

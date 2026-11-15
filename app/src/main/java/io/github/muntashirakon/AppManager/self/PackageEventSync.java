@@ -569,8 +569,8 @@ public final class PackageEventSync {
         }
     }
 
-    @VisibleForTesting
-    static boolean isMainProcess(@NonNull Context context) {
+    /** Whether this is the app's main process, not one of the processes a viewer runs in. */
+    public static boolean isMainProcess(@NonNull Context context) {
         String processName = currentProcessName();
         return processName == null || processName.equals(context.getPackageName());
     }

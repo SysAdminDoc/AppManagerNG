@@ -12,6 +12,7 @@ import android.util.Base64;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
+import androidx.annotation.WorkerThread;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -176,6 +177,26 @@ public class BackupItems {
             }
         }
         return backupItems;
+    }
+
+    /**
+     * Whether a backup folder holds anything a backup could be in. A folder that can't be read counts as holding
+     * backups, so it's never taken for empty.
+     */
+    @WorkerThread
+    public static boolean holdsBackups(@NonNull Uri destination) {
+        try {
+            for (Path path : getBaseDirectory(destination, false).listFiles(Path::isDirectory)) {
+                String name = path.getName();
+                if (!SaveLogHelper.SAVED_LOGS_DIR.equals(name) && !APK_SAVING_DIRECTORY.equals(name)
+                        && !".tmp".equals(name)) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (IOException | RuntimeException e) {
+            return true;
+        }
     }
 
     private static void collectBackupItems(@NonNull Path baseDirectory, @Nullable Uri destination,
