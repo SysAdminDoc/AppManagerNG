@@ -4,7 +4,7 @@
 
 Status: packaging helper ready; listing blocked by current Accrescent policy
 and maintainer-only external access.
-Checked: 2026-11-08.
+Checked: 2026-11-15.
 
 This packet is the source-of-truth for preparing AppManagerNG's Accrescent
 submission. It is not proof that an external developer-console upload has been
@@ -15,14 +15,14 @@ product flavor or an explicit policy exception.
 ## Current Release
 
 - Repository: `https://github.com/SysAdminDoc/AppManagerNG`
-- Tag: `v0.7.0`
-- Commit: `22f18fa9afb9061545d8f1e31ad6ada239ca1017`
+- Tag: `v0.8.0`
+- Commit: `b32438a12c4ce2b5ad790d8015eb721530c2b8d0`
 - Package name: `io.github.sysadmindoc.AppManagerNG`
 - Display name: `AppManagerNG`
-- Version name: `0.7.0`
-- Version code: `33`
+- Version name: `0.8.0`
+- Version code: `34`
 - Target SDK: `36`
-- Release: `https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.7.0`
+- Release: `https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.8.0`
 - Signing certificate SHA-256:
   `21:5F:B4:70:63:2E:A6:CD:59:A4:BA:AB:35:0A:9E:0B:99:AD:11:0F:DD:FA:F5:A9:EA:64:61:E5:D0:C2:38:6C`
 
@@ -55,8 +55,8 @@ signing fields used by the Gradle release build.
 Expected output:
 
 ```text
-app/build/outputs/accrescent/AppManagerNG-0.7.0-floss-accrescent.apks
-app/build/outputs/accrescent/AppManagerNG-0.7.0-floss-accrescent.apks.sha256
+app/build/outputs/accrescent/AppManagerNG-0.8.0-floss-accrescent.apks
+app/build/outputs/accrescent/AppManagerNG-0.8.0-floss-accrescent.apks.sha256
 ```
 
 ## Automated Checks

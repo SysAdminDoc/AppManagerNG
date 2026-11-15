@@ -3,7 +3,7 @@
 # F-Droid Listing Packet
 
 Status: ready for fdroiddata merge-request preparation.
-Checked: 2026-11-08.
+Checked: 2026-11-15.
 
 This packet is the source-of-truth for preparing AppManagerNG's F-Droid.org
 submission. It is not proof that an external fdroiddata merge request has been
@@ -12,13 +12,13 @@ filed or accepted.
 ## Current Release
 
 - Repository: `https://github.com/SysAdminDoc/AppManagerNG`
-- Tag: `v0.7.0`
-- Commit: `22f18fa9afb9061545d8f1e31ad6ada239ca1017`
+- Tag: `v0.8.0`
+- Commit: `b32438a12c4ce2b5ad790d8015eb721530c2b8d0`
 - Package name: `io.github.sysadmindoc.AppManagerNG`
 - Display name: `AppManagerNG`
-- Version name: `0.7.0`
-- Version code: `33`
-- Release: `https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.7.0`
+- Version name: `0.8.0`
+- Version code: `34`
+- Release: `https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.8.0`
 - License: `GPL-3.0-or-later`
 
 ## Build Target
@@ -51,9 +51,9 @@ RepoType: git
 Repo: https://github.com/SysAdminDoc/AppManagerNG.git
 
 Builds:
-  - versionName: 0.7.0
-    versionCode: 33
-    commit: 22f18fa9afb9061545d8f1e31ad6ada239ca1017
+  - versionName: 0.8.0
+    versionCode: 34
+    commit: b32438a12c4ce2b5ad790d8015eb721530c2b8d0
     submodules: true
     gradle:
       - floss
@@ -63,8 +63,8 @@ Builds:
 
 AutoUpdateMode: Version v%v
 UpdateCheckMode: Tags
-CurrentVersion: 0.7.0
-CurrentVersionCode: 33
+CurrentVersion: 0.8.0
+CurrentVersionCode: 34
 ```
 
 The `rm` entries remove binary test fixtures that are not part of the release
