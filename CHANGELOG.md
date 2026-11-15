@@ -84,6 +84,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The Revert AppManagerNG changes confirmation never showed its list of steps, only the summary above it, so there was no way to leave a step out. The list shows now.
 - Restoring background running from Running apps couldn't be reverted afterwards. Its history entry had nothing to undo it with, so it always landed in manual review. It now reverts like any other app op change.
 - An app opened from a home-screen shortcut made with Create shortcut on an app's Activities tab now stays in Recents, so you can switch back to it like any other app (upstream App Manager #2054). The shortcut passed its own keep-out-of-Recents mark on to the app it opened. When the shortcut's app is gone or won't open, you get the "target is no longer available" message and the shortcut closes, instead of leaving an invisible screen over everything until you press Back.
+- An encrypted backup was first written as plain files to the shared cache folder, where other apps with storage access could read or change them on Android 10 and older before they were encrypted. Those plain files now go to storage only AppManagerNG can reach, and they're deleted once the backup is done or fails.
 
 ## v0.7.0, 2026-11-08
 

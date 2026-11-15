@@ -924,13 +924,6 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Acceptance: WHEN a backup recorded as encrypted is restored and its info file now says unencrypted (or names another mode), the system SHALL stop with a message naming both modes before any app data is cleared, and a Robolectric test SHALL drive that swap through `RestoreOp`.
   Complexity: M
 
-- [ ] P1: Keep the plain copy of an encrypted backup out of shared storage while it's made
-  Why: backing up with encryption on first writes plain tar files to `FileUtils.getCachePath()`, which is the external cache when one exists (`FileUtils.java:185-191`). On Android 10 and older, other apps with the storage permission can read those files (the data the user chose to encrypt) or change them before they're encrypted.
-  Evidence: `BackupItems.requireUnencryptedBackupPath()` still uses `getTemporaryUnencryptedPath` (`BackupItems.java:286`) in backup mode. The restore side moved to private staging on 2026-11-15, the backup side didn't.
-  Touches: `BackupItems.requireUnencryptedBackupPath`, `getTemporaryUnencryptedPath`, `FileCache.getPrivateStagingDir`, the free-space check, `BackupManagerTest`.
-  Acceptance: WHEN a backup with encryption is made, the system SHALL write its plain files only under the app's no-backup data directory and delete them when the backup ends or fails, and a test SHALL assert no plain file is created under the external cache.
-  Complexity: S
-
 ### P2
 
 - [ ] P2: Check backup metadata against its checksum before parsing it
@@ -947,6 +940,13 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Evidence: 2026-11-15 review of 4b9359bf1. `OpenPGPCrypto` decrypts through the provider's stream, which inflates compressed literal data.
   Touches: `RestoreStaging.stage`, `BackupItems.decryptWritesCopies`, `crypto/OpenPGPCrypto.java`, `RestoreStagingTest`.
   Acceptance: WHEN an OpenPGP backup's decrypted size exceeds the free space, the system SHALL stop before writing any app data with a message naming the space needed, either by reading the literal data's declared length or by decrypting with a running space check, and a test with a highly compressible payload SHALL cover it.
+  Complexity: S
+
+- [ ] P3: Count an encrypted backup's plain copy in the space check before it starts
+  Why: an encrypted backup writes its plain tar files to the app's private staging folder (since 2026-11-15) before encrypting them onto the backup volume. `BackupStorageCheck` measures only the backup volume. When that volume is an SD card or a document provider, internal storage can run out part way through, and the backup fails late instead of warning first.
+  Evidence: `BackupStorageCheck.getFreeBytesOnBackupVolume` reads the destination's usable space only. The old staging spot, the external cache, sat on the same internal partition and was never counted either, so this isn't a regression.
+  Touches: `BackupStorageCheck.evaluate` and the aggregate path, `FileCache.getPrivateStagingDir`, `BackupStorageCheckTest`.
+  Acceptance: WHEN encryption is on and the estimated backup size exceeds the free space of the private staging folder's partition, the system SHALL report the backup as short of space before it starts, and a test SHALL cover a destination with room and a staging partition without it.
   Complexity: S
 
 ## Found While Fixing Binary XML Decoding (2026-11-15)

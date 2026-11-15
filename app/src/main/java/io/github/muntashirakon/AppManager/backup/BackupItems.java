@@ -282,20 +282,9 @@ public class BackupItems {
         }
     }
 
-    @NonNull
-    private static synchronized Path getTemporaryUnencryptedPath(@NonNull String backupName) throws IOException {
-        Path tmpDir = Prefs.Storage.getTempPath();
-        String newFilename = backupName;
-        int i = 0;
-        while (tmpDir.hasFile(newFilename)) {
-            newFilename = backupName + "_" + (++i);
-        }
-        return tmpDir.findOrCreateDirectory(newFilename);
-    }
-
     /**
-     * A new folder in {@link FileCache#getPrivateStagingDir()}. The shared cache the backup side
-     * uses can be written by other apps holding the storage permission up to Android 10.
+     * A new folder in {@link FileCache#getPrivateStagingDir()}. The shared cache can be read and
+     * written by other apps holding the storage permission up to Android 10.
      */
     @NonNull
     private static Path getPrivateUnencryptedPath() throws IOException {
@@ -480,10 +469,10 @@ public class BackupItems {
 
         public Path requireUnencryptedBackupPath() throws IOException {
             if (mTempUnencyptedPath == null) {
-                // We can only do this once for each BackupItem. What a restore decrypts is read
-                // again later, so it goes where no other app can change it in between.
-                mTempUnencyptedPath = mBackupMode ? getTemporaryUnencryptedPath(getBackupPath().getName())
-                        : getPrivateUnencryptedPath();
+                // We can only do this once for each BackupItem. A backup's plain files are what the
+                // user chose to encrypt, and a restore reads what it decrypts again later, so both go
+                // where no other app can read or change them.
+                mTempUnencyptedPath = getPrivateUnencryptedPath();
             }
             return mTempUnencyptedPath;
         }
