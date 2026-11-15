@@ -8,7 +8,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 import androidx.work.Data;
-import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import java.util.List;
@@ -16,9 +15,10 @@ import java.util.List;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.utils.ScheduledWorker;
 
 /** Runs a check over every rule, or over one app's rules when the input names a package. */
-public class PermissionWatchWorker extends Worker {
+public class PermissionWatchWorker extends ScheduledWorker {
     private static final String TAG = "PermissionWatchWorker";
 
     public static final String INPUT_PACKAGE = "package";
@@ -33,7 +33,7 @@ public class PermissionWatchWorker extends Worker {
 
     @NonNull
     @Override
-    public Result doWork() {
+    protected Result doScheduledWork() {
         Context context = getApplicationContext();
         if (!PermissionWatchDb.mightHaveRules(context)) {
             return Result.success();

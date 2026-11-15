@@ -25,7 +25,6 @@ import androidx.core.app.PendingIntentCompat;
 import androidx.core.content.ContextCompat;
 import androidx.work.Data;
 import androidx.work.ForegroundInfo;
-import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import java.util.ArrayList;
@@ -46,8 +45,9 @@ import io.github.muntashirakon.AppManager.progress.ProgressHandler;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
+import io.github.muntashirakon.AppManager.utils.ScheduledWorker;
 
-public class AutoBackupWorker extends Worker {
+public class AutoBackupWorker extends ScheduledWorker {
     static final String KEY_MANUAL = "manual";
     static final String KEY_ORIGIN = "origin";
     static final String KEY_CATCH_UP = "catch_up";
@@ -123,7 +123,7 @@ public class AutoBackupWorker extends Worker {
 
     @NonNull
     @Override
-    public Result doWork() {
+    protected Result doScheduledWork() {
         Context context = getApplicationContext();
         boolean manual = getInputData().getBoolean(KEY_MANUAL, false);
         String origin = originOf(getInputData());
@@ -227,7 +227,7 @@ public class AutoBackupWorker extends Worker {
     }
 
     /**
-     * Runs one backup. {@link #doWork()} holds the single run slot around it. Split out so a test
+     * Runs one backup. {@link #doScheduledWork()} holds the single run slot around it. Split out so a test
      * can count the runs that get past the checks before it.
      *
      * @param manual whether someone started the run by hand
@@ -244,7 +244,7 @@ public class AutoBackupWorker extends Worker {
             } catch (Exception fgErr) {
                 // Promoting to a foreground service can fail (background-restricted
                 // app, OEM FGS limits). Surface that distinctly and retry rather than
-                // logging it as a generic "backup failed". doWork turns a scheduled
+                // logging it as a generic "backup failed". doScheduledWork turns a scheduled
                 // run's retry into a catch-up run, so the schedule keeps its time.
                 if (fgErr instanceof InterruptedException) {
                     Thread.currentThread().interrupt();

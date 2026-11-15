@@ -5,18 +5,19 @@ package io.github.muntashirakon.AppManager.self;
 import android.content.Context;
 
 import androidx.annotation.NonNull;
-import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
+import io.github.muntashirakon.AppManager.utils.ScheduledWorker;
+
 /** The 15 minute look for app changes while the app isn't running. */
-public class PackageEventSyncWorker extends Worker {
+public class PackageEventSyncWorker extends ScheduledWorker {
     public PackageEventSyncWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
         super(context, workerParams);
     }
 
     @NonNull
     @Override
-    public Result doWork() {
+    protected Result doScheduledWork() {
         PackageEventSync.syncNow(getApplicationContext());
         return Result.success();
     }

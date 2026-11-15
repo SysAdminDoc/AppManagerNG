@@ -1158,17 +1158,6 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Acceptance: WHEN an import saves an internet rule, the system SHALL read the held UID and write the rule under the same lock that putting a rule into force takes; a test SHALL run an import while a block is being put into force and SHALL find the deny either lifted or named by the saved rule.
   Complexity: S
 
-## Found While Stabilizing Scheduled Backups (2026-11-15)
-
-### P2
-
-- [ ] P2: Keep periodic workers scheduled after an uncaught error
-  Why: on WorkManager 2.10.5 a periodic worker that throws ends FAILED and never runs again (b/443879071, fixed in 2.11.2, which needs minSdk 23). AutoBackupWorker, OpHistoryPruneWorker, PermissionWatchWorker and RoutineWorker catch Exception at most and PackageEventSyncWorker catches nothing, so an Error such as an OutOfMemoryError, or a LinkageError on a vendor build, ends that schedule. The scheduled backup only comes back when its settings change.
-  Evidence: WorkManager 2.11.2 release notes; `backup/schedule/AutoBackupScheduler.java` is scheduled only from `BackupRestorePreferences`; the five workers' `doWork`.
-  Touches: the five periodic workers, a shared base or helper, a test on the WorkManager harness in `ScheduledBackupNetworkTest`.
-  Acceptance: a test first shows a periodic worker that throws ends FAILED on 2.10.5; WHEN any of the five periodic workers throws, the system SHALL log it and keep the work ENQUEUED with its period; a test SHALL cover each worker.
-  Complexity: S
-
 ## Found While Reconciling Backup Folder Grants (2026-11-15)
 
 ### P3

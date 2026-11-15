@@ -6,13 +6,13 @@ import android.content.Context;
 
 import androidx.annotation.NonNull;
 import androidx.work.Data;
-import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.utils.ScheduledWorker;
 
-public class OpHistoryPruneWorker extends Worker {
+public class OpHistoryPruneWorker extends ScheduledWorker {
     private static final String TAG = OpHistoryPruneWorker.class.getSimpleName();
 
     public static final String OUTPUT_DELETED_COUNT = "deleted_count";
@@ -23,7 +23,7 @@ public class OpHistoryPruneWorker extends Worker {
 
     @NonNull
     @Override
-    public Result doWork() {
+    protected Result doScheduledWork() {
         Context context = getApplicationContext();
         int retentionDays = Prefs.Privacy.getOpHistoryRetentionDays();
         if (!OpHistoryPruneScheduler.shouldSchedule(retentionDays)) {

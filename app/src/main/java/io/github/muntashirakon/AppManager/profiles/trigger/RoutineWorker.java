@@ -9,7 +9,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.core.content.ContextCompat;
-import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import io.github.muntashirakon.AppManager.R;
@@ -20,9 +19,10 @@ import io.github.muntashirakon.AppManager.profiles.ProfileManager;
 import io.github.muntashirakon.AppManager.profiles.ProfileQueueItem;
 import io.github.muntashirakon.AppManager.profiles.struct.AppsBaseProfile;
 import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
+import io.github.muntashirakon.AppManager.utils.ScheduledWorker;
 import io.github.muntashirakon.io.Path;
 
-public class RoutineWorker extends Worker {
+public class RoutineWorker extends ScheduledWorker {
     static final String KEY_TRIGGER_ID = "trigger_id";
     private static final String TAG = RoutineWorker.class.getSimpleName();
 
@@ -32,7 +32,7 @@ public class RoutineWorker extends Worker {
 
     @NonNull
     @Override
-    public Result doWork() {
+    protected Result doScheduledWork() {
         Context context = getApplicationContext();
         String triggerId = getInputData().getString(KEY_TRIGGER_ID);
         return executeTrigger(context, new ProfileTriggerStore(context), triggerId, (profile, routineFilter) -> {
