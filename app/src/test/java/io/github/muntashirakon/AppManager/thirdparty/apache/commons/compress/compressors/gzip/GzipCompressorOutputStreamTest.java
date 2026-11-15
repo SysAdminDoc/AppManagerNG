@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.co
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 
 import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.ArchiveEntry;
 import io.github.muntashirakon.AppManager.thirdparty.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -157,8 +158,27 @@ public class GzipCompressorOutputStreamTest {
         gos.close();
     }
 
+    @Test
+    public void aFailedCloseKeepsTheWriteErrorWhenTheStreamUnderneathFailsUnchecked() throws IOException {
+        BreakableStream out = new BreakableStream();
+        out.uncheckedClose = true;
+        GzipCompressorOutputStream gos = new GzipCompressorOutputStream(out);
+        out.broken = true;
+        byte[] data = new byte[64 * 1024];
+        new Random(1).nextBytes(data);
+        assertThrows(IOException.class, () -> gos.write(data));
+
+        // An unchecked error from the stream underneath used to escape and drop the write error
+        IOException closeError = assertThrows(IOException.class, gos::close);
+        assertEquals("write failed", closeError.getMessage());
+        assertEquals(1, closeError.getSuppressed().length);
+        assertTrue(closeError.getSuppressed()[0] instanceof IllegalStateException);
+        gos.close();
+    }
+
     private static final class BreakableStream extends OutputStream {
         boolean broken;
+        boolean uncheckedClose;
 
         @Override
         public void write(int b) throws IOException {
@@ -174,6 +194,9 @@ public class GzipCompressorOutputStreamTest {
 
         @Override
         public void close() throws IOException {
+            if (broken && uncheckedClose) {
+                throw new IllegalStateException("close failed");
+            }
             if (broken) {
                 throw new IOException("close failed");
             }

@@ -194,27 +194,30 @@ public class GzipCompressorOutputStream extends CompressorOutputStream {
         // Closed from the start: the deflater is ended below whatever happens, so a second close must not try
         // to finish again. It used to, when the first close failed, and its "Deflater has been closed" error
         // replaced the write error that made the first one fail. That error also stays the one thrown when
-        // closing the stream underneath fails as well.
+        // closing the stream underneath fails as well, checked or not.
         closed = true;
-        IOException failure = null;
+        Throwable failure = null;
         try {
             finish();
-        } catch (IOException e) {
+        } catch (Throwable e) {
             failure = e;
-        } finally {
-            deflater.end();
-            try {
-                out.close();
-            } catch (IOException e) {
-                if (failure == null) {
-                    failure = e;
-                } else {
-                    failure.addSuppressed(e);
-                }
+        }
+        deflater.end();
+        try {
+            out.close();
+        } catch (Throwable e) {
+            if (failure == null) {
+                failure = e;
+            } else {
+                failure.addSuppressed(e);
             }
         }
-        if (failure != null) {
-            throw failure;
+        if (failure instanceof IOException) {
+            throw (IOException) failure;
+        } else if (failure instanceof RuntimeException) {
+            throw (RuntimeException) failure;
+        } else if (failure instanceof Error) {
+            throw (Error) failure;
         }
     }
 
