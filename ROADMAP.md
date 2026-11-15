@@ -966,15 +966,6 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
 
 ## Found While Fixing Binary XML Decoding (2026-11-15)
 
-### P1
-
-- [ ] P1: Skip unknown chunks inside binary XML the way Android does
-  Why: Android's `ResXMLParser::nextNode` logs and skips a chunk it doesn't know inside the element stream, but ARSCLib refuses it ("Unexpected chunk: NULL(0x0000)"), so a manifest that installs fine can't be shown, parsed by the installer, or read for its attributes. A probe on a compiled fixture showed ARSCLib skips such a chunk only before the root element.
-  Evidence: upstream App Manager #2060 (a chunk of type 0); `apk/parser/BinaryXmlBounds.java`; ARSCLib 1.4.0 `ResXmlElement` reading; `frameworks/base/libs/androidfw/ResourceTypes.cpp` `nextNode` and `setTo`.
-  Touches: `BinaryXmlBounds.java` (or a normalizing step beside it), `AndroidBinXmlDecoder.readDocument`, its callers in `ApkUtils` and `ManifestParser`, tests.
-  Acceptance: WHEN a binary XML document holds a chunk of a type Android skips (anything but a namespace, element, or CDATA node once the element stream has started), the system SHALL decode the document as if that chunk weren't there, in the viewer, the installer's manifest parser, and `getManifestAttributes`; a skipped chunk whose header is shorter than a node header, or whose size runs past its parent, is still refused with a bounded error as Android refuses it; tests insert type 0x0000, 0x0200 and 0x01ff chunks before the root and between elements of a compiled fixture.
-  Complexity: S
-
 ### P2
 
 - [ ] P2: Decode an APK's other XML files with that APK's compile SDK

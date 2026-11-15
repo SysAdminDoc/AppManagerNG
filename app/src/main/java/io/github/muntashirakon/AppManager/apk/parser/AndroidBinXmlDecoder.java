@@ -125,12 +125,13 @@ public class AndroidBinXmlDecoder {
 
     /**
      * Reads a binary XML document after checking its structure, so a damaged or hostile file fails
-     * with an {@link IOException} instead of exhausting memory or the stack.
+     * with an {@link IOException} instead of exhausting memory or the stack. Chunks Android skips
+     * are skipped here too.
      */
     @NonNull
     public static ResXmlDocument readDocument(@NonNull byte[] data) throws IOException {
-        BinaryXmlBounds.check(data);
-        try (BlockReader reader = new BlockReader(data)) {
+        byte[] readable = BinaryXmlBounds.check(data);
+        try (BlockReader reader = new BlockReader(readable)) {
             ResXmlDocument document = new ResXmlDocument();
             document.readBytes(reader);
             return document;
