@@ -3,14 +3,17 @@
 package io.github.muntashirakon.AppManager.details;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Application;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Looper;
 
 import androidx.annotation.NonNull;
@@ -26,9 +29,11 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.shadows.ShadowToast;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.settings.Prefs;
@@ -42,6 +47,7 @@ public class ActivityLauncherShortcutActivityTest {
     private static final String PKG = "com.example.app";
     private static final String CLS = "com.example.app.SettingsActivity";
     private static final int START_CLASS_NOT_FOUND = -2;
+    private static final int START_ABORTED = 102;
 
     private final List<Intent> mStarted = new ArrayList<>();
     private final List<Integer> mUsers = new ArrayList<>();
@@ -101,10 +107,62 @@ public class ActivityLauncherShortcutActivityTest {
         assertEquals(10, (int) mUsers.get(0));
         assertTrue(controller.get().isFinishing());
 
+        // A later shortcut tap reaches the open trampoline and starts its target too
+        controller.newIntent(shortcut());
+        assertEquals(2, mStarted.size());
+
         // A later intent that isn't a shortcut closes it again instead of crashing
         controller.newIntent(new Intent());
-        assertEquals(1, mStarted.size());
+        assertEquals(2, mStarted.size());
         assertTrue(controller.get().isFinishing());
+    }
+
+    @Test
+    public void aShortcutTapWhileTheLockIsUpWaitsForTheUnlock() throws Exception {
+        ActivityController<ActivityLauncherShortcutActivity> controller = Robolectric.buildActivity(
+                ActivityLauncherShortcutActivity.class, shortcut()).setup();
+        assertEquals(1, mStarted.size());
+        Field pending = BaseActivity.class.getDeclaredField("mAuthenticationPending");
+        pending.setAccessible(true);
+        pending.setBoolean(controller.get(), true);
+
+        Intent later = shortcut(11);
+        controller.newIntent(later);
+        assertEquals(1, mStarted.size());
+        assertSame(later, controller.get().getIntent());
+
+        pending.setBoolean(controller.get(), false);
+        controller.get().onAuthenticated(null);
+        assertEquals(2, mStarted.size());
+        assertEquals(11, (int) mUsers.get(1));
+    }
+
+    @Test
+    public void startResultsCountAsStartedOnlyWhenTheTargetIsUpOrQueued() {
+        for (int result = 0; result <= 3; ++result) {
+            assertTrue(ActivityLauncherShortcutActivity.targetStarted(result, Build.VERSION_CODES.O));
+            assertTrue(ActivityLauncherShortcutActivity.targetStarted(result, Build.VERSION_CODES.N_MR1));
+        }
+        // A canceled app switch is started later by the system
+        assertTrue(ActivityLauncherShortcutActivity.targetStarted(100, Build.VERSION_CODES.O));
+        assertTrue(ActivityLauncherShortcutActivity.targetStarted(4, Build.VERSION_CODES.N_MR1));
+        // Lock task violation and aborted start
+        assertFalse(ActivityLauncherShortcutActivity.targetStarted(101, Build.VERSION_CODES.O));
+        assertFalse(ActivityLauncherShortcutActivity.targetStarted(102, Build.VERSION_CODES.O));
+        assertFalse(ActivityLauncherShortcutActivity.targetStarted(5, Build.VERSION_CODES.N_MR1));
+        assertFalse(ActivityLauncherShortcutActivity.targetStarted(START_CLASS_NOT_FOUND, Build.VERSION_CODES.O));
+    }
+
+    @Test
+    public void anAbortedStartSaysSoAndCloses() {
+        ActivityLauncherShortcutActivity.sTargetStarter = (intent, userId) -> START_ABORTED;
+
+        ActivityLauncherShortcutActivity activity = Robolectric.buildActivity(
+                ActivityLauncherShortcutActivity.class, shortcut()).setup().get();
+        shadowOf(Looper.getMainLooper()).idle();
+
+        assertTrue(activity.isFinishing());
+        assertEquals(mApp.getString(R.string.shortcut_target_unavailable), ShadowToast.getTextOfLatestToast());
     }
 
     @Test
@@ -144,7 +202,12 @@ public class ActivityLauncherShortcutActivityTest {
 
     @NonNull
     private Intent shortcut() {
-        return ActivityLauncherShortcutActivity.getShortcutIntent(mApp, PKG, CLS, 10, false)
+        return shortcut(10);
+    }
+
+    @NonNull
+    private Intent shortcut(int userId) {
+        return ActivityLauncherShortcutActivity.getShortcutIntent(mApp, PKG, CLS, userId, false)
                 .setAction(Intent.ACTION_CREATE_SHORTCUT);
     }
 }

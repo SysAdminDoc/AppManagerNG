@@ -8,6 +8,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.UserHandleHidden;
 
@@ -103,6 +104,11 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
     @Override
     protected void onNewIntent(@NonNull Intent intent) {
         super.onNewIntent(intent);
+        if (isAuthenticationPending()) {
+            // The lock screen is still up. onAuthenticated launches whatever intent is current by then.
+            setIntent(intent);
+            return;
+        }
         unfreezeAndLaunchActivity(intent);
     }
 
@@ -172,11 +178,33 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
         } else close();
     }
 
-    /** Whether the target started. A negative start result is a refusal, such as a class that no longer exists. */
+    // ActivityManager start results. 0 to 3 mean the target is up: started, its task brought to the front, or
+    // the intent delivered to it.
+    private static final int START_DELIVERED_TO_TOP = 3;
+    // App switches were off for a moment, so the system queued the start for when they're back on
+    private static final int START_SWITCHES_CANCELED_BEFORE_O = 4;
+    private static final int START_SWITCHES_CANCELED = 100;
+
+    /**
+     * Whether a start result means the target is up or on its way. A negative result is a refusal, such as a class
+     * that no longer exists. Results from 100 (from 4 before Android 8) are non-fatal codes for a start that didn't
+     * happen, such as a lock task violation or an aborted start, except a canceled app switch, which the system
+     * starts later on its own.
+     */
+    @VisibleForTesting
+    static boolean targetStarted(int result, int sdkInt) {
+        if (result >= 0 && result <= START_DELIVERED_TO_TOP) {
+            return true;
+        }
+        return result == (sdkInt >= Build.VERSION_CODES.O ? START_SWITCHES_CANCELED
+                : START_SWITCHES_CANCELED_BEFORE_O);
+    }
+
+    /** Whether the target started. */
     private boolean startTarget() {
         try {
             int result = sTargetStarter.start(mIntent, mUserId);
-            if (result >= 0) {
+            if (targetStarted(result, Build.VERSION.SDK_INT)) {
                 return true;
             }
             Log.w(TAG, "Could not launch shortcut target: start result %d", result);
