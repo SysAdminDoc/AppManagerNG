@@ -601,7 +601,7 @@ Sources and reasoning: RESEARCH.md (2026-09-30).
   Why: the upstream wireless fixes are ported, and on the S22 on 2026-09-30 AppManagerNG paired, connected over Wireless debugging and came back on its own after Wi-Fi went off and on. The start at boot, which Android 15 only allows as a special use service, has host tests but hasn't run on a phone yet.
   Evidence: `self/BootReceiver.java`, `servermanager/WifiWaitService.java`; upstream `22d439d61` (connect on boot).
   Touches: nothing unless it fails.
-  Acceptance: with Wireless debugging as the mode, the network always allowed for Wireless debugging and the server stopped, `adb reboot` the S22 or S25 and unlock it; the server is running within two minutes of the unlock without the app being opened. On the same run, a debug build's `LocalServerManager` log shows the launch shell's echo only as "(echo of the launch command, not logged)" and still reaches "Success!", which checks on a phone that leaving the echo out didn't hide the launcher's answer. Then join an access point Wireless debugging isn't allowed on yet: one system prompt and one AppManagerNG notification come up, not one per retry, and the server starts once the network is allowed.
+  Acceptance: with Wireless debugging as the mode, the network always allowed for Wireless debugging and the server stopped, `adb reboot` the S22 or S25 and unlock it; the server is running within two minutes of the unlock without the app being opened. Then join an access point Wireless debugging isn't allowed on yet: one system prompt and one AppManagerNG notification come up, not one per retry, and the server starts once the network is allowed. (Already seen on the S22 on 2026-11-15: the log shows the echo only as "(echo of the launch command, not logged)" and reaches "Success!", and the server came back over Wireless debugging from the app change job without the app being opened.)
   Complexity: S
 
 ### P2
@@ -1086,14 +1086,21 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
 
 ### P1
 
-- [ ] P1: Check internet blocking on a phone
-  Why: the INTERNET switch on the Permissions tab is covered by host tests against a fake firewall only. Nothing has run it against a real `FIREWALL_CHAIN_OEM_DENY_3` yet.
-  Evidence: `rules/internet/PlatformInternetFirewall.java` calls `ConnectivityManager` hidden firewall methods that only exist on Android 14 and later; `rules/internet/InternetAccessTest.java` fakes them.
-  Touches: an S22 or S25 on Android 14 or later, in root or ADB mode, with any app that loads a web page.
-  Acceptance: WHEN the INTERNET switch is turned off for an app on an Android 14+ phone in root or ADB mode, the app SHALL fail to connect and the row SHALL read Blocked; WHEN the phone restarts, the app SHALL be cut off again once `BOOT_COMPLETED` runs; WHEN the switch is turned back on, the app SHALL connect again; WHEN no privileged mode is running, the switch SHALL be disabled with the reason under it for an app with no block or with one in force, and a block saved meanwhile SHALL still be removable; WHEN the app is reinstalled while AppManagerNG is closed, the block SHALL be on its new UID after the next app change check (about 15 minutes, or longer while the phone dozes). Screenshots of the row in each state go with the result.
+- [ ] P1: Check that an internet block comes back after a restart
+  Why: on the S22 (Android 16, Wireless debugging mode) on 2026-11-15 the block, the allow, the disabled states without a privileged mode and the move to a reinstalled app's new UID all worked against the real `FIREWALL_CHAIN_OEM_DENY_3`. The restart is the one part left, and it hasn't run anywhere yet.
+  Evidence: `self/BootReceiver.java` re-applies saved rules; `rules/internet/InternetAccess.java` `applySoonWhereTheUidMoved`.
+  Touches: nothing unless it fails. An API 36 Magisk emulator in root mode can run it without a phone.
+  Acceptance: WHEN an app's INTERNET switch is off on an Android 14+ device in root or ADB mode and the device restarts, the app SHALL be cut off again once `BOOT_COMPLETED` runs and the privileged mode is back, with the row reading Blocked.
   Complexity: S
 
 ### P2
+
+- [ ] P2: Stop background work from toasting "Working on ADB mode"
+  Why: on the S22 on 2026-11-15 the app change job and the internet rule worker each brought up the privileged mode in the background, and `Ops.checkRootOrIncompleteUsbDebuggingInAdb` showed "Working on ADB mode" twice over whatever app was on screen (logcat 11:48:56 and 11:51:01). A toast nobody asked for, over another app, reads as noise.
+  Evidence: `settings/Ops.java` `checkRootOrIncompleteUsbDebuggingInAdb` posts `displayShortToast(R.string.working_on_adb_mode)` (and the long root and system mode warnings) on the main thread whatever started the init; `rules/internet/InternetRuleWorker`, `self/PackageEventSync` and `self/BootReceiver` start it with no screen of their own.
+  Touches: `settings/Ops.java`, the background callers, an Ops test.
+  Acceptance: WHEN the privileged mode starts from a worker, receiver or service with no AppManagerNG screen in front, the system SHALL show none of these toasts; WHEN it starts from a screen the user opened, the toasts SHALL show as before; a test SHALL cover both.
+  Complexity: S
 
 - [ ] P2: Block internet access from batch operations and profiles
   Why: an INTERNET rule can only be set one app at a time from its Permissions tab. Batch operations and profiles still offer only the metered background network policy, which doesn't cut an app off.
