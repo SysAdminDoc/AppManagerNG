@@ -547,12 +547,22 @@ class LocalServerManager {
         // root can always read the app-private DE cache, and unlike external storage no other
         // app can overwrite it — closing a local privilege-escalation where a malicious app
         // with external-storage write access swaps the JAR/script that root then executes.
-        String command = ServerConfig.getServerRunnerCommand(1, localServerPort);
+        // The native launcher sits in the app's library folder, which only the system can write.
+        String command = ServerConfig.getRootServerRunnerCommand(mContext, localServerPort);
+        String scriptCommand = ServerConfig.getServerRunnerCommand(1, localServerPort);
         // + "\n" + "supolicy --live 'allow qti_init_shell zygote_exec file execute'";
         Log.d(TAG, "useRootStartServer: Launching privileged server.");
         Runner.Result result = Runner.runCommand(command);
 
         Log.d(TAG, "useRootStartServer: %s", result.getOutput());
+        if (!result.isSuccessful() && !command.equals(scriptCommand)) {
+            // A root that can't run files from the library folder can still run the script.
+            // Runner has logged the launcher's stderr already.
+            Log.w(TAG, "useRootStartServer: The native launcher failed (exit %d), trying the script.",
+                    result.getExitCode());
+            result = Runner.runCommand(scriptCommand);
+            Log.d(TAG, "useRootStartServer: %s", result.getOutput());
+        }
         if (!result.isSuccessful()) {
             throw new Exception("Could not start server.");
         }

@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.security.SecureRandom;
+import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.adb.AdbTcpipProbe;
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -43,6 +44,11 @@ public final class ServerConfig {
     public static final int DEFAULT_LOCAL_SERVER_PORT_BASE = 62001;
     public static final String SECRET_PREFS_NAME = "server_secrets";
     static final String SERVER_RUNNER_EXEC_NAME = "run_server.sh";
+    /**
+     * The native launcher root starts the server with. The APK carries it as a library, so the
+     * system extracts it into the app's library folder, which only the system can write.
+     */
+    static final String SERVER_RUNNER_NATIVE_NAME = "librun_server.so";
     /**
      * Where root runs am.jar from. Upstream's server runs /data/local/tmp/am.jar, which a shared
      * name would overwrite under it.
@@ -70,9 +76,9 @@ public final class ServerConfig {
         }
 
         // Setup paths
-        File deStorage = ContextUtils.getDeContext(context).getCacheDir();
+        File serverRunnerJar = getServerJarFile(context);
+        File deStorage = Objects.requireNonNull(serverRunnerJar.getParentFile());
         File serverRunnerExec = new File(deStorage, SERVER_RUNNER_EXEC_NAME);
-        File serverRunnerJar = new File(deStorage, Constants.JAR_NAME);
         SERVER_RUNNER_EXEC[0] = serverRunnerExec;
         SERVER_RUNNER_EXEC[1] = serverRunnerExec;
         SERVER_RUNNER_JAR[0] = serverRunnerJar;
@@ -114,6 +120,61 @@ public final class ServerConfig {
         Log.e(TAG, "Classpath: %s", SERVER_RUNNER_JAR[index]);
         Log.e(TAG, "Exec path: %s", SERVER_RUNNER_EXEC[index]);
         return "sh " + SERVER_RUNNER_EXEC[index] + " " + localServerPort + " " + getLocalToken();
+    }
+
+    /**
+     * am.jar in the app's device-encrypted cache, where {@link #init(Context)} copies it.
+     */
+    @AnyThread
+    @NonNull
+    static File getServerJarFile(@NonNull Context context) {
+        return new File(ContextUtils.getDeContext(context).getCacheDir(), Constants.JAR_NAME);
+    }
+
+    /**
+     * The command root mode runs: the native launcher in the app's library folder when the APK has
+     * one, and run_server.sh in the device-encrypted cache when it doesn't.
+     */
+    @AnyThread
+    @NonNull
+    public static String getRootServerRunnerCommand(@NonNull Context context,
+                                                    @IntRange(from = 1, to = 65535) int localServerPort) {
+        File launcher = getNativeServerRunner(context);
+        if (launcher == null) {
+            return getServerRunnerCommand(1, localServerPort);
+        }
+        return buildNativeServerRunnerCommand(launcher.getAbsolutePath(), localServerPort, getLocalToken(),
+                getServerJarFile(context).getAbsolutePath(), ROOT_EXEC_JAR, Constants.SERVER_NAME,
+                AssetsUtils.getServerArgs());
+    }
+
+    @AnyThread
+    @Nullable
+    private static File getNativeServerRunner(@NonNull Context context) {
+        String libraryDir = context.getApplicationInfo().nativeLibraryDir;
+        if (libraryDir == null) {
+            return null;
+        }
+        File launcher = new File(libraryDir, SERVER_RUNNER_NATIVE_NAME);
+        return launcher.isFile() ? launcher : null;
+    }
+
+    /**
+     * The launcher's command line with every argument quoted for the shell, so a path with a space
+     * or a quote in it still reaches the launcher as one argument.
+     */
+    @VisibleForTesting
+    @NonNull
+    static String buildNativeServerRunnerCommand(@NonNull String launcher, int port, @NonNull String token,
+                                                 @NonNull String jarPath, @NonNull String execJarPath,
+                                                 @NonNull String niceName, @NonNull String serverArgs) {
+        return shellQuote(launcher) + " " + port + " " + shellQuote(token) + " " + shellQuote(jarPath) + " "
+                + shellQuote(execJarPath) + " " + shellQuote(niceName) + " " + shellQuote(serverArgs);
+    }
+
+    @NonNull
+    private static String shellQuote(@NonNull String value) {
+        return "'" + value.replace("'", "'\\''") + "'";
     }
 
     @AnyThread

@@ -67,15 +67,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Today: 2026-11-14 there was no RAM to boot a Magisk AVD next to the other sessions' emulator, and both phones were leased. Check which Magisk the Hushfeed_Magisk_API36 AVD carries first, since the vault records 30.7 there.
   Complexity: S
 
-- [ ] P1: Port upstream's native run_server for the local privileged channel
-  Why: the HMAC half is done. Protocol 1.4.0 (fcbb19030) proves the token both ways without sending it, and `DataTransmissionHandshakeTest` covers the negative cases. Upstream's native run_server executable is what's left.
-  Evidence: upstream commits 07c7199 (run_server as a native executable, 2026-05-28) and b42efbb (main.jar copied through run_server). NG still launches through `app/src/main/assets/run_server.sh` and `servermanager/AdbLaunchFiles.java`, and its server has run apart from upstream's since 6e8f45d31 (port 62001 plus user ID, process `amng_server`).
-  Touches: libserver/, server/, adb/, servermanager/.
-  Acceptance: root mode still starts the server on a rooted Android 16 runtime through the native launcher, ADB mode still starts it, and the ported commits are attributed.
-  Merged: INIT-D3 (HMAC mutual auth and native run_server port).
-  Unblocked 2026-11-07: the upstream commits are public, and the rooted API 36 Magisk AVD on disk is the Android 16 root runtime the acceptance asks for.
-  Complexity: M
-
 - [ ] P2: Dhizuku freeze/suspend executor parity
   Why: freeze and suspend should run through Dhizuku's device-owner delegation on devices where ADB permissions are restricted.
   Evidence: `dhizuku/DhizukuBridge.java` is a detection probe only, and `settings/Ops.java` declares no Dhizuku mode.

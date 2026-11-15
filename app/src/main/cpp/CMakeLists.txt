@@ -21,6 +21,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${C_FLAGS}")
 
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${LINKER_FLAGS}")
 set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${LINKER_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${LINKER_FLAGS}")
 
 find_library(log-lib log)
 
@@ -35,4 +36,20 @@ target_link_libraries(am ${log-lib})
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_custom_command(TARGET am POST_BUILD
             COMMAND ${CMAKE_STRIP} --remove-section=.comment "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libam.so")
+endif ()
+
+# The launcher root starts the local server with (upstream App Manager 07c7199). It's an executable
+# named like a library, so the APK carries it under lib/ and the system extracts it into the app's
+# library folder, where only the system can write.
+add_executable(run_server run_server.c)
+
+set_target_properties(run_server PROPERTIES
+        PREFIX "lib"
+        SUFFIX ".so"
+        POSITION_INDEPENDENT_CODE ON
+        LINK_FLAGS "-pie")
+
+if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_custom_command(TARGET run_server POST_BUILD
+            COMMAND ${CMAKE_STRIP} --remove-section=.comment "$<TARGET_FILE:run_server>")
 endif ()
