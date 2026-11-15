@@ -34,7 +34,7 @@ import io.github.muntashirakon.AppManager.utils.ContextUtils;
 /**
  * Keeps each app's saved internet rule and the device's firewall in step. The saved rule is the wish; the firewall
  * forgets it on every restart and whenever the app gets a new UID, so it's put back after a restart, an install or
- * update, and whenever the privileged mode comes up.
+ * removal, and whenever the privileged mode comes up. An update keeps the app's UID.
  */
 public final class InternetAccess {
     private static final String TAG = "InternetAccess";
@@ -119,29 +119,44 @@ public final class InternetAccess {
         public final boolean blocked;
         /** The device does what the wish says right now. */
         public final boolean inForce;
+        /** The saved rule names a UID, so a deny may be on it in the kernel. */
+        public final boolean holdsUid;
         /** Why the wish isn't in force, or why a new one can't be made. */
         @Nullable
         public final Unavailable unavailable;
 
+        /** A saved rule here is taken to name a UID. */
         @VisibleForTesting
         Status(boolean saved, boolean blocked, boolean inForce, @Nullable Unavailable unavailable) {
+            this(saved, blocked, inForce, saved, unavailable);
+        }
+
+        Status(boolean saved, boolean blocked, boolean inForce, boolean holdsUid, @Nullable Unavailable unavailable) {
             this.saved = saved;
             this.blocked = blocked;
             this.inForce = inForce;
+            this.holdsUid = holdsUid;
             this.unavailable = unavailable;
         }
 
         /**
-         * Whether the switch can be used. A new wish needs a firewall that works. Without a privileged mode nothing
-         * can be read or changed, so the switch is off until one is running. Otherwise a saved wish can always be
-         * changed: one that never reached a UID is dropped without the firewall, and any other change is saved
-         * until it can be made.
+         * Whether the switch can be used. A new wish needs a firewall that works. A saved wish that names a UID
+         * stays put while no privileged mode can reach the firewall, since a deny on that UID could be neither read
+         * nor lifted, and the switch would show the app allowed while it's still blocked. Any other saved wish can
+         * be changed: one without a UID is dropped without the firewall, and the rest is saved until it can be made.
          */
         public boolean canChange() {
             if (unavailable == null) {
                 return true;
             }
-            return saved && unavailable.reason != Unavailable.NO_PRIVILEGED_MODE;
+            if (!saved) {
+                return false;
+            }
+            if (unavailable.reason == Unavailable.NO_PRIVILEGED_MODE
+                    || unavailable.reason == Unavailable.NO_PERMISSION) {
+                return !holdsUid;
+            }
+            return true;
         }
 
         /**
@@ -154,8 +169,8 @@ public final class InternetAccess {
                 if (!saved) {
                     return context.getString(R.string.internet_access_unavailable, reason);
                 }
-                if (unavailable.reason == Unavailable.NO_PRIVILEGED_MODE
-                        || unavailable.reason == Unavailable.NO_PERMISSION) {
+                if (holdsUid && (unavailable.reason == Unavailable.NO_PRIVILEGED_MODE
+                        || unavailable.reason == Unavailable.NO_PERMISSION)) {
                     // The kernel may still hold a block made before the privileged mode went away
                     return context.getString(R.string.internet_access_unknown, reason);
                 }
@@ -219,22 +234,23 @@ public final class InternetAccess {
             InternetFirewall firewall = sFirewall;
             Unavailable unavailable = firewall.check();
             if (rule == null) {
-                return new Status(false, false, true, unavailable);
+                return new Status(false, false, true, false, unavailable);
             }
             boolean blocked = rule.isBlocked();
-            if (!blocked && rule.getUid() == InternetRule.NO_UID) {
+            boolean holdsUid = rule.getUid() != InternetRule.NO_UID;
+            if (!blocked && !holdsUid) {
                 // Nothing was put on a UID for this rule, as with an import that only says allowed. There's nothing
                 // to lift, and a deny that something else put on the app's UID is left alone.
                 replaceIfUnchanged(rule, null);
-                return new Status(false, false, true, unavailable);
+                return new Status(false, false, true, false, unavailable);
             }
             if (unavailable != null && unavailable.reason == Unavailable.ANDROID_VERSION) {
                 // Kept for a later Android, but there's nothing to put back after app changes here
-                return new Status(true, blocked, false, unavailable);
+                return new Status(true, blocked, false, holdsUid, unavailable);
             }
             noteRuleSaved();
             if (unavailable != null) {
-                return new Status(true, blocked, false, unavailable);
+                return new Status(true, blocked, false, holdsUid, unavailable);
             }
             try {
                 int uid = sUidResolver.getUid(packageName, userId);
@@ -248,10 +264,10 @@ public final class InternetAccess {
                     if (blocked) {
                         // Kept for when the app comes back
                         replaceIfUnchanged(rule, rule.withUid(InternetRule.NO_UID));
-                        return new Status(true, true, false, null);
+                        return new Status(true, true, false, false, null);
                     }
                     replaceIfUnchanged(rule, null);
-                    return new Status(false, false, true, null);
+                    return new Status(false, false, true, false, null);
                 }
                 if (blocked) {
                     // Saved first, so a crash between the two still leaves a record of the UID to let go
@@ -262,9 +278,11 @@ public final class InternetAccess {
                     }
                     try {
                         firewall.setDenied(uid, true);
-                    } catch (SecurityException | LinkageError e) {
-                        // Refused, or the call doesn't exist, so nothing went on a new UID and the rule mustn't claim
-                        // it. An old UID was let go above, so allowing the app again then just drops the rule.
+                    } catch (RuntimeException | LinkageError e) {
+                        // Refused, failed, or the call doesn't exist, so nothing went on a new UID and the rule
+                        // mustn't claim it. A different old UID was either let go above or is held by another
+                        // blocked rule, so this rule drops it too, and allowing the app again just drops the rule.
+                        // A dead privileged mode (RemoteException) leaves the UID on, as the deny may have gone in.
                         replaceIfUnchanged(held, rule.withUid(oldUid == uid ? uid : InternetRule.NO_UID));
                         throw e;
                     }
@@ -273,7 +291,7 @@ public final class InternetAccess {
                     if (sharer != null) {
                         // The firewall works on UIDs, so allowing this app would also allow the other one
                         replaceIfUnchanged(rule, rule.withUid(uid));
-                        return new Status(true, false, false, new Unavailable(Unavailable.SHARED_UID, sharer));
+                        return new Status(true, false, false, true, new Unavailable(Unavailable.SHARED_UID, sharer));
                     }
                     firewall.setDenied(uid, false);
                 }
@@ -281,27 +299,28 @@ public final class InternetAccess {
                 if (denied != blocked) {
                     Log.w(TAG, "The firewall reads %s as %s after it was asked for %s", packageName,
                             denied ? "blocked" : "allowed", blocked ? "blocked" : "allowed");
-                    return new Status(true, blocked, false, new Unavailable(Unavailable.PLATFORM, null));
+                    return new Status(true, blocked, false, true, new Unavailable(Unavailable.PLATFORM, null));
                 }
                 if (!blocked) {
                     // Allowed and nothing left on any UID, so the rule has done its job
                     replaceIfUnchanged(rule, null);
-                    return new Status(false, false, true, null);
+                    return new Status(false, false, true, false, null);
                 }
-                return new Status(true, true, true, null);
+                return new Status(true, true, true, true, null);
             } catch (SecurityException e) {
                 Log.w(TAG, "The firewall refused a change for %s", e, packageName);
                 Unavailable now = firewall.check();
-                return new Status(true, blocked, false, now != null ? now
+                return new Status(true, blocked, false, savedRuleHoldsUid(packageName, userId), now != null ? now
                         : new Unavailable(Unavailable.NO_PERMISSION, e.getMessage()));
             } catch (RemoteException e) {
                 Log.w(TAG, "The privileged mode went away while changing %s", e, packageName);
-                return new Status(true, blocked, false, new Unavailable(Unavailable.NO_PRIVILEGED_MODE,
-                        e.getMessage()));
+                return new Status(true, blocked, false, savedRuleHoldsUid(packageName, userId),
+                        new Unavailable(Unavailable.NO_PRIVILEGED_MODE, e.getMessage()));
             } catch (RuntimeException | LinkageError e) {
                 // LinkageError: a ROM without the hidden firewall calls
                 Log.w(TAG, "The firewall failed for %s", e, packageName);
-                return new Status(true, blocked, false, new Unavailable(Unavailable.PLATFORM, e.getMessage()));
+                return new Status(true, blocked, false, savedRuleHoldsUid(packageName, userId),
+                        new Unavailable(Unavailable.PLATFORM, e.getMessage()));
             }
         }
     }
@@ -337,8 +356,8 @@ public final class InternetAccess {
     }
 
     /**
-     * Asks for the app's rule to be put back in every user that has one. An install, update or removal seen in one
-     * user can move the app to a new app ID, and with it the UID it has in every other user.
+     * Asks for the app's rule to be put back in every user that has one. An install or removal seen in one user can
+     * move the app to a new app ID, and with it the UID it has in every other user.
      */
     @WorkerThread
     public static void applySoonInEveryUser(@NonNull Context context, @NonNull String packageName) {
@@ -390,7 +409,7 @@ public final class InternetAccess {
         }
         try {
             if (marker.createNewFile()) {
-                // Installs and updates have to be seen while AppManagerNG isn't running, or a new UID goes unblocked
+                // A reinstall has to be seen while AppManagerNG isn't running, or the new UID goes unblocked
                 rescheduleAppChangeSync(context);
             }
         } catch (IOException e) {
@@ -432,6 +451,12 @@ public final class InternetAccess {
                 .setInputData(input.build())
                 .addTag(WORK_TAG)
                 .build();
+    }
+
+    /** Whether the app's saved rule names a UID, read again after a failed change. */
+    private static boolean savedRuleHoldsUid(@NonNull String packageName, @UserIdInt int userId) {
+        InternetRule rule = readRule(packageName, userId);
+        return rule != null && rule.getUid() != InternetRule.NO_UID;
     }
 
     @Nullable

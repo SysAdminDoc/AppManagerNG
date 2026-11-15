@@ -460,9 +460,13 @@ public class InternetAccessTest {
     }
 
     @Test
-    public void aSavedRuleCanBeChangedUnlessNoPrivilegedModeIsRunning() {
+    public void aSavedRuleCanBeChangedUnlessADenyOnItsUidIsOutOfReach() {
         assertFalse(waitingFor(Unavailable.NO_PRIVILEGED_MODE).canChange());
-        assertTrue(waitingFor(Unavailable.NO_PERMISSION).canChange());
+        assertFalse(waitingFor(Unavailable.NO_PERMISSION).canChange());
+        assertTrue(new InternetAccess.Status(true, true, false, false,
+                new Unavailable(Unavailable.NO_PRIVILEGED_MODE, null)).canChange());
+        assertTrue(new InternetAccess.Status(true, true, false, false,
+                new Unavailable(Unavailable.NO_PERMISSION, null)).canChange());
         assertTrue(waitingFor(Unavailable.ANDROID_VERSION).canChange());
         assertTrue(waitingFor(Unavailable.PLATFORM).canChange());
         assertTrue(waitingFor(Unavailable.SHARED_UID).canChange());
@@ -510,6 +514,64 @@ public class InternetAccessTest {
         assertEquals("nothing to lift", changes, mFirewall.changes);
         assertNull(savedRule(APP, 0));
         assertFalse(InternetAccess.mightHaveRules(ContextUtils.getContext()));
+    }
+
+    @Test
+    public void aBlockTheFirewallFailedHoldsNoUidSoAllowingDropsIt() {
+        mFirewall.failure = new IllegalStateException("No such chain");
+
+        InternetAccess.Status status = InternetAccess.setBlocked(APP, 0, true);
+
+        assertEquals(Unavailable.PLATFORM, status.unavailable.reason);
+        assertFalse(status.holdsUid);
+        assertEquals(InternetRule.NO_UID, savedRule(APP, 0).getUid());
+        int changes = mFirewall.changes;
+
+        InternetAccess.Status allowed = InternetAccess.setBlocked(APP, 0, false);
+
+        assertFalse(allowed.saved);
+        assertEquals("nothing to lift", changes, mFirewall.changes);
+        assertNull(savedRule(APP, 0));
+        assertFalse(InternetAccess.mightHaveRules(ContextUtils.getContext()));
+    }
+
+    @Test
+    public void aBlockInForceStaysPutWhileThePermissionToLiftItIsMissing() {
+        Context context = ContextUtils.getContext();
+        InternetAccess.setBlocked(APP, 0, true);
+        Unavailable noPermission = new Unavailable(Unavailable.NO_PERMISSION, null);
+        mFirewall.unavailable = noPermission;
+
+        InternetAccess.Status status = InternetAccess.apply(APP, 0);
+
+        assertTrue(status.holdsUid);
+        assertFalse("allowing couldn't lift the deny on its UID", status.canChange());
+        assertEquals(context.getString(R.string.internet_access_unknown, noPermission.describe(context)),
+                status.describe(context));
+        assertEquals(Collections.singleton(APP_UID), mFirewall.denied);
+    }
+
+    @Test
+    public void aBlockSavedWithoutAPrivilegedModeCanBeTakenBack() {
+        // The tab was opened while ADB was still up
+        Context context = ContextUtils.getContext();
+        Unavailable noPrivilegedMode = new Unavailable(Unavailable.NO_PRIVILEGED_MODE, null);
+        mFirewall.unavailable = noPrivilegedMode;
+
+        InternetAccess.Status status = InternetAccess.setBlocked(APP, 0, true);
+
+        assertTrue(status.saved);
+        assertFalse(status.holdsUid);
+        assertTrue(status.canChange());
+        assertEquals(context.getString(R.string.internet_access_not_in_force, noPrivilegedMode.describe(context)),
+                status.describe(context));
+
+        InternetAccess.Status allowed = InternetAccess.setBlocked(APP, 0, false);
+
+        assertFalse(allowed.saved);
+        assertNull(savedRule(APP, 0));
+        assertEquals(0, mFirewall.changes);
+        assertFalse(InternetAccess.mightHaveRules(context));
     }
 
     @Test

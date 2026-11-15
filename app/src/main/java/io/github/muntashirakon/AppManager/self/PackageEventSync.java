@@ -144,8 +144,8 @@ public final class PackageEventSync {
         public void onUpdated(@NonNull Context context, @NonNull String packageName, int userId) {
             // An update can reset what the user set, so watched permissions are checked whatever the monitors say.
             checkWatchedPermissions(context, packageName, userId);
-            // An update can move the app to a new UID
-            applyInternetRule(context, packageName);
+            // An update keeps the app's UID, so its internet rule stays in force. A reinstall comes as a removal
+            // and an install.
             runUpdateMonitors(context, packageName);
             enqueueRoutines(context, ProfileTrigger.TYPE_ON_APP_UPDATE, packageName);
         }
