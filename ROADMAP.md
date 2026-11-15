@@ -57,6 +57,7 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Unblocked 2026-11-07: the API 37.0 and 37.1 images are on disk and should root with Magisk 31.1 the way the API 36 image did (not tried yet), Shizuku 13.6.0 sideloads and starts over ADB, and Dhizuku 2.13.0 (2026-10-30) gets device owner through `dpm set-device-owner` on an emulator with no accounts.
   Research 2026-11-13: Shizuku 13.6.0 shows an empty authorized-apps list on Android 17 (RikkaApps/Shizuku #2180 with 25 upvotes, #2681 on 2026-11-11), so a 13.6.0 failure is expected. Also bind once through a Shizuku-API compatible server, such as Porter's compatibility mode (SD Maid SE 2.2.0, 2026-09-29). The warning logic is the new P2 "Judge Shizuku on Android 17 by whether the server answers".
   Checked 2026-11-14 on the S25 (API 37, One UI CP2A.260605.016): Shizuku 13.6.0's server starts over ADB, Mode doctor sees it, the consent dialog works and NG's shizuku_am and shizuku_fs services connect, so Shizuku binds on Android 17. The first switch then died: the READ_LOGS self-grant changes NG's gids, Android killed NG with Settings resumed, and the mode was never saved. READ_LOGS now waits until every NG process is cached (DeferredLogAccess). Retested on the S25 the same day with that build: the switch sticks ("Selected: Shizuku. Active now: Shizuku (shell)"), READ_LOGS lands 2 seconds after Home, the kill hits the cached process (adj 700), and reopening lands back on Mode of operation. Shizuku on API 37 is done. Still owed: root plus Dhizuku on API 37, which need an emulator with about 10 GB of host RAM free (rules/android.md). `AppManagerNG_Magisk_API37` is set up on a copy of the API 37 google_apis image and is not patched yet.
+  Research 2026-11-14: run ADB mode on API 37 too, since none of the checks above covers it. PermissionManagerX #83 (2026-11-12) shows Android 17 build CP4A.261105.040.A1 refusing a uid 2000 `startService` that names the app's own package (`ActivityManagerService.enforceCallingPackage`). NG's `ActivityManagerCompat` calls name `com.android.shell` from shell (`self/SelfPermissions.java:386-394`), so they're clear. The server's own broadcasts go through an NG package context (`ipc/RootServiceServer.java:143-153`, `server/BroadcastSender.java`), so in ADB mode on API 37 confirm the server-started and relay broadcasts still arrive (Mode doctor shows ADB active, and a permission watcher revoke fires).
   Complexity: S
 
 - [ ] P1: Check root detection on a live Android 16 root
@@ -245,6 +246,7 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Today: the only widgets are ScreenTime, DataUsage, ClearCache and Recording.
   Acceptance: a main-menu entry opens a grid of all frozen/suspended apps; each row has a one-tap toggle that freezes or unfreezes immediately; a home-screen widget shows frozen-app count and opens the freeze surface on tap; works in root, ADB, and Shizuku modes.
   Unblocked 2026-11-07: freeze runs in root, ADB and Shizuku modes on the emulators, and every emulator launcher can place a widget.
+  Research 2026-11-14: Hail #266 (open since 2024-09-06) asks for one widget tile that freezes a chosen set of apps. A "freeze my selection" action on the widget covers it.
   Complexity: M
 
 - [ ] P3: Profile sharing via QR code or deep link
@@ -296,6 +298,7 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Acceptance: at least one new signal appears in App Details and is filterable in the Finder, over fixture package data.
   Unblocked 2026-11-07: the Xposed signal only needs a row and a Finder filter, and the rows can be checked on an emulator.
   Research 2026-11-13: LibChecker 2.5.5 (2026-11-05) added AppFunctions, v3.2 signature and R8 mode detection, three more candidates for this item.
+  Research 2026-11-14: LibChecker identifies v3.2 as a scheme without verifying it. Roadmap_Blocked's "Show APK Signature Scheme v3.2" waits on a verifier, but a row that says "v3.2 block present, not verified" doesn't need one, so that part can land here.
   Complexity: M
 
 - [ ] P3: Persistent removal/debloat ledger surface
@@ -413,6 +416,7 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Evidence: `permission/watcher/PermissionWatchWorker.java:49-52` passes the report to `PermissionWatchNotifier.notify` and nothing else; `permission/monitor/AppChangeFeedStore.java` already keeps the install and update history.
   Touches: `permission/watcher/PermissionWatchWorker.java`, `permission/monitor/AppChangeFeedStore.java`, the feed's type labels, a worker test.
   Acceptance: every drift in a report, fixed or not, appends one feed entry naming the app, the permission or op, the rule's state and the state found; an entry for a drift that was fixed says so; a test with a faked rule DAO and grant lookup asserts the entries and fails with the append removed.
+  Research 2026-11-14: AppOpsNext 1.6.7 (2026-11-14) lists every permission that no longer matches what it last set, with "restore previous" and "keep current" per entry. Those two actions on a feed entry would make the record useful, not just visible.
   Complexity: S
 
 - [ ] P2: Bound the build-expiry lockout so it cannot strand a user
@@ -799,6 +803,7 @@ Sources and reasoning: RESEARCH.md (2026-11-13). The four crash fixes come first
   Evidence: Robolectric 4.17, or 4.18 (2026-11-13) once it's two weeks old. gson 2.15.0 (2026-10-24), smali 3.0.10 (2026-08-20), zstd-jni 1.5.7-26 (2026-11-08), AndroidHiddenApiBypass 6.2 (2026-10-09), BouncyCastle 1.87 (2026-11-12) once it's two weeks old. Guava stays at 32.1.3-android because 33.5.0 needs API 23.
   Touches: `versions.gradle`, the backup round-trip tests, the reproducible-build check.
   Acceptance: each bump lands on its own with the unit suite and the backup round-trip tests green and the APK's minSdk still 21. `versions.gradle` says why Guava is held.
+  Research 2026-11-14: zstd-jni is now 1.5.7-28 (2026-11-13). The test-only org.json 20251224 (`versions.gradle:33`) is inside GHSA-ghc9-756g-vrcv, fixed in 20260719, and 20260814 is the newest. It never ships in the APK, but the bump is free.
   Complexity: S
 
 - [ ] P2: Read the per-user disabled state the same way on a full load and a refresh
@@ -900,3 +905,69 @@ Sources and reasoning: RESEARCH.md (2026-11-13). The four crash fixes come first
   Touches: `SettingsActivity`, `SettingsActivityRecreateTest`.
   Acceptance: in dual pane a link that opens no page falls back to the default fill, an empty link leaves the saved path alone, and both have a Robolectric case.
   Complexity: S
+
+## Research-Driven Additions (2026-11-14)
+
+Sources and reasoning: RESEARCH.md (2026-11-14). The two build toolchain items come first because the reproducible release gate depends on them.
+
+### P1
+
+- [ ] P1: Move the Gradle wrapper to 9.9.1
+  Why: the wrapper is 9.7.0, inside six Gradle advisories. Five of them reach this build on the machine that builds releases: client-daemon and worker-to-daemon deserialization, daemon registry trust, stale registry port squatting, and a repository that fails SSL staying enabled.
+  Evidence: gradle/gradle advisories GHSA-j5m7-59rp-24f5, GHSA-xwqc-3h47-hg64 and GHSA-mvvg-497x-hmj8 (fixed in 9.8.1, 2026-10-07), GHSA-gqrr-4j89-5267 and GHSA-pcp8-98xm-c6pr (fixed in 9.9.1, 2026-11-10). The critical GHSA-3cfg-jpcr-gfp3 needs a TOML version catalog, and `gradle/` has none. `gradle/wrapper/gradle-wrapper.properties` pins 9.7.0 with `distributionSha256Sum`.
+  Touches: `gradle/wrapper/gradle-wrapper.properties` (URL and SHA-256 from services.gradle.org), `gradle/wrapper/gradle-wrapper.jar` if `gradlew wrapper` updates it, `gradle/verification-metadata.xml` (regenerate with `--write-verification-metadata sha256` and read the diff), `buildscript-gradle.lockfile`, README "Build from source" (names Gradle 9.7), the repo `CLAUDE.md` stack line.
+  Acceptance: `gradlew --version` prints 9.9.1 and the wrapper SHA-256 matches the published one. Both flavors' release builds pass, the unit suite is green, and the reproducible gate (`scripts/release_gate.py`) passes two clean builds. No `--warning-mode` deprecation from 9.8 or 9.9 is left unread.
+  Complexity: S
+
+- [ ] P1: Build with AGP 9.3.3 for its R8 fixes
+  Why: AGP 9.3.1 ships an R8 that can turn identical input into different dex and mapping output, which is the property the byte-identical release gate rests on. It can also emit dex that fails verification and crashes on launch.
+  Evidence: AGP 9.3 release notes, 9.3.3 (published 2026-09-17 per the Maven POM): #554586985 "R8 build non-determinism: identical input produces different dex/mapping", #485558707 "AGP intermittently produces dex files that fail verification and crash app on launch", #551348855 (outliner VerifyError), #522844908 (duplicate mapping). 9.3.2 fixes #522845800 (lint crash on JDK 17). `versions.gradle:14` pins `agp_version = '9.3.1'`, and nothing pins R8 separately (`build.gradle:18`). `docs/distribution/reproducible-builds.md:182` already notes that R8 determinism depends on the AGP version.
+  Touches: `versions.gradle`, `gradle/verification-metadata.xml`, `buildscript-gradle.lockfile`, README "Build from source" (names AGP 9.3.1), the repo `CLAUDE.md` stack line.
+  Acceptance: both flavors build with 9.3.3, lint runs clean on JDK 17, the reproducible gate passes two clean builds with byte-identical APKs and mappings, and the release APK launches on the API 37 emulator and on the oldest API image on disk. If this lands after the Gradle item, one gate run covers both.
+  Complexity: S
+
+### P2
+
+- [ ] P2: Say when Advanced Protection has taken the accessibility service away
+  Why: on Android 17, Advanced Protection limits AccessibilityService to "verified applications categorized as Accessibility Tools". NG's toast history, top-app bubble, UI tracker and no-root cache clearing all run on its one service, and the screens still tell the user to turn the service on.
+  Evidence: The Hacker News, 2026-10-02, quoting Google. `compat/AdvancedProtectionCompat.java` already reads the state. Privilege Health's row only mentions sideloading (`strings.xml:2966`). Toast history and the bubble say "Turn on the accessibility service" (`strings.xml:2159`, `:3419`). `res/xml/accessibility_service_config.xml` has no `isAccessibilityTool`, and it shouldn't get one, because NG isn't an assistive tool.
+  Touches: `compat/AdvancedProtectionCompat.java`, `accessibility/NoRootAccessibilityService.java` (or one shared availability helper), the toast history and top-app bubble prompts, UI tracker's prompt, `settings/PrivilegeHealthPreferences.java`, strings, tests.
+  Acceptance: first, on an API 37 image or phone with Advanced Protection on, record in the repo `CLAUDE.md` whether an already-enabled NG service is switched off or can only no longer be turned on. Then, on API 37+ with Advanced Protection on, Privilege Health's row names the features it stops (toast history, the bubble, UI tracker, no-root cache clearing), and those screens say Advanced Protection is the reason instead of sending the user to accessibility settings. With Advanced Protection off nothing changes. A Robolectric test drives the helper through on, off and unavailable.
+  Complexity: S
+
+- [ ] P2: Find why some apps won't update through NG's installer but will through Android's
+  Why: a #22 tester found WhatsApp and about seven other apps failed to update through NG while the same APKs installed through Android's own installer. The fallback and the blocked message have shipped, but nobody knows the cause, so it can't be fixed or explained.
+  Evidence: fork #22, antiframe's comment of 2026-11-09, item 8. The 2026-11-13 reply says the fallback hasn't run between two phones. Local sync sends the host's base and split APKs (`sync/lan/AndroidPackageCatalog.java:172-173`), so splits that don't fit the receiving phone (density, ABI or language) are one candidate, and Android 14+ update ownership is another (`apk/installer/InstallerOptions.java`, `mRequestUpdateOwnership`).
+  Touches: `apk/installer/PackageInstallerCompat.java` (status and message mapping), `sync/lan/` (which files get sent), the installer fallback, strings.
+  Acceptance: on the S22 or S25, update a Play-installed WhatsApp from a Local sync copy (and from a plain same-signer split set), capture the `PackageInstaller` status code and message in the repo `CLAUDE.md`, and name the cause. If it's split fit, Local sync sends or the installer picks only the splits the receiving phone can use. If it's update ownership, the installer says so and offers the fallback. A unit test covers the status mapping for that cause. The #22 reply waits until it's seen working on a phone.
+  Complexity: M
+
+- [ ] P2: Bring in the translations upstream added after the fork
+  Why: NG's locale files stopped at the 2026-04-30 fork while upstream's Weblate kept going. About 2,100 strings whose English NG never changed are translated upstream but show in English here, 1,085 of them Swedish, where NG has only 44. This doesn't wait on the hosted translation project in Roadmap_Blocked.md, because upstream's Weblate already reviewed these strings and they come under the same GPL.
+  Evidence: upstream merged 53 Weblate commits on 2026-05-29 (540c30cac3 sits 78 commits past NG's base 3d11bcb). Upstream master dc4154f4c against NG main 7ff61d2c3, counting only keys whose English text is identical in both and reading NG's base locales first: Swedish 1,085 missing, Latvian 307, Indonesian 225, Spanish 159, Ukrainian 100, and 271 more across German, French, Italian, Polish, Portuguese, Brazilian Portuguese, Turkish and Chinese. Another 366 existing translations differ from upstream's current text. NG's `values-sv/strings.xml` hasn't changed since the initial commit.
+  Touches: `app/src/main/res/values-*/strings.xml` (upstream's `es-rES`, `uk-rUA`, `it-rIT`, `zh-rCN`, `in-rID` and `tr-rTR` land in NG's `es`, `uk`, `it`, `zh`, `in` and `tr`, since 3d716430f folded regional dirs into base locales), `scripts/translation-coverage-baseline.json` (lower each `maxMissing` so the gain sticks), CONTRIBUTING.md "Translations" (existing upstream translations get synced, new NG strings still wait for the hosted project), CHANGELOG.
+  Acceptance: only keys whose English matches upstream's are added or updated. NG-only keys, reworded keys and any translation NG changed itself after the fork stay as they are. Each imported string keeps the placeholders and xliff tags of NG's English. `py -3.13 scripts/release_gate.py --only translation --only lint` passes. With NG's own language setting on Svenska, the main list, its menus and App details read in Swedish wherever upstream has a translation.
+  Complexity: S
+
+### P3
+
+- [ ] P3: Say in words when a component is disabled outside AppManagerNG
+  Why: a component that Android has disabled but NG hasn't blocked shows its switch on and reads "Component allowed" to TalkBack. Only a stroke color says otherwise, which a color-blind or TalkBack user can't see.
+  Evidence: upstream #2071 and #2072 (2026-11-02, closed as by design; the switch is App Manager's block state). `details/AppDetailsComponentsFragment.java:743-746` (switch and its description), `:792-797` (stroke only), `strings.xml:2708`. `details/AppDetailsViewModel.java:1989-2010` already tells a frozen app, an explicit disabled state and a manifest default apart.
+  Touches: `AppDetailsComponentsFragment.java` (the four row builders at `:797`, `:912`, `:1076`, `:1148`, through one helper), `AppDetailsViewModel.isComponentDisabled` (return the reason, not just a boolean), strings, an adapter test.
+  Acceptance: a disabled component with no NG rule shows a short text label for its reason (off in the app's manifest, turned off outside NG, or app frozen), and the switch's content description says it isn't blocked by NG but is disabled for that reason. The stroke color stays as reinforcement. A Robolectric test covers all three reasons for each of the four component types.
+  Complexity: S
+
+- [ ] P3: Sort the app list by cache size
+  Why: upstream #1524 (opened 2025-02-13, updated 2026-11-03) asks for it, and it's the quickest way to find what Clear cache should target. NG sorts by total size but not by cache.
+  Evidence: `main/MainListOptions.java:77-95` (sort constants end at `SORT_BY_DANGEROUS_PERMS = 18`), `main/ApplicationItem.java:1064` (cache size getter), `main/MainViewModel.java` (sort switch).
+  Touches: `MainListOptions` (a new `SORT_BY_CACHE_SIZE`), `MainViewModel`'s comparator, the sort dialog's labels, strings, a sort test.
+  Acceptance: "Cache size" appears in the sort options, sorting puts the largest cache first (and last when reversed), apps with no size info sort after the rest, and a host test asserts the order over fixture items.
+  Complexity: S
+
+- [ ] P3: Offer to put an app's blocking rules back after it's reinstalled
+  Why: uninstalling and reinstalling an app clears every component NG blocked, while NG's saved rules for it stay on disk unused. AppOpsNext 1.6.7 now restores its settings when an app comes back.
+  Evidence: AppOpsNext 1.6.7 release notes (2026-11-14): restore after reinstall, records kept 30 days, off by default. `rules/compontents/ComponentsBlocker.java:198-212` reads `conf/<package>.tsv`, and no code was found that deletes it on uninstall. `self/PackageEventSync.java` already spots a reinstall by its new first-install time (`diff`).
+  Touches: `self/PackageEventSync.java`, `ComponentsBlocker.applyRules`, a notification with an Apply action, a Rules setting (off by default) to apply without asking, op history, strings, a Robolectric test.
+  Acceptance: after a reinstall of an app with saved rules, NG posts one notification offering to apply them. With the setting on, root, ADB and Shizuku modes apply them without asking and write an op-history entry. In no-root mode the notification says a privileged mode is needed. A test drives a reinstall through `diff` and asserts the offer, or the apply when the setting is on.
+  Complexity: M
