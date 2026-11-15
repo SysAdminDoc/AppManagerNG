@@ -915,15 +915,6 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
 
 ## Found While Fixing Restore Staging (2026-11-15)
 
-### P1
-
-- [ ] P1: Refuse an encrypted backup that comes back unencrypted
-  Why: `info_v5.am.json` is never encrypted (`BackupItems.java:562`), and it alone says which crypto mode a backup uses and so which checksums count. Anyone who can write the backup folder (shared storage, or a document provider) can swap an encrypted backup for plain files, set `crypto` to none and write matching checksums. No key is needed, and the restore still runs as root into the app's data.
-  Evidence: `RestoreOp.java:161-182` takes `mBackupInfo.crypto` from that file and sets up crypto from it. The checksums file it then trusts (`:191`) sits in the same folder. Nothing compares the mode with what the backup was made with (the backups table records it).
-  Touches: `RestoreOp`'s setup, `BackupItems.BackupItem.getInfo`, the `Backup` entity or a keyed tag on the info file, a restore test.
-  Acceptance: WHEN a backup recorded as encrypted is restored and its info file now says unencrypted (or names another mode), the system SHALL stop with a message naming both modes before any app data is cleared, and a Robolectric test SHALL drive that swap through `RestoreOp`.
-  Complexity: M
-
 ### P2
 
 - [ ] P2: Check backup metadata against its checksum before parsing it

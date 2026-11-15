@@ -734,6 +734,9 @@ public class BackupItems {
                             && !stagedPreviousBackup.delete()) {
                         Log.w(TAG, "Could not delete staged previous backup %s", stagedPreviousBackup);
                     }
+                    // The info file isn't encrypted, so a restore checks the mode it names against
+                    // this record. It goes last, after any previous backup in this folder is gone.
+                    BackupCryptoRecord.record(getRelativeDir(), mCryptoMode);
                 }
             }
         }
@@ -833,6 +836,16 @@ public class BackupItems {
         }
 
         public boolean delete() {
+            // Read before the files go, since a v4 backup's folder name comes from its parent
+            String relativeDir = getRelativeDir();
+            boolean deleted = deleteFiles();
+            if (deleted) {
+                BackupCryptoRecord.forget(relativeDir);
+            }
+            return deleted;
+        }
+
+        private boolean deleteFiles() {
             if (mBackupPath.exists()) {
                 if (!isV5AndUp()) {
                     // For v4 and earlier, delete parent if it's the last one.

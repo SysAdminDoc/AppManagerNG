@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import io.github.muntashirakon.AppManager.backup.BackupCryptoRecord;
 import io.github.muntashirakon.AppManager.backup.BackupUtils;
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
@@ -147,6 +148,9 @@ public class AppDb {
 
     public void deleteAllBackups() {
         synchronized (sLock) {
+            // The table is filled again from the backups' own info files, which anyone who can
+            // write the backup folder can change, so the encrypted modes it held are kept first
+            BackupCryptoRecord.keepEncryptedModes(mBackupDao.getAll());
             mBackupDao.deleteAll();
         }
     }

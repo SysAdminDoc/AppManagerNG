@@ -165,6 +165,9 @@ class RestoreOp implements Closeable {
             throw new BackupException("Could not read backup info. Possibly due to a malformed json file.", e);
         }
         try {
+            // The info file alone names the mode, and so which checksums count, but it isn't
+            // encrypted. An encrypted backup swapped for plain files stops here.
+            BackupCryptoRecord.requireRecordedMode(mBackupItem.getRelativeDir(), mBackupInfo.crypto);
             BackupChecksumPolicy.requireCryptographicChecksum(mBackupInfo);
         } catch (BackupException e) {
             mBackupItem.cleanup();
