@@ -63,6 +63,8 @@ androidComponents {
         String buildTypeTaskName = buildType.capitalize()
         File projectRoot = project.rootDir
         String rootDir = projectRoot.absolutePath
+        // Resolved here: a task action that reads Task.project fails in Gradle 10
+        File d8ArgsDir = project.layout.buildDirectory.dir("tmp/d8").get().asFile
 
         def injected = project.objects.newInstance(InjectedExecOps)
         def jarTask = tasks.register("create${buildTypeTaskName}ServerJars") {
@@ -88,7 +90,7 @@ androidComponents {
                 File d8Jar = file("${d8Executable.parentFile}/lib/d8.jar")
 
                 def runD8 = { String name, List<String> arguments ->
-                    File argumentFile = new File(project.buildDir, "tmp/d8/${name}.args")
+                    File argumentFile = new File(d8ArgsDir, "${name}.args")
                     argumentFile.parentFile.mkdirs()
                     argumentFile.setText(arguments.join(System.lineSeparator()) + System.lineSeparator(), "UTF-8")
                     try {
@@ -137,10 +139,12 @@ androidComponents {
     }
 }
 
+def serverJarsDir = rootProject.file('app/src/main/assets')
+
 tasks.register('cleanupServerJars') {
     doLast {
-        file("${rootProject.projectDir.absolutePath}/app/src/main/assets/am.jar").delete()
-        file("${rootProject.projectDir.absolutePath}/app/src/main/assets/main.jar").delete()
+        new File(serverJarsDir, 'am.jar').delete()
+        new File(serverJarsDir, 'main.jar').delete()
     }
 }
 

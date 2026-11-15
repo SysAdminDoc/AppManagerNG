@@ -156,7 +156,7 @@ Compare it with the stable record in [docs/fingerprints.txt](docs/fingerprints.t
 
 ## Build from source
 
-The project uses Java, Android Views, Gradle 9.7, and AGP 9.3.1. Android SDK 37 and NDK 28.2.13676358 are the current pins.
+The project uses Java, Android Views, Gradle 9.9, and AGP 9.3.3. Android SDK 37 and NDK 28.2.13676358 are the current pins.
 
 ```bash
 git clone --recurse-submodules https://github.com/SysAdminDoc/AppManagerNG.git

@@ -26,6 +26,12 @@ wrapper {
     distributionType = Wrapper.DistributionType.BIN
 }
 
+// versions.gradle sets the version pins on the root project. Gradle 9.9 deprecates finding a
+// property through the parent project (an error in Gradle 10), so each project gets its own copy.
+subprojects {
+    rootProject.ext.properties.each { name, value -> ext.set(name, value) }
+}
+
 allprojects {
     dependencyLocking {
         lockMode = LockMode.STRICT

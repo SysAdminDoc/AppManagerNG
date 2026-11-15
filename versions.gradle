@@ -11,7 +11,7 @@ ext {
     ndk_version = '28.2.13676358'
 
     // Gradle plugins
-    agp_version = '9.3.1'
+    agp_version = '9.3.3'
     dependency_check_version = '13.0.0' // https://github.com/dependency-check/DependencyCheck - local dependency CVE audits; 13.0+ keeps grouped suppressions and unused-rule flags
 
     // Library dependencies

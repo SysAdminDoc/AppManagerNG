@@ -494,10 +494,14 @@ static Long sourceDateEpochMillis() {
 
 Long gitCommitTimeMillis() {
     try {
-        Process git = ["git", "show", "--no-patch", "--format=%ct", "HEAD"].execute(null, project.rootDir)
-        String commitSeconds = git.text.trim()
-        git.waitFor()
-        if (git.exitValue() != 0 || !isDigitsOnly(commitSeconds)) {
+        // providers.exec, not Process.execute(): Gradle 11 refuses a process started while configuring
+        def git = project.providers.exec {
+            commandLine "git", "show", "--no-patch", "--format=%ct", "HEAD"
+            workingDir project.rootDir
+            ignoreExitValue = true
+        }
+        String commitSeconds = git.standardOutput.asText.get().trim()
+        if (git.result.get().exitValue != 0 || !isDigitsOnly(commitSeconds)) {
             return null
         }
         long epochSeconds = Long.parseLong(commitSeconds)

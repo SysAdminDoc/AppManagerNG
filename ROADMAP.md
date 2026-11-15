@@ -898,25 +898,16 @@ Sources and reasoning: RESEARCH.md (2026-11-13). The four crash fixes come first
 
 ## Research-Driven Additions (2026-11-14)
 
-Sources and reasoning: RESEARCH.md (2026-11-14). The two build toolchain items come first because the reproducible release gate depends on them.
-
-### P1
-
-- [ ] P1: Move the Gradle wrapper to 9.9.1
-  Why: the wrapper is 9.7.0, inside six Gradle advisories. Five of them reach this build on the machine that builds releases: client-daemon and worker-to-daemon deserialization, daemon registry trust, stale registry port squatting, and a repository that fails SSL staying enabled.
-  Evidence: gradle/gradle advisories GHSA-j5m7-59rp-24f5, GHSA-xwqc-3h47-hg64 and GHSA-mvvg-497x-hmj8 (fixed in 9.8.1, 2026-10-07), GHSA-gqrr-4j89-5267 and GHSA-pcp8-98xm-c6pr (fixed in 9.9.1, 2026-11-10). The critical GHSA-3cfg-jpcr-gfp3 needs a TOML version catalog, and `gradle/` has none. `gradle/wrapper/gradle-wrapper.properties` pins 9.7.0 with `distributionSha256Sum`.
-  Touches: `gradle/wrapper/gradle-wrapper.properties` (URL and SHA-256 from services.gradle.org), `gradle/wrapper/gradle-wrapper.jar` if `gradlew wrapper` updates it, `gradle/verification-metadata.xml` (regenerate with `--write-verification-metadata sha256` and read the diff), `buildscript-gradle.lockfile`, README "Build from source" (names Gradle 9.7), the repo `CLAUDE.md` stack line.
-  Acceptance: `gradlew --version` prints 9.9.1 and the wrapper SHA-256 matches the published one. Both flavors' release builds pass, the unit suite is green, and the reproducible gate (`scripts/release_gate.py`) passes two clean builds. No `--warning-mode` deprecation from 9.8 or 9.9 is left unread.
-  Complexity: S
-
-- [ ] P1: Build with AGP 9.3.3 for its R8 fixes
-  Why: AGP 9.3.1 ships an R8 that can turn identical input into different dex and mapping output, which is the property the byte-identical release gate rests on. It can also emit dex that fails verification and crashes on launch.
-  Evidence: AGP 9.3 release notes, 9.3.3 (published 2026-09-17 per the Maven POM): #554586985 "R8 build non-determinism: identical input produces different dex/mapping", #485558707 "AGP intermittently produces dex files that fail verification and crash app on launch", #551348855 (outliner VerifyError), #522844908 (duplicate mapping). 9.3.2 fixes #522845800 (lint crash on JDK 17). `versions.gradle:14` pins `agp_version = '9.3.1'`, and nothing pins R8 separately (`build.gradle:18`). `docs/distribution/reproducible-builds.md:182` already notes that R8 determinism depends on the AGP version.
-  Touches: `versions.gradle`, `gradle/verification-metadata.xml`, `buildscript-gradle.lockfile`, README "Build from source" (names AGP 9.3.1), the repo `CLAUDE.md` stack line.
-  Acceptance: both flavors build with 9.3.3, lint runs clean on JDK 17, the reproducible gate passes two clean builds with byte-identical APKs and mappings, and the release APK launches on the API 37 emulator and on the oldest API image on disk. If this lands after the Gradle item, one gate run covers both.
-  Complexity: S
+Sources and reasoning: RESEARCH.md (2026-11-14).
 
 ### P2
+
+- [ ] P2: Stop ServerLoopbackBindTest failing when the machine is busy
+  Why: `noOtherAddressOfThisMachineReachesIt` failed once on "loopback still reaches it" while lint ran beside it (2026-11-15, Gradle 9.9.1 move), then passed alone in 6 seconds. The release gate runs the server tests, so a flake there stops a release for nothing.
+  Evidence: `server/src/test/.../ServerLoopbackBindTest.java:49`. Each probe of another local address waits out its 2-second timeout (three of them on this machine), and the final 127.0.0.1 connect also has 2 seconds. A busy run can miss that window, or a probe can leave the listener in a state the loopback connect hits.
+  Touches: `ServerLoopbackBindTest`.
+  Acceptance: WHEN the server tests run beside a full lint pass, the loopback assertion SHALL pass on five back-to-back runs, and a server bound to 0.0.0.0 SHALL still fail the test.
+  Complexity: S
 
 - [ ] P2: Say when Advanced Protection has taken the accessibility service away
   Why: on Android 17, Advanced Protection limits AccessibilityService to "verified applications categorized as Accessibility Tools". NG's toast history, top-app bubble, UI tracker and no-root cache clearing all run on its one service, and the screens still tell the user to turn the service on.
