@@ -8,6 +8,7 @@ import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.os.PowerManager;
 
@@ -16,6 +17,7 @@ import androidx.annotation.Nullable;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.PendingIntentCompat;
 import androidx.core.app.ServiceCompat;
+import androidx.core.content.ContextCompat;
 
 import java.util.ArrayList;
 import java.util.Objects;
@@ -91,11 +93,44 @@ public class BatchOpsService extends ForegroundService {
      */
     public static final String CHANNEL_ID = BuildConfig.APPLICATION_ID + ".channel.BATCH_OPS";
 
+    /** Set on a start whose import was already counted by {@link #start(Context, Intent)}. */
+    private static final String EXTRA_IMPORT_COUNTED = "import_counted";
+
     @NonNull
     public static Intent getServiceIntent(@NonNull Context context, @NonNull BatchQueueItem queueItem) {
         Intent intent = new Intent(context, BatchOpsService.class);
         IntentCompat.putWrappedParcelableExtra(intent, EXTRA_QUEUE_ITEM, queueItem);
         return intent;
+    }
+
+    /**
+     * Starts the service with an intent from {@link #getServiceIntent(Context, BatchQueueItem)}. An import is counted
+     * here, before the service runs, so a backup folder change in between doesn't let go of the access it needs.
+     */
+    public static void start(@NonNull Context context, @NonNull Intent intent) {
+        Uri importDirectory = importDirectory(getQueueItem(intent));
+        if (importDirectory != null) {
+            BackupDestinationGrants.importQueued(importDirectory);
+            intent.putExtra(EXTRA_IMPORT_COUNTED, true);
+        }
+        try {
+            ContextCompat.startForegroundService(context, intent);
+        } catch (RuntimeException e) {
+            if (importDirectory != null) {
+                BackupDestinationGrants.importDropped(importDirectory);
+            }
+            throw e;
+        }
+    }
+
+    /** The folder an import reads from, or null when this isn't an import. */
+    @Nullable
+    private static Uri importDirectory(@Nullable BatchQueueItem item) {
+        if (item != null && item.getOp() == BatchOpsManager.OP_IMPORT_BACKUPS
+                && item.getOptions() instanceof BatchBackupImportOptions) {
+            return ((BatchBackupImportOptions) item.getOptions()).getDirectory();
+        }
+        return null;
     }
 
     public static boolean isServiceWorking() {
@@ -125,11 +160,12 @@ public class BatchOpsService extends ForegroundService {
     @Override
     public int onStartCommand(@Nullable Intent intent, int flags, int startId) {
         BatchQueueItem item = getQueueItem(intent);
-        // Every import comes through here, the settings page, a replay from history and a retry alike, so an earlier
-        // import from the same folder that ends first keeps the access this one needs
-        if (item != null && item.getOp() == BatchOpsManager.OP_IMPORT_BACKUPS
-                && item.getOptions() instanceof BatchBackupImportOptions) {
-            BackupDestinationGrants.importQueued(((BatchBackupImportOptions) item.getOptions()).getDirectory());
+        // An import not started through start(), so not counted yet. Counting it now still keeps an earlier import
+        // from the same folder that ends first from letting go of the access this one needs
+        Uri importDirectory = importDirectory(item);
+        if (importDirectory != null && !intent.getBooleanExtra(EXTRA_IMPORT_COUNTED, false)) {
+            BackupDestinationGrants.importQueued(importDirectory);
+            intent.putExtra(EXTRA_IMPORT_COUNTED, true);
         }
         if (isWorking()) {
             mProgressHandler.onStartedAgain(this);
@@ -272,8 +308,17 @@ public class BatchOpsService extends ForegroundService {
         mShizukuBinderDeadListenerRegistered = false;
     }
 
+    @Override
+    protected void onDropped(@Nullable Intent intent) {
+        // A queued import that will never run gives back its count, so the folder doesn't stay held for it
+        Uri importDirectory = importDirectory(getQueueItem(intent));
+        if (importDirectory != null) {
+            BackupDestinationGrants.importDropped(importDirectory);
+        }
+    }
+
     @Nullable
-    private BatchQueueItem getQueueItem(@Nullable Intent intent) {
+    private static BatchQueueItem getQueueItem(@Nullable Intent intent) {
         if (intent == null) {
             return null;
         }
@@ -478,6 +523,10 @@ public class BatchOpsService extends ForegroundService {
             case BatchOpsManager.OP_SET_APP_OPS:
                 return context.getResources().getQuantityString(R.plurals.alert_failed_to_set_app_ops, failedCount, failedCount);
             case BatchOpsManager.OP_IMPORT_BACKUPS:
+                if (failedCount == 0) {
+                    // The folder couldn't be read, so no backup in it was tried
+                    return context.getString(R.string.import_backups_folder_unreadable);
+                }
                 return context.getResources().getQuantityString(R.plurals.alert_failed_to_import_backups, failedCount, failedCount);
             case BatchOpsManager.OP_INSTALL_EXISTING:
                 return context.getResources().getQuantityString(R.plurals.alert_failed_to_install_existing, failedCount, failedCount);

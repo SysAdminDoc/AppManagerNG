@@ -31,7 +31,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
+import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 
 import io.github.muntashirakon.AppManager.backup.schedule.AutoBackupWorker;
@@ -63,7 +65,11 @@ public final class BackupDestinationGrants {
     @VisibleForTesting
     static final String PREFS_NAME = "backup_destination_grants";
     private static final String KEY_OWNED = "owned";
+    private static final String KEY_UNFINISHED_IMPORTS = "unfinished_imports";
     private static final int MODES = Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION;
+    /** How long an import that didn't finish keeps its folder's access, so it can be retried after a restart. */
+    @VisibleForTesting
+    static final long RETRY_WINDOW_MILLIS = TimeUnit.DAYS.toMillis(7);
 
     /** The persisted grants as Android keeps them. */
     @VisibleForTesting
@@ -83,16 +89,19 @@ public final class BackupDestinationGrants {
      */
     private static final Map<String, Long> sTakenThisProcess = new HashMap<>();
     private static long sTakes;
-    /** Imports queued from each folder, by tree key, so one ending keeps the access the next needs. Guarded by LOCK. */
+    /**
+     * Imports handed to the batch service from each folder and not yet ended, by tree key, so one ending keeps the
+     * access the next needs. Guarded by LOCK.
+     */
     private static final Map<String, Integer> sQueuedImports = new HashMap<>();
-    /** Folders an import failed from in this process, which keep their access for a retry. Guarded by LOCK. */
-    private static final Set<String> sFailedImports = new HashSet<>();
     @Nullable
     private static GrantStore sStoreForTesting;
     @Nullable
     private static Predicate<Uri> sBackupProbeForTesting;
     @Nullable
     private static BooleanSupplier sBackupRunningForTesting;
+    @Nullable
+    private static LongSupplier sClockForTesting;
 
     private BackupDestinationGrants() {
     }
@@ -219,9 +228,10 @@ public final class BackupDestinationGrants {
     }
 
     /**
-     * Notes an import from this folder was queued, so an earlier import from it that ends keeps the access this one
-     * needs. The batch service calls it for every import it takes. Each is matched by
-     * {@link #releaseAfterImport(Context, Uri)} or {@link #importFailed(Uri)}.
+     * Notes an import from this folder was handed to the batch service, so the folder keeps its access until the
+     * import ends, and an earlier import from it that ends first keeps the access this one needs. Called before the
+     * service is started, since a folder change in between would otherwise let the access go. Each is matched by
+     * {@link #releaseAfterImport}, {@link #importFailed} or {@link #importDropped(Uri)}.
      */
     @AnyThread
     public static void importQueued(@NonNull Uri importDirectory) {
@@ -236,32 +246,67 @@ public final class BackupDestinationGrants {
     }
 
     /**
-     * An import from this folder failed. Its access is kept for a retry and let go on a later start of the app.
+     * A queued import from this folder will never run, as one dropped when the batch service was stopped, or one the
+     * service couldn't be started for. The access stays until the next start of the app checks it.
      */
     @AnyThread
-    public static void importFailed(@NonNull Uri importDirectory) {
+    public static void importDropped(@NonNull Uri importDirectory) {
         String treeKey = treeKey(importDirectory);
         if (treeKey == null) {
             return;
         }
         synchronized (LOCK) {
             importEnded(treeKey);
-            sFailedImports.add(treeKey);
         }
     }
 
     /**
-     * Lets go of the access taken for an import once it ends, unless another import from the folder is queued, one
-     * failed and may be retried, or the folder is also a backup folder.
+     * An import from this folder began. It's recorded on disk until it ends cleanly, so one cut short when the app
+     * was killed, or one that failed, keeps the folder's access for a retry after a restart, for
+     * {@link #RETRY_WINDOW_MILLIS}.
      */
     @WorkerThread
-    public static void releaseAfterImport(@NonNull Context context, @NonNull Uri importDirectory) {
+    public static void importStarted(@NonNull Context context, @NonNull Uri importDirectory, int importType) {
         String treeKey = treeKey(importDirectory);
         if (treeKey == null) {
             return;
         }
         synchronized (LOCK) {
-            if (!importEnded(treeKey) || sFailedImports.contains(treeKey)) {
+            setUnfinished(context, treeKey, importType, true);
+        }
+    }
+
+    /**
+     * An import from this folder failed. Its access is kept for a retry of the same import, for
+     * {@link #RETRY_WINDOW_MILLIS} from now.
+     */
+    @WorkerThread
+    public static void importFailed(@NonNull Context context, @NonNull Uri importDirectory, int importType) {
+        String treeKey = treeKey(importDirectory);
+        if (treeKey == null) {
+            return;
+        }
+        synchronized (LOCK) {
+            importEnded(treeKey);
+            setUnfinished(context, treeKey, importType, true);
+        }
+    }
+
+    /**
+     * An import from this folder ended cleanly, which also settles an earlier failed one of the same type. Lets go of
+     * the access taken for it, unless another import from the folder is queued, another that didn't finish may be
+     * retried, or the folder is also a backup folder.
+     */
+    @WorkerThread
+    public static void releaseAfterImport(@NonNull Context context, @NonNull Uri importDirectory, int importType) {
+        String treeKey = treeKey(importDirectory);
+        if (treeKey == null) {
+            return;
+        }
+        synchronized (LOCK) {
+            boolean ended = importEnded(treeKey);
+            setUnfinished(context, treeKey, importType, false);
+            if (!ended || importNeeds(context, treeKey)) {
                 return;
             }
             Map<String, Integer> owned = readOwned(context);
@@ -287,26 +332,26 @@ public final class BackupDestinationGrants {
         synchronized (LOCK) {
             listedAt = sTakes;
             Map<String, Integer> owned = readOwned(context);
-            if (owned.isEmpty()) {
-                return;
-            }
-            Set<String> persisted = new HashSet<>();
-            for (UriPermission permission : store(context).persisted()) {
-                persisted.add(permission.getUri().toString());
-            }
-            boolean changed = false;
-            for (Iterator<String> it = owned.keySet().iterator(); it.hasNext(); ) {
-                String key = it.next();
-                if (!persisted.contains(key)) {
-                    it.remove();
-                    changed = true;
-                } else if (!sTakenThisProcess.containsKey(key)) {
-                    candidates.add(key);
+            if (!owned.isEmpty()) {
+                Set<String> persisted = new HashSet<>();
+                for (UriPermission permission : store(context).persisted()) {
+                    persisted.add(permission.getUri().toString());
+                }
+                boolean changed = false;
+                for (Iterator<String> it = owned.keySet().iterator(); it.hasNext(); ) {
+                    String key = it.next();
+                    if (!persisted.contains(key)) {
+                        it.remove();
+                        changed = true;
+                    } else if (!sTakenThisProcess.containsKey(key)) {
+                        candidates.add(key);
+                    }
+                }
+                if (changed) {
+                    writeOwned(context, owned);
                 }
             }
-            if (changed) {
-                writeOwned(context, owned);
-            }
+            pruneUnfinished(context, owned);
         }
         releaseStale(context, candidates, listedAt);
     }
@@ -352,7 +397,8 @@ public final class BackupDestinationGrants {
             String treeKey = treeKey(uri);
             Integer purpose;
             synchronized (LOCK) {
-                purpose = takenSince(key, listedAt) || importNeeds(treeKey) ? null : readOwned(context).get(key);
+                purpose = takenSince(key, listedAt) || importNeeds(context, treeKey) ? null
+                        : readOwned(context).get(key);
             }
             if (purpose == null || treeKey == null || isReferenced(context, treeKey)) {
                 continue;
@@ -364,8 +410,8 @@ public final class BackupDestinationGrants {
             synchronized (LOCK) {
                 Map<String, Integer> owned = readOwned(context);
                 // Picked again or put to use meanwhile
-                if (!Objects.equals(owned.get(key), purpose) || takenSince(key, listedAt) || importNeeds(treeKey)
-                        || isReferenced(context, treeKey) || isBackupRunning()) {
+                if (!Objects.equals(owned.get(key), purpose) || takenSince(key, listedAt)
+                        || importNeeds(context, treeKey) || isReferenced(context, treeKey) || isBackupRunning()) {
                     continue;
                 }
                 release(context, owned, uri);
@@ -380,11 +426,133 @@ public final class BackupDestinationGrants {
     }
 
     /**
-     * Whether an import from the folder is queued, or failed and may be retried. A queued one may not have reached the
-     * batch service yet, so a running backup doesn't cover it. Call with LOCK held.
+     * Whether an import from the folder is queued, or began and didn't end cleanly within the retry window, as one
+     * that failed or was cut short. A queued one counts from the moment it's handed to the batch service, before the
+     * service runs, so a running backup doesn't cover it. Call with LOCK held.
      */
-    private static boolean importNeeds(@Nullable String treeKey) {
-        return treeKey != null && (sQueuedImports.containsKey(treeKey) || sFailedImports.contains(treeKey));
+    private static boolean importNeeds(@NonNull Context context, @Nullable String treeKey) {
+        if (treeKey == null) {
+            return false;
+        }
+        if (sQueuedImports.containsKey(treeKey)) {
+            return true;
+        }
+        JSONObject types = readUnfinished(context).optJSONObject(treeKey);
+        if (types == null) {
+            return false;
+        }
+        long now = now();
+        for (Iterator<String> it = types.keys(); it.hasNext(); ) {
+            if (withinRetryWindow(types.optLong(it.next(), 0), now)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** A clock moved back counts too, as long as it moved less than the window. */
+    private static boolean withinRetryWindow(long recordedAt, long now) {
+        return recordedAt > 0 && Math.abs(now - recordedAt) < RETRY_WINDOW_MILLIS;
+    }
+
+    /**
+     * Records an import of this type from the folder as not finished, as of now, or forgets it. Call with LOCK held.
+     */
+    private static void setUnfinished(@NonNull Context context, @NonNull String treeKey, int importType,
+                                      boolean unfinished) {
+        JSONObject all = readUnfinished(context);
+        JSONObject types = all.optJSONObject(treeKey);
+        String type = String.valueOf(importType);
+        try {
+            if (unfinished) {
+                if (types == null) {
+                    types = new JSONObject();
+                    all.put(treeKey, types);
+                }
+                types.put(type, now());
+            } else {
+                if (types == null || !types.has(type)) {
+                    return;
+                }
+                types.remove(type);
+                if (types.length() == 0) {
+                    all.remove(treeKey);
+                }
+            }
+        } catch (JSONException e) {
+            throw new IllegalStateException(e);
+        }
+        writeUnfinished(context, all);
+    }
+
+    /**
+     * Forgets imports past the retry window, and ones from folders no access is recorded for here, since there's
+     * nothing of theirs to keep. Call with LOCK held.
+     */
+    private static void pruneUnfinished(@NonNull Context context, @NonNull Map<String, Integer> owned) {
+        JSONObject all = readUnfinished(context);
+        if (all.length() == 0) {
+            return;
+        }
+        Set<String> ownedTrees = new HashSet<>();
+        for (String key : owned.keySet()) {
+            String treeKey = treeKey(Uri.parse(key));
+            if (treeKey != null) {
+                ownedTrees.add(treeKey);
+            }
+        }
+        long now = now();
+        boolean changed = false;
+        for (Iterator<String> trees = all.keys(); trees.hasNext(); ) {
+            String treeKey = trees.next();
+            JSONObject types = all.optJSONObject(treeKey);
+            if (types != null && ownedTrees.contains(treeKey)) {
+                for (Iterator<String> it = types.keys(); it.hasNext(); ) {
+                    if (!withinRetryWindow(types.optLong(it.next(), 0), now)) {
+                        it.remove();
+                        changed = true;
+                    }
+                }
+            }
+            if (types == null || types.length() == 0 || !ownedTrees.contains(treeKey)) {
+                trees.remove();
+                changed = true;
+            }
+        }
+        if (changed) {
+            writeUnfinished(context, all);
+        }
+    }
+
+    @NonNull
+    private static JSONObject readUnfinished(@NonNull Context context) {
+        String raw = prefs(context).getString(KEY_UNFINISHED_IMPORTS, null);
+        if (raw == null) {
+            return new JSONObject();
+        }
+        try {
+            return new JSONObject(raw);
+        } catch (JSONException e) {
+            Log.w(TAG, "The record of unfinished imports couldn't be read", e);
+            return new JSONObject();
+        }
+    }
+
+    private static void writeUnfinished(@NonNull Context context, @NonNull JSONObject all) {
+        SharedPreferences.Editor editor = prefs(context).edit();
+        if (all.length() == 0) {
+            editor.remove(KEY_UNFINISHED_IMPORTS);
+        } else {
+            editor.putString(KEY_UNFINISHED_IMPORTS, all.toString());
+        }
+        if (!editor.commit()) {
+            Log.w(TAG, "The record of unfinished imports couldn't be saved");
+        }
+    }
+
+    private static long now() {
+        LongSupplier clock = sClockForTesting;
+        return clock != null ? clock.getAsLong() : System.currentTimeMillis();
     }
 
     /** @return whether no other import from the folder is queued */
@@ -557,13 +725,17 @@ public final class BackupDestinationGrants {
         sBackupRunningForTesting = running;
     }
 
-    /** What a new process sees: nothing taken by it yet. */
+    @VisibleForTesting
+    static void setClockForTesting(@Nullable LongSupplier clock) {
+        sClockForTesting = clock;
+    }
+
+    /** What a new process sees: nothing taken or queued by it yet. What's on disk stays. */
     @VisibleForTesting
     static void startNewProcessForTesting() {
         synchronized (LOCK) {
             sTakenThisProcess.clear();
             sQueuedImports.clear();
-            sFailedImports.clear();
         }
     }
 

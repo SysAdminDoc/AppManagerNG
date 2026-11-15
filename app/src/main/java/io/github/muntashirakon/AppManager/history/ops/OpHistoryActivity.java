@@ -51,6 +51,7 @@ import java.util.concurrent.Future;
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.settings.Prefs;
@@ -169,10 +170,14 @@ public class OpHistoryActivity extends BaseActivity {
                 UIUtils.displayShortToast(getResources().getQuantityString(
                         R.plurals.op_history_sample_count, addedCount, addedCount)));
         mViewModel.getServiceLauncherIntentLiveData().observe(this, intent -> {
-            if (intent != null) {
-                ContextCompat.startForegroundService(this, intent);
-            } else {
+            if (intent == null) {
                 UIUtils.displayShortToast(R.string.failed);
+            } else if (intent.getComponent() != null
+                    && BatchOpsService.class.getName().equals(intent.getComponent().getClassName())) {
+                // A replayed batch may be an import, which is counted before the service runs
+                BatchOpsService.start(this, intent);
+            } else {
+                ContextCompat.startForegroundService(this, intent);
             }
         });
         OpHistoryManager.getHistoryAddedLiveData().observe(this, opHistory -> {

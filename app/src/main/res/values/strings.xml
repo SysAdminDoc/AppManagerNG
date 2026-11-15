@@ -3142,6 +3142,7 @@
     <string name="import_backups_warning_delete_backups_after_import">Delete each source backup after it is successfully imported into AppManagerNG?</string>
     <string name="import_backups_delete_after_import">Delete after import</string>
     <string name="import_backups_keep_source">Keep source backups</string>
+    <string name="import_backups_folder_unreadable">Could not read the folder to import from</string>
     <string name="troubleshooting">Troubleshooting</string>
     <string name="pref_reload_apps">Reload apps</string>
     <string name="pref_reload_apps_msg">Reload the list of apps stored in the AppManagerNG database in case of unexpected behaviour.</string>

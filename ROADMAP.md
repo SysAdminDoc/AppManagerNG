@@ -1091,15 +1091,6 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
 
 ## Found While Adding Internet Blocking (2026-11-15)
 
-### P1
-
-- [ ] P1: Check that an internet block comes back after a restart
-  Why: on the S22 (Android 16, Wireless debugging mode) on 2026-11-15 the block, the allow, the disabled states without a privileged mode and the move to a reinstalled app's new UID all worked against the real `FIREWALL_CHAIN_OEM_DENY_3`. The restart is the one part left, and it hasn't run anywhere yet.
-  Evidence: `self/BootReceiver.java` re-applies saved rules; `rules/internet/InternetAccess.java` `applySoonWhereTheUidMoved`.
-  Touches: nothing unless it fails. An API 36 Magisk emulator in root mode can run it without a phone.
-  Acceptance: WHEN an app's INTERNET switch is off on an Android 14+ device in root or ADB mode and the device restarts, the app SHALL be cut off again once `BOOT_COMPLETED` runs and the privileged mode is back, with the row reading Blocked.
-  Complexity: S
-
 ### P2
 
 - [ ] P2: Stop background work from toasting "Working on ADB mode"
@@ -1203,18 +1194,11 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Acceptance: WHEN the user releases a folder in the file manager that is the backup folder or a tag policy destination, the system SHALL keep the access and say why; other folders SHALL be released as before; a Robolectric test SHALL cover both.
   Complexity: S
 
-- [ ] P3: Let a failed backup import be retried after the app restarts
-  Why: a failed import keeps the folder's access for a retry, but the app's start lets go of import folders nothing references, so a retry from batch op history after a restart can't open the folder and the user has to pick it again.
-  Evidence: `batchops/BatchOpsManager.java` `opImportBackups` releases only after a clean import; `BackupDestinationGrants.pruneStale` releases unreferenced PURPOSE_IMPORT grants.
-  Touches: `BackupDestinationGrants.java` (keep import grants a pending retry references, with an age cap), batch op history.
-  Acceptance: WHEN an import failed and its retry is still offered, the system SHALL keep the folder's access across a restart for up to 7 days; WHEN the retry succeeds or the window passes, the system SHALL let it go; tests SHALL cover both.
-  Complexity: S
-
-- [ ] P3: Report a backup import that throws before listing as failed
-  Why: `opImportBackups` logs an exception thrown while opening or listing the folder and then returns an empty failure list, which reads as a successful import with nothing imported.
-  Evidence: `batchops/BatchOpsManager.java` `opImportBackups` catch block.
-  Touches: `BatchOpsManager.java`, a batch ops test.
-  Acceptance: WHEN listing the import folder throws, the system SHALL return an unsuccessful result and keep the folder's access; a test SHALL cover it.
+- [ ] P3: Tell a picked import folder the provider couldn't list from an empty one
+  Why: for a folder picked through the system picker, androidx `TreeDocumentFile.listFiles` catches the provider's exception and returns what it got, often nothing. An import from an unplugged drive or an offline network folder then ends as a clean import with nothing imported, and the folder's access is let go.
+  Evidence: `io/PathImpl.java` `listFiles` calls `DocumentFile.listFiles`; `batchops/BatchOpsManager.java` `opImportBackups` treats an empty listing as done. `BackupItems.holdsBackups` already reads the children cursor itself and checks `EXTRA_ERROR` and `EXTRA_LOADING`.
+  Touches: `BatchOpsManager.java` or `ConvertUtils.getRelevantImportFiles` (a listing that reports failure), `BackupItems` (share the cursor check), a Robolectric test with a fake documents provider.
+  Acceptance: WHEN the provider throws, returns no cursor, or flags an error or a partial listing for the import folder, the system SHALL report the import as failed and keep the folder's access; an empty folder the provider lists cleanly SHALL still import as done; a test SHALL cover both.
   Complexity: S
 
 ## Found While Verifying Pure Black and Scheduled Backup Fixes (2026-11-15)

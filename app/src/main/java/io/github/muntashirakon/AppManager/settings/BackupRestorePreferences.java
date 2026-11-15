@@ -28,7 +28,6 @@ import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.appcompat.app.AlertDialog;
 import androidx.collection.ArrayMap;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.DialogFragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.preference.Preference;
@@ -798,7 +797,7 @@ public class BackupRestorePreferences extends PreferenceFragment {
         BatchQueueItem item = BatchQueueItem.getBatchOpQueue(BatchOpsManager.OP_IMPORT_BACKUPS,
                 input.getFailedPackages(), input.getAssociatedUsers(), options);
         Intent intent = BatchOpsService.getServiceIntent(mActivity, item);
-        ContextCompat.startForegroundService(mActivity, intent);
+        BatchOpsService.start(mActivity, intent);
     }
 
     private void displayVolumeSelectionDialog(@NonNull ArrayMap<String, Uri> storageLocations) {

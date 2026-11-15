@@ -19,7 +19,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatEditText;
-import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
@@ -240,7 +239,7 @@ public class BatchOpsResultsActivity extends BaseActivity {
             return;
         }
         Intent batchOpsIntent = BatchOpsService.getServiceIntent(this, mBatchQueueItem);
-        ContextCompat.startForegroundService(this, batchOpsIntent);
+        BatchOpsService.start(this, batchOpsIntent);
         mRetryStarted = true;
         updateRetryState();
         UIUtils.displayShortToast(R.string.batch_results_retry_started);

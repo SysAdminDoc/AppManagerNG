@@ -735,20 +735,24 @@ public class BatchOpsManager {
     private Result opImportBackups(@NonNull BatchOpsInfo info) {
         final List<UserPackagePair> failedPkgList = Collections.synchronizedList(new ArrayList<>());
         MultithreadedExecutor executor = MultithreadedExecutor.getNewInstance();
+        Context context = ContextUtils.getContext();
         Uri importDirectory = null;
-        boolean listed = false;
+        int importType = 0;
+        // Set once every backup in the folder was handed out, so a throw before that isn't taken for a clean import
+        boolean completed = false;
         try {
             int userId = UserHandleHidden.myUserId();
             BatchBackupImportOptions options = (BatchBackupImportOptions) Objects.requireNonNull(info.options);
+            importType = options.getImportType();
             importDirectory = options.getDirectory();
+            BackupDestinationGrants.importStarted(context, importDirectory, importType);
             Path backupPath = Paths.get(importDirectory);
             if (!backupPath.isDirectory()) {
                 log("====> op=IMPORT_BACKUP, Not a directory.");
-                BackupDestinationGrants.importFailed(importDirectory);
+                BackupDestinationGrants.importFailed(context, importDirectory, importType);
                 return new Result(Collections.emptyList(), false);
             }
             Path[] files = ConvertUtils.getRelevantImportFiles(backupPath, options.getImportType());
-            listed = true;
             fixProgress(files.length);
             float lastProgress = mProgressHandler != null ? mProgressHandler.getLastProgress() : 0;
             AtomicInteger i = new AtomicInteger(0);
@@ -773,20 +777,22 @@ public class BatchOpsManager {
                     }
                 });
             }
+            completed = true;
         } catch (Exception th) {
             log("====> op=IMPORT_BACKUP", th);
         }
         executor.awaitCompletion();
+        boolean successful = completed && failedPkgList.isEmpty();
         if (importDirectory != null) {
-            if (listed && failedPkgList.isEmpty()) {
+            if (successful) {
                 // Nothing is left to retry, so the folder's access can go
-                BackupDestinationGrants.releaseAfterImport(ContextUtils.getContext(), importDirectory);
+                BackupDestinationGrants.releaseAfterImport(context, importDirectory, importType);
             } else {
                 // A failed import keeps it for a retry
-                BackupDestinationGrants.importFailed(importDirectory);
+                BackupDestinationGrants.importFailed(context, importDirectory, importType);
             }
         }
-        return new Result(failedPkgList);
+        return new Result(failedPkgList, successful);
     }
 
     @NonNull

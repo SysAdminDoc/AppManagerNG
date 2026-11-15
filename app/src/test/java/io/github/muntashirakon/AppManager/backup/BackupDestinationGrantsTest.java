@@ -7,8 +7,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import android.app.Application;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.UriPermission;
 import android.net.Uri;
 import android.os.Handler;
@@ -24,6 +28,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.Shadows;
 import org.robolectric.android.controller.ServiceController;
 import org.robolectric.annotation.Config;
 import org.robolectric.util.ReflectionHelpers;
@@ -62,6 +67,8 @@ public class BackupDestinationGrantsTest {
     private static final Uri FIRST = tree("first");
     private static final Uri SECOND = tree("second");
     private static final Uri IMPORTS = tree("imports");
+    private static final int TYPE = ImportType.OAndBackup;
+    private static final int OTHER_TYPE = ImportType.SwiftBackup;
 
     private Context mContext;
     private FakeGrantStore mStore;
@@ -88,6 +95,7 @@ public class BackupDestinationGrantsTest {
         BackupDestinationGrants.setStoreForTesting(null);
         BackupDestinationGrants.setBackupProbeForTesting(null);
         BackupDestinationGrants.setBackupRunningForTesting(null);
+        BackupDestinationGrants.setClockForTesting(null);
         BackupDestinationGrants.startNewProcessForTesting();
         Prefs.Storage.setVolumePath(mPreviousVolume);
     }
@@ -265,7 +273,7 @@ public class BackupDestinationGrantsTest {
         BackupDestinationGrants.selectDestination(mContext, FIRST, MODES);
         BackupDestinationGrants.acquire(mContext, IMPORTS, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
 
-        BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS);
+        BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS, TYPE);
 
         assertEquals(Collections.singletonList(FIRST), mStore.uris());
         assertFalse(owned().containsKey(IMPORTS.toString()));
@@ -276,7 +284,7 @@ public class BackupDestinationGrantsTest {
         BackupDestinationGrants.selectDestination(mContext, FIRST, MODES);
         BackupDestinationGrants.acquire(mContext, FIRST, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
 
-        BackupDestinationGrants.releaseAfterImport(mContext, FIRST);
+        BackupDestinationGrants.releaseAfterImport(mContext, FIRST, TYPE);
 
         assertEquals(Collections.singletonList(FIRST), mStore.uris());
         assertEquals(Integer.valueOf(BackupDestinationGrants.PURPOSE_DESTINATION), owned().get(FIRST.toString()));
@@ -287,7 +295,7 @@ public class BackupDestinationGrantsTest {
         mStore.grant(IMPORTS);
 
         BackupDestinationGrants.acquire(mContext, IMPORTS, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
-        BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS);
+        BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS, TYPE);
 
         assertEquals(Collections.singletonList(IMPORTS), mStore.uris());
     }
@@ -330,7 +338,7 @@ public class BackupDestinationGrantsTest {
         mHoldingBackups.add(StorageUtils.getFixedTreeUri(IMPORTS).toString());
 
         // The import ending doesn't take it either
-        BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS);
+        BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS, TYPE);
         Uri previous = BackupDestinationGrants.selectDestination(mContext, SECOND, MODES);
         BackupDestinationGrants.releaseIfUnused(mContext, previous);
 
@@ -344,27 +352,98 @@ public class BackupDestinationGrantsTest {
         BackupDestinationGrants.acquire(mContext, IMPORTS, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
         BackupDestinationGrants.importQueued(IMPORTS);
 
-        BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS);
+        BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS, TYPE);
         assertEquals(Collections.singletonList(IMPORTS), mStore.uris());
 
-        BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS);
+        BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS, TYPE);
         assertEquals(Collections.emptyList(), mStore.uris());
         assertFalse(owned().containsKey(IMPORTS.toString()));
     }
 
     @Test
-    public void aFailedImportKeepsTheFolderForARetryUntilTheNextStart() {
+    public void anotherImportEndingCleanlyKeepsTheFolderForTheFailedOnesRetry() {
         BackupDestinationGrants.acquire(mContext, IMPORTS, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
         BackupDestinationGrants.importQueued(IMPORTS);
         BackupDestinationGrants.importQueued(IMPORTS);
 
-        BackupDestinationGrants.importFailed(IMPORTS);
-        BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS);
+        BackupDestinationGrants.importStarted(mContext, IMPORTS, TYPE);
+        BackupDestinationGrants.importFailed(mContext, IMPORTS, TYPE);
+        BackupDestinationGrants.importStarted(mContext, IMPORTS, OTHER_TYPE);
+        BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS, OTHER_TYPE);
+
         assertEquals(Collections.singletonList(IMPORTS), mStore.uris());
+    }
+
+    @Test
+    public void aFailedImportKeepsTheFolderAcrossRestartsUntilTheRetryWindowPasses() {
+        long[] now = {1_000_000_000L};
+        BackupDestinationGrants.setClockForTesting(() -> now[0]);
+        BackupDestinationGrants.acquire(mContext, IMPORTS, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
+        BackupDestinationGrants.importQueued(IMPORTS);
+        BackupDestinationGrants.importStarted(mContext, IMPORTS, TYPE);
+        BackupDestinationGrants.importFailed(mContext, IMPORTS, TYPE);
 
         BackupDestinationGrants.startNewProcessForTesting();
         BackupDestinationGrants.pruneStale(mContext);
+        assertEquals(Collections.singletonList(IMPORTS), mStore.uris());
+
+        now[0] += BackupDestinationGrants.RETRY_WINDOW_MILLIS - TimeUnit.MINUTES.toMillis(1);
+        BackupDestinationGrants.startNewProcessForTesting();
+        BackupDestinationGrants.pruneStale(mContext);
+        assertEquals(Collections.singletonList(IMPORTS), mStore.uris());
+
+        now[0] += TimeUnit.MINUTES.toMillis(2);
+        BackupDestinationGrants.startNewProcessForTesting();
+        BackupDestinationGrants.pruneStale(mContext);
         assertEquals(Collections.emptyList(), mStore.uris());
+        assertFalse(owned().containsKey(IMPORTS.toString()));
+        assertFalse(grantPrefs().contains("unfinished_imports"));
+    }
+
+    @Test
+    public void aRetryThatSucceedsAfterARestartLetsTheFolderGo() {
+        BackupDestinationGrants.acquire(mContext, IMPORTS, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
+        BackupDestinationGrants.importQueued(IMPORTS);
+        BackupDestinationGrants.importStarted(mContext, IMPORTS, TYPE);
+        BackupDestinationGrants.importFailed(mContext, IMPORTS, TYPE);
+        BackupDestinationGrants.startNewProcessForTesting();
+        BackupDestinationGrants.pruneStale(mContext);
+
+        BackupDestinationGrants.importQueued(IMPORTS);
+        BackupDestinationGrants.importStarted(mContext, IMPORTS, TYPE);
+        BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS, TYPE);
+
+        assertEquals(Collections.emptyList(), mStore.uris());
+        assertFalse(owned().containsKey(IMPORTS.toString()));
+        assertFalse(grantPrefs().contains("unfinished_imports"));
+    }
+
+    @Test
+    public void anImportCutShortWhenTheAppDiedKeepsTheFolderForARetry() {
+        BackupDestinationGrants.acquire(mContext, IMPORTS, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
+        BackupDestinationGrants.importQueued(IMPORTS);
+        BackupDestinationGrants.importStarted(mContext, IMPORTS, TYPE);
+
+        // Killed mid-import, so neither end was reached
+        BackupDestinationGrants.startNewProcessForTesting();
+        BackupDestinationGrants.pruneStale(mContext);
+
+        assertEquals(Collections.singletonList(IMPORTS), mStore.uris());
+    }
+
+    @Test
+    public void aRetryRecordForAFolderAndroidNoLongerHoldsIsForgotten() {
+        BackupDestinationGrants.acquire(mContext, IMPORTS, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
+        BackupDestinationGrants.importQueued(IMPORTS);
+        BackupDestinationGrants.importStarted(mContext, IMPORTS, TYPE);
+        BackupDestinationGrants.importFailed(mContext, IMPORTS, TYPE);
+        // The folder's app was removed, which took the grant with it
+        mStore.grants.remove(IMPORTS);
+
+        BackupDestinationGrants.startNewProcessForTesting();
+        BackupDestinationGrants.pruneStale(mContext);
+
+        assertFalse(grantPrefs().contains("unfinished_imports"));
     }
 
     @Test
@@ -381,10 +460,10 @@ public class BackupDestinationGrantsTest {
             service.onStartCommand(importIntent(IMPORTS), 0, 1);
             service.onStartCommand(importIntent(IMPORTS), 0, 2);
 
-            BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS);
+            BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS, TYPE);
             assertEquals(Collections.singletonList(IMPORTS), mStore.uris());
 
-            BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS);
+            BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS, TYPE);
             assertEquals(Collections.emptyList(), mStore.uris());
         } finally {
             controller.destroy();
@@ -397,16 +476,88 @@ public class BackupDestinationGrantsTest {
     public void aQueuedImportKeepsTheOldBackupFolderWhenAnotherIsPicked() {
         BackupDestinationGrants.selectDestination(mContext, FIRST, MODES);
         BackupDestinationGrants.acquire(mContext, FIRST, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
-        BackupDestinationGrants.importQueued(FIRST);
+        Intent intent = importIntent(FIRST);
+        BatchOpsService.start(mContext, intent);
+        // Android was only asked to start the service, which hasn't run
+        Intent started = Shadows.shadowOf((Application) mContext).getNextStartedService();
+        assertTrue(intent.filterEquals(started));
         Uri previous = BackupDestinationGrants.selectDestination(mContext, SECOND, MODES);
 
         // The import hasn't reached the batch service yet, so nothing counts as running
         BackupDestinationGrants.releaseIfUnused(mContext, previous);
         assertEquals(List.of(FIRST, SECOND), mStore.uris());
 
-        BackupDestinationGrants.releaseAfterImport(mContext, FIRST);
+        BackupDestinationGrants.importStarted(mContext, FIRST, TYPE);
+        BackupDestinationGrants.releaseAfterImport(mContext, FIRST, TYPE);
         BackupDestinationGrants.startNewProcessForTesting();
         BackupDestinationGrants.pruneStale(mContext);
+        assertEquals(Collections.singletonList(SECOND), mStore.uris());
+    }
+
+    @Test
+    @Config(shadows = ShadowCpuUtils.class)
+    public void anImportCountedWhenItWasHandedOverIsntCountedAgainByTheService() throws Exception {
+        BackupDestinationGrants.acquire(mContext, IMPORTS, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
+        Intent intent = importIntent(IMPORTS);
+        BatchOpsService.start(mContext, intent);
+        ServiceController<BatchOpsService> controller = Robolectric.buildService(BatchOpsService.class).create();
+        BatchOpsService service = controller.get();
+        Looper looper = serviceLooper(service);
+        CountDownLatch gate = holdThread(looper);
+        try {
+            service.onStartCommand(intent, 0, 1);
+
+            BackupDestinationGrants.importStarted(mContext, IMPORTS, TYPE);
+            BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS, TYPE);
+            assertEquals(Collections.emptyList(), mStore.uris());
+        } finally {
+            controller.destroy();
+            gate.countDown();
+            looper.getThread().join(5000);
+        }
+    }
+
+    @Test
+    @Config(shadows = ShadowCpuUtils.class)
+    public void importsDroppedWhenTheServiceStopsGiveBackTheirCount() throws Exception {
+        BackupDestinationGrants.acquire(mContext, IMPORTS, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
+        ServiceController<BatchOpsService> controller = Robolectric.buildService(BatchOpsService.class).create();
+        BatchOpsService service = controller.get();
+        Looper looper = serviceLooper(service);
+        CountDownLatch gate = holdThread(looper);
+        try {
+            service.onStartCommand(importIntent(IMPORTS), 0, 1);
+            service.onStartCommand(importIntent(IMPORTS), 0, 2);
+            // Stopped from outside before either ran
+            controller.destroy();
+        } finally {
+            gate.countDown();
+            looper.getThread().join(5000);
+        }
+
+        // So a later import that ends cleanly lets the folder go
+        BackupDestinationGrants.importQueued(IMPORTS);
+        BackupDestinationGrants.importStarted(mContext, IMPORTS, TYPE);
+        BackupDestinationGrants.releaseAfterImport(mContext, IMPORTS, TYPE);
+        assertEquals(Collections.emptyList(), mStore.uris());
+    }
+
+    @Test
+    public void anImportWhoseServiceCouldntStartGivesBackItsCount() {
+        BackupDestinationGrants.selectDestination(mContext, FIRST, MODES);
+        BackupDestinationGrants.acquire(mContext, FIRST, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
+        Context refusing = new ContextWrapper(mContext) {
+            @Override
+            public ComponentName startForegroundService(Intent service) {
+                // What Android throws for a start it won't allow from the background
+                throw new IllegalStateException("Not allowed to start service");
+            }
+        };
+        assertThrows(IllegalStateException.class, () -> BatchOpsService.start(refusing, importIntent(FIRST)));
+        Uri previous = BackupDestinationGrants.selectDestination(mContext, SECOND, MODES);
+
+        BackupDestinationGrants.releaseIfUnused(mContext, previous);
+
         assertEquals(Collections.singletonList(SECOND), mStore.uris());
     }
 
@@ -415,7 +566,8 @@ public class BackupDestinationGrantsTest {
         BackupDestinationGrants.selectDestination(mContext, FIRST, MODES);
         BackupDestinationGrants.acquire(mContext, FIRST, MODES, BackupDestinationGrants.PURPOSE_IMPORT);
         BackupDestinationGrants.importQueued(FIRST);
-        BackupDestinationGrants.importFailed(FIRST);
+        BackupDestinationGrants.importStarted(mContext, FIRST, TYPE);
+        BackupDestinationGrants.importFailed(mContext, FIRST, TYPE);
         Uri previous = BackupDestinationGrants.selectDestination(mContext, SECOND, MODES);
 
         BackupDestinationGrants.releaseIfUnused(mContext, previous);
@@ -525,6 +677,11 @@ public class BackupDestinationGrantsTest {
     @NonNull
     private Map<String, Integer> owned() {
         return BackupDestinationGrants.ownedForTesting(mContext);
+    }
+
+    @NonNull
+    private SharedPreferences grantPrefs() {
+        return mContext.getSharedPreferences(BackupDestinationGrants.PREFS_NAME, Context.MODE_PRIVATE);
     }
 
     @NonNull
