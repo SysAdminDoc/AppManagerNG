@@ -327,6 +327,27 @@ public class PackageInstallerService extends ForegroundService {
     }
 
     @Override
+    protected void onDropped(@Nullable Intent intent) {
+        // What onHandleIntent() would have let go of once the install was done
+        ApkQueueItem apkQueueItem = getQueueItem(intent);
+        ApkSource apkSource = apkQueueItem != null ? apkQueueItem.getApkSource() : null;
+        if (apkSource == null) {
+            return;
+        }
+        if (apkQueueItem.holdsReviewedFile()) {
+            ApkFile apkFile = apkSource.resolveIfOpen();
+            if (apkFile != null) {
+                // The reference resolveIfOpen() took, then the one the review screen took (ApkFile#acquire)
+                apkFile.close();
+                apkFile.close();
+            }
+        }
+        if (apkSource instanceof CachedApkSource) {
+            ((CachedApkSource) apkSource).cleanup();
+        }
+    }
+
+    @Override
     protected void onStoppedUnfinished(boolean queueDropped) {
         mProgressHandler.onStoppedUnfinished(getText(R.string.package_installer), queueDropped);
     }

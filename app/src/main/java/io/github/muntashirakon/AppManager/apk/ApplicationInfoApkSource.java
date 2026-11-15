@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.os.Parcel;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.os.ParcelCompat;
 
 import org.json.JSONException;
@@ -42,6 +43,12 @@ public class ApplicationInfoApkSource extends ApkSource {
         }
         mApkFileKey = ApkFile.createInstance(mApplicationInfo);
         return Objects.requireNonNull(ApkFile.getInstance(mApkFileKey));
+    }
+
+    @Nullable
+    @Override
+    public ApkFile resolveIfOpen() {
+        return ApkFile.getInstance(mApkFileKey);
     }
 
     @NonNull

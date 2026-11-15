@@ -98,8 +98,15 @@ final class RestoreStaging implements Closeable {
         Path[] copies = new Path[sources.length];
         boolean done = false;
         try {
+            long copied = 0;
             for (int i = 0; i < sources.length; ++i) {
                 copies[i] = copyAndVerify(sources[i], batch, failurePrefix);
+                copied = saturatedAdd(copied, Math.max(0, copies[i].length()));
+            }
+            // The plain copies land on the same disk before these go, and are about as large
+            if (mBackupItem.decryptWritesCopies() && !makeRoom(mDirectory, saturatedAdd(copied, FREE_SPACE_RESERVE))) {
+                throw new BackupException("Not enough free space to decrypt " + Arrays.toString(sources)
+                        + " for the restore.\nNeeded: " + copied + " bytes");
             }
             Path[] decrypted;
             try {
@@ -140,7 +147,8 @@ final class RestoreStaging implements Closeable {
         }
         File copy = new File(batch, name);
         long declared = Math.max(0, source.length());
-        if (!makeRoom(batch, declared + FREE_SPACE_RESERVE)) {
+        // A provider can claim any length; near Long.MAX_VALUE a plain sum wraps negative and asks for nothing
+        if (!makeRoom(batch, saturatedAdd(declared, FREE_SPACE_RESERVE))) {
             throw new BackupException("Not enough free space to stage " + name + " for the restore."
                     + "\nNeeded: " + declared + " bytes");
         }
@@ -186,6 +194,12 @@ final class RestoreStaging implements Closeable {
             }
         }
         return Paths.getUnprivileged(copy);
+    }
+
+    /** Sum of two non-negative sizes, held at {@link Long#MAX_VALUE} instead of wrapping negative. */
+    @VisibleForTesting
+    static long saturatedAdd(long a, long b) {
+        return a > Long.MAX_VALUE - b ? Long.MAX_VALUE : a + b;
     }
 
     private static boolean makeRoom(@NonNull File directory, long bytes) {

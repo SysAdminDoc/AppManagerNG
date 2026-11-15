@@ -279,11 +279,15 @@ class RestoreOp implements Closeable {
     @Override
     public void close() {
         Log.d(TAG, "Close called");
-        mChecksum.close();
-        if (mStaging != null) {
-            mStaging.close();
+        // The staged copies go even if closing the checksum file throws
+        try {
+            mChecksum.close();
+        } finally {
+            if (mStaging != null) {
+                mStaging.close();
+            }
+            mBackupItem.cleanup();
         }
-        mBackupItem.cleanup();
     }
 
     void runRestore(@Nullable ProgressHandler progressHandler) throws BackupException {

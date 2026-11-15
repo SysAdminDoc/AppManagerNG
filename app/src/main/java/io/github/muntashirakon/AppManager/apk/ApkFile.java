@@ -104,9 +104,18 @@ public final class ApkFile implements AutoCloseable {
     @VisibleForTesting
     static final long MAX_IDSIG_BYTES = 64L * 1024 * 1024;
 
-    // There's hardly any chance of using multiple instances of ApkFile but still kept for convenience
+    // There's hardly any chance of using multiple instances of ApkFile but still kept for convenience.
+    // Held only for map updates, never while a package opens: close() runs on the main thread, and an
+    // APKM opens through a service bound on the main thread, so opening under it can deadlock.
     private static final SparseArrayCompat<ApkFile> sApkFiles = new SparseArrayCompat<>(3);
     private static final SparseIntArray sInstanceCount = new SparseIntArray(3);
+    // Keys handed to an instance still opening, so no other instance takes one
+    @GuardedBy("sApkFiles")
+    private static final Set<Integer> sReservedKeys = new HashSet<>();
+    // Runs at the start of every open from a URI; lets a test hold an open part way through
+    @VisibleForTesting
+    @Nullable
+    static volatile Runnable sOpeningHook;
 
     @AnyThread
     @Nullable
@@ -137,20 +146,23 @@ public final class ApkFile implements AutoCloseable {
     @AnyThread
     @NonNull
     public static ApkFile openForPreview(@NonNull Uri apkUri, @Nullable String mimeType) throws ApkFileException {
-        synchronized (sApkFiles) {
-            return Objects.requireNonNull(getInstance(register(apkUri, mimeType, true)));
-        }
+        // Nobody else knows the new key, so nothing can close it between the two calls
+        return Objects.requireNonNull(getInstance(register(apkUri, mimeType, true)));
     }
 
     @AnyThread
     private static int register(@NonNull Uri apkUri, @Nullable String mimeType, boolean preview)
             throws ApkFileException {
-        synchronized (sApkFiles) {
-            int key = getUniqueKey();
-            ApkFile apkFile = open(apkUri, mimeType, key, preview);
-            sApkFiles.put(key, apkFile);
-            return key;
+        int key = reserveKey();
+        ApkFile apkFile;
+        try {
+            apkFile = open(apkUri, mimeType, key, preview);
+        } catch (Throwable th) {
+            releaseKey(key);
+            throw th;
         }
+        publish(key, apkFile);
+        return key;
     }
 
     @NonNull
@@ -159,6 +171,10 @@ public final class ApkFile implements AutoCloseable {
         // A constructor that throws leaves no instance to close, so whatever it staged goes here
         FileCache fileCache = FileCache.newPrivateSessionCache();
         try {
+            Runnable hook = sOpeningHook;
+            if (hook != null) {
+                hook.run();
+            }
             return new ApkFile(apkUri, mimeType, key, preview, fileCache);
         } catch (Throwable th) {
             IoUtils.closeQuietly(fileCache);
@@ -168,21 +184,40 @@ public final class ApkFile implements AutoCloseable {
 
     @AnyThread
     static int createInstance(ApplicationInfo info) throws ApkFileException {
+        int key = reserveKey();
+        ApkFile apkFile;
+        try {
+            apkFile = new ApkFile(info, key);
+        } catch (Throwable th) {
+            releaseKey(key);
+            throw th;
+        }
+        publish(key, apkFile);
+        return key;
+    }
+
+    private static int reserveKey() {
         synchronized (sApkFiles) {
-            int key = getUniqueKey();
-            ApkFile apkFile = new ApkFile(info, key);
-            sApkFiles.put(key, apkFile);
+            int key;
+            do {
+                key = ThreadLocalRandom.current().nextInt();
+            } while (sApkFiles.containsKey(key) || sReservedKeys.contains(key));
+            sReservedKeys.add(key);
             return key;
         }
     }
 
-    @GuardedBy("sApkFiles")
-    private static int getUniqueKey() {
-        int key;
-        do {
-            key = ThreadLocalRandom.current().nextInt();
-        } while (sApkFiles.containsKey(key));
-        return key;
+    private static void releaseKey(int key) {
+        synchronized (sApkFiles) {
+            sReservedKeys.remove(key);
+        }
+    }
+
+    private static void publish(int key, @NonNull ApkFile apkFile) {
+        synchronized (sApkFiles) {
+            sReservedKeys.remove(key);
+            sApkFiles.put(key, apkFile);
+        }
     }
 
     @IntDef(value = {

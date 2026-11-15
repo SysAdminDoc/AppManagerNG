@@ -400,6 +400,13 @@ public class BackupItems {
             }
         }
 
+        /** Whether {@link #decrypt} writes plain copies, rather than handing the files back. */
+        public boolean decryptWritesCopies() {
+            synchronized (mCryptoGuard) {
+                return mCrypto != null;
+            }
+        }
+
         public void setBackupName(@Nullable String backupName) {
             mBackupName = backupName;
             mBackupNameSet = true;

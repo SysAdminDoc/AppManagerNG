@@ -16,6 +16,7 @@ import android.graphics.drawable.Drawable;
 import android.os.UserHandleHidden;
 
 import androidx.annotation.AnyThread;
+import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
@@ -53,7 +54,12 @@ public class PackageInstallerViewModel extends AndroidViewModel {
     private PackageInfo mNewPackageInfo;
     private PackageInfo mInstalledPackageInfo;
     private ApkSource mApkSource;
-    private ApkFile mApkFile;
+    // The screen holds one reference to this file. It changes on a worker thread and is closed on the
+    // main thread, so it is swapped and closed under mApkFileLock and never closed twice.
+    private final Object mApkFileLock = new Object();
+    private volatile ApkFile mApkFile;
+    @GuardedBy("mApkFileLock")
+    private boolean mCleared;
     private String mPackageName;
     private String mAppLabel;
     private Drawable mAppIcon;
@@ -76,10 +82,16 @@ public class PackageInstallerViewModel extends AndroidViewModel {
 
     @Override
     protected void onCleared() {
-        IoUtils.closeQuietly(mApkFile);
+        ApkFile apkFile;
+        synchronized (mApkFileLock) {
+            mCleared = true;
+            apkFile = mApkFile;
+            mApkFile = null;
+        }
         if (mPackageInfoResult != null) {
             mPackageInfoResult.cancel(true);
         }
+        IoUtils.closeQuietly(apkFile);
         super.onCleared();
     }
 
@@ -298,14 +310,26 @@ public class PackageInstallerViewModel extends AndroidViewModel {
      * that still needs it took its own reference (ApkFile#acquire), so this close never pulls a file
      * out from under the installer. Resolving the same file again took another reference too, so the
      * previous one is closed even when it is the same instance.
+     *
+     * @return {@code false} once the screen is gone, in which case {@code apkFile} is closed instead
      */
     @VisibleForTesting
-    void replaceApkFile(@NonNull ApkFile apkFile) {
-        ApkFile previous = mApkFile;
-        mApkFile = apkFile;
-        if (previous != null) {
-            previous.close();
+    boolean replaceApkFile(@NonNull ApkFile apkFile) {
+        ApkFile toClose;
+        boolean kept;
+        synchronized (mApkFileLock) {
+            kept = !mCleared;
+            if (kept) {
+                toClose = mApkFile;
+                mApkFile = apkFile;
+            } else {
+                toClose = apkFile;
+            }
         }
+        if (toClose != null) {
+            toClose.close();
+        }
+        return kept;
     }
 
     private void selectSplit(@NonNull ApkFile.Entry entry, @NonNull HashMap<String, HashSet<Integer>> seenTypes) {
@@ -319,7 +343,9 @@ public class PackageInstallerViewModel extends AndroidViewModel {
     }
 
     private void getPackageInfoInternal() throws PackageManager.NameNotFoundException, IOException, ApkFile.ApkFileException {
-        replaceApkFile(mApkSource.resolve());
+        if (!replaceApkFile(mApkSource.resolve())) {
+            return;
+        }
         mNewPackageInfo = loadNewPackageInfo();
         mPackageName = mNewPackageInfo.packageName;
         if (ThreadUtils.isInterrupted()) {
@@ -349,7 +375,9 @@ public class PackageInstallerViewModel extends AndroidViewModel {
         mPackageName = packageName;
         mInstalledPackageInfo = loadInstalledPackageInfo(packageName);
         mApkSource = ApkSource.getApkSource(mInstalledPackageInfo.applicationInfo);
-        replaceApkFile(mApkSource.resolve());
+        if (!replaceApkFile(mApkSource.resolve())) {
+            return;
+        }
         mNewPackageInfo = loadNewPackageInfo();
         mAppLabel = mPm.getApplicationLabel(mNewPackageInfo.applicationInfo).toString();
         mAppIcon = mPm.getApplicationIcon(mNewPackageInfo.applicationInfo);

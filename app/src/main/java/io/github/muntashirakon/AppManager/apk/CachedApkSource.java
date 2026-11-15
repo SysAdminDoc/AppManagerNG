@@ -83,6 +83,12 @@ public class CachedApkSource extends ApkSource {
         return Objects.requireNonNull(ApkFile.getInstance(mApkFileKey));
     }
 
+    @Nullable
+    @Override
+    public ApkFile resolveIfOpen() {
+        return ApkFile.getInstance(mApkFileKey);
+    }
+
     @NonNull
     @Override
     public ApkSource toCachedSource() {

@@ -237,6 +237,45 @@ public class RestoreStagingTest {
         }
     }
 
+    @Test
+    public void anEncryptedFileWithNoRoomForItsPlainCopyIsNotDecrypted() throws Throwable {
+        byte[] plain = "data the app gets back".getBytes(StandardCharsets.UTF_8);
+        Path cipherFile = tmpBackupPath.createNewDirectory("no-room")
+                .createNewFile("data0.tar.gz.0" + CryptoUtils.getExtension(CryptoUtils.MODE_AES), null);
+        writeBytes(cipherFile, XorCrypto.flip(plain));
+        BackupItems.BackupItem backupItem = restoreItem();
+        backupItem.setCrypto(new XorCrypto());
+        Set<String> stagedBefore = stagedNames();
+        List<Long> asked = new ArrayList<>();
+        // Room for the copy in its batch folder, none for a second copy that size next to it
+        RestoreStaging.setRoom((directory, bytes) -> {
+            asked.add(bytes);
+            return !directory.getName().startsWith("restore-");
+        });
+        try (BackupItems.Checksum checksum = checksums(cipherFile);
+             RestoreStaging staging = new RestoreStaging(backupItem, checksum, DigestUtils.SHA_256)) {
+            BackupException exception = assertThrows(BackupException.class,
+                    () -> staging.stage(new Path[]{cipherFile}, "Check failed."));
+
+            assertTrue(exception.getMessage(), exception.getMessage().startsWith("Not enough free space to decrypt"));
+            assertEquals(Arrays.asList(plain.length + RestoreStaging.FREE_SPACE_RESERVE,
+                    plain.length + RestoreStaging.FREE_SPACE_RESERVE), asked);
+            assertEquals(Collections.emptyList(), filesUnder(staging.getDirectory()));
+        } finally {
+            backupItem.cleanup();
+        }
+        assertEquals(stagedBefore, stagedNames());
+    }
+
+    @Test
+    public void aLengthNearTheLimitAsksForAllTheSpaceInsteadOfNone() {
+        // A provider that claims a length near Long.MAX_VALUE would otherwise wrap the request negative,
+        // which makeRoom() reads as asking for nothing
+        assertEquals(Long.MAX_VALUE, RestoreStaging.saturatedAdd(Long.MAX_VALUE - 1, RestoreStaging.FREE_SPACE_RESERVE));
+        assertEquals(Long.MAX_VALUE, RestoreStaging.saturatedAdd(Long.MAX_VALUE, Long.MAX_VALUE));
+        assertEquals(100 + RestoreStaging.FREE_SPACE_RESERVE, RestoreStaging.saturatedAdd(100, RestoreStaging.FREE_SPACE_RESERVE));
+    }
+
     /**
      * Puts a copy of the test backup on the volume and has the shadow report the app as installed,
      * so the restore leaves the APK alone. Each directory the restore hands back to the app is

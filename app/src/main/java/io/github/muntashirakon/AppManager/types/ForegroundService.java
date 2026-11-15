@@ -17,6 +17,7 @@ import android.os.Process;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.CallSuper;
+import androidx.annotation.GuardedBy;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -25,6 +26,9 @@ import androidx.annotation.WorkerThread;
 import androidx.core.app.ServiceCompat;
 import androidx.core.os.BundleCompat;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -95,6 +99,10 @@ public abstract class ForegroundService extends Service {
     // Starts not yet through onHandleIntent(), counted from onStartCommand() so a job the looper has taken but not
     // begun still counts
     private final AtomicInteger mJobsLeft = new AtomicInteger();
+    // Starts the worker hasn't begun, by start ID. The worker claims one before running it and a stop takes the rest,
+    // so each start either runs or is handed to onDropped(), never both.
+    @GuardedBy("mWaiting")
+    private final LinkedHashMap<Integer, Intent> mWaiting = new LinkedHashMap<>();
 
     // Handler that receives messages from the thread
     private final class ServiceHandler extends Handler {
@@ -104,6 +112,13 @@ public abstract class ForegroundService extends Service {
 
         @Override
         public void handleMessage(Message msg) {
+            synchronized (mWaiting) {
+                if (!mWaiting.containsKey(msg.arg1)) {
+                    // The service stopped after the looper took this start and before it began: it was dropped
+                    return;
+                }
+                mWaiting.remove(msg.arg1);
+            }
             Intent intent = BundleCompat.getParcelable(msg.getData(), "intent", Intent.class);
             try {
                 ThreadUtils.postOnMainThread(() -> onStartIntent(intent));
@@ -142,6 +157,9 @@ public abstract class ForegroundService extends Service {
         }
         mIsWorking = true;
         mJobsLeft.incrementAndGet();
+        synchronized (mWaiting) {
+            mWaiting.put(startId, intent);
+        }
         Message msg = mServiceHandler.obtainMessage();
         msg.arg1 = startId;
         Bundle args = new Bundle();
@@ -158,14 +176,29 @@ public abstract class ForegroundService extends Service {
         // A service that finished its work stops itself with nothing left. One Android didn't put in the foreground
         // can be stopped by Android once the app leaves the screen.
         if (mJobsLeft.get() > 0) {
-            boolean queueDropped = mServiceHandler.hasMessages(0);
-            // quitSafely() would still run every start already queued, with nothing left to keep the process alive
-            // or show their progress
-            mServiceHandler.removeMessages(0);
+            List<Intent> dropped;
+            synchronized (mWaiting) {
+                // quitSafely() would still run every start already queued, with nothing left to keep the process
+                // alive or show their progress
+                mServiceHandler.removeMessages(0);
+                dropped = new ArrayList<>(mWaiting.values());
+                mWaiting.clear();
+            }
             Log.w(TAG, "%s was stopped before its work was done.", getClass().getSimpleName());
-            onStoppedUnfinished(queueDropped);
+            for (Intent intent : dropped) {
+                onDropped(intent);
+            }
+            onStoppedUnfinished(!dropped.isEmpty());
         }
         mServiceLooper.quitSafely();
+    }
+
+    /**
+     * A queued start that never began because the service was stopped first. Release anything the caller handed over
+     * with it. Called once per dropped start, before {@link #onStoppedUnfinished(boolean)}.
+     */
+    @UiThread
+    protected void onDropped(@Nullable Intent intent) {
     }
 
     /**

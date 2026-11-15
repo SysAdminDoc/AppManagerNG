@@ -31,6 +31,11 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -189,6 +194,56 @@ public class ApkFileStagingTest {
         assertTrue(FileCache.makeRoom(stagingDir, 1));
         // No disk holds this much, however much cache the system clears
         assertFalse(FileCache.makeRoom(stagingDir, Long.MAX_VALUE));
+    }
+
+    /**
+     * Screens close their package on the main thread, and an APKM opens through a service that
+     * binds on the main thread. A close that waited for an open to finish could wait forever.
+     */
+    @Test
+    public void closingOnePackageNeverWaitsForAnotherToOpen() throws Throwable {
+        ApkFile open = open(extractBaseApk(temporaryFolder.newFile("open.apk")));
+        File opening = extractBaseApk(temporaryFolder.newFile("opening.apk"));
+        CountDownLatch inside = new CountDownLatch(1);
+        CountDownLatch finish = new CountDownLatch(1);
+        ApkFile.sOpeningHook = () -> {
+            inside.countDown();
+            try {
+                finish.await(60, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        };
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            // ApkFileException is a Throwable, which a Callable can't throw
+            Future<ApkFile> second = executor.submit(() -> {
+                try {
+                    return open(opening);
+                } catch (ApkFile.ApkFileException e) {
+                    throw new IllegalStateException(e);
+                }
+            });
+            assertTrue(inside.await(30, TimeUnit.SECONDS));
+
+            // The other open is still going: holding and closing this one must not wait for it
+            Future<Boolean> closed = executor.submit(() -> {
+                assertTrue(open.acquire());
+                open.close();
+                open.close();
+                return open.isClosed();
+            });
+            assertTrue(closed.get(10, TimeUnit.SECONDS));
+
+            finish.countDown();
+            ApkFile secondFile = second.get(60, TimeUnit.SECONDS);
+            assertFalse(secondFile.isClosed());
+            secondFile.close();
+        } finally {
+            ApkFile.sOpeningHook = null;
+            finish.countDown();
+            executor.shutdownNow();
+        }
     }
 
     @NonNull

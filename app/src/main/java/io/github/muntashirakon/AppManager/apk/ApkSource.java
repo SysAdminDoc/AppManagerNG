@@ -47,6 +47,14 @@ public abstract class ApkSource implements Parcelable, IJsonSerializer {
     @NonNull
     public abstract ApkFile resolve() throws ApkFile.ApkFileException;
 
+    /**
+     * The package this source has open now, with one more reference for the caller to close, or
+     * {@code null} when it has none open. Unlike {@link #resolve()}, it never opens or copies anything.
+     */
+    @AnyThread
+    @Nullable
+    public abstract ApkFile resolveIfOpen();
+
     @AnyThread
     @NonNull
     public abstract ApkSource toCachedSource();

@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.apk.installer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
@@ -124,6 +125,61 @@ public class ReviewedApkFileLifetimeTest {
         } finally {
             next.close();
         }
+    }
+
+    @Test
+    public void aFileResolvedAfterTheScreenIsGoneIsClosedAndTheReviewedOneIsLeftAlone() throws Throwable {
+        PackageInstallerViewModel model = new PackageInstallerViewModel(ApplicationProvider.getApplicationContext());
+        ApkFile reviewed = ApkSource.getApkSource(Uri.fromFile(baseApk("reviewed.apk")), APK_MIME).resolve();
+        File staged = reviewed.getBaseEntry().getFile(false);
+        model.replaceApkFile(reviewed);
+        // A queued install holds it
+        assertTrue(reviewed.acquire());
+
+        // The screen goes while a load for the next item is still running
+        model.onCleared();
+        assertFalse(reviewed.isClosed());
+        ApkFile late = ApkSource.getApkSource(Uri.fromFile(baseApk("late.apk")), APK_MIME).resolve();
+        assertFalse(model.replaceApkFile(late));
+
+        assertTrue(late.isClosed());
+        assertFalse(reviewed.isClosed());
+        assertTrue(staged.isFile());
+        assertNull(model.getApkFile());
+
+        // The install lets go of it
+        reviewed.close();
+        assertTrue(reviewed.isClosed());
+    }
+
+    @Test
+    @Config(shadows = ShadowCpuUtils.class)
+    public void aQueuedInstallDroppedByAStopLetsGoOfItsFile() throws Throwable {
+        Application app = ApplicationProvider.getApplicationContext();
+        shadowOf(app).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
+        ApkSource source = ApkSource.getApkSource(Uri.fromFile(baseApk("dropped.apk")), APK_MIME);
+        ApkFile reviewed = source.resolve();
+        File staged = reviewed.getBaseEntry().getFile(false);
+        ApkQueueItem item = ApkQueueItem.fromApkSource(source);
+        item.setAppLabel("Example");
+        item.setSelectedSplits(new ArrayList<>());
+        item.setReviewedPayload(reviewed.getPayloadSha256(), reviewed.getPayloadSize());
+        item.setHoldsReviewedFile(reviewed.acquire());
+        Intent intent = new Intent(app, PackageInstallerService.class);
+        IntentCompat.putWrappedParcelableExtra(intent, PackageInstallerService.EXTRA_QUEUE_ITEM, parcelled(item));
+        // The screen moves on, so only the queued install holds it
+        reviewed.close();
+        assertFalse(reviewed.isClosed());
+
+        ServiceController<PackageInstallerService> controller = Robolectric.buildService(PackageInstallerService.class).create();
+        try {
+            controller.get().onDropped(intent);
+        } finally {
+            controller.destroy();
+        }
+
+        assertTrue(reviewed.isClosed());
+        assertFalse(staged.exists());
     }
 
     @Test
