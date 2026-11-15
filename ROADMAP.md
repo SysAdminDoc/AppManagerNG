@@ -1225,3 +1225,65 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Touches: `AutoBackupScheduler.java`, `AutoBackupWorker.java` (save a status code beside the text, and write the waiting status under the run claim), `ScheduledBackupNetworkTest`.
   Acceptance: WHEN scheduled backups are turned off after the app language changed while a run waited for a network, the system SHALL clear the waiting status; WHEN a run starts while another waits, the system SHALL keep the running run's status; tests SHALL cover both.
   Complexity: S
+
+## Found While Verifying Import Grants and Server Staging (2026-11-15)
+
+### P2
+
+- [ ] P2: Run automation requests that arrive while the app is in the background
+  Why: on Android 12 and later a broadcast to `AutomationReceiver` while no app screen is showing gets `ForegroundServiceStartNotAllowedException` from `startForegroundService`. The receiver logs a warning and drops the request, so a Tasker or adb backup, freeze or restore simply never happens and nobody is told. Only an app exempt from battery optimization can start the service from there.
+  Evidence: API 36 emulator, 2026-11-15: a root `am broadcast` of `<appId>.action.BACKUP` with the app in the background logged "Could not start automation service" with that exception and ran nothing; the same broadcast with the app on screen ran. `automation/AutomationReceiver.java` `startForegroundService` catches and logs only.
+  Touches: `AutomationReceiver.java` (fall back to an expedited WorkManager request that starts the batch, or post a notification whose tap runs it and says why), strings, a Robolectric test that makes the start throw.
+  Acceptance: WHEN an automation request arrives on Android 12 or later and the foreground service start is refused, the system SHALL still run the request or SHALL post a notification naming the request and how to run it; the request SHALL NOT end with only a log line; a test SHALL cover the refused start.
+  Complexity: M
+
+### P3
+
+- [ ] P3: Give back the import count when an Error stops an import
+  Why: `opImportBackups` catches `Exception`, so an `Error` (out of memory on a big folder, a missing class) thrown after `importStarted` skips both `importFailed` and `releaseAfterImport`. The in-memory import count stays up for the life of the process, every later clean import from that folder sees it as still needed, and its access is never let go.
+  Evidence: `batchops/BatchOpsManager.java` `opImportBackups` (`catch (Exception th)` after `importStarted`); `BatchOpsService.onHandleIntent` catches the `Throwable` later without the accounting.
+  Touches: `BatchOpsManager.java` (do the accounting in a `finally`), `BatchOpsImportResultTest`.
+  Acceptance: WHEN an `Error` is thrown after an import started, the system SHALL record the import as failed and end its count before the error goes on; a test SHALL throw one and check the count and the kept folder.
+  Complexity: S
+
+- [ ] P3: Close the server log's file descriptor when its header write fails
+  Why: when the header write after a successful open fails, `FLog.openFile` drops the stream but leaves `sLogFd` open, and the next open (up to five tries) overwrites it, so each try leaks a descriptor. `openFile` also isn't synchronized, so two threads can both open the log and the second open empties what the first wrote.
+  Evidence: `libserver/.../server/common/FLog.java` `openFile` (`fos = null` in the catch) and `openPrivateLog` (sets `sLogFd`). The descriptor is also opened without `O_CLOEXEC`, which only a native child would inherit.
+  Touches: `FLog.java`, `FLogFileSafetyTest`.
+  Acceptance: WHEN the header write fails, the system SHALL close the descriptor it opened; two threads logging at once SHALL open the log once; a test SHALL cover the failed header.
+  Complexity: S
+
+- [ ] P3: Fall back to the script when the root server dies after a clean launch
+  Why: the root launcher falls back to `run_server.sh` only when the launch exits 126 or 127. On root setups whose policy lets the app's domain exec `app_process` but not read `app_data_file` (older SuperSU on Android 5 to 6), the launch returns 0, the server dies loading `am.jar` from the app's cache, and the connection just times out. The jar used to sit in `shell_data_file`, which those policies allow.
+  Evidence: `ipc/LocalServerManager.java` `useRootStartServer` exit code check; unconfirmed on a device.
+  Touches: `LocalServerManager.java` (fall back when the server doesn't connect in time too), a test of the wiring, an API 23 root emulator run.
+  Acceptance: WHEN the root launch exits 0 but the server never connects, the system SHALL try `run_server.sh` before giving up and SHALL say which launch failed; a test SHALL cover the fallback wiring.
+  Complexity: S
+
+- [ ] P3: Keep unfinished import records through a wrong clock
+  Why: `BackupDestinationGrants.withinRetryWindow` compares the absolute time difference with seven days, so a device that boots with its clock more than seven days off drops the record at start and lets go of a folder whose failed import is hours old; a clock that's a few days behind also stretches the window. The expiry is only checked at process start, so a process that stays up keeps a folder past seven days, and a failed `commit()` of the record is only logged, so after a restart the record is gone.
+  Evidence: `backup/BackupDestinationGrants.java` `withinRetryWindow`, `pruneStale`, `writeUnfinished`.
+  Touches: `BackupDestinationGrants.java` (prune by age only when the clock looks sane, check the age when a grant is next consulted, keep the in-memory record when the write fails), `BackupDestinationGrantsTest`.
+  Acceptance: WHEN the clock at start is more than seven days off from a record, the system SHALL keep the record; WHEN a record passes seven days while the process runs, the system SHALL let it go at the next check; tests SHALL cover both.
+  Complexity: S
+
+- [ ] P3: Count journal-recovered imports when they're handed to the service
+  Why: `MainActivity` retries a recovered queue item through `ContextCompat.startForegroundService` instead of `BatchOpsService.start`, so an import in it is counted only when the service picks it up and a refused start isn't given back. The unfinished record still keeps the folder, so the effect is small.
+  Evidence: `main/MainActivity.java` journal recovery `startForegroundService(this, BatchOpsService.getServiceIntent(this, retryQueueItem))`.
+  Touches: `MainActivity.java`, `BatchOpsService.start` callers.
+  Acceptance: WHEN a recovered import is handed to the service, the system SHALL count it at hand-off and give it back if the start is refused; a test SHALL cover it.
+  Complexity: S
+
+- [ ] P3: Say "couldn't read the folder" only when the listing failed
+  Why: an import that throws with no package failed maps to `import_backups_folder_unreadable`, so a throw after the folder was listed (reading the progress state, for one) still tells the user the folder couldn't be read.
+  Evidence: `batchops/BatchOpsService.java` `getDesiredErrorString`; `BatchOpsImportResultTest` throws in `getLastMax` after a clean listing and gets that message.
+  Touches: `BatchOpsManager.java` (report where it stopped), `BatchOpsService.java`, strings, `BatchOpsImportResultTest`.
+  Acceptance: WHEN an import stops after its folder was listed, the system SHALL report a general import failure, not an unreadable folder; a test SHALL cover both.
+  Complexity: S
+
+- [ ] P3: Test the server log's open and the root launch fallback on real descriptors
+  Why: `FLogFileSafetyTest` covers only the `isPrivateLogFile` check and `ServerRunnerCommandTest` only the exit-code check, so a change that breaks the `O_NOFOLLOW` open, the link and hard-link refusal on an open descriptor, the truncate before `fchown`, or the fallback wiring in `useRootStartServer` would still pass.
+  Evidence: `libserver` and `app` tests named above. Robolectric's `Os.open` ignores `O_NOFOLLOW`, so the open needs an instrumented test or a seam.
+  Touches: an instrumented test on the rooted emulator, or a seam for the open call.
+  Acceptance: WHEN the log path is a symlink or a hard link, a test SHALL see the open refused; WHEN the root launch exits 127, a test SHALL see `run_server.sh` started.
+  Complexity: M
