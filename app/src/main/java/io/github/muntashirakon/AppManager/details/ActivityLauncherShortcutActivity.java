@@ -16,7 +16,6 @@ import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
-import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -99,11 +98,7 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
     private boolean mTargetInstalled;
     // Counts the launches through the assistant. Only the newest one may ask the user. Main thread only.
     private int mAssistRound;
-    // The wait for the user that's showing, and its dialog. Main thread only.
-    @Nullable
-    private CountDownLatch mAssistantWait;
-    @Nullable
-    private AlertDialog mAssistantDialog;
+    private final AssistantPrompt mAssistantPrompt = new AssistantPrompt();
 
     @Override
     protected void onAuthenticated(@Nullable Bundle savedInstanceState) {
@@ -120,7 +115,7 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
         }
         // A new tap ends the wait for the last one, so that launch gives the assistant back
         ++mAssistRound;
-        endAssistantWait();
+        mAssistantPrompt.end();
         unfreezeAndLaunchActivity(intent);
     }
 
@@ -261,41 +256,10 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
             waitForInteraction.countDown();
             return;
         }
-        endAssistantWait();
-        mAssistantWait = waitForInteraction;
-        try {
-            mAssistantDialog = new MaterialAlertDialogBuilder(this)
-                    .setTitle(R.string.launch_activity_dialog_title)
-                    .setMessage(R.string.launch_activity_shortcut_dialog_message)
-                    .setCancelable(false)
-                    .setOnDismissListener((dialog) -> {
-                        waitForInteraction.countDown();
-                        // A dialog a newer launch replaced leaves this screen open for that one
-                        if (mAssistantWait == waitForInteraction) {
-                            close();
-                        }
-                    })
-                    .setNegativeButton(R.string.close, null)
-                    .show();
-        } catch (RuntimeException e) {
-            Log.w(TAG, "Could not ask for the assistant.", e);
-            waitForInteraction.countDown();
+        // A dialog a newer launch replaces leaves this screen open for that one
+        if (!mAssistantPrompt.show(this, waitForInteraction, R.string.launch_activity_shortcut_dialog_message,
+                this::close)) {
             close();
-        }
-    }
-
-    /** Ends the wait that's showing, if any, without closing this screen. */
-    @MainThread
-    private void endAssistantWait() {
-        CountDownLatch wait = mAssistantWait;
-        AlertDialog dialog = mAssistantDialog;
-        mAssistantWait = null;
-        mAssistantDialog = null;
-        if (dialog != null) {
-            dialog.dismiss();
-        }
-        if (wait != null) {
-            wait.countDown();
         }
     }
 
@@ -304,7 +268,7 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
         // This screen keeps no history, so it's finished as soon as the target opens over it. Its dialog goes with it
         // without calling the dismiss listener, which left the target as the user's assistant for the whole wait.
         ++mAssistRound;
-        endAssistantWait();
+        mAssistantPrompt.end();
         super.onDestroy();
     }
 }

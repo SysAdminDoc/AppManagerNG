@@ -118,6 +118,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
     private com.google.android.material.button.MaterialButton mTrackerBlockInTabButton;
     @Nullable
     private com.google.android.material.button.MaterialButton mComponentGuideButton;
+    private final AssistantPrompt mAssistantPrompt = new AssistantPrompt();
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -229,6 +230,25 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             mSortOrder = viewModel.getSortOrder(mNeededProperty);
             mSearchQuery = viewModel.getSearchQuery();
         }
+    }
+
+    @Override
+    public void onDestroyView() {
+        // The dialog asking for the assistant goes with the screen, on a rotation for one, without calling its
+        // dismiss listener. The activity then stayed the user's assistant for the rest of the 10-minute wait.
+        mAssistantPrompt.end();
+        super.onDestroyView();
+    }
+
+    /** Asks the user to open the assistant, which now points at the activity, unless this screen is gone. */
+    @MainThread
+    @VisibleForTesting
+    void askForTheAssistant(@NonNull Context context, @NonNull CountDownLatch waitForInteraction) {
+        if (getView() == null) {
+            waitForInteraction.countDown();
+            return;
+        }
+        mAssistantPrompt.show(context, waitForInteraction, R.string.launch_activity_dialog_message, null);
     }
 
     @Override
@@ -851,13 +871,8 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                     } else if (componentItem.canLaunchAssist) {
                         ActivityManagerCompat.startActivityViaAssist(ContextUtils.getContext(), cn, () -> {
                             CountDownLatch waitForInteraction = new CountDownLatch(1);
-                            ThreadUtils.postOnMainThread(() -> new MaterialAlertDialogBuilder(holder.itemView.getContext())
-                                    .setTitle(R.string.launch_activity_dialog_title)
-                                    .setMessage(R.string.launch_activity_dialog_message)
-                                    .setCancelable(false)
-                                    .setOnDismissListener((dialog) -> waitForInteraction.countDown())
-                                    .setNegativeButton(R.string.close, null)
-                                    .show());
+                            ThreadUtils.postOnMainThread(() -> askForTheAssistant(holder.itemView.getContext(),
+                                    waitForInteraction));
                             try {
                                 waitForInteraction.await(10, TimeUnit.MINUTES);
                             } catch (InterruptedException ignore) {
