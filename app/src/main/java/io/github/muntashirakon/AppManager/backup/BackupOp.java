@@ -73,7 +73,6 @@ import io.github.muntashirakon.AppManager.utils.BitmapRandomizer;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
-import io.github.muntashirakon.AppManager.utils.FileUtils;
 import io.github.muntashirakon.AppManager.utils.FreezeUtils;
 import io.github.muntashirakon.AppManager.utils.KeyStoreUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
@@ -555,39 +554,12 @@ class BackupOp implements Closeable {
             throw new BackupException("Failed to write master key checksum.", e);
         }
         // Store the KeyStore files
-        Path cachePath = Paths.get(FileUtils.getCachePath());
-        List<String> cachedKeyStoreFileNames = new ArrayList<>();
-        List<String> keyStoreFilters = new ArrayList<>();
-        for (String keyStoreFileName : KeyStoreUtils.getKeyStoreFiles(mApplicationInfo.uid, mUserId)) {
-            try {
-                String newFileName = Utils.replaceOnce(keyStoreFileName, String.valueOf(mApplicationInfo.uid),
-                        String.valueOf(KEYSTORE_PLACEHOLDER));
-                IoUtils.copy(keyStorePath.findFile(keyStoreFileName), cachePath.findOrCreateFile(newFileName, null));
-                cachedKeyStoreFileNames.add(newFileName);
-                keyStoreFilters.add(Pattern.quote(newFileName));
-            } catch (Exception e) {
-                throw new BackupException("Could not cache " + keyStoreFileName, e);
-            }
-        }
-        if (cachedKeyStoreFileNames.isEmpty()) {
-            throw new BackupException("There were some KeyStore items but they couldn't be cached before taking a backup.");
-        }
         String keyStorePrefix = KEYSTORE_PREFIX + getExt(mMetadata.info.tarType);
-        Path[] backedUpKeyStoreFiles;
-        try {
-            backedUpKeyStoreFiles = TarUtils.createDurable(mMetadata.info.tarType, cachePath, mBackupItem.getUnencryptedBackupPath(), keyStorePrefix,
-                            keyStoreFilters.toArray(new String[0]), null, null, false)
-                    .toArray(new Path[0]);
-        } catch (Exception th) {
-            throw new BackupException("Could not backup KeyStore item.", th);
-        }
-        // Remove cache
-        for (String name : cachedKeyStoreFileNames) {
-            try {
-                cachePath.findFile(name).delete();
-            } catch (FileNotFoundException ignore) {
-            }
-        }
+        Path[] backedUpKeyStoreFiles = archiveKeyStoreFiles(keyStorePath,
+                KeyStoreUtils.getKeyStoreFiles(mApplicationInfo.uid, mUserId), mApplicationInfo.uid,
+                (stagingPath, filters) -> TarUtils.createDurable(mMetadata.info.tarType, stagingPath,
+                                mBackupItem.getUnencryptedBackupPath(), keyStorePrefix, filters, null, null, false)
+                        .toArray(new Path[0]));
         try {
             backedUpKeyStoreFiles = mBackupItem.encrypt(backedUpKeyStoreFiles);
         } catch (IOException e) {
@@ -599,6 +571,54 @@ class BackupOp implements Closeable {
             }
         } catch (IOException e) {
             throw new BackupException("Failed to write KeyStore checksums.", e);
+        }
+    }
+
+    @VisibleForTesting
+    interface KeyStoreArchiver {
+        @NonNull
+        Path[] archive(@NonNull Path stagingPath, @NonNull String[] filters) throws Exception;
+    }
+
+    /**
+     * Copy an app's KeyStore entries under the placeholder UID and archive them. The copies are raw
+     * KeyStore entries, so they're staged where no other app can read them and removed whether or not
+     * the archive works.
+     */
+    @VisibleForTesting
+    @NonNull
+    static Path[] archiveKeyStoreFiles(@NonNull Path keyStorePath, @NonNull List<String> keyStoreFileNames,
+                                       int uid, @NonNull KeyStoreArchiver archiver) throws BackupException {
+        Path stagingPath;
+        try {
+            stagingPath = BackupItems.getPrivateUnencryptedPath();
+        } catch (IOException e) {
+            throw new BackupException("Could not create a private folder for the KeyStore items.", e);
+        }
+        try {
+            List<String> keyStoreFilters = new ArrayList<>();
+            for (String keyStoreFileName : keyStoreFileNames) {
+                try {
+                    String newFileName = Utils.replaceOnce(keyStoreFileName, String.valueOf(uid),
+                            String.valueOf(KEYSTORE_PLACEHOLDER));
+                    IoUtils.copy(keyStorePath.findFile(keyStoreFileName), stagingPath.findOrCreateFile(newFileName, null));
+                    keyStoreFilters.add(Pattern.quote(newFileName));
+                } catch (Exception e) {
+                    throw new BackupException("Could not cache " + keyStoreFileName, e);
+                }
+            }
+            if (keyStoreFilters.isEmpty()) {
+                throw new BackupException("There were some KeyStore items but they couldn't be cached before taking a backup.");
+            }
+            try {
+                return archiver.archive(stagingPath, keyStoreFilters.toArray(new String[0]));
+            } catch (Exception th) {
+                throw new BackupException("Could not backup KeyStore item.", th);
+            }
+        } finally {
+            if (!stagingPath.delete()) {
+                Log.w(TAG, "Could not remove the staged KeyStore items in %s", stagingPath);
+            }
         }
     }
 

@@ -23,11 +23,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
+import io.github.muntashirakon.AppManager.backup.struct.BackupMetadataV5;
 import io.github.muntashirakon.AppManager.crypto.Crypto;
 import io.github.muntashirakon.AppManager.self.filecache.FileCache;
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.AppManager.utils.RoboUtils;
+import io.github.muntashirakon.AppManager.utils.TarUtils;
 import io.github.muntashirakon.io.IoUtils;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
@@ -101,6 +105,45 @@ public class EncryptedBackupStagingTest {
         assertFalse(filesUnder(sharedCache).contains(PLAIN_NAME));
     }
 
+    @Test
+    public void anEncryptedBackupWritesItsPlainMetadataOnlyInPrivateStorage() throws IOException {
+        List<String> stagedBefore = namesIn(FileCache.getPrivateStagingDir());
+        BackupItems.BackupItem backupItem = BackupItems.createBackupItemGracefully(0, null, "com.example");
+        RecordingCrypto crypto = new RecordingCrypto();
+        backupItem.setCrypto(crypto);
+        try {
+            Map<String, String> checksums = MetadataManager.writeMetadata(newMetadata(), backupItem);
+
+            assertEquals(1, crypto.plainFiles.size());
+            File plainMetadata = crypto.plainFiles.get(0);
+            assertEquals(MetadataManager.META_V5_FILE, plainMetadata.getName());
+            assertTrue(plainMetadata.getCanonicalPath().startsWith(
+                    FileCache.getPrivateStagingDir().getCanonicalPath() + File.separator));
+            assertFalse(new File(backupItem.getBackupPath().getFilePath(), MetadataManager.META_V5_FILE).exists());
+            assertTrue(checksums.containsKey(MetadataManager.META_V5_FILE + CryptoUtils.getExtension(CryptoUtils.MODE_AES)));
+            assertTrue(checksums.containsKey(MetadataManager.INFO_V5_FILE));
+        } finally {
+            backupItem.cleanup();
+        }
+        assertEquals(stagedBefore, namesIn(FileCache.getPrivateStagingDir()));
+    }
+
+    @NonNull
+    private static BackupMetadataV5 newMetadata() {
+        BackupMetadataV5.Metadata metadata = new BackupMetadataV5.Metadata("test");
+        metadata.label = "Example";
+        metadata.packageName = "com.example";
+        metadata.versionName = "1.0";
+        metadata.versionCode = 1;
+        metadata.apkName = "base.apk";
+        metadata.dataDirs = new String[0];
+        metadata.splitConfigs = new String[0];
+        BackupMetadataV5.Info info = new BackupMetadataV5.Info(System.currentTimeMillis(),
+                new BackupFlags(BackupFlags.BACKUP_APK_FILES | BackupFlags.BACKUP_INT_DATA), 0,
+                TarUtils.TAR_GZIP, DigestUtils.SHA_256, CryptoUtils.MODE_AES, new byte[12], null, null);
+        return new BackupMetadataV5(info, metadata);
+    }
+
     @NonNull
     private static List<String> namesIn(@NonNull File directory) {
         String[] names = directory.list();
@@ -133,6 +176,45 @@ public class EncryptedBackupStagingTest {
     private static void write(@NonNull Path file, @NonNull byte[] contents) throws IOException {
         try (OutputStream os = file.openOutputStream()) {
             os.write(contents);
+        }
+    }
+
+    /** Remembers where each plain file was when it was encrypted. */
+    private static final class RecordingCrypto implements Crypto {
+        final List<File> plainFiles = new ArrayList<>();
+        private final FlipCrypto mFlip = new FlipCrypto();
+
+        @NonNull
+        @Override
+        public String getModeName() {
+            return mFlip.getModeName();
+        }
+
+        @Override
+        public void encrypt(@NonNull Path[] inputFiles, @NonNull Path[] outputFiles) throws IOException {
+            for (Path inputFile : inputFiles) {
+                plainFiles.add(new File(inputFile.getFilePath()));
+            }
+            mFlip.encrypt(inputFiles, outputFiles);
+        }
+
+        @Override
+        public void encrypt(@NonNull InputStream unencryptedStream, @NonNull OutputStream encryptedStream) throws IOException {
+            mFlip.encrypt(unencryptedStream, encryptedStream);
+        }
+
+        @Override
+        public void decrypt(@NonNull Path[] inputFiles, @NonNull Path[] outputFiles) throws IOException {
+            mFlip.decrypt(inputFiles, outputFiles);
+        }
+
+        @Override
+        public void decrypt(@NonNull InputStream encryptedStream, @NonNull OutputStream unencryptedStream) throws IOException {
+            mFlip.decrypt(encryptedStream, unencryptedStream);
+        }
+
+        @Override
+        public void close() {
         }
     }
 

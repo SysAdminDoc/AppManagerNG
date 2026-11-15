@@ -287,7 +287,7 @@ public class BackupItems {
      * written by other apps holding the storage permission up to Android 10.
      */
     @NonNull
-    private static Path getPrivateUnencryptedPath() throws IOException {
+    static Path getPrivateUnencryptedPath() throws IOException {
         File parent = FileCache.getPrivateStagingDir();
         if (!parent.mkdirs() && !parent.isDirectory()) {
             throw new IOException("Could not create " + parent);
@@ -563,8 +563,8 @@ public class BackupItems {
 
         public Path getMetadataV5File(boolean decryptIfRequired) throws IOException {
             if (mBackupMode) {
-                // Needs to be encrypted in backup mode
-                return getBackupPath().findOrCreateFile(MetadataManager.META_V5_FILE, null);
+                // Needs to be encrypted in backup mode, so the plain copy stays in private storage
+                return getUnencryptedBackupPath().findOrCreateFile(MetadataManager.META_V5_FILE, null);
             } else {
                 // Needs to be decrypted in restore mode
                 Path file = getBackupPath().findFile(MetadataManager.META_V5_FILE + CryptoUtils.getExtension(mCryptoMode));
