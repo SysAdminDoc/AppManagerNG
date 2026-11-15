@@ -86,6 +86,9 @@ public class ApkQueueItem implements Parcelable, IJsonSerializer {
     @Nullable
     private String mReviewedSha256;
     private long mReviewedSize = -1;
+    // The reviewed ApkFile took a reference for this item (ApkFile#acquire) that the installer
+    // service releases when it is done. Parceled to the service only, never saved to op history.
+    private boolean mHoldsReviewedFile;
 
     private ApkQueueItem(@NonNull String packageName, boolean installExisting) {
         mPackageName = Objects.requireNonNull(packageName);
@@ -110,6 +113,7 @@ public class ApkQueueItem implements Parcelable, IJsonSerializer {
         in.readStringList(mSelectedSplits);
         mReviewedSha256 = in.readString();
         mReviewedSize = in.readLong();
+        mHoldsReviewedFile = in.readByte() != 0;
     }
 
     @Nullable
@@ -189,6 +193,14 @@ public class ApkQueueItem implements Parcelable, IJsonSerializer {
         return mReviewedSize;
     }
 
+    public void setHoldsReviewedFile(boolean holdsReviewedFile) {
+        mHoldsReviewedFile = holdsReviewedFile;
+    }
+
+    public boolean holdsReviewedFile() {
+        return mHoldsReviewedFile;
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -206,6 +218,7 @@ public class ApkQueueItem implements Parcelable, IJsonSerializer {
         dest.writeStringList(mSelectedSplits);
         dest.writeString(mReviewedSha256);
         dest.writeLong(mReviewedSize);
+        dest.writeByte((byte) (mHoldsReviewedFile ? 1 : 0));
     }
 
     protected ApkQueueItem(@NonNull JSONObject jsonObject) throws JSONException {

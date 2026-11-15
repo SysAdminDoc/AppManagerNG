@@ -126,11 +126,43 @@ public final class ApkFile implements AutoCloseable {
 
     @AnyThread
     static int createInstance(Uri apkUri, @Nullable String mimeType) throws ApkFileException {
+        return register(apkUri, mimeType, false);
+    }
+
+    /**
+     * Opens a package only to show it, such as a file manager thumbnail. A {@code file://} package is
+     * read where it lies, with no private copy and no payload digest, so the result is never something
+     * to review or install from. Close it when done.
+     */
+    @AnyThread
+    @NonNull
+    public static ApkFile openForPreview(@NonNull Uri apkUri, @Nullable String mimeType) throws ApkFileException {
+        synchronized (sApkFiles) {
+            return Objects.requireNonNull(getInstance(register(apkUri, mimeType, true)));
+        }
+    }
+
+    @AnyThread
+    private static int register(@NonNull Uri apkUri, @Nullable String mimeType, boolean preview)
+            throws ApkFileException {
         synchronized (sApkFiles) {
             int key = getUniqueKey();
-            ApkFile apkFile = new ApkFile(apkUri, mimeType, key);
+            ApkFile apkFile = open(apkUri, mimeType, key, preview);
             sApkFiles.put(key, apkFile);
             return key;
+        }
+    }
+
+    @NonNull
+    private static ApkFile open(@NonNull Uri apkUri, @Nullable String mimeType, int key, boolean preview)
+            throws ApkFileException {
+        // A constructor that throws leaves no instance to close, so whatever it staged goes here
+        FileCache fileCache = FileCache.newPrivateSessionCache();
+        try {
+            return new ApkFile(apkUri, mimeType, key, preview, fileCache);
+        } catch (Throwable th) {
+            IoUtils.closeQuietly(fileCache);
+            throw th;
         }
     }
 
@@ -206,7 +238,8 @@ public final class ApkFile implements AutoCloseable {
     @NonNull
     private final List<ZipEntry> mObbFiles = new ArrayList<>();
     // Internal storage: every file read or installed from here must stay the bytes that were reviewed
-    private final FileCache mFileCache = FileCache.newPrivateSessionCache();
+    @NonNull
+    private final FileCache mFileCache;
     @NonNull
     private final File mCacheFilePath;
     // SHA-256 and size of mCacheFilePath, the private copy every later read comes from. Null for an
@@ -218,8 +251,10 @@ public final class ApkFile implements AutoCloseable {
     private ZipFile mZipFile;
     private boolean mClosed;
 
-    private ApkFile(@NonNull Uri apkUri, @Nullable String mimeType, int sparseArrayKey) throws ApkFileException {
+    private ApkFile(@NonNull Uri apkUri, @Nullable String mimeType, int sparseArrayKey, boolean preview,
+                    @NonNull FileCache fileCache) throws ApkFileException {
         mSparseArrayKey = sparseArrayKey;
+        mFileCache = fileCache;
         Context context = ContextUtils.getContext();
         Path apkSource = Paths.get(apkUri);
         @NonNull String extension;
@@ -276,17 +311,17 @@ public final class ApkFile implements AutoCloseable {
                 throw new ApkFileException(e);
             }
         } else {
-            File privateFile = getPrivateLocalFile(context, apkUri);
-            if (privateFile != null) {
-                // Already in storage no other app can write to
-                mCacheFilePath = privateFile;
+            File inPlaceFile = preview ? getLocalFile(apkUri) : getPrivateLocalFile(context, apkUri);
+            if (inPlaceFile != null) {
+                // Already in storage no other app can write to, or only being looked at
+                mCacheFilePath = inPlaceFile;
             } else {
                 // A provider or a shared-storage file can change between reads, so read it once
                 // into a private copy. Review, signer checks and the install all read that copy.
                 mCacheFilePath = stagePrivateCopy(apkSource, extension);
             }
         }
-        if (mPayloadSha256 == null) {
+        if (mPayloadSha256 == null && !preview) {
             recordPayloadDigest(mCacheFilePath);
         }
         String packageName = null;
@@ -408,6 +443,16 @@ public final class ApkFile implements AutoCloseable {
         return null;
     }
 
+    @Nullable
+    private static File getLocalFile(@NonNull Uri uri) {
+        String path = uri.getPath();
+        if (!"file".equals(uri.getScheme()) || path == null) {
+            return null;
+        }
+        File file = new File(path);
+        return file.isFile() ? file : null;
+    }
+
     /**
      * Copies the source into this instance's private cache in one read and records the SHA-256 and
      * size of exactly the bytes written.
@@ -419,7 +464,7 @@ public final class ApkFile implements AutoCloseable {
             staged = mFileCache.createCachedFile(extension);
             long needed = source.length();
             File stagingDir = staged.getParentFile();
-            if (needed > 0 && stagingDir != null && stagingDir.getUsableSpace() < needed) {
+            if (stagingDir != null && !FileCache.makeRoom(stagingDir, needed)) {
                 mFileCache.delete(staged);
                 throw new ApkFileException("Not enough free space to stage the package ("
                         + Formatter.formatShortFileSize(ContextUtils.getContext(), needed) + " needed).");
@@ -631,6 +676,7 @@ public final class ApkFile implements AutoCloseable {
 
     private ApkFile(@NonNull ApplicationInfo info, int sparseArrayKey) throws ApkFileException {
         mSparseArrayKey = sparseArrayKey;
+        mFileCache = FileCache.newPrivateSessionCache();
         mPackageName = info.packageName;
         mContainerType = CONTAINER_INSTALLED_APK_SET;
         mCacheFilePath = new File(info.publicSourceDir);
@@ -784,19 +830,43 @@ public final class ApkFile implements AutoCloseable {
         return mClosed;
     }
 
+    /**
+     * Takes one more reference to this open instance, released by one more {@link #close()}. Lets a
+     * holder outside the creator (a queued install) keep the reviewed package alive after the screen
+     * that opened it moves on. Returns {@code false} once the instance is closed.
+     */
+    @AnyThread
+    public boolean acquire() {
+        synchronized (sApkFiles) {
+            if (mClosed || sApkFiles.get(mSparseArrayKey) != this) {
+                return false;
+            }
+            synchronized (sInstanceCount) {
+                sInstanceCount.put(mSparseArrayKey, sInstanceCount.get(mSparseArrayKey) + 1);
+            }
+            return true;
+        }
+    }
+
     @Override
     public void close() {
-        synchronized (sInstanceCount) {
-            if (sInstanceCount.get(mSparseArrayKey) > 1) {
-                // This isn't the only instance, do not close yet
-                sInstanceCount.put(mSparseArrayKey, sInstanceCount.get(mSparseArrayKey) - 1);
-                return;
+        // Same lock order as getInstance() and acquire(), so neither hands out an instance mid-close.
+        // The count belongs to the registered instance only: a constructor that threw never got its key.
+        synchronized (sApkFiles) {
+            if (sApkFiles.get(mSparseArrayKey) == this) {
+                synchronized (sInstanceCount) {
+                    if (sInstanceCount.get(mSparseArrayKey) > 1) {
+                        // This isn't the only instance, do not close yet
+                        sInstanceCount.put(mSparseArrayKey, sInstanceCount.get(mSparseArrayKey) - 1);
+                        return;
+                    }
+                    // Only this instance remained
+                    sInstanceCount.delete(mSparseArrayKey);
+                }
+                sApkFiles.remove(mSparseArrayKey);
             }
-            // Only this instance remained
-            sInstanceCount.delete(mSparseArrayKey);
+            mClosed = true;
         }
-        mClosed = true;
-        sApkFiles.remove(mSparseArrayKey);
         for (Entry entry : mEntries) {
             entry.close();
         }

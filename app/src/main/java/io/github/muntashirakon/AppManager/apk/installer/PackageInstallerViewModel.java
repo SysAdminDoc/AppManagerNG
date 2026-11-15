@@ -293,6 +293,21 @@ public class PackageInstallerViewModel extends AndroidViewModel {
         return new ArrayList<>(Collections.singletonList(mApkFile.getBaseEntry().id));
     }
 
+    /**
+     * Each queue item resolves its own file, and the one before it is closed here. A queued install
+     * that still needs it took its own reference (ApkFile#acquire), so this close never pulls a file
+     * out from under the installer. Resolving the same file again took another reference too, so the
+     * previous one is closed even when it is the same instance.
+     */
+    @VisibleForTesting
+    void replaceApkFile(@NonNull ApkFile apkFile) {
+        ApkFile previous = mApkFile;
+        mApkFile = apkFile;
+        if (previous != null) {
+            previous.close();
+        }
+    }
+
     private void selectSplit(@NonNull ApkFile.Entry entry, @NonNull HashMap<String, HashSet<Integer>> seenTypes) {
         mSelectedSplits.add(entry.id);
         HashSet<Integer> types = seenTypes.get(entry.getFeature());
@@ -304,7 +319,7 @@ public class PackageInstallerViewModel extends AndroidViewModel {
     }
 
     private void getPackageInfoInternal() throws PackageManager.NameNotFoundException, IOException, ApkFile.ApkFileException {
-        mApkFile = mApkSource.resolve();
+        replaceApkFile(mApkSource.resolve());
         mNewPackageInfo = loadNewPackageInfo();
         mPackageName = mNewPackageInfo.packageName;
         if (ThreadUtils.isInterrupted()) {
@@ -334,7 +349,7 @@ public class PackageInstallerViewModel extends AndroidViewModel {
         mPackageName = packageName;
         mInstalledPackageInfo = loadInstalledPackageInfo(packageName);
         mApkSource = ApkSource.getApkSource(mInstalledPackageInfo.applicationInfo);
-        mApkFile = mApkSource.resolve();
+        replaceApkFile(mApkSource.resolve());
         mNewPackageInfo = loadNewPackageInfo();
         mAppLabel = mPm.getApplicationLabel(mNewPackageInfo.applicationInfo).toString();
         mAppIcon = mPm.getApplicationIcon(mNewPackageInfo.applicationInfo);

@@ -3,10 +3,12 @@
 package io.github.muntashirakon.AppManager.apk;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import android.content.Context;
 import android.net.Uri;
@@ -25,13 +27,18 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import io.github.muntashirakon.AppManager.self.filecache.FileCache;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.io.IoUtils;
+import io.github.muntashirakon.io.Paths;
 
 @RunWith(RobolectricTestRunner.class)
 public class ApkFileStagingTest {
@@ -110,6 +117,84 @@ public class ApkFileStagingTest {
         }
         assertNull(ApkFile.getPrivateLocalFile(context, Uri.parse("content://com.example.provider/own.apk")));
         assertNull(ApkFile.getPrivateLocalFile(context, Uri.fromFile(context.getFilesDir())));
+    }
+
+    @Test
+    public void aPreviewReadsTheFileWhereItLiesWithNoCopy() throws Throwable {
+        File shared = extractBaseApk(temporaryFolder.newFile("preview.apk"));
+        Set<String> stagedBefore = stagedNames();
+
+        ApkFile apkFile = ApkFile.openForPreview(Uri.fromFile(shared), APK_MIME);
+        try {
+            assertEquals(shared.getCanonicalFile(), apkFile.getBaseEntry().getFile(false).getCanonicalFile());
+            // Never something to install from
+            assertNull(apkFile.getPayloadSha256());
+            assertEquals(stagedBefore, stagedNames());
+        } finally {
+            apkFile.close();
+        }
+        assertTrue(apkFile.isClosed());
+        assertTrue(shared.isFile());
+    }
+
+    @Test
+    public void aPackageThatFailsToParseLeavesNothingStaged() throws IOException {
+        File broken = temporaryFolder.newFile("broken.apk");
+        try (OutputStream out = new FileOutputStream(broken)) {
+            out.write("not a package".getBytes());
+        }
+        Set<String> stagedBefore = stagedNames();
+
+        try {
+            ApkFile.createInstance(Uri.fromFile(broken), APK_MIME);
+            fail("A file with no manifest opened");
+        } catch (ApkFile.ApkFileException expected) {
+            // The private copy it made before parsing is gone
+        }
+
+        assertEquals(stagedBefore, stagedNames());
+    }
+
+    @Test
+    public void aCopyInPrivateStagingIsReadInPlaceAndOutlivesACacheTrim() throws Throwable {
+        Context context = ContextUtils.getContext();
+        File shared = extractBaseApk(temporaryFolder.newFile("provider.apk"));
+        File copy = FileCache.copyToPrivateStaging(Paths.get(shared));
+        try {
+            // Inside the data directory, outside the cache the system may trim mid-install
+            File stagingDir = FileCache.getPrivateStagingDir().getCanonicalFile();
+            assertEquals(stagingDir, copy.getParentFile().getCanonicalFile());
+            assertFalse(stagingDir.getPath().startsWith(context.getCacheDir().getCanonicalPath()));
+            assertNotNull(ApkFile.getPrivateLocalFile(context, Uri.fromFile(copy)));
+
+            ApkFile apkFile = open(copy);
+            try {
+                assertEquals(copy.getCanonicalFile(), apkFile.getBaseEntry().getFile(false).getCanonicalFile());
+                assertEquals(sha256(shared), apkFile.getPayloadSha256());
+            } finally {
+                apkFile.close();
+            }
+        } finally {
+            //noinspection ResultOfMethodCallIgnored
+            copy.delete();
+        }
+    }
+
+    @Test
+    public void roomIsOnlyPromisedForWhatTheDiskCanTake() {
+        File stagingDir = FileCache.getPrivateStagingDir();
+        assertTrue(stagingDir.mkdirs() || stagingDir.isDirectory());
+
+        assertTrue(FileCache.makeRoom(stagingDir, 0));
+        assertTrue(FileCache.makeRoom(stagingDir, 1));
+        // No disk holds this much, however much cache the system clears
+        assertFalse(FileCache.makeRoom(stagingDir, Long.MAX_VALUE));
+    }
+
+    @NonNull
+    private static Set<String> stagedNames() {
+        String[] names = FileCache.getPrivateStagingDir().list();
+        return names != null ? new HashSet<>(Arrays.asList(names)) : new HashSet<>();
     }
 
     @NonNull

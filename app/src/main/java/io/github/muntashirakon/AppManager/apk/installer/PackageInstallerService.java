@@ -240,7 +240,7 @@ public class PackageInstallerService extends ForegroundService {
                     // No apk file, abort
                     return;
                 }
-                ApkFile apkFile;
+                ApkFile apkFile = null;
                 try {
                     try {
                         apkFile = apkSource.resolve();
@@ -270,6 +270,10 @@ public class PackageInstallerService extends ForegroundService {
                     }
                     installer.install(apkFile, selectedSplitIds, options, mProgressHandler);
                 } finally {
+                    if (apkFile != null && apkQueueItem.holdsReviewedFile()) {
+                        // The reference the review screen took for this item (ApkFile#acquire)
+                        apkFile.close();
+                    }
                     // Delete the cached file
                     if (apkSource instanceof CachedApkSource) {
                         ((CachedApkSource) apkSource).cleanup();

@@ -21,7 +21,6 @@ import java.util.Map;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.ApkFile;
-import io.github.muntashirakon.AppManager.apk.UriApkSource;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.filecache.FileCache;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
@@ -331,9 +330,8 @@ final class FmIcons {
             return null;
         }
         try {
-            // Load as ApkFile
-            UriApkSource apkSource = new UriApkSource(Uri.fromFile(file.first), path.getType());
-            try (ApkFile apkFile = apkSource.resolve()) {
+            // Load as ApkFile, read in place: a thumbnail needs no private copy of the whole bundle
+            try (ApkFile apkFile = ApkFile.openForPreview(Uri.fromFile(file.first), path.getType())) {
                 ApkFile.Entry baseEntry = apkFile.getBaseEntry();
                 return getApkIcon(baseEntry.getFile(false));
             }

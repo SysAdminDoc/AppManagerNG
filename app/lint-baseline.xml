@@ -1455,23 +1455,12 @@
     <issue
         id="ThreadConstraint"
         message="Call must be from `@WorkerThread`, but super method `ApkSource.resolve(…)` is allowing `@AnyThread`"
-        errorLine1="                mCachedFile = FileCache.getGlobalFileCache().getCachedFile(Paths.get(mUri));"
-        errorLine2="                                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="                mCachedFile = FileCache.copyToPrivateStaging(Paths.get(mUri));"
+        errorLine2="                                                                   ~~~~~~~~~">
         <location
             file="src/main/java/io/github/muntashirakon/AppManager/apk/CachedApkSource.java"
             line="77"
-            column="62"/>
-    </issue>
-
-    <issue
-        id="ThreadConstraint"
-        message="Call must be from `@WorkerThread`, but super method `ApkSource.resolve(…)` is allowing `@AnyThread`"
-        errorLine1="                mCachedFile = FileCache.getGlobalFileCache().getCachedFile(Paths.get(mUri));"
-        errorLine2="                                                                                 ~~~~~~~~~">
-        <location
-            file="src/main/java/io/github/muntashirakon/AppManager/apk/CachedApkSource.java"
-            line="77"
-            column="82"/>
+            column="68"/>
     </issue>
 
     <issue

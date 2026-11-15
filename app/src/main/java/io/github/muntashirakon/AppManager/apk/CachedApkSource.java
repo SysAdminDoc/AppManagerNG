@@ -72,9 +72,9 @@ public class CachedApkSource extends ApkSource {
                 && FmProvider.AUTHORITY.equals(mUri.getAuthority())) {
             mApkFileKey = ApkFile.createInstance(mUri, mMimeType);
         } else {
-            // Need caching
+            // Need caching. One private copy, which ApkFile then reads in place instead of staging again.
             try {
-                mCachedFile = FileCache.getGlobalFileCache().getCachedFile(Paths.get(mUri));
+                mCachedFile = FileCache.copyToPrivateStaging(Paths.get(mUri));
                 mApkFileKey = ApkFile.createInstance(Uri.fromFile(mCachedFile), mMimeType);
             } catch (IOException | SecurityException e) {
                 throw new ApkFile.ApkFileException(e);

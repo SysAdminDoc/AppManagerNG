@@ -71,6 +71,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The Finder doesn't look up each app's APK on disk as you scroll anymore. Whether an app is installed gets read once, while the list loads.
 - Persian showed blank text while backing up an app or installing a package, because those two translations were empty. They fall back to English now, and so do one empty Norwegian string and one Traditional Chinese string.
 - An APK or bundle opened from another app or from shared storage could be swapped for a different file between the install prompt and the install. The installer now copies it once into storage only AppManagerNG can write, and the prompt, the signer check and the install all read that copy. If the file it's about to install isn't the size and SHA-256 you reviewed, it stops and asks you to open the package again. Installing again from history checks the same way, so a file that changed since then won't go in.
+- Installing several packages in a row keeps each reviewed copy open until its own install is done, even after the prompt has moved on to the next package. The prompt also deletes the copies it no longer needs instead of leaving them until the app closes. A package opened from another app is copied once now, not twice, and one that fails to open leaves no copy behind. File manager thumbnails for APK bundles read the bundle where it is without copying it first. When there isn't room for a copy, Android 8 and later are asked to clear cached files before the installer gives up.
 
 ## v0.7.0, 2026-11-08
 
