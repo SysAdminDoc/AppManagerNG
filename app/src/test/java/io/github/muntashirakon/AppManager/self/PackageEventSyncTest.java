@@ -24,6 +24,8 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,6 +35,7 @@ import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.permission.watcher.PermissionWatchDb;
+import io.github.muntashirakon.AppManager.rules.internet.InternetAccess;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 
 @RunWith(RobolectricTestRunner.class)
@@ -212,6 +215,25 @@ public class PackageEventSyncTest {
         PeriodicWorkRequest request = PackageEventSync.buildPeriodicRequest();
         assertEquals(TimeUnit.MINUTES.toMillis(15), request.getWorkSpec().intervalDuration);
         assertEquals(PackageEventSyncWorker.class.getName(), request.getWorkSpec().workerClassName);
+    }
+
+    @Test
+    public void aSavedInternetRuleKeepsTheJob() throws IOException {
+        PermissionWatchDb.setInstanceForTesting(null);
+        mApp.getDatabasePath(PermissionWatchDb.NAME).delete();
+        Prefs.Privacy.setPermissionChangeMonitorEnabled(false);
+        File marker = new File(mApp.getFilesDir(), InternetAccess.RULES_MARKER);
+        try {
+            assertFalse(PackageEventSync.hasListeners(mApp));
+
+            // A reinstall gives a blocked app a new UID, which has to be seen even with AppManagerNG closed
+            assertTrue(marker.createNewFile());
+            PackageEventSync.scheduleOrCancel(mApp);
+
+            assertEquals(Collections.singletonList("schedule"), mSchedule);
+        } finally {
+            marker.delete();
+        }
     }
 
     private void install(@NonNull String packageName, long firstInstallTime, long lastUpdateTime) {

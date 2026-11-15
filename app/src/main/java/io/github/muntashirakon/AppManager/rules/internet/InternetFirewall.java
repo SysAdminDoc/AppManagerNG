@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.rules.internet;
 
+import android.content.Context;
 import android.os.RemoteException;
 
 import androidx.annotation.IntDef;
@@ -11,6 +12,8 @@ import androidx.annotation.Nullable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Objects;
+
+import io.github.muntashirakon.AppManager.R;
 
 /**
  * Turns network access off and on for one UID. Tests swap in a fake.
@@ -57,6 +60,28 @@ public interface InternetFirewall {
         public Unavailable(@Reason int reason, @Nullable String detail) {
             this.reason = reason;
             this.detail = detail;
+        }
+
+        /**
+         * The reason as the end of a sentence, as in "Blocking isn't possible because ...".
+         */
+        @NonNull
+        public String describe(@NonNull Context context) {
+            switch (reason) {
+                case ANDROID_VERSION:
+                    return context.getString(R.string.internet_access_reason_android_version);
+                case NO_PRIVILEGED_MODE:
+                    return context.getString(R.string.internet_access_reason_no_privileged_mode);
+                case NO_PERMISSION:
+                    return context.getString(R.string.internet_access_reason_no_permission);
+                case SHARED_UID:
+                    return context.getString(R.string.internet_access_reason_shared_uid, detail);
+                case PLATFORM:
+                default:
+                    return detail != null
+                            ? context.getString(R.string.internet_access_reason_platform_error, detail)
+                            : context.getString(R.string.internet_access_reason_platform);
+            }
         }
 
         @NonNull

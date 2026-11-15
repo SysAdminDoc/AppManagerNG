@@ -51,6 +51,8 @@ public class RulesImporter implements Closeable {
     private List<String> mPackagesToImport;
     @NonNull
     private final int[] mUserIds;
+    @NonNull
+    private final List<InternetAccess.Status> mInternetRulesNotInForce = new ArrayList<>();
 
     public RulesImporter(@NonNull List<RuleType> typesToImport, @NonNull int[] userIds) {
         if (userIds.length == 0) {
@@ -120,8 +122,17 @@ public class RulesImporter implements Closeable {
         mPackagesToImport = packageNames;
     }
 
+    /**
+     * Internet rules the last {@link #applyRules(boolean)} saved but couldn't put into force, each with the reason.
+     */
+    @NonNull
+    public List<InternetAccess.Status> getInternetRulesNotInForce() {
+        return new ArrayList<>(mInternetRulesNotInForce);
+    }
+
     @WorkerThread
     public void applyRules(boolean commitChanges) {
+        mInternetRulesNotInForce.clear();
         if (mPackagesToImport == null) mPackagesToImport = getPackages();
         for (int userId : mUserIds) {
             for (String packageName : mPackagesToImport) {
@@ -157,7 +168,12 @@ public class RulesImporter implements Closeable {
                 }
                 if (hasInternetRule && commitChanges) {
                     // Outside the rules lock, which putting the rule into force takes again
-                    InternetAccess.apply(packageName, userId);
+                    InternetAccess.Status status = InternetAccess.apply(packageName, userId);
+                    if (!status.inForce) {
+                        Log.w(TAG, "Imported internet rule for %s in user %d isn't in force: %s", packageName,
+                                userId, status);
+                        mInternetRulesNotInForce.add(status);
+                    }
                 }
             }
         }

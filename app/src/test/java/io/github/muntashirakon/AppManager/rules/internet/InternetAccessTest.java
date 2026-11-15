@@ -7,8 +7,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.robolectric.Shadows.shadowOf;
 
 import android.content.Context;
+import android.net.Uri;
 import android.os.RemoteException;
 
 import androidx.annotation.NonNull;
@@ -35,10 +37,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.rules.RuleType;
+import io.github.muntashirakon.AppManager.rules.RulesExporter;
 import io.github.muntashirakon.AppManager.rules.RulesImporter;
 import io.github.muntashirakon.AppManager.rules.RulesStorageManager;
-import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
 import io.github.muntashirakon.AppManager.rules.internet.InternetFirewall.Unavailable;
 import io.github.muntashirakon.AppManager.rules.struct.InternetRule;
@@ -83,7 +86,8 @@ public class InternetAccessTest {
     }
 
     /**
-     * The rules files of the context the code uses, which stays the first test's across tests.
+     * The rules files and the saved-rule marker of the context the code uses, which stays the first test's across
+     * tests.
      */
     private static void deleteRulesFiles() {
         for (String packageName : Arrays.asList(APP, OTHER_APP)) {
@@ -92,6 +96,10 @@ public class InternetAccessTest {
             if (rulesFile != null) {
                 assertTrue(rulesFile.delete());
             }
+        }
+        File marker = new File(ContextUtils.getContext().getFilesDir(), InternetAccess.RULES_MARKER);
+        if (marker.exists()) {
+            assertTrue(marker.delete());
         }
     }
 
@@ -197,7 +205,7 @@ public class InternetAccessTest {
         assertTrue(waiting.blocked);
         assertFalse(waiting.inForce);
         assertEquals(Unavailable.NO_PRIVILEGED_MODE, waiting.unavailable.reason);
-        assertTrue(waiting.canChange());
+        assertFalse(waiting.canChange());
         assertTrue(mFirewall.denied.isEmpty());
         assertNotNull(savedRule(APP, 0));
 
@@ -375,15 +383,138 @@ public class InternetAccessTest {
         assertNull(savedRule(APP, 0));
     }
 
+    @Test
+    public void anImportThatOnlySaysAllowedLeavesOtherBlocksAlone() throws IOException {
+        // Something else, such as the platform's own networking switch, put a deny on the app's UID
+        mFirewall.denied.add(APP_UID);
+        File exported = writeExport(APP + "\t0\tINTERNET\tfalse\t-1\n");
+
+        List<InternetAccess.Status> notInForce = importRulesNotInForce(exported, 0);
+
+        assertTrue(notInForce.isEmpty());
+        assertEquals(Collections.singleton(APP_UID), mFirewall.denied);
+        assertEquals(0, mFirewall.changes);
+        assertNull(savedRule(APP, 0));
+        assertFalse(InternetAccess.mightHaveRules(ContextUtils.getContext()));
+    }
+
+    @Test
+    public void anImportedBlockThatCantBePutIntoForceIsReported() throws IOException {
+        File exported = writeExport(APP + "\t0\tINTERNET\ttrue\t-1\n");
+        mFirewall.unavailable = new Unavailable(Unavailable.NO_PRIVILEGED_MODE, null);
+
+        List<InternetAccess.Status> notInForce = importRulesNotInForce(exported, 0);
+
+        assertEquals(1, notInForce.size());
+        InternetAccess.Status status = notInForce.get(0);
+        assertTrue(status.saved);
+        assertTrue(status.blocked);
+        assertEquals(Unavailable.NO_PRIVILEGED_MODE, status.unavailable.reason);
+        assertTrue(savedRule(APP, 0).isBlocked());
+        assertTrue(mFirewall.denied.isEmpty());
+    }
+
+    @Test
+    public void aSavedRuleKeepsTheAppChangeSyncUntilTheLastOneGoes() {
+        Context context = ContextUtils.getContext();
+        mUids.put(APP + ":10", 1010100);
+        assertFalse(InternetAccess.mightHaveRules(context));
+
+        InternetAccess.setBlocked(APP, 0, true);
+        assertTrue(InternetAccess.mightHaveRules(context));
+        InternetAccess.setBlocked(APP, 10, true);
+
+        InternetAccess.setBlocked(APP, 0, false);
+        assertTrue("user 10 still has a rule", InternetAccess.mightHaveRules(context));
+
+        InternetAccess.setBlocked(APP, 10, false);
+        assertFalse(InternetAccess.mightHaveRules(context));
+    }
+
+    @Test
+    public void anAppChangeIsPutBackInEveryUserWithARule() {
+        Context context = ApplicationProvider.getApplicationContext();
+        mUids.put(APP + ":10", 1010100);
+        InternetAccess.setBlocked(APP, 0, true);
+        InternetAccess.setBlocked(APP, 10, true);
+
+        InternetAccess.applySoonInEveryUser(context, APP);
+        InternetAccess.applySoonInEveryUser(context, OTHER_APP);
+
+        assertEquals(2, mEnqueued.size());
+        assertEquals(new HashSet<>(Arrays.asList("internet_rules_package:" + APP + ":0",
+                "internet_rules_package:" + APP + ":10")), new HashSet<>(mEnqueued));
+    }
+
+    @Test
+    public void aRomWithoutTheFirewallCallsReadsAsAPlatformError() {
+        mFirewall.linkageError = new NoSuchMethodError("setUidFirewallRule");
+
+        InternetAccess.Status status = InternetAccess.setBlocked(APP, 0, true);
+
+        assertFalse(status.inForce);
+        assertEquals(new Unavailable(Unavailable.PLATFORM, "setUidFirewallRule"), status.unavailable);
+        assertTrue(status.canChange());
+        assertTrue(savedRule(APP, 0).isBlocked());
+    }
+
+    @Test
+    public void aSavedRuleCanOnlyBeChangedWhileTheFirewallAnswers() {
+        assertFalse(waitingFor(Unavailable.NO_PRIVILEGED_MODE).canChange());
+        assertFalse(waitingFor(Unavailable.NO_PERMISSION).canChange());
+        assertFalse(waitingFor(Unavailable.ANDROID_VERSION).canChange());
+        assertTrue(waitingFor(Unavailable.PLATFORM).canChange());
+        assertTrue(waitingFor(Unavailable.SHARED_UID).canChange());
+        assertFalse("a new rule needs a firewall that works", new InternetAccess.Status(false, false, true,
+                new Unavailable(Unavailable.PLATFORM, null)).canChange());
+    }
+
+    @Test
+    public void eachStatusSaysWhereTheBlockStands() {
+        Context context = ContextUtils.getContext();
+        String noPrivilegedMode = new Unavailable(Unavailable.NO_PRIVILEGED_MODE, null).describe(context);
+        String platform = new Unavailable(Unavailable.PLATFORM, null).describe(context);
+
+        assertNull(new InternetAccess.Status(false, false, true, null).describe(context));
+        assertEquals(context.getString(R.string.internet_access_unavailable, noPrivilegedMode),
+                new InternetAccess.Status(false, false, true,
+                        new Unavailable(Unavailable.NO_PRIVILEGED_MODE, null)).describe(context));
+        assertEquals(context.getString(R.string.internet_access_unknown, noPrivilegedMode),
+                waitingFor(Unavailable.NO_PRIVILEGED_MODE).describe(context));
+        assertEquals(context.getString(R.string.internet_access_not_in_force, platform),
+                waitingFor(Unavailable.PLATFORM).describe(context));
+        assertEquals(context.getString(R.string.internet_access_waiting_for_install),
+                new InternetAccess.Status(true, true, false, null).describe(context));
+        assertEquals(context.getString(R.string.internet_access_blocked),
+                new InternetAccess.Status(true, true, true, null).describe(context));
+    }
+
+    @NonNull
+    private static InternetAccess.Status waitingFor(int reason) {
+        return new InternetAccess.Status(true, true, false, new Unavailable(reason, null));
+    }
+
     /** What the rules exporter writes for one package and user. */
     @NonNull
     private static String export(@NonNull String packageName, int userId) throws IOException {
+        Uri uri = Uri.parse("content://internet-access-test/export");
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try (ComponentsBlocker cb = ComponentsBlocker.getInstance(packageName, userId)) {
-            ComponentUtils.storeRules(out, InternetRule.withoutOtherUsers(
-                    cb.getAll(Collections.singletonList(RuleType.INTERNET)), userId), true);
-        }
+        // Robolectric hands back a stream that keeps nothing for a URI nobody registered
+        shadowOf(ContextUtils.getContext().getContentResolver()).registerOutputStream(uri, out);
+        new RulesExporter(Collections.singletonList(RuleType.INTERNET), Collections.singletonList(packageName),
+                new int[]{userId}).saveRules(uri);
         return out.toString("UTF-8");
+    }
+
+    @NonNull
+    private static List<InternetAccess.Status> importRulesNotInForce(@NonNull File file, int userId)
+            throws IOException {
+        try (RulesImporter importer = new RulesImporter(Collections.singletonList(RuleType.INTERNET),
+                new int[]{userId})) {
+            importer.addRulesFromPath(Paths.get(file));
+            importer.applyRules(true);
+            return importer.getInternetRulesNotInForce();
+        }
     }
 
     @NonNull
@@ -420,6 +551,9 @@ public class InternetAccessTest {
         boolean remoteFailure;
         @Nullable
         RuntimeException failure;
+        /** A ROM without the hidden calls fails when they're linked. */
+        @Nullable
+        LinkageError linkageError;
         int changes;
 
         @Nullable
@@ -438,6 +572,7 @@ public class InternetAccessTest {
             ++changes;
             if (remoteFailure) throw new RemoteException("Binder died");
             if (failure != null) throw failure;
+            if (linkageError != null) throw linkageError;
             if (dropRules) return;
             if (deny) denied.add(uid);
             else denied.remove(uid);

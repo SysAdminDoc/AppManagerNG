@@ -136,7 +136,7 @@ public final class PackageEventSync {
                 Log.w(TAG, "Could not check whether %s came back.", e, packageName);
             }
             checkWatchedPermissions(context, packageName, userId);
-            applyInternetRule(context, packageName, userId);
+            applyInternetRule(context, packageName);
             enqueueRoutines(context, ProfileTrigger.TYPE_ON_APP_INSTALL, packageName);
         }
 
@@ -145,7 +145,7 @@ public final class PackageEventSync {
             // An update can reset what the user set, so watched permissions are checked whatever the monitors say.
             checkWatchedPermissions(context, packageName, userId);
             // An update can move the app to a new UID
-            applyInternetRule(context, packageName, userId);
+            applyInternetRule(context, packageName);
             runUpdateMonitors(context, packageName);
             enqueueRoutines(context, ProfileTrigger.TYPE_ON_APP_UPDATE, packageName);
         }
@@ -153,7 +153,7 @@ public final class PackageEventSync {
         @Override
         public void onRemoved(@NonNull Context context, @NonNull String packageName, int userId) {
             // Its UID can go to the next app installed, which mustn't inherit the block
-            applyInternetRule(context, packageName, userId);
+            applyInternetRule(context, packageName);
             enqueueRoutines(context, ProfileTrigger.TYPE_ON_APP_UNINSTALL, packageName);
         }
     };
@@ -306,6 +306,10 @@ public final class PackageEventSync {
             return true;
         }
         if (PermissionWatchDb.mightHaveRules(context)) {
+            return true;
+        }
+        if (InternetAccess.mightHaveRules(context)) {
+            // A reinstall moves a blocked app to a new UID, which has to be blocked again
             return true;
         }
         try {
@@ -480,9 +484,10 @@ public final class PackageEventSync {
         }
     }
 
-    private static void applyInternetRule(@NonNull Context context, @NonNull String packageName, int userId) {
+    private static void applyInternetRule(@NonNull Context context, @NonNull String packageName) {
         try {
-            InternetAccess.applySoon(context, packageName, userId);
+            // The app ID is shared by every user, so a change seen here moves the app's UID in the others too
+            InternetAccess.applySoonInEveryUser(context, packageName);
         } catch (Exception e) {
             Log.w(TAG, "Could not put back the internet rule of %s.", e, packageName);
         }

@@ -57,6 +57,7 @@ import io.github.muntashirakon.AppManager.progress.ProgressHandler;
 import io.github.muntashirakon.AppManager.rules.PseudoRules;
 import io.github.muntashirakon.AppManager.rules.RuleType;
 import io.github.muntashirakon.AppManager.rules.RulesImporter;
+import io.github.muntashirakon.AppManager.rules.internet.InternetAccess;
 import io.github.muntashirakon.AppManager.rules.struct.AppOpRule;
 import io.github.muntashirakon.AppManager.rules.struct.FreezeRule;
 import io.github.muntashirakon.AppManager.rules.struct.MagiskDenyListRule;
@@ -1202,6 +1203,14 @@ class RestoreOp implements Closeable {
             importer.addRulesFromPath(rulesFile);
             importer.setPackagesToImport(Collections.singletonList(mPackageName));
             importer.applyRules(true);
+            Context context = ContextUtils.getContext();
+            for (InternetAccess.Status status : importer.getInternetRulesNotInForce()) {
+                // The block is saved, but the app can go online until it's in force
+                String detail = status.describe(context);
+                if (detail != null) {
+                    addRestoreExtraWarning(context.getString(R.string.restore_internet_rule_warning, detail));
+                }
+            }
         } catch (IOException e) {
             throw new BackupException("Failed to restore rules file.", e);
         }

@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.RemoteException;
 
+import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
@@ -16,14 +17,18 @@ import androidx.work.ExistingWorkPolicy;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
+import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.rules.RulesStorageManager;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
 import io.github.muntashirakon.AppManager.rules.internet.InternetFirewall.Unavailable;
 import io.github.muntashirakon.AppManager.rules.struct.InternetRule;
+import io.github.muntashirakon.AppManager.self.PackageEventSync;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 
 /**
@@ -39,6 +44,9 @@ public final class InternetAccess {
     static final String ALL_RULES_WORK_NAME = "internet_rules_all";
     @VisibleForTesting
     static final String PACKAGE_WORK_PREFIX = "internet_rules_package:";
+    /** A file in the app's files folder that exists while an internet rule may be saved. */
+    @VisibleForTesting
+    public static final String RULES_MARKER = "internet_rules";
 
     /** Firewall changes and the rule writes that go with them happen one at a time. */
     private static final Object LOCK = new Object();
@@ -57,8 +65,10 @@ public final class InternetAccess {
 
     private static final UidResolver PACKAGE_MANAGER_UIDS = (packageName, userId) -> {
         try {
-            // A disabled app keeps its UID, so its rule stays on
+            // A disabled or hidden (frozen) app keeps its UID, so its rule stays on. Without
+            // MATCH_UNINSTALLED_PACKAGES a hidden app reads as gone and its block would be let go.
             return PackageManagerCompat.getApplicationInfo(packageName, PackageManagerCompat.MATCH_DISABLED_COMPONENTS
+                    | PackageManagerCompat.MATCH_UNINSTALLED_PACKAGES
                     | PackageManagerCompat.MATCH_STATIC_SHARED_AND_SDK_LIBRARIES, userId).uid;
         } catch (PackageManager.NameNotFoundException e) {
             return InternetRule.NO_UID;
@@ -122,11 +132,42 @@ public final class InternetAccess {
         }
 
         /**
-         * A saved wish can always be changed, so a rule that can't take effect can still be taken back. A new one
-         * needs a firewall that works.
+         * Whether the switch can be used. A new wish needs a firewall that works. A saved one can also be changed
+         * when the firewall answered but didn't do what it was asked, or when a shared UID holds it back. Without
+         * a privileged mode nothing can be read or changed, so the switch is off until one is running.
          */
         public boolean canChange() {
-            return saved || unavailable == null;
+            if (unavailable == null) {
+                return true;
+            }
+            return saved && (unavailable.reason == Unavailable.SHARED_UID || unavailable.reason == Unavailable.PLATFORM);
+        }
+
+        /**
+         * The line shown under the app's INTERNET row, or {@code null} when the app simply has its access.
+         */
+        @Nullable
+        public String describe(@NonNull Context context) {
+            if (unavailable != null) {
+                String reason = unavailable.describe(context);
+                if (!saved) {
+                    return context.getString(R.string.internet_access_unavailable, reason);
+                }
+                if (unavailable.reason == Unavailable.NO_PRIVILEGED_MODE
+                        || unavailable.reason == Unavailable.NO_PERMISSION) {
+                    // The kernel may still hold a block made before the privileged mode went away
+                    return context.getString(R.string.internet_access_unknown, reason);
+                }
+                return context.getString(R.string.internet_access_not_in_force, reason);
+            }
+            if (!saved) {
+                return null;
+            }
+            if (!inForce) {
+                return context.getString(R.string.internet_access_waiting_for_install);
+            }
+            // A restart clears the firewall, and the app is online until the rule is back
+            return blocked ? context.getString(R.string.internet_access_blocked) : null;
         }
 
         @NonNull
@@ -158,7 +199,11 @@ public final class InternetAccess {
                     file.setInternetRule(new InternetRule(packageName, userId, blocked, uid));
                 }
             }
-            return apply(packageName, userId);
+            Status status = apply(packageName, userId);
+            if (!status.saved) {
+                forgetMarkerIfNoRules();
+            }
+            return status;
         }
     }
 
@@ -176,6 +221,13 @@ public final class InternetAccess {
                 return new Status(false, false, true, unavailable);
             }
             boolean blocked = rule.isBlocked();
+            if (!blocked && rule.getUid() == InternetRule.NO_UID) {
+                // Nothing was put on a UID for this rule, as with an import that only says allowed. There's nothing
+                // to lift, and a deny that something else put on the app's UID is left alone.
+                replaceIfUnchanged(rule, null);
+                return new Status(false, false, true, unavailable);
+            }
+            noteRuleSaved();
             if (unavailable != null) {
                 return new Status(true, blocked, false, unavailable);
             }
@@ -230,10 +282,10 @@ public final class InternetAccess {
                 Log.w(TAG, "The privileged mode went away while changing %s", e, packageName);
                 return new Status(true, blocked, false, new Unavailable(Unavailable.NO_PRIVILEGED_MODE,
                         e.getMessage()));
-            } catch (RuntimeException e) {
+            } catch (RuntimeException | LinkageError e) {
+                // LinkageError: a ROM without the hidden firewall calls
                 Log.w(TAG, "The firewall failed for %s", e, packageName);
-                return new Status(true, blocked, false, new Unavailable(Unavailable.PLATFORM,
-                        String.valueOf(e.getMessage())));
+                return new Status(true, blocked, false, new Unavailable(Unavailable.PLATFORM, e.getMessage()));
             }
         }
     }
@@ -266,6 +318,63 @@ public final class InternetAccess {
             return;
         }
         sWorkSink.enqueue(context, uniqueWorkName(packageName, userId), buildRequest(packageName, userId));
+    }
+
+    /**
+     * Asks for the app's rule to be put back in every user that has one. An install, update or removal seen in one
+     * user can move the app to a new app ID, and with it the UID it has in every other user.
+     */
+    @WorkerThread
+    public static void applySoonInEveryUser(@NonNull Context context, @NonNull String packageName) {
+        for (InternetRule rule : readRules(packageName)) {
+            int userId = rule.getUserId();
+            sWorkSink.enqueue(context, uniqueWorkName(packageName, userId), buildRequest(packageName, userId));
+        }
+    }
+
+    /**
+     * Whether an internet rule may be saved, read without opening every rules file, so it's fine on the main
+     * thread. The app change sync stays scheduled while this is true.
+     */
+    @AnyThread
+    public static boolean mightHaveRules(@NonNull Context context) {
+        return new File(context.getFilesDir(), RULES_MARKER).exists();
+    }
+
+    /**
+     * Drops the marker once no rule is left, so the app change sync can stop if nothing else needs it.
+     */
+    @WorkerThread
+    static void forgetMarkerIfNoRules() {
+        Context context = ContextUtils.getContext();
+        File marker = new File(context.getFilesDir(), RULES_MARKER);
+        if (marker.exists() && !hasAnyRule() && marker.delete()) {
+            rescheduleAppChangeSync(context);
+        }
+    }
+
+    private static void noteRuleSaved() {
+        Context context = ContextUtils.getContext();
+        File marker = new File(context.getFilesDir(), RULES_MARKER);
+        if (marker.exists()) {
+            return;
+        }
+        try {
+            if (marker.createNewFile()) {
+                // Installs and updates have to be seen while AppManagerNG isn't running, or a new UID goes unblocked
+                rescheduleAppChangeSync(context);
+            }
+        } catch (IOException e) {
+            Log.w(TAG, "Could not note that an internet rule is saved.", e);
+        }
+    }
+
+    private static void rescheduleAppChangeSync(@NonNull Context context) {
+        try {
+            PackageEventSync.scheduleOrCancel(context);
+        } catch (RuntimeException e) {
+            Log.w(TAG, "Could not update the app change sync.", e);
+        }
     }
 
     @WorkerThread

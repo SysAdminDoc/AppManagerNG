@@ -18,6 +18,10 @@ import io.github.muntashirakon.AppManager.users.Users;
 /**
  * Android's own per-UID firewall, on the third OEM deny chain. A UID on a deny chain gets no network while the chain
  * is on. Rules live in the kernel, so they're gone after a restart and have to be put back.
+ * <p>
+ * The chain is shared. The platform's own {@code cmd connectivity set-package-networking-enabled} and
+ * {@code set-chain3-enabled} use it too, so turning it on also brings back any deny they left on a UID while it was
+ * off, and turning it off would lift theirs. That's why this class never turns it off.
  */
 final class PlatformInternetFirewall implements InternetFirewall {
     // Only read on Android 14 and later, where every call below checks first

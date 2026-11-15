@@ -1850,6 +1850,7 @@
     <string name="restore_api_risk_scoped_storage">Scoped storage enforcement changed between these versions — file paths in the backup may not resolve.</string>
     <string name="restore_api_risk_runtime_permissions">The runtime permission model changed between these versions — permission grants in the backup may not apply.</string>
     <string name="restore_api_risk_package_visibility">Package visibility filtering changed between these versions — cross-app references in the backup may not resolve.</string>
+    <string name="restore_internet_rule_warning">Internet block: <xliff:g id="status" example="Saved, but not in force because it needs Android 14 or later.">%1$s</xliff:g></string>
     <string name="restore_legacy_gcm_integrity_warning">This encrypted backup uses a legacy 32-bit GCM authentication tag. Its ciphertext integrity is weak; re-create the backup after restore to upgrade to 128-bit authentication.</string>
     <string name="backup_rules_description">Back up rules configured within AppManagerNG. <b>Warning:</b> Depending on the permissions, not all rules can be reapplied during restore.</string>
     <string name="backup_system_data">System data</string>
@@ -4914,8 +4915,9 @@ Components removed: %8$s</string>
     <string name="apps_db_upgrade_skipped_text">AppManagerNG needs to update its saved notes, history and favorites, but couldn\'t copy them somewhere safe first, so it left them untouched. Changes you make now are lost when the app closes. Freeing up some storage may help.</string>
     <string name="apps_db_open_failing_text">AppManagerNG couldn\'t open its saved notes, history and favorites the last three times it started. Nothing was deleted. Freeing up some storage or restarting the phone may fix it.</string>
     <string name="internet_access">Internet access</string>
-    <string name="internet_access_blocked">Blocked. After a restart the app can go online again until AppManagerNG puts the block back.</string>
-    <string name="internet_access_not_in_force">Saved, but not in force yet because %1$s.</string>
+    <string name="internet_access_blocked">Blocked. A restart lifts the block until AppManagerNG puts it back, which it can only do once root, ADB or Shizuku is running.</string>
+    <string name="internet_access_not_in_force">Saved, but not in force because %1$s.</string>
+    <string name="internet_access_unknown">Saved. AppManagerNG can\'t tell whether it\'s in force because %1$s.</string>
     <string name="internet_access_unavailable">Blocking isn\'t possible because %1$s.</string>
     <string name="internet_access_waiting_for_install">Saved. It goes into force once the app is installed in this user.</string>
     <string name="internet_access_change_failed">Couldn\'t change internet access</string>

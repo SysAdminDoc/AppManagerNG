@@ -1117,7 +1117,7 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Why: the INTERNET switch on the Permissions tab is covered by host tests against a fake firewall only. Nothing has run it against a real `FIREWALL_CHAIN_OEM_DENY_3` yet.
   Evidence: `rules/internet/PlatformInternetFirewall.java` calls `ConnectivityManager` hidden firewall methods that only exist on Android 14 and later; `rules/internet/InternetAccessTest.java` fakes them.
   Touches: an S22 or S25 on Android 14 or later, in root or ADB mode, with any app that loads a web page.
-  Acceptance: WHEN the INTERNET switch is turned off for an app on an Android 14+ phone in root or ADB mode, the app SHALL fail to connect and the row SHALL read Blocked; WHEN the phone restarts, the app SHALL be cut off again once `BOOT_COMPLETED` runs; WHEN the switch is turned back on, the app SHALL connect again; WHEN no privileged mode is running, the switch SHALL be disabled with the reason under it. Screenshots of the row in each state go with the result.
+  Acceptance: WHEN the INTERNET switch is turned off for an app on an Android 14+ phone in root or ADB mode, the app SHALL fail to connect and the row SHALL read Blocked; WHEN the phone restarts, the app SHALL be cut off again once `BOOT_COMPLETED` runs; WHEN the switch is turned back on, the app SHALL connect again; WHEN no privileged mode is running, the switch SHALL be disabled with the reason under it; WHEN the app is reinstalled while AppManagerNG is closed, the block SHALL be on its new UID within about 15 minutes. Screenshots of the row in each state go with the result.
   Complexity: S
 
 ### P2
@@ -1136,6 +1136,27 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Evidence: `rules/internet/InternetAccess.java` `findOtherBlockedRule` and the `SHARED_UID` reason; `details/AppDetailsViewModel.java` reads only the app's own rule.
   Touches: `rules/internet/InternetAccess.java`, `details/AppDetailsPermissionsFragment.java`, `rules/internet/InternetAccessTest.java`.
   Acceptance: WHEN an app without its own rule shares a UID with an app whose block is in force, its INTERNET row SHALL say which app's block cuts it off; a test SHALL cover it.
+  Complexity: S
+
+- [ ] P3: Notice app changes made only in another user
+  Why: the app change sync compares the installed apps of the user AppManagerNG runs in. An app that lives only in another user (a work profile, a second user) and is removed and installed again there gets a new app ID, and its internet block stays on the old UID until something else puts it back.
+  Evidence: `self/PackageEventSync.java` lists packages for `UserHandleHidden.myUserId()` only; `rules/internet/InternetAccess.java` `applySoonInEveryUser` covers every user only once a change is seen.
+  Touches: `self/PackageEventSync.java`, `self/PackageEventSyncTest.java`.
+  Acceptance: WHEN an app with an internet rule exists only in another user and gets a new UID there, the system SHALL put the block on the new UID within one sync; a test SHALL cover a package seen only in user 10.
+  Complexity: M
+
+- [ ] P3: Test a restore's internet rule warning end to end
+  Why: a restore that saves an internet block it can't put into force adds a warning, but only the importer's list behind it is tested. No test runs a backup with an INTERNET row through `RestoreOp`.
+  Evidence: `backup/RestoreOp.java` `restoreRules` adds `restore_internet_rule_warning`; the test backups under `app/src/test/resources/backups/` hold no rules file, and `InternetAccess.setFirewallForTesting` is package private.
+  Touches: `backup/RestoreOp.java`, `backup/BackupManagerTest.java`, a test backup with a rules file.
+  Acceptance: WHEN a backup holding a blocked INTERNET rule is restored with no privileged mode running, the restore SHALL finish with one warning naming the reason; a test SHALL check it.
+  Complexity: S
+
+- [ ] P3: Test the paths that put internet rules back
+  Why: the boot receiver, the privileged mode coming up and the rule worker are what put blocks back after a restart, and none of them has a test. A broken hook there leaves every app online after a restart with nothing failing.
+  Evidence: `rules/internet/InternetRuleWorker.java` (now `Ops.startUnattended`), the `applySoon(context, null, 0)` call in `self/BootReceiver.java` and the `applyAll` call in `ipc/LocalServices.java` when the privileged mode binds have no test calling them.
+  Touches: `rules/internet/InternetRuleWorker.java`, `self/BootReceiver.java`, `ipc/LocalServices.java`, new tests.
+  Acceptance: WHEN the phone finishes booting, the system SHALL enqueue the all-rules work; WHEN the privileged mode binds, the system SHALL put every saved rule back; WHEN the worker runs with no rules saved, it SHALL not start a privileged mode; tests SHALL cover all three.
   Complexity: S
 
 - [ ] P3: Lock the rules file across users

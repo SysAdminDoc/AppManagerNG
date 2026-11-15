@@ -29,9 +29,11 @@ public class InternetRuleWorker extends Worker {
         int userId = getInputData().getInt(INPUT_USER, 0);
         // Don't bring up root or ADB after every restart for nothing
         if (packageName == null && !InternetAccess.hasAnyRule()) {
+            InternetAccess.forgetMarkerIfNoRules();
             return Result.success();
         }
-        int status = Ops.init(getApplicationContext(), false);
+        // Nobody is there to answer a prompt. This also reconnects wireless debugging, as after a restart.
+        int status = Ops.startUnattended(getApplicationContext());
         if (status != Ops.STATUS_SUCCESS) {
             // Binding the privileged mode later puts every rule back
             Log.w(TAG, "Privileged mode isn't ready (%d), so internet rules wait for it.", status);

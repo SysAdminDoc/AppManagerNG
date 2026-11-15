@@ -141,6 +141,7 @@ public class AppDetailsViewModel extends AndroidViewModel {
     private final PackageManager mPackageManager;
     private final Object mBlockerLocker = new Object();
     private final ExecutorService mExecutor = Executors.newFixedThreadPool(4);
+    private final Object mInternetToggleLock = new Object();
     private final CountDownLatch mPackageInfoWatcher = new CountDownLatch(1);
     private final MutableLiveData<PackageInfo> mPackageInfoLiveData = new MutableLiveData<>();
     private final MutableLiveData<Boolean> mTagsAlteredLiveData = new MutableLiveData<>();
@@ -302,13 +303,16 @@ public class AppDetailsViewModel extends AndroidViewModel {
     @AnyThread
     public void toggleInternetAccessAsync(@AppDetailsFragment.Property int property,
                                           @NonNull AppDetailsPermissionItem item) {
-        InternetAccess.Status current = item.internetAccess;
         String packageName = mPackageName;
-        if (current == null || packageName == null) return;
+        if (item.internetAccess == null || packageName == null) return;
         int userId = mUserId;
         mExecutor.execute(() -> {
             try {
-                item.internetAccess = InternetAccess.setBlocked(packageName, userId, !current.blocked);
+                // One flip at a time, each from where the last one left it, so a double tap flips twice
+                synchronized (mInternetToggleLock) {
+                    InternetAccess.Status current = item.internetAccess;
+                    item.internetAccess = InternetAccess.setBlocked(packageName, userId, !current.blocked);
+                }
                 mPermOpResultLiveData.postValue(PermOpResult.successWithItem(property, item));
             } catch (Exception e) {
                 Log.e(TAG, "Could not change internet access of %s.", e, packageName);
