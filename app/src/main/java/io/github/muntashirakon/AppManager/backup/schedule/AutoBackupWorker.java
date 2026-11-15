@@ -9,6 +9,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Build;
 import android.text.format.DateUtils;
 import android.text.format.Formatter;
@@ -119,6 +121,42 @@ public class AutoBackupWorker extends Worker {
             AutoBackupScheduler.refreshDiagnostics(context);
             return Result.success();
         }
+        if (!manual && !hasUsableNetwork(context, Prefs.BackupRestore.getScheduledBackupNetworkType())) {
+            // Nothing is recorded: the last run stays the last one that ran.
+            Log.i(TAG, "Scheduled auto-backup is waiting for a network it can use");
+            return Result.retry();
+        }
+        return runBackup(context, manual, origin);
+    }
+
+    /**
+     * Whether a scheduled run may start under its network setting. WorkManager 2.10.5 lets the
+     * network constraint pass on Android 15 and later while the network is blocked for this app
+     * (b/465016918 and b/452081708, fixed in 2.11.1, which needs minSdk 23), so the run checks
+     * for itself there. Earlier versions rely on the constraint as before.
+     */
+    @VisibleForTesting
+    @SuppressWarnings("deprecation") // NetworkInfo is what reports the block for this app
+    static boolean hasUsableNetwork(@NonNull Context context, int networkType) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM
+                || AutoBackupScheduler.sanitizeNetworkType(networkType) == AutoBackupScheduler.NETWORK_NOT_REQUIRED) {
+            return true;
+        }
+        ConnectivityManager cm = ContextCompat.getSystemService(context, ConnectivityManager.class);
+        if (cm == null) {
+            return true;
+        }
+        NetworkInfo info = cm.getActiveNetworkInfo();
+        return info != null && info.isConnected();
+    }
+
+    /**
+     * Runs one backup in the single run slot. Split from {@link #doWork()} so a test can count
+     * the runs that get past the checks before it.
+     */
+    @VisibleForTesting
+    @NonNull
+    Result runBackup(@NonNull Context context, boolean manual, @NonNull String origin) {
         if (!claimRun(origin)) {
             // Another auto-backup run is already in flight. Skip the manual one; reschedule the
             // periodic one so its due packages still get backed up once the current run finishes.

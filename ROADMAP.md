@@ -422,13 +422,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
 
 ### P1
 
-- [ ] P1: Stabilize scheduled backup work on Android 15 and later
-  Why: WorkManager 2.10.5 retains connectivity and periodic-work defects fixed in 2.11.1 and 2.11.2, while taking 2.11 directly would raise its minimum SDK from 21 to 23.
-  Evidence: AndroidX WorkManager release notes; AndroidX version ledger; the pinned version in `versions.gradle`; scheduled backup workers and network-backed SAF support.
-  Touches: backup scheduling, worker constraints, connectivity observation, WorkManager patch or app-owned gate, API-floor policy, API 21 and API 35 through 37 tests.
-  Acceptance: a reproduction test first proves the affected behavior on WorkManager 2.10.5; the chosen fix retains minSdk 21 and is limited to the confirmed Android 15 or later path; a scheduled network-backed backup waits for usable connectivity, runs once after connectivity returns, and retains its next period after process death or reboot; API 21 scheduling remains unchanged; the dependency decision and upstream fix reference are recorded.
-  Complexity: L
-
 - [ ] P1: Reconcile persisted SAF grants when backup destinations change
   Why: selecting a new backup or restore destination takes another persistable URI grant but never releases an abandoned one, eventually consuming Android's finite per-app grant pool.
   Evidence: Android Storage Access Framework documentation; AOSP `UriGrantsManagerService`; `settings/BackupRestorePreferences.java:111,131,151`; current destination preference storage.
@@ -1178,4 +1171,15 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Evidence: `rules/RulesStorageManager.java` builds its lock key from the package name plus the user id, and `getDesiredFile` names the file by package only. Predates the INTERNET rule, which made it reachable from boot and install work as well.
   Touches: `rules/RulesStorageManager.java`, a concurrency test.
   Acceptance: WHEN two users' rules for one package are edited at the same time, the system SHALL keep both changes; a test SHALL run two edits on separate threads and find both rules in the file.
+  Complexity: S
+
+## Found While Stabilizing Scheduled Backups (2026-11-15)
+
+### P2
+
+- [ ] P2: Keep periodic workers scheduled after an uncaught error
+  Why: on WorkManager 2.10.5 a periodic worker that throws ends FAILED and never runs again (b/443879071, fixed in 2.11.2, which needs minSdk 23). AutoBackupWorker, OpHistoryPruneWorker, PermissionWatchWorker and RoutineWorker catch Exception at most and PackageEventSyncWorker catches nothing, so an Error such as an OutOfMemoryError, or a LinkageError on a vendor build, ends that schedule. The scheduled backup only comes back when its settings change.
+  Evidence: WorkManager 2.11.2 release notes; `backup/schedule/AutoBackupScheduler.java` is scheduled only from `BackupRestorePreferences`; the five workers' `doWork`.
+  Touches: the five periodic workers, a shared base or helper, a test on the WorkManager harness in `ScheduledBackupNetworkTest`.
+  Acceptance: a test first shows a periodic worker that throws ends FAILED on 2.10.5; WHEN any of the five periodic workers throws, the system SHALL log it and keep the work ENQUEUED with its period; a test SHALL cover each worker.
   Complexity: S
