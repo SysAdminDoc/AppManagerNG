@@ -1,118 +1,118 @@
 {
   "schemaVersion": 1,
   "policy": "A locale may not gain missing translatable source strings without a reviewed baseline update.",
-  "sourceCount": 4145,
+  "sourceCount": 4206,
   "locales": {
     "ar": {
-      "maxMissing": 2828
+      "maxMissing": 2889
     },
     "ar-rSA": {
-      "maxMissing": 4103
+      "maxMissing": 4164
     },
     "az": {
-      "maxMissing": 4145
+      "maxMissing": 4206
     },
     "ban": {
-      "maxMissing": 4145
+      "maxMissing": 4206
     },
     "be": {
-      "maxMissing": 4142
+      "maxMissing": 4203
     },
     "bn": {
-      "maxMissing": 3780
+      "maxMissing": 3841
     },
     "cs": {
-      "maxMissing": 3600
+      "maxMissing": 3661
     },
     "da": {
-      "maxMissing": 3918
+      "maxMissing": 3979
     },
     "de": {
-      "maxMissing": 2887
+      "maxMissing": 2948
     },
     "el": {
-      "maxMissing": 3960
+      "maxMissing": 4021
     },
     "eo": {
-      "maxMissing": 4077
+      "maxMissing": 4138
     },
     "es": {
-      "maxMissing": 3000
+      "maxMissing": 3061
     },
     "fa": {
-      "maxMissing": 2971
+      "maxMissing": 3034
     },
     "fr": {
-      "maxMissing": 2847
+      "maxMissing": 2908
     },
     "hi": {
-      "maxMissing": 3198
+      "maxMissing": 3259
     },
     "hu": {
-      "maxMissing": 3882
+      "maxMissing": 3943
     },
     "in": {
-      "maxMissing": 3080
+      "maxMissing": 3141
     },
     "it": {
-      "maxMissing": 2859
+      "maxMissing": 2920
     },
     "iw": {
-      "maxMissing": 3978
+      "maxMissing": 4039
     },
     "ja": {
-      "maxMissing": 3147
+      "maxMissing": 3208
     },
     "ko": {
-      "maxMissing": 3023
+      "maxMissing": 3084
     },
     "lv": {
-      "maxMissing": 4014
+      "maxMissing": 4075
     },
     "nb": {
-      "maxMissing": 3109
+      "maxMissing": 3171
     },
     "nl": {
-      "maxMissing": 2828
+      "maxMissing": 2889
     },
     "pl": {
-      "maxMissing": 2828
+      "maxMissing": 2889
     },
     "pt": {
-      "maxMissing": 2859
+      "maxMissing": 2920
     },
     "pt-rBR": {
-      "maxMissing": 3006
+      "maxMissing": 3067
     },
     "ro": {
-      "maxMissing": 3559
+      "maxMissing": 3620
     },
     "ru": {
-      "maxMissing": 565
+      "maxMissing": 626
     },
     "si": {
-      "maxMissing": 4139
+      "maxMissing": 4200
     },
     "sq": {
-      "maxMissing": 3870
+      "maxMissing": 3931
     },
     "sv": {
-      "maxMissing": 4101
+      "maxMissing": 4162
     },
     "tr": {
-      "maxMissing": 2860
+      "maxMissing": 2921
     },
     "uk": {
-      "maxMissing": 2936
+      "maxMissing": 2997
     },
     "vi": {
-      "maxMissing": 2860
+      "maxMissing": 2921
     },
     "zh": {
-      "maxMissing": 2828
+      "maxMissing": 2889
     },
     "zh-rTW": {
-      "maxMissing": 2961
+      "maxMissing": 3023
     }
   }
 }
