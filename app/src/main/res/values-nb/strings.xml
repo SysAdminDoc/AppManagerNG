@@ -851,7 +851,6 @@
     <string name="organization_unit">Organisasjonsenhet (OU)</string>
     <string name="common_name">Vanlig navn (CN)</string>
     <string name="verified_using_unreliable_hash">Bekreftet ved bruk av upålitelig sjekksum</string>
-    <string name="type_int_array_list"/>
     <string name="restore_latest">Gjenopprett siste sikkerhetskopier</string>
     <string name="restore_not_installed_msg">Gjenopprett grunn-sikkerhetskopi for programmer som ikke er installert nå.</string>
     <string name="restore_all_msg">Gjenopprett grunn-sikkerhetskopi fra alle sikkerhetskopierte programmer.</string>

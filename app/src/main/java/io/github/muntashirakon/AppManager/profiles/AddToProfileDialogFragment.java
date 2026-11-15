@@ -6,6 +6,7 @@ import static io.github.muntashirakon.AppManager.utils.UIUtils.getSecondaryText;
 import static io.github.muntashirakon.AppManager.utils.UIUtils.getSmallerText;
 
 import android.app.Dialog;
+import android.content.Context;
 import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
@@ -49,14 +50,6 @@ public class AddToProfileDialogFragment extends DialogFragment {
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
         String[] packages = requireArguments().getStringArray(ARG_PKGS);
-        // TODO: 16/9/23 Migrate to bottom sheet dialog and use loader before retrieving the profiles
-        List<AppsProfile> profiles = ExUtils.requireNonNullElse(() -> ProfileManager.getProfiles(AppsProfile.PROFILE_TYPE_APPS), Collections.emptyList());
-        List<CharSequence> profileNames = new ArrayList<>(profiles.size());
-        for (AppsProfile profile : profiles) {
-            profileNames.add(new SpannableStringBuilder(profile.name).append("\n")
-                    .append(getSecondaryText(requireContext(), getSmallerText(
-                            profile.toLocalizedString(requireContext())))));
-        }
         AtomicReference<AlertDialog> dialogRef = new AtomicReference<>();
         DialogTitleBuilder titleBuilder = new DialogTitleBuilder(requireContext())
                 .setTitle(R.string.add_to_profile)
@@ -75,7 +68,10 @@ public class AddToProfileDialogFragment extends DialogFragment {
                             }
                         })
                         .show());
-        AlertDialog alertDialog = new SearchableMultiChoiceDialogBuilder<>(requireContext(), profiles, profileNames)
+        // Profiles are read from disk, so the list fills in once they load
+        SearchableMultiChoiceDialogBuilder<AppsProfile> builder = new SearchableMultiChoiceDialogBuilder<>(
+                requireContext(), new ArrayList<AppsProfile>(), new ArrayList<CharSequence>());
+        AlertDialog alertDialog = builder
                 .setTitle(titleBuilder.build())
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.add, (dialog, which, selectedItems) -> ThreadUtils.postOnBackgroundThread(() -> {
@@ -102,6 +98,26 @@ public class AddToProfileDialogFragment extends DialogFragment {
                 }))
                 .create();
         dialogRef.set(alertDialog);
+        ThreadUtils.postOnBackgroundThread(() -> {
+            List<AppsProfile> profiles = ExUtils.requireNonNullElse(() ->
+                    ProfileManager.getProfiles(AppsProfile.PROFILE_TYPE_APPS), Collections.emptyList());
+            ThreadUtils.postOnMainThread(() -> {
+                if (!isAdded()) {
+                    return;
+                }
+                builder.setItems(profiles, getProfileNames(requireContext(), profiles));
+            });
+        });
         return alertDialog;
+    }
+
+    @NonNull
+    private static List<CharSequence> getProfileNames(@NonNull Context context, @NonNull List<AppsProfile> profiles) {
+        List<CharSequence> profileNames = new ArrayList<>(profiles.size());
+        for (AppsProfile profile : profiles) {
+            profileNames.add(new SpannableStringBuilder(profile.name).append("\n")
+                    .append(getSecondaryText(context, getSmallerText(profile.toLocalizedString(context)))));
+        }
+        return profileNames;
     }
 }

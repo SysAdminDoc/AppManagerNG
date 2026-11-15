@@ -88,7 +88,7 @@ final class RoutineDiagnostics {
 
     @Nullable
     private static JobInfo findJob(@NonNull Context context, @NonNull WorkInfo workInfo) {
-        JobScheduler jobScheduler = context.getSystemService(JobScheduler.class);
+        JobScheduler jobScheduler = (JobScheduler) context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
         if (jobScheduler == null) {
             return null;
         }
@@ -107,7 +107,7 @@ final class RoutineDiagnostics {
     private static void appendJobSchedulerDiagnostics(@NonNull Context context,
                                                       @NonNull StringBuilder detail,
                                                       @NonNull JobInfo jobInfo) {
-        JobScheduler jobScheduler = context.getSystemService(JobScheduler.class);
+        JobScheduler jobScheduler = (JobScheduler) context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
         if (jobScheduler == null) {
             return;
         }

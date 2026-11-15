@@ -16,6 +16,7 @@ import androidx.annotation.LayoutRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.annotation.UiThread;
 import androidx.appcompat.app.AlertDialog;
 import androidx.collection.ArraySet;
 import androidx.core.widget.TextViewCompat;
@@ -153,6 +154,19 @@ public class SearchableMultiChoiceDialogBuilder<T> {
         return this;
     }
 
+    /**
+     * Replace the items, for a list that finishes loading after the dialog is built. Selections and
+     * disabled items refer to positions in the old list, so they are cleared.
+     */
+    @UiThread
+    public SearchableMultiChoiceDialogBuilder<T> setItems(@NonNull List<T> items, @NonNull List<CharSequence> itemNames) {
+        mAdapter.setItems(items, itemNames);
+        mSearchView.setVisibility(items.size() < 6 ? View.GONE : View.VISIBLE);
+        mSelectAll.setVisibility(items.size() < 2 ? View.GONE : View.VISIBLE);
+        checkSelections();
+        return this;
+    }
+
     public SearchableMultiChoiceDialogBuilder<T> setTextSelectable(boolean textSelectable) {
         mIsTextSelectable = textSelectable;
         return this;
@@ -250,9 +264,9 @@ public class SearchableMultiChoiceDialogBuilder<T> {
 
     class SearchableRecyclerViewAdapter extends RecyclerView.Adapter<SearchableRecyclerViewAdapter.ViewHolder> {
         @NonNull
-        private final List<CharSequence> mItemNames;
+        private List<CharSequence> mItemNames;
         @NonNull
-        private final List<T> mItems;
+        private List<T> mItems;
         @NonNull
         private final List<T> mNotFoundItems = new ArrayList<>();
         @NonNull
@@ -269,6 +283,26 @@ public class SearchableMultiChoiceDialogBuilder<T> {
             mLayoutId = layoutId;
             for (int i = 0; i < items.size(); ++i) {
                 mFilteredItems.add(i);
+            }
+        }
+
+        void setItems(@NonNull List<T> items, @NonNull List<CharSequence> itemNames) {
+            synchronized (mFilteredItems) {
+                int previousCount = mFilteredItems.size();
+                synchronized (mSelectedItems) {
+                    mSelectedItems.clear();
+                }
+                synchronized (mDisabledItems) {
+                    mDisabledItems.clear();
+                }
+                mNotFoundItems.clear();
+                mItems = items;
+                mItemNames = itemNames;
+                mFilteredItems.clear();
+                for (int i = 0; i < items.size(); ++i) {
+                    mFilteredItems.add(i);
+                }
+                AdapterUtils.notifyDataSetChanged(this, previousCount, mFilteredItems.size());
             }
         }
 

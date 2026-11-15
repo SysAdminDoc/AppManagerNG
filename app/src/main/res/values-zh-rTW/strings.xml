@@ -1181,7 +1181,6 @@
     <string name="tap_to_freeze_app">輕觸以凍結</string>
     <string name="app_manager_build_expired">需要更新</string>
     <string name="renamed_successfully">已重新命名</string>
-    <string name="selinux_context"/>
     <string name="unix_file_permissions">模式</string>
     <string name="sort_by_file_size">檔案大小</string>
     <string name="sort_by_file_type">檔案類型</string>

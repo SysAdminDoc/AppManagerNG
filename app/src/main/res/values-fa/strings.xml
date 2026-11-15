@@ -1223,7 +1223,6 @@
     <string name="go_to_path">برو به…</string>
     <string name="uninstall_app">پاک‌کردن %1$s</string>
     <string name="copy_this_path">رونوشت مسیر</string>
-    <string name="backing_up_app"/>
     <string name="create_new_folder">پوشه جدید</string>
     <string name="create_new_file">پرونده جدید</string>
     <string name="installer_options">گزینه های نصب کننده</string>
@@ -1281,7 +1280,6 @@
     <string name="system_app_put_back">بازگشت به عقب</string>
     <string name="title_audio_player">پخش کننده صدا</string>
     <string name="filter_force_stopped_apps">برنامه های ایستاده</string>
-    <string name="installing_package"/>
     <string name="enter_target_path">مسیر هدف</string>
     <string name="invalid_target_path">مسیر نامعتبر</string>
     <string name="copy_these_paths">رونوشت مسیر ها</string>

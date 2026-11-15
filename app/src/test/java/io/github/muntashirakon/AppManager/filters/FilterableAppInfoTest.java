@@ -19,6 +19,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -91,6 +92,17 @@ public class FilterableAppInfoTest {
         assertTrue(info.getAllComponents().isEmpty());
         assertTrue(info.getAllPermissions().isEmpty());
         assertFalse(appOpsFilterMatches(info));
+    }
+
+    @Test
+    public void installStateIsReadWhenTheAppLoadsNotWhenARowBinds() throws IOException {
+        PackageInfo packageInfo = installedPackage();
+        FilterableAppInfo info = new FilterableAppInfo(packageInfo, null);
+
+        // The finder binds rows on the main thread, so reading the state must not stat the APK again
+        assertTrue(new File(packageInfo.applicationInfo.publicSourceDir).delete());
+
+        assertTrue(info.isInstalled());
     }
 
     private static boolean appOpsFilterMatches(@NonNull IFilterableAppInfo info) {

@@ -65,6 +65,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Tapping a row for an app that turns out to be installed after all opens its details and reads the row again from Android, instead of patching it in place.
 - On MIUI and HyperOS, an install or restore that Android turned down on the first try no longer comes back as failed while the automatic retry is still running. The retry now happens inside the same install, so the result you see is the last try's, and a confirmation you dismissed on the earlier try can't be taken for it. Ported from upstream App Manager (f3db2698a).
 - On HyperOS without root or ADB, an install that Android stopped (a cancelled prompt counts) no longer sits there without ever saying how it ended. HyperOS still calls itself MIUI but numbers its builds differently, and reading that number as a MIUI version failed.
+- Opening the diagnostics for scheduled backups or for routines no longer crashes on Android 5. Both asked for the job scheduler in a way that only works from Android 6 on.
+- Add to profile no longer reads your saved profiles before its dialog can open. The dialog shows up right away and the list fills in once they've loaded.
+- The Finder doesn't look up each app's APK on disk as you scroll anymore. Whether an app is installed gets read once, while the list loads.
+- Persian showed blank text while backing up an app or installing a package, because those two translations were empty. They fall back to English now, and so do one empty Norwegian string and one Traditional Chinese string.
 
 ## v0.7.0, 2026-11-08
 

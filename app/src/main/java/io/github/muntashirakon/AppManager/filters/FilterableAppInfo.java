@@ -86,6 +86,8 @@ public class FilterableAppInfo implements IFilterableAppInfo {
     private final ApplicationInfo mApplicationInfo;
     private final int mUserId;
     private final PackageManager mPm;
+    // Read once while loading: the check stats the APK path, and the finder list binds rows on the main thread
+    private final boolean mInstalled;
 
     private String mAppLabel;
     @Nullable
@@ -128,6 +130,7 @@ public class FilterableAppInfo implements IFilterableAppInfo {
         mApplicationInfo = Objects.requireNonNull(packageInfo.applicationInfo);
         mUserId = UserHandleHidden.getUserId(mApplicationInfo.uid);
         mPm = ContextUtils.getContext().getPackageManager();
+        mInstalled = ApplicationInfoCompat.isInstalled(mApplicationInfo);
     }
 
     @NonNull
@@ -418,7 +421,7 @@ public class FilterableAppInfo implements IFilterableAppInfo {
 
     @Override
     public boolean isInstalled() {
-        return ApplicationInfoCompat.isInstalled(mApplicationInfo);
+        return mInstalled;
     }
 
     @Override
