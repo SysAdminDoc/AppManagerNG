@@ -1,0 +1,3 @@
+Signer pins tie an app to the key it's signed with and refuse an install signed by any other key. The app bubble now tells an overlay ad apart from the app under it, and Top app history plus a Possible ad source filter help track it down. Toast history gets search and a tile, and a new Notification filter can silence or block notifications.
+
+Local sync resumes broken downloads and can replace an app signed by a different key. The first switch to Shizuku, root or ADB mode sticks again.

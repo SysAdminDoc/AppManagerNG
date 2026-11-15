@@ -8,6 +8,23 @@
 <changelog>
     <release
         type="stable release"
+        version="v0.8.0"
+        code="34"
+        date="15 November 2026">
+        <new title="Signer pins">Tie an app to the key it's signed with, and an install or update signed by any other key is refused.</new>
+        <new title="Finding ad sources">The app bubble shows an overlay apart from the app under it. Top app history and the Possible ad source filter point at apps that can pop up on their own.</new>
+        <new title="Notification filter">Rules pick notifications by app or by words, then let them through, silence them or block them.</new>
+        <new title="Language files">Translate the app yourself, or fix a built-in translation, without waiting for a new version.</new>
+        <improve title="Toast history">Search, a quick settings tile and an optional notification that keeps the newest toasts.</improve>
+        <improve title="Local sync">Broken downloads pick up where they stopped, received APKs stay around for another try, and an app signed by a different key can be replaced.</improve>
+        <improve title="Permission Inspector">Special app access is covered too, and without root or ADB each row opens Android's own setting.</improve>
+        <fix title="Mode switch">The first switch to Shizuku, root or ADB mode no longer drops you back to no-root.</fix>
+        <fix title="Saved data">Notes, favorites, filters and freeze choices survive an upgrade that fails, and a copy of the old data is kept.</fix>
+        <fix title="Schedules">Scheduled backups, routines and permission checks keep running after an error, and the ones that stopped come back.</fix>
+    </release>
+
+    <release
+        type="stable release"
         version="v0.7.0"
         code="33"
         date="8 November 2026">
