@@ -1,6 +1,12 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
+    <!-- Its text is set in code, so settings search doesn't list a notice that's usually hidden -->
+    <io.github.muntashirakon.preference.WarningAlertPreference
+        app:icon="@drawable/ic_caution"
+        app:key="privilege_health_untested_android"
+        app:isPreferenceVisible="false" />
+
     <PreferenceCategory
         app:key="privilege_health_status_category"
         app:title="@string/privilege_health_status_category"

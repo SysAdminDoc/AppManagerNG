@@ -15,8 +15,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 
+import io.github.muntashirakon.AppManager.compat.PlatformSupport;
 import io.github.muntashirakon.AppManager.compat.SubscriptionManagerCompat;
 import io.github.muntashirakon.AppManager.servermanager.AdbFailure;
 
@@ -202,5 +205,41 @@ public class SupportInfoBundleTest {
                 ctx, "2026-09-26T00:00:00Z", null, new SupportInfoBundle.SectionOptions()));
 
         assertTrue(text, text.contains("Telephony services: isub unavailable: service not registered"));
+    }
+
+    @Test
+    public void aTestedVersionGetsNoUntestedLine() {
+        StringBuilder sb = new StringBuilder();
+
+        SupportInfoBundle.appendPlatformSupport(sb, PlatformSupport.TESTED_SDK, "REL", Collections.emptyList());
+
+        assertEquals("Tested through: API " + PlatformSupport.TESTED_SDK + "\n"
+                + "Hidden API fallbacks: none\n", sb.toString());
+    }
+
+    @Test
+    public void aNewerVersionAndItsFallbacksAreNamed() {
+        StringBuilder sb = new StringBuilder();
+        int newer = PlatformSupport.TESTED_SDK + 1;
+
+        SupportInfoBundle.appendPlatformSupport(sb, newer, "REL", Arrays.asList(
+                "PackageManagerCompat#getInstalledPackages", "PermissionCompat#getPermissionFlags"));
+
+        String text = SupportInfoBundle.formatBundleTextForPublicIssue(sb.toString());
+        assertTrue(text, text.contains("Untested Android: this build was tested through API "
+                + PlatformSupport.TESTED_SDK + " and the device runs API " + newer + "\n"));
+        assertTrue(text, text.contains("Hidden API fallbacks: PackageManagerCompat#getInstalledPackages, "
+                + "PermissionCompat#getPermissionFlags\n"));
+    }
+
+    @Test
+    public void theDeviceSectionCarriesTheTestedVersion() {
+        android.content.Context ctx = androidx.test.core.app.ApplicationProvider.getApplicationContext();
+
+        String text = SupportInfoBundle.formatBundleTextForPublicIssue(SupportInfoBundle.buildText(
+                ctx, "2026-11-15T00:00:00Z", null, new SupportInfoBundle.SectionOptions()));
+
+        assertTrue(text, text.contains("Tested through: API " + PlatformSupport.TESTED_SDK + "\n"));
+        assertFalse(text, text.contains("Untested Android"));
     }
 }

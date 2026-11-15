@@ -24,6 +24,7 @@ import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.AdvancedProtectionCompat;
+import io.github.muntashirakon.AppManager.compat.PlatformSupport;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.dhizuku.DhizukuBridge;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
@@ -51,6 +52,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
             Ops.MODE_ADB_WIFI,
             Ops.MODE_NO_ROOT);
 
+    private Preference mUntestedAndroidPref;
     private Preference mModePref;
     private Preference mSelfTestPref;
     private Preference mCapabilityCoveragePref;
@@ -75,6 +77,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
     public void onCreatePreferences(@Nullable Bundle savedInstanceState, @Nullable String rootKey) {
         setPreferencesFromResource(R.xml.preferences_privilege_health, rootKey);
         getPreferenceManager().setPreferenceDataStore(new SettingsDataStore());
+        mUntestedAndroidPref = requirePreference("privilege_health_untested_android");
         mModePref = requirePreference("privilege_health_mode");
         mSelfTestPref = requirePreference("privilege_health_self_test");
         mCapabilityCoveragePref = requirePreference("privilege_health_capability_coverage");
@@ -90,6 +93,12 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         mRestrictedSettingsPref = requirePreference("privilege_health_restricted_settings");
         mAdvancedProtectionPref = requirePreference("privilege_health_advanced_protection");
         mBootstrapSmokeTestPref = requirePreference("privilege_health_bootstrap_smoke_test");
+        mUntestedAndroidPref.setOnPreferenceClickListener(preference -> {
+            PlatformSupport.dismissUntestedNotice();
+            mUntestedAndroidPref.setVisible(false);
+            UIUtils.displayShortToast(R.string.privilege_health_untested_android_hidden);
+            return true;
+        });
         mCapabilityDroppingPref.setOnPreferenceClickListener(preference -> {
             bindCapabilityDroppingAsync();
             return true;
@@ -144,6 +153,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
     private void refreshHealth() {
         Context context = getContext();
         if (context == null) return;
+        bindUntestedAndroid();
         bindMode(context);
         bindCapabilityCoverage(context);
         bindShizuku(context);
@@ -157,6 +167,16 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         bindRootModulesAsync();
         bindCapabilityDroppingAsync();
         bindKernelSuAsync(context.getApplicationContext());
+    }
+
+    private void bindUntestedAndroid() {
+        boolean show = PlatformSupport.shouldShowUntestedNotice();
+        mUntestedAndroidPref.setVisible(show);
+        if (show) {
+            mUntestedAndroidPref.setTitle(R.string.privilege_health_untested_android_title);
+            mUntestedAndroidPref.setSummary(getString(R.string.privilege_health_untested_android_summary,
+                    PlatformSupport.TESTED_SDK, PlatformSupport.getRunningLevel()));
+        }
     }
 
     private void bindMode(@NonNull Context context) {

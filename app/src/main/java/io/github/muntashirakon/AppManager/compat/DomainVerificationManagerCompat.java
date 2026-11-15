@@ -22,7 +22,10 @@ public class DomainVerificationManagerCompat {
     public static DomainVerificationUserState getDomainVerificationUserState(String packageName, int userId) {
         try {
             return getDomainVerificationManager().getDomainVerificationUserState(packageName, userId);
-        } catch (Throwable ignore) {
+        } catch (Throwable th) {
+            if (th instanceof LinkageError) {
+                HiddenApiFallbacks.log("DomainVerificationManagerCompat", "getDomainVerificationUserState", th);
+            }
         }
         return null;
     }

@@ -41,6 +41,8 @@ android {
         // Add build time to BuildConfig. Debug builds keep the historical wall-clock fallback
         // when a source timestamp is unavailable; release task graphs fail closed below.
         buildConfigField "long", "BUILD_TIME_MILLIS", "${buildTime()}"
+        // The newest Android API level this build is compiled and tested against
+        buildConfigField "int", "TESTED_SDK", "${compile_sdk}"
     }
 
     signingConfigs {

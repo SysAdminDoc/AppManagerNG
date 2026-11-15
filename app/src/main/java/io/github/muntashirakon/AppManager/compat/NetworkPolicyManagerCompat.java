@@ -80,7 +80,8 @@ public final class NetworkPolicyManagerCompat {
                 if (field.getName().startsWith("POLICY_")) {
                     try {
                         put(field.getInt(null), field.getName());
-                    } catch (IllegalAccessException ignore) {
+                    } catch (IllegalAccessException e) {
+                        HiddenApiFallbacks.log("NetworkPolicyManager", field.getName(), e);
                     }
                 }
             }

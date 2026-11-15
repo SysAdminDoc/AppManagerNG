@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
@@ -29,6 +30,8 @@ import java.util.regex.Pattern;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.compat.HiddenApiFallbacks;
+import io.github.muntashirakon.AppManager.compat.PlatformSupport;
 import io.github.muntashirakon.AppManager.compat.SubscriptionManagerCompat;
 import io.github.muntashirakon.AppManager.fm.FmProvider;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
@@ -135,6 +138,21 @@ public final class SupportInfoBundle {
         return intent;
     }
 
+    /**
+     * The Android version this build was tested through, a line when the device runs a newer one, and the
+     * hidden-API calls that fell back in this process.
+     */
+    @VisibleForTesting
+    static void appendPlatformSupport(@NonNull StringBuilder sb, int sdkInt, @Nullable String codename,
+                                      @NonNull List<String> fallbacks) {
+        appendLine(sb, "Tested through", "API " + PlatformSupport.TESTED_SDK);
+        String untested = PlatformSupport.describeUntested(sdkInt, codename);
+        if (untested != null) {
+            appendLine(sb, "Untested Android", untested);
+        }
+        appendLine(sb, "Hidden API fallbacks", fallbacks.isEmpty() ? "none" : TextUtils.join(", ", fallbacks));
+    }
+
     @WorkerThread
     @NonNull
     @VisibleForTesting
@@ -159,6 +177,7 @@ public final class SupportInfoBundle {
             appendLine(sb, "Model", Build.MODEL);
             appendLine(sb, "Product/device", Build.PRODUCT + "/" + Build.DEVICE);
             appendLine(sb, "Android", Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")");
+            appendPlatformSupport(sb, Build.VERSION.SDK_INT, Build.VERSION.CODENAME, HiddenApiFallbacks.getMembers());
             appendLine(sb, "Security patch", getSecurityPatch());
             appendLine(sb, "Build ID", Build.ID);
             appendLine(sb, "Incremental", Build.VERSION.INCREMENTAL);

@@ -236,7 +236,11 @@ public final class ActivityManagerCompat {
         } catch (RemoteException e) {
             return Collections.emptyList();
         } catch (Throwable th) {
-            Log.w("ActivityManagerCompat", th);
+            if (th instanceof LinkageError) {
+                HiddenApiFallbacks.log("ActivityManagerCompat", "getHistoricalProcessExitReasons", th);
+            } else {
+                Log.w("ActivityManagerCompat", th);
+            }
             return Collections.emptyList();
         }
     }

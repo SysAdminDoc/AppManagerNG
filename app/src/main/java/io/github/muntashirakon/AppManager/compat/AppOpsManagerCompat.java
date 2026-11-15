@@ -225,7 +225,7 @@ public class AppOpsManagerCompat {
                 sOpToStringField.setAccessible(true);
                 opToString = (String[]) sOpToStringField.get(null);
             } catch (NoSuchFieldException | IllegalAccessException e) {
-                Log.w(TAG, e);
+                HiddenApiFallbacks.log(TAG, "sOpToString", e);
             }
         }
         sOpToString = opToString;
@@ -235,7 +235,8 @@ public class AppOpsManagerCompat {
             if (field.getType() == int.class && field.getName().startsWith("MODE_")) {
                 try {
                     sModes.put(field.getInt(null), field.getName());
-                } catch (IllegalAccessException ignore) {
+                } catch (IllegalAccessException e) {
+                    HiddenApiFallbacks.log("AppOpsManager", field.getName(), e);
                 }
             }
         }
@@ -260,6 +261,7 @@ public class AppOpsManagerCompat {
         try {
             return MiuiUtils.isMiui() && op > AppOpsManagerHidden.MIUI_OP_START;
         } catch (Throwable e) {
+            HiddenApiFallbacks.log(TAG, "isMiuiOp", e);
             return false;
         }
     }
@@ -371,6 +373,7 @@ public class AppOpsManagerCompat {
         } catch (Throwable e) {
             String knownOpName = getKnownOpName(op);
             if (knownOpName != null) {
+                HiddenApiFallbacks.log(TAG, "opToName", e);
                 return knownOpName;
             }
             throw e;
@@ -392,6 +395,7 @@ public class AppOpsManagerCompat {
         try {
             return AppOpsManagerHidden.opToDefaultMode(op);
         } catch (NoSuchMethodError e) {
+            HiddenApiFallbacks.log(TAG, "opToDefaultMode", e);
             return AppOpsManagerHidden.opToDefaultMode(op, false);
         }
     }
@@ -804,7 +808,8 @@ public class AppOpsManagerCompat {
                 return mAppOpsService.checkOperationRaw(op, uid, packageName);
             }
         } catch (NoSuchMethodError e) {
-            Log.w("AppOpsManagerCompat", "No raw app op read on this build, using the evaluated mode", e);
+            // No raw read on this build: use the evaluated mode
+            HiddenApiFallbacks.log(TAG, "checkOperationRaw", e);
         }
         // Before Android 10 the evaluated mode is the stored mode
         return mAppOpsService.checkOperation(op, uid, packageName);
@@ -892,7 +897,8 @@ public class AppOpsManagerCompat {
                 if (op > OP_NONE) {
                     return op;
                 }
-            } catch (Throwable ignore) {
+            } catch (Throwable e) {
+                HiddenApiFallbacks.log(TAG, "strOpToOp", e);
             }
         }
         return fallbackOp;

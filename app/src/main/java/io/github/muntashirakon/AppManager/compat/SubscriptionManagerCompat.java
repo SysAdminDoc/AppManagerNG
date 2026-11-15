@@ -92,6 +92,7 @@ public class SubscriptionManagerCompat {
                     return sub.getActiveSubscriptionInfoList(callingPackage, null);
                 } catch (NoSuchMethodError e) {
                     // Android 14 r50
+                    HiddenApiFallbacks.log(TAG, "getActiveSubscriptionInfoList", e);
                     return sub.getActiveSubscriptionInfoList(callingPackage, null, true);
                 }
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -214,6 +215,7 @@ public class SubscriptionManagerCompat {
             failure = Availability.REMOTE_FAILURE;
         } catch (LinkageError e) {
             // An OEM build whose hidden interface lacks the method signature this API level uses.
+            HiddenApiFallbacks.log(TAG, serviceName, e);
             failure = Availability.INCOMPATIBLE;
         }
         record(serviceName, failure);

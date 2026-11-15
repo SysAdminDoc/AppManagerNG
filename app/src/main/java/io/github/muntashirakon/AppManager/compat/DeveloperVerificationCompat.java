@@ -71,7 +71,10 @@ public final class DeveloperVerificationCompat {
         try {
             IBinder binder = ProxyBinder.getUnprivilegedService(SERVICE_NAME);
             return binder.pingBinder();
-        } catch (Throwable ignore) {
+        } catch (Throwable th) {
+            if (th instanceof LinkageError) {
+                HiddenApiFallbacks.log(TAG, "isVerifierServiceAvailable", th);
+            }
             return false;
         }
     }

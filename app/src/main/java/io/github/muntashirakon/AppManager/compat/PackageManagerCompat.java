@@ -334,7 +334,7 @@ public final class PackageManagerCompat {
                 // bytecode may no longer resolve and the direct call fails with a linkage error.
                 // Re-dispatch reflectively (method resolution ignores the return type) and adapt
                 // whatever container the platform hands back.
-                Log.w(TAG, "getInstalledPackages return type changed; retrying reflectively", e);
+                HiddenApiFallbacks.log(TAG, "getInstalledPackages", e);
                 result = invokeListMethodReflectively(pm, "getInstalledPackages", flags, userId);
             }
             return extractList(result);
@@ -370,7 +370,7 @@ public final class PackageManagerCompat {
             // into our bytecode no longer resolves and the direct call fails with a linkage error.
             // Re-dispatch reflectively (method resolution ignores the return type) and adapt
             // whatever container the platform now hands back.
-            Log.w(TAG, "getInstalledApplications return type changed; retrying reflectively", e);
+            HiddenApiFallbacks.log(TAG, "getInstalledApplications", e);
             result = invokeListMethodReflectively(pm, "getInstalledApplications", flags, userId);
         }
         return extractList(result);
@@ -444,7 +444,7 @@ public final class PackageManagerCompat {
                 return (List<T>) list;
             }
         } catch (ReflectiveOperationException e) {
-            Log.w(TAG, "Could not extract list from " + sliceOrList.getClass().getName(), e);
+            HiddenApiFallbacks.log(TAG, sliceOrList.getClass().getSimpleName() + "#getList", e);
         }
         return Collections.emptyList();
     }
@@ -696,6 +696,7 @@ public final class PackageManagerCompat {
             try {
                 getPackageManager().setPackagesSuspendedAsUser(packageNames, suspend, null, null, null, 0, callingPackage, 0, userId);
             } catch (NoSuchMethodError e) {
+                HiddenApiFallbacks.log(TAG, "setPackagesSuspendedAsUser", e);
                 getPackageManager().setPackagesSuspendedAsUser(packageNames, suspend, null, null, (SuspendDialogInfo) null, callingPackage, userId);
             }
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -832,7 +833,11 @@ public final class PackageManagerCompat {
         } catch (Exception | LinkageError e) {
             // LinkageError: the 4-arg AIDL overload is absent below Android P,
             // so the device proxy throws NoSuchMethodError instead of an Exception.
-            Log.d(TAG, "IActivityManager.clearApplicationUserData failed, falling back to IPackageManager", e);
+            if (e instanceof LinkageError) {
+                HiddenApiFallbacks.log(TAG, "IActivityManager#clearApplicationUserData", e);
+            } else {
+                Log.d(TAG, "IActivityManager.clearApplicationUserData failed, falling back to IPackageManager", e);
+            }
             obs = new ClearDataObserver();
             clearApplicationUserDataViaPackageManager(pair, obs);
         }
@@ -857,6 +862,7 @@ public final class PackageManagerCompat {
             try {
                 pm.clearApplicationUserData(pair.getPackageName(), obs, pair.getUserId(), false);
             } catch (NoSuchMethodError e) {
+                HiddenApiFallbacks.log(TAG, "IPackageManager#clearApplicationUserData", e);
                 pm.clearApplicationUserData(pair.getPackageName(), obs, pair.getUserId());
             }
         } else {

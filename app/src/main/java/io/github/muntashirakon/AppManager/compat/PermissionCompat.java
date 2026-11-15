@@ -284,10 +284,12 @@ public final class PermissionCompat {
                 try {
                     return permissionManager.getPermissionFlags(packageName, permissionName, userId);
                 } catch (NoSuchMethodError e) {
+                    HiddenApiFallbacks.log("PermissionCompat", "getPermissionFlags", e);
                     try {
                         return permissionManager.getPermissionFlags(packageName, permissionName,
                                 ContextUtils.getContext().getDeviceId(), userId);
                     } catch (NoSuchMethodError e2) {
+                        HiddenApiFallbacks.log("PermissionCompat", "getPermissionFlags(deviceId)", e2);
                         return permissionManager.getPermissionFlags(packageName, permissionName,
                                 PERSISTENT_DEVICE_ID_DEFAULT, userId);
                     }
@@ -332,10 +334,12 @@ public final class PermissionCompat {
                 permissionManager.updatePermissionFlags(packageName, permissionName, flagMask, flagValues,
                         checkAdjustPolicyFlagPermission, userId);
             } catch (NoSuchMethodError e) {
+                HiddenApiFallbacks.log("PermissionCompat", "updatePermissionFlags", e);
                 try {
                     permissionManager.updatePermissionFlags(packageName, permissionName, flagMask, flagValues,
                             checkAdjustPolicyFlagPermission, ContextUtils.getContext().getDeviceId(), userId);
                 } catch (NoSuchMethodError e2) {
+                    HiddenApiFallbacks.log("PermissionCompat", "updatePermissionFlags(deviceId)", e2);
                     permissionManager.updatePermissionFlags(packageName, permissionName, flagMask, flagValues,
                             checkAdjustPolicyFlagPermission, PERSISTENT_DEVICE_ID_DEFAULT, userId);
                 }
@@ -369,10 +373,12 @@ public final class PermissionCompat {
             try {
                 permissionManager.grantRuntimePermission(packageName, permissionName, userId);
             } catch (NoSuchMethodError e) {
+                HiddenApiFallbacks.log("PermissionCompat", "grantRuntimePermission", e);
                 try {
                     permissionManager.grantRuntimePermission(packageName, permissionName,
                             ContextUtils.getContext().getDeviceId(), userId);
                 } catch (NoSuchMethodError e2) {
+                    HiddenApiFallbacks.log("PermissionCompat", "grantRuntimePermission(deviceId)", e2);
                     permissionManager.grantRuntimePermission(packageName, permissionName,
                             PERSISTENT_DEVICE_ID_DEFAULT, userId);
                 }
@@ -411,10 +417,12 @@ public final class PermissionCompat {
             try {
                 permissionManager.revokeRuntimePermission(packageName, permissionName, userId, reason);
             } catch (NoSuchMethodError e) {
+                HiddenApiFallbacks.log("PermissionCompat", "revokeRuntimePermission", e);
                 try {
                     permissionManager.revokeRuntimePermission(packageName, permissionName,
                             ContextUtils.getContext().getDeviceId(), userId, reason);
                 } catch (NoSuchMethodError e2) {
+                    HiddenApiFallbacks.log("PermissionCompat", "revokeRuntimePermission(deviceId)", e2);
                     permissionManager.revokeRuntimePermission(packageName, permissionName,
                             PERSISTENT_DEVICE_ID_DEFAULT, userId, reason);
                 }

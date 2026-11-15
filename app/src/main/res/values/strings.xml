@@ -2983,6 +2983,9 @@
     <string name="privilege_health_mode_doctor_action_shizuku_archive">Shizuku pinned archive</string>
     <string name="privilege_health_mode_doctor_action_dhizuku_settings">Dhizuku settings</string>
     <string name="privilege_health_refresh_summary">Re-run provider probes and update every status row.</string>
+    <string name="privilege_health_untested_android_title">Untested Android version</string>
+    <string name="privilege_health_untested_android_summary">This build was tested through Android API <xliff:g id="tested" example="37">%1$d</xliff:g>. This device runs API <xliff:g id="running" example="38">%2$d</xliff:g>. The app keeps working, but features that rely on hidden Android calls might show less or fail. Tap to hide this until your next Android update.</string>
+    <string name="privilege_health_untested_android_hidden">Hidden until your next Android update</string>
     <string name="os_revert_snackbar_message">OS reverted your change - see why</string>
     <string name="os_revert_see_why">See why</string>
     <string name="os_revert_details_title">OS reverted your change</string>
