@@ -16,6 +16,7 @@ import androidx.annotation.VisibleForTesting;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.Closeable;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -35,6 +36,7 @@ import io.github.muntashirakon.AppManager.crypto.DummyCrypto;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.logcat.helper.SaveLogHelper;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.self.filecache.FileCache;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.io.Path;
@@ -291,6 +293,26 @@ public class BackupItems {
         return tmpDir.findOrCreateDirectory(newFilename);
     }
 
+    /**
+     * A new folder in {@link FileCache#getPrivateStagingDir()}. The shared cache the backup side
+     * uses can be written by other apps holding the storage permission up to Android 10.
+     */
+    @NonNull
+    private static Path getPrivateUnencryptedPath() throws IOException {
+        File parent = FileCache.getPrivateStagingDir();
+        if (!parent.mkdirs() && !parent.isDirectory()) {
+            throw new IOException("Could not create " + parent);
+        }
+        String base = "plain-" + Long.toHexString(System.nanoTime());
+        for (int attempt = 0; attempt < 8; ++attempt) {
+            File directory = new File(parent, attempt == 0 ? base : base + "-" + attempt);
+            if (directory.mkdir()) {
+                return Paths.getUnprivileged(directory);
+            }
+        }
+        throw new IOException("Could not create a private folder in " + parent);
+    }
+
     @NonNull
     private static synchronized Path getTemporaryBackupPath(@NonNull Path originalBackupPath) throws IOException {
         return getTemporaryBackupPath(originalBackupPath, "");
@@ -451,8 +473,10 @@ public class BackupItems {
 
         public Path requireUnencryptedBackupPath() throws IOException {
             if (mTempUnencyptedPath == null) {
-                // We can only do this once for each BackupItem
-                mTempUnencyptedPath = getTemporaryUnencryptedPath(getBackupPath().getName());
+                // We can only do this once for each BackupItem. What a restore decrypts is read
+                // again later, so it goes where no other app can change it in between.
+                mTempUnencyptedPath = mBackupMode ? getTemporaryUnencryptedPath(getBackupPath().getName())
+                        : getPrivateUnencryptedPath();
             }
             return mTempUnencyptedPath;
         }

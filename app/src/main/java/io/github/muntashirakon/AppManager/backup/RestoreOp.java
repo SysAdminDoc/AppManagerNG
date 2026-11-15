@@ -96,6 +96,9 @@ class RestoreOp implements Closeable {
 
     @Nullable
     private static DirectoryCommandHook sDirectoryCommandHook;
+    /** Runs once every file the restore reads has been copied and checked, before anything changes. */
+    @Nullable
+    private static Runnable sStagedInputsHook;
 
     @NonNull
     private final String mPackageName;
@@ -123,10 +126,29 @@ class RestoreOp implements Closeable {
     private final ArrayList<String> mRestoreExtraWarnings = new ArrayList<>();
     @NonNull
     private final ArrayList<String> mDirectoryFailures = new ArrayList<>();
+    // Private copies of the backup files, checked and decrypted. Nothing past stageInputs() reads
+    // the backup itself, which another app or a document provider may change at any time.
+    @Nullable
+    private RestoreStaging mStaging;
+    @Nullable
+    private Path[] mStagedSourceFiles;
+    @Nullable
+    private Path[][] mStagedDataFiles;
+    @Nullable
+    private Path[] mStagedKeyStoreFiles;
+    @Nullable
+    private Path mStagedMiscFile;
+    @Nullable
+    private Path mStagedRulesFile;
 
     @VisibleForTesting
     static void setDirectoryCommandHook(@Nullable DirectoryCommandHook hook) {
         sDirectoryCommandHook = hook;
+    }
+
+    @VisibleForTesting
+    static void setStagedInputsHook(@Nullable Runnable hook) {
+        sStagedInputsHook = hook;
     }
 
     RestoreOp(@NonNull String packageName, @NonNull BackupFlags requestedFlags,
@@ -258,6 +280,9 @@ class RestoreOp implements Closeable {
     public void close() {
         Log.d(TAG, "Close called");
         mChecksum.close();
+        if (mStaging != null) {
+            mStaging.close();
+        }
         mBackupItem.cleanup();
     }
 
@@ -267,6 +292,8 @@ class RestoreOp implements Closeable {
                 // Check checksum of master key first
                 checkMasterKey();
             }
+            // Every check and decryption happens here, before the app or its data is touched
+            stageInputs();
             incrementProgress(progressHandler);
             if (mRequestedFlags.backupApkFiles()) {
                 restoreApkFiles();
@@ -387,14 +414,135 @@ class RestoreOp implements Closeable {
         }
     }
 
-    private void restoreApkFiles() throws BackupException {
-        if (!mBackupFlags.backupApkFiles()) {
-            throw new BackupException("APK restore is requested but backup doesn't contain any source files.");
+    /**
+     * Reads every backup file the requested parts of the restore use once, into private storage,
+     * and checks and decrypts those copies. A file that fails stops the restore here, before the
+     * app is reinstalled or its data cleared, and the steps after this read only the copies.
+     */
+    private void stageInputs() throws BackupException {
+        boolean skipChecks = mRequestedFlags.skipSignatureCheck();
+        mStaging = new RestoreStaging(mBackupItem, skipChecks ? null : mChecksum, mBackupInfo.checksumAlgo);
+        if (mRequestedFlags.backupApkFiles()) {
+            if (!mBackupFlags.backupApkFiles()) {
+                throw new BackupException("APK restore is requested but backup doesn't contain any source files.");
+            }
+            Path[] sourceFiles = mBackupItem.getSourceFiles();
+            if (sourceFiles.length == 0) {
+                // No source backup found
+                throw new BackupException("Source restore is requested but there are no source files.");
+            }
+            mStagedSourceFiles = mStaging.stage(sourceFiles, "Source file verification failed.");
         }
-        Path[] backupSourceFiles = mBackupItem.getSourceFiles();
-        if (backupSourceFiles.length == 0) {
-            // No source backup found
-            throw new BackupException("Source restore is requested but there are no source files.");
+        if (mRequestedFlags.backupData()) {
+            stageDataFiles(mStaging, skipChecks);
+            if (mBackupMetadata.keyStore && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                Path[] keyStoreFiles = mBackupItem.getKeyStoreFiles();
+                if (keyStoreFiles.length == 0) {
+                    throw new BackupException("KeyStore files should've existed but they didn't");
+                }
+                mStagedKeyStoreFiles = mStaging.stage(keyStoreFiles, "KeyStore file verification failed.");
+            }
+        }
+        if (mRequestedFlags.backupExtras()) {
+            Path miscFile = findMiscFile();
+            if (miscFile != null) {
+                mStagedMiscFile = mStaging.stage(new Path[]{miscFile}, "Couldn't verify misc file.")[0];
+            }
+        }
+        if (mRequestedFlags.backupRules()) {
+            Path rulesFile;
+            try {
+                rulesFile = mBackupItem.getRulesFile();
+            } catch (IOException e) {
+                if (mBackupMetadata.hasRules) {
+                    throw new BackupException("Rules file is missing.", e);
+                }
+                // There are no rules, just skip
+                rulesFile = null;
+            }
+            if (rulesFile != null) {
+                mStagedRulesFile = mStaging.stage(new Path[]{rulesFile}, "Couldn't verify permission file.")[0];
+            }
+        }
+        Runnable hook = sStagedInputsHook;
+        if (hook != null) {
+            hook.run();
+        }
+    }
+
+    /**
+     * Stages the archives of every data directory this restore writes back. The rest are still
+     * checked where they are, as before, though nothing reads them again.
+     */
+    private void stageDataFiles(@NonNull RestoreStaging staging, boolean skipChecks) throws BackupException {
+        String[] dataDirs = mBackupMetadata.dataDirs;
+        mStagedDataFiles = new Path[dataDirs.length][];
+        for (int i = 0; i < dataDirs.length; ++i) {
+            String dataDir = dataDirs[i];
+            boolean isAdb = dataDir.equals(BackupManager.DATA_BACKUP_SPECIAL_ADB);
+            boolean isSystem = !isAdb && SystemDataBackup.isSystemDataToken(dataDir);
+            boolean isRestored = isAdb || (isSystem ? mRequestedFlags.backupSystemData()
+                    : isRequestedDataDirectory(dataDir));
+            Path[] dataFiles = mBackupItem.getDataFiles(i);
+            if (dataFiles.length == 0) {
+                if (!skipChecks || (!isAdb && !isSystem)) {
+                    throw new BackupException("Data restore is requested but there are no data files for index " + i + ".");
+                }
+                if (isAdb) {
+                    throw new BackupException("ADB restore is requested but there are no .ab files.");
+                }
+                if (isRestored) {
+                    throw new BackupException("System data restore is requested but there are no data files for index " + i + ".");
+                }
+                continue;
+            }
+            if (isAdb && dataFiles.length != 1) {
+                throw new BackupException("ADB restore is requested but there are no .ab files.");
+            }
+            String failurePrefix = "Data file verification failed for index " + i + ".";
+            if (isRestored) {
+                mStagedDataFiles[i] = staging.stage(dataFiles, failurePrefix);
+            } else if (!skipChecks) {
+                verifyUnusedFiles(dataFiles, failurePrefix);
+            }
+        }
+    }
+
+    private void verifyUnusedFiles(@NonNull Path[] files, @NonNull String failurePrefix) throws BackupException {
+        for (Path file : files) {
+            String checksum = DigestUtils.getHexDigest(mBackupInfo.checksumAlgo, file);
+            if (!checksum.equals(mChecksum.get(file.getName()))) {
+                throw new BackupException(failurePrefix +
+                        "\nFile: " + file +
+                        "\nFound: " + checksum +
+                        "\nRequired: " + mChecksum.get(file.getName()));
+            }
+        }
+    }
+
+    @NonNull
+    private Path[] requireStagedDataFiles(int index) throws BackupException {
+        Path[] dataFiles = mStagedDataFiles != null ? mStagedDataFiles[index] : null;
+        if (dataFiles == null) {
+            throw new BackupException("Data files for index " + index + " weren't checked before the restore.");
+        }
+        return dataFiles;
+    }
+
+    @Nullable
+    private Path findMiscFile() {
+        try {
+            return mBackupItem.getMiscFile();
+        } catch (IOException e) {
+            // There are no permissions, just skip
+            return null;
+        }
+    }
+
+    private void restoreApkFiles() throws BackupException {
+        Path[] backupSourceFiles = mStagedSourceFiles;
+        if (backupSourceFiles == null || mStaging == null) {
+            throw new BackupException("Source files weren't checked before the restore.");
         }
         boolean isVerified = true;
         if (mPackageInfo != null) {
@@ -411,18 +559,6 @@ class RestoreOp implements Closeable {
                 }
             }
         }
-        if (!mRequestedFlags.skipSignatureCheck()) {
-            String checksum;
-            for (Path file : backupSourceFiles) {
-                checksum = DigestUtils.getHexDigest(mBackupInfo.checksumAlgo, file);
-                if (!checksum.equals(mChecksum.get(file.getName()))) {
-                    throw new BackupException("Source file verification failed." +
-                            "\nFile: " + file +
-                            "\nFound: " + checksum +
-                            "\nRequired: " + mChecksum.get(file.getName()));
-                }
-            }
-        }
         // Setup package staging directory
         Path packageStagingDirectory = Paths.get(PackageUtils.PACKAGE_STAGING_DIRECTORY);
         try {
@@ -430,14 +566,11 @@ class RestoreOp implements Closeable {
                 PackageUtils.ensurePackageStagingDirectoryPrivileged();
             }
         } catch (Exception e) {
-            Log.w(TAG, "Could not prepare the privileged package staging directory; trying the backup directory.", e);
+            Log.w(TAG, "Could not prepare the privileged package staging directory; using private restore staging.", e);
         }
-        try {
-            if (!packageStagingDirectory.canWrite()) {
-                packageStagingDirectory = mBackupItem.getUnencryptedBackupPath();
-            }
-        } catch (IOException e) {
-            throw new BackupException("Could not create package staging directory", e);
+        if (!packageStagingDirectory.canWrite()) {
+            // Not the backup folder, where another app could swap the packages before the install
+            packageStagingDirectory = mStaging.newDirectory("apk-");
         }
         synchronized (sLock) {
             // Setup apk files, including split apk
@@ -454,12 +587,6 @@ class RestoreOp implements Closeable {
                 }
             } catch (IOException e) {
                 throw new BackupException("Could not create staging files", e);
-            }
-            // Decrypt sources
-            try {
-                backupSourceFiles = mBackupItem.decrypt(backupSourceFiles);
-            } catch (IOException e) {
-                throw new BackupException("Failed to decrypt " + Arrays.toString(backupSourceFiles), e);
             }
             // Extract apk files to the package staging directory
             try {
@@ -553,27 +680,9 @@ class RestoreOp implements Closeable {
         if (mPackageInfo == null) {
             throw new BackupException("KeyStore restore is requested but the app isn't installed.");
         }
-        Path[] keyStoreFiles = mBackupItem.getKeyStoreFiles();
-        if (keyStoreFiles.length == 0) {
-            throw new BackupException("KeyStore files should've existed but they didn't");
-        }
-        if (!mRequestedFlags.skipSignatureCheck()) {
-            String checksum;
-            for (Path file : keyStoreFiles) {
-                checksum = DigestUtils.getHexDigest(mBackupInfo.checksumAlgo, file);
-                if (!checksum.equals(mChecksum.get(file.getName()))) {
-                    throw new BackupException("KeyStore file verification failed." +
-                            "\nFile: " + file +
-                            "\nFound: " + checksum +
-                            "\nRequired: " + mChecksum.get(file.getName()));
-                }
-            }
-        }
-        // Decrypt sources
-        try {
-            keyStoreFiles = mBackupItem.decrypt(keyStoreFiles);
-        } catch (IOException e) {
-            throw new BackupException("Failed to decrypt " + Arrays.toString(keyStoreFiles), e);
+        Path[] keyStoreFiles = mStagedKeyStoreFiles;
+        if (keyStoreFiles == null) {
+            throw new BackupException("KeyStore files weren't checked before the restore.");
         }
         // Restore KeyStore files to the /data/misc/keystore folder
         Path keyStorePath = KeyStoreUtils.getKeyStorePath(mUserId);
@@ -620,25 +729,7 @@ class RestoreOp implements Closeable {
             throw new BackupException("Data restore is requested but the app isn't installed.");
         }
         boolean hasSystemData = SystemDataBackup.hasSystemDataToken(mBackupMetadata.dataDirs);
-        if (!mRequestedFlags.skipSignatureCheck()) {
-            // Verify integrity of the data backups
-            String checksum;
-            for (int i = 0; i < mBackupMetadata.dataDirs.length; ++i) {
-                Path[] dataFiles = mBackupItem.getDataFiles(i);
-                if (dataFiles.length == 0) {
-                    throw new BackupException("Data restore is requested but there are no data files for index " + i + ".");
-                }
-                for (Path file : dataFiles) {
-                    checksum = DigestUtils.getHexDigest(mBackupInfo.checksumAlgo, file);
-                    if (!checksum.equals(mChecksum.get(file.getName()))) {
-                        throw new BackupException("Data file verification failed for index " + i + "." +
-                                "\nFile: " + file +
-                                "\nFound: " + checksum +
-                                "\nRequired: " + mChecksum.get(file.getName()));
-                    }
-                }
-            }
-        }
+        // The archives were checked when stageInputs() copied them
         StagedDataDirectoryRestore[] stagedDataRestores = null;
         if (!hasSystemData) {
             stagedDataRestores = stageRegularDataRestores();
@@ -715,16 +806,11 @@ class RestoreOp implements Closeable {
         if (!mRequestedFlags.backupSystemData()) {
             return;
         }
-        Path[] dataFiles = mBackupItem.getDataFiles(index);
+        Path[] dataFiles = requireStagedDataFiles(index);
         if (dataFiles.length == 0) {
             throw new BackupException("System data restore is requested but there are no data files for index " + index + ".");
         }
         SystemDataBackup.Source source = SystemDataBackup.getSource(token, mUserId);
-        try {
-            dataFiles = mBackupItem.decrypt(dataFiles);
-        } catch (IOException e) {
-            throw new BackupException("Failed to decrypt " + Arrays.toString(dataFiles), e);
-        }
         try {
             TarUtils.extract(mBackupInfo.tarType, dataFiles, source.source, source.filters, source.exclusions, null);
         } catch (Exception th) {
@@ -749,49 +835,47 @@ class RestoreOp implements Closeable {
         String dataSource = BackupUtils.getWritableDataDirectory(dir, mBackupInfo.userId, mUserId);
         BackupDataDirectoryInfo dataDirectoryInfo = BackupDataDirectoryInfo.getInfo(dataSource, mUserId);
         Path dataSourceFile = dataDirectoryInfo.getDirectory();
-
-        Path[] dataFiles = mBackupItem.getDataFiles(index);
-        if (dataFiles.length == 0) {
-            throw new BackupException("Data restore is requested but there are no data files for index " + index + ".");
+        if (!isRequestedDataDirectory(dataDirectoryInfo)) {
+            return null;
         }
+        Path[] dataFiles = requireStagedDataFiles(index);
         UidGidPair uidGidPair = dataSourceFile.getUidGid();
         if (uidGidPair == null) {
             // Fallback to app UID
             uidGidPair = new UidGidPair(mUid, mUid);
-        }
-        if (dataDirectoryInfo.isExternal()) {
-            // Skip if external data restore is not requested
-            switch (dataDirectoryInfo.subtype) {
-                case BackupDataDirectoryInfo.TYPE_ANDROID_DATA:
-                    // Skip restoring Android/data directory if not requested
-                    if (!mRequestedFlags.backupExternalData()) {
-                        return null;
-                    }
-                    break;
-                case BackupDataDirectoryInfo.TYPE_ANDROID_OBB:
-                case BackupDataDirectoryInfo.TYPE_ANDROID_MEDIA:
-                    // Skip restoring Android/data or Android/media if media/obb restore not requested
-                    if (!mRequestedFlags.backupMediaObb()) {
-                        return null;
-                    }
-                    break;
-                case BackupDataDirectoryInfo.TYPE_CREDENTIAL_PROTECTED:
-                case BackupDataDirectoryInfo.TYPE_CUSTOM:
-                case BackupDataDirectoryInfo.TYPE_DEVICE_PROTECTED:
-                    // NOP
-                    break;
-            }
-        } else {
-            // Skip if internal data restore is not requested.
-            if (!mRequestedFlags.backupInternalData()) {
-                return null;
-            }
         }
         if (!dataSourceFile.exists() && dataDirectoryInfo.isExternal()
                 && !dataDirectoryInfo.isMounted && !Utils.isRoboUnitTest()) {
             throw new BackupException("External directory containing " + dataSource + " is not mounted.");
         }
         return new DataDirectoryRestoreTarget(index, dataDirectoryInfo, dataSourceFile, dataFiles, uidGidPair);
+    }
+
+    private boolean isRequestedDataDirectory(@NonNull String dataDir) {
+        String dataSource = BackupUtils.getWritableDataDirectory(dataDir, mBackupInfo.userId, mUserId);
+        return isRequestedDataDirectory(BackupDataDirectoryInfo.getInfo(dataSource, mUserId));
+    }
+
+    private boolean isRequestedDataDirectory(@NonNull BackupDataDirectoryInfo dataDirectoryInfo) {
+        if (!dataDirectoryInfo.isExternal()) {
+            // Skip if internal data restore is not requested.
+            return mRequestedFlags.backupInternalData();
+        }
+        // Skip if external data restore is not requested
+        switch (dataDirectoryInfo.subtype) {
+            case BackupDataDirectoryInfo.TYPE_ANDROID_DATA:
+                // Skip restoring Android/data directory if not requested
+                return mRequestedFlags.backupExternalData();
+            case BackupDataDirectoryInfo.TYPE_ANDROID_OBB:
+            case BackupDataDirectoryInfo.TYPE_ANDROID_MEDIA:
+                // Skip restoring Android/data or Android/media if media/obb restore not requested
+                return mRequestedFlags.backupMediaObb();
+            case BackupDataDirectoryInfo.TYPE_CREDENTIAL_PROTECTED:
+            case BackupDataDirectoryInfo.TYPE_CUSTOM:
+            case BackupDataDirectoryInfo.TYPE_DEVICE_PROTECTED:
+            default:
+                return true;
+        }
     }
 
     private void restoreDirectoryToTarget(@NonNull DataDirectoryRestoreTarget restoreTarget,
@@ -806,13 +890,8 @@ class RestoreOp implements Closeable {
                 destination.setUidGid(restoreTarget.uidGidPair);
             }
         }
-        // Decrypt data
+        // Already checked and decrypted
         Path[] dataFiles = restoreTarget.dataFiles;
-        try {
-            dataFiles = mBackupItem.decrypt(dataFiles);
-        } catch (IOException e) {
-            throw new BackupException("Failed to decrypt " + Arrays.toString(dataFiles), e);
-        }
         // Extract data to the data directory
         try {
             String publicSourceDir = new File(Objects.requireNonNull(mPackageInfo.applicationInfo).publicSourceDir).getParent();
@@ -879,15 +958,9 @@ class RestoreOp implements Closeable {
     }
 
     private void restoreAdb(int index) throws BackupException {
-        Path[] dataFiles = mBackupItem.getDataFiles(index);
+        Path[] dataFiles = requireStagedDataFiles(index);
         if (dataFiles.length != 1) {
             throw new BackupException("ADB restore is requested but there are no .ab files.");
-        }
-        // Decrypt data
-        try {
-            dataFiles = mBackupItem.decrypt(dataFiles);
-        } catch (IOException e) {
-            throw new BackupException("Failed to decrypt " + Arrays.toString(dataFiles), e);
         }
         // Restore data
         try (InputStream is = dataFiles[0].openInputStream()) {
@@ -1095,27 +1168,10 @@ class RestoreOp implements Closeable {
     }
 
     private void loadMiscRules(final PseudoRules rules) throws BackupException {
-        Path miscFile;
-        try {
-            miscFile = mBackupItem.getMiscFile();
-        } catch (IOException e) {
-            // There are no permissions, just skip
+        // Checked and decrypted by stageInputs(), or there are no permissions
+        Path miscFile = mStagedMiscFile;
+        if (miscFile == null) {
             return;
-        }
-        if (!mRequestedFlags.skipSignatureCheck()) {
-            String checksum = DigestUtils.getHexDigest(mBackupInfo.checksumAlgo, miscFile);
-            if (!checksum.equals(mChecksum.get(miscFile.getName()))) {
-                throw new BackupException("Couldn't verify misc file." +
-                        "\nFile: " + miscFile +
-                        "\nFound: " + checksum +
-                        "\nRequired: " + mChecksum.get(miscFile.getName()));
-            }
-        }
-        // Decrypt permission file
-        try {
-            miscFile = mBackupItem.decrypt(new Path[]{miscFile})[0];
-        } catch (IOException | IndexOutOfBoundsException e) {
-            throw new BackupException("Failed to decrypt " + miscFile.getName(), e);
         }
         try {
             rules.loadExternalEntries(miscFile);
@@ -1129,31 +1185,11 @@ class RestoreOp implements Closeable {
         if (!mIsInstalled) {
             throw new BackupException("Rules restore is requested but the app isn't installed.");
         }
-        Path rulesFile;
-        try {
-            rulesFile = mBackupItem.getRulesFile();
-        } catch (IOException e) {
-            if (mBackupMetadata.hasRules) {
-                throw new BackupException("Rules file is missing.", e);
-            } else {
-                // There are no rules, just skip
-                return;
-            }
-        }
-        if (!mRequestedFlags.skipSignatureCheck()) {
-            String checksum = DigestUtils.getHexDigest(mBackupInfo.checksumAlgo, rulesFile);
-            if (!checksum.equals(mChecksum.get(rulesFile.getName()))) {
-                throw new BackupException("Couldn't verify permission file." +
-                        "\nFile: " + rulesFile +
-                        "\nFound: " + checksum +
-                        "\nRequired: " + mChecksum.get(rulesFile.getName()));
-            }
-        }
-        // Decrypt rules file
-        try {
-            rulesFile = mBackupItem.decrypt(new Path[]{rulesFile})[0];
-        } catch (IOException | IndexOutOfBoundsException e) {
-            throw new BackupException("Failed to decrypt " + rulesFile.getName(), e);
+        // Checked and decrypted by stageInputs(), which also failed the restore if rules were due
+        Path rulesFile = mStagedRulesFile;
+        if (rulesFile == null) {
+            // There are no rules, just skip
+            return;
         }
         try (RulesImporter importer = new RulesImporter(Arrays.asList(RuleType.values()), new int[]{mUserId})) {
             importer.addRulesFromPath(rulesFile);

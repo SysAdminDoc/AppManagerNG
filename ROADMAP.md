@@ -549,16 +549,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
 
 ### P1
 
-- [ ] P1 — Bind restore verification to the bytes that are consumed
-  Category: Security
-  Where: `app/src/main/java/io/github/muntashirakon/AppManager/settings/Prefs.java:1162-1182`; `app/src/main/java/io/github/muntashirakon/AppManager/backup/RestoreOp.java:369-460,609-815`; `app/src/main/java/io/github/muntashirakon/io/PathImpl.java:1263-1285`; `libcore/io/src/main/java/io/github/muntashirakon/io/SplitInputStream.java:214-231`
-  Problem: Restore hashes one provider stream, then reopens the path for listing, decryption, staging, or extraction, so a mutable provider can change the consumed archive after verification.
-  Evidence: Digesting and extraction independently call `openInputStream`; plaintext backup paths are returned unchanged, and destructive restore work can begin from bytes that were never hashed.
-  Fix: Copy every selected archive into private staging once, enforce size limits while copying, verify that exact staged object, and perform all later reads from it.
-  Acceptance: A provider that changes content between opens cannot alter the restored payload; checksum or authentication failure occurs before app data is cleared; plaintext, encrypted, split, APK, and data archives share the same stage-once contract and cleanup tests.
-  Confidence: Verified
-  Effort: L
-
 - [ ] P1 — Treat Pure black as a night-only palette
   Category: Accessibility
   Where: `app/src/main/java/io/github/muntashirakon/AppManager/settings/AppearancePreferences.java:44-70`; `app/src/main/java/io/github/muntashirakon/AppManager/settings/Prefs.java:199-235`; `app/src/main/java/io/github/muntashirakon/AppManager/utils/appearance/AppearanceUtils.java:189-221,365-370`; `app/src/main/res/values/themes-v2.xml:93-127,249`
@@ -952,3 +942,30 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Touches: `self/PackageEventSync.java`, `ComponentsBlocker.applyRules`, a notification with an Apply action, a Rules setting (off by default) to apply without asking, op history, strings, a Robolectric test.
   Acceptance: after a reinstall of an app with saved rules, NG posts one notification offering to apply them. With the setting on, root, ADB and Shizuku modes apply them without asking and write an op-history entry. In no-root mode the notification says a privileged mode is needed. A test drives a reinstall through `diff` and asserts the offer, or the apply when the setting is on.
   Complexity: M
+
+## Found While Fixing Restore Staging (2026-11-15)
+
+### P1
+
+- [ ] P1: Refuse an encrypted backup that comes back unencrypted
+  Why: `info_v5.am.json` is never encrypted (`BackupItems.java:562`), and it alone says which crypto mode a backup uses and so which checksums count. Anyone who can write the backup folder (shared storage, or a document provider) can swap an encrypted backup for plain files, set `crypto` to none and write matching checksums. No key is needed, and the restore still runs as root into the app's data.
+  Evidence: `RestoreOp.java:161-182` takes `mBackupInfo.crypto` from that file and sets up crypto from it. The checksums file it then trusts (`:191`) sits in the same folder. Nothing compares the mode with what the backup was made with (the backups table records it).
+  Touches: `RestoreOp`'s setup, `BackupItems.BackupItem.getInfo`, the `Backup` entity or a keyed tag on the info file, a restore test.
+  Acceptance: WHEN a backup recorded as encrypted is restored and its info file now says unencrypted (or names another mode), the system SHALL stop with a message naming both modes before any app data is cleared, and a Robolectric test SHALL drive that swap through `RestoreOp`.
+  Complexity: M
+
+- [ ] P1: Keep the plain copy of an encrypted backup out of shared storage while it's made
+  Why: backing up with encryption on first writes plain tar files to `FileUtils.getCachePath()`, which is the external cache when one exists (`FileUtils.java:185-191`). On Android 10 and older, other apps with the storage permission can read those files (the data the user chose to encrypt) or change them before they're encrypted.
+  Evidence: `BackupItems.requireUnencryptedBackupPath()` still uses `getTemporaryUnencryptedPath` (`BackupItems.java:286`) in backup mode. The restore side moved to private staging on 2026-11-15, the backup side didn't.
+  Touches: `BackupItems.requireUnencryptedBackupPath`, `getTemporaryUnencryptedPath`, `FileCache.getPrivateStagingDir`, the free-space check, `BackupManagerTest`.
+  Acceptance: WHEN a backup with encryption is made, the system SHALL write its plain files only under the app's no-backup data directory and delete them when the backup ends or fails, and a test SHALL assert no plain file is created under the external cache.
+  Complexity: S
+
+### P2
+
+- [ ] P2: Check backup metadata against its checksum before parsing it
+  Why: the restore parses `meta_v5.am.json` (`RestoreOp.java:185`) before `verifyMetadata()` hashes it (`:199`), and the two read the file separately. The parse acts on bytes that were never checked, and a provider can hand the hash a different file than the parser got.
+  Evidence: `MetadataManager.readMetadata` opens the file, then `verifyMetadata` opens it again for the digest. The same two-read pattern was fixed for archives with `RestoreStaging` on 2026-11-15.
+  Touches: `RestoreOp` setup, `MetadataManager.readMetadata`, `RestoreStaging` (stage the metadata file first), `RestoreStagingTest`.
+  Acceptance: WHEN the metadata file changes between two reads, the system SHALL parse and hash the same staged copy, and a test that swaps the file after the hash SHALL see the restore read only the hashed bytes or stop.
+  Complexity: S
