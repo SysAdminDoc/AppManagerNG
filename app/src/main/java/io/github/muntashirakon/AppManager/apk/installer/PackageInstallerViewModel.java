@@ -22,8 +22,11 @@ import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.lifecycle.AndroidViewModel;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.Observer;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,6 +37,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Future;
@@ -208,6 +212,8 @@ public class PackageInstallerViewModel extends AndroidViewModel {
      * Package info for the screen. A posted value reaches the main thread later, so one posted just before Next
      * was tapped would arrive once the next item's load had started and show, or batch install, the previous
      * package as the next one. Only the value posted last, by a load that is still current, gets through.
+     * LiveData also hands its stored value to every observer that attaches, as the screen's does when it's
+     * recreated, so observers are wrapped to drop that value once a newer load has started.
      */
     private final class LoadLiveData extends MutableLiveData<PackageInfo> {
         @GuardedBy("mApkFileLock")
@@ -215,6 +221,47 @@ public class PackageInstallerViewModel extends AndroidViewModel {
         @GuardedBy("mApkFileLock")
         @Nullable
         private PackageInfo mPosted;
+        // The load whose value is stored
+        @GuardedBy("mApkFileLock")
+        private int mStoredGeneration;
+        // Main thread only, like the observer calls
+        private final Map<Observer<? super PackageInfo>, Gate> mGates = new HashMap<>();
+
+        @Override
+        public void observe(@NonNull LifecycleOwner owner, @NonNull Observer<? super PackageInfo> observer) {
+            if (owner.getLifecycle().getCurrentState() == Lifecycle.State.DESTROYED) {
+                // LiveData ignores it, and would never remove a gate made for it
+                return;
+            }
+            super.observe(owner, gate(observer));
+        }
+
+        @Override
+        public void observeForever(@NonNull Observer<? super PackageInfo> observer) {
+            super.observeForever(gate(observer));
+        }
+
+        @Override
+        public void removeObserver(@NonNull Observer<? super PackageInfo> observer) {
+            // LiveData removes the gate itself when its owner is destroyed
+            if (observer instanceof Gate) {
+                mGates.remove(((Gate) observer).mObserver);
+                super.removeObserver(observer);
+                return;
+            }
+            Gate gate = mGates.remove(observer);
+            super.removeObserver(gate != null ? gate : observer);
+        }
+
+        @NonNull
+        private Gate gate(@NonNull Observer<? super PackageInfo> observer) {
+            Gate gate = mGates.get(observer);
+            if (gate == null) {
+                gate = new Gate(observer);
+                mGates.put(observer, gate);
+            }
+            return gate;
+        }
 
         @GuardedBy("mApkFileLock")
         void post(int generation, @Nullable PackageInfo packageInfo) {
@@ -231,8 +278,28 @@ public class PackageInstallerViewModel extends AndroidViewModel {
                 if (value != mPosted || !isCurrentLoad(mPostedGeneration)) {
                     return;
                 }
+                mStoredGeneration = mPostedGeneration;
             }
             super.setValue(value);
+        }
+
+        private final class Gate implements Observer<PackageInfo> {
+            @NonNull
+            final Observer<? super PackageInfo> mObserver;
+
+            Gate(@NonNull Observer<? super PackageInfo> observer) {
+                mObserver = observer;
+            }
+
+            @Override
+            public void onChanged(@Nullable PackageInfo value) {
+                synchronized (mApkFileLock) {
+                    if (!isCurrentLoad(mStoredGeneration)) {
+                        return;
+                    }
+                }
+                mObserver.onChanged(value);
+            }
         }
     }
 

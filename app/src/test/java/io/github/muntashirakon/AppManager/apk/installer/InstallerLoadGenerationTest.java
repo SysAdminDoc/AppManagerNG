@@ -20,6 +20,10 @@ import android.os.Parcel;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.LifecycleRegistry;
+import androidx.lifecycle.Observer;
 import androidx.test.core.app.ApplicationProvider;
 
 import org.json.JSONObject;
@@ -172,6 +176,64 @@ public class InstallerLoadGenerationTest {
         assertSame(newer.newPackageInfo, delivered.get(0));
     }
 
+    /**
+     * LiveData hands its stored value to an observer that attaches later, which is what the screen's
+     * observer does when the screen is recreated, say on rotation.
+     */
+    @Test
+    public void aRecreatedScreenIsNotHandedTheItemItMovedPast() throws Exception {
+        PackageInstallerViewModel model = new PackageInstallerViewModel(ApplicationProvider.getApplicationContext());
+        Owner screen = new Owner();
+        List<PackageInfo> delivered = new ArrayList<>();
+        model.packageInfoLiveData().observe(screen, delivered::add);
+        int first = model.startLoad();
+        PackageInstallerViewModel.LoadedPackage loaded = loaded("first", "com.example.first", null);
+        assertTrue(model.publish(first, loaded, null));
+        shadowOf(Looper.getMainLooper()).idle();
+        assertEquals(1, delivered.size());
+
+        // Next is tapped, and the screen is recreated before the next item has loaded
+        model.startLoad();
+        screen.registry.setCurrentState(Lifecycle.State.DESTROYED);
+        assertFalse(model.packageInfoLiveData().hasObservers());
+        Owner recreated = new Owner();
+        List<PackageInfo> afterRecreation = new ArrayList<>();
+        model.packageInfoLiveData().observe(recreated, afterRecreation::add);
+
+        assertTrue(afterRecreation.isEmpty());
+    }
+
+    @Test
+    public void aRecreatedScreenIsHandedTheItemStillOnIt() throws Exception {
+        PackageInstallerViewModel model = new PackageInstallerViewModel(ApplicationProvider.getApplicationContext());
+        int first = model.startLoad();
+        PackageInstallerViewModel.LoadedPackage loaded = loaded("first", "com.example.first", null);
+        assertTrue(model.publish(first, loaded, null));
+        shadowOf(Looper.getMainLooper()).idle();
+
+        Owner recreated = new Owner();
+        List<PackageInfo> delivered = new ArrayList<>();
+        model.packageInfoLiveData().observe(recreated, delivered::add);
+
+        assertEquals(1, delivered.size());
+        assertSame(loaded.newPackageInfo, delivered.get(0));
+    }
+
+    @Test
+    public void aRemovedObserverIsHandedNothingMore() throws Exception {
+        PackageInstallerViewModel model = new PackageInstallerViewModel(ApplicationProvider.getApplicationContext());
+        List<PackageInfo> delivered = new ArrayList<>();
+        Observer<PackageInfo> observer = delivered::add;
+        model.packageInfoLiveData().observeForever(observer);
+        model.packageInfoLiveData().removeObserver(observer);
+        assertFalse(model.packageInfoLiveData().hasObservers());
+
+        assertTrue(model.publish(model.startLoad(), loaded("first", "com.example.first", null), null));
+        shadowOf(Looper.getMainLooper()).idle();
+
+        assertTrue(delivered.isEmpty());
+    }
+
     @Test
     public void aLoadCancelledForTheNextItemDoesNotReportItsFailureForThatItem() throws Exception {
         PackageInstallerViewModel model = new PackageInstallerViewModel(ApplicationProvider.getApplicationContext());
@@ -245,6 +307,21 @@ public class InstallerLoadGenerationTest {
             assertTrue("Nothing reached the screen", System.nanoTime() < deadline);
             Thread.sleep(10);
             shadowOf(Looper.getMainLooper()).idle();
+        }
+    }
+
+    /** A screen that has started. */
+    private static final class Owner implements LifecycleOwner {
+        final LifecycleRegistry registry = new LifecycleRegistry(this);
+
+        Owner() {
+            registry.setCurrentState(Lifecycle.State.STARTED);
+        }
+
+        @NonNull
+        @Override
+        public Lifecycle getLifecycle() {
+            return registry;
         }
     }
 
