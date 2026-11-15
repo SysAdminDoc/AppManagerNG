@@ -186,7 +186,8 @@ public class BatchOpsService extends ForegroundService {
         mJournalPending = false;
         unregisterPrivilegedDeathWatch();
         OpHistoryManager.addHistoryItem(HISTORY_TYPE_BATCH_OPS, item, result.isSuccessful(),
-                OperationJournalMetadata.forBatchOperation(this, item, result));
+                OperationJournalMetadata.forBatchOperation(this, item, result)
+                        .withExecutionId(batchOpsManager.getExecutionId()));
         if (result.isSuccessful()) {
             sendResults(Activity.RESULT_OK, item, result);
         } else {

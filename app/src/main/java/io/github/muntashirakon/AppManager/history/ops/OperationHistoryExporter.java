@@ -5,12 +5,16 @@ package io.github.muntashirakon.AppManager.history.ops;
 import android.content.Context;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
@@ -23,6 +27,13 @@ public final class OperationHistoryExporter {
     @NonNull
     public static String toJson(@NonNull Context context, @NonNull List<OpHistoryItem> histories)
             throws JSONException {
+        return toJson(context, histories, null);
+    }
+
+    /** {@link #toJson(Context, List)} with mutation images attached, each saying whether it verified. */
+    @NonNull
+    public static String toJson(@NonNull Context context, @NonNull List<OpHistoryItem> histories,
+                                @Nullable List<MutationJournal.Entry> images) throws JSONException {
         JSONObject export = new JSONObject();
         export.put("schema_version", 1);
         export.put("generated_at", System.currentTimeMillis());
@@ -33,7 +44,38 @@ public final class OperationHistoryExporter {
             entries.put(history.getExportJson(context));
         }
         export.put("entries", entries);
+        if (images != null) {
+            export.put("mutation_image_count", images.size());
+            export.put("mutation_images", MutationJournal.toJson(images));
+        }
         return export.toString(2);
+    }
+
+    /**
+     * The images that go with the exported rows: all of them when the whole history is exported, otherwise only
+     * those written by the executions of those rows.
+     */
+    @NonNull
+    public static List<MutationJournal.Entry> imagesFor(@NonNull List<OpHistoryItem> histories,
+                                                        @NonNull List<MutationJournal.Entry> images,
+                                                        boolean wholeHistory) {
+        if (wholeHistory) {
+            return images;
+        }
+        Set<String> executionIds = new HashSet<>();
+        for (OpHistoryItem history : histories) {
+            String executionId = history.getExecutionId();
+            if (executionId != null) {
+                executionIds.add(executionId);
+            }
+        }
+        List<MutationJournal.Entry> result = new ArrayList<>();
+        for (MutationJournal.Entry entry : images) {
+            if (executionIds.contains(entry.image.executionId)) {
+                result.add(entry);
+            }
+        }
+        return result;
     }
 
     @NonNull

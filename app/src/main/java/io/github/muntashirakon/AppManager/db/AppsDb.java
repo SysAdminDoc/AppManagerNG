@@ -32,6 +32,7 @@ import io.github.muntashirakon.AppManager.db.dao.CachedScanResultDao;
 import io.github.muntashirakon.AppManager.db.dao.FmFavoriteDao;
 import io.github.muntashirakon.AppManager.db.dao.FreezeTypeDao;
 import io.github.muntashirakon.AppManager.db.dao.LogFilterDao;
+import io.github.muntashirakon.AppManager.db.dao.MutationImageDao;
 import io.github.muntashirakon.AppManager.db.dao.OpHistoryDao;
 import io.github.muntashirakon.AppManager.db.dao.AppUpdateChangeReportDao;
 import io.github.muntashirakon.AppManager.db.entity.App;
@@ -42,15 +43,31 @@ import io.github.muntashirakon.AppManager.db.entity.CachedScanResult;
 import io.github.muntashirakon.AppManager.db.entity.FmFavorite;
 import io.github.muntashirakon.AppManager.db.entity.FreezeType;
 import io.github.muntashirakon.AppManager.db.entity.LogFilter;
+import io.github.muntashirakon.AppManager.db.entity.MutationImage;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.logs.Log;
 
-@Database(entities = {App.class, AppNote.class, LogFilter.class, Backup.class, OpHistory.class, FmFavorite.class, FreezeType.class, CachedScanResult.class, AppUpdateChangeReport.class}, version = AppsDb.VERSION)
+@Database(entities = {App.class, AppNote.class, LogFilter.class, Backup.class, OpHistory.class, FmFavorite.class, FreezeType.class, CachedScanResult.class, AppUpdateChangeReport.class, MutationImage.class}, version = AppsDb.VERSION)
 public abstract class AppsDb extends RoomDatabase {
     private static final String TAG = AppsDb.class.getSimpleName();
 
-    static final int VERSION = 13;
+    static final int VERSION = 14;
+
+    /** Refuses every UPDATE of a mutation image. Room's schema check doesn't look at triggers, so it's added here. */
+    @VisibleForTesting
+    public static final String MUTATION_IMAGE_APPEND_ONLY_TRIGGER = "CREATE TRIGGER IF NOT EXISTS "
+            + "`mutation_image_append_only` BEFORE UPDATE ON `mutation_image` "
+            + "BEGIN SELECT RAISE(ABORT, 'mutation_image is append-only'); END";
+
+    /** Puts the append-only trigger back on every open, so a file made fresh or one it went missing from gets it. */
+    @VisibleForTesting
+    public static final RoomDatabase.Callback APPEND_ONLY_GUARD = new RoomDatabase.Callback() {
+        @Override
+        public void onOpen(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL(MUTATION_IMAGE_APPEND_ONLY_TRIGGER);
+        }
+    };
     static final String NAME = "apps.db";
 
     private static AppsDb sAppsDb;
@@ -178,8 +195,37 @@ public abstract class AppsDb extends RoomDatabase {
         }
     };
 
+    /** v14 adds {@code mutation_image}, the append-only record of each state change and what it replaced. */
+    public static final Migration M_13_14 = new Migration(13, 14) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS `mutation_image` ("
+                    + "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, "
+                    + "`execution_id` TEXT NOT NULL, "
+                    + "`executor` TEXT NOT NULL, "
+                    + "`operation` TEXT NOT NULL, "
+                    + "`package_name` TEXT NOT NULL, "
+                    + "`user_id` INTEGER NOT NULL, "
+                    + "`kind` TEXT NOT NULL, "
+                    + "`target` TEXT NOT NULL, "
+                    + "`before_value` TEXT, "
+                    + "`requested_value` TEXT NOT NULL, "
+                    + "`post_value` TEXT, "
+                    + "`result` TEXT NOT NULL, "
+                    + "`time` INTEGER NOT NULL, "
+                    + "`prev_mac` TEXT NOT NULL, "
+                    + "`mac` TEXT NOT NULL)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_mutation_image_package_name_user_id` "
+                    + "ON `mutation_image` (`package_name`, `user_id`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_mutation_image_execution_id` "
+                    + "ON `mutation_image` (`execution_id`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_mutation_image_time` ON `mutation_image` (`time`)");
+            db.execSQL(MUTATION_IMAGE_APPEND_ONLY_TRIGGER);
+        }
+    };
+
     static final Migration[] MIGRATIONS = {M_1_2, M_2_3, M_3_4, M_4_5, M_5_6, M_6_7, M_7_8, M_8_9, M_9_10,
-            M_10_11, M_11_12, M_12_13};
+            M_10_11, M_11_12, M_12_13, M_13_14};
 
     public static synchronized AppsDb getInstance() {
         // Synchronized: a concurrent first-caller could otherwise build a second
@@ -276,12 +322,13 @@ public abstract class AppsDb extends RoomDatabase {
         return Room.databaseBuilder(context, AppsDb.class, name)
                 .openHelperFactory(AppsDbRecovery.corruptionGuard(context, name))
                 .addMigrations(migrations)
+                .addCallback(APPEND_ONLY_GUARD)
                 .build();
     }
 
     @NonNull
     private static AppsDb inMemory(@NonNull Context context) {
-        return Room.inMemoryDatabaseBuilder(context, AppsDb.class).build();
+        return Room.inMemoryDatabaseBuilder(context, AppsDb.class).addCallback(APPEND_ONLY_GUARD).build();
     }
 
     /**
@@ -341,6 +388,9 @@ public abstract class AppsDb extends RoomDatabase {
     public abstract LogFilterDao logFilterDao();
 
     public abstract OpHistoryDao opHistoryDao();
+
+    @NonNull
+    public abstract MutationImageDao mutationImageDao();
 
     @NonNull
     public abstract AppUpdateChangeReportDao appUpdateChangeReportDao();

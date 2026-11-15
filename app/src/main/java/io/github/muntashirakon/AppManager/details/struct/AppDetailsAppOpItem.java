@@ -227,8 +227,7 @@ public class AppDetailsAppOpItem extends AppDetailsItem<Integer> {
      * Upstream 6495496ce: this went by the op's current mode, so allowing an ignored op revoked
      * the permission and denying an allowed one granted it.
      */
-    @VisibleForTesting
-    static boolean grantsLinkedPermission(@AppOpsManagerCompat.Mode int requestedMode) {
+    public static boolean grantsLinkedPermission(@AppOpsManagerCompat.Mode int requestedMode) {
         if (requestedMode == AppOpsManager.MODE_ALLOWED) {
             return true;
         }

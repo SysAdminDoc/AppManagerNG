@@ -438,14 +438,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
 
 ### P1
 
-- [ ] P1: Store exact mutation before and after images
-  Why: inverse-operation rollback can overwrite a newer change because it does not prove that current state still matches the state AppManagerNG wrote.
-  Evidence: upstream App Manager #1959; Thor's Changed elsewhere model; `history/ops/PerAppRollbackManager.java`; current operation history and App Change Feed stores. The existing App Details readback item covers two screen caches, not durable cross-operation rollback.
-  Touches: operation-history schema, mutation executors, authoritative readback adapters, `PerAppRollbackManager.java`, rollback review UI, retention and export, tests.
-  Acceptance: every supported mutation records target, operation, exact before value, requested value, confirmed post value, execution identity, result, and timestamp in an append-only entry; rollback reads current state first and proceeds only when it matches the recorded post value; a mismatch displays Changed elsewhere with both values and performs no write; partial batch results remain independently reversible; schema migration, pruning, restart, export, and tamper tests pass.
-  Research 2026-11-13: upstream's unreleased Actions engine (434037c40, 2026-10-12) tracks `RevertMode` and `ActionConflict` and refuses to revert over an outside change, the same check this item asks for. Borrow its conflict cases, not the engine (RESEARCH.md, Rejected Ideas).
-  Complexity: L
-
 - [ ] P1: Keep shortcut-launched targets in Recents
   Why: the shortcut trampoline is excluded from Recents and no-history, then calls `finishActivity(0)`, which can leave the launched target without the normal task lifecycle users expect.
   Evidence: upstream App Manager #2054; Android Tasks and Recents documentation; shortcut-management guidance; `details/ActivityLauncherShortcutActivity.java`; its manifest entry.
@@ -995,3 +987,14 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Touches: `FrameworkTables.java`, `AndroidBinXmlDecoder.java`, the manifest viewer's load path, tests.
   Acceptance: WHEN decoding an installed system app whose compile SDK equals the device's SDK, the system SHALL take private framework names from the device's `/system/framework/framework-res.apk` instead of the bundled AOSP table; other apps keep the bundled tables; a device table that can't be read falls back to raw IDs, never to another table's name.
   Complexity: M
+
+## Found While Storing Mutation Images (2026-11-15)
+
+### P2
+
+- [ ] P2: Record mutation images for the remaining state writers
+  Why: App Info, the app's tabs, Running apps and batch operations now store before, requested and read-back values, so per-app revert can refuse to overwrite an outside change. Other writers still change the same settings without an image, so revert falls back to the blind inverse for them or can't undo them at all.
+  Evidence: freeze writers in `AutoFreezeOnLockWorker`, `FreezeUnfreezeActivity`, `FreezeUnfreezeService`, `AssistActionActivity` and `shortcut/AppActionShortcutActivity`; permission writers in `permissions/PermissionToggleHelper` (Permission Inspector) and `permissions/SpecialAccessCatalog`; `backup/RestoreOp`, `rules/compontents/ComponentsBlocker`, `ComponentUtils`, `profiles/ProfileApplierService` and `permission/watcher/SystemWatchBackend`; component and tracker batch ops record no image because `MutationState` has no component kind.
+  Touches: those writers, `MutationState.java` (a component kind: enabled state plus blocking rule), `PerAppRollbackManager.java`, tests.
+  Acceptance: WHEN any writer listed above changes a freeze state, permission, app op, network policy or component, the system SHALL store a mutation image with the same fields and chain as the hooked writers, and per-app revert SHALL put that target back only while its current value equals the recorded post value. A component image SHALL restore the previous enabled state and blocking rule. WHEN a freeze moves from one frozen state to another, revert SHALL either restore it through a sequence that ends in the recorded before value or keep it in manual review with that reason shown.
+  Complexity: L

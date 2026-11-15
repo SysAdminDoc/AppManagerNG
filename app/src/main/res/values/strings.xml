@@ -3962,6 +3962,13 @@
         <item quantity="one">%d operation</item>
         <item quantity="other">%d operations</item>
     </plurals>
+    <string name="per_app_rollback_image_step">%1$s: %2$s, back to %3$s</string>
+    <string name="per_app_rollback_changed_elsewhere">Changed elsewhere: %1$s. AppManagerNG left %2$s, now %3$s</string>
+    <string name="per_app_rollback_target_net_policy">Network policy</string>
+    <plurals name="per_app_rollback_changed_elsewhere_count">
+        <item quantity="one">%d setting was changed elsewhere after AppManagerNG set it, so it\'s left alone.</item>
+        <item quantity="other">%d settings were changed elsewhere after AppManagerNG set them, so they\'re left alone.</item>
+    </plurals>
     <!-- Snapshot Bundle Export/Import (Now/T11) -->
     <string name="pref_snapshot_category">Snapshot bundle</string>
     <string name="pref_snapshot_export">Export AppManagerNG snapshot</string>

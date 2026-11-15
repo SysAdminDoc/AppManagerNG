@@ -153,6 +153,12 @@ public class OpHistoryItem {
         return metadata != null;
     }
 
+    /** The execution whose mutation images belong to this row, or null for rows written before images. */
+    @Nullable
+    public String getExecutionId() {
+        return metadata != null ? metadata.getExecutionId() : null;
+    }
+
     @OperationJournalMetadata.Risk
     public int getRisk() {
         return metadata != null ? metadata.getRisk() : OperationJournalMetadata.RISK_MEDIUM;

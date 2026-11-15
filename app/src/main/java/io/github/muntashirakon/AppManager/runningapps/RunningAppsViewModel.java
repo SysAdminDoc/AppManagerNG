@@ -37,6 +37,8 @@ import java.util.concurrent.TimeUnit;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
+import io.github.muntashirakon.AppManager.history.ops.MutationRecorder;
+import io.github.muntashirakon.AppManager.history.ops.MutationState;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.history.ops.OperationJournalMetadata;
 import io.github.muntashirakon.AppManager.history.ops.SingleAppActionHistoryItem;
@@ -58,6 +60,8 @@ import io.github.muntashirakon.proc.ProcMemoryInfo;
 
 public class RunningAppsViewModel extends AndroidViewModel {
     private static final String TAG = RunningAppsViewModel.class.getSimpleName();
+    /** Names the images "prevent background run" stores; it writes no history row of its own. */
+    private static final String OPERATION_PREVENT_BACKGROUND_RUN = "prevent_background_run";
 
     @RunningAppsActivity.SortOrder
     private int mSortOrder;
@@ -330,12 +334,22 @@ public class RunningAppsViewModel extends AndroidViewModel {
                             AppOpsUidGuard.MutationSource.IGNORE_DANGEROUS);
                 }
                 AppOpsManagerCompat appOpsService = new AppOpsManagerCompat();
+                int userId = UserHandleHidden.getUserId(info.uid);
+                MutationRecorder recorder = MutationRecorder.forSystem(MutationRecorder.newExecutionId(),
+                        MutationRecorder.singleOperation(OPERATION_PREVENT_BACKGROUND_RUN));
                 for (int op : appOps) {
-                    appOpsService.setMode(op, info.uid, info.packageName, AppOpsManager.MODE_IGNORED,
-                            AppOpsUidGuard.MutationSource.IGNORE_DANGEROUS, null);
+                    MutationRecorder.Pending image = recorder.begin(info.packageName, userId,
+                            MutationState.KIND_APP_OP, String.valueOf(op), String.valueOf(AppOpsManager.MODE_IGNORED));
+                    boolean written = false;
+                    try {
+                        appOpsService.setMode(op, info.uid, info.packageName, AppOpsManager.MODE_IGNORED,
+                                AppOpsUidGuard.MutationSource.IGNORE_DANGEROUS, null);
+                        written = true;
+                    } finally {
+                        image.finish(written);
+                    }
                 }
                 if (appOps.length > 0) {
-                    int userId = UserHandleHidden.getUserId(info.uid);
                     try (ComponentsBlocker cb = ComponentsBlocker.getMutableInstance(info.packageName, userId)) {
                         for (int op : appOps) {
                             cb.setAppOp(op, AppOpsManager.MODE_IGNORED);
@@ -356,8 +370,11 @@ public class RunningAppsViewModel extends AndroidViewModel {
             List<BackgroundRunAppOpPlan.OpModeChange> plan = Collections.emptyList();
             List<BackgroundRunAppOpPlan.OpModeChange> appliedChanges = new ArrayList<>();
             Throwable failure = null;
+            MutationRecorder recorder = MutationRecorder.forSystem(MutationRecorder.newExecutionId(),
+                    MutationRecorder.singleOperation(SingleAppActionHistoryItem.ACTION_APP_OP_SET));
             try {
                 int[] appOps = getBackgroundRunAppOpsForSdk(Build.VERSION.SDK_INT);
+                int userId = UserHandleHidden.getUserId(info.uid);
                 AppOpsManagerCompat appOpsService = new AppOpsManagerCompat();
                 int[] currentModes = readAppOpModes(appOpsService, appOps, info);
                 plan = BackgroundRunAppOpPlan.createRestorePlan(appOps, currentModes, null);
@@ -370,13 +387,19 @@ public class RunningAppsViewModel extends AndroidViewModel {
                             AppOpsUidGuard.MutationSource.DIRECT);
                 }
                 for (BackgroundRunAppOpPlan.OpModeChange change : plan) {
+                    MutationRecorder.Pending image = recorder.begin(info.packageName, userId,
+                            MutationState.KIND_APP_OP, String.valueOf(change.op), String.valueOf(change.restoreMode));
+                    boolean written = false;
                     try {
                         appOpsService.setMode(change.op, info.uid, info.packageName, change.restoreMode,
                                 AppOpsUidGuard.MutationSource.DIRECT, null);
                         appliedChanges.add(change);
+                        written = true;
                     } catch (RemoteException | SecurityException e) {
                         failure = e;
                         Log.e("RunningApps", "Could not restore background app-op " + change.op, e);
+                    } finally {
+                        image.finish(written);
                     }
                 }
                 if (!appliedChanges.isEmpty()) {
@@ -390,7 +413,7 @@ public class RunningAppsViewModel extends AndroidViewModel {
                 Log.e("RunningApps", "Could not restore background operation.", e);
             }
             boolean success = failure == null && appliedChanges.size() == plan.size();
-            recordBackgroundRunRestoreHistory(info, appliedChanges, success, failure);
+            recordBackgroundRunRestoreHistory(info, appliedChanges, success, failure, recorder.getExecutionId());
             mRestoreBackgroundRunResult.postValue(new BackgroundRunResult(info, success,
                     AppOpsUidGuard.findImpact(failure)));
         });
@@ -454,7 +477,8 @@ public class RunningAppsViewModel extends AndroidViewModel {
     private void recordBackgroundRunRestoreHistory(@NonNull ApplicationInfo info,
                                                    @NonNull List<BackgroundRunAppOpPlan.OpModeChange> changes,
                                                    boolean success,
-                                                   @Nullable Throwable failure) {
+                                                   @Nullable Throwable failure,
+                                                   @NonNull String executionId) {
         try {
             int userId = UserHandleHidden.getUserId(info.uid);
             SingleAppActionHistoryItem item = new SingleAppActionHistoryItem(
@@ -466,7 +490,7 @@ public class RunningAppsViewModel extends AndroidViewModel {
                     formatBackgroundRunRestoreDetail(changes));
             OpHistoryManager.addHistoryItem(OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION, item, success,
                     OperationJournalMetadata.forSingleAppAction(getApplication(), item, success,
-                            OperationJournalMetadata.RISK_MEDIUM, false, failure));
+                            OperationJournalMetadata.RISK_MEDIUM, false, failure).withExecutionId(executionId));
         } catch (Exception e) {
             Log.e("RunningApps", "Could not record background-run restore history.", e);
         }

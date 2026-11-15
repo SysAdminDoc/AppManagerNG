@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.history.ops;
 
 import android.app.Application;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -781,29 +782,54 @@ public class OpHistoryActivity extends BaseActivity {
     }
 
     private void exportVisibleHistory(boolean asJson) {
-        exportHistory(getVisibleHistory(), asJson);
+        exportHistory(getVisibleHistory(), asJson, false);
     }
 
     private void exportAllHistory(boolean asJson) {
-        exportHistory(getAllHistoryForAction(), asJson);
+        exportHistory(getAllHistoryForAction(), asJson, true);
     }
 
-    private void exportHistory(@NonNull List<OpHistoryItem> histories, boolean asJson) {
+    private void exportHistory(@NonNull List<OpHistoryItem> histories, boolean asJson, boolean wholeHistory) {
         if (histories.isEmpty()) {
             UIUtils.displayShortToast(R.string.no_history);
             return;
         }
-        try {
-            mPendingExport = asJson
-                    ? OperationHistoryExporter.toJson(this, histories)
-                    : OperationHistoryExporter.toCsv(this, histories);
-            mExportHistory.launch(getString(asJson
-                    ? R.string.op_history_export_filename_json
-                    : R.string.op_history_export_filename_csv));
-        } catch (JSONException e) {
-            Log.e(TAG, "Could not export operation history.", e);
-            UIUtils.displayShortToast(R.string.export_failed);
+        if (!asJson) {
+            mPendingExport = OperationHistoryExporter.toCsv(this, histories);
+            mExportHistory.launch(getString(R.string.op_history_export_filename_csv));
+            return;
         }
+        Context context = getApplicationContext();
+        ThreadUtils.postOnBackgroundThread(() -> {
+            List<MutationJournal.Entry> images;
+            try {
+                images = OperationHistoryExporter.imagesFor(histories, MutationJournal.getInstance().readAll(),
+                        wholeHistory);
+            } catch (Throwable th) {
+                // The rows still export; the file just goes without its images
+                Log.w(TAG, "Could not read the mutation journal for the export.", th);
+                images = null;
+            }
+            String export;
+            try {
+                export = OperationHistoryExporter.toJson(context, histories, images);
+            } catch (JSONException e) {
+                Log.e(TAG, "Could not export operation history.", e);
+                export = null;
+            }
+            String result = export;
+            ThreadUtils.postOnMainThread(() -> {
+                if (isFinishing() || isDestroyed()) {
+                    return;
+                }
+                if (result == null) {
+                    UIUtils.displayShortToast(R.string.export_failed);
+                    return;
+                }
+                mPendingExport = result;
+                mExportHistory.launch(getString(R.string.op_history_export_filename_json));
+            });
+        });
     }
 
     private void writePendingExport(@Nullable Uri uri) {

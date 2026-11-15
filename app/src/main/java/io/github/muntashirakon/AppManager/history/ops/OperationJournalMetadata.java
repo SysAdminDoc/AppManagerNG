@@ -53,6 +53,7 @@ public final class OperationJournalMetadata implements IJsonSerializer {
     private static final String KEY_BOOTSTRAP_SIGNATURE = "bootstrap_signature";
     private static final String KEY_WARNINGS = "warnings";
     private static final String KEY_RECOVERY_ACTIONS = "recovery_actions";
+    private static final String KEY_EXECUTION_ID = "execution_id";
 
     public static final int RISK_LOW = 0;
     public static final int RISK_MEDIUM = 1;
@@ -495,6 +496,29 @@ public final class OperationJournalMetadata implements IJsonSerializer {
     @NonNull
     public List<String> getTargetPreview() {
         return getSanitizedStringArray(KEY_TARGET_PREVIEW, MAX_TARGET_PREVIEW);
+    }
+
+    /**
+     * The id the run's mutation images carry, or null for a row written before images were recorded. Rollback uses
+     * the images for a row that has one and the old inverse operation only for a row that doesn't.
+     */
+    @Nullable
+    public String getExecutionId() {
+        String id = JSONUtils.optString(mJsonObject, KEY_EXECUTION_ID);
+        return id == null || id.isEmpty() ? null : id;
+    }
+
+    /** A copy carrying {@code executionId}. */
+    @NonNull
+    public OperationJournalMetadata withExecutionId(@NonNull String executionId) {
+        JSONObject copy;
+        try {
+            copy = new JSONObject(mJsonObject.toString());
+            copy.put(KEY_EXECUTION_ID, executionId);
+        } catch (JSONException e) {
+            return this;
+        }
+        return new OperationJournalMetadata(copy);
     }
 
     @NonNull

@@ -94,6 +94,8 @@ import io.github.muntashirakon.AppManager.details.struct.AppDetailsPermissionIte
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsServiceItem;
 import io.github.muntashirakon.AppManager.details.components.ReceiverBroadcastUtils;
 import io.github.muntashirakon.AppManager.details.components.ServiceActionUtils;
+import io.github.muntashirakon.AppManager.history.ops.MutationRecorder;
+import io.github.muntashirakon.AppManager.history.ops.MutationState;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.history.ops.OperationJournalMetadata;
 import io.github.muntashirakon.AppManager.history.ops.SingleAppActionHistoryItem;
@@ -696,16 +698,18 @@ public class AppDetailsViewModel extends AndroidViewModel {
                                        boolean success,
                                        @OperationJournalMetadata.Risk int risk,
                                        boolean reversible,
-                                       @Nullable Throwable failure) {
+                                       @Nullable Throwable failure,
+                                       @Nullable String executionId) {
         if (mPackageName == null) {
             return;
         }
         try {
             SingleAppActionHistoryItem item = new SingleAppActionHistoryItem(
                     action, operationLabel, mPackageName, mUserId, targetLabel, detail);
+            OperationJournalMetadata metadata = OperationJournalMetadata.forSingleAppAction(getApplication(), item,
+                    success, risk, reversible, failure);
             OpHistoryManager.addHistoryItem(OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION, item, success,
-                    OperationJournalMetadata.forSingleAppAction(getApplication(), item, success,
-                            risk, reversible, failure));
+                    executionId != null ? metadata.withExecutionId(executionId) : metadata);
         } catch (Exception e) {
             Log.e(TAG, "Could not record single-app operation history.", e);
         }
@@ -715,7 +719,8 @@ public class AppDetailsViewModel extends AndroidViewModel {
     private void recordPermissionHistory(@NonNull AppDetailsPermissionItem permissionItem,
                                          boolean grant,
                                          boolean success,
-                                         @Nullable Throwable failure) {
+                                         @Nullable Throwable failure,
+                                         @NonNull MutationRecorder recorder) {
         recordSingleAppAction(grant
                         ? SingleAppActionHistoryItem.ACTION_PERMISSION_GRANT
                         : SingleAppActionHistoryItem.ACTION_PERMISSION_REVOKE,
@@ -727,14 +732,16 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 success,
                 OperationJournalMetadata.RISK_MEDIUM,
                 false,
-                failure);
+                failure,
+                recorder.getExecutionId());
     }
 
     @WorkerThread
     private void recordAppOpHistory(int op,
                                     int mode,
                                     boolean success,
-                                    @Nullable Throwable failure) {
+                                    @Nullable Throwable failure,
+                                    @NonNull MutationRecorder recorder) {
         String opName = AppOpsManagerCompat.opToName(op);
         recordSingleAppAction(SingleAppActionHistoryItem.ACTION_APP_OP_SET,
                 getApplication().getString(R.string.op_history_single_action_set_app_op),
@@ -743,7 +750,48 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 success,
                 OperationJournalMetadata.RISK_MEDIUM,
                 false,
-                failure);
+                failure,
+                recorder.getExecutionId());
+    }
+
+    @NonNull
+    private static MutationRecorder newMutationRecorder(@NonNull String action) {
+        return MutationRecorder.forSystem(MutationRecorder.newExecutionId(),
+                MutationRecorder.singleOperation(action));
+    }
+
+    /** Images of a permission write: the permission, and its app op when the write moves that too. */
+    @WorkerThread
+    @NonNull
+    private List<MutationRecorder.Pending> beginPermissionImages(@NonNull MutationRecorder recorder,
+                                                                 @NonNull Permission permission,
+                                                                 boolean grant) {
+        List<MutationRecorder.Pending> images = new ArrayList<>(2);
+        images.add(recorder.begin(mPackageName, mUserId, MutationState.KIND_PERMISSION, permission.getName(),
+                grant ? MutationState.GRANTED : MutationState.DENIED));
+        if (permission.affectsAppOp()) {
+            images.add(recorder.begin(mPackageName, mUserId, MutationState.KIND_APP_OP,
+                    String.valueOf(permission.getAppOp()),
+                    String.valueOf(grant ? AppOpsManager.MODE_ALLOWED : AppOpsManager.MODE_IGNORED)));
+        }
+        return images;
+    }
+
+    /** Images of an app op write: the op, and its linked permission when the write moves that too. */
+    @WorkerThread
+    @NonNull
+    private List<MutationRecorder.Pending> beginAppOpImages(@NonNull MutationRecorder recorder,
+                                                            @NonNull AppDetailsAppOpItem appOpItem,
+                                                            int mode) {
+        List<MutationRecorder.Pending> images = new ArrayList<>(2);
+        images.add(recorder.begin(mPackageName, mUserId, MutationState.KIND_APP_OP,
+                String.valueOf(appOpItem.getOp()), String.valueOf(mode)));
+        if (appOpItem.hasModifiablePermission && appOpItem.permission != null) {
+            images.add(recorder.begin(mPackageName, mUserId, MutationState.KIND_PERMISSION,
+                    appOpItem.permission.getName(), AppDetailsAppOpItem.grantsLinkedPermission(mode)
+                            ? MutationState.GRANTED : MutationState.DENIED));
+        }
+        return images;
     }
 
     @WorkerThread
@@ -759,7 +807,8 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 success,
                 OperationJournalMetadata.RISK_MEDIUM,
                 true,
-                failure);
+                failure,
+                null);
     }
 
     public static final int RULE_APPLIED = 0;
@@ -951,6 +1000,9 @@ public class AppDetailsViewModel extends AndroidViewModel {
         PackageInfo packageInfo = getPackageInfoInternal();
         if (packageInfo == null) return false;
         boolean grant = !permissionItem.isGranted();
+        MutationRecorder recorder = newMutationRecorder(grant ? SingleAppActionHistoryItem.ACTION_PERMISSION_GRANT
+                : SingleAppActionHistoryItem.ACTION_PERMISSION_REVOKE);
+        List<MutationRecorder.Pending> images = beginPermissionImages(recorder, permissionItem.permission, grant);
         try {
             if (grant) {
                 Log.d(TAG, "Granting permission: %s", permissionItem.name);
@@ -961,10 +1013,12 @@ public class AppDetailsViewModel extends AndroidViewModel {
             }
         } catch (RemoteException | PermissionException e) {
             Log.e(TAG, e);
-            recordPermissionHistory(permissionItem, grant, false, e);
+            MutationRecorder.finishAll(images, false);
+            recordPermissionHistory(permissionItem, grant, false, e, recorder);
             return false;
         }
-        recordPermissionHistory(permissionItem, grant, true, null);
+        MutationRecorder.finishAll(images, true);
+        recordPermissionHistory(permissionItem, grant, true, null, recorder);
         mExecutor.submit(() -> {
             synchronized (mBlockerLocker) {
                 waitForBlockerOrExit();
@@ -1027,6 +1081,9 @@ public class AppDetailsViewModel extends AndroidViewModel {
         PackageInfo packageInfo = getPackageInfoInternal();
         if (packageInfo == null) return false;
         boolean grant = reference.isGranted();
+        MutationRecorder recorder = newMutationRecorder(grant ? SingleAppActionHistoryItem.ACTION_PERMISSION_GRANT
+                : SingleAppActionHistoryItem.ACTION_PERMISSION_REVOKE);
+        List<MutationRecorder.Pending> images = beginPermissionImages(recorder, permissionItem.permission, grant);
         try {
             if (grant) {
                 permissionItem.grantPermission(packageInfo, mAppOpsManager);
@@ -1035,10 +1092,12 @@ public class AppDetailsViewModel extends AndroidViewModel {
             }
         } catch (RemoteException | PermissionException e) {
             Log.e(TAG, e);
-            recordPermissionHistory(permissionItem, grant, false, e);
+            MutationRecorder.finishAll(images, false);
+            recordPermissionHistory(permissionItem, grant, false, e, recorder);
             return false;
         }
-        recordPermissionHistory(permissionItem, grant, true, null);
+        MutationRecorder.finishAll(images, true);
+        recordPermissionHistory(permissionItem, grant, true, null, recorder);
         synchronized (mBlockerLocker) {
             waitForBlockerOrExit();
             if (mBlocker == null) return false;
@@ -1065,13 +1124,18 @@ public class AppDetailsViewModel extends AndroidViewModel {
         synchronized (mUsesPermissionItems) {
             for (AppDetailsPermissionItem permissionItem : mUsesPermissionItems) {
                 if (!permissionItem.isDangerous || !permissionItem.permission.isGranted()) continue;
+                MutationRecorder recorder = newMutationRecorder(SingleAppActionHistoryItem.ACTION_PERMISSION_REVOKE);
+                List<MutationRecorder.Pending> images = beginPermissionImages(recorder, permissionItem.permission,
+                        false);
                 try {
                     permissionItem.revokePermission(packageInfo, mAppOpsManager);
                     revokedPermissions.add(permissionItem);
-                    recordPermissionHistory(permissionItem, false, true, null);
+                    MutationRecorder.finishAll(images, true);
+                    recordPermissionHistory(permissionItem, false, true, null, recorder);
                 } catch (RemoteException | PermissionException e) {
                     Log.e(TAG, e);
-                    recordPermissionHistory(permissionItem, false, false, e);
+                    MutationRecorder.finishAll(images, false);
+                    recordPermissionHistory(permissionItem, false, false, e, recorder);
                     isSuccessful = false;
                 }
             }
@@ -1102,10 +1166,14 @@ public class AppDetailsViewModel extends AndroidViewModel {
         if (mExternalApk) return false;
         PackageInfo packageInfo = getPackageInfoInternal();
         if (packageInfo == null) return false;
+        MutationRecorder recorder = newMutationRecorder(SingleAppActionHistoryItem.ACTION_APP_OP_SET);
+        MutationRecorder.Pending image = recorder.begin(mPackageName, mUserId, MutationState.KIND_APP_OP,
+                String.valueOf(op), String.valueOf(mode));
         try {
             // Set mode
             PermUtils.setAppOpMode(mAppOpsManager, op, mPackageName, packageInfo.applicationInfo.uid, mode);
-            recordAppOpHistory(op, mode, true, null);
+            image.finish(true);
+            recordAppOpHistory(op, mode, true, null, recorder);
             mExecutor.submit(() -> {
                 synchronized (mBlockerLocker) {
                     waitForBlockerOrExit();
@@ -1119,7 +1187,8 @@ public class AppDetailsViewModel extends AndroidViewModel {
         } catch (PermissionException e) {
             Log.e(TAG, e);
             recordAppOpsUidImpact(e);
-            recordAppOpHistory(op, mode, false, e);
+            image.finish(false);
+            recordAppOpHistory(op, mode, false, e, recorder);
             return false;
         }
         return true;
@@ -1134,13 +1203,18 @@ public class AppDetailsViewModel extends AndroidViewModel {
         if (packageInfo == null) return false;
         boolean isSuccessful = true;
         for (int op : ops) {
+            MutationRecorder recorder = newMutationRecorder(SingleAppActionHistoryItem.ACTION_APP_OP_SET);
+            MutationRecorder.Pending image = recorder.begin(mPackageName, mUserId, MutationState.KIND_APP_OP,
+                    String.valueOf(op), String.valueOf(mode));
             try {
                 PermUtils.setAppOpMode(mAppOpsManager, op, mPackageName, packageInfo.applicationInfo.uid, mode);
-                recordAppOpHistory(op, mode, true, null);
+                image.finish(true);
+                recordAppOpHistory(op, mode, true, null, recorder);
             } catch (PermissionException e) {
                 Log.e(TAG, e);
                 recordAppOpsUidImpact(e);
-                recordAppOpHistory(op, mode, false, e);
+                image.finish(false);
+                recordAppOpHistory(op, mode, false, e, recorder);
                 isSuccessful = false;
             }
         }
@@ -1166,14 +1240,19 @@ public class AppDetailsViewModel extends AndroidViewModel {
         if (mExternalApk) return false;
         PackageInfo packageInfo = getPackageInfoInternal();
         if (packageInfo == null) return false;
+        boolean allow = !appOpItem.isAllowed();
+        MutationRecorder recorder = newMutationRecorder(SingleAppActionHistoryItem.ACTION_APP_OP_SET);
+        List<MutationRecorder.Pending> images = beginAppOpImages(recorder, appOpItem,
+                allow ? AppOpsManager.MODE_ALLOWED : AppOpsManager.MODE_IGNORED);
         try {
-            if (appOpItem.isAllowed()) {
-                appOpItem.disallowAppOp(packageInfo, mAppOpsManager);
-            } else {
+            if (allow) {
                 appOpItem.allowAppOp(packageInfo, mAppOpsManager);
+            } else {
+                appOpItem.disallowAppOp(packageInfo, mAppOpsManager);
             }
+            MutationRecorder.finishAll(images, true);
             setAppOp(appOpItem);
-            recordAppOpHistory(appOpItem.getOp(), appOpItem.getMode(), true, null);
+            recordAppOpHistory(appOpItem.getOp(), appOpItem.getMode(), true, null, recorder);
             mExecutor.submit(() -> {
                 synchronized (mBlockerLocker) {
                     waitForBlockerOrExit();
@@ -1188,7 +1267,8 @@ public class AppDetailsViewModel extends AndroidViewModel {
         } catch (PermissionException e) {
             Log.e(TAG, e);
             recordAppOpsUidImpact(e);
-            recordAppOpHistory(appOpItem.getOp(), appOpItem.getMode(), false, e);
+            MutationRecorder.finishAll(images, false);
+            recordAppOpHistory(appOpItem.getOp(), appOpItem.getMode(), false, e, recorder);
             return false;
         }
     }
@@ -1200,10 +1280,13 @@ public class AppDetailsViewModel extends AndroidViewModel {
         if (mExternalApk) return false;
         PackageInfo packageInfo = getPackageInfoInternal();
         if (packageInfo == null) return false;
+        MutationRecorder recorder = newMutationRecorder(SingleAppActionHistoryItem.ACTION_APP_OP_SET);
+        List<MutationRecorder.Pending> images = beginAppOpImages(recorder, appOpItem, mode);
         try {
             appOpItem.setAppOp(packageInfo, mAppOpsManager, mode);
+            MutationRecorder.finishAll(images, true);
             setAppOp(appOpItem);
-            recordAppOpHistory(appOpItem.getOp(), mode, true, null);
+            recordAppOpHistory(appOpItem.getOp(), mode, true, null, recorder);
             mExecutor.submit(() -> {
                 synchronized (mBlockerLocker) {
                     waitForBlockerOrExit();
@@ -1218,7 +1301,8 @@ public class AppDetailsViewModel extends AndroidViewModel {
         } catch (PermissionException e) {
             Log.e(TAG, e);
             recordAppOpsUidImpact(e);
-            recordAppOpHistory(appOpItem.getOp(), mode, false, e);
+            MutationRecorder.finishAll(images, false);
+            recordAppOpHistory(appOpItem.getOp(), mode, false, e, recorder);
             return false;
         }
     }

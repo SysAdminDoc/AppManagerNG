@@ -170,6 +170,11 @@ public final class OpHistoryManager {
     @WorkerThread
     public static void clearAllHistory() {
         AppsDb.getInstance().opHistoryDao().deleteAll();
+        try {
+            MutationJournal.getInstance().clear();
+        } catch (Throwable th) {
+            Log.w(TAG, "Could not clear the mutation journal.", th);
+        }
     }
 
     @WorkerThread
@@ -190,7 +195,14 @@ public final class OpHistoryManager {
         if (days <= 0) {
             return 0;
         }
-        return AppsDb.getInstance().opHistoryDao().deleteOlderThan(System.currentTimeMillis() - days * DAY_MILLIS);
+        long cutoff = System.currentTimeMillis() - days * DAY_MILLIS;
+        int deleted = AppsDb.getInstance().opHistoryDao().deleteOlderThan(cutoff);
+        try {
+            MutationJournal.getInstance().prune(cutoff);
+        } catch (Throwable th) {
+            Log.w(TAG, "Could not prune the mutation journal.", th);
+        }
+        return deleted;
     }
 
     @WorkerThread

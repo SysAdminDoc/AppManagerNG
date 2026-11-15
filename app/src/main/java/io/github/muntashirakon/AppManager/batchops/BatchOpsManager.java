@@ -68,6 +68,8 @@ import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PermissionCompat;
 import io.github.muntashirakon.AppManager.compat.StorageManagerCompat;
 import io.github.muntashirakon.AppManager.debloat.RootlessDebloat;
+import io.github.muntashirakon.AppManager.history.ops.MutationRecorder;
+import io.github.muntashirakon.AppManager.history.ops.MutationState;
 import io.github.muntashirakon.AppManager.logs.Logger;
 import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler;
 import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler.NotificationInfo;
@@ -80,6 +82,7 @@ import io.github.muntashirakon.AppManager.safety.CriticalPackageGuard;
 import io.github.muntashirakon.AppManager.safety.AppOpsUidGuard;
 import io.github.muntashirakon.AppManager.safety.SystemAppRescueArtifacts;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
+import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
@@ -286,6 +289,20 @@ public class BatchOpsManager {
         void onTargetFinished(@NonNull UserPackagePair pair, boolean failed);
     }
 
+    /** Every mutation image this manager records carries it, and so does the history row of the run. */
+    @NonNull
+    private final String mExecutionId = MutationRecorder.newExecutionId();
+    @Nullable
+    private MutationRecorderFactory mRecorderFactory;
+    @NonNull
+    private MutationRecorder mRecorder = MutationRecorder.forSystem(mExecutionId, MutationRecorder.batchOperation(OP_NONE));
+
+    @VisibleForTesting
+    public interface MutationRecorderFactory {
+        @NonNull
+        MutationRecorder create(@NonNull String executionId, @NonNull String operation);
+    }
+
     public BatchOpsManager() {
         mCustomLogger = false;
         mLogger = ExUtils.exceptionAsNull(BatchOpsLogger::new);
@@ -294,6 +311,16 @@ public class BatchOpsManager {
     public BatchOpsManager(@Nullable Logger logger) {
         mLogger = logger;
         mCustomLogger = true;
+    }
+
+    @NonNull
+    public String getExecutionId() {
+        return mExecutionId;
+    }
+
+    @VisibleForTesting
+    public void setMutationRecorderFactory(@Nullable MutationRecorderFactory factory) {
+        mRecorderFactory = factory;
     }
 
     public Result performOp(@NonNull BatchOpsInfo info, @Nullable ProgressHandler progressHandler) {
@@ -319,6 +346,9 @@ public class BatchOpsManager {
         if (rescueArtifactResult != null) {
             return rescueArtifactResult;
         }
+        String operation = MutationRecorder.batchOperation(info.op);
+        mRecorder = mRecorderFactory != null ? mRecorderFactory.create(mExecutionId, operation)
+                : MutationRecorder.forSystem(mExecutionId, operation);
         switch (info.op) {
             case OP_ADVANCED_FREEZE:
                 return opFreeze(info);
@@ -877,6 +907,8 @@ public class BatchOpsManager {
                         .orElse(options.getType());
             } else type = options.getType();
             boolean failed = false;
+            MutationRecorder.Pending image = mRecorder.begin(pair.getPackageName(), pair.getUserId(),
+                    MutationState.KIND_FREEZE, "", MutationState.requestedFreezeValue(type));
             try {
                 FreezeUtils.freeze(pair.getPackageName(), pair.getUserId(), type);
             } catch (Exception e) {
@@ -888,6 +920,7 @@ public class BatchOpsManager {
                 failed = true;
                 failedPackages.add(pair);
             }
+            image.finish(!failed);
             recordTargetFinished(pair, failed);
         }
         return new Result(failedPackages);
@@ -903,9 +936,13 @@ public class BatchOpsManager {
             updateProgress(lastProgress, i + 1);
             pair = info.getPair(i);
             boolean failed = false;
+            int method = freeze ? Prefs.Blocking.getDefaultFreezingMethod() : FreezeUtils.FREEZE_DISABLE;
+            MutationRecorder.Pending image = mRecorder.begin(pair.getPackageName(), pair.getUserId(),
+                    MutationState.KIND_FREEZE, "",
+                    freeze ? MutationState.requestedFreezeValue(method) : MutationState.UNFROZEN);
             try {
                 if (freeze) {
-                    FreezeUtils.freeze(pair.getPackageName(), pair.getUserId());
+                    FreezeUtils.freeze(pair.getPackageName(), pair.getUserId(), method);
                 } else {
                     FreezeUtils.unfreeze(pair.getPackageName(), pair.getUserId());
                 }
@@ -918,6 +955,7 @@ public class BatchOpsManager {
                 failed = true;
                 failedPackages.add(pair);
             }
+            image.finish(!failed);
             recordTargetFinished(pair, failed);
         }
         return new Result(failedPackages);
@@ -941,6 +979,15 @@ public class BatchOpsManager {
                 continue;
             }
             boolean failed = false;
+            List<String> backgroundOps = new ArrayList<>(2);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                backgroundOps.add(String.valueOf(AppOpsManagerCompat.OP_RUN_IN_BACKGROUND));
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                backgroundOps.add(String.valueOf(AppOpsManagerCompat.OP_RUN_ANY_IN_BACKGROUND));
+            }
+            List<MutationRecorder.Pending> images = mRecorder.beginAll(pair.getPackageName(), pair.getUserId(),
+                    MutationState.KIND_APP_OP, backgroundOps, String.valueOf(AppOpsManager.MODE_IGNORED));
             try {
                 List<Integer> requestedAppOps = new ArrayList<>(2);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -984,6 +1031,7 @@ public class BatchOpsManager {
                 failed = true;
                 failedPackages.add(pair);
             }
+            MutationRecorder.finishAll(images, !failed);
             recordTargetFinished(pair, failed);
         }
         return new Result(failedPackages);
@@ -1010,11 +1058,7 @@ public class BatchOpsManager {
                         continue;
                     }
                     for (String permission : permissions) {
-                        if (isGrant) {
-                            PermissionCompat.grantPermission(pair.getPackageName(), permission, pair.getUserId());
-                        } else {
-                            PermissionCompat.revokePermission(pair.getPackageName(), permission, pair.getUserId());
-                        }
+                        grantOrRevokeRecorded(pair, permission, isGrant);
                     }
                 } catch (Exception e) {
                     failed = true;
@@ -1030,11 +1074,7 @@ public class BatchOpsManager {
                 boolean failed = false;
                 for (String permission : permissions) {
                     try {
-                        if (isGrant) {
-                            PermissionCompat.grantPermission(pair.getPackageName(), permission, pair.getUserId());
-                        } else {
-                            PermissionCompat.revokePermission(pair.getPackageName(), permission, pair.getUserId());
-                        }
+                        grantOrRevokeRecorded(pair, permission, isGrant);
                     } catch (Exception e) {
                         failed = true;
                         log("====> op=GRANT_OR_REVOKE_PERMISSIONS, pkg=" + pair, e);
@@ -1049,6 +1089,24 @@ public class BatchOpsManager {
             }
         }
         return new Result(failedPackages);
+    }
+
+    /** Grants or revokes one permission with its before and after state recorded. */
+    private void grantOrRevokeRecorded(@NonNull UserPackagePair pair, @NonNull String permission, boolean isGrant)
+            throws RemoteException {
+        MutationRecorder.Pending image = mRecorder.begin(pair.getPackageName(), pair.getUserId(),
+                MutationState.KIND_PERMISSION, permission, isGrant ? MutationState.GRANTED : MutationState.DENIED);
+        boolean done = false;
+        try {
+            if (isGrant) {
+                PermissionCompat.grantPermission(pair.getPackageName(), permission, pair.getUserId());
+            } else {
+                PermissionCompat.revokePermission(pair.getPackageName(), permission, pair.getUserId());
+            }
+            done = true;
+        } finally {
+            image.finish(done);
+        }
     }
 
     @NonNull
@@ -1084,6 +1142,8 @@ public class BatchOpsManager {
             updateProgress(lastProgress, i + 1);
             pair = info.getPair(i);
             boolean failed = false;
+            MutationRecorder.Pending image = mRecorder.begin(pair.getPackageName(), pair.getUserId(),
+                    MutationState.KIND_NET_POLICY, "", String.valueOf(options.getPolicies()));
             try {
                 int uid = PackageUtils.getAppUid(pair);
                 NetworkPolicyManagerCompat.setUidPolicy(uid, options.getPolicies());
@@ -1092,6 +1152,7 @@ public class BatchOpsManager {
                 log("====> op=NET_POLICY, pkg=" + pair, e);
                 failedPackages.add(pair);
             }
+            image.finish(!failed);
             recordTargetFinished(pair, failed);
         }
         return new Result(failedPackages);
@@ -1112,6 +1173,7 @@ public class BatchOpsManager {
                 updateProgress(lastProgress, i + 1);
                 pair = info.getPair(i);
                 boolean failed = false;
+                List<MutationRecorder.Pending> images = Collections.emptyList();
                 try {
                     List<Integer> appOpList = new ArrayList<>();
                     ApplicationInfo applicationInfo = PackageManagerCompat.getApplicationInfo(pair.getPackageName(),
@@ -1121,14 +1183,18 @@ public class BatchOpsManager {
                     for (AppOpsManagerCompat.OpEntry entry : entries) {
                         appOpList.add(entry.getOp());
                     }
+                    int[] configuredOps = ArrayUtils.convertToIntArray(appOpList);
+                    images = mRecorder.beginAll(pair.getPackageName(), pair.getUserId(), MutationState.KIND_APP_OP,
+                            MutationRecorder.targetsOf(configuredOps), String.valueOf(options.getMode()));
                     ExternalComponentsImporter.setModeToFilteredAppOps(appOpsManager, pair,
-                            ArrayUtils.convertToIntArray(appOpList), options.getMode(),
+                            configuredOps, options.getMode(),
                             info.getPackagesForUser(pair.getUserId()), options.isUidWideEffectReviewed());
                 } catch (Exception e) {
                     failed = true;
                     log("====> op=SET_APP_OPS, pkg=" + pair, e);
                     failedPkgList.add(pair);
                 }
+                MutationRecorder.finishAll(images, !failed);
                 recordTargetFinished(pair, failed);
             }
         } else {
@@ -1136,6 +1202,9 @@ public class BatchOpsManager {
                 updateProgress(lastProgress, i + 1);
                 pair = info.getPair(i);
                 boolean failed = false;
+                List<MutationRecorder.Pending> images = mRecorder.beginAll(pair.getPackageName(), pair.getUserId(),
+                        MutationState.KIND_APP_OP, MutationRecorder.targetsOf(appOps),
+                        String.valueOf(options.getMode()));
                 try {
                     ExternalComponentsImporter.setModeToFilteredAppOps(appOpsManager, pair, appOps,
                             options.getMode(), info.getPackagesForUser(pair.getUserId()),
@@ -1145,6 +1214,7 @@ public class BatchOpsManager {
                     log("====> op=SET_APP_OPS, pkg=" + pair, e);
                     failedPkgList.add(pair);
                 }
+                MutationRecorder.finishAll(images, !failed);
                 recordTargetFinished(pair, failed);
             }
         }

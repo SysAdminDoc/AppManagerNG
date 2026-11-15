@@ -128,6 +128,7 @@ import io.github.muntashirakon.AppManager.backup.dialog.BackupRestoreDialogFragm
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.batchops.BatchQueueItem;
+import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
 import io.github.muntashirakon.AppManager.compat.ApplicationInfoCompat;
 import io.github.muntashirakon.AppManager.compat.AppLocaleManagerCompat;
@@ -161,6 +162,8 @@ import io.github.muntashirakon.AppManager.logcat.LogViewerActivity;
 import io.github.muntashirakon.AppManager.logcat.struct.SearchCriteria;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryManager;
 import io.github.muntashirakon.AppManager.history.ops.DestructiveActionConfirmation;
+import io.github.muntashirakon.AppManager.history.ops.MutationRecorder;
+import io.github.muntashirakon.AppManager.history.ops.MutationState;
 import io.github.muntashirakon.AppManager.history.ops.OperationJournalMetadata;
 import io.github.muntashirakon.AppManager.history.ops.PerAppRollbackManager;
 import io.github.muntashirakon.AppManager.history.ops.SingleAppActionHistoryItem;
@@ -1234,7 +1237,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     return;
                 }
                 showProgressIndicator(false);
-                if (!plan.hasRunnableActions()) {
+                if (!plan.hasRunnableActions() && plan.getChangedElsewhere().isEmpty()) {
                     UIUtils.displayLongToast(R.string.per_app_rollback_none);
                     return;
                 }
@@ -1244,28 +1247,98 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     }
 
     /**
-     * EI-09 dry-run preview. Show a multi-choice dialog listing each inverse
-     * BatchOp the rollback planner produced so the user can untick rows before
-     * committing. The original single-line summary is preserved as the dialog
-     * subtitle so the manual-review count remains visible.
+     * EI-09 dry-run preview. Lists each step the rollback planner produced so the user can untick rows before
+     * committing; targets changed elsewhere are listed with both values and can't be ticked. The summary sits in
+     * the title, since a message would hide the list.
      */
     private void showPerAppRollbackPreview(@NonNull PerAppRollbackManager.RollbackPlan plan,
                                             @NonNull CharSequence label) {
-        java.util.List<io.github.muntashirakon.AppManager.batchops.BatchQueueItem> items = plan.getQueueItems();
-        CharSequence[] rowLabels = new CharSequence[items.size()];
-        boolean[] keep = new boolean[items.size()];
-        for (int i = 0; i < items.size(); ++i) {
-            rowLabels[i] = io.github.muntashirakon.AppManager.batchops.BatchOpsService
-                    .getDesiredOpTitle(requireContext(), items.get(i).getOp());
-            keep[i] = true;
+        List<PerAppRollbackManager.Step> steps = plan.getSteps();
+        List<PerAppRollbackManager.Step> changedElsewhere = plan.getChangedElsewhere();
+        List<Integer> rows = new ArrayList<>(steps.size() + changedElsewhere.size());
+        List<CharSequence> rowLabels = new ArrayList<>(steps.size() + changedElsewhere.size());
+        List<Integer> runnableRows = new ArrayList<>(steps.size());
+        List<Integer> disabledRows = new ArrayList<>(changedElsewhere.size());
+        for (int i = 0; i < steps.size(); ++i) {
+            rows.add(i);
+            runnableRows.add(i);
+            rowLabels.add(perAppRollbackStepLabel(steps.get(i)));
         }
-        new MaterialAlertDialogBuilder(requireContext())
+        for (int i = 0; i < changedElsewhere.size(); ++i) {
+            PerAppRollbackManager.Step step = changedElsewhere.get(i);
+            int row = steps.size() + i;
+            rows.add(row);
+            disabledRows.add(row);
+            rowLabels.add(getString(R.string.per_app_rollback_changed_elsewhere,
+                    perAppRollbackTargetLabel(step), perAppRollbackValueLabel(step, step.getRecordedValue()),
+                    perAppRollbackValueLabel(step, step.getCurrentValue())));
+        }
+        View title = new DialogTitleBuilder(requireContext())
                 .setTitle(R.string.per_app_rollback_confirm_title)
-                .setMessage(buildPerAppRollbackMessage(plan, label))
-                .setMultiChoiceItems(rowLabels, keep, (dialog, which, isChecked) -> keep[which] = isChecked)
+                .setSubtitle(buildPerAppRollbackMessage(plan, label))
+                .build();
+        new SearchableMultiChoiceDialogBuilder<>(requireContext(), rows, rowLabels)
+                .setTitle(title)
+                .addSelections(runnableRows)
+                .addDisabledItems(disabledRows)
+                .showSelectAll(false)
                 .setNegativeButton(R.string.cancel, null)
-                .setPositiveButton(R.string.per_app_rollback, (dialog, which) -> startPerAppRollback(plan, keep))
+                .setPositiveButton(R.string.per_app_rollback, (dialog, which, selectedItems) -> {
+                    boolean[] keep = new boolean[steps.size()];
+                    for (int row : selectedItems) {
+                        // Changed-elsewhere rows sit past the runnable ones and never run
+                        if (row < keep.length) {
+                            keep[row] = true;
+                        }
+                    }
+                    startPerAppRollback(plan, keep);
+                })
                 .show();
+    }
+
+    @NonNull
+    private CharSequence perAppRollbackStepLabel(@NonNull PerAppRollbackManager.Step step) {
+        CharSequence operation = BatchOpsService.getDesiredOpTitle(requireContext(), step.getQueueItem().getOp());
+        if (!step.isImageStep()) {
+            return operation;
+        }
+        return getString(R.string.per_app_rollback_image_step, operation, perAppRollbackTargetLabel(step),
+                perAppRollbackValueLabel(step, step.getRestoreValue()));
+    }
+
+    @NonNull
+    private CharSequence perAppRollbackTargetLabel(@NonNull PerAppRollbackManager.Step step) {
+        String kind = Objects.requireNonNull(step.getKind());
+        String target = Objects.requireNonNull(step.getTarget());
+        switch (kind) {
+            case MutationState.KIND_FREEZE:
+                return getString(R.string.os_revert_operation_freeze);
+            case MutationState.KIND_NET_POLICY:
+                return getString(R.string.per_app_rollback_target_net_policy);
+            case MutationState.KIND_APP_OP:
+                try {
+                    return AppOpsManagerCompat.opToName(Integer.parseInt(target));
+                } catch (NumberFormatException e) {
+                    return target;
+                }
+            default:
+                return target;
+        }
+    }
+
+    @NonNull
+    private CharSequence perAppRollbackValueLabel(@NonNull PerAppRollbackManager.Step step, @Nullable String value) {
+        if (value == null) {
+            return "";
+        }
+        if (MutationState.KIND_APP_OP.equals(step.getKind())) {
+            try {
+                return AppOpsManagerCompat.modeToName(Integer.parseInt(value));
+            } catch (NumberFormatException e) {
+                return value;
+            }
+        }
+        return value;
     }
 
     @NonNull
@@ -1275,26 +1348,39 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 R.plurals.per_app_rollback_inverse_count,
                 plan.getRunnableCount(),
                 plan.getRunnableCount());
-        String manualSuffix = "";
+        StringBuilder suffix = new StringBuilder();
         if (plan.getManualReviewCount() > 0) {
             String manualCount = getResources().getQuantityString(
                     R.plurals.per_app_rollback_manual_count,
                     plan.getManualReviewCount(),
                     plan.getManualReviewCount());
-            manualSuffix = getString(R.string.per_app_rollback_manual_suffix, manualCount);
+            suffix.append(getString(R.string.per_app_rollback_manual_suffix, manualCount));
         }
-        return getString(R.string.per_app_rollback_confirm_message, inverseCount, label, manualSuffix);
-    }
-
-    private void startPerAppRollback(@NonNull PerAppRollbackManager.RollbackPlan plan) {
-        startPerAppRollback(plan, null);
+        int changedElsewhere = plan.getChangedElsewhere().size();
+        if (changedElsewhere > 0) {
+            suffix.append("\n\n").append(getResources().getQuantityString(
+                    R.plurals.per_app_rollback_changed_elsewhere_count, changedElsewhere, changedElsewhere));
+        }
+        return getString(R.string.per_app_rollback_confirm_message, inverseCount, label, suffix.toString());
     }
 
     private void startPerAppRollback(@NonNull PerAppRollbackManager.RollbackPlan plan,
-                                      @Nullable boolean[] keep) {
-        int queuedCount = PerAppRollbackManager.start(requireContext(), plan, keep);
+                                      @NonNull boolean[] keep) {
+        Context context = requireContext().getApplicationContext();
+        ThreadUtils.postOnBackgroundThread(() -> {
+            // Each step reads its target again before it's queued, which can't run on the main thread
+            int queuedCount = PerAppRollbackManager.start(context, plan, keep);
+            ThreadUtils.postOnMainThread(() -> onPerAppRollbackQueued(queuedCount));
+        });
+    }
+
+    @MainThread
+    private void onPerAppRollbackQueued(int queuedCount) {
         if (queuedCount == 0) {
             UIUtils.displayLongToast(R.string.per_app_rollback_none);
+            return;
+        }
+        if (!isAdded()) {
             return;
         }
         String queued = getResources().getQuantityString(
@@ -4134,7 +4220,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     }
 
     @WorkerThread
-    private void recordFreezeHistory(boolean freeze, boolean success, @Nullable Throwable failure) {
+    private void recordFreezeHistory(boolean freeze, boolean success, @Nullable Throwable failure,
+                                     @NonNull String executionId) {
         try {
             Context context = mActivity != null ? mActivity : ContextUtils.getContext();
             String operationLabel = context.getString(freeze ? R.string.freeze : R.string.unfreeze);
@@ -4147,7 +4234,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     null);
             OpHistoryManager.addHistoryItem(OpHistoryManager.HISTORY_TYPE_SINGLE_APP_ACTION, item, success,
                     OperationJournalMetadata.forSingleAppAction(context, item, success,
-                            OperationJournalMetadata.RISK_MEDIUM, true, failure));
+                            OperationJournalMetadata.RISK_MEDIUM, true, failure).withExecutionId(executionId));
         } catch (Exception th) {
             Log.e(TAG, "Could not record single-app operation history.", th);
         }
@@ -4155,6 +4242,10 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
 
     @WorkerThread
     private void doFreeze(@FreezeUtils.FreezeMethod int freezeType, boolean remember) {
+        MutationRecorder recorder = MutationRecorder.forSystem(MutationRecorder.newExecutionId(),
+                MutationRecorder.singleOperation(SingleAppActionHistoryItem.ACTION_FREEZE));
+        MutationRecorder.Pending image = recorder.begin(mPackageName, mUserId, MutationState.KIND_FREEZE, "",
+                MutationState.requestedFreezeValue(freezeType));
         try {
             if (remember) {
                 FreezeUtils.storeFreezeMethod(mPackageName, freezeType);
@@ -4162,22 +4253,30 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 FreezeUtils.deleteFreezeMethod(mPackageName);
             }
             FreezeUtils.freeze(mPackageName, mUserId, freezeType);
-            recordFreezeHistory(true, true, null);
+            image.finish(true);
+            recordFreezeHistory(true, true, null, recorder.getExecutionId());
         } catch (Exception th) {
             Log.e(TAG, th);
-            recordFreezeHistory(true, false, th);
+            image.finish(false);
+            recordFreezeHistory(true, false, th, recorder.getExecutionId());
             ThreadUtils.postOnMainThread(() -> displayLongToast(R.string.failed_to_freeze, mAppLabel));
         }
     }
 
     @WorkerThread
     private void doUnfreeze() {
+        MutationRecorder recorder = MutationRecorder.forSystem(MutationRecorder.newExecutionId(),
+                MutationRecorder.singleOperation(SingleAppActionHistoryItem.ACTION_UNFREEZE));
+        MutationRecorder.Pending image = recorder.begin(mPackageName, mUserId, MutationState.KIND_FREEZE, "",
+                MutationState.UNFROZEN);
         try {
             FreezeUtils.unfreeze(mPackageName, mUserId);
-            recordFreezeHistory(false, true, null);
+            image.finish(true);
+            recordFreezeHistory(false, true, null, recorder.getExecutionId());
         } catch (Exception th) {
             Log.e(TAG, th);
-            recordFreezeHistory(false, false, th);
+            image.finish(false);
+            recordFreezeHistory(false, false, th, recorder.getExecutionId());
             ThreadUtils.postOnMainThread(() -> displayLongToast(R.string.failed_to_unfreeze, mAppLabel));
         }
     }
