@@ -286,6 +286,11 @@ public class InternetAccessTest {
 
         assertEquals(Unavailable.NO_PRIVILEGED_MODE, status.unavailable.reason);
         assertTrue(savedRule(APP, 0).isBlocked());
+        // The deny may have gone in before the privileged mode died, so the rule keeps the UID and the switch
+        // stays locked until it can be read
+        assertEquals(APP_UID, savedRule(APP, 0).getUid());
+        assertTrue(status.holdsUid);
+        assertFalse(status.canChange());
     }
 
     @Test
@@ -635,6 +640,21 @@ public class InternetAccessTest {
         InternetAccess.setBlocked(APP, 10, true);
 
         PackageEventSync.monitorsForTesting().onRemoved(ApplicationProvider.getApplicationContext(), APP, 0);
+
+        assertEquals(new HashSet<>(Arrays.asList("internet_rules_package:" + APP + ":0",
+                "internet_rules_package:" + APP + ":10")), new HashSet<>(mEnqueued));
+    }
+
+    @Test
+    public void anAppUpdatedInOneUserIsPutBackInEveryUser() {
+        // An update normally keeps the UID, and putting the rule back covers one that doesn't
+        mUids.put(APP + ":10", 1010100);
+        InternetAccess.setBlocked(APP, 0, true);
+        InternetAccess.setBlocked(APP, 10, true);
+        mEnqueued.clear();
+
+        PackageEventSync.monitorsForTesting().onUpdated(ApplicationProvider.getApplicationContext(), APP, 0);
+        PackageEventSync.monitorsForTesting().onUpdated(ApplicationProvider.getApplicationContext(), OTHER_APP, 0);
 
         assertEquals(new HashSet<>(Arrays.asList("internet_rules_package:" + APP + ":0",
                 "internet_rules_package:" + APP + ":10")), new HashSet<>(mEnqueued));

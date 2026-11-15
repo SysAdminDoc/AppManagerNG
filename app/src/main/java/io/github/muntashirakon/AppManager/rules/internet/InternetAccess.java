@@ -33,8 +33,8 @@ import io.github.muntashirakon.AppManager.utils.ContextUtils;
 
 /**
  * Keeps each app's saved internet rule and the device's firewall in step. The saved rule is the wish; the firewall
- * forgets it on every restart and whenever the app gets a new UID, so it's put back after a restart, an install or
- * removal, and whenever the privileged mode comes up. An update keeps the app's UID.
+ * forgets it on every restart and whenever the app gets a new UID, so it's put back after a restart, after the app is
+ * installed, updated or removed, and whenever the privileged mode comes up.
  */
 public final class InternetAccess {
     private static final String TAG = "InternetAccess";
@@ -190,7 +190,7 @@ public final class InternetAccess {
         @Override
         public String toString() {
             return "Status{saved=" + saved + ", blocked=" + blocked + ", inForce=" + inForce
-                    + ", unavailable=" + unavailable + '}';
+                    + ", holdsUid=" + holdsUid + ", unavailable=" + unavailable + '}';
         }
     }
 
@@ -310,17 +310,16 @@ public final class InternetAccess {
             } catch (SecurityException e) {
                 Log.w(TAG, "The firewall refused a change for %s", e, packageName);
                 Unavailable now = firewall.check();
-                return new Status(true, blocked, false, savedRuleHoldsUid(packageName, userId), now != null ? now
+                return failedStatus(packageName, userId, now != null ? now
                         : new Unavailable(Unavailable.NO_PERMISSION, e.getMessage()));
             } catch (RemoteException e) {
                 Log.w(TAG, "The privileged mode went away while changing %s", e, packageName);
-                return new Status(true, blocked, false, savedRuleHoldsUid(packageName, userId),
+                return failedStatus(packageName, userId,
                         new Unavailable(Unavailable.NO_PRIVILEGED_MODE, e.getMessage()));
             } catch (RuntimeException | LinkageError e) {
                 // LinkageError: a ROM without the hidden firewall calls
                 Log.w(TAG, "The firewall failed for %s", e, packageName);
-                return new Status(true, blocked, false, savedRuleHoldsUid(packageName, userId),
-                        new Unavailable(Unavailable.PLATFORM, e.getMessage()));
+                return failedStatus(packageName, userId, new Unavailable(Unavailable.PLATFORM, e.getMessage()));
             }
         }
     }
@@ -453,10 +452,18 @@ public final class InternetAccess {
                 .build();
     }
 
-    /** Whether the app's saved rule names a UID, read again after a failed change. */
-    private static boolean savedRuleHoldsUid(@NonNull String packageName, @UserIdInt int userId) {
+    /**
+     * Where the app stands after a failed change, read from the rule saved now. A failed block may already have taken
+     * its UID back off the rule.
+     */
+    @NonNull
+    private static Status failedStatus(@NonNull String packageName, @UserIdInt int userId,
+                                       @NonNull Unavailable unavailable) {
         InternetRule rule = readRule(packageName, userId);
-        return rule != null && rule.getUid() != InternetRule.NO_UID;
+        if (rule == null) {
+            return new Status(false, false, true, false, unavailable);
+        }
+        return new Status(true, rule.isBlocked(), false, rule.getUid() != InternetRule.NO_UID, unavailable);
     }
 
     @Nullable

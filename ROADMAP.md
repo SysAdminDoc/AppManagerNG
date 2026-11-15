@@ -1122,6 +1122,13 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Acceptance: WHEN a batch operation or profile blocks or allows internet access for a set of apps, the system SHALL call `InternetAccess.setBlocked` for each one and report every app whose rule is saved but not in force, with the reason; a test against the fake firewall SHALL check both outcomes.
   Complexity: M
 
+- [ ] P2: Know a block is gone after a restart
+  Why: a restart clears the firewall, but a saved block still names the UID it had before. Until root, ADB or Shizuku comes up again, the INTERNET row says AppManagerNG can't tell whether the block is in force and the switch stays locked, though the app is online and nothing is left to lift. An allowed rule kept from before the restart can't be dropped either.
+  Evidence: `rules/internet/InternetAccess.java` `Status.canChange` and `describe` lock on `holdsUid` under `NO_PRIVILEGED_MODE` and `NO_PERMISSION`; `rules/struct/InternetRule.java` saves the UID with no record of the boot it was denied in; `Settings.Global.BOOT_COUNT` (Android 7 and later) counts restarts.
+  Touches: `rules/struct/InternetRule.java` and its text form, `rules/internet/InternetAccess.java`, `rules/internet/InternetAccessTest.java`.
+  Acceptance: WHEN a saved rule's UID was denied in an earlier boot than the current one, the system SHALL treat it as holding no deny: the row SHALL say the block isn't in force, the switch SHALL be usable without a privileged mode, and allowing the app SHALL drop the rule; a rule saved before this change SHALL keep today's behavior; tests SHALL cover a same-boot and an earlier-boot rule.
+  Complexity: M
+
 ### P3
 
 - [ ] P3: Say when another app's block cuts this app off
@@ -1171,6 +1178,13 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Evidence: `rules/RulesStorageManager.java` builds its lock key from the package name plus the user id, and `getDesiredFile` names the file by package only. Predates the INTERNET rule, which made it reachable from boot and install work as well.
   Touches: `rules/RulesStorageManager.java`, a concurrency test.
   Acceptance: WHEN two users' rules for one package are edited at the same time, the system SHALL keep both changes; a test SHALL run two edits on separate threads and find both rules in the file.
+  Complexity: S
+
+- [ ] P3: Import internet rules under the internet lock
+  Why: a rules import reads the UID a saved internet rule holds and writes the imported rule without taking the lock `InternetAccess` holds while it changes the firewall. An import that lands while a block is being put into force can save a stale UID, and the block's own clean-up then skips its revert because the rule changed under it, which can leave a deny in the kernel with no rule naming it.
+  Evidence: `rules/RulesImporter.java` `applyRules` copies `saved.getUid()` under the components lock only; `rules/internet/InternetAccess.java` `apply` reverts through `replaceIfUnchanged`.
+  Touches: `rules/RulesImporter.java`, `rules/internet/InternetAccess.java` (a save that takes `LOCK`), `rules/internet/InternetAccessTest.java`.
+  Acceptance: WHEN an import saves an internet rule, the system SHALL read the held UID and write the rule under the same lock that putting a rule into force takes; a test SHALL run an import while a block is being put into force and SHALL find the deny either lifted or named by the saved rule.
   Complexity: S
 
 ## Found While Stabilizing Scheduled Backups (2026-11-15)
