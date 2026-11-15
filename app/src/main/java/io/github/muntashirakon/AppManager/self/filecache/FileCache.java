@@ -138,10 +138,9 @@ public class FileCache implements Closeable {
     private FileCache(boolean sessionOnly, @NonNull File cacheDir) {
         mSessionOnly = sessionOnly;
         mCacheDir = cacheDir;
-        if (!mCacheDir.exists()) {
-            if (!mCacheDir.mkdirs()) {
-                throw new IllegalStateException("Could not create cache. Is this OS broken?");
-            }
+        // Packages open on several threads at once, so another one may create the folder first
+        if (!mCacheDir.mkdirs() && !mCacheDir.isDirectory()) {
+            throw new IllegalStateException("Could not create cache. Is this OS broken?");
         }
     }
 

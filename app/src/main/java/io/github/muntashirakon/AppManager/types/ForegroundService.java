@@ -175,22 +175,30 @@ public abstract class ForegroundService extends Service {
         super.onDestroy();
         // A service that finished its work stops itself with nothing left. One Android didn't put in the foreground
         // can be stopped by Android once the app leaves the screen.
-        if (mJobsLeft.get() > 0) {
-            List<Intent> dropped;
-            synchronized (mWaiting) {
-                // quitSafely() would still run every start already queued, with nothing left to keep the process
-                // alive or show their progress
-                mServiceHandler.removeMessages(0);
-                dropped = new ArrayList<>(mWaiting.values());
-                mWaiting.clear();
+        try {
+            if (mJobsLeft.get() > 0) {
+                List<Intent> dropped;
+                synchronized (mWaiting) {
+                    // quitSafely() would still run every start already queued, with nothing left to keep the process
+                    // alive or show their progress
+                    mServiceHandler.removeMessages(0);
+                    dropped = new ArrayList<>(mWaiting.values());
+                    mWaiting.clear();
+                }
+                Log.w(TAG, "%s was stopped before its work was done.", getClass().getSimpleName());
+                for (Intent intent : dropped) {
+                    // One start that can't be released must not keep the others from being released
+                    try {
+                        onDropped(intent);
+                    } catch (RuntimeException e) {
+                        Log.e(TAG, "Couldn't release a dropped start", e);
+                    }
+                }
+                onStoppedUnfinished(!dropped.isEmpty());
             }
-            Log.w(TAG, "%s was stopped before its work was done.", getClass().getSimpleName());
-            for (Intent intent : dropped) {
-                onDropped(intent);
-            }
-            onStoppedUnfinished(!dropped.isEmpty());
+        } finally {
+            mServiceLooper.quitSafely();
         }
-        mServiceLooper.quitSafely();
     }
 
     /**

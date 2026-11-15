@@ -60,6 +60,10 @@ public class PackageInstallerViewModel extends AndroidViewModel {
     private volatile ApkFile mApkFile;
     @GuardedBy("mApkFileLock")
     private boolean mCleared;
+    // Each queue item's load gets the next number. A cancelled load can still be running when the next one
+    // starts, so only the load holding the current number may replace the file or publish what it read.
+    @GuardedBy("mApkFileLock")
+    private int mLoadGeneration;
     private String mPackageName;
     private String mAppLabel;
     private Drawable mAppIcon;
@@ -109,28 +113,82 @@ public class PackageInstallerViewModel extends AndroidViewModel {
             mPackageInfoResult.cancel(true);
         }
         mSelectedSplits.clear();
+        int generation = startLoad();
         mPackageInfoResult = ThreadUtils.postOnBackgroundThread(() -> {
             try {
                 // Three possibilities: 1. Install-existing, 2. ApkFile, 3. Uri
+                LoadedPackage loaded;
                 if (apkQueueItem.isInstallExisting()) {
                     if (apkQueueItem.getPackageName() == null) {
                         throw new IllegalArgumentException("Package name not set for install-existing.");
                     }
-                    getExistingPackageInfoInternal(apkQueueItem.getPackageName());
+                    loaded = loadExistingPackage(apkQueueItem.getPackageName(), generation);
                 } else if (apkQueueItem.getApkSource() != null) {
-                    mApkSource = apkQueueItem.getApkSource();
-                    getPackageInfoInternal();
+                    loaded = loadPackage(apkQueueItem.getApkSource(), generation);
                 } else {
                     throw new IllegalArgumentException("Invalid queue item.");
                 }
-                apkQueueItem.setApkSource(mApkSource);
-                apkQueueItem.setPackageName(mPackageName);
-                apkQueueItem.setAppLabel(mAppLabel);
+                if (loaded != null) {
+                    publish(generation, loaded, apkQueueItem);
+                }
             } catch (Throwable th) { // ApkFileException extends Throwable, not Exception
                 Log.e("PIVM", "Couldn't fetch package info", th);
-                mPackageInfoLiveData.postValue(null);
+                synchronized (mApkFileLock) {
+                    // A load that was replaced or whose screen is gone fails quietly
+                    if (isCurrentLoad(generation)) {
+                        mPackageInfoLiveData.postValue(null);
+                    }
+                }
             }
         });
+    }
+
+    /**
+     * Starts a new load, so every earlier one can no longer replace the file or publish.
+     *
+     * @return the new load's number
+     */
+    @VisibleForTesting
+    int startLoad() {
+        synchronized (mApkFileLock) {
+            return ++mLoadGeneration;
+        }
+    }
+
+    @GuardedBy("mApkFileLock")
+    private boolean isCurrentLoad(int generation) {
+        return !mCleared && generation == mLoadGeneration;
+    }
+
+    /**
+     * Hands what a load read to the screen, unless a newer load started or the screen is gone.
+     *
+     * @return {@code false} when the load was stale and nothing was published
+     */
+    @VisibleForTesting
+    boolean publish(int generation, @NonNull LoadedPackage loaded, @Nullable ApkQueueItem apkQueueItem) {
+        synchronized (mApkFileLock) {
+            if (!isCurrentLoad(generation)) {
+                return false;
+            }
+            mApkSource = loaded.apkSource;
+            mNewPackageInfo = loaded.newPackageInfo;
+            mInstalledPackageInfo = loaded.installedPackageInfo;
+            mPackageName = loaded.packageName;
+            mAppLabel = loaded.appLabel;
+            mAppIcon = loaded.appIcon;
+            mTrackerCount = loaded.trackerCount;
+            mBaseNativeAbis = loaded.baseNativeAbis;
+            mIsSignatureDifferent = loaded.signatureDifferent;
+            if (apkQueueItem != null) {
+                apkQueueItem.setApkSource(loaded.apkSource);
+                apkQueueItem.setPackageName(loaded.packageName);
+                apkQueueItem.setAppLabel(loaded.appLabel);
+            }
+            // Posted under the lock, so a newer load can't post first and then be overwritten
+            mPackageInfoLiveData.postValue(loaded.newPackageInfo);
+            return true;
+        }
     }
 
     @NonNull
@@ -236,13 +294,14 @@ public class PackageInstallerViewModel extends AndroidViewModel {
     }
 
     @WorkerThread
-    private void loadBaseNativeAbis() {
-        mBaseNativeAbis = null;
+    @Nullable
+    private static Set<String> loadBaseNativeAbis(@NonNull ApkFile apkFile) {
         try {
-            mBaseNativeAbis = readNativeAbis(mApkFile.getBaseEntry().getFile(false));
+            return readNativeAbis(apkFile.getBaseEntry().getFile(false));
         } catch (IOException | RuntimeException e) {
             // Only the native-code preflight is lost, the system installer still checks
             Log.w("PIVM", "Couldn't list the base APK's native libraries", e);
+            return null;
         }
     }
 
@@ -315,10 +374,26 @@ public class PackageInstallerViewModel extends AndroidViewModel {
      */
     @VisibleForTesting
     boolean replaceApkFile(@NonNull ApkFile apkFile) {
+        int generation;
+        synchronized (mApkFileLock) {
+            generation = mLoadGeneration;
+        }
+        return replaceApkFile(apkFile, generation);
+    }
+
+    /**
+     * {@link #replaceApkFile(ApkFile)} for one load. A load that a newer one replaced resolves its file too late
+     * to show it, so the file is closed and the newer load's file stays.
+     *
+     * @return {@code false} once the screen is gone or a newer load started, in which case {@code apkFile} is
+     * closed instead
+     */
+    @VisibleForTesting
+    boolean replaceApkFile(@NonNull ApkFile apkFile, int generation) {
         ApkFile toClose;
         boolean kept;
         synchronized (mApkFileLock) {
-            kept = !mCleared;
+            kept = isCurrentLoad(generation);
             if (kept) {
                 toClose = mApkFile;
                 mApkFile = apkFile;
@@ -342,57 +417,109 @@ public class PackageInstallerViewModel extends AndroidViewModel {
         types.add(entry.type);
     }
 
-    private void getPackageInfoInternal() throws PackageManager.NameNotFoundException, IOException, ApkFile.ApkFileException {
-        if (!replaceApkFile(mApkSource.resolve())) {
-            return;
+    /**
+     * Reads a package file for one load. Everything goes into locals, so a load that a newer one replaced
+     * can't leave its package name, label or installed version behind on the screen.
+     *
+     * @return {@code null} when the load was replaced, cancelled or its screen is gone
+     */
+    @WorkerThread
+    @Nullable
+    private LoadedPackage loadPackage(@NonNull ApkSource apkSource, int generation)
+            throws PackageManager.NameNotFoundException, IOException, ApkFile.ApkFileException {
+        ApkFile apkFile = apkSource.resolve();
+        if (!replaceApkFile(apkFile, generation)) {
+            return null;
         }
-        mNewPackageInfo = loadNewPackageInfo();
-        mPackageName = mNewPackageInfo.packageName;
+        PackageInfo newPackageInfo = loadNewPackageInfo(apkFile);
         if (ThreadUtils.isInterrupted()) {
-            return;
+            return null;
         }
+        PackageInfo installedPackageInfo;
         try {
-            mInstalledPackageInfo = loadInstalledPackageInfo(mPackageName);
+            installedPackageInfo = loadInstalledPackageInfo(newPackageInfo.packageName);
             if (ThreadUtils.isInterrupted()) {
-                return;
+                return null;
             }
         } catch (PackageManager.NameNotFoundException ignore) {
+            installedPackageInfo = null;
         }
-        mAppLabel = mPm.getApplicationLabel(mNewPackageInfo.applicationInfo).toString();
-        mAppIcon = mPm.getApplicationIcon(mNewPackageInfo.applicationInfo);
-        mTrackerCount = ComponentUtils.getTrackerComponentsCountForPackage(mNewPackageInfo);
-        if (ThreadUtils.isInterrupted()) {
-            return;
-        }
-        loadBaseNativeAbis();
-        if (mNewPackageInfo != null && mInstalledPackageInfo != null) {
-            mIsSignatureDifferent = PackageUtils.isSignatureDifferent(mNewPackageInfo, mInstalledPackageInfo);
-        }
-        mPackageInfoLiveData.postValue(mNewPackageInfo);
+        return describe(apkSource, apkFile, newPackageInfo, installedPackageInfo);
     }
 
-    private void getExistingPackageInfoInternal(@NonNull String packageName) throws PackageManager.NameNotFoundException, IOException, ApkFile.ApkFileException {
-        mPackageName = packageName;
-        mInstalledPackageInfo = loadInstalledPackageInfo(packageName);
-        mApkSource = ApkSource.getApkSource(mInstalledPackageInfo.applicationInfo);
-        if (!replaceApkFile(mApkSource.resolve())) {
-            return;
+    @WorkerThread
+    @Nullable
+    private LoadedPackage loadExistingPackage(@NonNull String packageName, int generation)
+            throws PackageManager.NameNotFoundException, IOException, ApkFile.ApkFileException {
+        PackageInfo installedPackageInfo = loadInstalledPackageInfo(packageName);
+        ApkSource apkSource = ApkSource.getApkSource(installedPackageInfo.applicationInfo);
+        ApkFile apkFile = apkSource.resolve();
+        if (!replaceApkFile(apkFile, generation)) {
+            return null;
         }
-        mNewPackageInfo = loadNewPackageInfo();
-        mAppLabel = mPm.getApplicationLabel(mNewPackageInfo.applicationInfo).toString();
-        mAppIcon = mPm.getApplicationIcon(mNewPackageInfo.applicationInfo);
-        mTrackerCount = ComponentUtils.getTrackerComponentsCountForPackage(mNewPackageInfo);
-        loadBaseNativeAbis();
-        if (mNewPackageInfo != null && mInstalledPackageInfo != null) {
-            mIsSignatureDifferent = PackageUtils.isSignatureDifferent(mNewPackageInfo, mInstalledPackageInfo);
+        PackageInfo newPackageInfo = loadNewPackageInfo(apkFile);
+        return describe(apkSource, apkFile, newPackageInfo, installedPackageInfo);
+    }
+
+    @WorkerThread
+    @Nullable
+    private LoadedPackage describe(@NonNull ApkSource apkSource, @NonNull ApkFile apkFile,
+                                   @NonNull PackageInfo newPackageInfo, @Nullable PackageInfo installedPackageInfo) {
+        String appLabel = mPm.getApplicationLabel(newPackageInfo.applicationInfo).toString();
+        Drawable appIcon = mPm.getApplicationIcon(newPackageInfo.applicationInfo);
+        int trackerCount = ComponentUtils.getTrackerComponentsCountForPackage(newPackageInfo);
+        if (ThreadUtils.isInterrupted()) {
+            return null;
         }
-        mPackageInfoLiveData.postValue(mNewPackageInfo);
+        Set<String> baseNativeAbis = loadBaseNativeAbis(apkFile);
+        boolean signatureDifferent = installedPackageInfo != null
+                && PackageUtils.isSignatureDifferent(newPackageInfo, installedPackageInfo);
+        return new LoadedPackage(apkSource, newPackageInfo, installedPackageInfo, newPackageInfo.packageName,
+                appLabel, appIcon, trackerCount, baseNativeAbis, signatureDifferent);
+    }
+
+    /**
+     * What one load read, kept apart from the screen's state until {@link #publish} accepts it.
+     */
+    @VisibleForTesting
+    static final class LoadedPackage {
+        @NonNull
+        final ApkSource apkSource;
+        @NonNull
+        final PackageInfo newPackageInfo;
+        @Nullable
+        final PackageInfo installedPackageInfo;
+        @NonNull
+        final String packageName;
+        @NonNull
+        final String appLabel;
+        @Nullable
+        final Drawable appIcon;
+        final int trackerCount;
+        @Nullable
+        final Set<String> baseNativeAbis;
+        final boolean signatureDifferent;
+
+        LoadedPackage(@NonNull ApkSource apkSource, @NonNull PackageInfo newPackageInfo,
+                      @Nullable PackageInfo installedPackageInfo, @NonNull String packageName,
+                      @NonNull String appLabel, @Nullable Drawable appIcon, int trackerCount,
+                      @Nullable Set<String> baseNativeAbis, boolean signatureDifferent) {
+            this.apkSource = apkSource;
+            this.newPackageInfo = newPackageInfo;
+            this.installedPackageInfo = installedPackageInfo;
+            this.packageName = packageName;
+            this.appLabel = appLabel;
+            this.appIcon = appIcon;
+            this.trackerCount = trackerCount;
+            this.baseNativeAbis = baseNativeAbis;
+            this.signatureDifferent = signatureDifferent;
+        }
     }
 
     @WorkerThread
     @NonNull
-    private PackageInfo loadNewPackageInfo() throws PackageManager.NameNotFoundException, IOException {
-        String apkPath = mApkFile.getBaseEntry().getFile(false).getAbsolutePath();
+    private PackageInfo loadNewPackageInfo(@NonNull ApkFile apkFile) throws PackageManager.NameNotFoundException, IOException {
+        String apkPath = apkFile.getBaseEntry().getFile(false).getAbsolutePath();
         int flags = PackageManager.GET_PERMISSIONS
                 | PackageManager.GET_ACTIVITIES | PackageManager.GET_RECEIVERS | PackageManager.GET_PROVIDERS
                 | PackageManager.GET_SERVICES | MATCH_DISABLED_COMPONENTS | GET_SIGNING_CERTIFICATES_APK

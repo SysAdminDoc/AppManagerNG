@@ -70,6 +70,37 @@ public class ForegroundServiceQueueTest {
         }
     }
 
+    public static class ThrowingDropService extends QueueService {
+        @Override
+        protected void onDropped(@Nullable Intent intent) {
+            super.onDropped(intent);
+            if (intent != null && "second".equals(intent.getAction())) {
+                throw new IllegalStateException("Release failed");
+            }
+        }
+    }
+
+    @Test
+    public void aDroppedStartThatFailsToReleaseStillLetsTheOthersGoAndTheWorkerStop() throws Exception {
+        ServiceController<ThrowingDropService> controller = Robolectric.buildService(ThrowingDropService.class).create();
+        ThrowingDropService service = controller.get();
+        service.onStartCommand(new Intent("first"), 0, 1);
+        assertTrue(service.firstStarted.await(30, TimeUnit.SECONDS));
+        service.onStartCommand(new Intent("second"), 0, 2);
+        service.onStartCommand(new Intent("third"), 0, 3);
+
+        controller.destroy();
+        service.finishFirst.countDown();
+        Thread worker = service.worker;
+        assertNotNull(worker);
+        worker.join(30_000);
+
+        assertFalse(worker.isAlive());
+        assertEquals(Arrays.asList("second", "third"), service.dropped);
+        assertEquals(Boolean.TRUE, service.queueDropped);
+        assertEquals(Collections.singletonList("first"), service.handled);
+    }
+
     @Test
     public void startsStillQueuedWhenTheServiceStopsAreHandedBackAndNeverRun() throws Exception {
         ServiceController<QueueService> controller = Robolectric.buildService(QueueService.class).create();

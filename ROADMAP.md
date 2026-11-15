@@ -962,3 +962,12 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Touches: `RestoreOp` setup, `MetadataManager.readMetadata`, `RestoreStaging` (stage the metadata file first), `RestoreStagingTest`.
   Acceptance: WHEN the metadata file changes between two reads, the system SHALL parse and hash the same staged copy, and a test that swaps the file after the hash SHALL see the restore read only the hashed bytes or stop.
   Complexity: S
+
+### P3
+
+- [ ] P3: Budget an OpenPGP backup's decrypted copy by what it really holds
+  Why: `RestoreStaging` asks for room for the decrypted copy equal to the encrypted size plus the 64 MB reserve (`RestoreStaging.java:107`). AES and RSA output is about the size of its input, but OpenPGP compresses before it encrypts, so a well-compressed OpenPGP backup can decrypt to far more than its own size. The restore then runs out of space part way through decrypting instead of stopping first.
+  Evidence: 2026-11-15 review of 4b9359bf1. `OpenPGPCrypto` decrypts through the provider's stream, which inflates compressed literal data.
+  Touches: `RestoreStaging.stage`, `BackupItems.decryptWritesCopies`, `crypto/OpenPGPCrypto.java`, `RestoreStagingTest`.
+  Acceptance: WHEN an OpenPGP backup's decrypted size exceeds the free space, the system SHALL stop before writing any app data with a message naming the space needed, either by reading the literal data's declared length or by decrypting with a running space check, and a test with a highly compressible payload SHALL cover it.
+  Complexity: S
