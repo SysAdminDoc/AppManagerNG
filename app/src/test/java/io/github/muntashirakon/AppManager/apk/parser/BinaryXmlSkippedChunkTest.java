@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.apk.parser;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -17,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -39,7 +41,13 @@ public class BinaryXmlSkippedChunkTest {
     private static final int[] UNKNOWN = {0x0000, 0x0200, 0x01ff};
     /** Types Android skips only once the nodes have started: an unused node type, a string pool, a resource map. */
     private static final int[] UNKNOWN_AMONG_NODES = {0x0105, 0x017f, 0x0001, 0x0180};
+    private static final int RES_STRING_POOL_TYPE = 0x0001;
     private static final int RES_XML_START_ELEMENT_TYPE = 0x0102;
+    private static final int RES_XML_END_ELEMENT_TYPE = 0x0103;
+    private static final int RES_XML_RESOURCE_MAP_TYPE = 0x0180;
+    private static final int ATTR_VERSION_NAME = 0x0101021c;
+    /** A private attribute the API 35 table names, so moving android:versionName onto it shows in the output. */
+    private static final int PRIVATE_ATTR = 0x01120017;
 
     @Test
     public void theViewerSkipsUnknownChunksBeforeTheRootAndBetweenElements() throws IOException {
@@ -119,6 +127,83 @@ public class BinaryXmlSkippedChunkTest {
         }
     }
 
+    /** ResXMLTree::setTo reads every pool before the first node, and only the last one's error counts. */
+    @Test
+    public void onlyTheLastStringPoolCounts() throws IOException {
+        byte[] data = resource("xml/framework_ref_api35.bin.xml");
+        String expected = AndroidBinXmlDecoder.decode(data);
+        // One string whose offset table runs past the pool
+        byte[] broken = new byte[28];
+        ByteBuffer.wrap(broken).order(ByteOrder.LITTLE_ENDIAN).putShort((short) RES_STRING_POOL_TYPE)
+                .putShort((short) 28).putInt(28).putInt(1);
+        assertEquals(expected, AndroidBinXmlDecoder.decode(inserted(data, headerSize(data), broken)));
+        assertThrows(IOException.class, () -> AndroidBinXmlDecoder.decode(inserted(data, firstNode(data), broken)));
+        // A copy after the resource map replaces the first pool
+        assertEquals(expected, AndroidBinXmlDecoder.decode(
+                inserted(data, firstNode(data), chunk(data, chunkOfType(data, RES_STRING_POOL_TYPE)))));
+    }
+
+    /** ResXMLTree::setTo points its resource IDs at each map it meets, so the last one is used. */
+    @Test
+    public void onlyTheLastResourceMapCounts() throws IOException {
+        byte[] data = resource("xml/framework_ref_api35.bin.xml");
+        String expected = AndroidBinXmlDecoder.decode(data);
+        byte[] changed = data.clone();
+        int map = chunkOfType(changed, RES_XML_RESOURCE_MAP_TYPE);
+        replaceId(changed, map, ATTR_VERSION_NAME, PRIVATE_ATTR);
+        String expectedChanged = AndroidBinXmlDecoder.decode(changed);
+        assertNotEquals(expected, expectedChanged);
+
+        byte[] changedMap = chunk(changed, map);
+        assertEquals(expectedChanged, AndroidBinXmlDecoder.decode(inserted(data, firstNode(data), changedMap)));
+        assertEquals(expected, AndroidBinXmlDecoder.decode(inserted(data, headerSize(data), changedMap)));
+    }
+
+    /** validate_chunk refuses a header or size off a 4-byte boundary, before and among the nodes. */
+    @Test
+    public void aChunkOffA4ByteBoundaryIsRefusedUntilTheRootCloses() throws IOException {
+        byte[] data = resource("xml/framework_ref_api35.bin.xml");
+        String expected = AndroidBinXmlDecoder.decode(data);
+        for (int at : new int[]{headerSize(data), firstNode(data), secondElement(data)}) {
+            for (int[] headerAndSize : new int[][]{{16, 18}, {10, 16}}) {
+                IOException e = assertThrows(IOException.class, () -> AndroidBinXmlDecoder.decode(
+                        withChunk(data, at, 0x0200, headerAndSize[0], headerAndSize[1])));
+                assertTrue(e.getMessage(), e.getMessage().contains("4-byte"));
+            }
+        }
+        // Android stops reading a manifest at its root element's end
+        for (int at : new int[]{afterRootElement(data), rootEnd(data)}) {
+            for (int[] headerAndSize : new int[][]{{16, 18}, {10, 16}, {8, 8}, {8, 16}}) {
+                assertEquals(Arrays.toString(headerAndSize) + " at " + at, expected, AndroidBinXmlDecoder.decode(
+                        withChunk(data, at, 0x0200, headerAndSize[0], headerAndSize[1])));
+            }
+        }
+    }
+
+    @Test
+    public void aBrokenChunkAfterTheRootIsDroppedWithEverythingAfterIt() throws IOException {
+        byte[] data = resource("xml/framework_ref_api35.bin.xml");
+        String expected = AndroidBinXmlDecoder.decode(data);
+        for (int at : new int[]{afterRootElement(data), rootEnd(data)}) {
+            byte[] pastTheEnd = withChunk(data, at, 0x0200, 16, 16);
+            ByteBuffer.wrap(pastTheEnd).order(ByteOrder.LITTLE_ENDIAN).putInt(at + 4, pastTheEnd.length);
+            assertEquals("past the end at " + at, expected, AndroidBinXmlDecoder.decode(pastTheEnd));
+            assertEquals("short header at " + at, expected,
+                    AndroidBinXmlDecoder.decode(withChunk(data, at, 0x0200, 4, 16)));
+        }
+    }
+
+    @Test
+    public void anEndElementWithNothingOpenIsDropped() throws IOException {
+        for (String fixture : FIXTURES) {
+            byte[] data = resource(fixture);
+            String expected = AndroidBinXmlDecoder.decode(data);
+            byte[] damaged = withChunk(data, firstNode(data), RES_XML_END_ELEMENT_TYPE, 16, 24);
+            damaged = withChunk(damaged, rootEnd(damaged), RES_XML_END_ELEMENT_TYPE, 16, 24);
+            assertEquals(fixture, expected, AndroidBinXmlDecoder.decode(damaged));
+        }
+    }
+
     private static void assertSame(@NonNull String fixture, int type, @NonNull String where, @NonNull String expected,
                                    @NonNull byte[] damaged) throws IOException {
         assertEquals(String.format("%s with a 0x%04x chunk %s", fixture, type, where), expected,
@@ -158,6 +243,69 @@ public class BinaryXmlSkippedChunkTest {
         }
         b.putInt(4, b.getInt(4) + size);
         return out;
+    }
+
+    /** {@code data} with {@code chunk} inserted at {@code at} and the document's size raised to match. */
+    @NonNull
+    private static byte[] inserted(@NonNull byte[] data, int at, @NonNull byte[] chunk) {
+        byte[] out = new byte[data.length + chunk.length];
+        System.arraycopy(data, 0, out, 0, at);
+        System.arraycopy(chunk, 0, out, at, chunk.length);
+        System.arraycopy(data, at, out, at + chunk.length, data.length - at);
+        ByteBuffer b = ByteBuffer.wrap(out).order(ByteOrder.LITTLE_ENDIAN);
+        b.putInt(4, b.getInt(4) + chunk.length);
+        return out;
+    }
+
+    @NonNull
+    private static byte[] chunk(@NonNull byte[] data, int at) {
+        int size = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN).getInt(at + 4);
+        return Arrays.copyOfRange(data, at, at + size);
+    }
+
+    private static int headerSize(@NonNull byte[] data) {
+        return ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN).getShort(2) & 0xffff;
+    }
+
+    private static int chunkOfType(@NonNull byte[] data, int wanted) {
+        ByteBuffer b = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+        int end = b.getInt(4);
+        for (int pos = headerSize(data); pos + 8 <= end; pos += b.getInt(pos + 4)) {
+            if ((b.getShort(pos) & 0xffff) == wanted) {
+                return pos;
+            }
+        }
+        throw new AssertionError("No chunk of type " + wanted);
+    }
+
+    private static void replaceId(@NonNull byte[] data, int map, int from, int to) {
+        ByteBuffer b = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+        int end = map + b.getInt(map + 4);
+        for (int pos = map + (b.getShort(map + 2) & 0xffff); pos + 4 <= end; pos += 4) {
+            if (b.getInt(pos) == from) {
+                b.putInt(pos, to);
+                return;
+            }
+        }
+        throw new AssertionError("No resource ID " + Integer.toHexString(from));
+    }
+
+    /** Just past the end element that closes the root, before the namespace ends. */
+    private static int afterRootElement(@NonNull byte[] data) {
+        ByteBuffer b = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
+        int end = b.getInt(4);
+        int depth = 0;
+        for (int pos = headerSize(data); pos + 8 <= end; ) {
+            int type = b.getShort(pos) & 0xffff;
+            pos += b.getInt(pos + 4);
+            if (type == RES_XML_START_ELEMENT_TYPE) {
+                ++depth;
+            } else if (type == RES_XML_END_ELEMENT_TYPE && --depth == 0) {
+                assertTrue("Nothing follows the root", pos < end);
+                return pos;
+            }
+        }
+        throw new AssertionError("The root never closes");
     }
 
     private static int firstNode(@NonNull byte[] data) {

@@ -3,11 +3,11 @@
 package io.github.muntashirakon.AppManager.apk.parser;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
 
 /**
  * Checks a binary XML document's structure before ARSCLib reads it, and drops the chunks Android
@@ -16,16 +16,26 @@ import java.util.Arrays;
  * <p>ARSCLib sizes its arrays from the counts and lengths written in the file and reads every
  * string up front, so a damaged or hostile file can make it allocate gigabytes, recurse until the
  * stack runs out, or spend minutes on deeply nested elements. This applies the bounds Android's
- * own ResXMLTree applies (every chunk inside its parent, string pool tables and strings inside the
- * pool, attributes inside their element, a node header on every chunk once the elements start)
- * plus a nesting limit, so such a file fails fast with an {@link IOException}. Unlike Android,
- * which checks a string only when it's read, every string is checked, because ARSCLib reads them
- * all.
+ * own ResXMLTree applies (every chunk inside its parent and on a 4-byte boundary, string pool
+ * tables and strings inside the pool, attributes inside their element, a node header on every
+ * chunk once the elements start) plus a nesting limit, so such a file fails fast with an
+ * {@link IOException}. Unlike Android, which checks a string only when it's read, every string is
+ * checked, because ARSCLib reads them all.
  *
- * <p>Android also reads past chunks it doesn't know: before the first node it uses only the string
- * pool and the resource map, and from the first node on only namespace, element and CDATA nodes
- * ({@code ResXMLTree::setTo} and {@code ResXMLParser::nextNode}). ARSCLib refuses an unknown chunk
- * among the elements, so a file Android installs couldn't be read. Those chunks are removed here.
+ * <p>Android also reads past chunks it doesn't use ({@code ResXMLTree::setTo} and
+ * {@code ResXMLParser::nextNode}), and ARSCLib reads some of them differently, so those chunks are
+ * removed here:
+ * <ul>
+ * <li>Before the first node Android uses only the last string pool and the last resource map.
+ * ARSCLib uses the first of each and refuses other chunks.</li>
+ * <li>From the first node on Android uses only namespace, element and CDATA nodes. ARSCLib
+ * refuses other chunks there.</li>
+ * <li>An end element with no open element closes nothing. ARSCLib keeps it but stops counting
+ * depth, which would let deeper nesting through.</li>
+ * <li>Android stops reading a manifest at its root element's end, so a chunk after that which
+ * Android would refuse is dropped rather than refused, along with everything after it when its
+ * size can't be trusted.</li>
+ * </ul>
  */
 final class BinaryXmlBounds {
     static final int MAX_DEPTH = 256;
@@ -70,37 +80,85 @@ final class BinaryXmlBounds {
         if (headerSize < CHUNK_HEADER_SIZE || headerSize > size || size > data.length) {
             throw new IOException("Bad binary XML header");
         }
-        // Start and end offsets of the chunks to drop, in order
-        long[] skipped = new long[0];
-        int skippedCount = 0;
+        // Counted first and copied second, so a file of tiny chunks needs no list as long as itself
+        long dropped = walk(b, headerSize, (int) size, null);
+        if (dropped == 0) {
+            return data;
+        }
+        byte[] out = new byte[(int) (data.length - dropped)];
+        walk(b, headerSize, (int) size, out);
+        return out;
+    }
+
+    /**
+     * Checks the chunks after the header and returns how many bytes the dropped ones take. With
+     * {@code out}, sized for what's kept, it also copies the document there without them and with
+     * the root size reduced to match.
+     */
+    private static long walk(@NonNull ByteBuffer b, int headerSize, int size, @Nullable byte[] out)
+            throws IOException {
+        long lastPool = -1;
+        long lastMap = -1;
+        for (long pos = headerSize; pos + CHUNK_HEADER_SIZE <= size; ) {
+            int chunkType = u16(b, (int) pos);
+            long chunkSize = u32(b, (int) pos + 4);
+            if (isNode(chunkType) || chunkSize < CHUNK_HEADER_SIZE || pos + chunkSize > size) {
+                // The first node, or a bad chunk the loop below refuses
+                break;
+            }
+            if (chunkType == RES_STRING_POOL_TYPE) {
+                lastPool = pos;
+            } else if (chunkType == RES_XML_RESOURCE_MAP_TYPE) {
+                lastMap = pos;
+            }
+            pos += chunkSize;
+        }
+        long dropped = 0;
+        int copiedTo = 0;
+        int outPos = 0;
         long pos = headerSize;
         int depth = 0;
         boolean inNodes = false;
+        boolean rootClosed = false;
         // Android ignores a tail too short to hold a chunk header
         while (pos + CHUNK_HEADER_SIZE <= size) {
             int at = (int) pos;
             int chunkType = u16(b, at);
             int chunkHeader = u16(b, at + 2);
             long chunkSize = u32(b, at + 4);
-            if (chunkType >= RES_XML_FIRST_CHUNK_TYPE && chunkType <= RES_XML_LAST_CHUNK_TYPE) {
+            if (isNode(chunkType)) {
                 inNodes = true;
             }
-            if (chunkHeader < CHUNK_HEADER_SIZE || chunkSize < chunkHeader || pos + chunkSize > size) {
+            boolean bad = chunkHeader < CHUNK_HEADER_SIZE || chunkSize < chunkHeader || pos + chunkSize > size;
+            boolean misaligned = ((chunkHeader | chunkSize) & 3) != 0;
+            boolean keep;
+            if (rootClosed && bad) {
+                // Its size can't be trusted to find the next chunk, so the rest goes too
+                chunkSize = size - pos;
+                keep = false;
+            } else if (bad) {
                 throw new IOException("Bad chunk at offset " + pos);
-            }
-            if (inNodes && chunkHeader < NODE_HEADER_SIZE) {
+            } else if (rootClosed && (misaligned || chunkHeader < NODE_HEADER_SIZE)) {
+                keep = false;
+            } else if (misaligned) {
+                throw new IOException("Chunk off a 4-byte boundary at offset " + pos);
+            } else if (!inNodes) {
+                keep = pos == lastPool || pos == lastMap;
+            } else if (chunkHeader < NODE_HEADER_SIZE) {
                 // nextNode validates every chunk as a node, the ones it skips too
                 throw new IOException("Bad node header at offset " + pos);
+            } else if (chunkType == RES_XML_END_ELEMENT_TYPE) {
+                keep = depth > 0;
+            } else {
+                keep = chunkType >= RES_XML_START_NAMESPACE_TYPE && chunkType <= RES_XML_CDATA_TYPE;
             }
-            boolean keep = inNodes
-                    ? chunkType >= RES_XML_START_NAMESPACE_TYPE && chunkType <= RES_XML_CDATA_TYPE
-                    : chunkType == RES_STRING_POOL_TYPE || chunkType == RES_XML_RESOURCE_MAP_TYPE;
             if (!keep) {
-                if (skippedCount == skipped.length) {
-                    skipped = Arrays.copyOf(skipped, Math.max(8, skipped.length * 2));
+                dropped += chunkSize;
+                if (out != null) {
+                    System.arraycopy(b.array(), copiedTo, out, outPos, at - copiedTo);
+                    outPos += at - copiedTo;
+                    copiedTo = (int) (pos + chunkSize);
                 }
-                skipped[skippedCount++] = pos;
-                skipped[skippedCount++] = pos + chunkSize;
             } else if (chunkType == RES_STRING_POOL_TYPE) {
                 checkStringPool(b, at, chunkHeader, chunkSize);
             } else if (chunkType == RES_XML_START_ELEMENT_TYPE) {
@@ -109,32 +167,22 @@ final class BinaryXmlBounds {
                     throw new IOException("Elements nested deeper than " + MAX_DEPTH);
                 }
             } else if (chunkType == RES_XML_END_ELEMENT_TYPE) {
-                --depth;
+                if (--depth == 0) {
+                    rootClosed = true;
+                }
             }
             pos += chunkSize;
         }
-        return skippedCount == 0 ? data : without(data, skipped, skippedCount, size);
+        if (out != null) {
+            byte[] data = b.array();
+            System.arraycopy(data, copiedTo, out, outPos, data.length - copiedTo);
+            ByteBuffer.wrap(out).order(ByteOrder.LITTLE_ENDIAN).putInt(4, (int) (size - dropped));
+        }
+        return dropped;
     }
 
-    /** {@code data} without the given ranges, its root chunk's size reduced to match. */
-    @NonNull
-    private static byte[] without(@NonNull byte[] data, @NonNull long[] skipped, int count, long size) {
-        long dropped = 0;
-        for (int i = 0; i < count; i += 2) {
-            dropped += skipped[i + 1] - skipped[i];
-        }
-        byte[] out = new byte[(int) (data.length - dropped)];
-        int from = 0;
-        int to = 0;
-        for (int i = 0; i < count; i += 2) {
-            int start = (int) skipped[i];
-            System.arraycopy(data, from, out, to, start - from);
-            to += start - from;
-            from = (int) skipped[i + 1];
-        }
-        System.arraycopy(data, from, out, to, data.length - from);
-        ByteBuffer.wrap(out).order(ByteOrder.LITTLE_ENDIAN).putInt(4, (int) (size - dropped));
-        return out;
+    private static boolean isNode(int chunkType) {
+        return chunkType >= RES_XML_FIRST_CHUNK_TYPE && chunkType <= RES_XML_LAST_CHUNK_TYPE;
     }
 
     private static void checkElement(@NonNull ByteBuffer b, int at, int header, long size) throws IOException {

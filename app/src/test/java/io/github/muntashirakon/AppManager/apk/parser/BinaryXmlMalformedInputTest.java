@@ -98,6 +98,26 @@ public class BinaryXmlMalformedInputTest {
         assertThrows(IOException.class, () -> AndroidBinXmlDecoder.readDocument(nested(100_000)));
     }
 
+    /**
+     * An end element with nothing open closes nothing. Counting it anyway let as many extra levels
+     * of nesting through as there were stray ends, and ARSCLib then ran out of stack.
+     */
+    @Test
+    public void strayEndElementsDoNotRaiseTheNestingLimit() throws IOException {
+        int over = BinaryXmlBounds.MAX_DEPTH + 1;
+        for (int[] runs : new int[][]{
+                {-5_000, over, -over},
+                {1, -1, -5_000, over, -over},
+                {-5_000, 5_000 + over, -(5_000 + over)},
+        }) {
+            IOException e = assertThrows(Arrays.toString(runs), IOException.class,
+                    () -> AndroidBinXmlDecoder.decode(elements(runs)));
+            assertTrue(e.getMessage(), e.getMessage().contains("nested"));
+        }
+        int limit = BinaryXmlBounds.MAX_DEPTH;
+        assertTrue(AndroidBinXmlDecoder.decode(elements(-5_000, limit, -limit)).contains("<e>"));
+    }
+
     @Test(timeout = 120_000)
     public void manySiblingsAndNamespacesStillDecode() throws IOException {
         StringBuilder wide = new StringBuilder("<root>");
@@ -142,6 +162,41 @@ public class BinaryXmlMalformedInputTest {
             // RES_XML_END_ELEMENT_TYPE
             b.putShort((short) 0x0103).putShort((short) 16).putInt(endSize).putInt(depth + i + 1).putInt(-1)
                     .putInt(-1).putInt(0);
+        }
+        return b.array();
+    }
+
+    /**
+     * {@code <e>} start and end elements in runs: a positive run is that many starts, a negative
+     * run that many ends, whether or not anything is open.
+     */
+    @NonNull
+    private static byte[] elements(int... runs) {
+        int poolSize = 28 + 4 + 4;
+        int startSize = 36;
+        int endSize = 24;
+        int total = 8 + poolSize;
+        for (int run : runs) {
+            total += run > 0 ? run * startSize : -run * endSize;
+        }
+        ByteBuffer b = ByteBuffer.allocate(total).order(ByteOrder.LITTLE_ENDIAN);
+        b.putShort((short) 0x0003).putShort((short) 8).putInt(total);
+        b.putShort((short) 0x0001).putShort((short) 28).putInt(poolSize)
+                .putInt(1).putInt(0).putInt(0x100).putInt(28 + 4).putInt(0);
+        b.putInt(0);
+        b.put(new byte[]{1, 1, 'e', 0});
+        int line = 0;
+        for (int run : runs) {
+            for (int i = 0; i < Math.abs(run); ++i) {
+                if (run > 0) {
+                    b.putShort((short) 0x0102).putShort((short) 16).putInt(startSize).putInt(++line).putInt(-1)
+                            .putInt(-1).putInt(0).putShort((short) 20).putShort((short) 20)
+                            .putShort((short) 0).putShort((short) 0).putShort((short) 0).putShort((short) 0);
+                } else {
+                    b.putShort((short) 0x0103).putShort((short) 16).putInt(endSize).putInt(++line).putInt(-1)
+                            .putInt(-1).putInt(0);
+                }
+            }
         }
         return b.array();
     }
