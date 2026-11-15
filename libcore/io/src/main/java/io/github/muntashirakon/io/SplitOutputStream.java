@@ -7,11 +7,14 @@ import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -138,15 +141,19 @@ public class SplitOutputStream extends OutputStream {
         private final Path mFile;
         @NonNull
         private final OutputStream mStream;
+        @Nullable
+        private final FileChannel mChannel;
+        @Nullable
         private final ParcelFileDescriptor mParcelFileDescriptor;
         private final boolean mVerifySizeOnClose;
         private long mBytesWritten;
         private boolean mClosed;
 
-        private OutputTarget(@NonNull Path file, @NonNull OutputStream stream,
-                             ParcelFileDescriptor parcelFileDescriptor, boolean verifySizeOnClose) {
+        private OutputTarget(@NonNull Path file, @NonNull OutputStream stream, @Nullable FileChannel channel,
+                             @Nullable ParcelFileDescriptor parcelFileDescriptor, boolean verifySizeOnClose) {
             mFile = file;
             mStream = stream;
+            mChannel = channel;
             mParcelFileDescriptor = parcelFileDescriptor;
             mVerifySizeOnClose = verifySizeOnClose;
         }
@@ -154,14 +161,25 @@ public class SplitOutputStream extends OutputStream {
         @NonNull
         private static OutputTarget open(@NonNull Path file, boolean syncAfterEachChunk) throws IOException {
             if (syncAfterEachChunk) {
+                // A channel syncs the file where it really is: in this process, or in the root service for a file
+                // only that can reach. A descriptor for such a file is the write end of a pipe that the main
+                // thread copies into the file, and a pipe can't be synced, so every chunk failed there.
+                try {
+                    FileChannel channel = file.openFileChannel(FileSystemManager.MODE_WRITE_ONLY
+                            | FileSystemManager.MODE_CREATE | FileSystemManager.MODE_TRUNCATE);
+                    return new OutputTarget(file, Channels.newOutputStream(channel), channel, null, true);
+                } catch (IOException ignore) {
+                    // Not a file either side can open, such as a document from a provider
+                }
                 try {
                     ParcelFileDescriptor pfd = file.openFileDescriptor("w", getCallbackHandler());
-                    return new OutputTarget(file, new ParcelFileDescriptor.AutoCloseOutputStream(pfd), pfd, true);
+                    return new OutputTarget(file, new ParcelFileDescriptor.AutoCloseOutputStream(pfd), null, pfd,
+                            true);
                 } catch (Exception ignore) {
                     // Fall back to the provider output stream when it does not support file descriptors.
                 }
             }
-            return new OutputTarget(file, file.openOutputStream(), null, syncAfterEachChunk);
+            return new OutputTarget(file, file.openOutputStream(), null, null, syncAfterEachChunk);
         }
 
         private static Handler getCallbackHandler() throws IOException {
@@ -186,7 +204,9 @@ public class SplitOutputStream extends OutputStream {
 
         void sync() throws IOException {
             mStream.flush();
-            if (mParcelFileDescriptor != null) {
+            if (mChannel != null) {
+                mChannel.force(true);
+            } else if (mParcelFileDescriptor != null) {
                 mParcelFileDescriptor.getFileDescriptor().sync();
             }
         }

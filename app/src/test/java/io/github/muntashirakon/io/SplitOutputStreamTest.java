@@ -12,6 +12,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -22,6 +23,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
 
@@ -77,6 +79,33 @@ public class SplitOutputStreamTest {
         for (Path file : files) {
             junkFiles.add(new File(file.getFilePath()));
         }
+    }
+
+    @Test
+    @Config(shadows = ShadowPathImplUnsyncableDescriptor.class)
+    public void durableWritesSyncTheFileItselfNotADescriptorThatCantBeSynced() throws Exception {
+        // In root mode a backup folder only the root service can reach hands out pipe descriptors, which can't be
+        // synced, so every durable backup there failed at its first chunk with "sync failed"
+        byte[] payload = new byte[12 * 1024];
+        new Random(7).nextBytes(payload);
+        List<Path> files;
+        try (SplitOutputStream outputStream = new SplitOutputStream(Paths.get("/tmp"),
+                "am_split_durable_" + System.nanoTime(), 5 * 1024, true)) {
+            files = outputStream.getFiles();
+            try {
+                outputStream.write(payload);
+            } finally {
+                for (Path file : files) {
+                    junkFiles.add(new File(file.getFilePath()));
+                }
+            }
+        }
+
+        assertEquals(3, files.size());
+        assertEquals(5 * 1024, files.get(0).length());
+        assertEquals(5 * 1024, files.get(1).length());
+        assertEquals(2 * 1024, files.get(2).length());
+        assertArrayEquals(payload, readAll(files));
     }
 
     @Test
