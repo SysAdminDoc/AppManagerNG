@@ -10,13 +10,19 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
+import android.Manifest;
 import android.app.Application;
 import android.content.ComponentName;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.os.Build;
 import android.os.Looper;
+import android.provider.Settings;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.test.core.app.ApplicationProvider;
 
@@ -27,11 +33,13 @@ import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
+import org.robolectric.shadows.ShadowDialog;
 import org.robolectric.shadows.ShadowToast;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
@@ -48,6 +56,8 @@ public class ActivityLauncherShortcutActivityTest {
     private static final String CLS = "com.example.app.SettingsActivity";
     private static final int START_CLASS_NOT_FOUND = -2;
     private static final int START_ABORTED = 102;
+    private static final String ASSISTANT = "assistant";
+    private static final String USERS_ASSISTANT = "com.example.assistant/.VoiceService";
 
     private final List<Intent> mStarted = new ArrayList<>();
     private final List<Integer> mUsers = new ArrayList<>();
@@ -192,6 +202,76 @@ public class ActivityLauncherShortcutActivityTest {
     }
 
     @Test
+    public void aShortcutMadeForTheAssistantStartsATargetThatStartsOnItsOwn() {
+        shadowOf(mApp).grantPermissions(Manifest.permission.WRITE_SECURE_SETTINGS);
+        Settings.Secure.putString(mApp.getContentResolver(), ASSISTANT, USERS_ASSISTANT);
+
+        ActivityLauncherShortcutActivity activity = Robolectric.buildActivity(
+                ActivityLauncherShortcutActivity.class, shortcutViaAssist()).setup().get();
+        shadowOf(Looper.getMainLooper()).idle();
+
+        assertEquals(1, mStarted.size());
+        assertEquals(new ComponentName(PKG, CLS), mStarted.get(0).getComponent());
+        assertTrue(activity.isFinishing());
+        assertNull(ShadowDialog.getLatestDialog());
+        assertEquals(USERS_ASSISTANT, Settings.Secure.getString(mApp.getContentResolver(), ASSISTANT));
+    }
+
+    @Test
+    public void aShortcutMadeForTheAssistantToAnAppThatsGoneSaysSoAndLeavesTheAssistantAlone() {
+        shadowOf(mApp).grantPermissions(Manifest.permission.WRITE_SECURE_SETTINGS);
+        Settings.Secure.putString(mApp.getContentResolver(), ASSISTANT, USERS_ASSISTANT);
+        ActivityLauncherShortcutActivity.sTargetStarter = (intent, userId) -> START_CLASS_NOT_FOUND;
+
+        ActivityLauncherShortcutActivity activity = Robolectric.buildActivity(
+                ActivityLauncherShortcutActivity.class, shortcutViaAssist()).setup().get();
+        shadowOf(Looper.getMainLooper()).idle();
+
+        assertTrue(activity.isFinishing());
+        assertEquals(mApp.getString(R.string.shortcut_target_unavailable), ShadowToast.getTextOfLatestToast());
+        assertNull(ShadowDialog.getLatestDialog());
+        assertEquals(USERS_ASSISTANT, Settings.Secure.getString(mApp.getContentResolver(), ASSISTANT));
+    }
+
+    @Test
+    public void anInstalledTargetThatWontStartDirectlyGoesThroughTheAssistant() throws Exception {
+        installTargetThatOnlyTheAssistantCanStart();
+
+        ActivityLauncherShortcutActivity activity = Robolectric.buildActivity(
+                ActivityLauncherShortcutActivity.class, shortcut()).setup().get();
+        // The assistant is set up on a background thread, which then asks the user to press it
+        AlertDialog dialog = (AlertDialog) waitFor(ShadowDialog::getLatestDialog);
+
+        assertEquals(new ComponentName(PKG, CLS).flattenToShortString(),
+                Settings.Secure.getString(mApp.getContentResolver(), ASSISTANT));
+        assertNull(ShadowToast.getTextOfLatestToast());
+
+        dialog.getButton(DialogInterface.BUTTON_NEGATIVE).performClick();
+        waitFor(() -> USERS_ASSISTANT.equals(Settings.Secure.getString(mApp.getContentResolver(), ASSISTANT))
+                ? Boolean.TRUE : null);
+        assertTrue(activity.isFinishing());
+    }
+
+    @Test
+    public void theAssistantComesBackWhenTheTrampolineGoesAwayWhileItWaits() throws Exception {
+        installTargetThatOnlyTheAssistantCanStart();
+
+        ActivityController<ActivityLauncherShortcutActivity> controller = Robolectric.buildActivity(
+                ActivityLauncherShortcutActivity.class, shortcut()).setup();
+        waitFor(ShadowDialog::getLatestDialog);
+        assertEquals(new ComponentName(PKG, CLS).flattenToShortString(),
+                Settings.Secure.getString(mApp.getContentResolver(), ASSISTANT));
+
+        // The trampoline keeps no history, so Android finishes it once the target opens over it. Its dialog goes
+        // with it and never reports a dismissal.
+        controller.get().finish();
+        controller.pause().stop().destroy();
+
+        waitFor(() -> USERS_ASSISTANT.equals(Settings.Secure.getString(mApp.getContentResolver(), ASSISTANT))
+                ? Boolean.TRUE : null, 1000);
+    }
+
+    @Test
     public void anIntentThatIsntAShortcutClosesWithoutStartingAnything() {
         ActivityLauncherShortcutActivity activity = Robolectric.buildActivity(ActivityLauncherShortcutActivity.class,
                 new Intent(mApp, ActivityLauncherShortcutActivity.class)).setup().get();
@@ -209,5 +289,48 @@ public class ActivityLauncherShortcutActivityTest {
     private Intent shortcut(int userId) {
         return ActivityLauncherShortcutActivity.getShortcutIntent(mApp, PKG, CLS, userId, false)
                 .setAction(Intent.ACTION_CREATE_SHORTCUT);
+    }
+
+    /** A shortcut made while App Manager could launch activities through the assistant, whatever the target. */
+    @NonNull
+    private Intent shortcutViaAssist() {
+        return ActivityLauncherShortcutActivity.getShortcutIntent(mApp, PKG, CLS, 10, true)
+                .setAction(Intent.ACTION_CREATE_SHORTCUT);
+    }
+
+    /** A target that's installed but won't start directly, with the user's assistant set and ours allowed to change it. */
+    private void installTargetThatOnlyTheAssistantCanStart() {
+        shadowOf(mApp).grantPermissions(Manifest.permission.WRITE_SECURE_SETTINGS);
+        Settings.Secure.putString(mApp.getContentResolver(), ASSISTANT, USERS_ASSISTANT);
+        PackageInfo target = new PackageInfo();
+        target.packageName = PKG;
+        target.applicationInfo = new ApplicationInfo();
+        target.applicationInfo.packageName = PKG;
+        shadowOf(mApp.getPackageManager()).installPackage(target);
+        ActivityLauncherShortcutActivity.sTargetStarter = (intent, userId) -> {
+            throw new SecurityException("not exported");
+        };
+    }
+
+    @NonNull
+    private static <T> T waitFor(@NonNull Callable<T> check) throws Exception {
+        return waitFor(check, 5000);
+    }
+
+    /** Runs the main thread until {@code check} gives something, for work that hops through a background thread. */
+    @NonNull
+    private static <T> T waitFor(@NonNull Callable<T> check, long timeoutMillis) throws Exception {
+        long deadline = System.currentTimeMillis() + timeoutMillis;
+        while (true) {
+            shadowOf(Looper.getMainLooper()).idle();
+            T value = check.call();
+            if (value != null) {
+                return value;
+            }
+            if (System.currentTimeMillis() > deadline) {
+                throw new AssertionError("Timed out");
+            }
+            Thread.sleep(10);
+        }
     }
 }

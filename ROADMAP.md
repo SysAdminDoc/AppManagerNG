@@ -983,13 +983,6 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Acceptance: WHEN the process starts with Day or Night picked in Appearance, the system SHALL create the first screen once, already in that mode, and a test SHALL build an activity with AppCompat's default night mode unset and assert `onCreate` ran once.
   Complexity: S
 
-- [ ] P2: Give the user's assistant back as soon as the assist-launch dialog can't be answered
-  Why: without INJECT_EVENTS, an assist launch sets the secure `assistant` setting to the target and then waits on a dialog for up to 10 minutes before putting the user's assistant back. The dialog is posted on the trampoline, which may already be finishing or gone (it closes itself on most paths, and Home or a config change ends it). Then `show()` throws or the window never appears, its dismiss listener never runs, and the user's assistant key opens the target for those 10 minutes.
-  Evidence: `details/ActivityLauncherShortcutActivity.java` `launchActivityViaAssist` (CountDownLatch with `await(10, TimeUnit.MINUTES)`, `show()` on `this` from a background post) and `compat/ActivityManagerCompat.java:89-101` (restores the setting only in `finally` after the callback returns). Found by the verification pass over the shortcut fix on 2026-11-15; not yet seen on a phone.
-  Touches: `launchActivityViaAssist` (count the latch down when the activity is finishing or destroyed, or when `show()` throws), `ActivityManagerCompat.startActivityViaAssist`, a Robolectric test with a fake callback runner.
-  Acceptance: WHEN the trampoline is finishing or destroyed while an assist launch waits for the user, the system SHALL restore the previous `assistant` value within a second, and a test SHALL finish the activity mid-wait and assert the setting was restored.
-  Complexity: S
-
 ## Found While Verifying Backup, History and Shortcut Fixes (2026-11-15)
 
 ### P3

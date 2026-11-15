@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.UserHandleHidden;
 
+import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
@@ -29,7 +30,6 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.behavior.FreezeUnfreeze;
 import io.github.muntashirakon.AppManager.apk.behavior.FreezeUnfreezeService;
 import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
-import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
@@ -43,6 +43,7 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
     private static final String TAG = ActivityLauncherShortcutActivity.class.getSimpleName();
     private static final String EXTRA_PKG = BuildConfig.APPLICATION_ID + ".intent.EXTRA.shortcut.pkg";
     private static final String EXTRA_CLS = BuildConfig.APPLICATION_ID + ".intent.EXTRA.shortcut.cls";
+    // Still written for older builds, which read it. This one decides at launch whether the assistant is needed.
     private static final String EXTRA_AST = BuildConfig.APPLICATION_ID + ".intent.EXTRA.shortcut.ast";
     private static final String EXTRA_USR = BuildConfig.APPLICATION_ID + ".intent.EXTRA.shortcut.usr";
 
@@ -94,7 +95,9 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
     private ComponentName mComponentName;
     private int mUserId;
     private boolean mCanLaunchViaAssist;
-    private boolean mIsLaunchViaAssist;
+    private boolean mTargetInstalled;
+    @Nullable
+    private volatile CountDownLatch mAssistantWait;
 
     @Override
     protected void onAuthenticated(@Nullable Bundle savedInstanceState) {
@@ -129,9 +132,9 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
         mPackageName = mComponentName.getPackageName();
         mUserId = intent.getIntExtra(EXTRA_USR, UserHandleHidden.myUserId());
         mCanLaunchViaAssist = SelfPermissions.checkSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS);
-        mIsLaunchViaAssist = intent.getBooleanExtra(EXTRA_AST, false) && mCanLaunchViaAssist;
         // Check for frozen
         ApplicationInfo info = ExUtils.exceptionAsNull(() -> PackageManagerCompat.getApplicationInfo(mPackageName, 0, mUserId));
+        mTargetInstalled = info != null;
         if (info != null && FreezeUtils.isFrozen(info)) {
             // Ask to unfreeze
             new MaterialAlertDialogBuilder(this)
@@ -163,19 +166,20 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
     }
 
     private void launchActivity() {
-        if (mIsLaunchViaAssist && !SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.START_ANY_ACTIVITY)) {
-            launchActivityViaAssist();
-            return;
-        }
+        // The usual start comes first. A shortcut made while the assistant could launch activities asked for the
+        // assistant whatever its target was, and going there first took over the user's assistant and asked them
+        // to press it, even for an exported activity that starts on its own.
         if (startTarget()) {
             close();
             return;
         }
-        UIUtils.displayLongToast(R.string.shortcut_target_unavailable);
-        // Try assist instead
-        if (mCanLaunchViaAssist) {
+        // The assistant can only open an activity that's still installed
+        if (mCanLaunchViaAssist && mTargetInstalled) {
             launchActivityViaAssist();
-        } else close();
+            return;
+        }
+        UIUtils.displayLongToast(R.string.shortcut_target_unavailable);
+        close();
     }
 
     // ActivityManager start results. 0 to 3 mean the target is up: started, its task brought to the front, or
@@ -225,16 +229,7 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
     private void launchActivityViaAssist() {
         boolean launched = ActivityManagerCompat.startActivityViaAssist(ContextUtils.getContext(), mComponentName, () -> {
             CountDownLatch waitForInteraction = new CountDownLatch(1);
-            ThreadUtils.postOnMainThread(() -> new MaterialAlertDialogBuilder(this)
-                    .setTitle(R.string.launch_activity_dialog_title)
-                    .setMessage(R.string.launch_activity_dialog_message)
-                    .setCancelable(false)
-                    .setOnDismissListener((dialog) -> {
-                        waitForInteraction.countDown();
-                        close();
-                    })
-                    .setNegativeButton(R.string.close, null)
-                    .show());
+            ThreadUtils.postOnMainThread(() -> askForTheAssistant(waitForInteraction));
             try {
                 waitForInteraction.await(10, TimeUnit.MINUTES);
             } catch (InterruptedException ignore) {
@@ -243,5 +238,46 @@ public class ActivityLauncherShortcutActivity extends BaseActivity {
         if (launched) {
             close();
         }
+    }
+
+    /**
+     * Asks the user to open the assistant, which now points at the target. The user's own assistant comes back when
+     * the wait ends, so it ends as soon as nobody can answer: this screen is closing or gone, or the dialog can't be
+     * shown.
+     */
+    @MainThread
+    private void askForTheAssistant(@NonNull CountDownLatch waitForInteraction) {
+        if (isFinishing() || isDestroyed()) {
+            waitForInteraction.countDown();
+            return;
+        }
+        mAssistantWait = waitForInteraction;
+        try {
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle(R.string.launch_activity_dialog_title)
+                    .setMessage(R.string.launch_activity_dialog_message)
+                    .setCancelable(false)
+                    .setOnDismissListener((dialog) -> {
+                        waitForInteraction.countDown();
+                        close();
+                    })
+                    .setNegativeButton(R.string.close, null)
+                    .show();
+        } catch (RuntimeException e) {
+            Log.w(TAG, "Could not ask for the assistant.", e);
+            waitForInteraction.countDown();
+            close();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        // This screen keeps no history, so it's finished as soon as the target opens over it. Its dialog goes with it
+        // without calling the dismiss listener, which left the target as the user's assistant for the whole wait.
+        CountDownLatch assistantWait = mAssistantWait;
+        if (assistantWait != null) {
+            assistantWait.countDown();
+        }
+        super.onDestroy();
     }
 }
