@@ -43,6 +43,16 @@ public class AppManagerDocumentsProvider extends DocumentsProvider {
 
     private static final String DOCUMENT_ID_SEPARATOR = ":";
 
+    /**
+     * Every root is local and answers {@link #isChildDocument}, which is what lets DocumentsUI offer
+     * it to ACTION_OPEN_DOCUMENT_TREE and what the framework calls to keep a tree grant inside its
+     * tree. Both arrived in API 21, so every supported release gets the same contract. No flag here
+     * advertises creating, renaming, deleting or writing: the provider stays read-only.
+     */
+    @VisibleForTesting
+    static final int ROOT_FLAGS = DocumentsContract.Root.FLAG_LOCAL_ONLY
+            | DocumentsContract.Root.FLAG_SUPPORTS_IS_CHILD;
+
     private static final String[] DEFAULT_ROOT_PROJECTION = new String[]{
             DocumentsContract.Root.COLUMN_ROOT_ID,
             DocumentsContract.Root.COLUMN_DOCUMENT_ID,
@@ -129,7 +139,7 @@ public class AppManagerDocumentsProvider extends DocumentsProvider {
                         row.add(root.iconRes);
                         break;
                     case DocumentsContract.Root.COLUMN_FLAGS:
-                        row.add(DocumentsContract.Root.FLAG_LOCAL_ONLY);
+                        row.add(ROOT_FLAGS);
                         break;
                     case DocumentsContract.Root.COLUMN_AVAILABLE_BYTES:
                         row.add(rootFile.getUsableSpace());
@@ -166,6 +176,39 @@ public class AppManagerDocumentsProvider extends DocumentsProvider {
             includeDocument(cursor, buildDocumentIdForFile(parent.rootId, roots.get(parent.rootId), child), child);
         }
         return cursor;
+    }
+
+    /**
+     * The framework asks this before it serves any tree URI, so a client holding a tree grant reaches
+     * only that tree. Anything that doesn't resolve to the same canonical document is refused.
+     */
+    @Override
+    public boolean isChildDocument(@NonNull String parentDocumentId, @NonNull String documentId) {
+        return isDescendant(parentDocumentId, documentId, getAvailableRoots(requireProviderContext()));
+    }
+
+    /**
+     * Whether {@code documentId} lies strictly below {@code parentDocumentId} in the same root. Both
+     * IDs must be the canonical ID of an existing document: one that climbs with {@code ..}, goes
+     * through a symbolic link or names a deleted file isn't, so it is never a child. A file can be
+     * listed under two roots (profiles inside the backup folder), and each of its IDs is a child in
+     * its own root only.
+     */
+    @VisibleForTesting
+    static boolean isDescendant(@NonNull String parentDocumentId, @NonNull String documentId,
+                                @NonNull Map<String, File> roots) {
+        try {
+            RootIdAndFile parent = resolveDocumentFileWithRoot(parentDocumentId, roots);
+            RootIdAndFile child = resolveDocumentFileWithRoot(documentId, roots);
+            if (!parent.rootId.equals(child.rootId) || !parent.file.isDirectory()) {
+                return false;
+            }
+            String parentPath = parent.file.getCanonicalPath();
+            String prefix = parentPath.endsWith(File.separator) ? parentPath : parentPath + File.separator;
+            return child.file.getCanonicalPath().startsWith(prefix);
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     @Nullable
