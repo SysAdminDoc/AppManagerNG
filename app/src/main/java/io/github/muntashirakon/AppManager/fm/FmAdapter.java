@@ -83,7 +83,7 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         FmItem item = mAdapterList.get(position);
         holder.itemView.setTag(item.path);
-        holder.title.setText(FmUtils.getPathDisplayName(item.path));
+        holder.title.setText(FmUtils.getRowTitle(holder.title.getContext(), item.path));
         // Load attributes
         cacheAndLoadAttributes(holder, item, mAttributeLoadGeneration);
         if (item.isDirectory) {

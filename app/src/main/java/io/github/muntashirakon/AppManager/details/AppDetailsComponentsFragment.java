@@ -74,6 +74,7 @@ import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.shortcut.CreateShortcutDialogFragment;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
+import io.github.muntashirakon.AppManager.utils.InvisibleChars;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
@@ -847,7 +848,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                     getString(R.string.soft_input), Utils.getSoftInputString(activityInfo.softInputMode),
                     (activityInfo.permission == null ? getString(R.string.require_no_permission) : activityInfo.permission)));
             // Label
-            holder.labelView.setText(componentItem.label);
+            holder.labelView.setText(InvisibleChars.annotate(holder.labelView.getContext(), componentItem.label));
             // Process name
             String processName = activityInfo.processName;
             if (processName != null && !processName.equals(mPackageName)) {
@@ -932,7 +933,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             }
             applyTrackerChip(holder.chipType, serviceItem);
             // Label
-            holder.labelView.setText(serviceItem.label);
+            holder.labelView.setText(InvisibleChars.annotate(holder.labelView.getContext(), serviceItem.label));
             // Name
             if (mConstraint != null && serviceInfo.name.toLowerCase(Locale.ROOT).contains(mConstraint)) {
                 // Highlight searched query
@@ -1096,7 +1097,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             }
             applyTrackerChip(holder.chipType, componentItem);
             // Label
-            holder.labelView.setText(componentItem.label);
+            holder.labelView.setText(InvisibleChars.annotate(holder.labelView.getContext(), componentItem.label));
             // Name
             if (mConstraint != null && activityInfo.name.toLowerCase(Locale.ROOT).contains(mConstraint)) {
                 // Highlight searched query
@@ -1168,7 +1169,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             }
             applyTrackerChip(holder.chipType, componentItem);
             // Label
-            holder.labelView.setText(componentItem.label);
+            holder.labelView.setText(InvisibleChars.annotate(holder.labelView.getContext(), componentItem.label));
             // Icon
             String tag = mPackageName + "_" + providerName;
             holder.imageView.setTag(tag);

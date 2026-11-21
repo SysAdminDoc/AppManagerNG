@@ -74,6 +74,13 @@ public final class EditorThemes {
         scheme.setColor(EditorColorScheme.SCROLL_BAR_THUMB_PRESSED, thumbColor);
         int trackColor = ColorUtils.setAlphaComponent(MaterialColors.getColor(context, androidx.appcompat.R.attr.colorControlNormal, EditorColor.class.getSimpleName()), 0x39);
         scheme.setColor(EditorColorScheme.SCROLL_BAR_TRACK, trackColor);
+        // Invisible character badges, in the same colors as the file manager's
+        scheme.setColor(EditorColorScheme.TEXT_INLAY_HINT_BACKGROUND, MaterialColors.getColor(context,
+                com.google.android.material.R.attr.colorTertiaryContainer,
+                scheme.getColor(EditorColorScheme.TEXT_INLAY_HINT_BACKGROUND)));
+        scheme.setColor(EditorColorScheme.TEXT_INLAY_HINT_FOREGROUND, MaterialColors.getColor(context,
+                com.google.android.material.R.attr.colorOnTertiaryContainer,
+                scheme.getColor(EditorColorScheme.TEXT_INLAY_HINT_FOREGROUND)));
     }
 
     private static class TextMateColorSchemeFixed extends TextMateColorScheme {

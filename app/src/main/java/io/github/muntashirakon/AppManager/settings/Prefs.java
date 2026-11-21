@@ -669,6 +669,15 @@ public final class Prefs {
         public static void setWordWrapEnabled(boolean enabled) {
             AppPref.set(AppPref.PrefKey.PREF_EDITOR_WORD_WRAP_BOOL, enabled);
         }
+
+        /** Mark zero-width and other invisible characters with a badge (#53). */
+        public static boolean isShowInvisibleCharsEnabled() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_EDITOR_SHOW_INVISIBLE_CHARS_BOOL);
+        }
+
+        public static void setShowInvisibleCharsEnabled(boolean enabled) {
+            AppPref.set(AppPref.PrefKey.PREF_EDITOR_SHOW_INVISIBLE_CHARS_BOOL, enabled);
+        }
     }
 
     public static final class Installer {

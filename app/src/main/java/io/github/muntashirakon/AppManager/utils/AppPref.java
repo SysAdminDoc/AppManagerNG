@@ -139,6 +139,7 @@ public class AppPref {
         PREF_AUTO_FREEZE_DELAY_SECONDS_INT,
         PREF_FREEZE_TYPE_INT,
         PREF_EDITOR_WORD_WRAP_BOOL,
+        PREF_EDITOR_SHOW_INVISIBLE_CHARS_BOOL,
         PREF_FM_DISPLAY_IN_LAUNCHER_BOOL,
         PREF_FM_FOLDER_OPTIONS_STR,
         PREF_FM_HOME_STR,
@@ -663,6 +664,7 @@ public class AppPref {
             case PREF_BACKUP_PAUSE_APPS_BOOL:
             case PREF_TRACKER_DATABASE_FRESHNESS_CHECK_BOOL:
             case PREF_ENABLE_PERMISSION_WATCHER_ENFORCE_BOOL:
+            case PREF_EDITOR_SHOW_INVISIBLE_CHARS_BOOL:
                 return true;
             case PREF_BACKUP_SCHEDULE_HOUR_INT:
                 return AutoBackupScheduler.DEFAULT_HOUR;

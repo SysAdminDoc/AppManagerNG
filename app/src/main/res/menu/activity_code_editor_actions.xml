@@ -49,6 +49,12 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_show_invisible_chars"
+        android:checkable="true"
+        android:title="@string/editor_show_invisible_chars"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_share"
         android:icon="@drawable/ic_share"
         android:title="@string/share"

@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.fm;
 
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
@@ -10,6 +11,7 @@ import android.provider.DocumentsContract;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -22,6 +24,7 @@ import java.util.Objects;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
+import io.github.muntashirakon.AppManager.utils.InvisibleChars;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
 import io.github.muntashirakon.io.fs.VirtualFileSystem;
@@ -76,6 +79,29 @@ public final class FmUtils {
     @NonNull
     public static String getPathDisplayName(@NonNull Path path) {
         return getDisplayName(path.getName(), getDisplayablePath(path));
+    }
+
+    /**
+     * The name shown in a file list row. Zero-width, direction and other invisible characters show
+     * up as badges, and a name made only of spaces shows its spaces, so two such names never look
+     * the same (#53).
+     */
+    @NonNull
+    public static CharSequence getRowTitle(@NonNull Context context, @NonNull Path path) {
+        return getRowTitle(context, path.getName(), getDisplayablePath(path));
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static CharSequence getRowTitle(@NonNull Context context, @Nullable String name, @Nullable String fallback) {
+        if (InvisibleChars.isBlank(name)) {
+            return InvisibleChars.annotate(context, name);
+        }
+        if (InvisibleChars.containsInvisible(name)) {
+            // No trim: a control character at either end is one of the things to show
+            return InvisibleChars.annotate(context, ExportTextUtils.escapeTsvField(name));
+        }
+        return getDisplayName(name, fallback);
     }
 
     @NonNull

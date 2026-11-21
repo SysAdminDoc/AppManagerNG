@@ -72,6 +72,7 @@ import io.github.muntashirakon.util.UiUtils;
 import io.github.rosemoe.sora.event.ContentChangeEvent;
 import io.github.rosemoe.sora.event.PublishSearchResultEvent;
 import io.github.rosemoe.sora.event.SelectionChangeEvent;
+import io.github.rosemoe.sora.graphics.inlayHint.TextInlayHintRenderer;
 import io.github.rosemoe.sora.lang.EmptyLanguage;
 import io.github.rosemoe.sora.lang.Language;
 import io.github.rosemoe.sora.langs.textmate.TextMateColorScheme;
@@ -230,6 +231,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
     private Future<?> mDiffResult;
     private int mDiffRequestId;
     private boolean mTextModified = false;
+    private final Runnable mInvisibleCharHintsUpdater = this::updateInvisibleCharHints;
     private final ActivityResultLauncher<Intent> mSaveOpenedFile = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
@@ -330,11 +332,14 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
         mEditor.setTextSize(14);
         mEditor.setLineSpacing(2f, 1.1f);
         mEditor.setWordwrap(Prefs.Editor.isWordWrapEnabled());
+        // Sora registers no inlay renderer by default; the invisible character badges need one
+        mEditor.registerInlayHintRenderer(new TextInlayHintRenderer());
         mEditor.subscribeEvent(ContentChangeEvent.class, (event, unsubscribe) -> {
             if (!mTextModified && event.getAction() != ContentChangeEvent.ACTION_SET_NEW_TEXT) {
                 markTextModified();
             }
             mEditor.postDelayed(this::updateLiveButtons, 50);
+            scheduleInvisibleCharHints();
         });
         mEditor.subscribeEvent(SelectionChangeEvent.class, (event, unsubscribe) -> getFragmentActivity()
                 .ifPresent(activity -> updatePositionText()));
@@ -529,6 +534,8 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             mEditor.setText(content);
             lineSeparatorButton.setText(mEditor.getLineSeparator().name());
             updatePositionText();
+            // setText() and setEditorLanguage() drop every inlay hint
+            scheduleInvisibleCharHints();
         });
         mViewModel.getSaveFileLiveData().observe(getViewLifecycleOwner(), result -> {
             if (result.success) {
@@ -615,6 +622,10 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
         mRedoMenu = menu.findItem(R.id.action_redo);
         mJavaSmaliToggleMenu = menu.findItem(R.id.action_java_smali_toggle);
         mShareMenu = menu.findItem(R.id.action_share);
+        MenuItem invisibleCharsMenu = menu.findItem(R.id.action_show_invisible_chars);
+        if (invisibleCharsMenu != null) {
+            invisibleCharsMenu.setChecked(Prefs.Editor.isShowInvisibleCharsEnabled());
+        }
         updateStartupMenu();
     }
 
@@ -641,6 +652,12 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
                 Prefs.Editor.setWordWrapEnabled(wordWrap);
                 return true;
             }
+        } else if (id == R.id.action_show_invisible_chars) {
+            boolean show = !Prefs.Editor.isShowInvisibleCharsEnabled();
+            Prefs.Editor.setShowInvisibleCharsEnabled(show);
+            item.setChecked(show);
+            updateInvisibleCharHints();
+            return true;
         } else if (id == R.id.action_save) {
             saveFile();
             return true;
@@ -767,6 +784,33 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
         }
     }
 
+    /**
+     * Rescans for invisible characters once typing pauses, rather than on every keystroke.
+     */
+    private void scheduleInvisibleCharHints() {
+        if (mEditor == null) {
+            return;
+        }
+        mEditor.removeCallbacks(mInvisibleCharHintsUpdater);
+        mEditor.postDelayed(mInvisibleCharHintsUpdater, 300);
+    }
+
+    /**
+     * Badges each invisible character (#53). The badges are drawn by the editor and never become
+     * part of the text, so saving and copying see the file unchanged.
+     */
+    private void updateInvisibleCharHints() {
+        if (mEditor == null) {
+            return;
+        }
+        mEditor.removeCallbacks(mInvisibleCharHintsUpdater);
+        if (Prefs.Editor.isShowInvisibleCharsEnabled()) {
+            mEditor.setInlayHints(EditorInvisibleChars.buildHints(mEditor.getText(), EditorInvisibleChars.MAX_HINTS));
+        } else if (mEditor.getInlayHints() != null) {
+            mEditor.setInlayHints(null);
+        }
+    }
+
     private void updateLiveButtons() {
         boolean readOnly = mViewModel.isReadOnly();
         if (mSaveMenu != null) {
@@ -849,6 +893,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             menu.add(lang).setOnMenuItemClickListener(item -> {
                 mViewModel.setLanguage(lang);
                 mEditor.setEditorLanguage(getLanguage(lang));
+                scheduleInvisibleCharHints();
                 languageButton.setText(lang);
                 indentSizeButton.setText(buildTabSizeLabel());
                 return true;

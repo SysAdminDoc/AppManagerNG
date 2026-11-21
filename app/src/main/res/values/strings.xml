@@ -268,6 +268,7 @@
         \n- <a href="https://github.com/eclipse/tm4e">tm4e</a>
         \n- <a href="https://github.com/tuyafeng/Watt">Watt</a></string>
     <string name="word_wrap">Toggle word wrap</string>
+    <string name="editor_show_invisible_chars">Show invisible characters</string>
     <string name="editor_show_changes">Show changes</string>
     <string name="editor_no_changes">No changes</string>
     <string name="editor_diff_title">Changes vs. saved file</string>
