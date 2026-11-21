@@ -57,6 +57,7 @@ import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.NoOps;
 import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
 import io.github.muntashirakon.AppManager.runner.RunnerUtils;
+import io.github.muntashirakon.AppManager.self.ModeAnnouncer;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.servermanager.AdbFailure;
 import io.github.muntashirakon.AppManager.servermanager.LocalServer;
@@ -344,6 +345,7 @@ public class Ops {
     @NoOps
     public static void setMode(@NonNull String newMode) {
         AppPref.set(AppPref.PrefKey.PREF_MODE_OF_OPS_STR, newMode);
+        ModeAnnouncer.forget();
         if (!MODE_ADB_WIFI.equals(newMode) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             // A boot-time reconnect or a pairing for the old mode must not bring wireless ADB back
             Context context = ContextUtils.getContext();
@@ -701,7 +703,7 @@ public class Ops {
             if (uid == SHELL_UID) {
                 sIsRoot = sIsSystem = false;
                 sIsAdb = true;
-                ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.working_on_adb_mode));
+                ModeAnnouncer.announce(R.string.working_on_adb_mode, false);
                 return;
             }
         }
@@ -1226,19 +1228,19 @@ public class Ops {
             // AM service is being run as root
             sIsRoot = true;
             sIsSystem = sIsAdb = false;
-            ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(R.string.warning_working_on_root_mode));
+            ModeAnnouncer.announce(R.string.warning_working_on_root_mode, true);
         } else if (uid == SYSTEM_UID) {
             // AM service is being run as system
             sIsSystem = true;
             sIsRoot = sIsAdb = false;
-            ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(R.string.warning_working_on_system_mode));
+            ModeAnnouncer.announce(R.string.warning_working_on_system_mode, true);
         } else if (uid == SHELL_UID) { // ADB mode
             if (!SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.GRANT_RUNTIME_PERMISSIONS)) {
                 // USB debugging is incomplete, revert back to no-root
                 sIsAdb = sIsSystem = sIsRoot = false;
                 return STATUS_FAILURE_ADB_NEED_MORE_PERMS;
             }
-            ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.working_on_adb_mode));
+            ModeAnnouncer.announce(R.string.working_on_adb_mode, false);
         } else {
             // No-root mode
             sIsAdb = sIsSystem = sIsRoot = false;
@@ -1255,11 +1257,11 @@ public class Ops {
         if (uid == ROOT_UID) {
             sIsRoot = true;
             sIsSystem = sIsAdb = false;
-            ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.working_on_shizuku_root_mode));
+            ModeAnnouncer.announce(R.string.working_on_shizuku_root_mode, false);
         } else if (uid == SYSTEM_UID) {
             sIsSystem = true;
             sIsRoot = sIsAdb = false;
-            ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.working_on_shizuku_system_mode));
+            ModeAnnouncer.announce(R.string.working_on_shizuku_system_mode, false);
         } else if (uid == SHELL_UID) {
             if (!SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.GRANT_RUNTIME_PERMISSIONS)) {
                 sIsAdb = sIsSystem = sIsRoot = sIsShizuku = false;
@@ -1267,7 +1269,7 @@ public class Ops {
             }
             sIsAdb = true;
             sIsRoot = sIsSystem = false;
-            ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(R.string.working_on_shizuku_mode));
+            ModeAnnouncer.announce(R.string.working_on_shizuku_mode, false);
         } else {
             sIsAdb = sIsSystem = sIsRoot = sIsShizuku = false;
             return STATUS_FAILURE;

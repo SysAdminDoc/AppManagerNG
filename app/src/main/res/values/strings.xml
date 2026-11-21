@@ -2588,6 +2588,8 @@
     <string name="working_on_shizuku_mode">Working through Shizuku shell mode</string>
     <string name="working_on_shizuku_root_mode">Working through Shizuku root mode</string>
     <string name="working_on_shizuku_system_mode">Working through Shizuku system mode</string>
+    <string name="pref_mode_toast">Toast the mode when it connects</string>
+    <string name="pref_mode_toast_summary">Shows which mode AppManagerNG works in, once, while one of its screens is open. It never shows over other apps.</string>
     <string name="shizuku_permission_required_title">Allow Shizuku access?</string>
     <string name="shizuku_permission_denied_message">Shizuku is running, but AppManagerNG is not authorized. Open Shizuku and allow AppManagerNG under Authorized applications, then try again.</string>
     <string name="shizuku_unavailable_message">Shizuku is not running, this device is below Android 7.0, or Shizuku is too old for UserService mode. Start Shizuku v11 or newer on Android 7.0+, then try again.</string>

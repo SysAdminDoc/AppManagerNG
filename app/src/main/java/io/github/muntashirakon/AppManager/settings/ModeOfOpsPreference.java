@@ -28,6 +28,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.color.MaterialColors;
+import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.android.material.textview.MaterialTextView;
@@ -45,6 +46,7 @@ import io.github.muntashirakon.AppManager.servermanager.LocalServer;
 import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
 import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.users.Users;
+import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.ClipboardUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
@@ -136,6 +138,10 @@ public class ModeOfOpsPreference extends Fragment {
         mModeOfOpsView = view.findViewById(R.id.op_name);
         mAdbFailureView = view.findViewById(R.id.adb_failure);
         bindCapabilities(view);
+        MaterialSwitch modeToast = view.findViewById(R.id.mode_toast);
+        modeToast.setChecked(AppPref.getBoolean(AppPref.PrefKey.PREF_MODE_TOAST_BOOL));
+        modeToast.setOnCheckedChangeListener((buttonView, isChecked) ->
+                AppPref.set(AppPref.PrefKey.PREF_MODE_TOAST_BOOL, isChecked));
         mChangeModeView = view.findViewById(R.id.action_settings);
         List<String> disabledItems;
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || Utils.isTv(requireContext())) {

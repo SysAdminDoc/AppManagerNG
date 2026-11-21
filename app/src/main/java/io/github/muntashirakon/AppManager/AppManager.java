@@ -38,6 +38,7 @@ import io.github.muntashirakon.AppManager.oneclickops.ClearCacheAppWidget;
 import io.github.muntashirakon.AppManager.scanner.TrackerDatabaseFreshnessChecker;
 import io.github.muntashirakon.AppManager.self.DeferredLogAccess;
 import io.github.muntashirakon.AppManager.self.FailedScheduleRevival;
+import io.github.muntashirakon.AppManager.self.ModeAnnouncer;
 import io.github.muntashirakon.AppManager.self.PackageEventSync;
 import io.github.muntashirakon.AppManager.usage.DataUsageAppWidget;
 import io.github.muntashirakon.AppManager.usage.ScreenTimeAppWidget;
@@ -86,6 +87,7 @@ public class AppManager extends Application {
         LanguagePackManager.installOnStartup(this);
         AppearanceUtils.init(this);
         DeferredLogAccess.register(this);
+        ModeAnnouncer.register(this);
         registerAutoFreezeOnLockReceiver();
         Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
         Security.addProvider(new JavaKeyStoreProvider());
