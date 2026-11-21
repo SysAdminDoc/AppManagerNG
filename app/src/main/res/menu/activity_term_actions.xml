@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?><!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_run_in_termux"
+        android:title="@string/run_in_termux"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_open_in_termux"
+        android:title="@string/open_in_termux"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_extra_keys"
+        android:checkable="true"
+        android:title="@string/terminal_extra_keys"
+        app:showAsAction="never" />
+
+</menu>

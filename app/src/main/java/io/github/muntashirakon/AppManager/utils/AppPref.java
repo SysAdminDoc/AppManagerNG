@@ -216,6 +216,7 @@ public class AppPref {
         PREF_SIGNATURE_SCHEMES_INT,
         PREF_SHOW_DISCLAIMER_BOOL,
 
+        PREF_TERMINAL_EXTRA_KEYS_BOOL,
         PREF_TIPS_PREFS_INT,
 
         PREF_VIRUS_TOTAL_API_KEY_STR,
@@ -665,6 +666,7 @@ public class AppPref {
             case PREF_TRACKER_DATABASE_FRESHNESS_CHECK_BOOL:
             case PREF_ENABLE_PERMISSION_WATCHER_ENFORCE_BOOL:
             case PREF_EDITOR_SHOW_INVISIBLE_CHARS_BOOL:
+            case PREF_TERMINAL_EXTRA_KEYS_BOOL:
                 return true;
             case PREF_BACKUP_SCHEDULE_HOUR_INT:
                 return AutoBackupScheduler.DEFAULT_HOUR;

@@ -2,22 +2,34 @@
 
 package io.github.muntashirakon.AppManager.terminal;
 
+import android.content.ActivityNotFoundException;
+import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.PowerManager;
+import android.provider.Settings;
 import android.text.Editable;
 import android.text.Spanned;
+import android.text.TextWatcher;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StrikethroughSpan;
 import android.text.style.StyleSpan;
 import android.text.style.UnderlineSpan;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.ColorInt;
 import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
@@ -25,8 +37,11 @@ import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 import androidx.appcompat.widget.AppCompatEditText;
 import androidx.appcompat.widget.AppCompatTextView;
+import androidx.core.content.ContextCompat;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.color.MaterialColors;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -46,9 +61,12 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.ProcessCompat;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.settings.FeatureController;
 import io.github.muntashirakon.AppManager.settings.Ops;
+import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.CpuUtils;
+import io.github.muntashirakon.AppManager.utils.UIUtils;
 
 public class TermActivity extends BaseActivity {
     public static final String TAG = TermActivity.class.getSimpleName();
@@ -67,6 +85,28 @@ public class TermActivity extends BaseActivity {
     private int mDefaultBackgroundColor;
     private final AnsiState mAnsiState = new AnsiState();
     private CommandHistory mHistory;
+    private View mExtraKeysScroll;
+    @Nullable
+    private MaterialButton mCtrlButton;
+    @Nullable
+    private MaterialButton mAltButton;
+    @Nullable
+    private ColorStateList mDefaultKeyTint;
+    private boolean mCtrlLatched;
+    private boolean mAltLatched;
+    private boolean mRemovingModifiedText;
+    @Nullable
+    private String mPendingTermuxCommand;
+    private final ActivityResultLauncher<String> mRequestTermuxPermission = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(), granted -> {
+                String command = mPendingTermuxCommand;
+                mPendingTermuxCommand = null;
+                if (granted && command != null) {
+                    sendToTermux(command);
+                } else if (!granted) {
+                    showTermuxPermissionDialog();
+                }
+            });
 
     @Override
     protected void onAuthenticated(@Nullable Bundle savedInstanceState) {
@@ -140,16 +180,291 @@ public class TermActivity extends BaseActivity {
             }
             return false;
         });
+        mCommandInput.addTextChangedListener(new TextWatcher() {
+            @Nullable
+            private String mTyped;
+            private int mTypedStart;
+            private int mTypedEnd;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // A key typed while Ctrl or Alt is latched goes to the shell with the modifier
+                // instead of into the command line
+                if (mRemovingModifiedText || !isModifierLatched() || count <= before) {
+                    return;
+                }
+                mTypedStart = start + before;
+                mTypedEnd = start + count;
+                mTyped = s.subSequence(mTypedStart, mTypedEnd).toString();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                String typed = mTyped;
+                if (typed == null) {
+                    return;
+                }
+                mTyped = null;
+                mRemovingModifiedText = true;
+                try {
+                    s.delete(mTypedStart, Math.min(mTypedEnd, s.length()));
+                } finally {
+                    mRemovingModifiedText = false;
+                }
+                sendExtraChar(typed.codePointAt(0));
+            }
+        });
+        View bottomBar = findViewById(R.id.bottom_bar);
+        View scrollView = findViewById(R.id.scrollView);
+        mExtraKeysScroll = findViewById(R.id.extra_keys_scroll);
+        buildExtraKeys(findViewById(R.id.extra_keys));
+        mExtraKeysScroll.setVisibility(Prefs.Terminal.isExtraKeysEnabled() ? View.VISIBLE : View.GONE);
+        // Keep the last output line above the bar, whatever its height with or without the keys
+        bottomBar.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            int height = bottom - top;
+            if (height != oldBottom - oldTop && scrollView.getPaddingBottom() != height) {
+                scrollView.setPadding(scrollView.getPaddingLeft(), scrollView.getPaddingTop(),
+                        scrollView.getPaddingRight(), height);
+            }
+        });
         initShell();
     }
 
     @Override
+    public boolean onCreateOptionsMenu(@NonNull Menu menu) {
+        getMenuInflater().inflate(R.menu.activity_term_actions, menu);
+        MenuItem extraKeys = menu.findItem(R.id.action_extra_keys);
+        if (extraKeys != null) {
+            extraKeys.setChecked(Prefs.Terminal.isExtraKeysEnabled());
+        }
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    private void buildExtraKeys(@NonNull ViewGroup row) {
+        LayoutInflater inflater = LayoutInflater.from(row.getContext());
+        String[] labels = {"ESC", "CTRL", "ALT", "TAB", "-", "/", "|", String.valueOf((char) 0x2190),
+                String.valueOf((char) 0x2193), String.valueOf((char) 0x2191), String.valueOf((char) 0x2192)};
+        for (String label : labels) {
+            MaterialButton button = (MaterialButton) inflater.inflate(R.layout.item_terminal_extra_key, row, false);
+            button.setText(label);
+            row.addView(button);
+            switch (label) {
+                case "ESC":
+                    button.setOnClickListener(v -> sendExtraKey(TerminalKeys.KEY_ESC));
+                    break;
+                case "TAB":
+                    button.setOnClickListener(v -> sendExtraKey(TerminalKeys.KEY_TAB));
+                    break;
+                case "CTRL":
+                    mCtrlButton = button;
+                    button.setCheckable(true);
+                    button.setOnClickListener(v -> setModifiers(!mCtrlLatched, mAltLatched));
+                    break;
+                case "ALT":
+                    mAltButton = button;
+                    button.setCheckable(true);
+                    button.setOnClickListener(v -> setModifiers(mCtrlLatched, !mAltLatched));
+                    break;
+                case "-":
+                case "/":
+                case "|":
+                    button.setOnClickListener(v -> sendExtraChar(label.charAt(0)));
+                    break;
+                default: {
+                    char arrow = label.charAt(0);
+                    int key = arrow == 0x2190 ? TerminalKeys.KEY_LEFT
+                            : arrow == 0x2193 ? TerminalKeys.KEY_DOWN
+                            : arrow == 0x2191 ? TerminalKeys.KEY_UP
+                            : TerminalKeys.KEY_RIGHT;
+                    button.setOnClickListener(v -> sendExtraKey(key));
+                    break;
+                }
+            }
+        }
+        mDefaultKeyTint = mCtrlButton != null ? mCtrlButton.getBackgroundTintList() : null;
+    }
+
+    private boolean isModifierLatched() {
+        return mCtrlLatched || mAltLatched;
+    }
+
+    /**
+     * Ctrl and Alt are sticky: tap one, then the key it goes with. Either lets go after one key.
+     */
+    private void setModifiers(boolean ctrl, boolean alt) {
+        mCtrlLatched = ctrl;
+        mAltLatched = alt;
+        showLatched(mCtrlButton, ctrl);
+        showLatched(mAltButton, alt);
+    }
+
+    private void showLatched(@Nullable MaterialButton button, boolean latched) {
+        if (button == null) {
+            return;
+        }
+        button.setChecked(latched);
+        button.setBackgroundTintList(latched ? ColorStateList.valueOf(MaterialColors.getColor(button,
+                com.google.android.material.R.attr.colorSecondaryContainer)) : mDefaultKeyTint);
+    }
+
+    private void sendExtraKey(int key) {
+        boolean ctrl = mCtrlLatched;
+        boolean alt = mAltLatched;
+        setModifiers(false, false);
+        Editable input = Objects.requireNonNull(mCommandInput.getText());
+        if (!ctrl && !alt) {
+            // Unmodified arrows act on the command line the way the hardware keys do: up and
+            // down walk the history, left and right move the cursor while there's text
+            if (key == TerminalKeys.KEY_UP || key == TerminalKeys.KEY_DOWN) {
+                String command = key == TerminalKeys.KEY_UP ? mHistory.navigateUp() : mHistory.navigateDown();
+                if (command != null) {
+                    mCommandInput.setText(command);
+                    mCommandInput.setSelection(command.length());
+                }
+                return;
+            }
+            if ((key == TerminalKeys.KEY_LEFT || key == TerminalKeys.KEY_RIGHT) && input.length() > 0) {
+                int cursor = mCommandInput.getSelectionStart();
+                int moved = key == TerminalKeys.KEY_LEFT ? Math.max(0, cursor - 1)
+                        : Math.min(input.length(), cursor + 1);
+                mCommandInput.setSelection(moved);
+                return;
+            }
+        }
+        sendToStdin(TerminalKeys.encodeKey(key, ctrl, alt), false);
+    }
+
+    private void sendExtraChar(int codePoint) {
+        boolean ctrl = mCtrlLatched;
+        boolean alt = mAltLatched;
+        setModifiers(false, false);
+        if (!ctrl && !alt) {
+            Editable input = Objects.requireNonNull(mCommandInput.getText());
+            int start = Math.max(0, mCommandInput.getSelectionStart());
+            int end = Math.max(start, mCommandInput.getSelectionEnd());
+            input.replace(start, end, new String(Character.toChars(codePoint)));
+            return;
+        }
+        // Like a hardware Ctrl key: echo it, then send it as a line
+        String bytes = TerminalKeys.encodeChar(codePoint, ctrl, alt);
+        appendBoldOutput(TerminalKeys.describe(bytes));
+        appendOutput("\n");
+        sendToStdin(bytes, true);
+    }
+
+    @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == android.R.id.home) {
+        int id = item.getItemId();
+        if (id == android.R.id.home) {
             finish();
+            return true;
+        } else if (id == R.id.action_extra_keys) {
+            boolean show = !Prefs.Terminal.isExtraKeysEnabled();
+            Prefs.Terminal.setExtraKeysEnabled(show);
+            item.setChecked(show);
+            if (!show) {
+                setModifiers(false, false);
+            }
+            mExtraKeysScroll.setVisibility(show ? View.VISIBLE : View.GONE);
+            return true;
+        } else if (id == R.id.action_open_in_termux) {
+            openTermux();
+            return true;
+        } else if (id == R.id.action_run_in_termux) {
+            String command = Objects.requireNonNull(mCommandInput.getText()).toString().trim();
+            if (command.isEmpty()) {
+                // Nothing typed: just go to Termux
+                openTermux();
+            } else {
+                runInTermux(command);
+            }
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void openTermux() {
+        if (!TermuxBridge.isInstalled(this)) {
+            showTermuxMissingDialog();
+            return;
+        }
+        try {
+            startActivity(TermuxBridge.getLaunchIntent(this));
+        } catch (RuntimeException e) {
+            Log.w(TAG, "Could not open Termux", e);
+            UIUtils.displayLongToast(R.string.termux_run_command_failed);
+        }
+    }
+
+    private void runInTermux(@NonNull String command) {
+        switch (TermuxBridge.getState(this)) {
+            case TermuxBridge.STATE_NOT_INSTALLED:
+                showTermuxMissingDialog();
+                return;
+            case TermuxBridge.STATE_NO_PERMISSION:
+                mPendingTermuxCommand = command;
+                mRequestTermuxPermission.launch(TermuxBridge.PERMISSION_RUN_COMMAND);
+                return;
+            case TermuxBridge.STATE_READY:
+            default:
+                sendToTermux(command);
+        }
+    }
+
+    private void sendToTermux(@NonNull String command) {
+        try {
+            ContextCompat.startForegroundService(this, TermuxBridge.buildRunCommandIntent(command));
+        } catch (RuntimeException e) {
+            // SecurityException once the permission is taken back, IllegalStateException when
+            // Android refuses the start
+            Log.w(TAG, "Could not start Termux command", e);
+            UIUtils.displayLongToast(R.string.termux_run_command_failed);
+            return;
+        }
+        mHistory.add(command);
+        mCommandInput.setText("");
+    }
+
+    private void showTermuxMissingDialog() {
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.termux)
+                .setMessage(getString(R.string.termux_not_installed, TermuxBridge.PACKAGE_NAME))
+                .setNegativeButton(R.string.close, null);
+        String installUrl = TermuxBridge.getInstallUrl(FeatureController.areOptionalNetworkFeaturesAvailable());
+        if (installUrl != null) {
+            builder.setPositiveButton(R.string.fdroid, (dialog, which) -> {
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(installUrl)));
+                } catch (ActivityNotFoundException e) {
+                    Log.w(TAG, "No app can open %s", e, installUrl);
+                }
+            });
+        }
+        builder.show();
+    }
+
+    /**
+     * Termux runs nothing from other apps until its permission is granted here and
+     * allow-external-apps is set on its side, and neither can be done from this app.
+     */
+    private void showTermuxPermissionDialog() {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.termux_permission_title)
+                .setMessage(R.string.termux_permission_steps)
+                .setNegativeButton(R.string.close, null)
+                .setPositiveButton(R.string.app_info, (dialog, which) -> {
+                    try {
+                        startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.fromParts("package", getPackageName(), null)));
+                    } catch (ActivityNotFoundException e) {
+                        Log.w(TAG, "Could not open App info", e);
+                    }
+                })
+                .show();
     }
 
     @Override

@@ -1157,6 +1157,9 @@
     <string name="open_in_termux">Open in Termux</string>
     <string name="run_in_termux">Run in Termux</string>
     <string name="termux_run_command_failed">Couldn\'t reach Termux. Make sure it\'s installed and its RunCommand service is enabled.</string>
+    <string name="termux_not_installed">Termux isn\'t installed. Install the Termux app (package <xliff:g id="package" example="com.termux">%1$s</xliff:g>) and try again.</string>
+    <string name="termux_permission_title">Allow commands in Termux</string>
+    <string name="termux_permission_steps">Termux runs commands sent from other apps only after two steps.\n\n1. Open App info, then Permissions, then Additional permissions, and allow Run commands in Termux environment.\n\n2. In Termux, add the line allow-external-apps = true to ~/.termux/termux.properties, then run termux-reload-settings.</string>
     <string name="installer_launch_failed">Couldn\'t open the installer.</string>
     <string name="installer_open_app_failed">Couldn\'t open the app.</string>
     <string name="website">Website</string>
@@ -3468,6 +3471,7 @@
     <string name="terminal_process_start_failed">Could not start terminal via <xliff:g id="route" example="Local">%1$s</xliff:g>: <xliff:g id="reason" example="permission denied">%2$s</xliff:g></string>
     <string name="terminal_process_ended">Terminal process ended via <xliff:g id="route" example="ADB">%1$s</xliff:g> (exit <xliff:g id="exit_code" example="0">%2$d</xliff:g>).</string>
     <string name="terminal_process_not_running">Terminal process is not running.</string>
+    <string name="terminal_extra_keys">Extra keys</string>
     <string name="title_labs_activity">Labs</string>
     <string name="labs_section_system_insight">System insight</string>
     <string name="labs_section_workbench">Workbench</string>

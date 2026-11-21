@@ -680,6 +680,17 @@ public final class Prefs {
         }
     }
 
+    public static final class Terminal {
+        /** The row of Esc, Ctrl, Alt, Tab, arrow and symbol keys above the command line (#55). */
+        public static boolean isExtraKeysEnabled() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_TERMINAL_EXTRA_KEYS_BOOL);
+        }
+
+        public static void setExtraKeysEnabled(boolean enabled) {
+            AppPref.set(AppPref.PrefKey.PREF_TERMINAL_EXTRA_KEYS_BOOL, enabled);
+        }
+    }
+
     public static final class Installer {
         public static boolean installInBackground() {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_INSTALLER_ALWAYS_ON_BACKGROUND_BOOL);
