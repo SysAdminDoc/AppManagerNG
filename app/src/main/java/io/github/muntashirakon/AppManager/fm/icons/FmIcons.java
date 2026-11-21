@@ -17,6 +17,7 @@ import androidx.core.util.Pair;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import io.github.muntashirakon.AppManager.R;
@@ -41,7 +42,7 @@ final class FmIcons {
     private static final int DRAWABLE_CONTACT = R.drawable.ic_contact_page;
     private static final int DRAWABLE_DATABASE = R.drawable.ic_database;
     private static final int DRAWABLE_DIRECTORY = R.drawable.ic_folder;
-    private static final int DRAWABLE_DOCUMENT = R.drawable.ic_file;
+    private static final int DRAWABLE_DOCUMENT = R.drawable.ic_description;
     private static final int DRAWABLE_EBOOK = R.drawable.ic_book;
     private static final int DRAWABLE_EMAIL = R.drawable.ic_email;
     private static final int DRAWABLE_FONT = R.drawable.ic_font_download;
@@ -249,6 +250,67 @@ final class FmIcons {
             put("video", DRAWABLE_VIDEO);
         }
     };
+
+    /**
+     * Used when the content says nothing more than "some bytes" (or "some text"): the name still
+     * tells what kind of file it is.
+     */
+    private static final Map<String, Integer> sExtensionToIconMap = new HashMap<>();
+
+    static {
+        putExtensions(DRAWABLE_APK, "apk", "apkm", "apks", "xapk");
+        putExtensions(DRAWABLE_ARCHIVE, "7z", "bz2", "cab", "cpio", "deb", "dmg", "gz", "iso", "jar", "lz", "lz4",
+                "lzma", "rar", "rpm", "tar", "tbz2", "tgz", "txz", "xz", "z", "zip", "zst");
+        putExtensions(DRAWABLE_AUDIO, "aac", "aiff", "amr", "ape", "flac", "m4a", "mid", "midi", "mp3", "oga",
+                "ogg", "opus", "wav", "wma");
+        putExtensions(DRAWABLE_CALENDAR, "ics");
+        putExtensions(DRAWABLE_CERTIFICATE, "cer", "crt", "der", "p12", "pem", "pfx");
+        putExtensions(DRAWABLE_CODE, "bash", "bat", "c", "cc", "cpp", "cs", "css", "dart", "go", "gradle", "groovy",
+                "h", "hpp", "htm", "html", "ini", "java", "js", "json", "kt", "kts", "lua", "mjs", "php", "pl",
+                "properties", "ps1", "py", "rb", "rs", "scala", "sh", "smali", "sql", "swift", "toml", "ts", "xml",
+                "yaml", "yml", "zsh");
+        putExtensions(DRAWABLE_CONTACT, "vcf");
+        putExtensions(DRAWABLE_DATABASE, "db", "sqlite", "sqlite3");
+        putExtensions(DRAWABLE_DOCUMENT, "abw", "doc", "docm", "docx", "dot", "dotx", "odt", "ott", "rtf");
+        putExtensions(DRAWABLE_EBOOK, "azw", "azw3", "cbr", "cbz", "epub", "fb2", "mobi");
+        putExtensions(DRAWABLE_EMAIL, "eml", "msg");
+        putExtensions(DRAWABLE_FONT, "otf", "ttf", "woff", "woff2");
+        putExtensions(DRAWABLE_IMAGE, "avif", "bmp", "dng", "gif", "heic", "heif", "ico", "jpeg", "jpg", "png",
+                "svg", "tif", "tiff", "webp");
+        putExtensions(DRAWABLE_PDF, "pdf");
+        putExtensions(DRAWABLE_PRESENTATION, "key", "odp", "ppt", "pptx");
+        putExtensions(DRAWABLE_SPREADSHEET, "csv", "ods", "tsv", "xls", "xlsx");
+        putExtensions(DRAWABLE_TEXT, "log", "markdown", "md", "nfo", "rst", "text", "txt");
+        putExtensions(DRAWABLE_VIDEO, "3gp", "avi", "flv", "m4v", "mkv", "mov", "mp4", "mpeg", "mpg", "webm",
+                "wmv");
+    }
+
+    private static void putExtensions(@DrawableRes int drawable, @NonNull String... extensions) {
+        for (String extension : extensions) {
+            sExtensionToIconMap.put(extension, drawable);
+        }
+    }
+
+    /**
+     * The icon for a file whose preview isn't available. The detected type decides; the extension
+     * fills in when the type is unknown, or narrows plain text down to source code.
+     */
+    @DrawableRes
+    public static int getDrawable(@Nullable String mimeType, @Nullable String extension) {
+        int drawable = getDrawableFromType(mimeType);
+        if ((drawable != DRAWABLE_GENERIC && drawable != DRAWABLE_TEXT) || extension == null) {
+            return drawable;
+        }
+        Integer byExtension = sExtensionToIconMap.get(extension.toLowerCase(Locale.ROOT));
+        if (byExtension == null) {
+            return drawable;
+        }
+        if (drawable == DRAWABLE_TEXT) {
+            // Source code sniffs as plain text; anything else claimed by the name stays text
+            return byExtension == DRAWABLE_CODE ? DRAWABLE_CODE : drawable;
+        }
+        return byExtension;
+    }
 
     @DrawableRes
     public static int getDrawableFromType(@Nullable String mimeType) {

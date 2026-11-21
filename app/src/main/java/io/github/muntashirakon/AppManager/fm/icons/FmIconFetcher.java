@@ -100,13 +100,16 @@ public class FmIconFetcher implements ImageLoader.ImageFetcherInterface {
             mFmItem.setContentInfo(contentInfo);
         }
         String mimeType = contentInfo.getMimeType();
+        // The detected type picks the preview decoder; the icon shown until (or instead of) a
+        // preview also listens to the file's extension
         int drawableRes = FmIcons.getDrawableFromType(mimeType);
+        int iconRes = FmIcons.getDrawable(mimeType, mFmItem.path.getExtension());
         int padding = UiUtils.dpToPx(ContextUtils.getContext(), 4);
         int length = UiUtils.dpToPx(ContextUtils.getContext(), 40);
-        ImageLoader.DefaultImage defaultImage = new ImageLoader.DefaultImageDrawableRes("drawable_" + drawableRes, drawableRes, padding);
+        ImageLoader.DefaultImage defaultImage = new ImageLoader.DefaultImageDrawableRes("drawable_" + iconRes, iconRes, padding);
         Size size = new Size(length, length);
         try {
-            return fetchImage(tag, mimeType, drawableRes, padding, size, defaultImage);
+            return fetchImage(tag, mimeType, drawableRes, iconRes, padding, size, defaultImage);
         } catch (Exception | StackOverflowError | OutOfMemoryError | LinkageError e) {
             // A file that breaks its preview (an APK icon nested deep enough to use up the stack,
             // say, or a decoder class that failed to load) still gets its type's icon
@@ -117,7 +120,8 @@ public class FmIconFetcher implements ImageLoader.ImageFetcherInterface {
 
     @NonNull
     private ImageLoader.ImageFetcherResult fetchImage(@NonNull String tag, @Nullable String mimeType,
-                                                      @DrawableRes int drawableRes, int padding,
+                                                      @DrawableRes int drawableRes,
+                                                      @DrawableRes int iconRes, int padding,
                                                       @NonNull Size size,
                                                       @NonNull ImageLoader.DefaultImage defaultImage) {
         if (OPEN_DOCUMENT_FORMAT_MIME_TYPES.contains(mimeType)) {
@@ -205,7 +209,8 @@ public class FmIconFetcher implements ImageLoader.ImageFetcherInterface {
                 return new ImageLoader.ImageFetcherResult(tag, getThumbnail(bitmap, size, true),
                         false, true, defaultImage);
             }
-        } else if (FmIcons.isGeneric(drawableRes)) {
+        } else if (FmIcons.isGeneric(iconRes)) {
+            // Neither the content nor the name says what this is
             String extension = mFmItem.path.getExtension();
             if (extension != null) {
                 // Generate icon from extension (at most 4 characters)
