@@ -22,6 +22,38 @@
         app:showAsAction="ifRoom" />
 
     <item
+        android:id="@+id/action_sort"
+        android:icon="@drawable/ic_sort"
+        android:title="@string/sort"
+        app:showAsAction="never">
+        <menu>
+            <group
+                android:id="@+id/group_sort_by"
+                android:checkableBehavior="single">
+                <item
+                    android:id="@+id/action_sort_by_name"
+                    android:title="@string/sort_by_filename" />
+                <item
+                    android:id="@+id/action_sort_by_last_modified"
+                    android:title="@string/sort_by_last_modified" />
+                <item
+                    android:id="@+id/action_sort_by_type"
+                    android:title="@string/sort_by_file_type" />
+                <item
+                    android:id="@+id/action_sort_by_size"
+                    android:title="@string/sort_by_file_size" />
+            </group>
+            <group
+                android:id="@+id/group_sort_reverse"
+                android:checkableBehavior="all">
+                <item
+                    android:id="@+id/action_sort_reverse"
+                    android:title="@string/reverse" />
+            </group>
+        </menu>
+    </item>
+
+    <item
         android:id="@+id/action_refresh"
         android:icon="@drawable/ic_refresh"
         android:title="@string/refresh"

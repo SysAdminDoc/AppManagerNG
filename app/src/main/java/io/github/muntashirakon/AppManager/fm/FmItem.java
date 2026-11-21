@@ -84,6 +84,18 @@ public class FmItem implements Comparable<FmItem> {
         return path.length();
     }
 
+    /**
+     * The MIME type, taken from the attributes read with the list when they carry one, so sorting
+     * by type doesn't go back to the disk for every file.
+     */
+    @NonNull
+    public String getType() {
+        if (mAttributes != null && mAttributes.mimeType != null) {
+            return mAttributes.mimeType;
+        }
+        return path.getType();
+    }
+
     public int getChildCount() {
         if (!isDirectory) {
             return 0;

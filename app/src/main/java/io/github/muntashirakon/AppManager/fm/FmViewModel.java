@@ -45,7 +45,6 @@ import io.github.muntashirakon.AppManager.misc.ListOptions;
 import io.github.muntashirakon.AppManager.self.filecache.FileCache;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
 import io.github.muntashirakon.AppManager.settings.Prefs;
-import io.github.muntashirakon.AppManager.utils.AlphanumComparator;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
@@ -630,34 +629,7 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
         if (ThreadUtils.isInterrupted()) {
             return;
         }
-        // Sort by name first
-        Collections.sort(filteredList, (o1, o2) -> AlphanumComparator.compareStringIgnoreCase(o1.getName(), o2.getName()));
-        if (mSortBy == FmListOptions.SORT_BY_NAME) {
-            if (mReverseSort) {
-                Collections.reverse(filteredList);
-            }
-        } else {
-            // Other sorting options
-            int inverse = mReverseSort ? -1 : 1;
-            Collections.sort(filteredList, (o1, o2) -> {
-                Path p1 = o1.path;
-                Path p2 = o2.path;
-                if (mSortBy == FmListOptions.SORT_BY_LAST_MODIFIED) {
-                    return -Long.compare(o1.getLastModified(), o2.getLastModified()) * inverse;
-                }
-                if (mSortBy == FmListOptions.SORT_BY_SIZE) {
-                    return -Long.compare(o1.getSize(), o2.getSize()) * inverse;
-                }
-                if (mSortBy == FmListOptions.SORT_BY_TYPE) {
-                    return p1.getType().compareToIgnoreCase(p2.getType()) * inverse;
-                }
-                return 0;
-            });
-        }
-        if (foldersOnTop) {
-            // Folders should be on top
-            Collections.sort(filteredList, (o1, o2) -> -Boolean.compare(o1.isDirectory, o2.isDirectory));
-        }
+        FmSorter.sort(filteredList, mSortBy, mReverseSort, foldersOnTop);
         if (ThreadUtils.isInterrupted()) {
             return;
         }

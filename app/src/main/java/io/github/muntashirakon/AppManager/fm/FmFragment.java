@@ -21,6 +21,7 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.SubMenu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -528,6 +529,39 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             FmTasks.FmTask fmTask = FmTasks.getInstance().peek();
             pasteMenu.setEnabled(mFolderShortInfo != null && fmTask != null && mFolderShortInfo.canWrite && fmTask.canPaste());
         }
+        updateSortMenu(menu);
+    }
+
+    private void updateSortMenu(@NonNull Menu menu) {
+        int[] ids = {R.id.action_sort_by_name, R.id.action_sort_by_last_modified, R.id.action_sort_by_type,
+                R.id.action_sort_by_size};
+        int sortBy = mModel.getSortBy();
+        for (int id : ids) {
+            MenuItem sortItem = menu.findItem(id);
+            if (sortItem != null && getSortOrder(id) == sortBy) {
+                sortItem.setChecked(true);
+            }
+        }
+        MenuItem reverseItem = menu.findItem(R.id.action_sort_reverse);
+        if (reverseItem != null) {
+            reverseItem.setChecked(mModel.isReverseSort());
+        }
+    }
+
+    /**
+     * The sort order a Sort menu item stands for, or -1 for any other item.
+     */
+    private static int getSortOrder(int menuId) {
+        if (menuId == R.id.action_sort_by_name) {
+            return FmListOptions.SORT_BY_NAME;
+        } else if (menuId == R.id.action_sort_by_last_modified) {
+            return FmListOptions.SORT_BY_LAST_MODIFIED;
+        } else if (menuId == R.id.action_sort_by_type) {
+            return FmListOptions.SORT_BY_TYPE;
+        } else if (menuId == R.id.action_sort_by_size) {
+            return FmListOptions.SORT_BY_SIZE;
+        }
+        return -1;
     }
 
     @Override
@@ -549,6 +583,22 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
             FmListOptions listOptions = new FmListOptions();
             listOptions.setListOptionActions(mModel);
             listOptions.show(getChildFragmentManager(), FmListOptions.TAG);
+            return true;
+        } else if (id == R.id.action_sort) {
+            // The sort can also change in List options, so mark the current one as the submenu opens
+            SubMenu subMenu = item.getSubMenu();
+            if (subMenu != null) {
+                updateSortMenu(subMenu);
+            }
+            return false;
+        } else if (getSortOrder(id) >= 0) {
+            mModel.setSortBy(getSortOrder(id));
+            item.setChecked(true);
+            return true;
+        } else if (id == R.id.action_sort_reverse) {
+            boolean reverse = !mModel.isReverseSort();
+            mModel.setReverseSort(reverse);
+            item.setChecked(reverse);
             return true;
         } else if (id == R.id.action_paste) {
             FmTasks.FmTask task = FmTasks.getInstance().dequeue();
