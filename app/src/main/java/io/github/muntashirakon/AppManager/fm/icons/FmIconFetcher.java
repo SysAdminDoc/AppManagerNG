@@ -107,9 +107,9 @@ public class FmIconFetcher implements ImageLoader.ImageFetcherInterface {
         Size size = new Size(length, length);
         try {
             return fetchImage(tag, mimeType, drawableRes, padding, size, defaultImage);
-        } catch (Exception | StackOverflowError | OutOfMemoryError e) {
+        } catch (Exception | StackOverflowError | OutOfMemoryError | LinkageError e) {
             // A file that breaks its preview (an APK icon nested deep enough to use up the stack,
-            // say) still gets its type's icon
+            // say, or a decoder class that failed to load) still gets its type's icon
             Log.w(TAG, "Could not make a thumbnail for %s", e, mFmItem.path);
             return new ImageLoader.ImageFetcherResult(tag, null, defaultImage);
         }

@@ -6,6 +6,7 @@ import android.net.Uri;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.util.Pair;
 import androidx.documentfile.provider.VirtualDocumentFile;
 
@@ -18,6 +19,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.concurrent.Callable;
 
 import io.github.muntashirakon.AppManager.fm.ContentType2;
 import io.github.muntashirakon.AppManager.fm.FmProvider;
@@ -35,7 +37,62 @@ class PathContentInfoImpl extends PathContentInfo {
         put("application/zip", true);
     }};
 
+    private static final Object sContentInfoUtilLock = new Object();
+    @Nullable
+    private static Callable<ContentInfoUtil> sContentInfoUtilFactory;
+    @Nullable
     private static ContentInfoUtil sContentInfoUtil;
+    // Once loading fails it isn't retried: a class whose static initializer threw stays broken
+    // for the life of the process
+    private static boolean sContentInfoUtilFailed;
+    private static volatile boolean sExtensionMatchFailed;
+
+    /**
+     * Replaces how the magic-byte matcher is made, and forgets the one already made. {@code null}
+     * goes back to the real one.
+     */
+    @VisibleForTesting
+    static void setContentInfoUtilFactory(@Nullable Callable<ContentInfoUtil> factory) {
+        synchronized (sContentInfoUtilLock) {
+            sContentInfoUtilFactory = factory;
+            sContentInfoUtil = null;
+            sContentInfoUtilFailed = false;
+        }
+    }
+
+    /**
+     * The magic-byte matcher, or {@code null} when it can't load in this build. Detection then
+     * falls back to the file name instead of taking the file list down with it (#49).
+     */
+    @Nullable
+    private static ContentInfoUtil getContentInfoUtil() {
+        synchronized (sContentInfoUtilLock) {
+            if (sContentInfoUtil == null && !sContentInfoUtilFailed) {
+                try {
+                    Callable<ContentInfoUtil> factory = sContentInfoUtilFactory;
+                    sContentInfoUtil = factory != null ? factory.call() : new ContentInfoUtil();
+                } catch (Exception | LinkageError e) {
+                    sContentInfoUtilFailed = true;
+                    Log.e(TAG, "Could not load the magic-byte database, detecting types by name only", e);
+                }
+            }
+            return sContentInfoUtil;
+        }
+    }
+
+    @Nullable
+    private static ContentInfo findExtensionMatch(@Nullable String ext) {
+        if (ext == null || sExtensionMatchFailed) {
+            return null;
+        }
+        try {
+            return ContentInfoUtil.findExtensionMatch(ext);
+        } catch (RuntimeException | LinkageError e) {
+            sExtensionMatchFailed = true;
+            Log.e(TAG, "Could not match file extensions, using the built-in list only", e);
+            return null;
+        }
+    }
 
     @NonNull
     public static PathContentInfoImpl fromExtension(@NonNull Path path) {
@@ -43,7 +100,7 @@ class PathContentInfoImpl extends PathContentInfo {
             return DIRECTORY;
         }
         String ext = path.getExtension();
-        ContentInfo extInfo = ext != null ? ContentInfoUtil.findExtensionMatch(ext) : null;
+        ContentInfo extInfo = findExtensionMatch(ext);
         ContentType2 extType2 = ext != null ? ContentType2.fromFileExtension(ext) : null;
         if (extInfo != null) {
             return withPartialOverride(fromContentInfo(extInfo), extType2);
@@ -59,29 +116,29 @@ class PathContentInfoImpl extends PathContentInfo {
         if (path.isDirectory()) {
             return DIRECTORY;
         }
-        if (sContentInfoUtil == null) {
-            sContentInfoUtil = new ContentInfoUtil();
-        }
         String ext = path.getExtension();
-        ContentInfo extInfo = ext != null ? ContentInfoUtil.findExtensionMatch(ext) : null;
+        ContentInfo extInfo = findExtensionMatch(ext);
         ContentType2 extType2 = ext != null ? ContentType2.fromFileExtension(ext) : null;
-        try (InputStream is = openForSniff(path)) {
-            ContentInfo contentInfo = sContentInfoUtil.findMatch(is);
-            if (contentInfo != null) {
-                if (contentInfo.isPartial()) {
-                    if (extType2 != null) {
-                        return fromPathContentInfo(new PathContentInfoImpl(extType2.getSimpleName(),
-                                contentInfo.getMessage(), extType2.getMimeType(), extType2.getFileExtensions(), true));
+        ContentInfoUtil contentInfoUtil = getContentInfoUtil();
+        if (contentInfoUtil != null) {
+            try (InputStream is = openForSniff(path)) {
+                ContentInfo contentInfo = contentInfoUtil.findMatch(is);
+                if (contentInfo != null) {
+                    if (contentInfo.isPartial()) {
+                        if (extType2 != null) {
+                            return fromPathContentInfo(new PathContentInfoImpl(extType2.getSimpleName(),
+                                    contentInfo.getMessage(), extType2.getMimeType(), extType2.getFileExtensions(), true));
+                        }
+                        if (extInfo != null) {
+                            return fromPathContentInfo(new PathContentInfoImpl(extInfo.getName(), contentInfo.getMessage(),
+                                    extInfo.getMimeType(), extInfo.getFileExtensions(), true));
+                        }
                     }
-                    if (extInfo != null) {
-                        return fromPathContentInfo(new PathContentInfoImpl(extInfo.getName(), contentInfo.getMessage(),
-                                extInfo.getMimeType(), extInfo.getFileExtensions(), true));
-                    }
+                    return fromContentInfo(contentInfo);
                 }
-                return fromContentInfo(contentInfo);
+            } catch (Exception | LinkageError | StackOverflowError e) {
+                Log.e(TAG, "Could not load MIME type for path %s", e, path);
             }
-        } catch (Exception e) {
-            Log.e(TAG, "Could not load MIME type for path %s", e, path);
         }
         if (extInfo != null) {
             return withPartialOverride(fromContentInfo(extInfo), extType2);

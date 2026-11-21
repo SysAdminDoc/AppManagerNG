@@ -9,6 +9,9 @@ import android.content.ContentResolver;
 import android.content.pm.ProviderInfo;
 import android.net.Uri;
 
+import com.j256.simplemagic.ContentInfo;
+import com.j256.simplemagic.ContentInfoUtil;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -79,6 +83,66 @@ public class PathContentInfoImplTest {
         PathContentInfo contentInfo = apksFile.getPathContentInfo();
 
         assertEquals("application/x-apks", contentInfo.getMimeType());
+    }
+
+    @Test
+    public void fromPathFallsBackToTheExtensionWhenMagicDetectionCannotLoad() throws Exception {
+        // A release build died here (#49): the magic database's static initializer threw, and the
+        // ExceptionInInitializerError took the whole file list down with it
+        Path png = copyTestIcon("photo.png");
+        Path unknown = mRoot.createNewFile("README", null);
+        AtomicInteger loads = new AtomicInteger();
+        PathContentInfoImpl.setContentInfoUtilFactory(() -> {
+            loads.incrementAndGet();
+            throw new ExceptionInInitializerError(new NullPointerException("Package.getName()"));
+        });
+        try {
+            assertEquals("image/png", png.getPathContentInfo().getMimeType());
+            assertEquals("application/octet-stream", unknown.getPathContentInfo().getMimeType());
+            // The next file still gets an answer, and the broken loader isn't retried for every row
+            assertEquals("image/png", png.getPathContentInfo().getMimeType());
+            assertEquals(1, loads.get());
+        } finally {
+            PathContentInfoImpl.setContentInfoUtilFactory(null);
+        }
+    }
+
+    @Test
+    public void fromPathFallsBackToTheExtensionWhenTheMatcherThrowsAnError() throws Exception {
+        Path png = copyTestIcon("photo.png");
+        PathContentInfoImpl.setContentInfoUtilFactory(() -> new ContentInfoUtil() {
+            @Override
+            public ContentInfo findMatch(InputStream is) {
+                throw new NoClassDefFoundError("com.j256.simplemagic.entries.MagicEntries");
+            }
+        });
+        try {
+            assertEquals("image/png", png.getPathContentInfo().getMimeType());
+        } finally {
+            PathContentInfoImpl.setContentInfoUtilFactory(null);
+        }
+    }
+
+    @Test
+    public void fromPathStillSniffsBytesAfterTheFactoryIsRestored() throws Exception {
+        PathContentInfoImpl.setContentInfoUtilFactory(() -> {
+            throw new ExceptionInInitializerError(new NullPointerException());
+        });
+        Path pngWithTextExtension = copyTestIcon("icon.txt");
+        assertEquals("text/plain", pngWithTextExtension.getPathContentInfo().getMimeType());
+        PathContentInfoImpl.setContentInfoUtilFactory(null);
+
+        assertEquals("image/png", pngWithTextExtension.getPathContentInfo().getMimeType());
+    }
+
+    private Path copyTestIcon(String name) throws IOException {
+        Path path = mRoot.createNewFile(name, null);
+        try (InputStream in = Objects.requireNonNull(getClass().getClassLoader())
+                .getResourceAsStream("images/test_icon.png");
+             OutputStream out = path.openOutputStream()) {
+            IoUtils.copy(Objects.requireNonNull(in), out);
+        }
+        return path;
     }
 
     @Test

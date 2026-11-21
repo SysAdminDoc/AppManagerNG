@@ -22,6 +22,17 @@
     io.github.muntashirakon.io.Path findFile(java.lang.String);
 }
 
+# R8 moves classes it renames into the unnamed package, where Class.getPackage() returns null on
+# Android. These libraries read a class's package in a static initializer (or resolve a resource
+# relative to it), so keep the names of exactly those classes. Without them the file manager died
+# with ExceptionInInitializerError on the first file that needed magic-byte MIME detection (#49),
+# and decompiling with jadx failed the same way.
+# simplemagic: LogBackendType builds backend class names from LocalLogBackendFactory's package.
+-keepnames class com.j256.simplemagic.logger.backend.LocalLogBackend$LocalLogBackendFactory
+# jadx: Utils reads JadxDecompiler's package; TldHelper loads tld_3.txt next to itself.
+-keepnames class jadx.api.JadxDecompiler
+-keepnames class jadx.core.deobf.TldHelper
+
 # Keep all class members that implement the serializable interface
 -keepclassmembers class * implements java.io.Serializable {
     static final long serialVersionUID;
