@@ -67,7 +67,9 @@ public class FmViewModel extends AndroidViewModel implements ListOptions.ListOpt
     private final MutableLiveData<FolderShortInfo> mFolderShortInfoLiveData = new MutableLiveData<>();
     private final MutableLiveData<Uri> mUriLiveData = new MutableLiveData<>();
     private final MutableLiveData<Uri> mLastUriLiveData = new MutableLiveData<>();
-    private final MutableLiveData<Uri> mDisplayPropertiesLiveData = new MutableLiveData<>();
+    // One-shot: a plain LiveData hands its last value to the new view after a rotation, which
+    // opened the Properties sheet again, one more copy per rotation (#34)
+    private final SingleLiveEvent<Uri> mDisplayPropertiesLiveData = new SingleLiveEvent<>();
     private final SingleLiveEvent<Pair<Path, Bitmap>> mShortcutCreatorLiveData = new SingleLiveEvent<>();
     private final SingleLiveEvent<SharableItems> mSharableItemsLiveData = new SingleLiveEvent<>();
     private final SingleLiveEvent<Path> mExtractArchiveLiveData = new SingleLiveEvent<>();
