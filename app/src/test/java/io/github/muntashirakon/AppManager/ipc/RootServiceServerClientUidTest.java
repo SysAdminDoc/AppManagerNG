@@ -35,9 +35,10 @@ public class RootServiceServerClientUidTest {
     }
 
     @Test
-    public void aSecondLauncherRunningAsTheShellCanAskForAnotherBroadcast() {
-        // A new launch finding the daemon already up calls broadcast(uid) from another shell process
-        assertEquals(PROFILE_APP, RootServiceServer.resolveClientUid(SHELL, SHELL, PROFILE_APP));
+    public void theShellCannotRedirectARootServer() {
+        // Only root or the server itself may name the client. Anything the shell starts that calls
+        // into a root daemon is an ordinary caller there.
+        assertEquals(SHELL, RootServiceServer.resolveClientUid(SHELL, 0, PROFILE_APP));
     }
 
     @Test
