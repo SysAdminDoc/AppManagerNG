@@ -15,6 +15,8 @@ import androidx.annotation.StringRes;
 import androidx.annotation.VisibleForTesting;
 import androidx.annotation.XmlRes;
 import androidx.annotation.WorkerThread;
+import androidx.core.os.ConfigurationCompat;
+import androidx.core.os.LocaleListCompat;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -112,32 +114,53 @@ public final class SettingsSearchIndex {
 
     @NonNull
     private final List<Entry> mEntries;
+    /** The app's locales when the text was read, as language tags */
+    @NonNull
+    private final String mLocaleTags;
+    /** Lowercases both the text and the query, so they follow the same language's rules */
+    @NonNull
+    private final Locale mLocale;
 
-    private SettingsSearchIndex(@NonNull List<Entry> entries) {
+    private SettingsSearchIndex(@NonNull List<Entry> entries, @NonNull LocaleListCompat locales) {
         mEntries = Collections.unmodifiableList(entries);
+        mLocaleTags = locales.toLanguageTags();
+        Locale first = locales.get(0);
+        mLocale = first != null ? first : Locale.getDefault();
     }
 
     /**
      * Lazily build (or return) the singleton index for {@code context}. The
      * harvest walks ~15 small XML files and resolves their string references,
      * which is cheap enough to run on a background thread on first use.
+     *
+     * <p>The index is rebuilt when the app's language has changed since it was read, so a
+     * language picked in this process is searched in that language.</p>
      */
     @AnyThread
     @NonNull
     public static SettingsSearchIndex get(@NonNull Context context) {
+        Context appContext = context.getApplicationContext();
+        // Read before the text, so a change made while it's being read leaves an index that
+        // looks stale and is read again next time
+        LocaleListCompat locales = ConfigurationCompat.getLocales(appContext.getResources().getConfiguration());
         SettingsSearchIndex local = sInstance;
-        if (local != null) {
+        if (local != null && local.mLocaleTags.equals(locales.toLanguageTags())) {
             return local;
         }
         synchronized (SettingsSearchIndex.class) {
-            if (sInstance == null) {
-                sInstance = new SettingsSearchIndex(buildEntries(context.getApplicationContext()));
+            local = sInstance;
+            if (local == null || !local.mLocaleTags.equals(locales.toLanguageTags())) {
+                local = new SettingsSearchIndex(buildEntries(appContext), locales);
+                sInstance = local;
             }
-            return sInstance;
+            return local;
         }
     }
 
-    /** Clear the cache. Call after a locale change so titles re-resolve. */
+    /**
+     * Clear the cache. A change of language is noticed on its own; call this when the app's text
+     * changes without one, such as a language file being used or stopped.
+     */
     public static void invalidate() {
         synchronized (SettingsSearchIndex.class) {
             sInstance = null;
@@ -164,7 +187,7 @@ public final class SettingsSearchIndex {
     @NonNull
     public List<Entry> search(@Nullable CharSequence query) {
         if (query == null) return Collections.emptyList();
-        String needle = query.toString().trim().toLowerCase(Locale.getDefault());
+        String needle = query.toString().trim().toLowerCase(mLocale);
         if (needle.isEmpty()) return Collections.emptyList();
         List<Entry> matches = new ArrayList<>();
         for (Entry entry : mEntries) {
@@ -177,9 +200,9 @@ public final class SettingsSearchIndex {
         return matches;
     }
 
-    private static boolean matches(@Nullable CharSequence haystack, @NonNull String needle) {
+    private boolean matches(@Nullable CharSequence haystack, @NonNull String needle) {
         if (haystack == null) return false;
-        return haystack.toString().toLowerCase(Locale.getDefault()).contains(needle);
+        return haystack.toString().toLowerCase(mLocale).contains(needle);
     }
 
     @WorkerThread

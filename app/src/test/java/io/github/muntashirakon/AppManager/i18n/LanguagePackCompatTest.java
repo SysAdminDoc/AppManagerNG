@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.i18n;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 import android.content.Context;
@@ -30,15 +31,18 @@ import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 
 import java.io.File;
-import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Locale;
 
 import io.github.muntashirakon.AppManager.PerProcessActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.settings.PreferenceFragment;
+import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.settings.SettingsSearchIndex;
 import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.LangUtils;
+import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 import io.github.muntashirakon.test.CachedAppContext;
 
 /**
@@ -132,6 +136,29 @@ public class LanguagePackCompatTest {
         }
     }
 
+    @Test
+    public void settingsSearchFollowsALanguageFileInTheLanguageAlreadyShown() throws Exception {
+        // German is the app's language before and after, so only the text changes
+        Prefs.Appearance.setLanguage("de");
+        AppearanceUtils.applyOnlyLocale(mContext);
+        SettingsSearchIndex.invalidate();
+        assertTrue(SettingsSearchIndex.get(mContext).search("Tiefschwarz").isEmpty());
+
+        LanguagePackManager manager = new LanguagePackManager(mContext);
+        LanguagePackManager.setInstanceForTesting(manager);
+        manager.importPack(pack("de", ENTRIES));
+        manager.use("de", manager.prepare("de"));
+        List<SettingsSearchIndex.Entry> found = SettingsSearchIndex.get(mContext).search("Tiefschwarz");
+        assertEquals(1, found.size());
+        assertEquals("app_theme_pure_black", found.get(0).targetKey);
+        assertEquals("Ganz schwarzer Hintergrund im Dunkelmodus.", String.valueOf(found.get(0).summary));
+
+        manager.stop();
+        assertTrue(SettingsSearchIndex.get(mContext).search("Tiefschwarz").isEmpty());
+        assertEquals("app_theme_pure_black",
+                SettingsSearchIndex.get(mContext).search("Rein schwarzes Thema").get(0).targetKey);
+    }
+
     private static TextView inflateSendLog(HostActivity activity) {
         View root = LayoutInflater.from(activity).inflate(R.layout.dialog_send_log, null, false);
         return root.findViewById(android.R.id.checkbox);
@@ -157,14 +184,7 @@ public class LanguagePackCompatTest {
     }
 
     static void forgetStatics() {
-        CachedAppContext.forget();
-        try {
-            Field field = AppPref.class.getDeclaredField("sAppPref");
-            field.setAccessible(true);
-            field.set(null, null);
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError(e);
-        }
+        CachedAppContext.forgetWithPrefs();
     }
 
     static byte[] pack(String code, String entries) {

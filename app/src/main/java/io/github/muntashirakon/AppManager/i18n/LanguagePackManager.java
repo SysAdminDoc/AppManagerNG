@@ -44,6 +44,7 @@ import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.StaticDataset;
 import io.github.muntashirakon.AppManager.debloat.DebloatObject;
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.AppManager.settings.SettingsSearchIndex;
 import io.github.muntashirakon.AppManager.utils.LangUtils;
 import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 
@@ -450,6 +451,7 @@ public final class LanguagePackManager {
             Api30.clear(mLoader);
         }
         LanguagePackCompat.setActive(null);
+        SettingsSearchIndex.invalidate();
         if (inUse) {
             applyLanguage(previous == null ? LangUtils.LANG_AUTO : previous);
         } else {
@@ -733,6 +735,8 @@ public final class LanguagePackManager {
             LanguagePackCompat.setActive(kept != null && kept.table.equals(prepared) ? kept.pack
                     : CompatPack.fromBytes(readTable(prepared)));
         }
+        // The file's text may be in the language already shown, which Settings search can't tell
+        SettingsSearchIndex.invalidate();
     }
 
     @RequiresApi(Build.VERSION_CODES.R)

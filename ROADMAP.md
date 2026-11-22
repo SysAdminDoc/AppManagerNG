@@ -501,16 +501,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Confidence: Verified
   Effort: S
 
-- [ ] P2 — Invalidate Settings search after locale changes
-  Category: Localization
-  Where: `app/src/main/java/io/github/muntashirakon/AppManager/settings/SettingsSearchIndex.java:110-144,187-198`; `app/src/main/java/io/github/muntashirakon/AppManager/settings/ChangeLanguageFragment.java:133-142`; `app/src/main/java/io/github/muntashirakon/AppManager/settings/Prefs.java:179-188`
-  Problem: The process-wide search index caches localized titles and summaries without keying them by locale or invalidating them when the app language changes.
-  Evidence: Language application updates configuration, while the production index cache has no locale transition hook; invalidation appears only in tests.
-  Fix: Key cached entries by effective locale and configuration, or invalidate and rebuild after language application before new search results are shown.
-  Acceptance: Switching languages in one process updates every search title, summary, and normalized query without restart; switching back is also correct; tests cover script and region variants plus rapid consecutive changes.
-  Confidence: Verified
-  Effort: S
-
 - [ ] P2 — Announce onboarding access checks only after they finish
   Category: Accessibility
   Where: `app/src/main/java/io/github/muntashirakon/AppManager/onboarding/OnboardingFragment.java:161-168,267-276,361-414,445-471,659-692`

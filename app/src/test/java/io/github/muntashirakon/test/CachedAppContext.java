@@ -4,6 +4,7 @@ package io.github.muntashirakon.test;
 
 import java.lang.reflect.Field;
 
+import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 
 /**
@@ -19,6 +20,21 @@ public final class CachedAppContext {
     public static void forget() {
         try {
             Field field = ContextUtils.class.getDeclaredField("sContext");
+            field.setAccessible(true);
+            field.set(null, null);
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    /**
+     * Also forgets the preferences {@link AppPref#set} writes to, which belong to the first application context
+     * too. A test that changes a setting and reads it back through a new context (the app's language, say) needs it.
+     */
+    public static void forgetWithPrefs() {
+        forget();
+        try {
+            Field field = AppPref.class.getDeclaredField("sAppPref");
             field.setAccessible(true);
             field.set(null, null);
         } catch (ReflectiveOperationException e) {
