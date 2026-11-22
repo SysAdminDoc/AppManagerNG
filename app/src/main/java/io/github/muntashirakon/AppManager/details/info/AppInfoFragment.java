@@ -290,6 +290,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     private volatile AppInfoViewModel.AppInfo mLastAppInfo;
     @Nullable
     private volatile AppInfoViewModel.ApkContents mApkContents;
+    @Nullable
+    private volatile Integer mTvSupport;
 
     @GuardedBy("mListItems")
     private final List<ListItem> mListItems = new ArrayList<>();
@@ -390,6 +392,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             mAppInfoModel.loadAppInfo(mPackageInfo, mIsExternalApk);
             mAppInfoModel.loadApkSha256(mApplicationInfo);
             mAppInfoModel.loadApkContents(mPackageInfo, mIsExternalApk);
+            mAppInfoModel.loadTvSupport(mPackageInfo, mIsExternalApk);
         });
         mAppInfoModel.getAppLabel().observe(getViewLifecycleOwner(), appLabel -> {
             ++mLoadedItemCount;
@@ -447,6 +450,10 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         mAppInfoModel.getApkSha256().observe(getViewLifecycleOwner(), this::setApkSha256);
         mAppInfoModel.getApkContents().observe(getViewLifecycleOwner(), apkContents -> {
             mApkContents = apkContents;
+            refreshVerticalView();
+        });
+        mAppInfoModel.getTvSupport().observe(getViewLifecycleOwner(), tvSupport -> {
+            mTvSupport = tvSupport;
             refreshVerticalView();
         });
         mAppInfoModel.getInstallExistingResult().observe(getViewLifecycleOwner(), statusMessagePair ->
@@ -4208,6 +4215,11 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 licenseItem.setActionIcon(io.github.muntashirakon.ui.R.drawable.ic_information);
                 licenseItem.setActionContentDescription(R.string.license_files);
                 mListItems.add(licenseItem);
+            }
+            Integer tvSupport = mTvSupport;
+            if (tvSupport != null) {
+                mListItems.add(ListItem.newSelectableRegularItem(appContext.getString(R.string.android_tv),
+                        appContext.getString(TvSupport.labelRes(tvSupport))));
             }
         }
     }

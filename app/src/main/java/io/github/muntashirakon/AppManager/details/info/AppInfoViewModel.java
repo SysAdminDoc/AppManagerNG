@@ -103,6 +103,7 @@ public class AppInfoViewModel extends AndroidViewModel {
     private final MutableLiveData<Pair<Integer, CharSequence>> mInstallExistingResult = new MutableLiveData<>();
     private final MutableLiveData<String> mApkSha256 = new MutableLiveData<>();
     private final MutableLiveData<ApkContents> mApkContents = new MutableLiveData<>();
+    private final MutableLiveData<Integer> mTvSupport = new MutableLiveData<>();
     private final ExecutorService mExecutor = Executors.newFixedThreadPool(4);
     private Future<?> mTagCloudFuture;
     private Future<?> mAppInfoFuture;
@@ -158,6 +159,13 @@ public class AppInfoViewModel extends AndroidViewModel {
 
     public LiveData<ApkContents> getApkContents() {
         return mApkContents;
+    }
+
+    /**
+     * One of {@link TvSupport}'s levels.
+     */
+    public LiveData<Integer> getTvSupport() {
+        return mTvSupport;
     }
 
     @AnyThread
@@ -614,6 +622,18 @@ public class AppInfoViewModel extends AndroidViewModel {
                 }
             }
             mApkContents.postValue(contents);
+        });
+    }
+
+    /**
+     * How the app fits a TV. Only an installed app can be asked for its TV launcher entry.
+     */
+    @AnyThread
+    public void loadTvSupport(@NonNull PackageInfo packageInfo, boolean isExternalApk) {
+        ThreadUtils.postOnBackgroundThread(() -> {
+            boolean hasLeanbackLauncher = !isExternalApk && TvSupport.hasLeanbackLauncher(getApplication(),
+                    packageInfo.packageName, UserHandleHidden.getUserId(packageInfo.applicationInfo.uid));
+            mTvSupport.postValue(TvSupport.classify(hasLeanbackLauncher, packageInfo.reqFeatures));
         });
     }
 

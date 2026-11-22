@@ -63,6 +63,7 @@ import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.db.entity.App;
 import io.github.muntashirakon.AppManager.db.utils.AppDb;
+import io.github.muntashirakon.AppManager.details.info.TvSupport;
 import io.github.muntashirakon.AppManager.filters.FilterItem;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
@@ -905,6 +906,11 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                     }
                 }
             }
+            // One launcher query covers every row
+            Set<String> tvPackages = (mFilterFlags & MainListOptions.FILTER_APPS_TV) != 0
+                    ? TvSupport.leanbackPackages(getApplication(),
+                    mSelectedUsers != null ? mSelectedUsers : Users.getUsersIds())
+                    : Collections.emptySet();
             for (ApplicationItem item : candidateApplicationItems) {
                 item.setPackageUsageInfo(packageUsageInfoList.get(item.packageName));
                 item.setRunning(runningPackages.contains(item.packageName));
@@ -945,6 +951,9 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                 }
                 if ((mFilterFlags & MainListOptions.FILTER_APPS_POSSIBLE_AD_SOURCES) != 0
                         && !AdSourceSignals.isPossibleAdSource(item)) {
+                    continue;
+                }
+                if ((mFilterFlags & MainListOptions.FILTER_APPS_TV) != 0 && !tvPackages.contains(item.packageName)) {
                     continue;
                 }
                 filteredApplicationItems.add(item);

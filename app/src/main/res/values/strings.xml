@@ -1773,6 +1773,7 @@
     <string name="filter_apps_with_trackers">Unblocked trackers</string>
     <string name="filter_apps_with_granted_perms">Granted permissions</string>
     <string name="filter_apps_possible_ad_sources">Possible ad sources</string>
+    <string name="filter_apps_tv">TV apps</string>
     <string name="value">Value</string>
     <string name="matching_activities">Matching activities</string>
     <string name="send_edited_intent">Send edited Intent</string>
@@ -3858,6 +3859,10 @@
     <string name="xposed_module_modern_summary">Modern API <xliff:g id="min" example="100">%1$d</xliff:g>, built for <xliff:g id="target" example="101">%2$d</xliff:g></string>
     <string name="license_not_recognized">Not recognized</string>
     <string name="license_files">License files</string>
+    <string name="android_tv">Android TV</string>
+    <string name="tv_support_made_for_tv">Made for TV</string>
+    <string name="tv_support_works_without_touch">Works without touch</string>
+    <string name="tv_support_touch_only">Touch only</string>
     <string name="split_type_density">Screen densities</string>
     <string name="split_type_abi">CPU architectures</string>
     <string name="split_type_feature">Feature modules</string>
