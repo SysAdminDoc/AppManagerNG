@@ -37,7 +37,6 @@ import io.github.muntashirakon.AppManager.utils.LangUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.AppManager.utils.appearance.ColorCodes;
 import io.github.muntashirakon.util.AdapterUtils;
-import io.github.muntashirakon.view.ProgressIndicatorCompat;
 import io.github.muntashirakon.widget.MaterialAlertView;
 import io.github.muntashirakon.widget.RecyclerView;
 
@@ -91,7 +90,7 @@ public class AppDetailsOverlaysFragment extends AppDetailsFragment {
         viewModel.get(AppDetailsFragment.OVERLAYS).observe(getViewLifecycleOwner(), appDetailsItems -> {
             if (appDetailsItems != null && mAdapter != null && viewModel.isPackageExist()) {
                 mAdapter.setDefaultList(appDetailsItems);
-            } else ProgressIndicatorCompat.setVisibility(progressIndicator, false);
+            } else showProgress(false);
         });
         viewModel.getRuleApplicationStatus().observe(getViewLifecycleOwner(), status -> {
             alertView.setAlertType(MaterialAlertView.ALERT_TYPE_WARN);
@@ -118,14 +117,14 @@ public class AppDetailsOverlaysFragment extends AppDetailsFragment {
     }
 
     private void setSortBy(@SortOrder int sortBy) {
-        ProgressIndicatorCompat.setVisibility(progressIndicator, true);
+        showProgress(true);
         if (viewModel == null) return;
         viewModel.setSortOrder(sortBy, OVERLAYS);
     }
 
     private void refreshDetails() {
         if (viewModel == null || overlayManager == null) return;
-        ProgressIndicatorCompat.setVisibility(progressIndicator, true);
+        showProgress(true);
         viewModel.triggerPackageChange();
     }
 
@@ -224,7 +223,7 @@ public class AppDetailsOverlaysFragment extends AppDetailsFragment {
             // thread could put an older list on screen after a newer one.
             if (!isAdded()) return;
             mConstraint = viewModel == null ? null : viewModel.getSearchQuery();
-            ProgressIndicatorCompat.setVisibility(progressIndicator, false);
+            showProgress(false);
             synchronized (mAdapterList) {
                 AdapterUtils.notifyDataSetChanged(this, mAdapterList, list);
             }

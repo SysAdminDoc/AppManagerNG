@@ -42,6 +42,7 @@ public class RecyclerView extends androidx.recyclerview.widget.RecyclerView {
     }
 
     private View mEmptyView;
+    private boolean mEmptyViewSuppressed;
     final private AdapterDataObserver mObserver = new AdapterDataObserver() {
         @Override
         public void onChanged() {
@@ -95,7 +96,7 @@ public class RecyclerView extends androidx.recyclerview.widget.RecyclerView {
         }
         if (mEmptyView != null && getAdapter() != null) {
             boolean emptyViewVisible = getAdapter().getItemCount() == 0;
-            mEmptyView.setVisibility(emptyViewVisible ? VISIBLE : GONE);
+            mEmptyView.setVisibility(emptyViewVisible && !mEmptyViewSuppressed ? VISIBLE : GONE);
             setVisibility(emptyViewVisible ? GONE : VISIBLE);
         }
     }
@@ -117,6 +118,15 @@ public class RecyclerView extends androidx.recyclerview.widget.RecyclerView {
 
     public void setEmptyView(View emptyView) {
         mEmptyView = emptyView;
+        checkIfEmpty();
+    }
+
+    /**
+     * Keeps the empty view hidden while the list is still loading, so an empty message doesn't flash before the
+     * first rows arrive. A list that ends up empty shows it again once this is turned off.
+     */
+    public void setEmptyViewSuppressed(boolean suppressed) {
+        mEmptyViewSuppressed = suppressed;
         checkIfEmpty();
     }
 

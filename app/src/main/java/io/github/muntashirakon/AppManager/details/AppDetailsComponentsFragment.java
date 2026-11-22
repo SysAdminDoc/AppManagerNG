@@ -78,7 +78,6 @@ import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.AppManager.utils.appearance.ColorCodes;
 import io.github.muntashirakon.util.AdapterUtils;
-import io.github.muntashirakon.view.ProgressIndicatorCompat;
 import io.github.muntashirakon.widget.MaterialAlertView;
 import io.github.muntashirakon.widget.RecyclerView;
 
@@ -163,7 +162,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                 mAdapter.setDefaultList(appDetailsItems);
                 refreshComponentGuideButton();
                 refreshTabTrackerBlockButton(appDetailsItems);
-            } else ProgressIndicatorCompat.setVisibility(progressIndicator, false);
+            } else showProgress(false);
         });
         viewModel.getRuleApplicationStatus().observe(getViewLifecycleOwner(), status -> {
             alertView.setAlertType(MaterialAlertView.ALERT_TYPE_WARN);
@@ -387,7 +386,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                                          boolean showUndo) {
         if (viewModel == null || trackerItems.isEmpty()) return;
         List<AppDetailsComponentItem> snapshot = new ArrayList<>(trackerItems);
-        ProgressIndicatorCompat.setVisibility(progressIndicator, true);
+        showProgress(true);
         if (mTrackerBlockInTabButton != null) {
             mTrackerBlockInTabButton.setEnabled(false);
         }
@@ -440,7 +439,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
     }
 
     private void setSortBy(@SortOrder int sortBy) {
-        ProgressIndicatorCompat.setVisibility(progressIndicator, true);
+        showProgress(true);
         if (viewModel == null) return;
         viewModel.setSortOrder(sortBy, mNeededProperty);
     }
@@ -448,7 +447,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
     @MainThread
     private void refreshDetails() {
         if (viewModel == null || mIsExternalApk) return;
-        ProgressIndicatorCompat.setVisibility(progressIndicator, true);
+        showProgress(true);
         viewModel.triggerPackageChange();
     }
 
@@ -610,7 +609,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                 }
                 ThreadUtils.postOnMainThread(() -> {
                     if (!isAdded()) return;
-                    ProgressIndicatorCompat.setVisibility(progressIndicator, false);
+                    showProgress(false);
                     synchronized (mAdapterList) {
                         AdapterUtils.notifyDataSetChanged(this, mAdapterList, list);
                     }

@@ -75,7 +75,6 @@ import io.github.muntashirakon.dialog.SearchableItemsDialogBuilder;
 import io.github.muntashirakon.dialog.SearchableSingleChoiceDialogBuilder;
 import io.github.muntashirakon.dialog.TextInputDropdownDialogBuilder;
 import io.github.muntashirakon.util.AdapterUtils;
-import io.github.muntashirakon.view.ProgressIndicatorCompat;
 import io.github.muntashirakon.widget.MaterialAlertView;
 import io.github.muntashirakon.widget.RecyclerView;
 
@@ -141,7 +140,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                 mIsExternalApk = viewModel.isExternalApk();
                 configureEmptyState();
                 mAdapter.setDefaultList(appDetailsItems);
-            } else ProgressIndicatorCompat.setVisibility(progressIndicator, false);
+            } else showProgress(false);
         });
         viewModel.getRuleApplicationStatus().observe(getViewLifecycleOwner(), status -> {
             alertView.setAlertType(MaterialAlertView.ALERT_TYPE_WARN);
@@ -156,7 +155,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             // indicator never clears.
             if (result == null || result.property != mNeededProperty) return;
             viewModel.clearPermOpResult();
-            ProgressIndicatorCompat.setVisibility(progressIndicator, false);
+            showProgress(false);
             if (result.success) {
                 if (result.changedItem != null) {
                     AppDetailsAdapterUtils.notifyItemChangedIfPresent(mAdapter, mAdapter.mAdapterList,
@@ -228,14 +227,14 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             refreshDetails();
         } else if (id == R.id.action_reset_to_default) {  // App ops
             if (viewModel == null) return true;
-            ProgressIndicatorCompat.setVisibility(progressIndicator, true);
+            showProgress(true);
             viewModel.resetAppOpsAsync(mNeededProperty);
         } else if (id == R.id.action_deny_dangerous_app_ops) {  // App ops
             if (viewModel == null) return true;
-            ProgressIndicatorCompat.setVisibility(progressIndicator, true);
+            showProgress(true);
             viewModel.ignoreDangerousAppOpsAsync(mNeededProperty);
         } else if (id == R.id.action_toggle_default_app_ops) {  // App ops
-            ProgressIndicatorCompat.setVisibility(progressIndicator, true);
+            showProgress(true);
             // Turn filter on/off
             boolean curr = Prefs.AppDetailsPage.displayDefaultAppOps();
             Prefs.AppDetailsPage.setDisplayDefaultAppOps(!curr);
@@ -288,7 +287,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                     .show();
         } else if (id == R.id.action_deny_dangerous_permissions) {  // permissions
             if (viewModel == null) return true;
-            ProgressIndicatorCompat.setVisibility(progressIndicator, true);
+            showProgress(true);
             viewModel.revokeDangerousPermissionsAsync(mNeededProperty);
         } else if (id == R.id.action_open_privacy_dashboard) {
             openPrivacyDashboardForInspectedPackage();
@@ -427,14 +426,14 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
     }
 
     private void setSortBy(@SortOrder int sortBy) {
-        ProgressIndicatorCompat.setVisibility(progressIndicator, true);
+        showProgress(true);
         if (viewModel == null) return;
         viewModel.setSortOrder(sortBy, mNeededProperty);
     }
 
     private void refreshDetails() {
         if (viewModel == null || mIsExternalApk) return;
-        ProgressIndicatorCompat.setVisibility(progressIndicator, true);
+        showProgress(true);
         viewModel.triggerPackageChange();
     }
 
@@ -500,7 +499,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                 mCanModifyAppOpMode = SelfPermissions.canModifyAppOpMode();
                 ThreadUtils.postOnMainThread(() -> {
                     if (!isAdded()) return;
-                    ProgressIndicatorCompat.setVisibility(progressIndicator, false);
+                    showProgress(false);
                     synchronized (mAdapterList) {
                         AdapterUtils.notifyDataSetChanged(this, mAdapterList, list);
                     }
@@ -770,7 +769,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                 // still opens the full single-choice mode picker (FOREGROUND/DEFAULT/etc.).
                 int nextMode = nextAppOpModeInCycle(item.getMode());
                 if (viewModel != null) {
-                    ProgressIndicatorCompat.setVisibility(progressIndicator, true);
+                    showProgress(true);
                     viewModel.setAppOpModeAsync(mNeededProperty, item, nextMode);
                 }
             });
@@ -784,7 +783,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                         return;
                     }
                     // The rule disagrees with the op right now, so it takes effect at once.
-                    ProgressIndicatorCompat.setVisibility(progressIndicator, true);
+                    showProgress(true);
                     viewModel.setAppOpModeAsync(mNeededProperty, item, rule.state == WatchRule.STATE_ALLOW
                             ? AppOpsManager.MODE_ALLOWED : AppOpsManager.MODE_IGNORED);
                 });

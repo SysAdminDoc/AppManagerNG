@@ -66,7 +66,6 @@ import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.io.Paths;
 import io.github.muntashirakon.util.AdapterUtils;
 import io.github.muntashirakon.util.LocalizedString;
-import io.github.muntashirakon.view.ProgressIndicatorCompat;
 import io.github.muntashirakon.widget.RecyclerView;
 
 public class AppDetailsOtherFragment extends AppDetailsFragment {
@@ -104,7 +103,7 @@ public class AppDetailsOtherFragment extends AppDetailsFragment {
                 mIsExternalApk = viewModel.isExternalApk();
                 configureEmptyState();
                 mAdapter.setDefaultList(appDetailsItems);
-            } else ProgressIndicatorCompat.setVisibility(progressIndicator, false);
+            } else showProgress(false);
         });
     }
 
@@ -261,7 +260,7 @@ public class AppDetailsOtherFragment extends AppDetailsFragment {
 
     private void refreshDetails() {
         if (viewModel == null || mIsExternalApk) return;
-        ProgressIndicatorCompat.setVisibility(progressIndicator, true);
+        showProgress(true);
         viewModel.triggerPackageChange();
     }
 
@@ -319,7 +318,7 @@ public class AppDetailsOtherFragment extends AppDetailsFragment {
                 mRequestedProperty = mNeededProperty;
                 ThreadUtils.postOnMainThread(() -> {
                     if (!isAdded()) return;
-                    ProgressIndicatorCompat.setVisibility(progressIndicator, false);
+                    showProgress(false);
                     synchronized (mAdapterList) {
                         AdapterUtils.notifyDataSetChanged(this, mAdapterList, list);
                     }

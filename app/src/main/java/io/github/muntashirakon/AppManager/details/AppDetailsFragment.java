@@ -154,7 +154,7 @@ public abstract class AppDetailsFragment extends Fragment implements AdvancedSea
         recyclerView.setEmptyView(emptyView);
         progressIndicator = view.findViewById(R.id.progress_linear);
         progressIndicator.setVisibilityAfterHide(View.GONE);
-        ProgressIndicatorCompat.setVisibility(progressIndicator, true);
+        showProgress(true);
         alertView = view.findViewById(R.id.alert_text);
         alertView.setEndIconMode(MaterialAlertView.END_ICON_CUSTOM);
         alertView.setEndIconDrawable(com.google.android.material.R.drawable.mtrl_ic_cancel);
@@ -165,6 +165,17 @@ public abstract class AppDetailsFragment extends Fragment implements AdvancedSea
 
     @Property
     protected abstract int getProperty();
+
+    /**
+     * Shows or hides the progress bar. While it shows, the empty message stays hidden: the list is empty until the
+     * first load lands, and "No requested permissions" (or the tab's own message) used to flash on every open.
+     */
+    protected void showProgress(boolean show) {
+        ProgressIndicatorCompat.setVisibility(progressIndicator, show);
+        if (recyclerView != null) {
+            recyclerView.setEmptyViewSuppressed(show);
+        }
+    }
 
     protected void setEmptyStateText(@StringRes int titleRes) {
         setEmptyStateText(getText(titleRes));

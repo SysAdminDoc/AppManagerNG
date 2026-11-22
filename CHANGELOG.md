@@ -28,6 +28,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Release builds of the file manager closed when they tried to guess a file's type (issue #49). The shrinker moved a library's classes in a way that broke how it names its own logger. Those classes now keep their names, and if type detection fails anyway, the file manager falls back to the file extension instead of closing.
 - Open in Termux and Run in Termux in App Info didn't run anything. Termux's login shell took the first word, `su`, for a script file name. The command now goes over whole, and Run in Termux hands `run-as` its package name the way `su -c` expects.
 - The Properties sheet in the file manager came back every time you rotated the phone, even after you'd closed it, and an open one stacked a new copy per rotation (issue #34).
+- App Details tabs no longer flash their empty message, like "No requested permissions", while they're still loading.
 
 ## v0.8.0, 2026-11-15
 
