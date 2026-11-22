@@ -24,7 +24,6 @@ import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
-import androidx.core.content.ContextCompat;
 import androidx.cursoradapter.widget.CursorAdapter;
 import androidx.cursoradapter.widget.SimpleCursorAdapter;
 import androidx.fragment.app.DialogFragment;
@@ -64,7 +63,6 @@ import io.github.muntashirakon.AppManager.utils.CpuUtils;
 import io.github.muntashirakon.AppManager.utils.ExportTextUtils;
 import io.github.muntashirakon.AppManager.utils.MimeTypeUtils;
 import io.github.muntashirakon.AppManager.utils.MultithreadedExecutor;
-import io.github.muntashirakon.AppManager.utils.StoragePermission;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.dialog.DialogTitleBuilder;
@@ -116,7 +114,6 @@ public class LogViewerActivity extends BaseActivity implements SearchView.OnQuer
     private final MultithreadedExecutor mExecutor = MultithreadedExecutor.getNewInstance();
     private final BetterActivityResult<Intent, ActivityResult> mActivityLauncher =
             BetterActivityResult.registerActivityForResult(this);
-    private final StoragePermission mStoragePermission = StoragePermission.init(this);
     private final BetterActivityResult<String, Uri> mSaveLauncher = BetterActivityResult
             .registerForActivityResult(this, new ActivityResultContracts.CreateDocument("*/*"));
 
@@ -194,12 +191,10 @@ public class LogViewerActivity extends BaseActivity implements SearchView.OnQuer
         LogLine.omitSensitiveInfo = Prefs.LogViewer.omitSensitiveInfo();
 
         if ("record".equals(getIntent().getStringExtra("shortcut_action"))) {
-            // Handle shortcut
-            mStoragePermission.request(granted -> {
-                if (granted) {
-                    startLogRecorder();
-                }
-            });
+            // An old record shortcut. This screen is exported, so any app or a web link can send
+            // this. Recording waits for the user's OK in the record dialog, as it does from the widget.
+            startActivity(new Intent(this, RecordLogDialogActivity.class));
+            finish();
             return;
         }
 
@@ -269,21 +264,6 @@ public class LogViewerActivity extends BaseActivity implements SearchView.OnQuer
                 .replace(R.id.main_layout, fragment)
                 .addToBackStack(null)
                 .commit();
-    }
-
-    private void startLogRecorder() {
-        String logFilename = SaveLogHelper.createLogFilename();
-        mExecutor.submit(() -> {
-            // Start recording logs
-            Intent intent = ServiceHelper.getLogcatRecorderServiceIfNotAlreadyRunning(this, logFilename,
-                    "", Prefs.LogViewer.getLogLevel());
-            runOnUiThread(() -> {
-                if (intent != null) {
-                    ContextCompat.startForegroundService(this, intent);
-                }
-                finish();
-            });
-        });
     }
 
     @WorkerThread

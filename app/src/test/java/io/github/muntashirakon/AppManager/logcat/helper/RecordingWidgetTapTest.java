@@ -64,8 +64,8 @@ public class RecordingWidgetTapTest {
         List<ResolveInfo> receivers = mContext.getPackageManager()
                 .queryBroadcastReceivers(action, PackageManager.MATCH_ALL);
         for (ResolveInfo info : receivers) {
-            assertFalse("the exported provider still matches the action",
-                    RecordingWidgetProvider.class.getName().equals(info.activityInfo.name));
+            // Not the provider, and nothing else another app could send it to either
+            assertFalse(info.activityInfo.name + " answers the action and is exported", info.activityInfo.exported);
         }
 
         // Sent to it by name anyway, as another app could, it does nothing
