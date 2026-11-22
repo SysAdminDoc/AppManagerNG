@@ -33,6 +33,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - New notification filter actions (issue #32). Pin keeps a copy in the shade with an Unpin button. It stays until you unpin it, or you can have it run out after an hour or at midnight, and on Android 14 and up a swipe only sends it away for a moment. Silent with status bar icon keeps the app's icon up top with no sound or vibration. Each rule also sets a High, Medium or Low priority for its copies, and rows in Notification history can be pinned.
 - Toast history has a switch that puts its notification back when it's swiped away (issue #32).
 - Related words search (issue #46). Next to Regex in Toast history and Notification history, and as a chip in Operation history, it finds "Wi-Fi is off" when you search "internet". It's a small built-in English word list plus plural and -ing endings, with no model or download behind it.
+- Dhizuku support (discussion #5). With Dhizuku as the device owner and AppManagerNG allowed in it, No root mode can hide, suspend and unfreeze apps, grant and revoke runtime permissions, clear app data, and install and uninstall apps without the system prompt, batch operations included. It works from Android 6 on, though suspending needs Android 7 and clearing data Android 9. Permissions set this way aren't locked, so you can still change them in Settings. Force stop, clearing cache, app ops, blocking components and disabling apps still need root, ADB or Shizuku, and with the freeze method set to Disable, Dhizuku hides the app instead.
 
 ### Fixed
 - Mode toasts like "Working through Shizuku shell mode" no longer pop up over other apps (issue #56). Background work checks the mode too, around the clock, and each check toasted. Now the toast shows only while an AppManagerNG screen is open, once per mode, and again only when the mode changes.
@@ -55,6 +56,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Editing a notification filter rule showed "New rule" at the top. It says "Edit rule" now.
 - Picking a mode in the first-run setup only took effect at the next start. On a phone where ADB over TCP was already on, picking No root kept working through ADB until then. The pick applies right away now.
 - Freezing an app and unfreezing it again within half a minute raised a "reverted by the system" alert and marked the app, though nothing had undone anything. The same went for a component, an app op or battery optimization changed twice in a row. Only a change the system really undid is flagged now.
+- The Dhizuku status in the first-run setup said Dhizuku was ready while none of its operations were wired up, and counted it as Shizuku being ready (discussion #5). Onboarding, Privileges and Mode of operation now say what Dhizuku can and can't run on your phone. When Dhizuku turns AppManagerNG down, the message says where in Dhizuku to unblock it.
 
 ## v0.8.0, 2026-11-15
 

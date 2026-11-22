@@ -42,7 +42,7 @@ Top opportunities, in priority order:
 
 ### Key integrations and data flows
 
-- Privileged calls go from `settings/Ops.java` to the local server and binder services. ADB uses libadb-android 3.1.1 against 127.0.0.1, Shizuku uses Shizuku-API 13.1.5, root uses libsu 6.0.0, and Dhizuku is used for installs.
+- Privileged calls go from `settings/Ops.java` to the local server and binder services. ADB uses libadb-android 3.1.1 against 127.0.0.1, Shizuku uses Shizuku-API 13.1.5, root uses libsu 6.0.0. Dhizuku-API 2.7.0 runs hide, suspend, runtime permission, clear-data, install and uninstall calls through Dhizuku next to any mode (`dhizuku/`).
 - The server process sends its status and relay broadcasts through an NG package context (`server/.../BroadcastSender.java`, `ipc/RootServiceServer.java:143-153`).
 - One AccessibilityService (`accessibility/NoRootAccessibilityService.java`) feeds toast history, the top-app bubble, UI tracker and no-root cache clearing.
 

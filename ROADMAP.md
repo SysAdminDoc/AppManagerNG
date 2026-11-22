@@ -67,14 +67,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Today: 2026-11-14 there was no RAM to boot a Magisk AVD next to the other sessions' emulator, and both phones were leased. Check which Magisk the Hushfeed_Magisk_API36 AVD carries first, since the vault records 30.7 there.
   Complexity: S
 
-- [ ] P2: Dhizuku freeze/suspend executor parity
-  Why: freeze and suspend should run through Dhizuku's device-owner delegation on devices where ADB permissions are restricted.
-  Evidence: `dhizuku/DhizukuBridge.java` is a detection probe only, and `settings/Ops.java` declares no Dhizuku mode.
-  Order: do it after the ROADMAP item "Make the Dhizuku capability copy match what Dhizuku can actually do", which settles the API 26 module question.
-  Unblocked 2026-11-07: Dhizuku 2.13.0 (2026-10-30) is out, and `dpm set-device-owner` hands it device owner on any emulator with no accounts.
-  Research 2026-11-13: Thor 1.96.1 to 1.97.4 shows a working shape. It freezes with `setApplicationHidden`, grants with `setPermissionGrantState` and clears data through DevicePolicyManager, and has no Dhizuku path for force-stop or cache clearing. Dhizuku 2.12.0 (2026-06-24) also works as profile owner.
-  Complexity: M
-
 - [ ] P2: Wireless-ADB resilience: recover after the One UI 8 doze kill
   Why: One UI 8 kills ADB-spawned servers on wake from doze (Shizuku #2475, reported on an S22 with Android 16).
   Evidence: the trusted-network half landed. 658ef6e38 asks once per network when Wireless debugging must be allowed, 14e8c1277 reconnects after a reboot on Android 15+, and 4cc5254b6 says why ADB mode failed. Nothing in `servermanager/` or `adb/` handles the server dying on wake from doze, and Shizuku #2475 is still open.
@@ -399,14 +391,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Evidence: `self/life/BuildExpiryChecker.java:88-105` compares `System.currentTimeMillis()` against `BuildConfig.BUILD_TIME_MILLIS`, with a source comment conceding it should use an SNTP server; `:64-86` adds a continue button only for the stable build type, leaving alpha, beta, and rc with only Update and Uninstall; it is enforced at `BaseActivity.java:86`, `main/SplashActivity.java:117`, and `crypto/ks/KeyStoreActivity.java:33`, so a skewed clock locks the user out of their own backups; `getUpdateUri()` returns the repository's Actions page for debug builds while this repository has no `.github/workflows` by policy.
   Touches: `self/life/BuildExpiryChecker.java`, `BaseActivity.java`, `main/SplashActivity.java`, `crypto/ks/KeyStoreActivity.java`, `app/src/test/java/io/github/muntashirakon/AppManager/self/life/BuildExpiryCheckerTest.java`, strings.
   Acceptance: every build type offers a continue path, so no expiry state can stop a user reaching their backups, rules, and snapshots; a build time in the future, or a device clock earlier than the build time, is treated as unknown rather than expired; the debug update link points at the releases page; the existing warning-period behaviour is unchanged; tests cover a clock set backwards, a clock set far forwards, and each build type, asserting a continue action exists in every case.
-  Complexity: S
-
-- [ ] P2: Make the Dhizuku capability copy match what Dhizuku can actually do
-  Why: onboarding tells the user Dhizuku is ready and active while Privilege Health correctly states its operations are disabled, and the reason Privilege Health gives for that is now answerable rather than open.
-  Evidence: fork discussion #5, where a user asks for full Dhizuku support because ColorOS 16 restricted ADB permissions and points at `trinadhthatakula/Thor`; `onboarding_confidence_mode_shizuku_ready` and `onboarding_mode_dhizuku_status_ready` in `app/src/main/res/values/strings.xml` against `privilege_health_dhizuku_dialog_message`; `settings/Ops.java:85-90` declares no Dhizuku mode; `apk/installer/InstallerPrivilegeCascade.java:182` adds Dhizuku only as an informational step with a null mode; `dhizuku/DhizukuBridge.java` is a detection probe; Dhizuku-API 2.6.0 declares a minimum SDK of 26 (https://raw.githubusercontent.com/iamr0s/Dhizuku-API/main/build.gradle) against a Dhizuku manager that already requires Android 8.0, so the AAR is a manifest-merger question rather than the API 21 floor conflict the string claims.
-  Touches: `app/src/main/res/values/strings.xml`, `onboarding/OnboardingFragment.java`, `settings/PrivilegeHealthPreferences.java`, `docs/policy/minsdk-21-ceiling.md`, `Roadmap_Blocked.md`.
-  Acceptance: no user-facing string implies Dhizuku can perform operations while it cannot, and none conflates Shizuku readiness with Dhizuku readiness; the Dhizuku status text states what detection gives the user today and what it does not; `docs/policy/minsdk-21-ceiling.md` records the measured Dhizuku-API minimum SDK and the decision on whether an API 26 guarded module with `tools:overrideLibrary` is acceptable under the API 21 policy, so the parked Dhizuku executor-parity row in `Roadmap_Blocked.md` carries a decided approach instead of an open question; a settings-string test fails if a readiness string is reintroduced without a matching capability.
-  Research 2026-11-13: Dhizuku 2.12.0 (2026-06-24) added profile owner support and 2.13.0 (2026-10-30) an off-by-default setting that lets clients transfer or clear ownership. Its default APK needs API 23, which the copy should say.
   Complexity: S
 
 ## Research-Driven Additions (2026-09-25)
@@ -1261,4 +1245,20 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Evidence: `AssistantPrompt.show`, `AssistantPromptTest`.
   Touches: `AssistantPromptTest` (show on a destroyed activity, or a context whose window token is gone).
   Acceptance: WHEN `show()` throws `BadTokenException`, the system SHALL end that wait without running the close action, and a test SHALL cover it.
+  Complexity: S
+
+## Found While Checking Dhizuku (2026-11-22)
+
+### P3
+
+- [ ] P3: Remember "Not now" on the notification prompt before batch operations
+  Why: with notifications off, every batch operation stops on "Allow batch operation notifications?" until it's answered, even right after "Not now", so a run of batch freezes asks every time.
+  Evidence: `utils/NotificationUtils.java:149-166` (`requestPostNotificationsForWorkflow`) runs the continuation on "Not now" but keeps nothing; `main/MainActivity.java:1166-1172` calls it before each batch dispatch, and the installer does the same. Seen 2026-11-22 on the API 35 emulator: a batch suspend and the batch unfreeze right after it both stopped on the prompt.
+  Acceptance: "Not now" holds per workflow for the rest of the process, the first-run prompt and Settings still offer notifications, and a test shows a second batch operation dispatching without the dialog after "Not now".
+  Complexity: S
+
+- [ ] P3: Check Dhizuku as a profile owner and on ColorOS
+  Why: Dhizuku 2.12.0 and later can run as a work profile's owner, and the request in discussion #5 came from ColorOS 16, where ADB permissions are restricted. Both paths are untested; the 2026-11-22 walk ran Dhizuku 2.13.0 as device owner on a single-user API 35 emulator.
+  Evidence: `dhizuku/DhizukuOps.java` `canRun` only allows the current user; `apk/installer/InstallerPrivilegeCascade.java` uses Dhizuku for the current user or a single-user device.
+  Acceptance: in a work profile with Dhizuku as profile owner, NG running in that profile hides, suspends, grants and installs through Dhizuku, and NG in the main profile says Dhizuku isn't available there; on a ColorOS 16 phone (a user report counts) the same operations work in No root mode.
   Complexity: S
