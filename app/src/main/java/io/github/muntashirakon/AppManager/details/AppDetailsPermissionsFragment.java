@@ -751,6 +751,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             } else {
                 holder.itemView.setStrokeColor(Color.TRANSPARENT);
             }
+            PermissionRowStyle.apply(holder.itemView, holder.textView1, holder.textView3, item.isDangerous);
             // Op Switch
             holder.toggleSwitch.setVisibility(mCanModifyAppOpMode ? View.VISIBLE : View.GONE);
             // op granted
@@ -861,6 +862,8 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             } else {
                 holder.itemView.setStrokeColor(Color.TRANSPARENT);
             }
+            PermissionRowStyle.apply(holder.itemView, holder.textView1, holder.textView3,
+                    permissionItem.isDangerous);
             // Set package name
             if (permissionInfo.packageName != null) {
                 holder.textView4.setVisibility(View.VISIBLE);
