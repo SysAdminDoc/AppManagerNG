@@ -65,6 +65,7 @@ import io.github.muntashirakon.AppManager.revert.OsRevertCountTracker;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
+import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.users.UserInfo;
 import io.github.muntashirakon.AppManager.users.Users;
@@ -565,14 +566,20 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             holder.backupInfo.setVisibility(View.GONE);
             holder.backupInfoExt.setVisibility(View.GONE);
         }
+        int sortBy = mActivity.viewModel != null ? mActivity.viewModel.getSortBy() : MainListOptions.SORT_BY_APP_LABEL;
+        boolean followSort = Prefs.MainPage.metadataFollowsSort();
         holder.metadata.setText(MainListUidFormatter.metadataLine(context, item, holder.isSystemApp.getText(),
-                getBadgeWarningContentColor(context)));
+                getBadgeWarningContentColor(context), sortBy, followSort));
         limitVisibleStatuses(holder, MAX_INLINE_STATUSES);
         String installedState = context.getString(item.isInstalled ? R.string.main_list_installed_state
                 : item.isKnownArchived() ? R.string.archived_app : R.string.main_list_uninstalled_state);
         String sdkState = item.sdkString != null ? item.sdkString : "-";
         String contentDescription = context.getString(R.string.main_list_app_content_description,
                 item.label, installedState, item.packageName, item.versionTag, sdkState);
+        String sortedDescription = MainListUidFormatter.sortedValueDescription(context, item, sortBy, followSort);
+        if (!sortedDescription.isEmpty()) {
+            contentDescription += " " + sortedDescription;
+        }
         String uidDescription = MainListUidFormatter.contentDescription(context, item);
         if (!uidDescription.isEmpty()) {
             contentDescription += " " + uidDescription;

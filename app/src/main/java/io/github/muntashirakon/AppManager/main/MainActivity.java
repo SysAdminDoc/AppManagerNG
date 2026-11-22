@@ -132,6 +132,8 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     @Nullable
     private android.os.Parcelable mPendingListState;
     private boolean mImeVisibleBeforeLeave;
+    // The details line setting the rows were last bound with, so a change in Settings redraws them
+    private boolean mMetadataFollowsSort = Prefs.MainPage.metadataFollowsSort();
     // The saved data notice while it's on screen, so a resume doesn't show it twice
     @Nullable
     private Snackbar mDbNotice;
@@ -762,6 +764,13 @@ public class MainActivity extends BaseActivity implements AdvancedSearchView.OnQ
     protected void onResume() {
         super.onResume();
         if (viewModel != null) viewModel.onResume();
+        boolean metadataFollowsSort = Prefs.MainPage.metadataFollowsSort();
+        if (metadataFollowsSort != mMetadataFollowsSort) {
+            mMetadataFollowsSort = metadataFollowsSort;
+            if (mAdapter != null) {
+                mAdapter.notifyItemRangeChanged(0, mAdapter.getItemCount());
+            }
+        }
         showDbNoticeIfAny();
         // T21-G: prune expired OS-revert events so the attention-badge tracker
         // cannot grow unbounded across long-lived sessions.

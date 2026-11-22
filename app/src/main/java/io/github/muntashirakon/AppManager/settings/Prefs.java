@@ -870,6 +870,18 @@ public final class Prefs {
             AppPref.set(AppPref.PrefKey.PREF_MAIN_WINDOW_SORT_REVERSE_BOOL, reverseSort);
         }
 
+        /**
+         * Whether a row's details line shows the value the list is sorted by, instead of the same line for every
+         * sort.
+         */
+        public static boolean metadataFollowsSort() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_MAIN_WINDOW_METADATA_FOLLOWS_SORT_BOOL);
+        }
+
+        public static void setMetadataFollowsSort(boolean followsSort) {
+            AppPref.set(AppPref.PrefKey.PREF_MAIN_WINDOW_METADATA_FOLLOWS_SORT_BOOL, followsSort);
+        }
+
         @MainListOptions.Filter
         public static int getFilters() {
             return AppPref.getInt(AppPref.PrefKey.PREF_MAIN_WINDOW_FILTER_FLAGS_INT);

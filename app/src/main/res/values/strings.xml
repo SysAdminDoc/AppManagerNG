@@ -127,6 +127,29 @@
     <string name="main_list_app_content_description">%1$s, %2$s, package %3$s, %4$s, %5$s. Double tap for app details.</string>
     <string name="main_list_uid_label">UID <xliff:g id="uid" example="10123">%1$s</xliff:g></string>
     <string name="main_list_uid_a11y">UID <xliff:g id="uid" example="10123">%1$s</xliff:g>.</string>
+    <!-- The value the app list is sorted by, shown after the UID in each row's details line -->
+    <string name="main_list_sort_installed">Installed <xliff:g id="date" example="11/21/26 2:05 PM">%1$s</xliff:g></string>
+    <string name="main_list_sort_updated">Updated <xliff:g id="date" example="11/21/26 2:05 PM">%1$s</xliff:g></string>
+    <string name="main_list_sort_last_used">Last used <xliff:g id="date" example="11/21/26 2:05 PM">%1$s</xliff:g></string>
+    <string name="main_list_sort_last_action">Last action <xliff:g id="date" example="11/21/26 2:05 PM">%1$s</xliff:g></string>
+    <string name="main_list_sort_size">Size <xliff:g id="size" example="52 MB">%1$s</xliff:g></string>
+    <string name="main_list_sort_data">Data <xliff:g id="size" example="2 kB">%1$s</xliff:g></string>
+    <string name="main_list_sort_screen_time">Screen time <xliff:g id="duration" example="1 hour 5 minutes">%1$s</xliff:g></string>
+    <plurals name="main_list_sort_opened">
+        <item quantity="one">Opened <xliff:g id="count" example="1">%d</xliff:g> time</item>
+        <item quantity="other">Opened <xliff:g id="count" example="3">%d</xliff:g> times</item>
+    </plurals>
+    <plurals name="main_list_sort_trackers">
+        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> tracker</item>
+        <item quantity="other"><xliff:g id="count" example="4">%d</xliff:g> trackers</item>
+    </plurals>
+    <plurals name="main_list_sort_blocked">
+        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> blocked</item>
+        <item quantity="other"><xliff:g id="count" example="2">%d</xliff:g> blocked</item>
+    </plurals>
+    <string name="main_list_sort_dangerous"><xliff:g id="granted" example="1">%1$d</xliff:g> of <xliff:g id="total" example="5">%2$d</xliff:g> dangerous granted</string>
+    <string name="main_list_sort_signer">Signed by <xliff:g id="issuer" example="CN=Example">%1$s</xliff:g></string>
+    <string name="main_list_sorted_value_a11y"><xliff:g id="value" example="Installed 11/21/26 2:05 PM">%1$s</xliff:g>.</string>
     <plurals name="main_list_app_id_multi_user_a11y">
         <item quantity="one">App ID <xliff:g id="app_id" example="10123">%1$s</xliff:g>, installed for <xliff:g id="users" example="1">%2$d</xliff:g> user.</item>
         <item quantity="other">App ID <xliff:g id="app_id" example="10123">%1$s</xliff:g>, installed for <xliff:g id="users" example="2">%2$d</xliff:g> users.</item>
@@ -3978,6 +4001,8 @@
     <string name="tag_sensors_disabled">Sensors disabled</string>
     <string name="pref_use_system_font">Use system font</string>
     <string name="pref_use_system_font_msg">Use the system-default font instead of the material font. <b>Experimental:</b> This feature may not work as expected on every device.</string>
+    <string name="pref_main_list_details_follow_sort">App rows follow the sort order</string>
+    <string name="pref_main_list_details_follow_sort_msg">Each app row\'s details line shows the value the list is sorted by, like the install date or size. Turn this off to keep the same details for every sort.</string>
     <string name="pref_preview_new_design">Preview new design (BETA)</string>
     <string name="pref_preview_new_design_msg">Apply the refreshed visual language: refined typography, calmer surfaces, tighter spacing and bounded controls. Restart the app after toggling. Layouts are unchanged in this release.</string>
     <string name="actual_installer">Actual installer</string>
