@@ -1068,13 +1068,6 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
 
 ### P2
 
-- [ ] P2: Stop background work from toasting "Working on ADB mode"
-  Why: on the S22 on 2026-11-15 the app change job and the internet rule worker each brought up the privileged mode in the background, and `Ops.checkRootOrIncompleteUsbDebuggingInAdb` showed "Working on ADB mode" twice over whatever app was on screen (logcat 11:48:56 and 11:51:01). A toast nobody asked for, over another app, reads as noise.
-  Evidence: `settings/Ops.java` `checkRootOrIncompleteUsbDebuggingInAdb` posts `displayShortToast(R.string.working_on_adb_mode)` (and the long root and system mode warnings) on the main thread whatever started the init; `rules/internet/InternetRuleWorker`, `self/PackageEventSync` and `self/BootReceiver` start it with no screen of their own.
-  Touches: `settings/Ops.java`, the background callers, an Ops test.
-  Acceptance: WHEN the privileged mode starts from a worker, receiver or service with no AppManagerNG screen in front, the system SHALL show none of these toasts; WHEN it starts from a screen the user opened, the toasts SHALL show as before; a test SHALL cover both.
-  Complexity: S
-
 - [ ] P2: Block internet access from batch operations and profiles
   Why: an INTERNET rule can only be set one app at a time from its Permissions tab. Batch operations and profiles still offer only the metered background network policy, which doesn't cut an app off.
   Evidence: `batchops/struct/BatchNetPolicyOptions.java` and `profiles/` have no INTERNET rule; `rules/internet/InternetAccess.java` has `setBlocked(packageName, userId, blocked)`.

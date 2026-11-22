@@ -19,7 +19,7 @@ Items here wait on something the code can't settle, like an owner decision or a 
 
 - [ ] P3. On-device AI models (issue #46)
   Why: #46 proposes a small embedding model for meaning-based search in the toast, notification and app-op logs, and a Gemma-class model for an assistant, translation and screenshot help.
-  Blocker: shipping or downloading a model and an inference runtime (LiteRT, ONNX Runtime or ExecuTorch) adds tens to thousands of MB and a native dependency to an offline-first GPL app. Whether the app takes that on, and where models would come from, is the owner's call. Related-word search without a model doesn't wait on it.
+  Blocker: shipping or downloading a model and an inference runtime (LiteRT, ONNX Runtime or ExecuTorch) adds tens to thousands of MB and a native dependency to an offline-first GPL app. Whether the app takes that on, and where models would come from, is the owner's call. The search part of the request is covered without a model: Related words search in Toast, Notification and Operation history (`a28cf249c`, a built-in word list plus a stemmer). What's left here is the model-backed assistant, translation and screenshot help.
   Re-tested 2026-11-21: nothing in the app or its dependencies loads a model today.
   Complexity: L
 
