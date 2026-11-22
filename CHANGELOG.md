@@ -52,6 +52,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Toast history never listed AppManagerNG's own toasts, error messages included (issue #27). They're recorded now. The only one left out is the toast the history shows when it can't save, which would otherwise loop.
 - The + button in the Backup volume picker had no name, so TalkBack read it as an unlabeled button. It's called "Add a folder" now.
 - The button in search bars that switches between Contains, Regex and the other search types had no name either. TalkBack reads it as "Search type" now, and a long press shows that label.
+- Editing a notification filter rule showed "New rule" at the top. It says "Edit rule" now.
 
 ## v0.8.0, 2026-11-15
 

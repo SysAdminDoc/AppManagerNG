@@ -163,7 +163,8 @@ public class NotificationRuleEditorActivity extends BaseActivity {
         }
         String packageName = null;
         if (mEditing != null) {
-            setTitle(R.string.notification_filter_rule_edit);
+            // On the toolbar itself: one with a title from its layout ignores the activity's.
+            toolbar.setTitle(R.string.notification_filter_rule_edit);
             if (savedInstanceState == null) {
                 mName.setText(mEditing.name);
                 mPattern.setText(mEditing.pattern);

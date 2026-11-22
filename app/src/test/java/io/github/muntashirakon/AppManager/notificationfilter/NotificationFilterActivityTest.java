@@ -222,6 +222,21 @@ public class NotificationFilterActivityTest {
         assertEquals("Rule b", mSettings.findRule("b").name);
     }
 
+    /** The toolbar's own title from the layout used to win, so editing a rule still said "New rule". */
+    @Test
+    public void editorTitleSaysWhetherItsANewRule() {
+        mSettings.setRules(Arrays.asList(rule("a", "alpha")));
+        NotificationRuleEditorActivity editor = openEditor("a");
+        androidx.appcompat.widget.Toolbar toolbar = editor.findViewById(R.id.toolbar);
+        assertEquals(mApp.getString(R.string.notification_filter_rule_edit), String.valueOf(toolbar.getTitle()));
+        mController.pause().stop().destroy();
+        mController = null;
+
+        NotificationRuleEditorActivity newRule = openEditor(null);
+        toolbar = newRule.findViewById(R.id.toolbar);
+        assertEquals(mApp.getString(R.string.notification_filter_rule_new), String.valueOf(toolbar.getTitle()));
+    }
+
     private static void pick(@NonNull AutoCompleteTextView view, @NonNull String label) {
         ListAdapter adapter = view.getAdapter();
         for (int i = 0; i < adapter.getCount(); ++i) {
