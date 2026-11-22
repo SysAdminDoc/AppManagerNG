@@ -17,6 +17,8 @@ import org.robolectric.shadows.ShadowPackageManager;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.apk.installer.InstallerOptions;
@@ -29,36 +31,63 @@ import io.github.muntashirakon.io.Paths;
 
 @Implements(PackageInstallerCompat.class)
 public class ShadowPackageInstallerCompat {
+    private static final List<String> sHandedApks = new ArrayList<>();
+
+    /**
+     * The file path of every APK install() was handed since the last reset, in order. Call
+     * {@link #resetHandedApks()} before and after the test: Robolectric runs no resetter for this module's shadows.
+     */
+    @NonNull
+    public static List<String> getHandedApks() {
+        synchronized (sHandedApks) {
+            return new ArrayList<>(sHandedApks);
+        }
+    }
+
+    public static void resetHandedApks() {
+        synchronized (sHandedApks) {
+            sHandedApks.clear();
+        }
+    }
+
     @Implementation
     public boolean install(@NonNull Path[] apkFiles, @NonNull String packageName, @NonNull InstallerOptions options,
                            @Nullable ProgressHandler progressHandler) {
+        synchronized (sHandedApks) {
+            for (Path apkFile : apkFiles) {
+                sHandedApks.add(apkFile.getFilePath());
+            }
+        }
         PackageManager packageManager = RuntimeEnvironment.getApplication().getPackageManager();
         ShadowPackageManager shadowPackageManager = Shadows.shadowOf(packageManager);
         String apkPath = apkFiles[0].getFilePath();
         if (apkPath != null) {
-            PackageInfo packageInfo = packageManager.getPackageArchiveInfo(apkFiles[0].getFilePath(), 0);
+            File roboDir = RoboUtils.getTestBaseDir();
+            File apkDir = new File(roboDir.getAbsoluteFile() + "/data/app/" + packageName);
+            if (!apkDir.mkdirs() && !apkDir.isDirectory()) {
+                return false;
+            }
+            // Like the real installer, which streams the files into its session: the copies are parsed, so the
+            // caller's files aren't held open (Windows won't delete an open file)
+            String[] filenames = new String[apkFiles.length];
+            int i = 0;
+            for (Path apkFile : apkFiles) {
+                String filename = apkFile.getName();
+                filenames[i] = filename;
+                File dupApkFile = new File(apkDir, filename);
+                try {
+                    FileUtils.copy(apkFile, Paths.get(dupApkFile), null);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return false;
+                }
+                ++i;
+            }
+            PackageInfo packageInfo = packageManager.getPackageArchiveInfo(
+                    new File(apkDir, filenames[0]).getAbsolutePath(), 0);
             if (packageInfo != null) {
                 packageInfo.packageName = packageName;
                 ApplicationInfo applicationInfo = Objects.requireNonNull(packageInfo.applicationInfo);
-                File roboDir = RoboUtils.getTestBaseDir();
-                File apkDir = new File(roboDir.getAbsoluteFile() + "/data/app/" + packageName);
-                if (!apkDir.exists() && !apkDir.mkdirs()) {
-                    return false;
-                }
-                String[] filenames = new String[apkFiles.length];
-                int i = 0;
-                for (Path apkFile : apkFiles) {
-                    String filename = apkFile.getName();
-                    filenames[i] = filename;
-                    File dupApkFile = new File(apkDir, filename);
-                    try {
-                        FileUtils.copy(apkFile, Paths.get(dupApkFile), null);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        return false;
-                    }
-                    ++i;
-                }
                 if (filenames.length > 1) {
                     // Split APK
                     applicationInfo.splitPublicSourceDirs = new String[filenames.length - 1];

@@ -31,7 +31,6 @@ import android.os.PowerManager;
 import android.os.RemoteException;
 import android.os.UserHandleHidden;
 import android.os.storage.StorageManagerHidden;
-import android.system.ErrnoException;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.util.Pair;
@@ -66,7 +65,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -96,15 +94,9 @@ import io.github.muntashirakon.AppManager.types.PackageSizeInfo;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.appearance.ColorCodes;
-import io.github.muntashirakon.io.ExtendedFile;
-import io.github.muntashirakon.io.Path;
-import io.github.muntashirakon.io.Paths;
-import io.github.muntashirakon.io.UidGidPair;
 
 public final class PackageUtils {
     public static final String TAG = PackageUtils.class.getSimpleName();
-
-    public static final File PACKAGE_STAGING_DIRECTORY = new File("/data/local/tmp");
 
     @NonNull
     public static ArrayList<UserPackagePair> getUserPackagePairs(@NonNull List<ApplicationItem> applicationItems) {
@@ -1007,38 +999,6 @@ public final class PackageUtils {
      */
     public static boolean isV1SchemeOnlySigning(boolean v1, boolean v2, boolean v3, boolean v31, boolean v4) {
         return v1 && !v2 && !v3 && !v31 && !v4;
-    }
-
-    public static void ensurePackageStagingDirectoryPrivileged() throws ErrnoException {
-        if (!Paths.get("/data/local").canWrite()) {
-            return;
-        }
-        Path psd = Paths.get(PACKAGE_STAGING_DIRECTORY);
-        if (!psd.isDirectory()) {
-            // Recreate directory
-            Path parent = psd.getParent();
-            if (parent == null) {
-                throw new IllegalStateException("Parent should be /data/local");
-            }
-            if (psd.exists()) psd.delete();
-            psd.mkdir();
-        }
-        // Change permission
-        ExtendedFile f = Objects.requireNonNull(psd.getFile());
-        if ((f.getMode() & 0x1FF) != 0711) {
-            f.setMode(0711);
-        }
-        // Change UID, GID
-        UidGidPair uidGidPair = f.getUidGid();
-        if (uidGidPair.uid != 2000 || uidGidPair.gid != 2000) {
-            f.setUidGid(2000, 2000);
-        }
-    }
-
-    @NonNull
-    public static String ensurePackageStagingDirectoryCommand() {
-        String psd = PACKAGE_STAGING_DIRECTORY.getAbsolutePath();
-        return String.format("( [ -d  %s ] || ( rm %s; mkdir %s && chmod 771 %s && chown 2000:2000 %s ) )", psd, psd, psd, psd, psd);
     }
 
     /**

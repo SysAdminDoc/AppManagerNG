@@ -567,19 +567,10 @@ class RestoreOp implements Closeable {
                 }
             }
         }
-        // Setup package staging directory
-        Path packageStagingDirectory = Paths.get(PackageUtils.PACKAGE_STAGING_DIRECTORY);
-        try {
-            synchronized (sLock) {
-                PackageUtils.ensurePackageStagingDirectoryPrivileged();
-            }
-        } catch (Exception e) {
-            Log.w(TAG, "Could not prepare the privileged package staging directory; using private restore staging.", e);
-        }
-        if (!packageStagingDirectory.canWrite()) {
-            // Not the backup folder, where another app could swap the packages before the install
-            packageStagingDirectory = mStaging.newDirectory("apk-");
-        }
+        // The restore's own private folder. Not the backup folder, where another app could swap the packages
+        // before the install, and not /data/local/tmp: the shell user owns it, so it could put a link where
+        // root is about to write a package. The installer reads these files in this process in every mode.
+        Path packageStagingDirectory = mStaging.newDirectory("apk-");
         synchronized (sLock) {
             // Setup apk files, including split apk
             final int splitCount = mBackupMetadata.splitConfigs.length;

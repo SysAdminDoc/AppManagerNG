@@ -20,6 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.LooperMode;
 
 import java.io.File;
@@ -44,6 +45,7 @@ import io.github.muntashirakon.AppManager.utils.TarUtils;
 import io.github.muntashirakon.io.IoUtils;
 import io.github.muntashirakon.io.Path;
 import io.github.muntashirakon.io.Paths;
+import io.github.muntashirakon.test.shadows.ShadowPackageInstallerCompat;
 import io.github.muntashirakon.test.shadows.ShadowPackageManagerCompat;
 
 /**
@@ -68,6 +70,7 @@ public class RestoreStagingTest {
         tmpBackupPath = Paths.get(RoboUtils.getTestBaseDir());
         ShadowPackageManagerCompat.resetClearApplicationUserDataCalls();
         ShadowPackageManagerCompat.resetPackageInfo();
+        ShadowPackageInstallerCompat.resetHandedApks();
     }
 
     @After
@@ -77,6 +80,7 @@ public class RestoreStagingTest {
         RestoreStaging.setRoom(null);
         ShadowPackageManagerCompat.resetClearApplicationUserDataCalls();
         ShadowPackageManagerCompat.resetPackageInfo();
+        ShadowPackageInstallerCompat.resetHandedApks();
         for (Path path : tmpBackupPath.listFiles()) {
             path.delete();
         }
@@ -110,6 +114,27 @@ public class RestoreStagingTest {
         assertNotEquals("swapped after the check", internal);
         assertEquals(external, internal);
         assertEquals(1, ShadowPackageManagerCompat.getClearApplicationUserDataCalls());
+        assertEquals(stagedBefore, stagedNames());
+    }
+
+    @Test
+    public void restoredApksAreStagedPrivatelyAndGoneOnceInstalled() throws Throwable {
+        // The app isn't installed, so the backed-up APK is installed as it is
+        Prefs.Storage.setVolumePath(tmpBackupPath.getUri().toString());
+        assertNotNull(rscBackupPath.findFile("AppManager").copyTo(tmpBackupPath, true));
+        Set<String> stagedBefore = stagedNames();
+
+        new BackupManager().restore(new RestoreOpOptions(PACKAGE, 0, PACKAGE + "/0", BackupFlags.BACKUP_APK_FILES),
+                null);
+
+        List<String> handed = ShadowPackageInstallerCompat.getHandedApks();
+        assertEquals(1, handed.size());
+        File apk = new File(handed.get(0));
+        assertEquals("base.apk", apk.getName());
+        // Only this app can reach it, unlike /data/local/tmp, which the shell user owns
+        assertTrue(handed.get(0), isInside(Paths.get(apk), FileCache.getPrivateStagingDir()));
+        assertFalse(apk.exists());
+        assertNotNull(RuntimeEnvironment.getApplication().getPackageManager().getPackageInfo(PACKAGE, 0));
         assertEquals(stagedBefore, stagedNames());
     }
 
