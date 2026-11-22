@@ -1187,3 +1187,25 @@ Sources and reasoning: RESEARCH.md (2026-11-14).
   Evidence: `dhizuku/DhizukuOps.java` `canRun` only allows the current user; `apk/installer/InstallerPrivilegeCascade.java` uses Dhizuku for the current user or a single-user device.
   Acceptance: in a work profile with Dhizuku as profile owner, NG running in that profile hides, suspends, grants and installs through Dhizuku, and NG in the main profile says Dhizuku isn't available there; on a ColorOS 16 phone (a user report counts) the same operations work in No root mode.
   Complexity: S
+
+## Found During the v0.9.0 Release (2026-11-22)
+
+### P3
+
+- [ ] P3: Declared permissions without a group read "Group: null"
+  Why: the Permissions tab (permissions an app declares) prints the group with string concatenation, so a permission with no group shows the word "null". Seen on the S22 in the v0.9.0 walk on Google Play services (`BIND_ALLOWLIST_PROVIDER_SERVICE` and others).
+  Evidence: `details/AppDetailsPermissionsFragment.java:1057` builds `permissionInfo.group + permAppOp(permissionInfo.name)`; the Uses permissions rows at :737 and :881 already skip a null group.
+  Acceptance: a declared permission with no group shows no Group line (or only its app op), and a Robolectric test on the row binding pins it.
+  Complexity: S
+
+- [ ] P3: Rename the release APKs with ABI and short hash, with a heads-up first (#44)
+  Why: #44 asked for `%abi%` and `%sha256_short%` in release asset names too. Obtainium and other update trackers match today's names, so the reporter suggested a one-time in-app notice in the release before the change, with either re-adding the repo or an APK filter regex like `^AppManagerNG-.*-(foss|floss)-.*\.apk$` as the fix.
+  Touches: `scripts/verify_reproducible_release.sh` (publish names), the release gate's artifact checks, `docs/distribution/*`, a one-time notice.
+  Acceptance: Matt decides whether to rename. If yes, one release ships the notice and the next one the new names, and Obtainium with the suggested regex picks up both.
+  Complexity: M
+
+- [ ] P3: Look at a bring-your-own-model runtime in Labs (#46)
+  Why: after the related words search shipped, #46 suggested shipping only a small inference runtime (LiteRT or ONNX Runtime) in Labs and letting people pick their own `.tflite` or `.onnx` file, with no bundled model and no download.
+  Touches: a new Labs screen, a runtime dependency (size, licence and F-Droid fit to check), SAF file picking.
+  Acceptance: Matt decides whether it fits. If yes, the runtime adds under about 4 MB to the APK, works offline with a picked model, and nothing loads until the user opens it.
+  Complexity: L
