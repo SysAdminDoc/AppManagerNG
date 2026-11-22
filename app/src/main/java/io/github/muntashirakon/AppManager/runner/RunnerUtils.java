@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.NoOps;
+import io.github.muntashirakon.AppManager.settings.Ops;
 
 public final class RunnerUtils {
     public static final String TAG = RunnerUtils.class.getSimpleName();
@@ -113,9 +114,14 @@ public final class RunnerUtils {
         return Boolean.TRUE.equals(isAppGrantedRoot());
     }
 
-    @NoOps
-    public static boolean isRootAvailable() {
-        return !Boolean.FALSE.equals(isAppGrantedRoot());
+    /**
+     * Whether this device has root, found out without asking for it: root is the mode in use, or an
+     * su is on the PATH. Opening a root shell to check is a superuser prompt on a rooted phone, so
+     * a screen that only shows whether root is there must not do that while No root is chosen.
+     */
+    @NoOps(used = true)
+    public static boolean hasRootWithoutAsking() {
+        return Ops.isDirectRoot() || isSuOnPath();
     }
 
     /**

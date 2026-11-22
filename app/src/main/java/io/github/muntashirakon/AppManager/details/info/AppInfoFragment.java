@@ -504,7 +504,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         mMenuPreparationResult = ThreadUtils.postOnBackgroundThread(() -> {
             boolean magiskHideAvailable = MagiskHide.available();
             boolean magiskDenyListAvailable = MagiskDenyList.available();
-            boolean rootAvailable = RunnerUtils.isRootAvailable();
+            // Termux asks for root itself, so this only needs to know root is there
+            boolean rootAvailable = RunnerUtils.hasRootWithoutAsking();
             if (ThreadUtils.isInterrupted()) {
                 return;
             }

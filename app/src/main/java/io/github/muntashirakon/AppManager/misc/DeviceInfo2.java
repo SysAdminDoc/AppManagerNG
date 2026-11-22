@@ -174,7 +174,7 @@ public class DeviceInfo2 implements LocalizedString {
 
     @WorkerThread
     public void loadInfo() {
-        hasRoot = RunnerUtils.isRootAvailable();
+        hasRoot = RunnerUtils.hasRootWithoutAsking();
         selinux = getSelinuxStatus();
         encryptionStatus = getEncryptionStatus();
         if (mPm.hasSystemFeature(PackageManager.FEATURE_VERIFIED_BOOT)) {
