@@ -17,7 +17,6 @@ import android.annotation.UserIdInt;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.IPackageInstaller;
 import android.content.pm.IPackageManager;
@@ -28,10 +27,7 @@ import android.content.pm.LauncherApps;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ParceledListSlice;
-import android.content.pm.PermissionInfo;
-import android.content.pm.ProviderInfo;
 import android.content.pm.ResolveInfo;
-import android.content.pm.ServiceInfo;
 import android.content.pm.SuspendDialogInfo;
 import android.os.BadParcelableException;
 import android.os.Build;
@@ -457,9 +453,10 @@ public final class PackageManagerCompat {
         return getPackageInfo(getPackageManager(), packageName, flags, userId);
     }
 
+    @VisibleForTesting
     @NonNull
-    private static PackageInfo getPackageInfo(@NonNull IPackageManager pm, @NonNull String packageName, int flags,
-                                             @UserIdInt int userId)
+    static PackageInfo getPackageInfo(@NonNull IPackageManager pm, @NonNull String packageName, int flags,
+                                      @UserIdInt int userId)
             throws RemoteException, PackageManager.NameNotFoundException {
         PackageInfo info = null;
         try {
@@ -471,8 +468,7 @@ public final class PackageManagerCompat {
         if (info == null) {
             // The app might not be loaded properly due parcel size limit, try to load components separately.
             // first check the existence of the package
-            int strippedFlags = flags & ~(PackageManager.GET_ACTIVITIES | PackageManager.GET_SERVICES
-                    | PackageManager.GET_PROVIDERS | PackageManager.GET_RECEIVERS | PackageManager.GET_PERMISSIONS);
+            int strippedFlags = flags & ~SPLIT_FETCH_PARTS;
             info = getPackageInfoInternal(pm, packageName, strippedFlags, userId);
             if (info == null) {
                 // At this point, it should return package info.
@@ -481,49 +477,57 @@ public final class PackageManagerCompat {
                         packageName, strippedFlags, userId));
             }
             // Load info for major flags
-            ActivityInfo[] activities = null;
-            if ((flags & PackageManager.GET_ACTIVITIES) != 0) {
-                int newFlags = flags & ~(PackageManager.GET_SERVICES | PackageManager.GET_PROVIDERS
-                        | PackageManager.GET_RECEIVERS | PackageManager.GET_PERMISSIONS);
-                PackageInfo info1 = getPackageInfoInternal(pm, packageName, newFlags, userId);
-                if (info1 != null) activities = info1.activities;
-            }
-            ServiceInfo[] services = null;
-            if ((flags & PackageManager.GET_SERVICES) != 0) {
-                int newFlags = flags & ~(PackageManager.GET_ACTIVITIES | PackageManager.GET_PROVIDERS
-                        | PackageManager.GET_RECEIVERS | PackageManager.GET_PERMISSIONS);
-                PackageInfo info1 = getPackageInfoInternal(pm, packageName, newFlags, userId);
-                if (info1 != null) services = info1.services;
-            }
-            ProviderInfo[] providers = null;
-            if ((flags & PackageManager.GET_PROVIDERS) != 0) {
-                int newFlags = flags & ~(PackageManager.GET_ACTIVITIES | PackageManager.GET_SERVICES
-                        | PackageManager.GET_RECEIVERS | PackageManager.GET_PERMISSIONS);
-                PackageInfo info1 = getPackageInfoInternal(pm, packageName, newFlags, userId);
-                if (info1 != null) providers = info1.providers;
-            }
-            ActivityInfo[] receivers = null;
-            if ((flags & PackageManager.GET_RECEIVERS) != 0) {
-                int newFlags = flags & ~(PackageManager.GET_ACTIVITIES | PackageManager.GET_SERVICES
-                        | PackageManager.GET_PROVIDERS | PackageManager.GET_PERMISSIONS);
-                PackageInfo info1 = getPackageInfoInternal(pm, packageName, newFlags, userId);
-                if (info1 != null) receivers = info1.receivers;
-            }
-            PermissionInfo[] permissions = null;
-            if ((flags & PackageManager.GET_PERMISSIONS) != 0) {
-                int newFlags = flags & ~(PackageManager.GET_ACTIVITIES | PackageManager.GET_SERVICES
-                        | PackageManager.GET_PROVIDERS | PackageManager.GET_RECEIVERS);
-                PackageInfo info1 = getPackageInfoInternal(pm, packageName, newFlags, userId);
-                if (info1 != null) permissions = info1.permissions;
-            }
-            info.activities = activities;
-            info.services = services;
-            info.providers = providers;
-            info.receivers = receivers;
-            info.permissions = permissions;
+            PackageInfo part = getPackageInfoPart(pm, packageName, flags, PackageManager.GET_ACTIVITIES, userId);
+            info.activities = part != null ? part.activities : null;
+            part = getPackageInfoPart(pm, packageName, flags, PackageManager.GET_SERVICES, userId);
+            info.services = part != null ? part.services : null;
+            part = getPackageInfoPart(pm, packageName, flags, PackageManager.GET_PROVIDERS, userId);
+            info.providers = part != null ? part.providers : null;
+            part = getPackageInfoPart(pm, packageName, flags, PackageManager.GET_RECEIVERS, userId);
+            info.receivers = part != null ? part.receivers : null;
+            part = getPackageInfoPart(pm, packageName, flags, PackageManager.GET_PERMISSIONS, userId);
+            info.permissions = part != null ? part.permissions : null;
+            // GET_PERMISSIONS also brings the permissions the app asks for
+            info.requestedPermissions = part != null ? part.requestedPermissions : null;
+            info.requestedPermissionsFlags = part != null ? part.requestedPermissionsFlags : null;
         }
         // Info should never be null here, but it's checked anyway.
         return Objects.requireNonNull(info);
+    }
+
+    // The parts getPackageInfo() fetches one at a time when the whole is too big for one binder reply
+    private static final int SPLIT_FETCH_PARTS = PackageManager.GET_ACTIVITIES | PackageManager.GET_SERVICES
+            | PackageManager.GET_PROVIDERS | PackageManager.GET_RECEIVERS | PackageManager.GET_PERMISSIONS;
+    // What a part can do without: the stripped call already has the package-wide ones, and meta-data
+    // and URI patterns are what push a big app's component list over the limit
+    @SuppressWarnings("deprecation")
+    private static final int SPLIT_FETCH_EXTRAS = PackageManager.GET_META_DATA | PackageManager.GET_URI_PERMISSION_PATTERNS
+            | PackageManager.GET_SIGNATURES | PackageManager.GET_SIGNING_CERTIFICATES | PackageManager.GET_CONFIGURATIONS
+            | PackageManager.GET_SHARED_LIBRARY_FILES | PackageManager.GET_GIDS | PackageManager.GET_INSTRUMENTATION;
+
+    /**
+     * Fetch one part ({@code partFlag}) of a package info that was too big to fetch whole. A part still too
+     * big is fetched without {@link #SPLIT_FETCH_EXTRAS}, and one too big even then is left out (null) so
+     * that the rest can still be shown. Google Play services' activities on Android 10 are one such part.
+     */
+    @Nullable
+    private static PackageInfo getPackageInfoPart(@NonNull IPackageManager pm, @NonNull String packageName,
+                                                  int flags, int partFlag, @UserIdInt int userId)
+            throws RemoteException {
+        if ((flags & partFlag) == 0) return null;
+        int partFlags = flags & ~(SPLIT_FETCH_PARTS & ~partFlag);
+        try {
+            return getPackageInfoInternal(pm, packageName, partFlags, userId);
+        } catch (DeadObjectException e) {
+            Log.w(TAG, "Part 0x%X of package %s is too big with flags 0x%X, trying without extras",
+                    e, partFlag, packageName, partFlags);
+        }
+        try {
+            return getPackageInfoInternal(pm, packageName, partFlags & ~SPLIT_FETCH_EXTRAS, userId);
+        } catch (DeadObjectException e) {
+            Log.w(TAG, "Leaving part 0x%X of package %s out, too big even without extras", e, partFlag, packageName);
+            return null;
+        }
     }
 
     @SuppressWarnings("deprecation")
