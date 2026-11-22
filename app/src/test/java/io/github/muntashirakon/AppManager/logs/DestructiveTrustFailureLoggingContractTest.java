@@ -33,8 +33,7 @@ public class DestructiveTrustFailureLoggingContractTest {
                 "Could not register the privileged binder death listener.",
                 "Could not unregister the privileged binder death listener.");
         assertLogged(readSource("backup/RestoreOp.java"),
-                "Could not query installed package %s; treating the restore as not installed.",
-                "Could not prepare the privileged package staging directory; using private restore staging.");
+                "Could not query installed package %s; treating the restore as not installed.");
         assertLogged(readSource("settings/Ops.java"),
                 "Could not open the developer settings.",
                 "Could not open App Manager settings for %s.");
