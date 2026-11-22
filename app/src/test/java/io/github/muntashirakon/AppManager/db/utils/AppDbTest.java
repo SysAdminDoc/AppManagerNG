@@ -156,8 +156,32 @@ public class AppDbTest {
         assertTrue(mine.isInstalled);
     }
 
-    /** Flagged, with a process and an APK on disk, which is what an installed package has. */
+    @Test
+    public void anAppFrozenSinceTheLastReadIsReadAgain() throws IOException {
+        Application application = RuntimeEnvironment.getApplication();
+        AppDb appDb = new AppDb();
+        install(application);
+        App before = mine(appDb.updateApplications(application, new String[]{PACKAGE}));
+        assertNotNull(before);
+        assertTrue(before.isEnabled);
+
+        // Disabling an app changes neither its update time nor the flags the database compares
+        install(application, false);
+        App after = mine(appDb.updateApplications(application, new String[]{PACKAGE}));
+
+        assertNotNull(after);
+        assertFalse(after.isEnabled);
+        App stored = mine(appDb.getAllApplications(PACKAGE));
+        assertNotNull(stored);
+        assertFalse(stored.isEnabled);
+    }
+
     private static void install(@NonNull Application application) throws IOException {
+        install(application, true);
+    }
+
+    /** Flagged, with a process and an APK on disk, which is what an installed package has. */
+    private static void install(@NonNull Application application, boolean enabled) throws IOException {
         Path apk = Files.createTempFile("appmanagerng-installed", ".apk");
         apk.toFile().deleteOnExit();
         PackageInfo packageInfo = new PackageInfo();
@@ -169,6 +193,7 @@ public class AppDbTest {
         packageInfo.applicationInfo.flags = ApplicationInfo.FLAG_INSTALLED;
         packageInfo.applicationInfo.sourceDir = apk.toString();
         packageInfo.applicationInfo.publicSourceDir = apk.toString();
+        packageInfo.applicationInfo.enabled = enabled;
         shadowOf(application.getPackageManager()).installPackage(packageInfo);
     }
 

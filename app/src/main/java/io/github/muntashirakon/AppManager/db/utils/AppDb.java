@@ -56,6 +56,7 @@ import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.BroadcastUtils;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
+import io.github.muntashirakon.AppManager.utils.FreezeUtils;
 import io.github.muntashirakon.AppManager.utils.KeyStoreUtils;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
@@ -562,9 +563,11 @@ public class AppDb {
             // The app was not installed earlier
             return false;
         }
-        // App was installed
+        // App was installed. Disabling or hiding an app changes neither its update time nor its
+        // flags, so the frozen state is compared too: the list shows it in words.
         return currentApp.lastUpdateTime == installedPackageInfo.lastUpdateTime
-                && currentApp.flags == installedPackageInfo.applicationInfo.flags;
+                && currentApp.flags == installedPackageInfo.applicationInfo.flags
+                && currentApp.isEnabled == !FreezeUtils.isFrozen(installedPackageInfo.applicationInfo);
     }
 
     private static boolean isUpToDate(@NonNull App currentApp, @NonNull Backup backup) {
