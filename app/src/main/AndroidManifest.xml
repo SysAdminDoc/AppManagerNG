@@ -10,7 +10,7 @@
         android:name="android.hardware.touchscreen"
         android:required="false" />
 
-    <uses-sdk tools:overrideLibrary="rikka.shizuku.aidl,rikka.shizuku.api,rikka.shizuku.provider,rikka.shizuku.shared" />
+    <uses-sdk tools:overrideLibrary="rikka.shizuku.aidl,rikka.shizuku.api,rikka.shizuku.provider,rikka.shizuku.shared,com.rosan.dhizuku.api" />
 
     <uses-permission android:name="android.permission.ACCESS_HIDDEN_PROFILES" />
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />

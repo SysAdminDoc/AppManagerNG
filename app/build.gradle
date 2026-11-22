@@ -326,6 +326,7 @@ dependencies {
     implementation "com.github.topjohnwu.libsu:core:${libsu_version}"
     implementation "dev.rikka.shizuku:api:${shizuku_version}"
     implementation "dev.rikka.shizuku:provider:${shizuku_version}"
+    implementation "io.github.iamr0s:Dhizuku-API:${dhizuku_api_version}"
     implementation "org.lsposed.hiddenapibypass:hiddenapibypass:${hiddenapibypass_version}"
     implementation "dev.rikka.tools.refine:runtime:${refine_version}"
 

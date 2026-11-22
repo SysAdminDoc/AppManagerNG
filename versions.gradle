@@ -24,6 +24,7 @@ ext {
     baksmali_version = "3.0.9" // https://github.com/google/smali/tags
     biometric_version = "1.4.0-alpha04" // API 21-22 support dropped in 1.4.0-alpha05
     bouncycastle_version = "1.86" // https://www.bouncycastle.org/download/bouncy-castle-java — bcprov, bcpkix and bcutil share one release again; 1.86 fixes CVE-2026-17508.
+    dhizuku_api_version = "2.7.0" // https://github.com/iamr0s/Dhizuku-API (MIT). Declares minSdk 23: calls stay behind SDK_INT >= M, see docs/policy/minsdk-21-ceiling.md
     desugar_jdk_version = "2.1.5" // https://github.com/google/desugar_jdk_libs
     documentfile_version = "1.1.0" // AppCompat still includes the buggy implementation of documentfile library (1.0.0)
     duration_picker = "c3c89adf3d" // https://github.com/MuntashirAkon/time-duration-picker

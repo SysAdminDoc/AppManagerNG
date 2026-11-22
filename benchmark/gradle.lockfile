@@ -233,6 +233,7 @@ dev.rikka.shizuku:api:13.1.5=debugLintChecksClasspath,debugTestedApks
 dev.rikka.shizuku:provider:13.1.5=debugLintChecksClasspath,debugTestedApks
 dev.rikka.shizuku:shared:13.1.5=debugLintChecksClasspath,debugTestedApks
 dev.rikka.tools.refine:runtime:4.0.0=debugLintChecksClasspath,debugTestedApks
+io.github.iamr0s:Dhizuku-API:2.7.0=debugLintChecksClasspath,debugTestedApks
 io.github.rosemoe:editor:0.24.6=debugLintChecksClasspath,debugTestedApks
 io.github.rosemoe:language-textmate:0.24.6=debugLintChecksClasspath,debugTestedApks
 io.grpc:grpc-api:1.57.2=unified-test-platform-core
