@@ -1104,7 +1104,7 @@
     <string name="language_files">Language files</string>
     <string name="language_files_summary">Import and share translations people make themselves</string>
     <string name="language_files_import">Import a language file</string>
-    <string name="language_files_import_summary">Pick a .json file someone shared or one you made. It only holds text, so it can\'t run anything.</string>
+    <string name="language_files_import_summary">Pick a .json file someone shared or one you made, or a .zip with one in it. It only holds text, so it can\'t run anything.</string>
     <string name="language_files_start">Start a translation</string>
     <string name="language_files_start_summary">Save a file with every English string to fill in, or start from a built-in translation to correct it</string>
     <string name="language_files_start_from">Start from</string>
@@ -1128,8 +1128,13 @@
     <string name="language_files_use">Use this language</string>
     <string name="language_files_stop_using">Stop using it</string>
     <string name="language_files_export">Export for editing</string>
+    <string name="language_files_export_zip">Export as a zip</string>
     <string name="language_files_added">Added %s</string>
     <string name="language_files_updated">Updated %s</string>
+    <plurals name="language_files_zip_picked">
+        <item quantity="one">Imported %1$s from the zip, which had %2$d language file</item>
+        <item quantity="other">Imported %1$s from the zip, which had %2$d language files</item>
+    </plurals>
     <string name="language_files_removed">Removed %s</string>
     <string name="language_files_save_failed">Couldn\'t save the file</string>
     <string name="language_files_use_failed">Couldn\'t switch to that language file</string>
@@ -1141,6 +1146,7 @@
     <string name="language_files_error_bad_name">Fill in language_name with the name of the language.</string>
     <string name="language_files_error_english">English is built in, so the file needs another language.</string>
     <string name="language_files_error_nothing_usable">None of its translations can be used with this version.</string>
+    <string name="language_files_error_no_file_in_zip">The zip has no .json language file in it.</string>
     <string name="language_files_error_read">The file couldn\'t be read.</string>
     <string name="launcher_icon_default">Default</string>
     <string name="launcher_icon_ng_mark">AppManagerNG mark</string>

@@ -14,6 +14,8 @@ public final class LanguagePackException extends Exception {
         BAD_NAME,
         ENGLISH,
         NOTHING_USABLE,
+        /** A zip without a .json in it. */
+        NO_FILE_IN_ZIP,
     }
 
     @NonNull

@@ -62,6 +62,7 @@ public final class LanguagePackManager {
     private static final String STAMP_SUFFIX = ".stamp";
     private static final String REMOVED_SUFFIX = ".removed";
     private static final String TEMP_SUFFIX = ".tmp";
+    private static final String FILE_PREFIX = "AppManagerNG-";
     /** Bumped whenever {@link ArscWriter} output changes, so cached tables are rebuilt. */
     private static final int TABLE_FORMAT = 1;
 
@@ -96,12 +97,20 @@ public final class LanguagePackManager {
         public final boolean replaced;
         /** The file replaced the one in use, so the app should load it again. */
         public final boolean inUse;
+        /** The language file's name inside the zip it came in, or {@code null} for a plain file. */
+        @Nullable
+        public final String archiveEntry;
+        /** How many .json files that zip had. */
+        public final int archiveJsonFiles;
 
-        ImportResult(@NonNull String code, @NonNull String name, boolean replaced, boolean inUse) {
+        ImportResult(@NonNull String code, @NonNull String name, boolean replaced, boolean inUse,
+                     @Nullable String archiveEntry, int archiveJsonFiles) {
             this.code = code;
             this.name = name;
             this.replaced = replaced;
             this.inUse = inUse;
+            this.archiveEntry = archiveEntry;
+            this.archiveJsonFiles = archiveJsonFiles;
         }
     }
 
@@ -279,6 +288,7 @@ public final class LanguagePackManager {
         return out;
     }
 
+    /** Imports a language file, or a zip with one in it. */
     @WorkerThread
     @NonNull
     public ImportResult importPack(@NonNull Uri uri) throws IOException, LanguagePackException {
@@ -295,6 +305,14 @@ public final class LanguagePackManager {
     @WorkerThread
     @NonNull
     ImportResult importPack(@NonNull byte[] data) throws IOException, LanguagePackException {
+        String archiveEntry = null;
+        int archiveJsonFiles = 0;
+        if (LanguageFileArchive.isZip(data)) {
+            LanguageFileArchive.Picked picked = LanguageFileArchive.pick(data);
+            data = picked.data;
+            archiveEntry = picked.entryName;
+            archiveJsonFiles = picked.jsonFiles;
+        }
         LanguagePack pack = LanguagePackReader.read(data);
         String code = canonicalCode(pack.code);
         pack = pack.withCode(code);
@@ -305,7 +323,7 @@ public final class LanguagePackManager {
         File target = packFile(code);
         boolean replaced = target.exists();
         writeAtomically(target, data);
-        return new ImportResult(code, pack.name, replaced, code.equals(inUseCode()));
+        return new ImportResult(code, pack.name, replaced, code.equals(inUseCode()), archiveEntry, archiveJsonFiles);
     }
 
     /** Compiles {@code code}'s table for this app build unless it's already cached. */
@@ -401,7 +419,7 @@ public final class LanguagePackManager {
      */
     @WorkerThread
     public void exportTemplate(@NonNull Uri uri, @Nullable String builtInTag) throws IOException {
-        writeToUri(uri, template(builtInTag));
+        writeToUri(uri, template(builtInTag).getBytes(StandardCharsets.UTF_8));
     }
 
     @WorkerThread
@@ -422,10 +440,21 @@ public final class LanguagePackManager {
         return LanguagePackWriter.template(code, name, source, prefill, keywords, madeWith());
     }
 
-    /** Writes an installed file back out with every string, marking what still needs work. */
+    /**
+     * Writes an installed file back out with every string, marking what still needs work, as a
+     * .json or as a zip with the .json in it.
+     */
     @WorkerThread
-    public void exportPack(@NonNull String code, @NonNull Uri uri) throws IOException, LanguagePackException {
-        writeToUri(uri, forEditing(code));
+    public void exportPack(@NonNull String code, @NonNull Uri uri, boolean zip)
+            throws IOException, LanguagePackException {
+        writeToUri(uri, exportBytes(code, zip));
+    }
+
+    @WorkerThread
+    @NonNull
+    byte[] exportBytes(@NonNull String code, boolean zip) throws IOException, LanguagePackException {
+        byte[] json = forEditing(code).getBytes(StandardCharsets.UTF_8);
+        return zip ? LanguageFileArchive.zip(jsonFileName(code), json) : json;
     }
 
     @WorkerThread
@@ -436,6 +465,18 @@ public final class LanguagePackManager {
         LanguagePackValidator.Report report = LanguagePackValidator.check(pack, source);
         return LanguagePackWriter.forEditing(pack, report, source,
                 AndroidSourceStrings.pluralKeywords(Locale.forLanguageTag(code)), madeWith());
+    }
+
+    /** The file name an export of {@code code} gets. */
+    @NonNull
+    public static String jsonFileName(@NonNull String code) {
+        return FILE_PREFIX + code + PACK_SUFFIX;
+    }
+
+    /** The zip holding {@link #jsonFileName}: the same name with .zip added. */
+    @NonNull
+    public static String zipFileName(@NonNull String code) {
+        return jsonFileName(code) + LanguageFileArchive.ZIP_SUFFIX;
     }
 
     @NonNull
@@ -509,12 +550,12 @@ public final class LanguagePackManager {
                 + packFile.length() + ":" + packFile.lastModified();
     }
 
-    private void writeToUri(@NonNull Uri uri, @NonNull String text) throws IOException {
+    private void writeToUri(@NonNull Uri uri, @NonNull byte[] data) throws IOException {
         try (OutputStream os = mContext.getContentResolver().openOutputStream(uri)) {
             if (os == null) {
                 throw new IOException("Can't open " + uri);
             }
-            os.write(text.getBytes(StandardCharsets.UTF_8));
+            os.write(data);
         }
     }
 

@@ -2,6 +2,8 @@
 
 package io.github.muntashirakon.AppManager.settings;
 
+import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -27,6 +29,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.i18n.LanguageFileArchive;
 import io.github.muntashirakon.AppManager.i18n.LanguagePackException;
 import io.github.muntashirakon.AppManager.i18n.LanguagePackManager;
 import io.github.muntashirakon.AppManager.utils.LangUtils;
@@ -56,7 +59,7 @@ public class LanguagePacksPreferences extends PreferenceFragment {
     private String mExportCode;
 
     private final ActivityResultLauncher<String> mImport = registerForActivityResult(
-            new ActivityResultContracts.GetContent(), uri -> {
+            new ImportContract(), uri -> {
                 if (uri != null) {
                     importPack(uri);
                 }
@@ -75,7 +78,15 @@ public class LanguagePacksPreferences extends PreferenceFragment {
                 String code = mExportCode;
                 mExportCode = null;
                 if (uri != null && code != null) {
-                    save(() -> mManager.exportPack(code, uri));
+                    save(() -> mManager.exportPack(code, uri, false));
+                }
+            });
+    private final ActivityResultLauncher<String> mSaveZip = registerForActivityResult(
+            new ActivityResultContracts.CreateDocument(LanguageFileArchive.MIME_ZIP), uri -> {
+                String code = mExportCode;
+                mExportCode = null;
+                if (uri != null && code != null) {
+                    save(() -> mManager.exportPack(code, uri, true));
                 }
             });
 
@@ -139,7 +150,6 @@ public class LanguagePacksPreferences extends PreferenceFragment {
         importRow.setTitle(R.string.language_files_import);
         importRow.setSummary(R.string.language_files_import_summary);
         importRow.setOnPreferenceClickListener(p -> {
-            // Files shared over chat apps often arrive as text/plain or octet-stream
             mImport.launch("*/*");
             return true;
         });
@@ -225,8 +235,8 @@ public class LanguagePacksPreferences extends PreferenceFragment {
     }
 
     private void showActions(@NonNull LanguagePackManager.Installed pack) {
-        List<String> labels = new ArrayList<>(3);
-        List<Runnable> actions = new ArrayList<>(3);
+        List<String> labels = new ArrayList<>(4);
+        List<Runnable> actions = new ArrayList<>(4);
         if (LanguagePackManager.canUse()) {
             if (pack.inUse) {
                 labels.add(getString(R.string.language_files_stop_using));
@@ -239,7 +249,12 @@ public class LanguagePacksPreferences extends PreferenceFragment {
         labels.add(getString(R.string.language_files_export));
         actions.add(() -> {
             mExportCode = pack.code;
-            mSavePack.launch(fileName(pack.code));
+            mSavePack.launch(LanguagePackManager.jsonFileName(pack.code));
+        });
+        labels.add(getString(R.string.language_files_export_zip));
+        actions.add(() -> {
+            mExportCode = pack.code;
+            mSaveZip.launch(LanguagePackManager.zipFileName(pack.code));
         });
         labels.add(getString(R.string.item_remove));
         actions.add(() -> remove(pack));
@@ -269,15 +284,11 @@ public class LanguagePacksPreferences extends PreferenceFragment {
                 .setItems(names.toArray(new String[0]), (dialog, which) -> {
                     String tag = tags.get(which);
                     mTemplateTag = tag;
-                    mSaveTemplate.launch(fileName(TEMPLATE_SCRATCH.equals(tag) ? "template" : tag));
+                    mSaveTemplate.launch(LanguagePackManager.jsonFileName(
+                            TEMPLATE_SCRATCH.equals(tag) ? "template" : tag));
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
-    }
-
-    @NonNull
-    private static String fileName(@NonNull String code) {
-        return "AppManagerNG-" + code + ".json";
     }
 
     private void importPack(@NonNull Uri uri) {
@@ -296,6 +307,8 @@ public class LanguagePacksPreferences extends PreferenceFragment {
             }
             if (result.inUse) {
                 // The file the app is showing changed, so load the new text right away
+                LanguagePackManager.ImportResult inUse = result;
+                ThreadUtils.postOnMainThread(() -> showArchiveChoice(inUse));
                 use(result.code);
                 return;
             }
@@ -305,6 +318,7 @@ public class LanguagePacksPreferences extends PreferenceFragment {
                     return;
                 }
                 reload();
+                showArchiveChoice(imported);
                 Snackbar snackbar = Snackbar.make(requireView(), getString(imported.replaced
                         ? R.string.language_files_updated : R.string.language_files_added, imported.name),
                         Snackbar.LENGTH_LONG);
@@ -314,6 +328,14 @@ public class LanguagePacksPreferences extends PreferenceFragment {
                 snackbar.show();
             });
         });
+    }
+
+    /** A zip with more than one language file: say which one was taken. */
+    private void showArchiveChoice(@NonNull LanguagePackManager.ImportResult result) {
+        if (result.archiveEntry != null && result.archiveJsonFiles > 1) {
+            UIUtils.displayLongToastPl(R.plurals.language_files_zip_picked, result.archiveJsonFiles,
+                    result.archiveEntry, result.archiveJsonFiles);
+        }
     }
 
     private void failImport(@StringRes int reason) {
@@ -339,6 +361,8 @@ public class LanguagePacksPreferences extends PreferenceFragment {
                 return R.string.language_files_error_english;
             case NOTHING_USABLE:
                 return R.string.language_files_error_nothing_usable;
+            case NO_FILE_IN_ZIP:
+                return R.string.language_files_error_no_file_in_zip;
             case NOT_A_PACK:
             default:
                 return R.string.language_files_error_not_a_pack;
@@ -422,6 +446,20 @@ public class LanguagePacksPreferences extends PreferenceFragment {
                 });
             }
         });
+    }
+
+    /**
+     * Picks a language file or a zip with one in it. Chat apps often hand files over as
+     * text/plain or octet-stream, so everything stays pickable and the reader decides.
+     */
+    public static class ImportContract extends ActivityResultContracts.GetContent {
+        @NonNull
+        @Override
+        public Intent createIntent(@NonNull Context context, @NonNull String input) {
+            return super.createIntent(context, input).putExtra(Intent.EXTRA_MIME_TYPES, new String[]{MIME_JSON,
+                    LanguageFileArchive.MIME_ZIP, "application/x-zip-compressed", "text/plain",
+                    "application/octet-stream"});
+        }
     }
 
     private interface Save {
