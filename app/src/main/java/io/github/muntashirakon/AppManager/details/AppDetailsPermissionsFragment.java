@@ -28,6 +28,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
+import androidx.core.content.pm.PermissionInfoCompat;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
@@ -51,6 +52,7 @@ import io.github.muntashirakon.AppManager.details.struct.AppDetailsAppOpItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsDefinedPermissionItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsPermissionItem;
+import io.github.muntashirakon.AppManager.permission.PermissionProtectionText;
 import io.github.muntashirakon.AppManager.permission.watcher.PermissionWatcher;
 import io.github.muntashirakon.AppManager.permission.watcher.WatchRule;
 import io.github.muntashirakon.AppManager.permission.watcher.WatchRuleMenu;
@@ -716,8 +718,8 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                     holder.textView2.setText(description);
                 } else holder.textView2.setVisibility(View.GONE);
                 // Protection level
-                String protectionLevel = Utils.getProtectionLevelString(permissionInfo);
-                protectionLevel += '|' + (Objects.requireNonNull(item.permission).isGranted() ? "granted" : "revoked");
+                String protectionLevel = PermissionProtectionText.of(context, permissionInfo,
+                        Objects.requireNonNull(item.permission).isGranted());
                 if (item.hasReference) {
                     protectionLevel += '|' + getString(item.isReferenceDrifted()
                             ? R.string.permission_reference_drift
@@ -854,8 +856,8 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                 holder.textView2.setText(description);
             } else holder.textView2.setVisibility(View.GONE);
             // Protection level
-            String protectionLevel = Utils.getProtectionLevelString(permissionInfo);
-            protectionLevel += '|' + (permissionItem.permission.isGranted() ? "granted" : "revoked");
+            String protectionLevel = PermissionProtectionText.of(context, permissionInfo,
+                    permissionItem.permission.isGranted());
             if (permissionItem.hasReference) {
                 protectionLevel += '|' + getString(permissionItem.isReferenceDrifted()
                         ? R.string.permission_reference_drift
@@ -1055,10 +1057,10 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             holder.textView4.setText(String.format(Locale.ROOT, "%s: %s",
                     getString(R.string.group), permissionInfo.group + permAppOp(permissionInfo.name)));
             // Protection level
-            String protectionLevel = Utils.getProtectionLevelString(permissionInfo);
+            String protectionLevel = PermissionProtectionText.of(context, permissionInfo);
             holder.textView5.setText(String.format(Locale.ROOT, "⚑ %s", protectionLevel));
-            // Set border color
-            if (protectionLevel.contains("dangerous")) {
+            // Set border color. The protection text may be translated, so ask the protection itself.
+            if (PermissionInfoCompat.getProtection(permissionInfo) == PermissionInfo.PROTECTION_DANGEROUS) {
                 holder.itemView.setStrokeColor(ColorCodes.getPermissionDangerousIndicatorColor(context));
             } else {
                 holder.itemView.setStrokeColor(Color.TRANSPARENT);

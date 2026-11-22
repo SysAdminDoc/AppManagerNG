@@ -3674,6 +3674,15 @@
     <string name="perm_apps_grant_all_confirm_body">Выдаёт %1$s всем редактируемым приложениям в этом списке. Приложения могут получить доступ сразу после изменения.</string>
     <string name="perm_app_status_granted">Выдано</string>
     <string name="perm_app_status_not_granted">Не выдано</string>
+    <string name="perm_protection_dangerous">опасное</string>
+    <string name="perm_protection_normal">обычное</string>
+    <string name="perm_protection_signature_or_privileged">подпись или привилегированное</string>
+    <string name="perm_protection_verifier">верификатор</string>
+    <string name="perm_protection_preinstalled">предустановленное</string>
+    <string name="perm_protection_runtime">во время выполнения</string>
+    <string name="perm_protection_instant">для мгновенных приложений</string>
+    <string name="perm_protection_development">разработка</string>
+    <string name="perm_status_revoked">отозвано</string>
     <string name="perm_app_status_reference_drift">Отклонение от эталона</string>
     <string name="permission_reference_pin">Закрепить эталон</string>
     <string name="permission_reference_restore">Восстановить эталон</string>

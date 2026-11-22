@@ -4716,6 +4716,19 @@ Components removed: %8$s</string>
     <string name="perm_apps_grant_all_confirm_body">Grants %1$s to every editable app in this list. Apps may gain access immediately after the change.</string>
     <string name="perm_app_status_granted">Granted</string>
     <string name="perm_app_status_not_granted">Not granted</string>
+    <!-- Words in a permission row's protection line, joined by "|" like "dangerous|instant|revoked". English keeps the platform's own lowercase names. -->
+    <string name="perm_protection_dangerous">dangerous</string>
+    <string name="perm_protection_normal">normal</string>
+    <string name="perm_protection_signature_or_privileged">signatureOrPrivileged</string>
+    <string name="perm_protection_pre23">pre23</string>
+    <string name="perm_protection_verifier">verifier</string>
+    <string name="perm_protection_preinstalled">preinstalled</string>
+    <string name="perm_protection_setup">setup</string>
+    <string name="perm_protection_runtime">runtime</string>
+    <string name="perm_protection_instant">instant</string>
+    <string name="perm_protection_development">development</string>
+    <string name="perm_protection_appop">appop</string>
+    <string name="perm_status_revoked">revoked</string>
     <string name="perm_app_status_reference_drift">Reference drift</string>
     <string name="permission_reference_pin">Pin reference</string>
     <string name="permission_reference_restore">Restore reference</string>

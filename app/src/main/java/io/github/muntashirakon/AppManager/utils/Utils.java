@@ -13,7 +13,6 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.ConfigurationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.content.pm.PermissionInfo;
 import android.content.pm.ServiceInfo;
 import android.content.res.Configuration;
 import android.net.ConnectivityManager;
@@ -33,7 +32,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.annotation.VisibleForTesting;
-import androidx.core.content.pm.PermissionInfoCompat;
 import androidx.fragment.app.FragmentActivity;
 
 import org.jetbrains.annotations.Contract;
@@ -334,69 +332,6 @@ public class Utils {
         checkStringBuilderEnd(builder);
         String result = builder.toString();
         return result.isEmpty() ? "⚐" : "⚑ " + result;
-    }
-
-    // Canonical Android API tokens — match the values accepted by
-    // android:protectionLevel="..." in AndroidManifest.xml. Intentionally not
-    // localised: they are technical identifiers (developers grep manifests for
-    // these literal tokens) and a programmatic .contains("dangerous") check
-    // exists in AppDetailsPermissionsFragment.
-    @NonNull
-    public static String getProtectionLevelString(PermissionInfo permissionInfo) {
-        int basePermissionType = PermissionInfoCompat.getProtection(permissionInfo);
-        int permissionFlags = PermissionInfoCompat.getProtectionFlags(permissionInfo);
-        String protectionLevel = "????";
-        switch (basePermissionType) {
-            case PermissionInfo.PROTECTION_DANGEROUS:
-                protectionLevel = "dangerous";
-                break;
-            case PermissionInfo.PROTECTION_NORMAL:
-                protectionLevel = "normal";
-                break;
-            case PermissionInfo.PROTECTION_SIGNATURE:
-                protectionLevel = "signature";
-                break;
-            case PermissionInfo.PROTECTION_SIGNATURE_OR_SYSTEM:
-            case PermissionInfo.PROTECTION_SIGNATURE | PermissionInfo.PROTECTION_FLAG_PRIVILEGED:
-                protectionLevel = "signatureOrPrivileged";
-                break;
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if ((permissionFlags & PermissionInfo.PROTECTION_FLAG_PRIVILEGED) != 0)
-                protectionLevel += "|privileged";
-            if ((permissionFlags & PermissionInfo.PROTECTION_FLAG_PRE23) != 0)
-                protectionLevel += "|pre23";  // pre marshmallow
-            if ((permissionFlags & PermissionInfo.PROTECTION_FLAG_INSTALLER) != 0)
-                protectionLevel += "|installer";
-            if ((permissionFlags & PermissionInfo.PROTECTION_FLAG_VERIFIER) != 0)
-                protectionLevel += "|verifier";
-            if ((permissionFlags & PermissionInfo.PROTECTION_FLAG_PREINSTALLED) != 0)
-                protectionLevel += "|preinstalled";
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                if ((permissionFlags & PermissionInfo.PROTECTION_FLAG_SETUP) != 0)
-                    protectionLevel += "|setup";
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                if ((permissionFlags & PermissionInfo.PROTECTION_FLAG_RUNTIME_ONLY) != 0)
-                    protectionLevel += "|runtime";
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-                if ((permissionFlags & PermissionInfo.PROTECTION_FLAG_INSTANT) != 0)
-                    protectionLevel += "|instant";
-            }
-        } else {
-            if ((permissionFlags & PermissionInfo.PROTECTION_FLAG_SYSTEM) != 0) {
-                protectionLevel += "|system";
-            }
-        }
-
-        if ((permissionFlags & PermissionInfo.PROTECTION_FLAG_DEVELOPMENT) != 0) {
-            protectionLevel += "|development";
-        }
-        if ((permissionFlags & PermissionInfo.PROTECTION_FLAG_APPOP) != 0) {
-            protectionLevel += "|appop";
-        }
-        return protectionLevel;
     }
 
     @NonNull
