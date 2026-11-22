@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.details.manifest;
 
 import android.annotation.SuppressLint;
+import android.content.ContentResolver;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -10,10 +11,15 @@ import android.view.MenuItem;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
+import androidx.core.os.BundleCompat;
+import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.progressindicator.LinearProgressIndicator;
+
+import java.io.File;
 
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
@@ -42,6 +48,12 @@ public class ManifestViewerActivity extends BaseActivity {
             showErrorAndFinish();
             return;
         }
+        // A screen made again (a rotation, or back after Android closed the app) has its viewer
+        // back, with the place in the file and any Save As answer it's waiting for. A new viewer
+        // swapped in lost both, so the manifest is read and shown again only when that file is gone.
+        if (showsAReadableFile(getSupportFragmentManager().findFragmentById(R.id.container))) {
+            return;
+        }
         final ApkSource apkSource = packageUri != null ? ApkSource.getApkSource(packageUri, intent.getType()) : null;
         mModel.getManifestLiveData().observe(this, manifest -> {
             CodeEditorFragment.Options options = new CodeEditorFragment.Options.Builder()
@@ -62,6 +74,23 @@ public class ManifestViewerActivity extends BaseActivity {
                     .commit();
         });
         mModel.loadApkFile(apkSource, packageName);
+    }
+
+    private static boolean showsAReadableFile(@Nullable Fragment fragment) {
+        if (!(fragment instanceof CodeEditorFragment) || fragment.getArguments() == null) {
+            return false;
+        }
+        CodeEditorFragment.Options options = BundleCompat.getParcelable(fragment.getArguments(),
+                CodeEditorFragment.ARG_OPTIONS, CodeEditorFragment.Options.class);
+        if (options == null || options.uri == null) {
+            return false;
+        }
+        // The manifest is read into the cache. A copy saved elsewhere is the editor's to open.
+        if (!ContentResolver.SCHEME_FILE.equals(options.uri.getScheme())) {
+            return true;
+        }
+        String path = options.uri.getPath();
+        return path != null && new File(path).canRead();
     }
 
     @UiThread

@@ -56,6 +56,11 @@ public class ManifestViewerViewModel extends AndroidViewModel {
     }
 
     public void loadApkFile(@Nullable ApkSource apkSource, @Nullable String packageName) {
+        if (mManifestLoaderResult != null) {
+            // A screen made again asks again. The manifest it gets is the one already read, or
+            // being read, so the APK isn't opened a second time and the first one left open.
+            return;
+        }
         mManifestLoaderResult = ThreadUtils.postOnBackgroundThread(() -> {
             final PackageManager pm = getApplication().getPackageManager();
             ApkSource realApkSource;

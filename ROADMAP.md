@@ -346,6 +346,13 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
 
 ### P3
 
+- [ ] P3: Keep the code editor's "unsaved changes were lost" note across a rotation
+  Why: after Android closes the app, the editor says once that edits weren't saved. The flag lives on the fragment and is read from saved state only while the view model has no text, so if the file finishes reading while the phone is being turned, the new view skips the flag and the note never shows.
+  Evidence: `editor/CodeEditorFragment.java` (`mUnsavedEditsLost`, read in `onViewCreated` only when `getContentLiveData().getValue() == null`).
+  Touches: `CodeEditorFragment`, `CodeEditorViewModel`, `CodeEditorReleaseTest`.
+  Acceptance: the "lost" state lives in the view model, set from saved state by the first view after a restart and cleared when the note shows; a rotation at any point before the note shows still shows it once; a plain rotation with unsaved edits never shows it. Needs a way to finish the read at a chosen point in a test (a seam on the view model's loader) so the window can be hit on purpose.
+  Complexity: S
+
 - [ ] P3: Show AppOps proxy package and attribution provenance
   Why: App Details displays time, duration, and mode but omits the proxy package and attribution tag available on API 30 and later.
   Evidence: `compat/AppOpsManagerCompat.java:666-700`; `hiddenapi/src/main/java/android/app/AppOpsManagerHidden.java:538-568`; Android `AppOpsManager.OpEventProxyInfo` API.
