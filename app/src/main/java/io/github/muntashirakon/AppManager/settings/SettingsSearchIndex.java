@@ -2,7 +2,9 @@
 
 package io.github.muntashirakon.AppManager.settings;
 
+import android.content.ComponentCallbacks;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
 import android.util.Log;
@@ -26,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.muntashirakon.AppManager.R;
 
@@ -111,6 +114,24 @@ public final class SettingsSearchIndex {
 
     @Nullable
     private static volatile SettingsSearchIndex sInstance;
+    /**
+     * Moves on with every configuration change and every {@link #invalidate()}. On a configuration
+     * change Android first puts the app's resources back in the system language and only then does
+     * the app reapply its own, so text read across one can be in two languages under unchanged tags.
+     */
+    private static final AtomicInteger sGeneration = new AtomicInteger();
+    @Nullable
+    private static Context sWatchedContext;
+    private static final ComponentCallbacks CONFIGURATION_WATCHER = new ComponentCallbacks() {
+        @Override
+        public void onConfigurationChanged(@NonNull Configuration newConfig) {
+            sGeneration.incrementAndGet();
+        }
+
+        @Override
+        public void onLowMemory() {
+        }
+    };
 
     @NonNull
     private final List<Entry> mEntries;
@@ -120,12 +141,18 @@ public final class SettingsSearchIndex {
     /** Lowercases both the text and the query, so they follow the same language's rules */
     @NonNull
     private final Locale mLocale;
+    private final int mGeneration;
 
-    private SettingsSearchIndex(@NonNull List<Entry> entries, @NonNull LocaleListCompat locales) {
+    private SettingsSearchIndex(@NonNull List<Entry> entries, @NonNull LocaleListCompat locales, int generation) {
         mEntries = Collections.unmodifiableList(entries);
         mLocaleTags = locales.toLanguageTags();
         Locale first = locales.get(0);
         mLocale = first != null ? first : Locale.getDefault();
+        mGeneration = generation;
+    }
+
+    private boolean isCurrent(@NonNull LocaleListCompat locales, int generation) {
+        return mGeneration == generation && mLocaleTags.equals(locales.toLanguageTags());
     }
 
     /**
@@ -140,20 +167,29 @@ public final class SettingsSearchIndex {
     @NonNull
     public static SettingsSearchIndex get(@NonNull Context context) {
         Context appContext = context.getApplicationContext();
-        // Read before the text, so a change made while it's being read leaves an index that
+        watchConfiguration(appContext);
+        // Both read before the text, so a change made while it's being read leaves an index that
         // looks stale and is read again next time
+        int generation = sGeneration.get();
         LocaleListCompat locales = ConfigurationCompat.getLocales(appContext.getResources().getConfiguration());
         SettingsSearchIndex local = sInstance;
-        if (local != null && local.mLocaleTags.equals(locales.toLanguageTags())) {
+        if (local != null && local.isCurrent(locales, generation)) {
             return local;
         }
         synchronized (SettingsSearchIndex.class) {
             local = sInstance;
-            if (local == null || !local.mLocaleTags.equals(locales.toLanguageTags())) {
-                local = new SettingsSearchIndex(buildEntries(appContext), locales);
+            if (local == null || !local.isCurrent(locales, generation)) {
+                local = new SettingsSearchIndex(buildEntries(appContext), locales, generation);
                 sInstance = local;
             }
             return local;
+        }
+    }
+
+    private static synchronized void watchConfiguration(@NonNull Context appContext) {
+        if (sWatchedContext != appContext) {
+            appContext.registerComponentCallbacks(CONFIGURATION_WATCHER);
+            sWatchedContext = appContext;
         }
     }
 
@@ -162,6 +198,7 @@ public final class SettingsSearchIndex {
      * changes without one, such as a language file being used or stopped.
      */
     public static void invalidate() {
+        sGeneration.incrementAndGet();
         synchronized (SettingsSearchIndex.class) {
             sInstance = null;
         }

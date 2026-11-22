@@ -4,9 +4,12 @@ package io.github.muntashirakon.AppManager.settings;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.app.Application;
 import android.content.Context;
 
 import androidx.annotation.NonNull;
@@ -116,6 +119,22 @@ public class SettingsSearchLocaleTest {
         Locale.setDefault(Locale.ENGLISH);
         assertEquals("İnterneti kullan", title("toggle_internet"));
         assertTrue(keys(search("internet")).contains("toggle_internet"));
+    }
+
+    @Test
+    public void textReadAcrossAConfigurationChangeIsReadAgain() {
+        switchTo("de");
+        SettingsSearchIndex first = SettingsSearchIndex.get(mContext);
+        assertSame(first, SettingsSearchIndex.get(mContext));
+
+        // Android puts the resources back in the system language before the app reapplies its own,
+        // so the same language tags can sit over text read in two languages
+        ((Application) mContext).onConfigurationChanged(mContext.getResources().getConfiguration());
+
+        SettingsSearchIndex second = SettingsSearchIndex.get(mContext);
+        assertNotSame(first, second);
+        assertSame(second, SettingsSearchIndex.get(mContext));
+        assertEquals("Farbschema der Anwendung", title("app_theme"));
     }
 
     /** What picking a language does, and then the app's text follows it as the next screen opens. */
