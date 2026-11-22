@@ -4,12 +4,20 @@ package io.github.muntashirakon.AppManager.sync.lan;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.WorkerThread;
 
+import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Local sync only talks to devices on the local network. These checks keep both the sharing side
@@ -27,7 +35,125 @@ public final class LanAddresses {
         }
     }
 
+    /**
+     * One address of one network interface on this device.
+     */
+    static final class Candidate {
+        @NonNull
+        final String interfaceName;
+        @NonNull
+        final InetAddress address;
+        final boolean up;
+
+        Candidate(@NonNull String interfaceName, @NonNull InetAddress address, boolean up) {
+            this.interfaceName = interfaceName;
+            this.address = address;
+            this.up = up;
+        }
+    }
+
     private LanAddresses() {
+    }
+
+    // Mobile data, VPN and tethering-internal interfaces: another phone on the Wi-Fi can't reach these
+    private static final String[] UNREACHABLE_PREFIXES = {
+            "lo", "rmnet", "ccmni", "pdp", "v4-", "clat", "tun", "ppp", "ipsec", "dummy"
+    };
+
+    /**
+     * This device's IPv4 addresses that another device on the same network could type in, Wi-Fi
+     * first. Empty when there is no such network, like on mobile data alone.
+     */
+    @WorkerThread
+    @NonNull
+    public static List<String> ownIpv4Addresses() {
+        List<Candidate> candidates = new ArrayList<>();
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            if (interfaces == null) {
+                return Collections.emptyList();
+            }
+            for (NetworkInterface networkInterface : Collections.list(interfaces)) {
+                boolean up = networkInterface.isUp();
+                for (InetAddress address : Collections.list(networkInterface.getInetAddresses())) {
+                    candidates.add(new Candidate(networkInterface.getName(), address, up));
+                }
+            }
+        } catch (SocketException | RuntimeException e) {
+            return Collections.emptyList();
+        }
+        return usableIpv4(candidates);
+    }
+
+    /**
+     * Private IPv4 addresses (10/8, 172.16/12, 192.168/16) of interfaces that are up, without
+     * duplicates, Wi-Fi first, then a hotspot, then a cable, then anything else.
+     */
+    @NonNull
+    static List<String> usableIpv4(@NonNull List<Candidate> candidates) {
+        List<Candidate> usable = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        for (Candidate candidate : candidates) {
+            if (!candidate.up || !(candidate.address instanceof Inet4Address)
+                    || !candidate.address.isSiteLocalAddress() || !isReachableInterface(candidate.interfaceName)) {
+                continue;
+            }
+            if (seen.add(candidate.address.getHostAddress())) {
+                usable.add(candidate);
+            }
+        }
+        // A stable sort keeps the system's order within one kind
+        Collections.sort(usable, (a, b) -> Integer.compare(rank(a.interfaceName), rank(b.interfaceName)));
+        List<String> addresses = new ArrayList<>(usable.size());
+        for (Candidate candidate : usable) {
+            addresses.add(candidate.address.getHostAddress());
+        }
+        return addresses;
+    }
+
+    private static boolean isReachableInterface(@NonNull String name) {
+        for (String prefix : UNREACHABLE_PREFIXES) {
+            if (name.startsWith(prefix)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static int rank(@NonNull String name) {
+        if (name.startsWith("wlan")) {
+            return 0;
+        }
+        if (name.startsWith("swlan") || name.startsWith("ap") || name.startsWith("softap")) {
+            return 1;
+        }
+        if (name.startsWith("eth")) {
+            return 2;
+        }
+        return 3;
+    }
+
+    /**
+     * The addresses as one line, each with the port when there is one ({@code port > 0}).
+     */
+    @NonNull
+    public static String describeOwn(@NonNull List<String> addresses, int port) {
+        StringBuilder sb = new StringBuilder();
+        for (String address : addresses) {
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
+            sb.append(withPort(address, port));
+        }
+        return sb.toString();
+    }
+
+    /**
+     * {@code address:port}, the form the address field takes, or the bare address without a port.
+     */
+    @NonNull
+    public static String withPort(@NonNull String address, int port) {
+        return port > 0 ? address + ":" + port : address;
     }
 
     /**

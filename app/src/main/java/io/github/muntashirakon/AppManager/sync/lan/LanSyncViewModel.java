@@ -103,6 +103,15 @@ public class LanSyncViewModel extends AndroidViewModel {
     }
 
     /**
+     * This device's addresses that another device on the network can type in.
+     */
+    interface OwnAddressSource {
+        @WorkerThread
+        @NonNull
+        List<String> addresses();
+    }
+
+    /**
      * The apps installed on this device, keyed by package name.
      */
     interface LocalIndex {
@@ -164,6 +173,11 @@ public class LanSyncViewModel extends AndroidViewModel {
     private final MutableLiveData<List<LanSyncDownloader.Result>> mReady = new MutableLiveData<>();
     private final ScreenOnPolicy mScreenOn = new ScreenOnPolicy();
     private final MutableLiveData<Integer> mTrouble = new MutableLiveData<>(TROUBLE_NONE);
+    private final MutableLiveData<List<String>> mOwnAddresses = new MutableLiveData<>();
+    // The port this device shares on, 0 while sharing is off
+    private final MutableLiveData<Integer> mSharedPort = new MutableLiveData<>(0);
+    @NonNull
+    private volatile OwnAddressSource mOwnAddressSource = LanAddresses::ownIpv4Addresses;
     // Main thread only
     @Nullable
     private String mSearchQuery;
@@ -221,6 +235,31 @@ public class LanSyncViewModel extends AndroidViewModel {
     @VisibleForTesting
     void setLocalIndex(@NonNull LocalIndex localIndex) {
         mLocalIndex = localIndex;
+    }
+
+    @VisibleForTesting
+    void setOwnAddressSource(@NonNull OwnAddressSource source) {
+        mOwnAddressSource = source;
+    }
+
+    /**
+     * Reads this device's addresses again, off the main thread, for the line next to the address
+     * field. The network may have changed since the last look.
+     */
+    @MainThread
+    public void refreshOwnAddresses() {
+        OwnAddressSource source = mOwnAddressSource;
+        mHostExecutor.execute(() -> mOwnAddresses.postValue(new ArrayList<>(source.addresses())));
+    }
+
+    @NonNull
+    public LiveData<List<String>> getOwnAddresses() {
+        return mOwnAddresses;
+    }
+
+    @NonNull
+    public LiveData<Integer> getSharedPort() {
+        return mSharedPort;
     }
 
     @VisibleForTesting
@@ -434,6 +473,8 @@ public class LanSyncViewModel extends AndroidViewModel {
                     port = host.start(mTrust.getHostPort());
                     mHost = host;
                     mHostPort = port;
+                    // Posted under the lock, so a stop that follows always posts its 0 later
+                    mSharedPort.postValue(port);
                 }
                 mTrust.setHostPort(port);
                 mHostStatus.postValue(waitingStatus(port));
@@ -462,6 +503,8 @@ public class LanSyncViewModel extends AndroidViewModel {
             ++mShareGeneration;
             host = mHost;
             mHost = null;
+            // A post, not a set: it replaces a start's port that is still on its way
+            mSharedPort.postValue(0);
         }
         if (host != null) {
             host.stop();
@@ -577,6 +620,7 @@ public class LanSyncViewModel extends AndroidViewModel {
                 ++mShareGeneration;
                 host = mHost;
                 mHost = null;
+                mSharedPort.postValue(0);
             }
             if (host != null) {
                 host.stop();

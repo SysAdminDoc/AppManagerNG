@@ -4936,6 +4936,9 @@ Components removed: %8$s</string>
     <string name="lan_sync_connect">Connect</string>
     <string name="lan_sync_address_invalid">Type a numeric address and port, like 192.168.1.20:40123</string>
     <string name="lan_sync_address_not_local">Only addresses on your local network work here</string>
+    <string name="lan_sync_own_address">This device: <xliff:g id="addresses" example="192.168.1.23:40123">%1$s</xliff:g></string>
+    <string name="lan_sync_own_address_no_port">This device: <xliff:g id="addresses" example="192.168.1.23">%1$s</xliff:g> (turn on Share this device to get a port)</string>
+    <string name="lan_sync_own_address_none">This device has no Wi-Fi address right now</string>
     <string name="lan_sync_connect_rejected">The other device didn\'t allow the connection</string>
     <string name="lan_sync_connect_failed">Couldn\'t connect: %1$s</string>
     <string name="lan_sync_trusted_title">Remembered devices</string>

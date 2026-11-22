@@ -58,6 +58,7 @@ import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.types.PackageChangeReceiver;
+import io.github.muntashirakon.AppManager.utils.ClipboardUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.widget.RecyclerView;
 
@@ -131,6 +132,8 @@ public class LanSyncActivity extends BaseActivity {
     private final Runnable mNothingFoundCheck = this::checkNothingFound;
     private View mTroubleCard;
     private TextView mTroubleTitle;
+    private TextView mOwnAddress;
+    private View mCopyOwnAddress;
 
     @Override
     protected void onAuthenticated(@Nullable Bundle savedInstanceState) {
@@ -207,6 +210,9 @@ public class LanSyncActivity extends BaseActivity {
         });
         mManualConnect = findViewById(R.id.manual_connect);
         mManualConnect.setOnClickListener(v -> connectManually());
+        mOwnAddress = findViewById(R.id.own_address);
+        mCopyOwnAddress = findViewById(R.id.copy_own_address);
+        mCopyOwnAddress.setOnClickListener(v -> copyOwnAddress());
         mTrustedContainer = findViewById(R.id.trusted_container);
         mTrustedEmpty = findViewById(R.id.trusted_empty);
 
@@ -255,6 +261,12 @@ public class LanSyncActivity extends BaseActivity {
             mSharing = Boolean.TRUE.equals(sharing);
             setShareSwitch(mSharing);
             updateKeepScreenOn();
+        });
+        mViewModel.getOwnAddresses().observe(this, addresses -> renderOwnAddress());
+        mViewModel.getSharedPort().observe(this, port -> {
+            renderOwnAddress();
+            // Sharing usually starts right after joining a network
+            mViewModel.refreshOwnAddresses();
         });
         mViewModel.getHostStatus().observe(this, status -> {
             if (status == null) {
@@ -321,6 +333,8 @@ public class LanSyncActivity extends BaseActivity {
             startDiscoveryIfAllowed();
             // Back from somewhere else: anything installed or removed meanwhile
             mViewModel.recheckInstalled();
+            // and maybe another network
+            mViewModel.refreshOwnAddresses();
         }
     }
 
@@ -672,6 +686,40 @@ public class LanSyncActivity extends BaseActivity {
         }
         mManualAddressLayout.setError(null);
         mViewModel.connect(address, hostPort.port, text);
+    }
+
+    /**
+     * This device's own address, to type on the other device. The port exists only while sharing
+     * is on, so without it the line says how to get one.
+     */
+    private void renderOwnAddress() {
+        List<String> addresses = mViewModel.getOwnAddresses().getValue();
+        if (addresses == null) {
+            // Not read yet
+            return;
+        }
+        Integer shared = mViewModel.getSharedPort().getValue();
+        int port = shared == null ? 0 : shared;
+        if (addresses.isEmpty()) {
+            mOwnAddress.setText(R.string.lan_sync_own_address_none);
+        } else if (port > 0) {
+            mOwnAddress.setText(getString(R.string.lan_sync_own_address, LanAddresses.describeOwn(addresses, port)));
+        } else {
+            mOwnAddress.setText(getString(R.string.lan_sync_own_address_no_port,
+                    LanAddresses.describeOwn(addresses, 0)));
+        }
+        mCopyOwnAddress.setVisibility(addresses.isEmpty() ? View.GONE : View.VISIBLE);
+    }
+
+    private void copyOwnAddress() {
+        List<String> addresses = mViewModel.getOwnAddresses().getValue();
+        if (addresses == null || addresses.isEmpty()) {
+            return;
+        }
+        Integer shared = mViewModel.getSharedPort().getValue();
+        String text = LanAddresses.withPort(addresses.get(0), shared == null ? 0 : shared);
+        ClipboardUtils.copyToClipboard(this, getString(R.string.lan_sync_title), text);
+        UIUtils.displayShortToast(R.string.copied_to_clipboard);
     }
 
     private void renderConnection(@Nullable LanSyncViewModel.Connection connection) {
