@@ -147,10 +147,11 @@ public class MainListUidFormatterTest {
     }
 
     @Test
-    public void theLineStaysOneLineSoANarrowRowOrBigFontCannotGrowTheRow() {
+    public void theLineKeepsItsCapSoANarrowRowOrBigFontCannotGrowTheRowWithoutEnd() {
         TextView metadata = bind(item(10123, new int[]{0})).findViewById(R.id.metadata);
 
-        assertEquals(1, metadata.getMaxLines());
+        // Two lines since #31, so a long translation wraps once before it's cut
+        assertEquals(2, metadata.getMaxLines());
         // Cut from the end, the UID at the front is the part that stays
         assertEquals(TextUtils.TruncateAt.END, metadata.getEllipsize());
         assertEquals(0, metadata.getText().toString().indexOf("UID 10123"));
