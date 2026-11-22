@@ -91,11 +91,11 @@ public abstract class AppsBaseProfile extends BaseProfile {
             return new PrivilegeCapabilities(
                     SelfPermissions.canModifyAppComponentStates(UserHandleHidden.myUserId(), null, true),
                     SelfPermissions.canModifyAppOpMode(),
-                    SelfPermissions.canModifyPermissions(),
+                    SelfPermissions.canModifyRuntimePermissions(),
                     SelfPermissions.canFreezeUnfreezePackages(),
                     SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.FORCE_STOP_PACKAGES),
                     SelfPermissions.canClearAppCache(),
-                    SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.CLEAR_APP_USER_DATA)
+                    SelfPermissions.canClearAppUserData()
             );
         }
     }

@@ -2,6 +2,7 @@
 
 package io.github.muntashirakon.AppManager.utils;
 
+import android.Manifest;
 import android.annotation.UserIdInt;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -23,6 +24,8 @@ import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.db.AppsDb;
 import io.github.muntashirakon.AppManager.db.entity.FreezeType;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuCapabilities;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuOps;
 import io.github.muntashirakon.AppManager.revert.OsRevertMonitor;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Prefs;
@@ -104,6 +107,20 @@ public final class FreezeUtils {
         if (BuildConfig.APPLICATION_ID.equals(packageName) && userId == UserHandleHidden.myUserId()) {
             throw new RemoteException("Could not freeze myself.");
         }
+        Integer dhizukuMethod = getDhizukuFreezeMethod(freezeType, userId);
+        if (dhizukuMethod != null) {
+            if (freezeType == FREEZE_ADV_SUSPEND
+                    && SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.FORCE_STOP_PACKAGES)) {
+                PackageManagerCompat.forceStopPackage(packageName, userId);
+            }
+            if (dhizukuMethod == FREEZE_SUSPEND && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                DhizukuOps.setSuspended(packageName, userId, true);
+            } else {
+                DhizukuOps.setHidden(packageName, userId, true);
+            }
+            OsRevertMonitor.watchFreeze(ContextUtils.getContext(), packageName, userId, true);
+            return;
+        }
         if (freezeType == FREEZE_HIDE) {
             if (SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.MANAGE_USERS)) {
                 PackageManagerCompat.hidePackage(packageName, userId, true);
@@ -139,6 +156,12 @@ public final class FreezeUtils {
     }
 
     public static void unfreeze(@NonNull String packageName, @UserIdInt int userId) throws RemoteException {
+        if (!SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.MANAGE_USERS)
+                && DhizukuOps.canRun(DhizukuCapabilities.Operation.HIDE_APPS, userId)) {
+            unfreezeThroughDhizuku(packageName, userId);
+            OsRevertMonitor.watchFreeze(ContextUtils.getContext(), packageName, userId, false);
+            return;
+        }
         // Ignore checking preference, unfreeze for all types
         if (PackageManagerCompat.isPackageHidden(packageName, userId)) {
             PackageManagerCompat.hidePackage(packageName, userId, false);
@@ -150,5 +173,65 @@ public final class FreezeUtils {
             PackageManagerCompat.setApplicationEnabledSetting(packageName, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, 0, userId);
         }
         OsRevertMonitor.watchFreeze(ContextUtils.getContext(), packageName, userId, false);
+    }
+
+    /**
+     * The method to freeze with through Dhizuku, or {@code null} when the current mode can do
+     * {@code freezeType} itself or Dhizuku can't help. Dhizuku can hide and suspend apps but can't
+     * disable them, so the disable method hides when the mode can't disable.
+     */
+    @Nullable
+    private static Integer getDhizukuFreezeMethod(@FreezeMethod int freezeType, @UserIdInt int userId) {
+        if (!DhizukuOps.canRun(DhizukuCapabilities.Operation.HIDE_APPS, userId)) {
+            return null;
+        }
+        if ((freezeType == FREEZE_SUSPEND || freezeType == FREEZE_ADV_SUSPEND)
+                && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            boolean modeCanSuspend = SelfPermissions.checkSelfOrRemotePermission(
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                            ? ManifestCompat.permission.SUSPEND_APPS
+                            : ManifestCompat.permission.MANAGE_USERS);
+            if (modeCanSuspend) {
+                return null;
+            }
+            if (DhizukuOps.canRun(DhizukuCapabilities.Operation.SUSPEND_APPS, userId)) {
+                return FREEZE_SUSPEND;
+            }
+        } else if (freezeType == FREEZE_HIDE) {
+            return SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.MANAGE_USERS)
+                    ? null : FREEZE_HIDE;
+        }
+        // The old path disables the app when the mode can
+        if (SelfPermissions.checkSelfOrRemotePermission(Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE)) {
+            return null;
+        }
+        return FREEZE_HIDE;
+    }
+
+    private static void unfreezeThroughDhizuku(@NonNull String packageName, @UserIdInt int userId)
+            throws RemoteException {
+        if (DhizukuOps.isHidden(packageName, userId)) {
+            DhizukuOps.setHidden(packageName, userId, false);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
+                && DhizukuOps.canRun(DhizukuCapabilities.Operation.SUSPEND_APPS, userId)
+                && DhizukuOps.isSuspended(packageName, userId)) {
+            DhizukuOps.setSuspended(packageName, userId, false);
+        }
+        int enabledSetting;
+        try {
+            enabledSetting = ContextUtils.getContext().getPackageManager().getApplicationEnabledSetting(packageName);
+        } catch (IllegalArgumentException e) {
+            // Not visible to this app, so there's nothing to re-enable that could be seen here
+            return;
+        }
+        if (enabledSetting == PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+                || enabledSetting == PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER
+                || enabledSetting == PackageManager.COMPONENT_ENABLED_STATE_DISABLED_UNTIL_USED) {
+            if (!SelfPermissions.checkSelfOrRemotePermission(Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE)) {
+                throw new RemoteException(packageName + " is disabled. Re-enabling a disabled app needs root, ADB or Shizuku.");
+            }
+            PackageManagerCompat.setApplicationEnabledSetting(packageName, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, 0, userId);
+        }
     }
 }

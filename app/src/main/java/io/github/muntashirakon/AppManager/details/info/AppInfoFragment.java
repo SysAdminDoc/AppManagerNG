@@ -3193,7 +3193,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     });
                 }
             }
-            if (!isStaticSharedLib && (SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.CLEAR_APP_USER_DATA)
+            if (!isStaticSharedLib && (SelfPermissions.canClearAppUserData(mUserId)
                     || accessibilityServiceRunning)) {
                 // Clear data
                 ActionItem clearDataAction = new ActionItem(AppInfoActionOrderResolver.ACTION_CLEAR_DATA,
@@ -3203,7 +3203,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                         .forClearData(mActivity, mAppLabel, getClearDataConfirmationMessage(),
                                 (dialog, which) -> ActionAuthGate.authenticate(mActivity,
                                 R.string.authenticate_to_clear_data, () -> {
-                            if (SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.CLEAR_APP_USER_DATA)) {
+                            if (SelfPermissions.canClearAppUserData(mUserId)) {
                                 ThreadUtils.postOnBackgroundThread(() -> {
                                     boolean hadShizukuPermission = ShizukuBridge.hasPermission();
                                     boolean success = PackageManagerCompat

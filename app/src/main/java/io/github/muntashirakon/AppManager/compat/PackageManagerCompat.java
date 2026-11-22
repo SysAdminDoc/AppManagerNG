@@ -62,6 +62,8 @@ import java.util.Objects;
 import java.util.Set;
 
 import dev.rikka.tools.refine.Refine;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuCapabilities;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuOps;
 import io.github.muntashirakon.AppManager.ipc.ProxyBinder;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.revert.OsRevertMonitor;
@@ -787,6 +789,14 @@ public final class PackageManagerCompat {
 
     @RequiresPermission(ManifestCompat.permission.CLEAR_APP_USER_DATA)
     public static void clearApplicationUserData(@NonNull UserPackagePair pair) throws AndroidException {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                && !SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.CLEAR_APP_USER_DATA)
+                && DhizukuOps.canRun(DhizukuCapabilities.Operation.CLEAR_APP_DATA, pair.getUserId())) {
+            // The device policy reports the result itself, and the shell fallback below can't run here
+            DhizukuOps.clearAppData(pair.getPackageName(), pair.getUserId());
+            BroadcastUtils.sendPackageAltered(ContextUtils.getContext(), new String[]{pair.getPackageName()});
+            return;
+        }
         long preSize = queryAppDataBytesQuietly(pair);
         AndroidException ipcException = null;
         try {

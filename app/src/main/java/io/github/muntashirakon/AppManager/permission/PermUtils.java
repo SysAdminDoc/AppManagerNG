@@ -33,6 +33,8 @@ import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.compat.PermissionCompat;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuCapabilities;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuOps;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.safety.AppOpsUidGuard;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
@@ -122,6 +124,10 @@ public class PermUtils {
                                        @NonNull AppOpsManagerCompat appOpsManager,
                                        boolean setByTheUser,
                                        boolean fixedByTheUser) throws PermissionException {
+        if (usesDhizuku(packageInfo)) {
+            setRuntimePermissionThroughDhizuku(packageInfo, permission, true);
+            return;
+        }
         boolean killApp = false;
         boolean wasGranted = permission.isGrantedIncludingAppOp();
 
@@ -223,6 +229,10 @@ public class PermUtils {
                                         @NonNull Permission permission,
                                         @NonNull AppOpsManagerCompat appOpsManager,
                                         boolean fixedByTheUser) throws PermissionException {
+        if (usesDhizuku(packageInfo)) {
+            setRuntimePermissionThroughDhizuku(packageInfo, permission, false);
+            return;
+        }
         boolean killApp = false;
 
         if (!isModifiable(permission)) {
@@ -449,7 +459,44 @@ public class PermUtils {
     }
 
     public static boolean isModifiable(@NonNull Permission permission) {
-        // Non-readonly permissions or permissions with app ops are modifiable
-        return SelfPermissions.canModifyPermissions() && (!permission.isReadOnly() || permission.affectsAppOp());
+        if (SelfPermissions.canModifyPermissions()) {
+            // Non-readonly permissions or permissions with app ops are modifiable
+            return !permission.isReadOnly() || permission.affectsAppOp();
+        }
+        // Dhizuku changes runtime permissions only, never app ops or other permission kinds
+        return permission.isRuntime() && !permission.isReadOnly()
+                && DhizukuOps.canRun(DhizukuCapabilities.Operation.RUNTIME_PERMISSIONS, UserHandleHidden.myUserId());
+    }
+
+    private static boolean usesDhizuku(@NonNull PackageInfo packageInfo) {
+        return !SelfPermissions.canModifyPermissions()
+                && DhizukuOps.canRun(DhizukuCapabilities.Operation.RUNTIME_PERMISSIONS,
+                UserHandleHidden.getUserId(packageInfo.applicationInfo.uid));
+    }
+
+    /**
+     * Grant or revoke a runtime permission as the Dhizuku owner. Flags and app ops stay as they
+     * are: only root, ADB and Shizuku can change those.
+     */
+    @WorkerThread
+    private static void setRuntimePermissionThroughDhizuku(@NonNull PackageInfo packageInfo,
+                                                           @NonNull Permission permission,
+                                                           boolean grant) throws PermissionException {
+        if (!permission.isRuntime() || permission.isReadOnly()
+                || !supportsRuntimePermissions(packageInfo.applicationInfo)) {
+            throw new PermissionException("Through Dhizuku, only runtime permissions of apps made for Android 6.0 "
+                    + "or later can change. Changing " + permission.getName() + " needs root, ADB or Shizuku.");
+        }
+        try {
+            DhizukuOps.setRuntimePermission(packageInfo.applicationInfo.packageName, permission.getName(),
+                    UserHandleHidden.getUserId(packageInfo.applicationInfo.uid), grant);
+        } catch (RemoteException e) {
+            throw new PermissionException(e);
+        }
+        permission.setGranted(grant);
+        if (permission.affectsAppOp()) {
+            // Android keeps a runtime permission's app op in step with the grant
+            permission.setAppOpAllowed(grant);
+        }
     }
 }

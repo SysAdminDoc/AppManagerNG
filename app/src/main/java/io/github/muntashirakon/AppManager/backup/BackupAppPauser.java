@@ -78,7 +78,8 @@ class BackupAppPauser implements Closeable {
         if (SelfPermissions.isSystemOrRootOrShell()) {
             return true;
         }
-        return SelfPermissions.canFreezeUnfreezePackages() || SelfPermissions.canKillUid();
+        // Pausing runs shell commands, which Dhizuku can't run
+        return SelfPermissions.canFreezeUnfreezePackagesWithMode() || SelfPermissions.canKillUid();
     }
 
     @NonNull

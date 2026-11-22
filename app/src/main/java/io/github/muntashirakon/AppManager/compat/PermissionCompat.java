@@ -29,7 +29,10 @@ import java.util.Collections;
 import java.util.List;
 
 import dev.rikka.tools.refine.Refine;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuCapabilities;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuOps;
 import io.github.muntashirakon.AppManager.ipc.ProxyBinder;
+import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.ExUtils;
 
@@ -367,6 +370,10 @@ public final class PermissionCompat {
                                        @NonNull String permissionName,
                                        @UserIdInt int userId)
             throws RemoteException {
+        if (usesDhizuku(userId)) {
+            DhizukuOps.setRuntimePermission(packageName, permissionName, userId, true);
+            return;
+        }
         IPackageManager pm = PackageManagerCompat.getPackageManager();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             IPermissionManager permissionManager = getPermissionManager();
@@ -393,6 +400,15 @@ public final class PermissionCompat {
     }
 
     /**
+     * Whether a runtime permission change goes through Dhizuku: the current mode can't grant or
+     * revoke, and Dhizuku allowed this app.
+     */
+    private static boolean usesDhizuku(@UserIdInt int userId) {
+        return !SelfPermissions.canModifyPermissions()
+                && DhizukuOps.canRun(DhizukuCapabilities.Operation.RUNTIME_PERMISSIONS, userId);
+    }
+
+    /**
      * Revoke a permission. May also require {@link ManifestCompat.permission#ADJUST_RUNTIME_PERMISSIONS_POLICY}.
      */
     @RequiresPermission(ManifestCompat.permission.REVOKE_RUNTIME_PERMISSIONS)
@@ -411,6 +427,10 @@ public final class PermissionCompat {
                                         @NonNull String permissionName,
                                         @UserIdInt int userId,
                                         @Nullable String reason) throws RemoteException {
+        if (usesDhizuku(userId)) {
+            DhizukuOps.setRuntimePermission(packageName, permissionName, userId, false);
+            return;
+        }
         IPackageManager pm = PackageManagerCompat.getPackageManager();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             IPermissionManager permissionManager = getPermissionManager();

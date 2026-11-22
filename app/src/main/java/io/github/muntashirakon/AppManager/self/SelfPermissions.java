@@ -23,6 +23,8 @@ import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PermissionCompat;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuCapabilities;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuOps;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
@@ -122,6 +124,30 @@ public class SelfPermissions {
                 || checkSelfOrRemotePermission(ManifestCompat.permission.REVOKE_RUNTIME_PERMISSIONS, callingUid);
     }
 
+    /**
+     * Whether runtime permissions can be granted and revoked, by the current mode or through
+     * Dhizuku. Other permission kinds, app ops included, still need {@link #canModifyPermissions()}.
+     */
+    public static boolean canModifyRuntimePermissions() {
+        return canModifyPermissions()
+                || DhizukuOps.canRun(DhizukuCapabilities.Operation.RUNTIME_PERMISSIONS, UserHandleHidden.myUserId());
+    }
+
+    /**
+     * Whether app data can be cleared, by the current mode or through Dhizuku.
+     */
+    public static boolean canClearAppUserData() {
+        return canClearAppUserData(UserHandleHidden.myUserId());
+    }
+
+    /**
+     * Whether app data in {@code userId} can be cleared. Dhizuku only reaches the current user.
+     */
+    public static boolean canClearAppUserData(@UserIdInt int userId) {
+        return checkSelfOrRemotePermission(ManifestCompat.permission.CLEAR_APP_USER_DATA)
+                || DhizukuOps.canRun(DhizukuCapabilities.Operation.CLEAR_APP_DATA, userId);
+    }
+
     public static boolean checkGetGrantRevokeRuntimePermissions() {
         int callingUid = Users.getSelfOrRemoteUid();
         return checkSelfOrRemotePermission(ManifestCompat.permission.GET_RUNTIME_PERMISSIONS, callingUid)
@@ -140,7 +166,20 @@ public class SelfPermissions {
         return false;
     }
 
+    /**
+     * Whether apps can be frozen and unfrozen, by the current mode or through Dhizuku, which
+     * hides or suspends them.
+     */
     public static boolean canFreezeUnfreezePackages() {
+        return canFreezeUnfreezePackagesWithMode()
+                || DhizukuOps.canRun(DhizukuCapabilities.Operation.HIDE_APPS, UserHandleHidden.myUserId());
+    }
+
+    /**
+     * Whether the current mode can freeze and unfreeze apps by itself. Code that freezes with
+     * shell commands checks this instead of {@link #canFreezeUnfreezePackages()}.
+     */
+    public static boolean canFreezeUnfreezePackagesWithMode() {
         // 1. Suspend (7+): MANAGE_USERS (<= 9), SUSPEND_APPS (>= 9)
         // 2. Disable: CHANGE_COMPONENT_ENABLED_STATE
         // 2. HIDE: MANAGE_USERS

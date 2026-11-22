@@ -22,11 +22,11 @@ final class PrivilegeCapabilitySummary {
         return new Snapshot(
                 SelfPermissions.canInstallExistingPackages(),
                 SelfPermissions.canModifyAppOpMode(),
-                SelfPermissions.canModifyPermissions(),
+                SelfPermissions.canModifyRuntimePermissions(),
                 SelfPermissions.canFreezeUnfreezePackages(),
                 SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.FORCE_STOP_PACKAGES)
                         || SelfPermissions.canKillUid(),
-                SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.CLEAR_APP_USER_DATA),
+                SelfPermissions.canClearAppUserData(),
                 SelfPermissions.canClearAppCache(),
                 SelfPermissions.canWriteToDataData(),
                 SelfPermissions.canBlockByIFW());

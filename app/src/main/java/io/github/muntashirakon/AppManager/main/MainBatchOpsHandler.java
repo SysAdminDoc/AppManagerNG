@@ -63,7 +63,7 @@ public class MainBatchOpsHandler implements MultiSelectionView.OnSelectionChange
     public void updateConstraints() {
         mCanFreezeUnfreezePackages = SelfPermissions.canFreezeUnfreezePackages();
         mCanForceStopPackages = SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.FORCE_STOP_PACKAGES);
-        mCanClearData = SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.CLEAR_APP_USER_DATA);
+        mCanClearData = SelfPermissions.canClearAppUserData();
         mCanClearCache = SelfPermissions.canClearAppCache();
         mCanModifyAppOpMode = SelfPermissions.canModifyAppOpMode();
         mCanModifyNetPolicy = SelfPermissions.checkSelfOrRemotePermission(ManifestCompat.permission.MANAGE_NETWORK_POLICY);
