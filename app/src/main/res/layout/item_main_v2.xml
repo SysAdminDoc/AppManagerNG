@@ -66,7 +66,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
-                        android:maxLines="1"
+                        android:maxLines="2"
                         android:paddingEnd="@dimen/premium_space_32"
                         android:textAppearance="@style/TextAppearance.AppTheme.V2.TitleMedium"
                         android:textColor="?attr/colorOnSurface"
@@ -101,7 +101,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
                     android:ellipsize="end"
-                    android:maxLines="1"
+                    android:maxLines="2"
                     android:textAppearance="@style/TextAppearance.AppTheme.V2.BodySmall"
                     android:textColor="?attr/colorOnSurfaceVariant"
                     tools:text="UID 10123 · v4.7.3 · User · SDK 35" />

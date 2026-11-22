@@ -47,7 +47,7 @@
                 android:textAlignment="viewStart"
                 android:textAppearance="?android:attr/textAppearanceListItemSecondary"
                 android:ellipsize="end"
-                android:maxLines="2"
+                android:maxLines="10"
                 tools:text="@tools:sample/lorem[10]" />
 
         </RelativeLayout>

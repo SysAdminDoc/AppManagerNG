@@ -15,10 +15,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.menu.MenuBuilder;
+import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
 import io.github.muntashirakon.AppManager.i18n.LanguagePackCompat;
+import io.github.muntashirakon.AppManager.utils.TextMarquee;
 
 public class PerProcessActivity extends AppCompatActivity {
     private final LanguagePackCompat.Host mLanguagePack = new LanguagePackCompat.Host();
@@ -47,6 +49,15 @@ public class PerProcessActivity extends AppCompatActivity {
         MenuInflater base = super.getMenuInflater();
         //noinspection ConstantValue
         return mLanguagePack != null ? mLanguagePack.menuInflater(this, base) : base;
+    }
+
+    @Override
+    public void setSupportActionBar(@Nullable Toolbar toolbar) {
+        super.setSupportActionBar(toolbar);
+        if (toolbar != null) {
+            // A title too long for the toolbar scrolls instead of being cut
+            TextMarquee.applyToToolbar(toolbar);
+        }
     }
 
     public boolean getTransparentBackground() {

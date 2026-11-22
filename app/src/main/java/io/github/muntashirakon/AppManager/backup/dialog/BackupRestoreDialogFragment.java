@@ -49,6 +49,7 @@ import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.users.UserInfo;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
 import io.github.muntashirakon.AppManager.utils.StoragePermission;
+import io.github.muntashirakon.AppManager.utils.TextMarquee;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.dialog.BottomSheetBehavior;
 import io.github.muntashirakon.dialog.CapsuleBottomSheetDialogFragment;
@@ -296,6 +297,8 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
         getBody().findViewById(R.id.container).setVisibility(View.VISIBLE);
         ViewPager2 viewPager = getBody().findViewById(R.id.pager);
         TabLayout tabLayout = getBody().findViewById(R.id.tab_layout);
+        // The tabs share the width, so a long translation scrolls instead of being cut
+        TextMarquee.applyToTabs(tabLayout);
         viewPager.setOffscreenPageLimit(1);
         viewPager.registerOnPageChangeCallback(new ViewPagerUpdateScrollingChildListener(viewPager, getBehavior()));
         finishLoading();
@@ -341,6 +344,8 @@ public class BackupRestoreDialogFragment extends CapsuleBottomSheetDialogFragmen
         getBody().findViewById(R.id.container).setVisibility(View.VISIBLE);
         ViewPager2 viewPager = getBody().findViewById(R.id.pager);
         TabLayout tabLayout = getBody().findViewById(R.id.tab_layout);
+        // The tabs share the width, so a long translation scrolls instead of being cut
+        TextMarquee.applyToTabs(tabLayout);
         viewPager.setOffscreenPageLimit(1);
         viewPager.registerOnPageChangeCallback(new ViewPagerUpdateScrollingChildListener(viewPager, getBehavior()));
         finishLoading();
