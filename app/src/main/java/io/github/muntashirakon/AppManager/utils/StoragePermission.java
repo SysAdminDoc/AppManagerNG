@@ -30,12 +30,20 @@ public class StoragePermission {
     private BetterActivityResult<String, Boolean> mStoragePerm;
     @RequiresApi(api = Build.VERSION_CODES.R)
     private BetterActivityResult<Intent, ActivityResult> mStoragePermApi30;
+    /**
+     * An answer that came back while nothing was waiting for it. After Android closes the app, the
+     * screen it brings back gets the answer as it starts, which can be before the app is unlocked
+     * and the screen gets to {@link #awaitResult}.
+     */
+    private boolean mUnclaimedAnswer;
 
     private StoragePermission(@NonNull ActivityResultCaller caller) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            mStoragePermApi30 = BetterActivityResult.registerForActivityResult(caller, new ActivityResultContracts.StartActivityForResult());
+            mStoragePermApi30 = BetterActivityResult.registerForActivityResult(caller,
+                    new ActivityResultContracts.StartActivityForResult(), result -> mUnclaimedAnswer = true);
         } else {
-            mStoragePerm = BetterActivityResult.registerForActivityResult(caller, new ActivityResultContracts.RequestPermission());
+            mStoragePerm = BetterActivityResult.registerForActivityResult(caller,
+                    new ActivityResultContracts.RequestPermission(), result -> mUnclaimedAnswer = true);
         }
     }
 
@@ -56,9 +64,15 @@ public class StoragePermission {
     /**
      * Waits for the answer to a request made before the screen was made again (turned, or brought
      * back after Android closed the app while its storage screen was open). Android hands that
-     * answer to the new screen, so this asks nothing.
+     * answer to the new screen, so this asks nothing. An answer that is already in, or access that
+     * is already there, calls back at once.
      */
     public void awaitResult(@NonNull StoragePermissionCallback callback) {
+        if (mUnclaimedAnswer || SelfPermissions.checkSelfStoragePermission()) {
+            mUnclaimedAnswer = false;
+            answer(callback);
+            return;
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             mStoragePermApi30.setOnActivityResult(result -> answer(callback));
         } else {
