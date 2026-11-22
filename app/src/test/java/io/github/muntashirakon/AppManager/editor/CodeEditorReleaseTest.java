@@ -276,6 +276,38 @@ public class CodeEditorReleaseTest {
     }
 
     @Test
+    public void aSaveAsToAnotherKindOfFileSwitchesTheLanguageRightAway() throws Exception {
+        CodeEditorActivity activity = open(JSON);
+        waitForText(activity, JSON);
+        File copy = mTemp.newFile("copy.xml");
+
+        saveAs(activity, copy, Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+        waitForFile(copy, JSON);
+
+        assertEquals("xml", String.valueOf(((TextView) activity.findViewById(R.id.language)).getText()));
+    }
+
+    @Test
+    public void aCopySavedWithoutALastingGrantLeavesTheOpenFileUnsaved() throws Exception {
+        CodeEditorActivity activity = open(JSON);
+        waitForText(activity, JSON).getText().insert(0, 0, "// mine\n");
+        File copy = mTemp.newFile("copy.json");
+
+        // The picker gave no lasting access, so the editor stays on its own file
+        saveAs(activity, copy, 0);
+        waitForFile(copy, "// mine\n" + JSON);
+        waitForSavedToast(activity);
+
+        assertEquals(JSON, read(mFile));
+        assertEquals("* Subtitle", subtitle(activity));
+
+        // Saving to its own file still clears the mark
+        assertTrue(fragment(activity).onMenuItemSelected(new RoboMenuItem(R.id.action_save)));
+        waitForFile(mFile, "// mine\n" + JSON);
+        waitForSubtitle(activity, "Subtitle");
+    }
+
+    @Test
     public void aPopupLeftOpenGoesAwayWithTheView() throws Exception {
         CodeEditorActivity activity = open(JSON);
         waitForText(activity, JSON);
@@ -337,6 +369,15 @@ public class CodeEditorReleaseTest {
             idle();
             Thread.sleep(20);
         }
+    }
+
+    private static void saveAs(@NonNull CodeEditorActivity activity, @NonNull File target, int grantFlags) {
+        assertTrue(fragment(activity).onMenuItemSelected(new RoboMenuItem(R.id.action_save_as)));
+        idle();
+        Intent picker = shadowOf(activity).getNextStartedActivityForResult().intent;
+        shadowOf(activity).receiveResult(picker, Activity.RESULT_OK, new Intent()
+                .setData(Uri.fromFile(target))
+                .addFlags(grantFlags));
     }
 
     private static void waitForSavedToast(@NonNull CodeEditorActivity activity) throws InterruptedException {

@@ -135,22 +135,27 @@ public class CodeEditorViewModel extends AndroidViewModel {
         /** The text written, as it was when the save began. Empty for a failure. */
         @NonNull
         public final String savedText;
+        /** Where it was written. {@code null} for a failure. */
+        @Nullable
+        final Uri savedTo;
 
-        private SaveResult(boolean success, boolean originalIntact, @Nullable String reason, @NonNull String savedText) {
+        private SaveResult(boolean success, boolean originalIntact, @Nullable String reason, @NonNull String savedText,
+                           @Nullable Uri savedTo) {
             this.success = success;
             this.originalIntact = originalIntact;
             this.reason = reason;
             this.savedText = savedText;
+            this.savedTo = savedTo;
         }
 
         @NonNull
-        static SaveResult saved(@NonNull String savedText) {
-            return new SaveResult(true, true, null, savedText);
+        static SaveResult saved(@NonNull String savedText, @NonNull Uri savedTo) {
+            return new SaveResult(true, true, null, savedText, savedTo);
         }
 
         @NonNull
         static SaveResult failed(@NonNull String reason, boolean originalIntact) {
-            return new SaveResult(false, originalIntact, reason, "");
+            return new SaveResult(false, originalIntact, reason, "", null);
         }
     }
 
@@ -302,12 +307,21 @@ public class CodeEditorViewModel extends AndroidViewModel {
             Path savingPath = alternativeFile != null ? alternativeFile : sourceFile;
             try {
                 EditorSaver.save(() -> encode(text, xmlType), new EditorSaver.PathTarget(savingPath), MAX_FILE_BYTES);
-                mSaveFileLiveData.postValue(SaveResult.saved(text));
+                mSaveFileLiveData.postValue(SaveResult.saved(text, savingPath.getUri()));
             } catch (EditorSaver.SaveException e) {
                 Log.e(TAG, "Could not save %s (original intact: %b)", e, savingPath, e.originalIntact);
                 mSaveFileLiveData.postValue(SaveResult.failed(String.valueOf(e.getMessage()), e.originalIntact));
             }
         });
+    }
+
+    /**
+     * Whether a save went to the file this editor has open, so the editor's text now matches it. A
+     * Save As that couldn't take the new file over wrote a copy and leaves the open file as it was.
+     * A new document has no file of its own, so wherever its text went counts.
+     */
+    public boolean savedToOpenFile(@NonNull SaveResult result) {
+        return mSourceFile == null || (result.savedTo != null && result.savedTo.equals(mSourceFile.getUri()));
     }
 
     /** Asks the editor to close after the next save, but only if that save succeeds. */

@@ -263,8 +263,14 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
                                 .setUri(uri)
                                 .setSubtitle(Paths.get(uri).getName())
                                 .build();
+                        String languageBefore = mViewModel.getLanguage();
                         mViewModel.setOptions(mOptions);
                         requireArguments().putParcelable(ARG_OPTIONS, mOptions);
+                        if (!Objects.equals(languageBefore, mViewModel.getLanguage())) {
+                            // The new file's extension picked another language
+                            showLanguage();
+                        }
+                        updateStartupMenu();
                     }
                 } finally {
                     showProgressIndicator(false);
@@ -565,15 +571,18 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
         mViewModel.getSaveFileLiveData().observe(getViewLifecycleOwner(), result -> {
             if (result.success) {
                 UIUtils.displayShortToast(R.string.saved_successfully);
-                // What was written is the text as it was when Save was tapped. Anything typed while
-                // it was being written is still unsaved.
-                mViewModel.updateOriginalContent(result.savedText);
-                if (mEditor != null && !result.savedText.contentEquals(mEditor.getText())) {
-                    markTextModified();
-                } else {
-                    mTextModified = false;
-                    mTextModifiedBackPressedCallback.setEnabled(false);
-                    getActionBar().ifPresent(actionBar -> actionBar.setSubtitle(mOptions.subtitle));
+                // A copy saved elsewhere leaves the open file, and so the unsaved mark, as they were
+                if (mViewModel.savedToOpenFile(result)) {
+                    // What was written is the text as it was when Save was tapped. Anything typed
+                    // while it was being written is still unsaved.
+                    mViewModel.updateOriginalContent(result.savedText);
+                    if (mEditor != null && !result.savedText.contentEquals(mEditor.getText())) {
+                        markTextModified();
+                    } else {
+                        mTextModified = false;
+                        mTextModifiedBackPressedCallback.setEnabled(false);
+                        getActionBar().ifPresent(actionBar -> actionBar.setSubtitle(mOptions.subtitle));
+                    }
                 }
                 if (mViewModel.consumeExitAfterSave(true)) {
                     requireActivity().getOnBackPressedDispatcher().onBackPressed();
@@ -977,6 +986,17 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
         }
         menu.setGroupCheckable(0, true, true);
         showPopup(popup);
+    }
+
+    /** Shows the view model's language: the highlighter, and the language and indent labels. */
+    private void showLanguage() {
+        View view = getView();
+        if (mEditor == null || view == null) return;
+        String language = mViewModel.getLanguage();
+        mEditor.setEditorLanguage(getLanguage(language));
+        scheduleInvisibleCharHints();
+        ((TextView) view.findViewById(R.id.language)).setText(language);
+        ((TextView) view.findViewById(R.id.tab_size)).setText(buildTabSizeLabel());
     }
 
     /**
