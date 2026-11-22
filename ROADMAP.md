@@ -668,6 +668,20 @@ Sources and reasoning: RESEARCH.md (2026-11-13). The four crash fixes come first
   Acceptance: no production call builds the format string from runtime text, a message holding `%3A` logs as written, and the change keeps each call's level and throwable.
   Complexity: M
 
+- [ ] P2: A Save As result that arrives after the process was killed writes an empty file
+  Why: Android can kill the app while the file picker is open. The new fragment gets the picker's result as soon as it starts, before the background read of the file has filled the editor, and `saveFile(mEditor.getText(), uri)` writes that empty text to the chosen file. Even once the read finishes, the text typed before the kill is gone with the old view model, so the target gets the file as it was on disk without saying so.
+  Evidence: `editor/CodeEditorFragment.java` Save As launcher callback (`saveFile(mEditor.getText(), uri)`), `CodeEditorViewModel.loadFileContentIfAvailable`. Found 2026-11-22 by the review of the editor rotation fixes. HEAD before those fixes behaved the same.
+  Touches: `CodeEditorFragment`, `CodeEditorViewModel`, `CodeEditorReleaseTest` (Robolectric can rebuild the fragment with a fresh view model and deliver the result before the read ends).
+  Acceptance: a Save As result that lands before the content is loaded waits for it and saves the loaded text, never an empty file. When the edits from before the kill can't be recovered the editor says so instead of writing silently, and a test covers the early result.
+  Complexity: S
+
+- [ ] P2: Check the log recording widget on a phone's launcher
+  Why: widget taps now go through a non-exported receiver instead of the widget provider (9f65e25ed). Robolectric covers the tap's PendingIntent and the receiver, but not a real launcher's broadcasts to the provider.
+  Evidence: `logcat/RecordingWidgetActionReceiver.java`, `logcat/RecordingWidgetProvider.java`, `AndroidManifest.xml`.
+  Touches: device check only, on the S22 or S25.
+  Acceptance: on a phone, add the widget, tap it to start and again to stop a recording, then confirm it still updates after a reboot and after another widget instance is added and removed. `adb shell am broadcast -a <applicationId>.action.RECORD_OR_STOP -n <applicationId>/io.github.muntashirakon.AppManager.logcat.RecordingWidgetActionReceiver` is refused (not exported) and the provider still gets `APPWIDGET_UPDATE`, `APPWIDGET_ENABLED` and `APPWIDGET_DELETED`.
+  Complexity: S
+
 ### P3
 
 - [ ] P3: Name a snapshot section that failed to export
