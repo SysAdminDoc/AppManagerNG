@@ -5203,6 +5203,9 @@
          <artifact name="Dhizuku-API-2.7.0.module">
             <sha256 value="d13e651a02b662c209e1a3f568309e4172d06337f5d2eb7910cf1a500e22207d" origin="Verified against the upstream repository" reason="Checksum taken from the sha256 published beside the artifact in the MavenRepo repository, not from the local cache"/>
          </artifact>
+         <artifact name="Dhizuku-API-2.7.0.pom">
+            <sha256 value="076cab8ca318819305cfa90a0ab8432969b13446f50664cc28991ecf50c5c482" origin="Verified against the upstream repository" reason="Checksum taken from the sha256 published beside the artifact in the MavenRepo repository, not from the local cache"/>
+         </artifact>
       </component>
       <component group="io.github.jeremylong" name="jcs3-slf4j" version="1.0.5">
          <artifact name="jcs3-slf4j-1.0.5.jar">
