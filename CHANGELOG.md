@@ -77,6 +77,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A tag name (for an app or a backup tag policy), log file name or filter value that doesn't work no longer closes its dialog and throws away what you typed. The dialog stays open with the reason under the field, and the keyboard's Done key or a hardware Enter runs the same check as the button. A broken filter regex now says so instead of showing a general error.
 - With a larger font size, the medium screen-time widget keeps each app's name beside its bubble. The names and bubbles used to move with the font size, so at 200% a name sat well below the bubble it belonged to. A bubble's time now shrinks to fit the bubble instead of being cut off.
 - A frozen or suspended app now says so in words at the front of its row's info line, and a screen reader says "Frozen" or "Suspended" in place of "Installed". Before, a frozen app showed only as a tinted UID and a suspended one as a "°" after the app type.
+- An app that's enabled for one user and frozen for another keeps showing that on its row when the whole app list reloads. Before, only refreshing that one app showed it, and the next reload lost it again.
 
 ## v0.8.0, 2026-11-15
 

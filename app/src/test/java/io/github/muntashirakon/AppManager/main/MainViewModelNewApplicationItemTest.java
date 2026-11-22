@@ -21,6 +21,8 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -28,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import io.github.muntashirakon.AppManager.db.entity.App;
+import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.test.shadows.ShadowPackageManagerCompat;
 
 @RunWith(RobolectricTestRunner.class)
@@ -131,6 +134,32 @@ public class MainViewModelNewApplicationItemTest {
             assertArrayEquals(new int[]{ME}, item.userIds);
             assertEquals(0, item.uninstalledUserIds.length);
             assertFalse(item.hasPerUserPackageState());
+        }
+    }
+
+    @Test
+    public void aFullLoadAndARefreshGiveTheSameUsersForAnAppDisabledForOneOfTwo() {
+        App mine = app(ME, true);
+        App work = app(WORK, true);
+        work.isEnabled = false;
+        App gone = app(WORK + 1, false);
+        // The orders the database can return the rows in
+        App[][] orders = {{mine, work, gone}, {work, gone, mine}, {gone, work, mine}};
+        for (App[] apps : orders) {
+            ApplicationItem refreshed = newItem(apps);
+            Map<String, ApplicationItem> items = new HashMap<>();
+            PackageUtils.mergeApplicationItems(items, Arrays.asList(apps), new HashMap<>());
+            ApplicationItem loaded = items.get(PACKAGE);
+
+            String order = apps[0].userId + "," + apps[1].userId + "," + apps[2].userId;
+            assertArrayEquals(order, refreshed.userIds, loaded.userIds);
+            assertArrayEquals(order, refreshed.enabledUserIds, loaded.enabledUserIds);
+            assertArrayEquals(order, refreshed.disabledUserIds, loaded.disabledUserIds);
+            assertArrayEquals(order, refreshed.uninstalledUserIds, loaded.uninstalledUserIds);
+            // And that's the state of each user's copy
+            assertArrayEquals(order, new int[]{ME}, loaded.enabledUserIds);
+            assertArrayEquals(order, new int[]{WORK}, loaded.disabledUserIds);
+            assertTrue(order, loaded.hasPerUserPackageState());
         }
     }
 

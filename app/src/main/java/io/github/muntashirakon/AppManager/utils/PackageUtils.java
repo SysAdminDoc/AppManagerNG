@@ -209,9 +209,9 @@ public final class PackageUtils {
      * copy, with the current user's label when it has one, and the users it was found for, so an
      * archived copy can be looked up.
      */
-    @VisibleForTesting
-    static void mergeApplicationItems(@NonNull Map<String, ApplicationItem> applicationItems,
-                                      @NonNull List<App> apps, @NonNull Map<String, Backup> backups) {
+    @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
+    public static void mergeApplicationItems(@NonNull Map<String, ApplicationItem> applicationItems,
+                                             @NonNull List<App> apps, @NonNull Map<String, Backup> backups) {
         int thisUser = UserHandleHidden.myUserId();
         // Get application items from apps
         for (App app : apps) {
@@ -235,6 +235,13 @@ public final class PackageUtils {
                     item.hasKeystore = false;
                 }
                 item.userIds = ArrayUtils.appendInt(item.userIds, app.userId);
+                // Each installed copy's state, as a one-package refresh records it, so the row's
+                // per-user summary and tint don't change with the next full load
+                if (app.isEnabled) {
+                    item.enabledUserIds = ArrayUtils.appendInt(item.enabledUserIds, app.userId);
+                } else {
+                    item.disabledUserIds = ArrayUtils.appendInt(item.disabledUserIds, app.userId);
+                }
                 item.isInstalled = true;
                 item.isOnlyDataInstalled = false;
                 item.openCount += app.openCount;

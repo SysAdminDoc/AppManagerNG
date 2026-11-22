@@ -41,8 +41,8 @@ public class PackageUtilsMergeTest {
 
     @Test
     public void aPackageInstalledForAnyUserRecordsNoUninstalledUsers() {
-        // The full load doesn't record enabled or disabled users either, so a half list would make
-        // the row show a user state summary it can't complete
+        // Only the installed copies' users and their states are recorded, so a list of uninstalled
+        // users next to them would make the row show a user state summary it can't complete
         Map<String, ApplicationItem> items = merge(
                 app("com.example.later", WORK, false), app("com.example.later", ME, true),
                 app("com.example.first", ME, true), app("com.example.first", WORK, false));

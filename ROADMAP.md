@@ -634,13 +634,6 @@ Sources and reasoning: RESEARCH.md (2026-11-13). The four crash fixes come first
   Research 2026-11-14: zstd-jni is now 1.5.7-28 (2026-11-13). The test-only org.json 20251224 (`versions.gradle:33`) is inside GHSA-ghc9-756g-vrcv, fixed in 20260719, and 20260814 is the newest. It never ships in the APK, but the bump is free.
   Complexity: S
 
-- [ ] P2: Read the per-user disabled state the same way on a full load and a refresh
-  Why: a full load (`PackageUtils.mergeApplicationItems`) records no enabled or disabled users for a row, but a one-package refresh (`MainViewModel.getNewApplicationItem`) does. An app disabled for one user and enabled for another gets the per-user tint on its UID after a refresh and loses it on the next full load.
-  Evidence: `utils/PackageUtils.java` `mergeApplicationItems`, `main/MainViewModel.java` `getNewApplicationItem`, `MainListUidFormatter.isHighlighted`. Found while making the two paths agree on uninstalled users (2026-11-14).
-  Touches: `mergeApplicationItems`, `getNewApplicationItem`, `PackageUtilsMergeTest`, `MainViewModelNewApplicationItemTest`.
-  Acceptance: for the same database rows, both paths give the row the same `userIds`, `disabledUserIds` and `uninstalledUserIds`, and one test runs both over an app disabled for one of two users.
-  Complexity: S
-
 - [ ] P2: Stop passing log messages in as format strings
   Why: `Log.v/d/i/w/e(tag, format, args)` formats its first string, so a call like `Log.w(TAG, "Error: " + e.getMessage())` throws `MissingFormatArgumentException` or `UnknownFormatConversionException` when the message holds a `%`, such as a URL-encoded path. The SSAID read in `AppDb.updateVariableData` did this and stopped a package refresh on the test host. About 190 such calls remain in about 70 files.
   Evidence: `logs/Log.java` (`String.format(Locale.ROOT, format, args)`); `rg 'Log\.[vdiwe]\(TAG, "[^"]*" \+' app/src/main`.
