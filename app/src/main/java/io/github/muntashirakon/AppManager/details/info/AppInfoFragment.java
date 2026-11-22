@@ -171,6 +171,7 @@ import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.magisk.MagiskDenyList;
 import io.github.muntashirakon.AppManager.magisk.MagiskHide;
 import io.github.muntashirakon.AppManager.magisk.MagiskProcess;
+import io.github.muntashirakon.AppManager.misc.XposedModuleInfo;
 import io.github.muntashirakon.AppManager.profiles.AddToProfileDialogFragment;
 import io.github.muntashirakon.AppManager.rules.RulesTypeSelectionDialogFragment;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentsBlocker;
@@ -284,6 +285,11 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     private boolean mIsExternalApk;
     private boolean mIsDataOnlyPackage;
     private int mLoadedItemCount;
+    // The latest App Info, kept so a result that arrives later can redraw the list with it
+    @Nullable
+    private volatile AppInfoViewModel.AppInfo mLastAppInfo;
+    @Nullable
+    private volatile AppInfoViewModel.ApkContents mApkContents;
 
     @GuardedBy("mListItems")
     private final List<ListItem> mListItems = new ArrayList<>();
@@ -383,6 +389,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             // Load other info
             mAppInfoModel.loadAppInfo(mPackageInfo, mIsExternalApk);
             mAppInfoModel.loadApkSha256(mApplicationInfo);
+            mAppInfoModel.loadApkContents(mPackageInfo, mIsExternalApk);
         });
         mAppInfoModel.getAppLabel().observe(getViewLifecycleOwner(), appLabel -> {
             ++mLoadedItemCount;
@@ -438,6 +445,10 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         mAppInfoModel.getTagCloud().observe(getViewLifecycleOwner(), this::setupTagCloud);
         mAppInfoModel.getAppInfo().observe(getViewLifecycleOwner(), this::setupVerticalView);
         mAppInfoModel.getApkSha256().observe(getViewLifecycleOwner(), this::setApkSha256);
+        mAppInfoModel.getApkContents().observe(getViewLifecycleOwner(), apkContents -> {
+            mApkContents = apkContents;
+            refreshVerticalView();
+        });
         mAppInfoModel.getInstallExistingResult().observe(getViewLifecycleOwner(), statusMessagePair ->
                 new MaterialAlertDialogBuilder(requireActivity())
                         .setTitle(mAppLabel)
@@ -4092,6 +4103,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     @MainThread
     @GuardedBy("mListItems")
     private void setupVerticalView(AppInfoViewModel.AppInfo appInfo) {
+        mLastAppInfo = appInfo;
         Context appContext = requireContext().getApplicationContext();
         if (mListFuture != null) mListFuture.cancel(true);
         mListFuture = ThreadUtils.postOnBackgroundThread(() -> {
@@ -4107,6 +4119,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                     }
                 }
                 setMoreInfo(appContext, appInfo);
+                addApkContents(appContext);
                 addPendingJobInfo(appContext, appInfo);
                 addExitHistoryInfo(appContext, appInfo);
                 ThreadUtils.postOnMainThread(() -> {
@@ -4120,6 +4133,16 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 });
             }
         });
+    }
+
+    /**
+     * Redraws the list with the latest App Info once a result that came separately is in.
+     */
+    private void refreshVerticalView() {
+        AppInfoViewModel.AppInfo appInfo = mLastAppInfo;
+        if (appInfo != null && isAdded()) {
+            setupVerticalView(appInfo);
+        }
     }
 
     /**
@@ -4141,6 +4164,64 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             mVersionView.setOnLongClickListener(null);
             mVersionView.setLongClickable(false);
         }
+    }
+
+    @GuardedBy("mListItems")
+    private void addApkContents(@NonNull Context appContext) {
+        AppInfoViewModel.ApkContents contents = mApkContents;
+        if (contents == null) {
+            return;
+        }
+        synchronized (mListItems) {
+            mListItems.add(ListItem.newGroupStart(appContext.getString(R.string.apk_contents)));
+            XposedModuleInfo xposedModule = contents.xposedModule;
+            if (xposedModule != null) {
+                mListItems.add(ListItem.newSelectableRegularItem(appContext.getString(R.string.xposed_module),
+                        xposedModule.legacy
+                                ? appContext.getString(R.string.xposed_module_legacy_summary, xposedModule.minVersion)
+                                : appContext.getString(R.string.xposed_module_modern_summary, xposedModule.minVersion,
+                                xposedModule.targetVersion)));
+            }
+            if (contents.glEsVersion != null) {
+                mListItems.add(ListItem.newSelectableRegularItem(appContext.getString(R.string.gles_version),
+                        contents.glEsVersion));
+            }
+            if (!contents.splits.isEmpty()) {
+                mListItems.add(ListItem.newSelectableRegularItem(appContext.getString(R.string.splits),
+                        ApkSplits.summarize(appContext, contents.splits)));
+            }
+            Integer apexStatus = contents.apexStatus;
+            if (apexStatus != null && apexStatus != ApexStatus.REGULAR) {
+                mListItems.add(ListItem.newSelectableRegularItem(appContext.getString(R.string.apex_and_mainline),
+                        appContext.getString(ApexStatus.labelRes(apexStatus))));
+            }
+            LicenseDetector.Result license = contents.license;
+            if (license == null || license.files.isEmpty()) {
+                mListItems.add(ListItem.newSelectableRegularItem(appContext.getString(R.string.license),
+                        appContext.getString(R.string.not_declared)));
+            } else {
+                CharSequence licenses = license.licenses.isEmpty()
+                        ? appContext.getString(R.string.license_not_recognized)
+                        : TextUtils.join(", ", license.licenses);
+                ListItem licenseItem = ListItem.newSelectableRegularItem(appContext.getString(R.string.license),
+                        licenses, v -> showLicenseFiles(license));
+                licenseItem.setActionIcon(io.github.muntashirakon.ui.R.drawable.ic_information);
+                licenseItem.setActionContentDescription(R.string.license_files);
+                mListItems.add(licenseItem);
+            }
+        }
+    }
+
+    private void showLicenseFiles(@NonNull LicenseDetector.Result license) {
+        List<String> files = new ArrayList<>(license.files.size());
+        for (Map.Entry<String, String> file : license.files.entrySet()) {
+            files.add(file.getValue() != null ? file.getKey() + " (" + file.getValue() + ")" : file.getKey());
+        }
+        new MaterialAlertDialogBuilder(requireActivity())
+                .setTitle(R.string.license_files)
+                .setItems(files.toArray(new String[0]), null)
+                .setPositiveButton(R.string.close, null)
+                .show();
     }
 
     @Nullable

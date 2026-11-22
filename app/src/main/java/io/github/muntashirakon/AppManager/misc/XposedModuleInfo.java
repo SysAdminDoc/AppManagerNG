@@ -38,12 +38,23 @@ import io.github.muntashirakon.util.UiUtils;
 public class XposedModuleInfo implements LocalizedString {
     public static final String TAG = XposedModuleInfo.class.getSimpleName();
 
+    /**
+     * Whether the app is an Xposed module: {@code null} for a legacy module, which says so in its meta-data
+     * ({@code xposedmodule} or {@code xposedminversion}), {@code true} for a modern one, which ships
+     * META-INF/xposed/java_init.list or module.prop, {@code false} for neither.
+     */
     @Nullable
     public static Boolean isXposedModule(@NonNull ApplicationInfo app, @NonNull ZipFile zipFile) {
-        if (app.metaData != null && app.metaData.containsKey("xposedminversion")) {
+        if (app.metaData != null && (app.metaData.containsKey("xposedminversion")
+                || isTrue(app.metaData.get("xposedmodule")))) {
             return null;
         }
-        return zipFile.getEntry("META-INF/xposed/module.prop") != null;
+        return zipFile.getEntry("META-INF/xposed/java_init.list") != null
+                || zipFile.getEntry("META-INF/xposed/module.prop") != null;
+    }
+
+    private static boolean isTrue(@Nullable Object value) {
+        return Boolean.TRUE.equals(value) || (value instanceof String && "true".equalsIgnoreCase((String) value));
     }
 
     public final String packageName;

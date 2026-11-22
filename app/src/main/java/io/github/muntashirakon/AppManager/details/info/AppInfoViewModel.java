@@ -102,6 +102,7 @@ public class AppInfoViewModel extends AndroidViewModel {
     private final MutableLiveData<AppInfo> mAppInfo = new MutableLiveData<>();
     private final MutableLiveData<Pair<Integer, CharSequence>> mInstallExistingResult = new MutableLiveData<>();
     private final MutableLiveData<String> mApkSha256 = new MutableLiveData<>();
+    private final MutableLiveData<ApkContents> mApkContents = new MutableLiveData<>();
     private final ExecutorService mExecutor = Executors.newFixedThreadPool(4);
     private Future<?> mTagCloudFuture;
     private Future<?> mAppInfoFuture;
@@ -153,6 +154,10 @@ public class AppInfoViewModel extends AndroidViewModel {
      */
     public LiveData<String> getApkSha256() {
         return mApkSha256;
+    }
+
+    public LiveData<ApkContents> getApkContents() {
+        return mApkContents;
     }
 
     @AnyThread
@@ -580,6 +585,38 @@ public class AppInfoViewModel extends AndroidViewModel {
         });
     }
 
+    /**
+     * What the APK carries besides its code: an Xposed module, the OpenGL ES version it needs, its splits, whether
+     * it's an APEX or a Mainline module, and its license files.
+     */
+    @AnyThread
+    public void loadApkContents(@NonNull PackageInfo packageInfo, boolean isExternalApk) {
+        ThreadUtils.postOnBackgroundThread(() -> {
+            ApplicationInfo applicationInfo = packageInfo.applicationInfo;
+            ApkContents contents = new ApkContents();
+            contents.glEsVersion = GlEsRequirement.fromFeatures(packageInfo.reqFeatures);
+            contents.splits = ApkSplits.from(applicationInfo);
+            if (!isExternalApk && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                contents.apexStatus = ApexStatus.of(getApplication(), packageInfo);
+            }
+            String path = applicationInfo.publicSourceDir != null ? applicationInfo.publicSourceDir
+                    : applicationInfo.sourceDir;
+            if (!TextUtils.isEmpty(path)) {
+                try (ZipFile zipFile = new ZipFile(path)) {
+                    Boolean modernModule = XposedModuleInfo.isXposedModule(applicationInfo, zipFile);
+                    if (!Boolean.FALSE.equals(modernModule)) {
+                        contents.xposedModule = new XposedModuleInfo(applicationInfo,
+                                modernModule == null ? null : zipFile);
+                    }
+                    contents.license = LicenseDetector.detect(zipFile);
+                } catch (IOException | RuntimeException e) {
+                    Log.w(TAG, "Couldn't read the APK %s", e, path);
+                }
+            }
+            mApkContents.postValue(contents);
+        });
+    }
+
     @WorkerThread
     private void loadAppInfoInternal(@NonNull PackageInfo packageInfo, boolean isExternalApk) {
         String packageName = packageInfo.packageName;
@@ -901,5 +938,21 @@ public class AppInfoViewModel extends AndroidViewModel {
         public String signingCertSubject;
         @Nullable
         public String signingCertIssuer;
+    }
+
+    public static class ApkContents {
+        @Nullable
+        public XposedModuleInfo xposedModule;
+        @Nullable
+        public String glEsVersion;
+        @NonNull
+        public List<ApkSplits.Split> splits = Collections.emptyList();
+        /**
+         * One of {@link ApexStatus}'s values, or {@code null} below Android 10 and for an APK file.
+         */
+        @Nullable
+        public Integer apexStatus;
+        @Nullable
+        public LicenseDetector.Result license;
     }
 }

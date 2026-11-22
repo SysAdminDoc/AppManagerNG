@@ -3851,6 +3851,23 @@
     <string name="xposed_module_info">Xposed module info</string>
     <string name="title_description">Description</string>
     <string name="module_name">Module name</string>
+    <string name="apk_contents">Inside the APK</string>
+    <string name="not_declared">Not declared</string>
+    <string name="xposed_module">Xposed module</string>
+    <string name="xposed_module_legacy_summary">Legacy API, needs version <xliff:g id="min" example="82">%1$d</xliff:g> or later</string>
+    <string name="xposed_module_modern_summary">Modern API <xliff:g id="min" example="100">%1$d</xliff:g>, built for <xliff:g id="target" example="101">%2$d</xliff:g></string>
+    <string name="license_not_recognized">Not recognized</string>
+    <string name="license_files">License files</string>
+    <string name="split_type_density">Screen densities</string>
+    <string name="split_type_abi">CPU architectures</string>
+    <string name="split_type_feature">Feature modules</string>
+    <string name="split_type_other">Other splits</string>
+    <string name="split_group_summary"><xliff:g id="type" example="Languages">%1$s</xliff:g>: <xliff:g id="names" example="config.en, config.fr">%2$s</xliff:g> (<xliff:g id="size" example="24 kB">%3$s</xliff:g>)</string>
+    <string name="apex_and_mainline">APEX and Mainline</string>
+    <string name="apex_status_regular">Regular app</string>
+    <string name="apex_status_apex">APEX package</string>
+    <string name="apex_status_mainline_apex">Mainline module, shipped as an APEX</string>
+    <string name="apex_status_mainline_apk">Mainline module, shipped as an APK</string>
     <string name="version_with_apk_sha"><xliff:g id="version" example="Version 0.8.0 (34)">%1$s</xliff:g> · SHA <xliff:g id="sha" example="7a4b8c2e">%2$s</xliff:g></string>
     <string name="app_manager_is_running">AppManagerNG is running</string>
     <string name="tap_to_open_notification_settings">Tap for notification settings</string>
