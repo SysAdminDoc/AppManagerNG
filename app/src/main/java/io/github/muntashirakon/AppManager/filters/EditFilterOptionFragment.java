@@ -15,6 +15,7 @@ import static io.github.muntashirakon.AppManager.filters.options.FilterOption.TY
 
 import android.annotation.SuppressLint;
 import android.app.Dialog;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.InputType;
@@ -24,12 +25,15 @@ import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.CheckedTextView;
 
 import androidx.annotation.LayoutRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.os.BundleCompat;
 import androidx.core.widget.TextViewCompat;
 import androidx.fragment.app.DialogFragment;
@@ -143,6 +147,7 @@ public class EditFilterOptionFragment extends DialogFragment {
                 }
             }
             mGenericTextInputLayout.setErrorEnabled(false);
+            mDateTextInputLayout.setError(null);
         }
     };
 
@@ -188,6 +193,7 @@ public class EditFilterOptionFragment extends DialogFragment {
         }
         // Setup listeners
         filterSpinner.setOnItemClickListener((parent, v, position, id) -> {
+            filterSpinner.setError(null);
             mCurrentFilterOption = FilterOptions.create(filters.getItem(position).toString());
             updateUiForFilter(mCurrentFilterOption);
         });
@@ -195,6 +201,7 @@ public class EditFilterOptionFragment extends DialogFragment {
             if (mKeyAdapter == null || mCurrentFilterOption == null) {
                 return;
             }
+            mKeySpinner.setError(null);
             mCurrentKey = mKeyAdapter.getItem(position);
             int lastKeyType = mCurrentKeyType;
             mCurrentKeyType = Objects.requireNonNull(mCurrentFilterOption.getKeysWithType().get(mCurrentKey));
@@ -207,33 +214,78 @@ public class EditFilterOptionFragment extends DialogFragment {
         Objects.requireNonNull(mOnClickDialogButtonInterface);
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(activity);
         builder.setView(view)
-                .setPositiveButton(editMode ? R.string.update : R.string.add, (dialog, which) -> {
-                    if (mCurrentFilterOption == null) {
-                        UIUtils.displayLongToast(R.string.key_name_cannot_be_null);
-                        return;
-                    }
-                    Editable editable = mGenericEditText.getText();
-                    try {
-                        Objects.requireNonNull(mCurrentKey);
-                        mCurrentFilterOption.setKeyValue(mCurrentKey, TextUtils.isEmpty(editable) ? null : editable.toString());
-                    } catch (Exception e) {
-                        Log.w(TAG, e);
-                        UIUtils.displayLongToast(R.string.error_evaluating_input);
-                        return;
-                    }
-                    if (editMode) {
-                        mOnClickDialogButtonInterface.onUpdateItem(mPosition, mCurrentFilterOption);
-                    } else {
-                        mOnClickDialogButtonInterface.onAddItem(mCurrentFilterOption);
-                    }
-                })
+                // The real handler goes on the button once it's shown, so a value that doesn't work
+                // keeps the dialog and what was typed
+                .setPositiveButton(editMode ? R.string.update : R.string.add, null)
                 .setNegativeButton(R.string.cancel, (dialog, which) -> {
                     if (getDialog() != null) getDialog().cancel();
                 });
         if (editMode) {
             builder.setNeutralButton(R.string.delete, (dialog, which) -> mOnClickDialogButtonInterface.onDeleteItem(mPosition, mFilterOption.id));
         }
-        return builder.create();
+        AlertDialog dialog = builder.create();
+        dialog.setOnShowListener(d -> dialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(v -> {
+            if (dialog.isShowing() && applyInput(editMode, filterSpinner)) {
+                dialog.dismiss();
+            }
+        }));
+        mGenericEditText.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        mGenericEditText.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId != EditorInfo.IME_ACTION_DONE) {
+                return false;
+            }
+            Button positive = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+            if (positive != null) {
+                positive.performClick();
+            }
+            return true;
+        });
+        return dialog;
+    }
+
+    /**
+     * Puts the dialog's values in the filter and hands it on.
+     *
+     * @return {@code false} when a value doesn't work, with the reason shown at the field it's about
+     */
+    private boolean applyInput(boolean editMode, @NonNull MaterialSpinner filterSpinner) {
+        if (mCurrentFilterOption == null) {
+            filterSpinner.setError(getText(R.string.key_name_cannot_be_null));
+            filterSpinner.requestFocus();
+            return false;
+        }
+        if (mCurrentKey == null) {
+            mKeySpinner.setError(getText(R.string.key_name_cannot_be_null));
+            mKeySpinner.requestFocus();
+            return false;
+        }
+        Editable editable = mGenericEditText.getText();
+        try {
+            mCurrentFilterOption.setKeyValue(mCurrentKey, TextUtils.isEmpty(editable) ? null : editable.toString());
+        } catch (Exception e) {
+            Log.w(TAG, e);
+            showValueError(getText(R.string.error_evaluating_input));
+            return false;
+        }
+        if (editMode) {
+            mOnClickDialogButtonInterface.onUpdateItem(mPosition, mCurrentFilterOption);
+        } else {
+            mOnClickDialogButtonInterface.onAddItem(mCurrentFilterOption);
+        }
+        return true;
+    }
+
+    private void showValueError(@NonNull CharSequence error) {
+        if (mGenericTextInputLayout.getVisibility() == View.VISIBLE) {
+            mGenericTextInputLayout.setError(error);
+            mGenericEditText.requestFocus();
+        } else if (mDateTextInputLayout.getVisibility() == View.VISIBLE) {
+            mDateTextInputLayout.setError(error);
+            mDateEditText.requestFocus();
+        } else {
+            // Flags have no text field to put it under
+            UIUtils.displayLongToast(error);
+        }
     }
 
     private void updateUiForFilter(@NonNull FilterOption filterOption) {

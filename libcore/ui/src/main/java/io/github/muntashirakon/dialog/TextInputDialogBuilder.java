@@ -7,7 +7,11 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Typeface;
 import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.KeyEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -37,9 +41,23 @@ public class TextInputDialogBuilder {
 
     @Nullable
     private DialogInterface.OnShowListener mShowListener;
+    @Nullable
+    private OnValidatedClickListener mValidatedPositiveListener;
 
     public interface OnClickListener {
         void onClick(DialogInterface dialog, int which, @Nullable Editable inputText, boolean isChecked);
+    }
+
+    /**
+     * A positive action whose answer decides whether the dialog closes.
+     */
+    public interface OnValidatedClickListener {
+        /**
+         * @return {@code null} to accept the input and close the dialog, or the error to show under
+         * the field, which keeps the dialog open with the input as it was typed
+         */
+        @Nullable
+        CharSequence onClick(@NonNull DialogInterface dialog, int which, @Nullable Editable inputText, boolean isChecked);
     }
 
     @SuppressLint("InflateParams")
@@ -126,6 +144,7 @@ public class TextInputDialogBuilder {
     }
 
     public TextInputDialogBuilder setPositiveButton(@StringRes int textId, @Nullable OnClickListener listener) {
+        mValidatedPositiveListener = null;
         mBuilder.setPositiveButton(textId, (dialog, which) -> {
             if (listener != null) listener.onClick(dialog, which, mEditText.getText(), mCheckBox.isChecked());
         });
@@ -133,9 +152,22 @@ public class TextInputDialogBuilder {
     }
 
     public TextInputDialogBuilder setPositiveButton(@NonNull CharSequence text, @Nullable OnClickListener listener) {
+        mValidatedPositiveListener = null;
         mBuilder.setPositiveButton(text, (dialog, which) -> {
             if (listener != null) listener.onClick(dialog, which, mEditText.getText(), mCheckBox.isChecked());
         });
+        return this;
+    }
+
+    /**
+     * A positive button that checks the input first. The dialog closes only when the listener
+     * accepts it. Otherwise the listener's error shows under the field and the field keeps focus.
+     * The keyboard's action key (Done, Go or Send) and a hardware Enter go the same way.
+     */
+    public TextInputDialogBuilder setValidatedPositiveButton(@StringRes int textId, @NonNull OnValidatedClickListener listener) {
+        // The real click handler is put on the button once it's shown, so the dialog can't close itself
+        mBuilder.setPositiveButton(textId, null);
+        mValidatedPositiveListener = listener;
         return this;
     }
 
@@ -190,7 +222,47 @@ public class TextInputDialogBuilder {
     @NonNull
     public AlertDialog create() {
         AlertDialog dialog = mBuilder.create();
+        OnValidatedClickListener validatedListener = mValidatedPositiveListener;
+        if (validatedListener != null) {
+            mEditText.setOnEditorActionListener((v, actionId, event) -> {
+                boolean imeAction = actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_GO
+                        || actionId == EditorInfo.IME_ACTION_SEND;
+                boolean enterKey = actionId == EditorInfo.IME_NULL && event != null
+                        && (event.getKeyCode() == KeyEvent.KEYCODE_ENTER
+                        || event.getKeyCode() == KeyEvent.KEYCODE_NUMPAD_ENTER);
+                if (!imeAction && !enterKey) {
+                    return false;
+                }
+                // A hardware Enter arrives as a press and then a release, under the field's action
+                // on newer Android and as IME_NULL before. Act on the press, and take the release too.
+                if (event == null || event.getAction() == KeyEvent.ACTION_DOWN) {
+                    submit(dialog, validatedListener);
+                }
+                return true;
+            });
+            mEditText.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    // The error was about the old text
+                    if (mTextInputLayout.getError() != null) {
+                        mTextInputLayout.setError(null);
+                    }
+                }
+            });
+        }
         dialog.setOnShowListener(dialog1 -> {
+            if (validatedListener != null) {
+                Button positive = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+                positive.setOnClickListener(v -> submit(dialog, validatedListener));
+            }
             if (mShowListener != null) {
                 mShowListener.onShow(dialog1);
             }
@@ -206,5 +278,21 @@ public class TextInputDialogBuilder {
 
     public void show() {
         create().show();
+    }
+
+    private void submit(@NonNull AlertDialog dialog, @NonNull OnValidatedClickListener listener) {
+        if (!dialog.isShowing()) {
+            // A second tap, or Done and then the button, after the input was already taken
+            return;
+        }
+        CharSequence error = listener.onClick(dialog, DialogInterface.BUTTON_POSITIVE, mEditText.getText(),
+                mCheckBox.isChecked());
+        if (error == null) {
+            mTextInputLayout.setError(null);
+            dialog.dismiss();
+        } else {
+            mTextInputLayout.setError(error);
+            mEditText.requestFocus();
+        }
     }
 }

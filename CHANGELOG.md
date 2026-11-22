@@ -73,6 +73,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - In ADB mode, a copy of AppManagerNG in a work profile waited on its startup screen until the mode check timed out. The privileged service sent its connection to the main profile's copy instead of the one that started it, and now sends it to the one that asked.
 - Other apps can no longer start or stop a log recording. The recording widget's tap went to a part of the app every installed app could message, and now goes to one only the app itself can reach.
 - Settings search follows a language change right away. It kept showing and matching the titles of the language the app started in until you restarted it. Using or stopping a language file updates it too, even when the file is for the language already shown.
+- A tag name, log file name or filter value that doesn't work no longer closes its dialog and throws away what you typed. The dialog stays open with the reason under the field, and the keyboard's Done key runs the same check as the button.
 
 ## v0.8.0, 2026-11-15
 

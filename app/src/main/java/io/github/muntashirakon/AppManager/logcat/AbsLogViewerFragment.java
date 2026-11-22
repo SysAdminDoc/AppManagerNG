@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.logcat;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -11,6 +12,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.CheckBox;
 import android.widget.Filter;
 import android.widget.TextView;
@@ -19,6 +21,8 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
+import androidx.core.util.Consumer;
 import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Lifecycle;
@@ -386,20 +390,32 @@ public abstract class AbsLogViewerFragment extends Fragment implements MenuProvi
     }
 
     protected final void displaySaveLogDialog(boolean onlySelected) {
-        new TextInputDialogBuilder(mActivity, R.string.filename)
+        saveLogDialog(mActivity, filename ->
+                mViewModel.saveLogs(filename, onlySelected ? getSelectedLogsAsStrings() : getCurrentLogsAsListOfStrings()))
+                .show();
+    }
+
+    /**
+     * Asks for the file name to save the log under. A name that can't be used keeps the dialog
+     * open with the typed text and says why under the field.
+     */
+    @VisibleForTesting
+    @NonNull
+    static TextInputDialogBuilder saveLogDialog(@NonNull Context context, @NonNull Consumer<String> onFilename) {
+        return new TextInputDialogBuilder(context, R.string.filename)
                 .setTitle(R.string.save_log)
                 .setInputText(SaveLogHelper.createLogFilename())
-                .setPositiveButton(R.string.ok, (dialog, which, inputText, isChecked) -> {
+                .setInputInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS)
+                .setInputImeOptions(EditorInfo.IME_ACTION_DONE)
+                .setValidatedPositiveButton(R.string.ok, (dialog, which, inputText, isChecked) -> {
                     if (SaveLogHelper.isInvalidFilename(inputText)) {
-                        UIUtils.displayShortToast(R.string.enter_good_filename);
-                    } else {
-                        @SuppressWarnings("ConstantConditions")
-                        String filename = inputText.toString();
-                        mViewModel.saveLogs(filename, onlySelected ? getSelectedLogsAsStrings() : getCurrentLogsAsListOfStrings());
+                        return context.getText(R.string.enter_good_filename);
                     }
+                    //noinspection ConstantConditions
+                    onFilename.accept(inputText.toString());
+                    return null;
                 })
-                .setNegativeButton(R.string.cancel, null)
-                .show();
+                .setNegativeButton(R.string.cancel, null);
     }
 
     protected final void displayExportLogDialog(boolean onlySelected) {

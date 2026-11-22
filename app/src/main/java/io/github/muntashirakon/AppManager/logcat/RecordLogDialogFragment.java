@@ -7,6 +7,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.InputType;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 
 import androidx.annotation.NonNull;
@@ -27,7 +29,6 @@ import io.github.muntashirakon.AppManager.logcat.helper.WidgetHelper;
 import io.github.muntashirakon.AppManager.settings.LogViewerPreferences;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
-import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.dialog.TextInputDialogBuilder;
 import io.github.muntashirakon.dialog.TextInputDropdownDialogBuilder;
 
@@ -76,26 +77,28 @@ public class RecordLogDialogFragment extends DialogFragment {
         return new TextInputDialogBuilder(mActivity, R.string.enter_filename)
                 .setTitle(R.string.record_log)
                 .setInputText(logFilename)
-                .setPositiveButton(R.string.ok, (dialog, which, inputText, isChecked) -> {
+                .setInputInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS)
+                .setInputImeOptions(EditorInfo.IME_ACTION_DONE)
+                .setValidatedPositiveButton(R.string.ok, (dialog, which, inputText, isChecked) -> {
                     if (SaveLogHelper.isInvalidFilename(inputText)) {
-                        UIUtils.displayShortToast(R.string.enter_good_filename);
-                    } else {
-                        //noinspection ConstantConditions
-                        String filename = inputText.toString();
-                        Context context = mActivity.getApplicationContext();
-                        ThreadUtils.postOnBackgroundThread(() -> {
-                            Intent intent = ServiceHelper.getLogcatRecorderServiceIfNotAlreadyRunning(context, filename,
-                                    mFilterQuery, mLogLevel);
-                            ThreadUtils.postOnMainThread(() -> {
-                                if (intent != null) {
-                                    ContextCompat.startForegroundService(context, intent);
-                                }
-                                if (mListener != null && !(mActivity.isFinishing() || mActivity.isDestroyed())) {
-                                    mListener.onServiceStarted();
-                                }
-                            });
-                        });
+                        return getText(R.string.enter_good_filename);
                     }
+                    //noinspection ConstantConditions
+                    String filename = inputText.toString();
+                    Context context = mActivity.getApplicationContext();
+                    ThreadUtils.postOnBackgroundThread(() -> {
+                        Intent intent = ServiceHelper.getLogcatRecorderServiceIfNotAlreadyRunning(context, filename,
+                                mFilterQuery, mLogLevel);
+                        ThreadUtils.postOnMainThread(() -> {
+                            if (intent != null) {
+                                ContextCompat.startForegroundService(context, intent);
+                            }
+                            if (mListener != null && !(mActivity.isFinishing() || mActivity.isDestroyed())) {
+                                mListener.onServiceStarted();
+                            }
+                        });
+                    });
+                    return null;
                 })
                 .setNegativeButton(R.string.cancel, (dialog, which, inputText, isChecked) ->
                         WidgetHelper.updateWidgets(mActivity))

@@ -54,6 +54,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.webkit.MimeTypeMap;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -73,6 +74,7 @@ import androidx.annotation.WorkerThread;
 import androidx.collection.ArrayMap;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.pm.PackageInfoCompat;
+import androidx.core.util.Consumer;
 import androidx.core.view.MenuProvider;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Lifecycle;
@@ -1023,24 +1025,37 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         if (mPackageName == null) {
             return;
         }
-        new TextInputDialogBuilder(requireActivity(), R.string.tag_name)
+        String packageName = mPackageName;
+        newTagDialog(requireActivity(), tag -> {
+            store.addTag(packageName, tag);
+            if (mMainModel != null) {
+                mMainModel.getTagsAlteredLiveData().setValue(true);
+            }
+            // Reopen the picker so the new tag can be assigned/reviewed.
+            showEditTagsDialog();
+        }).show();
+    }
+
+    /**
+     * Asks for a tag name. A name that isn't a valid tag keeps the dialog open with the typed text
+     * and says why under the field.
+     */
+    @VisibleForTesting
+    @NonNull
+    static TextInputDialogBuilder newTagDialog(@NonNull Context context, @NonNull Consumer<String> onTag) {
+        return new TextInputDialogBuilder(context, R.string.tag_name)
                 .setTitle(R.string.new_tag)
-                .setPositiveButton(R.string.add, (dialog, which, inputText, isChecked) -> {
-                    if (inputText == null) return;
-                    String tag = inputText.toString().trim();
+                .setInputInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS)
+                .setInputImeOptions(EditorInfo.IME_ACTION_DONE)
+                .setValidatedPositiveButton(R.string.add, (dialog, which, inputText, isChecked) -> {
+                    String tag = inputText != null ? inputText.toString().trim() : "";
                     if (!AppTagStore.isValidTag(tag)) {
-                        UIUtils.displayShortToast(R.string.invalid_tag);
-                        return;
+                        return context.getText(R.string.invalid_tag);
                     }
-                    store.addTag(mPackageName, tag);
-                    if (mMainModel != null) {
-                        mMainModel.getTagsAlteredLiveData().setValue(true);
-                    }
-                    // Reopen the picker so the new tag can be assigned/reviewed.
-                    showEditTagsDialog();
+                    onTag.accept(tag);
+                    return null;
                 })
-                .setNegativeButton(R.string.cancel, null)
-                .show();
+                .setNegativeButton(R.string.cancel, null);
     }
 
     // T20-C: capture and show a point-in-time memory snapshot (dumpsys meminfo
