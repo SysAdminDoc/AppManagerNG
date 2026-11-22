@@ -257,6 +257,9 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     private SwipeRefreshLayout mSwipeRefresh;
     private CharSequence mAppLabel;
     private LinearProgressIndicator mProgressIndicator;
+    /** Each request is made once per screen however often the list is rebuilt. Main thread only. */
+    private boolean mAskedForUsageAccess;
+    private boolean mAskedForPhoneState;
     private AppDetailsViewModel mMainModel;
     private AppInfoViewModel mAppInfoModel;
     private AppInfoRecyclerAdapter mAdapter;
@@ -4339,37 +4342,47 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         if (FeatureController.isUsageAccessEnabled()) {
             // Grant optional READ_PHONE_STATE permission
             if (AppUsageStatsManager.requireReadPhoneStatePermission()) {
-                ThreadUtils.postOnMainThread(() -> mRequestPerm.launch(Manifest.permission.READ_PHONE_STATE, granted -> {
-                    if (granted) {
-                        mAppInfoModel.loadAppInfo(mPackageInfo, mIsExternalApk);
-                    }
-                }));
+                ThreadUtils.postOnMainThread(() -> {
+                    if (mAskedForPhoneState || !isAdded()) return;
+                    mAskedForPhoneState = true;
+                    mRequestPerm.launch(Manifest.permission.READ_PHONE_STATE, granted -> {
+                        if (granted) {
+                            mAppInfoModel.loadAppInfo(mPackageInfo, mIsExternalApk);
+                        }
+                    });
+                });
             }
         }
         // The Usage Access screen changes only AppManagerNG's own grant, so that grant alone decides
         // whether to send the user there; a privileged identity's grant is irrelevant (issue #16).
         if (!SelfPermissions.hasAppUsageAccessGrant()) {
-            ThreadUtils.postOnMainThread(() -> new MaterialAlertDialogBuilder(mActivity)
-                    .setTitle(R.string.grant_usage_access)
-                    .setMessage(R.string.grant_usage_acess_message)
-                    .setPositiveButton(R.string.go, (dialog, which) -> {
-                        try {
-                            mActivityLauncher.launch(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS), result -> {
-                                if (SelfPermissions.hasAppUsageAccessGrant()) {
-                                    FeatureController.getInstance().modifyState(FeatureController
-                                            .FEAT_USAGE_ACCESS, true);
-                                    // Reload app info
-                                    mAppInfoModel.loadAppInfo(mPackageInfo, mIsExternalApk);
-                                }
-                            });
-                        } catch (SecurityException ignore) {
-                        }
-                    })
-                    .setNegativeButton(R.string.cancel, null)
-                    .setNeutralButton(R.string.never_ask, (dialog, which) -> FeatureController.getInstance().modifyState(
-                            FeatureController.FEAT_USAGE_ACCESS, false))
-                    .setCancelable(false)
-                    .show());
+            ThreadUtils.postOnMainThread(() -> {
+                // This list is rebuilt each time App details posts its data, often twice while it
+                // opens, so ask once per screen
+                if (mAskedForUsageAccess || !isAdded()) return;
+                mAskedForUsageAccess = true;
+                new MaterialAlertDialogBuilder(mActivity)
+                        .setTitle(R.string.grant_usage_access)
+                        .setMessage(R.string.grant_usage_acess_message)
+                        .setPositiveButton(R.string.go, (dialog, which) -> {
+                            try {
+                                mActivityLauncher.launch(new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS), result -> {
+                                    if (SelfPermissions.hasAppUsageAccessGrant()) {
+                                        FeatureController.getInstance().modifyState(FeatureController
+                                                .FEAT_USAGE_ACCESS, true);
+                                        // Reload app info
+                                        mAppInfoModel.loadAppInfo(mPackageInfo, mIsExternalApk);
+                                    }
+                                });
+                            } catch (SecurityException ignore) {
+                            }
+                        })
+                        .setNegativeButton(R.string.cancel, null)
+                        .setNeutralButton(R.string.never_ask, (dialog, which) -> FeatureController.getInstance()
+                                .modifyState(FeatureController.FEAT_USAGE_ACCESS, false))
+                        .setCancelable(false)
+                        .show();
+            });
             return;
         }
         PackageSizeInfo sizeInfo = appInfo.sizeInfo;

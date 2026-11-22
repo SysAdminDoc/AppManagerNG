@@ -57,6 +57,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Picking a mode in the first-run setup only took effect at the next start. On a phone where ADB over TCP was already on, picking No root kept working through ADB until then. The pick applies right away now.
 - Freezing an app and unfreezing it again within half a minute raised a "reverted by the system" alert and marked the app, though nothing had undone anything. The same went for a component, an app op or battery optimization changed twice in a row. Only a change the system really undid is flagged now.
 - The Dhizuku status in the first-run setup said Dhizuku was ready while none of its operations were wired up, and counted it as Shizuku being ready (discussion #5). Onboarding, Privileges and Mode of operation now say what Dhizuku can and can't run on your phone. When Dhizuku turns AppManagerNG down, the message says where in Dhizuku to unblock it.
+- Opening App details without usage access asked for it twice, since the screen loads its details twice while it opens. It asks once now.
 - File Properties showed the size in bytes with the word "bytes" in English whatever the app's language. It can be translated now, and Russian has it.
 
 ## v0.8.0, 2026-11-15
