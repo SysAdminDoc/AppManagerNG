@@ -227,6 +227,9 @@ public final class LanguagePackManager {
     @NonNull
     private final SharedPreferences mPrefs;
     private final Object mTableLock = new Object();
+    /** What {@link #prepare} last read for compatibility mode, until {@link #load} takes it. */
+    @Nullable
+    private volatile Prepared mPrepared;
     private final Object mDebloatLock = new Object();
     @Nullable
     private AndroidSourceStrings mSource;
@@ -377,6 +380,9 @@ public final class LanguagePackManager {
             File stampFile = new File(mTableDir, code + suffix + STAMP_SUFFIX);
             String stamp = stamp(packFile, loader ? TABLE_FORMAT : CompatPack.FORMAT);
             if (table.isFile() && stampFile.isFile() && stamp.equals(readText(stampFile))) {
+                if (!loader) {
+                    keepForUse(table, readTable(table));
+                }
                 return table;
             }
             LanguagePack pack = readStored(code);
@@ -385,7 +391,37 @@ public final class LanguagePackManager {
                     : CompatPack.build(source(), pack).toBytes();
             writeAtomically(table, prepared);
             writeAtomically(stampFile, stamp.getBytes(StandardCharsets.UTF_8));
+            if (!loader) {
+                keepForUse(table, prepared);
+            }
             return table;
+        }
+    }
+
+    /**
+     * Holds the text {@link #prepare} read for compatibility mode, so {@link #use} on the main
+     * thread doesn't read the file again.
+     */
+    private void keepForUse(@NonNull File table, @NonNull byte[] data) throws IOException {
+        mPrepared = new Prepared(table, CompatPack.fromBytes(data));
+    }
+
+    @NonNull
+    private static byte[] readTable(@NonNull File table) throws IOException {
+        try (InputStream in = new FileInputStream(table)) {
+            return readAll(in);
+        }
+    }
+
+    private static final class Prepared {
+        @NonNull
+        final File table;
+        @NonNull
+        final CompatPack pack;
+
+        Prepared(@NonNull File table, @NonNull CompatPack pack) {
+            this.table = table;
+            this.pack = pack;
         }
     }
 
@@ -692,11 +728,10 @@ public final class LanguagePackManager {
         if (hasResourcesLoader()) {
             loadTable(prepared);
         } else {
-            byte[] data;
-            try (InputStream in = new FileInputStream(prepared)) {
-                data = readAll(in);
-            }
-            LanguagePackCompat.setActive(CompatPack.fromBytes(data));
+            Prepared kept = mPrepared;
+            mPrepared = null;
+            LanguagePackCompat.setActive(kept != null && kept.table.equals(prepared) ? kept.pack
+                    : CompatPack.fromBytes(readTable(prepared)));
         }
     }
 

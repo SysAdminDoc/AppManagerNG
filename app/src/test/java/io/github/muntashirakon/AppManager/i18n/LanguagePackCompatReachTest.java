@@ -165,6 +165,16 @@ public class LanguagePackCompatReachTest {
         }
     }
 
+    @Test
+    public void usingAPreparedFileReadsNothingMoreFromStorage() throws Exception {
+        mManager.importPack(LanguagePackCompatTest.pack("fi", ENTRIES));
+        File table = mManager.prepare("fi");
+        // Use runs on the main thread; whatever it needs was read when the file was prepared
+        assertTrue(table.delete());
+        mManager.use("fi", table);
+        assertEquals("Peruuta", mContext.getString(R.string.cancel));
+    }
+
     @Nullable
     private static MenuItem itemWithSubmenu(@NonNull MenuBuilder menu, @NonNull String title) {
         for (int i = 0; i < menu.size(); ++i) {
