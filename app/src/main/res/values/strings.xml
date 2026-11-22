@@ -1321,7 +1321,6 @@
     <string name="installer_privilege_cascade_chip_shizuku">Shizuku</string>
     <string name="installer_privilege_cascade_chip_root">Root</string>
     <string name="installer_privilege_cascade_chip_system_confirmation">Android confirmation</string>
-    <string name="installer_privilege_cascade_chip_dhizuku">Dhizuku detected</string>
     <string name="installer_privilege_cascade_chip_miui">MIUI optimization check</string>
     <string name="installer_privilege_cascade_trying">Trying %1$s installer access…</string>
     <string name="installer_privilege_cascade_using">Using %1$s installer access.</string>

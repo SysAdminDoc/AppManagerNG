@@ -1328,7 +1328,6 @@
     <string name="installer_privilege_cascade_chip_current">Текущий режим</string>
     <string name="installer_privilege_cascade_chip_adb">Сессия ADB</string>
     <string name="installer_privilege_cascade_chip_system_confirmation">Подтверждение Android</string>
-    <string name="installer_privilege_cascade_chip_dhizuku">Обнаружен Dhizuku</string>
     <string name="installer_privilege_cascade_chip_miui">Проверка оптимизации MIUI</string>
     <string name="installer_privilege_cascade_trying">Пробуем доступ установщика через %1$s…</string>
     <string name="installer_privilege_cascade_using">Используем доступ установщика через %1$s.</string>

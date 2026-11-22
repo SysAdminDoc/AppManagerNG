@@ -76,6 +76,8 @@ import io.github.muntashirakon.AppManager.apk.signing.SignerPinStore;
 import io.github.muntashirakon.AppManager.compat.DeveloperVerificationCompat;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuInstaller;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuSession;
 import io.github.muntashirakon.AppManager.ipc.ProxyBinder;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
@@ -603,6 +605,8 @@ public final class PackageInstallerCompat {
     private int mAttemptNumber = 1;
     private final Context mContext;
     private final boolean mHasInstallPackagePermission;
+    // The open session belongs to the Dhizuku owner, see DhizukuInstaller
+    private boolean mUseDhizuku;
     private static final String PREFS_INSTALLER = "installer_state";
     private static final String KEY_SAVED_VERIFY_ADB = "saved_verify_adb_installs";
     private int mLastVerifyAdbInstallsResult;
@@ -1246,7 +1250,7 @@ public final class PackageInstallerCompat {
     private boolean commit(int userId) {
         IntentSender sender;
         LocalIntentReceiver intentReceiver;
-        if (mHasInstallPackagePermission) {
+        if (mHasInstallPackagePermission || mUseDhizuku) {
             Log.d(TAG, "Commit: Commit via LocalIntentReceiver...");
             try {
                 intentReceiver = new LocalIntentReceiver();
@@ -1346,16 +1350,34 @@ public final class PackageInstallerCompat {
         String requestedInstallerPackageName = canChangeInstaller ? installerName : null;
         String installerPackageName = Build.VERSION.SDK_INT < Build.VERSION_CODES.P && canChangeInstaller
                 ? installerName : BuildConfig.APPLICATION_ID;
-        try {
-            mPackageInstaller = PackageManagerCompat.getPackageInstaller();
-        } catch (RemoteException e) {
-            callFinish(STATUS_FAILURE_SESSION_CREATE, withCause(
-                    "STATUS_FAILURE_SESSION_CREATE: Could not reach Android's package installer.", e));
-            Log.e(TAG, "OpenSession: Could not get PackageInstaller.", e);
-            return false;
+        mUseDhizuku = false;
+        if (!mHasInstallPackagePermission && DhizukuSession.isPermittedCached()
+                && DhizukuInstaller.shouldUse(false, true, userId, (installFlags & INSTALL_ALL_USERS) != 0,
+                UserHandleHidden.myUserId(), Users.getAllUserIds().length)
+                && DhizukuSession.isReady(mContext)) {
+            // A device owner installs without a prompt. Android checks the installer name
+            // against the calling uid, which is the owner's.
+            try {
+                mPackageInstaller = DhizukuInstaller.getPackageInstaller(mContext);
+                installerPackageName = DhizukuInstaller.getOwnerPackageName(mContext);
+                mUseDhizuku = true;
+                Log.d(TAG, "OpenSession: installing through Dhizuku.");
+            } catch (RemoteException e) {
+                Log.w(TAG, "OpenSession: Dhizuku stopped answering, asking the user instead.", e);
+            }
         }
-        // Clean old sessions
-        cleanOldSessions();
+        if (!mUseDhizuku) {
+            try {
+                mPackageInstaller = PackageManagerCompat.getPackageInstaller();
+            } catch (RemoteException e) {
+                callFinish(STATUS_FAILURE_SESSION_CREATE, withCause(
+                        "STATUS_FAILURE_SESSION_CREATE: Could not reach Android's package installer.", e));
+                Log.e(TAG, "OpenSession: Could not get PackageInstaller.", e);
+                return false;
+            }
+            // Clean old sessions. Dhizuku's sessions belong to the owner, not to this app.
+            cleanOldSessions();
+        }
         // Create install session
         SessionParams sessionParams = new SessionParams(SessionParams.MODE_FULL_INSTALL);
         if (disableVerification) {
@@ -1438,8 +1460,12 @@ public final class PackageInstallerCompat {
             return false;
         }
         try {
-            mSession = Refine.unsafeCast(new PackageInstallerHidden.Session(IPackageInstallerSession.Stub.asInterface(
-                    new ProxyBinder(mPackageInstaller.openSession(mSessionId).asBinder()))));
+            IBinder sessionBinder = mPackageInstaller.openSession(mSessionId).asBinder();
+            // Only the uid that created the session may write to it
+            sessionBinder = mUseDhizuku ? DhizukuInstaller.wrapSession(mContext, sessionBinder)
+                    : new ProxyBinder(sessionBinder);
+            mSession = Refine.unsafeCast(new PackageInstallerHidden.Session(
+                    IPackageInstallerSession.Stub.asInterface(sessionBinder)));
             Log.d(TAG, "OpenSession: session opened.");
         } catch (RemoteException e) {
             callFinish(STATUS_FAILURE_SESSION_CREATE, withCause(
@@ -1836,20 +1862,41 @@ public final class PackageInstallerCompat {
                 Log.e(TAG, "Uninstall: Could not get PackageInstaller.", e);
                 return false;
             }
+            boolean allUsers = userId == UserHandleHidden.USER_ALL;
             userId = getCorrectUserIdForUninstallation(packageName, userId);
-            try {
-                mPackageInstaller = PackageManagerCompat.getPackageInstaller();
-            } catch (RemoteException e) {
-                callFinish(STATUS_FAILURE_SESSION_CREATE, withCause(
-                        "STATUS_FAILURE_SESSION_CREATE: Could not reach Android's package installer.", e));
-                Log.e(TAG, "Uninstall: Could not get PackageInstaller.", e);
-                return false;
+            boolean useDhizuku = false;
+            if (!hasDeletePackagesPermission && DhizukuSession.isPermittedCached()
+                    && DhizukuInstaller.shouldUse(false, true, userId, allUsers, UserHandleHidden.myUserId(),
+                    Users.getAllUserIds().length)
+                    && DhizukuSession.isReady(mContext)) {
+                // A device owner uninstalls without a prompt. Android checks the caller's package
+                // against the calling uid, which is the owner's.
+                try {
+                    mPackageInstaller = DhizukuInstaller.getPackageInstaller(mContext);
+                    callerPackageName = DhizukuInstaller.getOwnerPackageName(mContext);
+                    // Only one user here, and an owner acts on its own user
+                    flags &= ~DELETE_ALL_USERS;
+                    useDhizuku = true;
+                    Log.d(TAG, "Uninstall: uninstalling through Dhizuku.");
+                } catch (RemoteException e) {
+                    Log.w(TAG, "Uninstall: Dhizuku stopped answering, asking the user instead.", e);
+                }
+            }
+            if (!useDhizuku) {
+                try {
+                    mPackageInstaller = PackageManagerCompat.getPackageInstaller();
+                } catch (RemoteException e) {
+                    callFinish(STATUS_FAILURE_SESSION_CREATE, withCause(
+                            "STATUS_FAILURE_SESSION_CREATE: Could not reach Android's package installer.", e));
+                    Log.e(TAG, "Uninstall: Could not get PackageInstaller.", e);
+                    return false;
+                }
             }
 
             // Perform uninstallation
             IntentSender sender;
             LocalIntentReceiver intentReceiver;
-            if (hasDeletePackagesPermission) {
+            if (hasDeletePackagesPermission || useDhizuku) {
                 Log.d(TAG, "Uninstall: Uninstall via LocalIntentReceiver...");
                 try {
                     intentReceiver = new LocalIntentReceiver();
@@ -1886,6 +1933,11 @@ public final class PackageInstallerCompat {
                 waitForPackageInstallerBroadcasts("Uninstall");
             } else {
                 Intent resultIntent = intentReceiver.getResult(INSTALL_RESULT_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+                if (useDhizuku && resultIntent != null && resultIntent.getIntExtra(PackageInstaller.EXTRA_STATUS,
+                        PackageInstaller.STATUS_FAILURE) == PackageInstaller.STATUS_PENDING_USER_ACTION) {
+                    // A profile owner that isn't affiliated still has to ask the user
+                    resultIntent = awaitUserAction(intentReceiver, resultIntent);
+                }
                 if (resultIntent != null) {
                     mFinalStatus = resultIntent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE);
                     mStatusMessage = resultIntent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);

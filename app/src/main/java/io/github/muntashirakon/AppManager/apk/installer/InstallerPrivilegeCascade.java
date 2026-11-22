@@ -16,7 +16,7 @@ import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.adb.AdbUtils;
-import io.github.muntashirakon.AppManager.dhizuku.DhizukuBridge;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuSession;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.progress.NotificationProgressHandler.NotificationInfo;
 import io.github.muntashirakon.AppManager.progress.ProgressHandler;
@@ -43,7 +43,7 @@ public final class InstallerPrivilegeCascade {
     @VisibleForTesting
     static final String ROUTE_SYSTEM_CONFIRMATION = "system_confirmation";
     @VisibleForTesting
-    static final String ROUTE_DHIZUKU_INFO = "dhizuku_info";
+    static final String ROUTE_DHIZUKU = "dhizuku";
     @VisibleForTesting
     static final String ROUTE_MIUI_NUDGE = "miui_nudge";
 
@@ -52,14 +52,12 @@ public final class InstallerPrivilegeCascade {
 
     @NonNull
     public static Plan getPreviewPlan(@NonNull Context context) {
-        Context appContext = context.getApplicationContext();
-        DhizukuBridge.Result dhizuku = DhizukuBridge.probe(appContext);
         return buildPlan(
                 SelfPermissions.checkSelfOrRemotePermission(Manifest.permission.INSTALL_PACKAGES),
                 SelfPermissions.checkSelfPermission(Manifest.permission.INTERNET) && AdbUtils.isAdbdRunning(),
                 ShizukuBridge.isUsable(),
                 Ops.hasRoot(),
-                dhizuku.isOfficialOwner() && dhizuku.providerVisible && dhizuku.apiPermissionGranted,
+                DhizukuSession.isPermittedCached(),
                 MiuiUtils.isMiui() && !MiuiUtils.isMiuiOptimizationDisabled());
     }
 
@@ -68,11 +66,28 @@ public final class InstallerPrivilegeCascade {
                                                    @Nullable ProgressHandler progressHandler) {
         Context appContext = context.getApplicationContext();
         Plan plan = getPreviewPlan(appContext);
-        if (plan.selectedMode == null || ROUTE_CURRENT.equals(plan.selectedRoute)) {
+        if (ROUTE_CURRENT.equals(plan.selectedRoute) || ROUTE_SYSTEM_CONFIRMATION.equals(plan.selectedRoute)) {
             return new Activation(appContext, Ops.getMode(), null, plan);
         }
         String originalMode = Ops.getMode();
+        boolean modeChanged = false;
         for (Step step : plan.steps) {
+            if (step.direct) {
+                // Dhizuku works next to the user's own mode, so put that back first
+                if (modeChanged) {
+                    restoreMode(appContext, originalMode);
+                    modeChanged = false;
+                }
+                postProgress(appContext, progressHandler, appContext.getString(
+                        R.string.installer_privilege_cascade_trying, appContext.getString(step.labelRes)));
+                if (DhizukuSession.isReady(appContext)) {
+                    postProgress(appContext, progressHandler, appContext.getString(
+                            R.string.installer_privilege_cascade_using, appContext.getString(step.labelRes)));
+                    return new Activation(appContext, originalMode, null, plan);
+                }
+                Log.w(TAG, "Installer privilege cascade route %s failed: Dhizuku did not answer", step.route);
+                continue;
+            }
             if (step.mode == null) {
                 continue;
             }
@@ -80,6 +95,7 @@ public final class InstallerPrivilegeCascade {
                     R.string.installer_privilege_cascade_trying, appContext.getString(step.labelRes)));
             try {
                 Ops.setMode(step.mode);
+                modeChanged = true;
                 int status = Ops.init(appContext, true);
                 if (status == Ops.STATUS_SUCCESS
                         && SelfPermissions.checkSelfOrRemotePermission(Manifest.permission.INSTALL_PACKAGES)) {
@@ -92,7 +108,9 @@ public final class InstallerPrivilegeCascade {
                 Log.e(TAG, "Installer privilege cascade route " + step.route + " failed.", e);
             }
         }
-        restoreMode(appContext, originalMode);
+        if (modeChanged) {
+            restoreMode(appContext, originalMode);
+        }
         postProgress(appContext, progressHandler,
                 appContext.getString(R.string.installer_privilege_cascade_system_confirmation_progress));
         return new Activation(appContext, originalMode, null, plan);
@@ -170,14 +188,20 @@ public final class InstallerPrivilegeCascade {
                 }
                 steps.add(step);
             }
+            if (dhizukuReady) {
+                // A device owner installs without a prompt, as the owner, with no mode switch
+                Step step = Step.direct(ROUTE_DHIZUKU, R.string.privilege_health_dhizuku_title, false);
+                if (selectedRoute == null) {
+                    selectedRoute = ROUTE_DHIZUKU;
+                    step = step.asSelected();
+                }
+                steps.add(step);
+            }
             if (selectedRoute == null) {
                 selectedRoute = ROUTE_SYSTEM_CONFIRMATION;
                 steps.add(Step.info(ROUTE_SYSTEM_CONFIRMATION,
                         R.string.installer_privilege_cascade_chip_system_confirmation));
             }
-        }
-        if (dhizukuReady) {
-            steps.add(Step.info(ROUTE_DHIZUKU_INFO, R.string.installer_privilege_cascade_chip_dhizuku));
         }
         if (miuiNudge) {
             steps.add(Step.info(ROUTE_MIUI_NUDGE, R.string.installer_privilege_cascade_chip_miui));
@@ -266,7 +290,7 @@ public final class InstallerPrivilegeCascade {
             for (Step step : steps) {
                 labels.add(context.getString(step.selected
                                 ? R.string.installer_privilege_cascade_chip_try
-                                : step.mode != null
+                                : step.mode != null || step.direct
                                 ? R.string.installer_privilege_cascade_chip_fallback
                                 : R.string.installer_privilege_cascade_chip_info,
                         context.getString(step.labelRes)));
@@ -294,33 +318,43 @@ public final class InstallerPrivilegeCascade {
         @Nullable
         public final String mode;
         public final boolean selected;
+        /**
+         * Installs without switching the operating mode (Dhizuku).
+         */
+        public final boolean direct;
 
         private Step(@NonNull String route, @StringRes int labelRes, @Nullable String mode,
-                     boolean selected) {
+                     boolean selected, boolean direct) {
             this.route = route;
             this.labelRes = labelRes;
             this.mode = mode;
             this.selected = selected;
+            this.direct = direct;
         }
 
         @NonNull
         private static Step selected(@NonNull String route, @StringRes int labelRes, @Nullable String mode) {
-            return new Step(route, labelRes, mode, true);
+            return new Step(route, labelRes, mode, true, false);
         }
 
         @NonNull
         private static Step fallback(@NonNull String route, @StringRes int labelRes, @Nullable String mode) {
-            return new Step(route, labelRes, mode, false);
+            return new Step(route, labelRes, mode, false, false);
         }
 
         @NonNull
         private static Step info(@NonNull String route, @StringRes int labelRes) {
-            return new Step(route, labelRes, null, false);
+            return new Step(route, labelRes, null, false, false);
+        }
+
+        @NonNull
+        private static Step direct(@NonNull String route, @StringRes int labelRes, boolean selected) {
+            return new Step(route, labelRes, null, selected, true);
         }
 
         @NonNull
         private Step asSelected() {
-            return new Step(route, labelRes, mode, true);
+            return new Step(route, labelRes, mode, true, direct);
         }
     }
 }
