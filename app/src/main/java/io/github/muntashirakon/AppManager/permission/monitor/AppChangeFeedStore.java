@@ -45,8 +45,8 @@ public final class AppChangeFeedStore {
         this(new File(appContext.getFilesDir(), FILE_NAME));
     }
 
-    @VisibleForTesting
-    AppChangeFeedStore(@NonNull File file) {
+    @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
+    public AppChangeFeedStore(@NonNull File file) {
         mFile = new DurableFile(file);
     }
 

@@ -346,6 +346,12 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
 
 ### P3
 
+- [ ] P3: Act on a permission watcher entry from the App change feed
+  Why: the feed now keeps each app the watcher finds out of step with a rule (`PermissionWatchWorker.FEED_KIND`), but an entry is only a record. AppOpsNext 1.6.7 (2026-11-14) offers "restore previous" and "keep current" on each such entry.
+  Touches: the feed list in `settings/PrivacyPreferences.java`, `permission/watcher/` (apply the rule, or change the rule to what was found), feed entry tests.
+  Acceptance: a watcher entry offers putting the rule's state back (only while root or ADB mode is running) and keeping what was found (which changes the rule); both record a new feed entry; other kinds of entries offer neither.
+  Complexity: M
+
 - [ ] P3: Keep the code editor's "unsaved changes were lost" note across a rotation
   Why: after Android closes the app, the editor says once that edits weren't saved. The flag lives on the fragment and is read from saved state only while the view model has no text, so if the file finishes reading while the phone is being turned, the new view skips the flag and the note never shows.
   Evidence: `editor/CodeEditorFragment.java` (`mUnsavedEditsLost`, read in `onViewCreated` only when `getContentLiveData().getValue() == null`).
@@ -370,14 +376,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
 ## Research-Driven Additions (2026-09-05)
 
 ### P2
-
-- [ ] P2: Log permission watcher drift to the app change feed
-  Why: the watcher (`permission/watcher/`) reports a rule mismatch it couldn't fix only as a notification, so once that's dismissed there's no record of which app drifted from the user's rule or when.
-  Evidence: `permission/watcher/PermissionWatchWorker.java:49-52` passes the report to `PermissionWatchNotifier.notify` and nothing else; `permission/monitor/AppChangeFeedStore.java` already keeps the install and update history.
-  Touches: `permission/watcher/PermissionWatchWorker.java`, `permission/monitor/AppChangeFeedStore.java`, the feed's type labels, a worker test.
-  Acceptance: every drift in a report, fixed or not, appends one feed entry naming the app, the permission or op, the rule's state and the state found; an entry for a drift that was fixed says so; a test with a faked rule DAO and grant lookup asserts the entries and fails with the append removed.
-  Research 2026-11-14: AppOpsNext 1.6.7 (2026-11-14) lists every permission that no longer matches what it last set, with "restore previous" and "keep current" per entry. Those two actions on a feed entry would make the record useful, not just visible.
-  Complexity: S
 
 - [ ] P2: Bound the build-expiry lockout so it cannot strand a user
   Why: an expired prerelease build shows a non-cancelable dialog with no way through, expiry is decided from an unvalidated device clock, and the debug update link points at a page this project does not use.

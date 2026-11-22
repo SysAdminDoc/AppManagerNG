@@ -7,15 +7,26 @@ import static org.junit.Assert.assertTrue;
 
 import static io.github.muntashirakon.AppManager.permission.watcher.WatchTestDb.permission;
 
+import androidx.annotation.NonNull;
+
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
+
+import io.github.muntashirakon.AppManager.permission.monitor.AppChangeFeedEntry;
+import io.github.muntashirakon.AppManager.permission.monitor.AppChangeFeedStore;
 
 @RunWith(RobolectricTestRunner.class)
 public class PermissionWatchWorkerTest {
@@ -29,6 +40,9 @@ public class PermissionWatchWorkerTest {
     private final WatchRule mOneWorkProfile = permission(ONE, 10, "android.permission.CAMERA", WatchRule.STATE_DENY);
     private final WatchRule mTwoIgnored = permission(TWO, 0, "android.permission.READ_CONTACTS",
             WatchRule.STATE_IGNORE);
+
+    @Rule
+    public final TemporaryFolder mTemp = new TemporaryFolder();
 
     private PermissionWatchDb mDb;
     private WatchRuleDao mDao;
@@ -81,6 +95,47 @@ public class PermissionWatchWorkerTest {
     }
 
     @Test
+    public void everyDriftGoesInTheChangeFeedWithWhatWasFoundAndWhatWasDone() {
+        mBackend.privileged = true;
+        mBackend.refused.add(FakeWatchBackend.key(mTwoMic));
+        AppChangeFeedStore feed = new AppChangeFeedStore(new File(mTemp.getRoot(), "feed.json"));
+
+        PermissionWatcher.Report report = check(feed);
+
+        assertEquals(4, report.drifts.size());
+        assertEquals(sorted(
+                        ONE + " | com.example.one: CAMERA didn't match your rule"
+                                + " | It was allowed, and your rule says deny. It was changed back.",
+                        ONE + " | com.example.one: ACCESS_FINE_LOCATION didn't match your rule"
+                                + " | It was denied, and your rule says allow. It was changed back.",
+                        TWO + " | com.example.two: RECORD_AUDIO didn't match your rule"
+                                + " | It was allowed, and your rule says deny."
+                                + " Changing it back didn't work: refused android.permission.RECORD_AUDIO",
+                        ONE + " | com.example.one (user 10): CAMERA didn't match your rule"
+                                + " | It was allowed, and your rule says deny. It was changed back."),
+                watchEntries(feed));
+    }
+
+    @Test
+    public void aDriftLeftAsItIsGoesInTheFeedOnceNotOnEveryCheck() {
+        mBackend.privileged = false;
+        AppChangeFeedStore feed = new AppChangeFeedStore(new File(mTemp.getRoot(), "feed.json"));
+
+        check(feed);
+        check(feed);
+
+        List<String> entries = watchEntries(feed);
+        assertEquals(entries.toString(), 4, entries.size());
+        assertTrue(entries.contains(TWO + " | com.example.two: RECORD_AUDIO didn't match your rule"
+                + " | It was allowed, and your rule says deny. Root or ADB mode isn't running, so nothing was changed."));
+
+        // Once it can be changed back, that goes on record too
+        mBackend.privileged = true;
+        check(feed);
+        assertEquals(8, watchEntries(feed).size());
+    }
+
+    @Test
     public void anUpdateChecksOnlyThatAppForThatUser() {
         mBackend.privileged = true;
 
@@ -91,5 +146,31 @@ public class PermissionWatchWorkerTest {
                 mBackend.reads);
         assertEquals(Arrays.asList("grant " + FakeWatchBackend.key(mOneLocation),
                 "revoke " + FakeWatchBackend.key(mOneCamera)), mBackend.applied);
+    }
+
+    @NonNull
+    private PermissionWatcher.Report check(@NonNull AppChangeFeedStore feed) {
+        // Labels are looked up elsewhere; the package name keeps the entries easy to read here
+        return PermissionWatchWorker.checkAndRecord(RuntimeEnvironment.getApplication(), mDao, mBackend, true,
+                null, 0, feed, packageName -> packageName);
+    }
+
+    @NonNull
+    private static List<String> watchEntries(@NonNull AppChangeFeedStore feed) {
+        List<String> entries = new ArrayList<>();
+        for (AppChangeFeedEntry entry : feed.readAll()) {
+            if (PermissionWatchWorker.FEED_KIND.equals(entry.kind)) {
+                entries.add(entry.packageName + " | " + entry.title + " | " + entry.body);
+            }
+        }
+        Collections.sort(entries);
+        return entries;
+    }
+
+    @NonNull
+    private static List<String> sorted(@NonNull String... entries) {
+        List<String> list = new ArrayList<>(Arrays.asList(entries));
+        Collections.sort(list);
+        return list;
     }
 }
