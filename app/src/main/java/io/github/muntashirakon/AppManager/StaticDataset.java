@@ -29,6 +29,8 @@ import io.github.muntashirakon.AppManager.db.utils.AppDb;
 import io.github.muntashirakon.AppManager.debloat.DebloatDefinitionsUpdater;
 import io.github.muntashirakon.AppManager.debloat.DebloatObject;
 import io.github.muntashirakon.AppManager.debloat.SuggestionObject;
+import io.github.muntashirakon.AppManager.i18n.DebloatTranslations;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackManager;
 import io.github.muntashirakon.AppManager.misc.VMRuntime;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.FileUtils;
@@ -161,9 +163,10 @@ public class StaticDataset {
         if (sDebloatObjects == null) {
             sDebloatObjects = loadDebloatObjects(context, new Gson());
         }
+        DebloatTranslations translations = LanguagePackManager.getInstance(context).debloatTranslations();
         List<DebloatObject> filled = new ArrayList<>(sDebloatObjects.size());
         for (DebloatObject definition : sDebloatObjects) {
-            filled.add(fillCopy(context, definition, appDb));
+            filled.add(fillCopy(context, definition, appDb, translations));
         }
         return filled;
     }
@@ -183,7 +186,8 @@ public class StaticDataset {
         }
         for (DebloatObject definition : sDebloatObjects) {
             if (packageName.equals(definition.packageName)) {
-                return fillCopy(context, definition, new AppDb());
+                return fillCopy(context, definition, new AppDb(),
+                        LanguagePackManager.getInstance(context).debloatTranslations());
             }
         }
         return null;
@@ -193,8 +197,14 @@ public class StaticDataset {
     @WorkerThread
     @NonNull
     private static DebloatObject fillCopy(@NonNull Context context, @NonNull DebloatObject definition,
-                                          @NonNull AppDb appDb) {
+                                          @NonNull AppDb appDb, @Nullable DebloatTranslations translations) {
         DebloatObject debloatObject = definition.copyDefinition(sDebloatIcons.get(definition.packageName));
+        if (translations != null) {
+            // The language file in use may translate the description and warning
+            debloatObject.setTranslation(
+                    translations.description(definition.packageName, definition.getEnglishDescription()),
+                    translations.warning(definition.packageName, definition.getEnglishWarning()));
+        }
         debloatObject.fillInstallInfo(context, appDb);
         Drawable icon = debloatObject.getIcon();
         if (icon != null) {

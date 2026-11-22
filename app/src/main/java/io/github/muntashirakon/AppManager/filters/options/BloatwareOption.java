@@ -101,7 +101,7 @@ public class BloatwareOption extends FilterOption {
             case "description_starts_with":
             case "description_ends_with":
             case "description_regex":
-                return result.setMatched(matchesDescription(object.getDescription(), key, value, regexValue));
+                return result.setMatched(matchesDescription(object.getEnglishDescription(), key, value, regexValue));
             case "preinstalled_oem_eq":
             case "preinstalled_oem_contains":
             case "preinstalled_oem_starts_with":

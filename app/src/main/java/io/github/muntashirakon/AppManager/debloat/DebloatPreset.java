@@ -51,7 +51,7 @@ public enum DebloatPreset {
                     && ("oem".equals(object.type) || "carrier".equals(object.type))
                     && object.getDependencies().length == 0
                     && object.getRequiredBy().length == 0
-                    && object.getWarning() == null;
+                    && object.getEnglishWarning() == null;
         }
     };
 
@@ -102,9 +102,9 @@ public enum DebloatPreset {
     private static boolean containsAny(@NonNull DebloatObject object, @NonNull String... needles) {
         StringBuilder haystack = new StringBuilder(object.packageName).append('\n')
                 .append(object.getLabelOrPackageName()).append('\n')
-                .append(object.getDescription()).append('\n')
+                .append(object.getEnglishDescription()).append('\n')
                 .append(object.type);
-        String warning = object.getWarning();
+        String warning = object.getEnglishWarning();
         if (warning != null) {
             haystack.append('\n').append(warning);
         }

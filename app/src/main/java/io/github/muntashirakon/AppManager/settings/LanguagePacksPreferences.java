@@ -42,8 +42,11 @@ public class LanguagePacksPreferences extends PreferenceFragment {
     private static final String MIME_JSON = "application/json";
     private static final String STATE_TEMPLATE_TAG = "template_tag";
     private static final String STATE_EXPORT_CODE = "export_code";
+    private static final String STATE_EXPORT_DEBLOAT = "export_debloat";
     /** A template that starts empty rather than from a built-in translation. */
     private static final String TEMPLATE_SCRATCH = "";
+    /** A file with only the Debloater's descriptions. */
+    private static final String TEMPLATE_DEBLOAT = "debloat";
 
     /**
      * Removing the file in use switches the app's language, which rebuilds this screen. The undo
@@ -57,6 +60,7 @@ public class LanguagePacksPreferences extends PreferenceFragment {
     private String mTemplateTag;
     @Nullable
     private String mExportCode;
+    private boolean mExportDebloat;
 
     private final ActivityResultLauncher<String> mImport = registerForActivityResult(
             new ImportContract(), uri -> {
@@ -69,24 +73,31 @@ public class LanguagePacksPreferences extends PreferenceFragment {
                 String tag = mTemplateTag;
                 mTemplateTag = null;
                 if (uri != null && tag != null) {
-                    String builtIn = TEMPLATE_SCRATCH.equals(tag) ? null : tag;
-                    save(() -> mManager.exportTemplate(uri, builtIn));
+                    if (TEMPLATE_DEBLOAT.equals(tag)) {
+                        save(() -> mManager.exportDebloatTemplate(uri, null));
+                    } else {
+                        String builtIn = TEMPLATE_SCRATCH.equals(tag) ? null : tag;
+                        save(() -> mManager.exportTemplate(uri, builtIn));
+                    }
                 }
             });
     private final ActivityResultLauncher<String> mSavePack = registerForActivityResult(
             new ActivityResultContracts.CreateDocument(MIME_JSON), uri -> {
                 String code = mExportCode;
+                boolean withDebloat = mExportDebloat;
                 mExportCode = null;
+                mExportDebloat = false;
                 if (uri != null && code != null) {
-                    save(() -> mManager.exportPack(code, uri, false));
+                    save(() -> mManager.exportPack(code, uri, false, withDebloat));
                 }
             });
     private final ActivityResultLauncher<String> mSaveZip = registerForActivityResult(
             new ActivityResultContracts.CreateDocument(LanguageFileArchive.MIME_ZIP), uri -> {
                 String code = mExportCode;
                 mExportCode = null;
+                mExportDebloat = false;
                 if (uri != null && code != null) {
-                    save(() -> mManager.exportPack(code, uri, true));
+                    save(() -> mManager.exportPack(code, uri, true, false));
                 }
             });
 
@@ -97,6 +108,7 @@ public class LanguagePacksPreferences extends PreferenceFragment {
         if (savedInstanceState != null) {
             mTemplateTag = savedInstanceState.getString(STATE_TEMPLATE_TAG);
             mExportCode = savedInstanceState.getString(STATE_EXPORT_CODE);
+            mExportDebloat = savedInstanceState.getBoolean(STATE_EXPORT_DEBLOAT);
         }
     }
 
@@ -128,6 +140,7 @@ public class LanguagePacksPreferences extends PreferenceFragment {
         super.onSaveInstanceState(outState);
         outState.putString(STATE_TEMPLATE_TAG, mTemplateTag);
         outState.putString(STATE_EXPORT_CODE, mExportCode);
+        outState.putBoolean(STATE_EXPORT_DEBLOAT, mExportDebloat);
     }
 
     @Override
@@ -235,8 +248,8 @@ public class LanguagePacksPreferences extends PreferenceFragment {
     }
 
     private void showActions(@NonNull LanguagePackManager.Installed pack) {
-        List<String> labels = new ArrayList<>(4);
-        List<Runnable> actions = new ArrayList<>(4);
+        List<String> labels = new ArrayList<>(5);
+        List<Runnable> actions = new ArrayList<>(5);
         if (LanguagePackManager.canUse()) {
             if (pack.inUse) {
                 labels.add(getString(R.string.language_files_stop_using));
@@ -249,12 +262,19 @@ public class LanguagePacksPreferences extends PreferenceFragment {
         labels.add(getString(R.string.language_files_export));
         actions.add(() -> {
             mExportCode = pack.code;
+            mExportDebloat = false;
             mSavePack.launch(LanguagePackManager.jsonFileName(pack.code));
         });
         labels.add(getString(R.string.language_files_export_zip));
         actions.add(() -> {
             mExportCode = pack.code;
             mSaveZip.launch(LanguagePackManager.zipFileName(pack.code));
+        });
+        labels.add(getString(R.string.language_files_export_debloat));
+        actions.add(() -> {
+            mExportCode = pack.code;
+            mExportDebloat = true;
+            mSavePack.launch(LanguagePackManager.jsonFileName(pack.code));
         });
         labels.add(getString(R.string.item_remove));
         actions.add(() -> remove(pack));
@@ -279,13 +299,16 @@ public class LanguagePacksPreferences extends PreferenceFragment {
             tags.add(tag);
             names.add(LanguagePackManager.displayName(locale));
         }
+        // Large, so it's a file of its own, imported after the language file it adds to
+        tags.add(TEMPLATE_DEBLOAT);
+        names.add(getString(R.string.language_files_start_debloat));
         new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.language_files_start_from)
                 .setItems(names.toArray(new String[0]), (dialog, which) -> {
                     String tag = tags.get(which);
                     mTemplateTag = tag;
-                    mSaveTemplate.launch(LanguagePackManager.jsonFileName(
-                            TEMPLATE_SCRATCH.equals(tag) ? "template" : tag));
+                    mSaveTemplate.launch(LanguagePackManager.jsonFileName(TEMPLATE_SCRATCH.equals(tag) ? "template"
+                            : TEMPLATE_DEBLOAT.equals(tag) ? "debloat" : tag));
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
@@ -319,9 +342,12 @@ public class LanguagePacksPreferences extends PreferenceFragment {
                 }
                 reload();
                 showArchiveChoice(imported);
-                Snackbar snackbar = Snackbar.make(requireView(), getString(imported.replaced
-                        ? R.string.language_files_updated : R.string.language_files_added, imported.name),
-                        Snackbar.LENGTH_LONG);
+                String message = imported.debloatEntries > 0 && imported.replaced
+                        ? getResources().getQuantityString(R.plurals.language_files_debloat_added,
+                        imported.debloatEntries, imported.debloatEntries, imported.name)
+                        : getString(imported.replaced ? R.string.language_files_updated
+                        : R.string.language_files_added, imported.name);
+                Snackbar snackbar = Snackbar.make(requireView(), message, Snackbar.LENGTH_LONG);
                 if (LanguagePackManager.canUse()) {
                     snackbar.setAction(R.string.language_files_use, v -> use(imported.code));
                 }

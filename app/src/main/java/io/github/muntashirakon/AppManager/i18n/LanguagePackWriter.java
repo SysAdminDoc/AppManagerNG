@@ -31,6 +31,41 @@ public final class LanguagePackWriter {
             + "language_code (like de or pt-BR) and "
             + "language_name, then import the file in Settings, Appearance, Language files.";
 
+    static final String DEBLOAT_INSTRUCTIONS = " The debloat section has the Debloater's descriptions by "
+            + "package name. Translate them the same way, or leave them empty to keep the English.";
+
+    /** One Debloater entry as a language file lists it. */
+    public static final class DebloatRow {
+        @NonNull
+        final String packageName;
+        @NonNull
+        final String description;
+        @NonNull
+        final String descriptionTranslation;
+        @Nullable
+        final String warning;
+        @NonNull
+        final String warningTranslation;
+        /** Set when the translation was made from older English. */
+        @Nullable
+        final String previousDescription;
+        @Nullable
+        final String previousWarning;
+
+        public DebloatRow(@NonNull String packageName, @NonNull String description,
+                          @Nullable String descriptionTranslation, @Nullable String previousDescription,
+                          @Nullable String warning, @Nullable String warningTranslation,
+                          @Nullable String previousWarning) {
+            this.packageName = packageName;
+            this.description = description;
+            this.descriptionTranslation = descriptionTranslation != null ? descriptionTranslation : "";
+            this.previousDescription = previousDescription;
+            this.warning = warning;
+            this.warningTranslation = warningTranslation != null ? warningTranslation : "";
+            this.previousWarning = previousWarning;
+        }
+    }
+
     private LanguagePackWriter() {
     }
 
@@ -46,7 +81,7 @@ public final class LanguagePackWriter {
                                   @Nullable String madeWith) {
         List<String> quantities = orderedQuantities(pluralKeywords);
         StringBuilder sb = new StringBuilder(source.keys().size() * 96);
-        header(sb, code, name, 1, Collections.emptyList(), madeWith);
+        header(sb, code, name, 1, Collections.emptyList(), madeWith, false);
         boolean first = true;
         for (String key : source.keys()) {
             SourceString src = source.get(key);
@@ -57,7 +92,20 @@ public final class LanguagePackWriter {
             TextValue translation = withForms(prefill.get(key), src.isPlural(), quantities);
             first = entry(sb, first, key, original, translation, null, null, null);
         }
-        footer(sb);
+        footer(sb, Collections.emptyList());
+        return sb.toString();
+    }
+
+    /**
+     * A file with only the Debloater's descriptions, to translate on their own. It's imported
+     * after the language file it belongs to and adds to it.
+     */
+    @NonNull
+    public static String debloatTemplate(@NonNull String code, @NonNull String name, @Nullable String madeWith,
+                                         @NonNull List<DebloatRow> rows) {
+        StringBuilder sb = new StringBuilder(rows.size() * 256 + 1024);
+        header(sb, code, name, 1, Collections.emptyList(), madeWith, true);
+        footer(sb, rows);
         return sb.toString();
     }
 
@@ -66,9 +114,17 @@ public final class LanguagePackWriter {
     public static String forEditing(@NonNull LanguagePack pack, @NonNull LanguagePackValidator.Report report,
                                     @NonNull SourceStrings source, @NonNull Collection<String> pluralKeywords,
                                     @Nullable String madeWith) {
+        return forEditing(pack, report, source, pluralKeywords, madeWith, Collections.emptyList());
+    }
+
+    /** The same, followed by a section with the given Debloater descriptions. */
+    @NonNull
+    public static String forEditing(@NonNull LanguagePack pack, @NonNull LanguagePackValidator.Report report,
+                                    @NonNull SourceStrings source, @NonNull Collection<String> pluralKeywords,
+                                    @Nullable String madeWith, @NonNull List<DebloatRow> debloat) {
         List<String> quantities = orderedQuantities(pluralKeywords);
-        StringBuilder sb = new StringBuilder(source.keys().size() * 112);
-        header(sb, pack.code, pack.name, pack.version, pack.translators, madeWith);
+        StringBuilder sb = new StringBuilder(source.keys().size() * 112 + debloat.size() * 256);
+        header(sb, pack.code, pack.name, pack.version, pack.translators, madeWith, !debloat.isEmpty());
         boolean first = true;
         for (String key : source.keys()) {
             SourceString src = source.get(key);
@@ -108,7 +164,7 @@ public final class LanguagePackWriter {
                         "This app version has no string with this key");
             }
         }
-        footer(sb);
+        footer(sb, debloat);
         return sb.toString();
     }
 
@@ -143,7 +199,7 @@ public final class LanguagePackWriter {
     }
 
     private static void header(@NonNull StringBuilder sb, @NonNull String code, @NonNull String name, int version,
-                               @NonNull List<String> translators, @Nullable String madeWith) {
+                               @NonNull List<String> translators, @Nullable String madeWith, boolean debloat) {
         sb.append("{\n");
         key(sb, 1, "schema_version").append(LanguagePack.SCHEMA_VERSION).append(",\n");
         key(sb, 1, "language_code");
@@ -164,12 +220,49 @@ public final class LanguagePackWriter {
             string(sb, madeWith).append(",\n");
         }
         key(sb, 1, "instructions");
-        string(sb, INSTRUCTIONS).append(",\n");
+        string(sb, debloat ? INSTRUCTIONS + DEBLOAT_INSTRUCTIONS : INSTRUCTIONS).append(",\n");
         key(sb, 1, "translations").append('{');
     }
 
-    private static void footer(@NonNull StringBuilder sb) {
-        sb.append("\n  }\n}\n");
+    private static void footer(@NonNull StringBuilder sb, @NonNull List<DebloatRow> debloat) {
+        sb.append("\n  }");
+        if (!debloat.isEmpty()) {
+            sb.append(",\n");
+            key(sb, 1, "debloat").append('{');
+            boolean first = true;
+            for (DebloatRow row : debloat) {
+                sb.append(first ? "\n" : ",\n");
+                first = false;
+                key(sb, 2, row.packageName).append("{\n");
+                debloatText(sb, "description", row.description, row.descriptionTranslation, row.previousDescription);
+                if (row.warning != null) {
+                    sb.append(",\n");
+                    debloatText(sb, "warning", row.warning, row.warningTranslation, row.previousWarning);
+                }
+                sb.append('\n');
+                indent(sb, 2).append('}');
+            }
+            sb.append("\n  }");
+        }
+        sb.append("\n}\n");
+    }
+
+    private static void debloatText(@NonNull StringBuilder sb, @NonNull String name, @NonNull String original,
+                                    @NonNull String translation, @Nullable String previous) {
+        key(sb, 3, name).append("{\n");
+        key(sb, 4, "original");
+        string(sb, original).append(",\n");
+        key(sb, 4, "translation");
+        string(sb, translation);
+        if (previous != null) {
+            sb.append(",\n");
+            key(sb, 4, "status");
+            string(sb, STATUS_OUTDATED).append(",\n");
+            key(sb, 4, "previous_original");
+            string(sb, previous);
+        }
+        sb.append('\n');
+        indent(sb, 3).append('}');
     }
 
     private static boolean entry(@NonNull StringBuilder sb, boolean first, @NonNull String key,

@@ -130,7 +130,78 @@ public final class LanguagePackReader {
             }
             entries.put(key, new LanguagePack.Entry(original, translation));
         }
-        return new LanguagePack(code, name, version, translators, entries, malformed);
+        Map<String, LanguagePack.DebloatEntry> debloat = readDebloat(root.opt("debloat"));
+        return new LanguagePack(code, name, version, translators, entries, malformed, debloat);
+    }
+
+    /**
+     * The optional section with the Debloater's descriptions, keyed by package name. Files made
+     * before it existed, and files where it isn't an object, read as having none. Entries with a
+     * bad package name, the wrong JSON types or text that can't be shown are left out.
+     */
+    @NonNull
+    private static Map<String, LanguagePack.DebloatEntry> readDebloat(@Nullable Object value)
+            throws LanguagePackException {
+        Map<String, LanguagePack.DebloatEntry> out = new LinkedHashMap<>();
+        if (!(value instanceof JSONObject)) {
+            return out;
+        }
+        JSONObject section = (JSONObject) value;
+        Iterator<String> packages = section.keys();
+        while (packages.hasNext()) {
+            String packageName = packages.next();
+            if (out.size() >= MAX_ENTRIES) {
+                throw new LanguagePackException(LanguagePackException.Reason.TOO_LARGE, "Too many debloat entries");
+            }
+            Object item = section.opt(packageName);
+            if (packageName.length() > MAX_KEY_CHARS || !KEY.matcher(packageName).matches()
+                    || !(item instanceof JSONObject)) {
+                continue;
+            }
+            JSONObject texts = (JSONObject) item;
+            String[] description = readDebloatText(texts.opt("description"));
+            String[] warning = readDebloatText(texts.opt("warning"));
+            if (description[0] == null && warning[0] == null) {
+                // Nothing translated yet.
+                continue;
+            }
+            out.put(packageName, new LanguagePack.DebloatEntry(description[0], description[1], warning[0], warning[1]));
+        }
+        return out;
+    }
+
+    /** The translation and the original it was made from, each {@code null} when missing or unusable. */
+    @NonNull
+    private static String[] readDebloatText(@Nullable Object value) {
+        String[] out = new String[2];
+        if (!(value instanceof JSONObject)) {
+            return out;
+        }
+        JSONObject text = (JSONObject) value;
+        Object translation = text.opt("translation");
+        Object original = text.opt("original");
+        if (translation instanceof String && isShowableText((String) translation)
+                && !((String) translation).trim().isEmpty()) {
+            out[0] = (String) translation;
+        }
+        if (original instanceof String && ((String) original).length() <= MAX_TEXT_CHARS) {
+            out[1] = (String) original;
+        }
+        return out;
+    }
+
+    /** Plain text a description can hold: line breaks and tabs, but no other control characters. */
+    private static boolean isShowableText(@NonNull String s) {
+        if (s.length() > MAX_TEXT_CHARS) {
+            return false;
+        }
+        for (int i = 0; i < s.length(); ++i) {
+            char c = s.charAt(i);
+            if ((c < 0x20 && c != '\n' && c != '\t') || (c >= 0x7F && c <= 0x9F)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

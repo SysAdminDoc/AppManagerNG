@@ -74,6 +74,10 @@ public class DebloatObject {
     @SerializedName("suggestions")
     @Nullable
     private String mSuggestionId;
+    @Nullable
+    private transient String mDescriptionTranslated;
+    @Nullable
+    private transient String mWarningTranslated;
 
     private int mId;
 
@@ -175,12 +179,34 @@ public class DebloatObject {
         }
     }
 
+    /**
+     * Shows a language file's translation of the description and warning in place of the
+     * English. {@code null} keeps the English.
+     */
+    public void setTranslation(@Nullable String description, @Nullable String warning) {
+        mDescriptionTranslated = description;
+        mWarningTranslated = warning;
+    }
+
+    /** The warning as shown, in the language file's language when it has one. */
     @Nullable
     public String getWarning() {
+        return mWarningTranslated != null ? mWarningTranslated : mWarning;
+    }
+
+    /** The description as shown, in the language file's language when it has one. */
+    public String getDescription() {
+        return mDescriptionTranslated != null ? mDescriptionTranslated : mDescription;
+    }
+
+    /** The debloat list's own warning, for matching and for language files. */
+    @Nullable
+    public String getEnglishWarning() {
         return mWarning;
     }
 
-    public String getDescription() {
+    /** The debloat list's own description, for matching and for language files. */
+    public String getEnglishDescription() {
         return mDescription;
     }
 

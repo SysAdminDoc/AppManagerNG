@@ -35,11 +35,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
+import io.github.muntashirakon.AppManager.StaticDataset;
+import io.github.muntashirakon.AppManager.debloat.DebloatObject;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.LangUtils;
 import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
@@ -58,6 +61,8 @@ public final class LanguagePackManager {
     private static final String KEY_PREVIOUS = "previous_language";
     private static final String DIR = "language_packs";
     private static final String PACK_SUFFIX = ".json";
+    /** Debloater descriptions imported on their own, kept next to the language file they belong to. */
+    private static final String DEBLOAT_SUFFIX = ".debloat";
     private static final String TABLE_SUFFIX = ".arsc";
     private static final String STAMP_SUFFIX = ".stamp";
     private static final String REMOVED_SUFFIX = ".removed";
@@ -102,15 +107,18 @@ public final class LanguagePackManager {
         public final String archiveEntry;
         /** How many .json files that zip had. */
         public final int archiveJsonFiles;
+        /** Debloater descriptions the file brought. */
+        public final int debloatEntries;
 
         ImportResult(@NonNull String code, @NonNull String name, boolean replaced, boolean inUse,
-                     @Nullable String archiveEntry, int archiveJsonFiles) {
+                     @Nullable String archiveEntry, int archiveJsonFiles, int debloatEntries) {
             this.code = code;
             this.name = name;
             this.replaced = replaced;
             this.inUse = inUse;
             this.archiveEntry = archiveEntry;
             this.archiveJsonFiles = archiveJsonFiles;
+            this.debloatEntries = debloatEntries;
         }
     }
 
@@ -145,6 +153,11 @@ public final class LanguagePackManager {
             }
         }
         return instance;
+    }
+
+    @VisibleForTesting
+    public static void setInstanceForTesting(@Nullable LanguagePackManager manager) {
+        sInstance = manager;
     }
 
     /** Using a language file needs {@code ResourcesLoader}, which arrived in Android 11. */
@@ -211,11 +224,16 @@ public final class LanguagePackManager {
     @NonNull
     private final SharedPreferences mPrefs;
     private final Object mTableLock = new Object();
+    private final Object mDebloatLock = new Object();
     @Nullable
     private AndroidSourceStrings mSource;
     /** The {@code ResourcesLoader}, kept as an Object so older Android never loads the class. */
     @Nullable
     private Object mLoader;
+    @Nullable
+    private String mDebloatStamp;
+    @Nullable
+    private DebloatTranslations mDebloat;
 
     @VisibleForTesting
     LanguagePackManager(@NonNull Context context) {
@@ -273,6 +291,7 @@ public final class LanguagePackManager {
             }
             String code = fileName.substring(0, fileName.length() - PACK_SUFFIX.length());
             if (!code.equals(LanguagePackReader.normalizeCode(code))) {
+                // Debloater descriptions (de.debloat.json) and anything else that isn't a language
                 continue;
             }
             try {
@@ -317,13 +336,27 @@ public final class LanguagePackManager {
         String code = canonicalCode(pack.code);
         pack = pack.withCode(code);
         LanguagePackValidator.Report report = LanguagePackValidator.check(pack, source());
+        File target = packFile(code);
         if (report.usable == 0) {
+            if (pack.entries.isEmpty() && !pack.debloat.isEmpty() && target.isFile()) {
+                // Debloater descriptions on their own, for a language that's already here
+                writeAtomically(debloatFile(code), data);
+                forgetDebloat();
+                return new ImportResult(code, pack.name, true, code.equals(inUseCode()), archiveEntry,
+                        archiveJsonFiles, pack.debloat.size());
+            }
             throw new LanguagePackException(LanguagePackException.Reason.NOTHING_USABLE, "No usable entries");
         }
-        File target = packFile(code);
         boolean replaced = target.exists();
         writeAtomically(target, data);
-        return new ImportResult(code, pack.name, replaced, code.equals(inUseCode()), archiveEntry, archiveJsonFiles);
+        if (!pack.debloat.isEmpty()) {
+            // The new file has descriptions of its own, which replace any imported before
+            //noinspection ResultOfMethodCallIgnored
+            debloatFile(code).delete();
+        }
+        forgetDebloat();
+        return new ImportResult(code, pack.name, replaced, code.equals(inUseCode()), archiveEntry, archiveJsonFiles,
+                pack.debloat.size());
     }
 
     /** Compiles {@code code}'s table for this app build unless it's already cached. */
@@ -395,6 +428,16 @@ public final class LanguagePackManager {
         if (!packFile(code).renameTo(removed)) {
             throw new IOException("Couldn't remove " + code);
         }
+        File debloat = debloatFile(code);
+        if (debloat.isFile()) {
+            File debloatRemoved = new File(mDir, code + DEBLOAT_SUFFIX + REMOVED_SUFFIX);
+            //noinspection ResultOfMethodCallIgnored
+            debloatRemoved.delete();
+            if (!debloat.renameTo(debloatRemoved)) {
+                Log.w(TAG, "Couldn't set aside the Debloater descriptions of " + code);
+            }
+        }
+        forgetDebloat();
         deleteTable(code);
         return new Removal(code, name, wasInUse);
     }
@@ -405,12 +448,19 @@ public final class LanguagePackManager {
         if (!removed.renameTo(packFile(removal.code))) {
             throw new IOException("Couldn't restore " + removal.code);
         }
+        File debloatRemoved = new File(mDir, removal.code + DEBLOAT_SUFFIX + REMOVED_SUFFIX);
+        if (debloatRemoved.isFile() && !debloatRemoved.renameTo(debloatFile(removal.code))) {
+            Log.w(TAG, "Couldn't restore the Debloater descriptions of " + removal.code);
+        }
+        forgetDebloat();
     }
 
     @WorkerThread
     public void finishRemove(@NonNull Removal removal) {
         //noinspection ResultOfMethodCallIgnored
         new File(mDir, removal.code + REMOVED_SUFFIX).delete();
+        //noinspection ResultOfMethodCallIgnored
+        new File(mDir, removal.code + DEBLOAT_SUFFIX + REMOVED_SUFFIX).delete();
     }
 
     /**
@@ -441,30 +491,61 @@ public final class LanguagePackManager {
     }
 
     /**
-     * Writes an installed file back out with every string, marking what still needs work, as a
-     * .json or as a zip with the .json in it.
+     * Writes a file with only the Debloater's descriptions, to translate and import after the
+     * language file they belong to.
      */
     @WorkerThread
-    public void exportPack(@NonNull String code, @NonNull Uri uri, boolean zip)
-            throws IOException, LanguagePackException {
-        writeToUri(uri, exportBytes(code, zip));
+    public void exportDebloatTemplate(@NonNull Uri uri, @Nullable String builtInTag) throws IOException {
+        writeToUri(uri, debloatTemplate(builtInTag).getBytes(StandardCharsets.UTF_8));
     }
 
     @WorkerThread
     @NonNull
-    byte[] exportBytes(@NonNull String code, boolean zip) throws IOException, LanguagePackException {
-        byte[] json = forEditing(code).getBytes(StandardCharsets.UTF_8);
+    String debloatTemplate(@Nullable String builtInTag) {
+        String code = "";
+        String name = "";
+        if (builtInTag != null) {
+            code = canonicalCode(builtInTag);
+            name = displayName(Locale.forLanguageTag(builtInTag));
+        }
+        DebloatTranslations translations = code.isEmpty() ? null : debloatTranslations(code);
+        return LanguagePackWriter.debloatTemplate(code, name, madeWith(), debloatRows(translations, true));
+    }
+
+    /**
+     * Writes an installed file back out with every string, marking what still needs work, as a
+     * .json or as a zip with the .json in it. With {@code withDebloat} it also lists every
+     * Debloater description to translate.
+     */
+    @WorkerThread
+    public void exportPack(@NonNull String code, @NonNull Uri uri, boolean zip, boolean withDebloat)
+            throws IOException, LanguagePackException {
+        writeToUri(uri, exportBytes(code, zip, withDebloat));
+    }
+
+    @WorkerThread
+    @NonNull
+    byte[] exportBytes(@NonNull String code, boolean zip, boolean withDebloat) throws IOException, LanguagePackException {
+        byte[] json = forEditing(code, withDebloat).getBytes(StandardCharsets.UTF_8);
         return zip ? LanguageFileArchive.zip(jsonFileName(code), json) : json;
     }
 
     @WorkerThread
     @NonNull
     String forEditing(@NonNull String code) throws IOException, LanguagePackException {
+        return forEditing(code, false);
+    }
+
+    @WorkerThread
+    @NonNull
+    private String forEditing(@NonNull String code, boolean withDebloat) throws IOException, LanguagePackException {
         LanguagePack pack = readStored(code);
         AndroidSourceStrings source = source();
         LanguagePackValidator.Report report = LanguagePackValidator.check(pack, source);
+        // What was translated always goes along, so nothing is lost on the way back in
+        List<LanguagePackWriter.DebloatRow> debloat = debloatRows(debloatTranslations(code), withDebloat);
         return LanguagePackWriter.forEditing(pack, report, source,
-                AndroidSourceStrings.pluralKeywords(Locale.forLanguageTag(code)), madeWith());
+                AndroidSourceStrings.pluralKeywords(Locale.forLanguageTag(code)), madeWith(), debloat);
     }
 
     /** The file name an export of {@code code} gets. */
@@ -477,6 +558,98 @@ public final class LanguagePackManager {
     @NonNull
     public static String zipFileName(@NonNull String code) {
         return jsonFileName(code) + LanguageFileArchive.ZIP_SUFFIX;
+    }
+
+    /**
+     * The Debloater descriptions of the language file in use, or {@code null} when there's none
+     * or it has no descriptions.
+     */
+    @WorkerThread
+    @Nullable
+    public DebloatTranslations debloatTranslations() {
+        String code = inUseCode();
+        return code == null ? null : debloatTranslations(code);
+    }
+
+    /** {@code code}'s Debloater descriptions, from its own file and any imported on their own. */
+    @WorkerThread
+    @Nullable
+    DebloatTranslations debloatTranslations(@NonNull String code) {
+        File pack = packFile(code);
+        if (!pack.isFile()) {
+            return null;
+        }
+        File addOn = debloatFile(code);
+        String stamp = code + ':' + pack.length() + ':' + pack.lastModified() + ':' + addOn.length() + ':'
+                + addOn.lastModified();
+        synchronized (mDebloatLock) {
+            if (stamp.equals(mDebloatStamp)) {
+                return mDebloat;
+            }
+            Map<String, LanguagePack.DebloatEntry> entries = new HashMap<>();
+            try {
+                entries.putAll(readStored(code).debloat);
+            } catch (IOException | LanguagePackException e) {
+                Log.w(TAG, "Couldn't read the Debloater descriptions of " + code, e);
+            }
+            if (addOn.isFile()) {
+                try (InputStream in = new FileInputStream(addOn)) {
+                    entries.putAll(LanguagePackReader.read(readCapped(in)).debloat);
+                } catch (IOException | LanguagePackException e) {
+                    Log.w(TAG, "Couldn't read the Debloater descriptions of " + code, e);
+                }
+            }
+            mDebloat = entries.isEmpty() ? null : new DebloatTranslations(entries);
+            mDebloatStamp = stamp;
+            return mDebloat;
+        }
+    }
+
+    /**
+     * The Debloater entries a file lists: those with a translation, or with {@code everyEntry}
+     * all of them, in the debloat list's order. Packages the list no longer has are left out.
+     */
+    @WorkerThread
+    @NonNull
+    private static List<LanguagePackWriter.DebloatRow> debloatRows(@Nullable DebloatTranslations translations,
+                                                                   boolean everyEntry) {
+        Map<String, LanguagePack.DebloatEntry> translated = translations != null ? translations.entries()
+                : Collections.emptyMap();
+        if (!everyEntry && translated.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<LanguagePackWriter.DebloatRow> rows = new ArrayList<>();
+        for (DebloatObject definition : StaticDataset.getDebloatObjects()) {
+            String description = definition.getEnglishDescription();
+            if (definition.packageName == null || description == null) {
+                continue;
+            }
+            LanguagePack.DebloatEntry entry = translated.get(definition.packageName);
+            if (entry == null && !everyEntry) {
+                continue;
+            }
+            String warning = definition.getEnglishWarning();
+            String descriptionTranslation = entry != null ? entry.description : null;
+            String warningTranslation = entry != null && warning != null ? entry.warning : null;
+            rows.add(new LanguagePackWriter.DebloatRow(definition.packageName, description, descriptionTranslation,
+                    previous(descriptionTranslation, entry != null ? entry.originalDescription : null, description),
+                    warning, warningTranslation,
+                    previous(warningTranslation, entry != null ? entry.originalWarning : null, warning)));
+        }
+        return rows;
+    }
+
+    /** The English a translation was made from, when that isn't the English the app has now. */
+    @Nullable
+    private static String previous(@Nullable String translation, @Nullable String original, @Nullable String english) {
+        return translation != null && original != null && !original.equals(english) ? original : null;
+    }
+
+    private void forgetDebloat() {
+        synchronized (mDebloatLock) {
+            mDebloatStamp = null;
+            mDebloat = null;
+        }
     }
 
     @NonNull
@@ -532,6 +705,14 @@ public final class LanguagePackManager {
             throw new IllegalArgumentException("Bad language code");
         }
         return new File(mDir, code + PACK_SUFFIX);
+    }
+
+    @NonNull
+    private File debloatFile(@NonNull String code) {
+        if (!code.equals(LanguagePackReader.normalizeCode(code))) {
+            throw new IllegalArgumentException("Bad language code");
+        }
+        return new File(mDir, code + DEBLOAT_SUFFIX + PACK_SUFFIX);
     }
 
     private void deleteTable(@NonNull String code) {

@@ -59,8 +59,8 @@ public class LanguageFileArchiveTest {
     public void anExportedZipHoldsTheJsonAndImportsBack() throws Exception {
         LanguagePackManager manager = new LanguagePackManager(mContext);
         manager.importPack(pack("de", "Deutsch", CANCEL, SHOWING));
-        byte[] json = manager.exportBytes("de", false);
-        byte[] zip = manager.exportBytes("de", true);
+        byte[] json = manager.exportBytes("de", false, false);
+        byte[] zip = manager.exportBytes("de", true, false);
         assertTrue(LanguageFileArchive.isZip(zip));
         assertFalse(LanguageFileArchive.isZip(json));
 
