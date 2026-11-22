@@ -32,8 +32,10 @@ public final class DhizukuBridge {
     public static final String ACTIVATION_COMMAND =
             "adb shell dpm set-device-owner --user 0 " + PACKAGE_NAME + "/.server.DhizukuDAReceiver";
 
-    public static final int MIN_SUPPORTED_SDK = Build.VERSION_CODES.O;
-    public static final int MAX_DECLARED_SUPPORTED_SDK = 36;
+    // Dhizuku-API 2.7.0 declares minSdk 23 and the Dhizuku app supports Android 6.0 and later
+    public static final int MIN_SUPPORTED_SDK = Build.VERSION_CODES.M;
+    // Dhizuku 2.13.0 lists Android 17 as supported
+    public static final int MAX_DECLARED_SUPPORTED_SDK = 37;
 
     private DhizukuBridge() {
     }
@@ -187,6 +189,13 @@ public final class DhizukuBridge {
             this.ownerComponent = ownerComponent;
             this.providerVisible = providerVisible;
             this.apiPermissionGranted = apiPermissionGranted;
+        }
+
+        @VisibleForTesting
+        @NonNull
+        public static Result forTesting(int sdk, @Nullable String installedVersionName,
+                                        @Nullable ComponentName ownerComponent) {
+            return new Result(sdk, installedVersionName, ownerComponent, false, false);
         }
 
         public boolean isInstalled() {

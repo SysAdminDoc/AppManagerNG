@@ -51,6 +51,7 @@ import io.github.muntashirakon.AppManager.adb.AdbPairingService;
 import io.github.muntashirakon.AppManager.adb.AdbPairingSession;
 import io.github.muntashirakon.AppManager.adb.AdbUtils;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuSession;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.logcat.helper.ServiceHelper;
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -385,6 +386,8 @@ public class Ops {
             return initLocked(context, force, mode, persistAutoDetectedMode);
         } finally {
             sTransitionLock.unlock();
+            // Dhizuku works next to every mode, so look for it whenever the mode is set up
+            DhizukuSession.refreshQuietly(context);
         }
     }
 

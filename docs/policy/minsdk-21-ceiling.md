@@ -2,7 +2,7 @@
 
 # minSdk 21 Dependency Ceiling Ledger
 
-Last updated: 2026-08-22.
+Last updated: 2026-11-21.
 
 This ledger tracks every dependency pinned to its last API-21-compatible
 release. If any of these pins become untenable (security advisory, blocking
@@ -73,6 +73,27 @@ decision. They are bumped on their normal cadence.
 - Window 1.4.0
 - Guava 32.1.3-android
 - All native/vendored deps (apksig, libadb, jadx, ARSCLib, etc.)
+
+## Above the floor, behind a version check
+
+These libraries declare a higher `minSdkVersion` than the app. They don't
+gate the floor decision because the manifest lists their packages in
+`tools:overrideLibrary` and every call into them sits behind an `SDK_INT`
+check, so an API 21-22 device never loads their classes.
+
+| Dependency | Version | Declared minSdk | Guard |
+|---|---|---|---|
+| **Shizuku API** (`dev.rikka.shizuku`) | 13.1.5 | 24 | `ShizukuBridge.isBinderAlive()` returns false below `SDK_INT` 24, so nothing reaches the Shizuku binder there. |
+| **Dhizuku API** (`io.github.iamr0s:Dhizuku-API`) | 2.7.0 | 23 | Only `DhizukuApiClient` touches the library, and `DhizukuSession` creates it only when `SDK_INT >= 23`. On Android 5.x the Dhizuku status reads "needs Android 6.0 or later". |
+
+Dhizuku decision (2026-11-21): the Dhizuku-API 2.7.0 AAR manifest declares
+`minSdkVersion` 23, and the Dhizuku app itself supports Android 6.0 and later.
+An older ROADMAP note assumed Android 8.0, which matched neither artifact, so
+NG's Dhizuku floor is API 23. Raising the app floor for one optional
+privilege path would cost API 21-22 users everything else, so the library goes
+in `overrideLibrary` instead. The checksums in
+`gradle/verification-metadata.xml` match the `.sha256` files Maven Central
+publishes beside the AAR and its Gradle module file.
 
 ## Trigger status
 

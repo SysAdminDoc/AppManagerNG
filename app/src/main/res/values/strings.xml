@@ -2937,6 +2937,8 @@
     <string name="mode_of_op_capability_status_inactive">not active</string>
     <string name="mode_of_op_capability_status_enabled">enabled</string>
     <string name="mode_of_op_capability_status_disabled">disabled</string>
+    <string name="mode_of_op_capability_status_not_owner">installed, not device owner</string>
+    <string name="mode_of_op_capability_status_needs_android_6">needs Android 6.0 or later</string>
     <string name="privilege_health_title">Privileges</string>
     <string name="privilege_health_summary">Root, Shizuku, ADB, and remote service health.</string>
     <string name="privilege_health_status_category">Current status</string>
@@ -3048,6 +3050,21 @@
     <string name="privilege_health_dhizuku_missing_summary">Not installed or not visible. If you install Dhizuku, activate it with: <xliff:g id="command" example="adb shell dpm set-device-owner --user 0 com.rosan.dhizuku/.server.DhizukuDAReceiver">%1$s</xliff:g></string>
     <string name="privilege_health_dhizuku_android_newer_warning">Dhizuku currently declares support through Android API <xliff:g id="sdk" example="36">%1$d</xliff:g>; verify compatibility before using it on this Android version.</string>
     <string name="privilege_health_dhizuku_dialog_message">Installed version: <xliff:g id="version" example="2.11.2">%1$s</xliff:g>\nOwner component: <xliff:g id="owner" example="com.rosan.dhizuku/.server.DhizukuDAReceiver">%2$s</xliff:g>\nProvider: <xliff:g id="provider" example="active">%3$s</xliff:g>\nAPI permission: <xliff:g id="permission" example="authorized">%4$s</xliff:g>\n\nActivation command:\n<xliff:g id="command" example="adb shell dpm set-device-owner --user 0 com.rosan.dhizuku/.server.DhizukuDAReceiver">%5$s</xliff:g>\n\nAppManagerNG detects Dhizuku without linking the Dhizuku-API AAR. Actual DPM operations stay disabled until the API-21 floor conflict is resolved.</string>
+    <string name="dhizuku_status_checking">Checking Dhizuku</string>
+    <string name="dhizuku_status_unsupported">Dhizuku needs Android 6.0 or later.</string>
+    <string name="dhizuku_status_not_installed">Dhizuku isn\'t installed.</string>
+    <string name="dhizuku_status_no_owner">Dhizuku is installed but isn\'t the device owner yet.</string>
+    <string name="dhizuku_status_not_connected">Dhizuku is the device owner but didn\'t answer. Open Dhizuku, then check again.</string>
+    <string name="dhizuku_status_not_permitted">Dhizuku is the device owner, but it hasn\'t allowed AppManagerNG yet.</string>
+    <string name="dhizuku_status_permitted">Dhizuku allows AppManagerNG.</string>
+    <string name="dhizuku_runs_through">Through Dhizuku, AppManagerNG can <xliff:g id="operations" example="hide and unhide apps, clear app data">%1$s</xliff:g>.</string>
+    <string name="dhizuku_still_needs_other_mode">Force stop, clearing cache, blocking components, app ops, disabling apps and shell commands still need root, ADB or Shizuku. When the freeze method is Disable, Dhizuku hides the app instead.</string>
+    <string name="dhizuku_capability_hide_apps">hide and unhide apps</string>
+    <string name="dhizuku_capability_suspend_apps">suspend and unsuspend apps</string>
+    <string name="dhizuku_capability_runtime_permissions">grant and revoke runtime permissions</string>
+    <string name="dhizuku_capability_clear_app_data">clear app data</string>
+    <string name="dhizuku_capability_install_apps">install APKs without a prompt</string>
+    <string name="dhizuku_capability_uninstall_apps">uninstall apps without a prompt</string>
     <string name="privilege_health_adb_title">ADB and wireless debugging</string>
     <string name="privilege_health_adb_summary">USB debugging: <xliff:g id="usb" example="enabled">%1$s</xliff:g>. Wireless debugging: <xliff:g id="wireless" example="active">%2$s</xliff:g>. Last paired port: <xliff:g id="port" example="37123">%3$s</xliff:g>.</string>
     <string name="privilege_health_remote_services_title">Remote server and services</string>

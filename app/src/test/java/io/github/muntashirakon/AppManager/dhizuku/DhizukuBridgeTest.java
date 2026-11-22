@@ -11,10 +11,11 @@ import org.junit.Test;
 public class DhizukuBridgeTest {
     @Test
     public void platformSupportMatchesDhizukuDeclaredRange() {
-        assertTrue(DhizukuBridge.isBelowMinimumSupportedAndroidVersion(25));
-        assertFalse(DhizukuBridge.isBelowMinimumSupportedAndroidVersion(26));
-        assertFalse(DhizukuBridge.isAboveDeclaredSupportedAndroidVersion(36));
-        assertTrue(DhizukuBridge.isAboveDeclaredSupportedAndroidVersion(37));
+        // Dhizuku-API 2.7.0 declares minSdk 23; Dhizuku 2.13.0 lists Android 6.0 through 17
+        assertTrue(DhizukuBridge.isBelowMinimumSupportedAndroidVersion(22));
+        assertFalse(DhizukuBridge.isBelowMinimumSupportedAndroidVersion(23));
+        assertFalse(DhizukuBridge.isAboveDeclaredSupportedAndroidVersion(37));
+        assertTrue(DhizukuBridge.isAboveDeclaredSupportedAndroidVersion(38));
     }
 
     @Test
