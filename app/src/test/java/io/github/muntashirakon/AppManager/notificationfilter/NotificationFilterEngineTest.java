@@ -717,6 +717,75 @@ public class NotificationFilterEngineTest {
         assertEquals(Collections.singletonList(sale.getKey()), mEngine.copiedKeys());
     }
 
+    /**
+     * #32: an app that's force stopped ends its snoozed notifications too, but Android keeps listing them as snoozed
+     * until the snooze runs out and doesn't tell the listener. The stop is the one sign, so their copies go then.
+     */
+    @Test
+    public void aForceStoppedAppsCopiesGoAtOnce() {
+        rules(ongoingRule("upload", Action.SILENT));
+        StatusBarNotification upload = withFlags(CHAT, 3, "Upload 10%", Notification.FLAG_ONGOING_EVENT);
+        StatusBarNotification other = withFlags(SHOP, 4, "Upload 5%", Notification.FLAG_ONGOING_EVENT);
+        mEngine.onPosted(upload);
+        mEngine.onPosted(other);
+        mShade.snoozed.add(upload);
+        mShade.snoozed.add(other);
+        String uploadCopy = NotificationReposter.copyTag(upload.getKey());
+
+        mEngine.onPackageStopped(CHAT, UID);
+        assertNull(mShade.posted.get(uploadCopy));
+        assertNotNull("another app's copy stays", mShade.posted.get(NotificationReposter.copyTag(other.getKey())));
+
+        // Still listed, but it's the one that ended, so its copy stays down.
+        mEngine.onPosted(notification(SHOP, 9, "Something else"));
+        mEngine.check();
+        assertNull(mShade.posted.get(uploadCopy));
+
+        // The app starts again and posts it once more. Android keeps that one snoozed, so the copy comes back.
+        mShade.snoozed.set(0, sbn(CHAT, 3, null, upload.getNotification(), NOW + 5000));
+        mEngine.check();
+        assertNotNull(mShade.posted.get(uploadCopy));
+        assertEquals(Arrays.asList(other.getKey(), upload.getKey()), mEngine.copiedKeys());
+    }
+
+    /** A stop for another user's copy of the app, or before anything was snoozed, changes nothing. */
+    @Test
+    public void aStopOnlyTouchesThatAppsOwnSnoozedOnes() {
+        mEngine.onPackageStopped(CHAT, UID);
+        rules(ongoingRule("upload", Action.SILENT));
+        StatusBarNotification upload = withFlags(CHAT, 3, "Upload 10%", Notification.FLAG_ONGOING_EVENT);
+        mEngine.onPosted(upload);
+        mShade.snoozed.add(upload);
+
+        mEngine.onPackageStopped(CHAT, UID + 100000);
+        assertNotNull(mShade.posted.get(NotificationReposter.copyTag(upload.getKey())));
+        assertEquals(Collections.singletonList(upload.getKey()), mEngine.copiedKeys());
+    }
+
+    /**
+     * #32: Android doesn't say when a snoozed notification changes or its snooze runs out on one that ended, so the
+     * service looks in on them every so often for as long as something is snoozed.
+     */
+    @Test
+    public void theRegularCheckCatchesWhatHappensWhileSnoozed() {
+        assertFalse(mEngine.hasSnoozed());
+        rules(ongoingRule("upload", Action.SILENT));
+        StatusBarNotification upload = withFlags(CHAT, 3, "Upload 10%", Notification.FLAG_ONGOING_EVENT);
+        mEngine.onPosted(upload);
+        assertTrue(mEngine.hasSnoozed());
+        String copyTag = NotificationReposter.copyTag(upload.getKey());
+
+        mShade.snoozed.add(withFlags(CHAT, 3, "Upload 60%", Notification.FLAG_ONGOING_EVENT));
+        mEngine.check();
+        assertEquals("Upload 60%", text(mShade.posted.get(copyTag)));
+
+        // Its app ended it, and once the snooze ran out Android stopped listing it.
+        mShade.snoozed.clear();
+        mEngine.check();
+        assertNull(mShade.posted.get(copyTag));
+        assertFalse(mEngine.hasSnoozed());
+    }
+
     @Test
     public void editingTheRulesBringsBackWhatTheyNoLongerTake() {
         StatusBarNotification upload = withFlags(CHAT, 3, "Upload 10%", Notification.FLAG_ONGOING_EVENT);

@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -89,6 +90,8 @@ final class NotificationFilterEngine {
     private static final int REMEMBERED = 256;
     /** How long a snooze may take to show in the snoozed list before a copy is taken for gone. */
     static final long SNOOZE_GRACE_MILLIS = TimeUnit.SECONDS.toMillis(30);
+    /** How often what's snoozed is looked in on, since Android doesn't report an update to it. */
+    static final long CHECK_EVERY_MILLIS = TimeUnit.MINUTES.toMillis(1);
     private static final int UNTOUCHABLE_SUMMARY_FLAGS = Notification.FLAG_ONGOING_EVENT
             | Notification.FLAG_FOREGROUND_SERVICE | Notification.FLAG_NO_CLEAR;
 
@@ -144,11 +147,22 @@ final class NotificationFilterEngine {
 
     private static final class Snoozed {
         final long sinceMillis;
+        @NonNull
+        final String packageName;
+        final int uid;
         /** Whether the shade listed it as snoozed. Until then it may be missing because the snooze hasn't landed. */
         boolean seen;
+        /**
+         * Its app was force stopped, which ended it, though Android lists it as snoozed until the snooze runs out.
+         * Only a post made after that, with a later post time, brings its copy back.
+         */
+        boolean ended;
+        long endedPostTime;
 
-        Snoozed(long sinceMillis) {
+        Snoozed(long sinceMillis, @NonNull StatusBarNotification sbn) {
             this.sinceMillis = sinceMillis;
+            this.packageName = sbn.getPackageName();
+            this.uid = sbn.getUid();
         }
     }
 
@@ -206,7 +220,7 @@ final class NotificationFilterEngine {
             long now = mClock.getAsLong();
             for (StatusBarNotification sbn : mShade.snoozed()) {
                 if (mCopies.containsKey(sbn.getKey())) {
-                    Snoozed snoozed = new Snoozed(now);
+                    Snoozed snoozed = new Snoozed(now, sbn);
                     snoozed.seen = true;
                     mSnoozed.put(sbn.getKey(), snoozed);
                 }
@@ -318,16 +332,21 @@ final class NotificationFilterEngine {
             return;
         }
         long now = mClock.getAsLong();
-        Map<String, StatusBarNotification> snoozed = new HashMap<>();
-        for (StatusBarNotification sbn : mShade.snoozed()) {
-            snoozed.put(sbn.getKey(), sbn);
-        }
+        Map<String, StatusBarNotification> snoozed = snoozedByKey();
         Set<String> active = null;
         for (String key : new ArrayList<>(mSnoozed.keySet())) {
             Snoozed state = mSnoozed.get(key);
             StatusBarNotification sbn = snoozed.get(key);
             if (sbn != null) {
                 state.seen = true;
+                if (state.ended) {
+                    if (sbn.getPostTime() == state.endedPostTime) {
+                        // What its app had up when it was force stopped, listed until the snooze runs out.
+                        continue;
+                    }
+                    // Posted again since, and Android kept that snoozed too.
+                    state.ended = false;
+                }
                 refreshSnoozed(sbn, now);
                 continue;
             }
@@ -492,7 +511,7 @@ final class NotificationFilterEngine {
             case SNOOZE:
                 mCancelling.add(key);
                 if (mShade.snooze(key, OngoingPolicy.snoozeMillis(mShade.importanceOf(key)))) {
-                    mSnoozed.put(key, new Snoozed(now));
+                    mSnoozed.put(key, new Snoozed(now, sbn));
                 }
                 break;
             case AS_ROOT:
@@ -595,6 +614,62 @@ final class NotificationFilterEngine {
         mHistory.accept(new NotificationHistoryEntry(mClock.getAsLong(), packageName,
                 mApps.label(packageName).toString(), facts.fields, actionName,
                 action != null ? result.ruleName : null, action != null && result.byQuietMode));
+    }
+
+    /**
+     * A force stop ends every notification the app had, snoozed ones too. Android keeps listing those as snoozed
+     * until their snooze runs out and doesn't tell the listener, so this is the one sign, and their copies go now.
+     *
+     * @param uid The app's uid, so another user's copy of it is left alone, or a negative number when it's unknown.
+     */
+    @MainThread
+    void onPackageStopped(@NonNull String packageName, int uid) {
+        if (mSnoozed.isEmpty()) {
+            return;
+        }
+        Map<String, StatusBarNotification> snoozed = null;
+        Iterator<Map.Entry<String, Snoozed>> it = mSnoozed.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<String, Snoozed> entry = it.next();
+            Snoozed state = entry.getValue();
+            if (!state.packageName.equals(packageName) || (uid >= 0 && state.uid != uid)) {
+                continue;
+            }
+            if (snoozed == null) {
+                snoozed = snoozedByKey();
+            }
+            StatusBarNotification sbn = snoozed.get(entry.getKey());
+            if (sbn != null) {
+                state.ended = true;
+                state.endedPostTime = sbn.getPostTime();
+            } else {
+                it.remove();
+            }
+            dropCopy(entry.getKey());
+        }
+    }
+
+    /** Whether anything this listener snoozed is out of sight, so the service keeps looking in on it. */
+    boolean hasSnoozed() {
+        return !mSnoozed.isEmpty();
+    }
+
+    /**
+     * The regular look at what's snoozed, for what Android doesn't report: an update, and a snooze that ran out on
+     * one its app had ended.
+     */
+    @MainThread
+    void check() {
+        refreshSnoozed();
+    }
+
+    @NonNull
+    private Map<String, StatusBarNotification> snoozedByKey() {
+        Map<String, StatusBarNotification> snoozed = new HashMap<>();
+        for (StatusBarNotification sbn : mShade.snoozed()) {
+            snoozed.put(sbn.getKey(), sbn);
+        }
+        return snoozed;
     }
 
     /** For tests: the keys of the originals that have a copy, oldest first. */

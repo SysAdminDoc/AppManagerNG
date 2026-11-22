@@ -4,11 +4,17 @@ package io.github.muntashirakon.AppManager.notificationfilter;
 
 import android.app.INotificationManager;
 import android.app.Notification;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.RemoteException;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
@@ -16,7 +22,9 @@ import android.util.LruCache;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
 
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.ipc.ProxyBinder;
@@ -38,10 +46,36 @@ public class NotificationFilterService extends NotificationListenerService {
     private NotificationFilterEngine mEngine;
     @Nullable
     private NotificationFilterSettings mSettings;
+    /** The ranking that came with the notification being handled, while it's handled. */
+    @Nullable
+    private RankingMap mPostRanking;
+    private final Handler mHandler = new Handler(Looper.getMainLooper());
+    private boolean mConnected;
+    private boolean mStopReceiverRegistered;
     /** A saved rule applies to what's in the shade too, not just to what comes next. */
     private final Runnable mOnRulesChanged = () -> {
         if (mEngine != null) {
             mEngine.sweep();
+        }
+        scheduleCheck();
+    };
+    /** Android doesn't report what happens to a snoozed notification, so while one is snoozed it's looked in on. */
+    private final Runnable mCheck = () -> {
+        if (mEngine != null) {
+            mEngine.check();
+        }
+        scheduleCheck();
+    };
+    /** A force stop ends the app's snoozed notifications too, and this broadcast is the only sign of it. */
+    private final BroadcastReceiver mPackageStopped = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Uri data = intent.getData();
+            String packageName = data != null ? data.getSchemeSpecificPart() : null;
+            if (packageName != null && mEngine != null) {
+                mEngine.onPackageStopped(packageName, intent.getIntExtra(Intent.EXTRA_UID, -1));
+                scheduleCheck();
+            }
         }
     };
 
@@ -57,35 +91,72 @@ public class NotificationFilterService extends NotificationListenerService {
     public void onListenerConnected() {
         super.onListenerConnected();
         NotificationReposter.ensureChannels(this);
+        mConnected = true;
+        if (!mStopReceiverRegistered) {
+            IntentFilter filter = new IntentFilter(Intent.ACTION_PACKAGE_RESTARTED);
+            filter.addDataScheme("package");
+            // Only the system sends it.
+            ContextCompat.registerReceiver(this, mPackageStopped, filter, ContextCompat.RECEIVER_EXPORTED);
+            mStopReceiverRegistered = true;
+        }
         if (mEngine != null) {
             mEngine.onConnected();
         }
         if (mSettings != null) {
             mSettings.registerRulesListener(mOnRulesChanged);
         }
+        scheduleCheck();
     }
 
     @Override
     public void onListenerDisconnected() {
-        if (mSettings != null) {
-            mSettings.unregisterRulesListener(mOnRulesChanged);
-        }
+        stopWatching();
         super.onListenerDisconnected();
     }
 
     @Override
     public void onDestroy() {
-        if (mSettings != null) {
-            mSettings.unregisterRulesListener(mOnRulesChanged);
-        }
+        stopWatching();
         super.onDestroy();
     }
 
-    @Override
-    public void onNotificationPosted(@Nullable StatusBarNotification sbn) {
-        if (sbn != null && mEngine != null) {
-            mEngine.onPosted(sbn);
+    private void stopWatching() {
+        mConnected = false;
+        mHandler.removeCallbacks(mCheck);
+        if (mStopReceiverRegistered) {
+            unregisterReceiver(mPackageStopped);
+            mStopReceiverRegistered = false;
         }
+        if (mSettings != null) {
+            mSettings.unregisterRulesListener(mOnRulesChanged);
+        }
+    }
+
+    /** Looks in on what's snoozed a minute from now, for as long as something is. Each event starts it over. */
+    private void scheduleCheck() {
+        mHandler.removeCallbacks(mCheck);
+        if (mConnected && mEngine != null && mEngine.hasSnoozed()) {
+            mHandler.postDelayed(mCheck, NotificationFilterEngine.CHECK_EVERY_MILLIS);
+        }
+    }
+
+    /**
+     * Not passed on: the default calls the one without a ranking. The ranking that came with the post is the one that
+     * lists it for sure. By the time it's handled the current one can be newer and already without it, and a missing
+     * importance would snooze a quiet notification for the long time.
+     */
+    @Override
+    public void onNotificationPosted(@Nullable StatusBarNotification sbn, @Nullable RankingMap rankingMap) {
+        if (sbn == null || mEngine == null) {
+            return;
+        }
+        mPostRanking = rankingMap;
+        try {
+            mEngine.onPosted(sbn);
+        } finally {
+            mPostRanking = null;
+        }
+        scheduleCheck();
     }
 
     /** Before Android 8, which doesn't say why. */
@@ -93,6 +164,7 @@ public class NotificationFilterService extends NotificationListenerService {
     public void onNotificationRemoved(@Nullable StatusBarNotification sbn) {
         if (sbn != null && mEngine != null) {
             mEngine.onRemoved(sbn, 0);
+            scheduleCheck();
         }
     }
 
@@ -103,7 +175,26 @@ public class NotificationFilterService extends NotificationListenerService {
         // Not passed on: the default calls the one above, which would handle it a second time.
         if (sbn != null && mEngine != null) {
             mEngine.onRemoved(sbn, reason);
+            scheduleCheck();
         }
+    }
+
+    /**
+     * @param postRanking    The ranking that came with the post being handled, or {@code null} outside of one.
+     * @param currentRanking The newest ranking.
+     * @return The notification's importance from the first of them that lists it, or -1 when neither does.
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    static int importanceIn(@NonNull String key, @Nullable RankingMap postRanking,
+                            @Nullable RankingMap currentRanking) {
+        Ranking out = new Ranking();
+        if (postRanking != null && postRanking.getRanking(key, out)) {
+            return out.getImportance();
+        }
+        if (currentRanking != null && currentRanking.getRanking(key, out)) {
+            return out.getImportance();
+        }
+        return -1;
     }
 
     private final class ListenerShade implements NotificationFilterEngine.Shade {
@@ -222,12 +313,7 @@ public class NotificationFilterService extends NotificationListenerService {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
                 return -1;
             }
-            RankingMap ranking = getCurrentRanking();
-            Ranking out = new Ranking();
-            if (ranking == null || !ranking.getRanking(key, out)) {
-                return -1;
-            }
-            return out.getImportance();
+            return importanceIn(key, mPostRanking, getCurrentRanking());
         }
 
         @Override

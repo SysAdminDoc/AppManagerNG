@@ -2297,7 +2297,7 @@
     <string name="notification_filter_rule_regex">Regular expression</string>
     <string name="notification_filter_rule_action">Then</string>
     <string name="notification_filter_rule_ongoing">Ongoing notifications too</string>
-    <string name="notification_filter_ongoing_snooze">On this Android version an ongoing notification can\'t be removed for good. It\'s hidden for a while and checked again when it comes back, so it may show up for a moment now and then.</string>
+    <string name="notification_filter_ongoing_snooze">On this Android version an ongoing notification can\'t be removed for good. It\'s hidden for a while and checked again when it comes back, so it may show up for a moment now and then. If its app ends it while it\'s hidden, the copy can stay until that check, since Android doesn\'t say so sooner.</string>
     <string name="notification_filter_ongoing_root">Ongoing notifications are removed with root. One from a running service can\'t be removed, so it\'s left as it is.</string>
     <string name="notification_filter_ongoing_none">On this Android version ongoing notifications can only be removed with root, so this rule leaves them as they are.</string>
     <string name="notification_filter_rule_priority_note">Ordering applies to notifications the filter manages.</string>
