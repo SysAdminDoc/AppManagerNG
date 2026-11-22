@@ -45,6 +45,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.accessibility.AccessibilityMultiplexer;
 import io.github.muntashirakon.AppManager.compat.UsageStatsManagerCompat;
 import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Prefs;
@@ -459,5 +460,11 @@ public class TopAppOverlayService extends Service implements AccessibilityMultip
     private PendingIntent detailsPendingIntent(@NonNull String packageName, int requestCode) {
         return PendingIntentCompat.getActivity(this, requestCode, detailsIntent(packageName),
                 PendingIntent.FLAG_UPDATE_CURRENT, false);
+    }
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        // Notifications and tiles show a language file on Android 10 and older this way
+        super.attachBaseContext(LanguagePackCompat.wrap(base));
     }
 }

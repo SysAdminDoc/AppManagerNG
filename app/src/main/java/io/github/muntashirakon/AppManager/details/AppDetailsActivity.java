@@ -6,7 +6,6 @@ import android.annotation.UserIdInt;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
-import android.content.res.TypedArray;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcel;
@@ -141,7 +140,7 @@ public class AppDetailsActivity extends BaseActivity {
     private ViewPager2 mViewPager;
     @Nullable
     private ViewPager2.OnPageChangeCallback mPageChangeCallback;
-    private TypedArray mTabTitleIds;
+    private CharSequence[] mTabTitles;
     private Fragment[] mTabFragments;
     private boolean[] mLoadedTabs;
     private boolean mPackageReady;
@@ -184,9 +183,10 @@ public class AppDetailsActivity extends BaseActivity {
         }
         model.setUserId(mUserId);
         // Initialize tabs
-        mTabTitleIds = getResources().obtainTypedArray(R.array.TAB_TITLES);
-        mTabFragments = new Fragment[mTabTitleIds.length()];
-        mLoadedTabs = new boolean[mTabTitleIds.length()];
+        // As text, so a language file on Android 10 and older names the tabs too
+        mTabTitles = getResources().getTextArray(R.array.TAB_TITLES);
+        mTabFragments = new Fragment[mTabTitles.length];
+        mLoadedTabs = new boolean[mTabTitles.length];
         if (mPackageName == null && mApkSource == null) {
             UIUtils.displayLongToast(apkIntentError != 0 ? apkIntentError : R.string.empty_package_name);
             finish();
@@ -209,7 +209,7 @@ public class AppDetailsActivity extends BaseActivity {
         // Set tabs
         mViewPager.setOffscreenPageLimit(1);
         mViewPager.setAdapter(new AppDetailsFragmentPagerAdapter(this));
-        new TabLayoutMediator(tabLayout, mViewPager, (tab, position) -> tab.setText(mTabTitleIds.getString(position)))
+        new TabLayoutMediator(tabLayout, mViewPager, (tab, position) -> tab.setText(mTabTitles[position]))
                 .attach();
         mPageChangeCallback = new ViewPager2.OnPageChangeCallback() {
             @Override
@@ -223,7 +223,7 @@ public class AppDetailsActivity extends BaseActivity {
         if (savedInstanceState == null) {
             Intent launchIntent = getIntent();
             int initialTab = launchIntent.getIntExtra(EXTRA_INITIAL_TAB, -1);
-            if (initialTab >= 0 && initialTab < mTabTitleIds.length()) {
+            if (initialTab >= 0 && initialTab < mTabTitles.length) {
                 mViewPager.setCurrentItem(initialTab, false);
             }
             if (launchIntent.getBooleanExtra(EXTRA_APPLY_TRACKER_SORT, false)) {
@@ -473,7 +473,7 @@ public class AppDetailsActivity extends BaseActivity {
             return;
         }
         mLoadedTabs[id] = true;
-        Log.d("ADA - " + mTabTitleIds.getText(id), "loading selected tab");
+        Log.d("ADA - " + mTabTitles[id], "loading selected tab");
         model.load(id);
     }
 
@@ -533,7 +533,7 @@ public class AppDetailsActivity extends BaseActivity {
 
         @Override
         public int getItemCount() {
-            return mTabTitleIds.length();
+            return mTabTitles.length;
         }
     }
 }

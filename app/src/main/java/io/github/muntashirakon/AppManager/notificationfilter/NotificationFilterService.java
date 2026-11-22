@@ -26,6 +26,7 @@ import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
+import io.github.muntashirakon.AppManager.i18n.LanguagePackCompat;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.ipc.ProxyBinder;
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -381,5 +382,11 @@ public class NotificationFilterService extends NotificationListenerService {
             mIcons.put(packageName, icon);
             return icon;
         }
+    }
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        // Notifications and tiles show a language file on Android 10 and older this way
+        super.attachBaseContext(LanguagePackCompat.wrap(base));
     }
 }

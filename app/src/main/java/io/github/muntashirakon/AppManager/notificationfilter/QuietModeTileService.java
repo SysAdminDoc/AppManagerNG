@@ -14,6 +14,7 @@ import androidx.annotation.RequiresApi;
 import androidx.annotation.VisibleForTesting;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.shortcut.QuickOpenTileService;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -71,5 +72,11 @@ public class QuietModeTileService extends TileService {
         tile.setLabel(getString(R.string.notification_filter_quiet_mode));
         tile.setState(on ? Tile.STATE_ACTIVE : Tile.STATE_INACTIVE);
         tile.updateTile();
+    }
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        // Notifications and tiles show a language file on Android 10 and older this way
+        super.attachBaseContext(LanguagePackCompat.wrap(base));
     }
 }

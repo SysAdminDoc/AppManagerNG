@@ -15,6 +15,8 @@ import org.jetbrains.annotations.Contract;
 
 import java.util.Objects;
 
+import io.github.muntashirakon.AppManager.i18n.LanguagePackCompat;
+
 // Copyright 2020 John "topjohnwu" Wu
 public final class ContextUtils {
     public static final String TAG = ContextUtils.class.getSimpleName();
@@ -33,7 +35,8 @@ public final class ContextUtils {
                 Context c = (Context) Class.forName("android.app.ActivityThread")
                         .getMethod("currentApplication")
                         .invoke(null);
-                sContext = getContextImpl(Objects.requireNonNull(c));
+                // A language file on Android 10 and older reaches text only through a wrapper
+                sContext = LanguagePackCompat.wrap(Objects.requireNonNull(getContextImpl(c)));
             } catch (Exception e) {
                 // Shall never happen
                 throw new RuntimeException(e);

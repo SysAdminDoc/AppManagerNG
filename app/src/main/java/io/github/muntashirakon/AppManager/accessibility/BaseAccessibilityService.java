@@ -19,6 +19,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.List;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackCompat;
 
 public abstract class BaseAccessibilityService extends AccessibilityService {
     private static final long ACTION_DELAY_MILLIS = 500;
@@ -328,5 +329,11 @@ public abstract class BaseAccessibilityService extends AccessibilityService {
             performGlobalAction(action);
             performGlobalActions(action, count - 1);
         });
+    }
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        // Notifications and tiles show a language file on Android 10 and older this way
+        super.attachBaseContext(LanguagePackCompat.wrap(base));
     }
 }

@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackCompat;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.types.ForegroundService;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
@@ -549,5 +550,11 @@ public class WifiWaitService extends Service {
         unregisterNetworkCallback();
         super.onDestroy();
         Log.d(TAG, "Service destroyed");
+    }
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        // Notifications and tiles show a language file on Android 10 and older this way
+        super.attachBaseContext(LanguagePackCompat.wrap(base));
     }
 }

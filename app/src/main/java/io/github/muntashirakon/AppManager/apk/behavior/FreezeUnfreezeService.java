@@ -43,6 +43,7 @@ import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.DummyActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.ScreenLockChecker;
 import io.github.muntashirakon.AppManager.settings.Prefs;
@@ -252,5 +253,11 @@ public class FreezeUnfreezeService extends Service {
                 .setIntent(intent)
                 .build();
         ShortcutManagerCompat.updateShortcuts(this, Collections.singletonList(shortcutInfoCompat));
+    }
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        // Notifications and tiles show a language file on Android 10 and older this way
+        super.attachBaseContext(LanguagePackCompat.wrap(base));
     }
 }

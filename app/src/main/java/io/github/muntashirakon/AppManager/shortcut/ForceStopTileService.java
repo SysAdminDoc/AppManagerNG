@@ -20,6 +20,7 @@ import androidx.core.content.ContextCompat;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.main.SplashActivity;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
@@ -153,5 +154,11 @@ public class ForceStopTileService extends TileService implements TileActionHost 
             tile.setState(configuredState);
         }
         tile.updateTile();
+    }
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        // Notifications and tiles show a language file on Android 10 and older this way
+        super.attachBaseContext(LanguagePackCompat.wrap(base));
     }
 }

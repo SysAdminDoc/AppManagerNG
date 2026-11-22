@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.i18n;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
@@ -52,6 +53,8 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import io.github.muntashirakon.widget.MaterialAlertView;
 
 /**
  * Shows a language file on Android 10 and older, which have no {@code ResourcesLoader}. The app's
@@ -153,56 +156,138 @@ public final class LanguagePackCompat {
         }
     }
 
+    /**
+     * A context whose resources show the language file while one is shown through compatibility
+     * mode. For contexts the app gets without going through an activity or the application: the
+     * one {@code ContextUtils} hands out, services' and widgets'.
+     */
+    @NonNull
+    public static Context wrap(@NonNull Context base) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || base instanceof CompatContext) {
+            // Android 11 and later lay the file over the app's own resources
+            return base;
+        }
+        return new CompatContext(base);
+    }
+
+    private static final class CompatContext extends ContextWrapper {
+        private final Host mHost = new Host();
+
+        CompatContext(@NonNull Context base) {
+            super(base);
+        }
+
+        @Override
+        public Resources getResources() {
+            return mHost.resources(super.getResources());
+        }
+    }
+
     /** Puts the file's text in a menu built from {@code menuRes} somewhere other than an activity. */
     public static void translateMenu(@NonNull Context context, @MenuRes int menuRes, @NonNull Menu menu) {
         CompatPack pack = sActive;
         if (pack == null || !pack.appliesTo(context.getResources().getConfiguration())) {
             return;
         }
+        Resources english = untranslated(context.getResources());
+        // The menu each open <menu> element was built into: the one given, then the submenus of
+        // the items around it, or null where that item wasn't found
+        List<Menu> open = new ArrayList<>();
+        MenuItem last = null;
         try (XmlResourceParser parser = context.getResources().getLayout(menuRes)) {
             int event;
             while ((event = parser.next()) != XmlPullParser.END_DOCUMENT) {
-                if (event != XmlPullParser.START_TAG || !"item".equals(parser.getName())) {
-                    continue;
-                }
-                int id = 0;
-                Map<String, CharSequence> texts = new HashMap<>(4);
-                for (int i = 0, n = parser.getAttributeCount(); i < n; ++i) {
-                    String name = parser.getAttributeName(i);
-                    int res = parser.getAttributeResourceValue(i, 0);
-                    if ("id".equals(name)) {
-                        id = res;
-                    } else if (res != 0) {
-                        CharSequence text = pack.text(res);
-                        if (text != null) {
-                            texts.put(name, text);
-                        }
+                if (event == XmlPullParser.START_TAG) {
+                    String tag = parser.getName();
+                    if ("menu".equals(tag)) {
+                        open.add(open.isEmpty() ? menu : last != null && last.hasSubMenu() ? last.getSubMenu() : null);
+                    } else if ("item".equals(tag)) {
+                        last = translateItem(pack, english, parser, menu,
+                                open.isEmpty() ? null : open.get(open.size() - 1));
                     }
-                }
-                MenuItem item = id != 0 && !texts.isEmpty() ? menu.findItem(id) : null;
-                if (item == null) {
-                    continue;
-                }
-                CharSequence title = texts.get("title");
-                if (title != null) {
-                    item.setTitle(title);
-                }
-                CharSequence condensed = texts.get("titleCondensed");
-                if (condensed != null) {
-                    item.setTitleCondensed(condensed);
-                }
-                CharSequence description = texts.get("contentDescription");
-                if (description != null) {
-                    MenuItemCompat.setContentDescription(item, description);
-                }
-                CharSequence tooltip = texts.get("tooltipText");
-                if (tooltip != null) {
-                    MenuItemCompat.setTooltipText(item, tooltip);
+                } else if (event == XmlPullParser.END_TAG && "menu".equals(parser.getName()) && !open.isEmpty()) {
+                    open.remove(open.size() - 1);
                 }
             }
         } catch (XmlPullParserException | IOException | Resources.NotFoundException e) {
             Log.w(TAG, "Couldn't read menu " + menuRes, e);
         }
+    }
+
+    /**
+     * Finds the menu item an {@code <item>} element made and puts the file's text in it. One with
+     * an id is looked up anywhere in {@code root}; one without, such as an entry that opens a
+     * submenu, by the English title it still has in {@code parent}.
+     */
+    @Nullable
+    private static MenuItem translateItem(@NonNull CompatPack pack, @NonNull Resources english,
+                                          @NonNull XmlResourceParser parser, @NonNull Menu root,
+                                          @Nullable Menu parent) {
+        int id = 0;
+        int titleRes = 0;
+        Map<String, CharSequence> texts = new HashMap<>(4);
+        for (int i = 0, n = parser.getAttributeCount(); i < n; ++i) {
+            String name = parser.getAttributeName(i);
+            int res = parser.getAttributeResourceValue(i, 0);
+            if ("id".equals(name)) {
+                id = res;
+            } else if (res != 0) {
+                if ("title".equals(name)) {
+                    titleRes = res;
+                }
+                CharSequence text = pack.text(res);
+                if (text != null) {
+                    texts.put(name, text);
+                }
+            }
+        }
+        MenuItem item;
+        if (id != 0) {
+            item = root.findItem(id);
+        } else {
+            item = parent != null && titleRes != 0 ? findByTitle(parent, english, titleRes) : null;
+        }
+        if (item == null) {
+            return null;
+        }
+        CharSequence title = texts.get("title");
+        if (title != null) {
+            item.setTitle(title);
+            if (item.hasSubMenu()) {
+                // The header a submenu shows is the title its item had when it was built
+                item.getSubMenu().setHeaderTitle(title);
+            }
+        }
+        CharSequence condensed = texts.get("titleCondensed");
+        if (condensed != null) {
+            item.setTitleCondensed(condensed);
+        }
+        CharSequence description = texts.get("contentDescription");
+        if (description != null) {
+            MenuItemCompat.setContentDescription(item, description);
+        }
+        CharSequence tooltip = texts.get("tooltipText");
+        if (tooltip != null) {
+            MenuItemCompat.setTooltipText(item, tooltip);
+        }
+        return item;
+    }
+
+    @Nullable
+    private static MenuItem findByTitle(@NonNull Menu menu, @NonNull Resources english, int titleRes) {
+        CharSequence wanted;
+        try {
+            wanted = english.getText(titleRes);
+        } catch (Resources.NotFoundException e) {
+            return null;
+        }
+        for (int i = 0, n = menu.size(); i < n; ++i) {
+            MenuItem item = menu.getItem(i);
+            if (item.getItemId() == Menu.NONE && TextUtils.equals(String.valueOf(item.getTitle()), wanted.toString())) {
+                return item;
+            }
+        }
+        return null;
     }
 
     /** The speed dial built from {@code menuRes} gets the file's labels. */
@@ -477,6 +562,8 @@ public final class LanguagePackCompat {
             case "text":
                 if (view instanceof TextView) {
                     ((TextView) view).setText(text);
+                } else if (view instanceof MaterialAlertView) {
+                    ((MaterialAlertView) view).setText(text);
                 }
                 break;
             case "hint":
@@ -514,6 +601,16 @@ public final class LanguagePackCompat {
             case "helperText":
                 if (view instanceof TextInputLayout) {
                     ((TextInputLayout) view).setHelperText(text);
+                }
+                break;
+            case "endIconContentDescription":
+                if (view instanceof TextInputLayout) {
+                    ((TextInputLayout) view).setEndIconContentDescription(text);
+                }
+                break;
+            case "startIconContentDescription":
+                if (view instanceof TextInputLayout) {
+                    ((TextInputLayout) view).setStartIconContentDescription(text);
                 }
                 break;
             case "placeholderText":

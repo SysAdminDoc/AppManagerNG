@@ -19,6 +19,7 @@ import androidx.core.app.PendingIntentCompat;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.accessibility.toast.ToastHistoryActivity;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackCompat;
 import io.github.muntashirakon.AppManager.logcat.LogViewerActivity;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.profiles.ProfilesActivity;
@@ -184,5 +185,11 @@ public abstract class QuickOpenTileService extends TileService {
             tile.setSubtitle(enabled ? null : getString(R.string.quick_open_tile_feature_off));
         }
         tile.updateTile();
+    }
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        // Notifications and tiles show a language file on Android 10 and older this way
+        super.attachBaseContext(LanguagePackCompat.wrap(base));
     }
 }
