@@ -585,6 +585,12 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
                     }
                 }
                 if (mViewModel.consumeExitAfterSave(true)) {
+                    // Everything on screen went into the file just written, even a copy saved
+                    // elsewhere, so leave without asking again. Text typed while it was being
+                    // written still gets the question.
+                    if (mEditor == null || result.savedText.contentEquals(mEditor.getText())) {
+                        mTextModifiedBackPressedCallback.setEnabled(false);
+                    }
                     requireActivity().getOnBackPressedDispatcher().onBackPressed();
                 }
             } else {

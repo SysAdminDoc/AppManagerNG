@@ -7,11 +7,13 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Looper;
@@ -305,6 +307,38 @@ public class CodeEditorReleaseTest {
         assertTrue(fragment(activity).onMenuItemSelected(new RoboMenuItem(R.id.action_save)));
         waitForFile(mFile, "// mine\n" + JSON);
         waitForSubtitle(activity, "Subtitle");
+    }
+
+    @Test
+    public void saveAndExitLeavesOnceACopyOfAFileItCannotWriteIsSaved() throws Exception {
+        CodeEditorActivity activity = open(JSON);
+        waitForText(activity, JSON).getText().insert(0, 0, "// mine\n");
+        idle();
+        assertTrue(mFile.setWritable(false));
+        try {
+            activity.getOnBackPressedDispatcher().onBackPressed();
+            idle();
+            androidx.appcompat.app.AlertDialog unsaved = (androidx.appcompat.app.AlertDialog) ShadowDialog.getLatestDialog();
+            unsaved.getButton(DialogInterface.BUTTON_NEUTRAL).performClick();
+            idle();
+            // The file can't be written, so it asks to save a copy instead
+            androidx.appcompat.app.AlertDialog readOnly = (androidx.appcompat.app.AlertDialog) ShadowDialog.getLatestDialog();
+            assertNotSame(unsaved, readOnly);
+            readOnly.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+            idle();
+            File copy = mTemp.newFile("copy.json");
+            // A picker that gives no lasting access, so the editor stays on its own file
+            Intent picker = shadowOf(activity).getNextStartedActivityForResult().intent;
+            shadowOf(activity).receiveResult(picker, Activity.RESULT_OK, new Intent().setData(Uri.fromFile(copy)));
+            waitForFile(copy, "// mine\n" + JSON);
+            waitForSavedToast(activity);
+
+            // Everything typed is in the copy, so it leaves without asking again
+            assertTrue(activity.isFinishing());
+            assertSame(readOnly, ShadowDialog.getLatestDialog());
+        } finally {
+            mFile.setWritable(true);
+        }
     }
 
     @Test
