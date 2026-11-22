@@ -60,6 +60,8 @@ public class LogViewerRecordShortcutTest {
         Intent started = shadowOf(activity).getNextStartedActivity();
         assertNotNull(started);
         assertEquals(RecordLogDialogActivity.class.getName(), started.getComponent().getClassName());
+        // The record screen asks for storage itself, and nothing else opens on the way
+        assertNull(shadowOf(activity).getNextStartedActivity());
         assertNull("a recording started without the user's OK", shadowOf(mContext).getNextStartedService());
         assertTrue(activity.isFinishing());
     }

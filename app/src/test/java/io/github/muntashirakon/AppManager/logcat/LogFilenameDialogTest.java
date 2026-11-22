@@ -5,10 +5,12 @@ package io.github.muntashirakon.AppManager.logcat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Looper;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
@@ -30,6 +32,7 @@ import org.robolectric.android.controller.ActivityController;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.R;
 
@@ -97,7 +100,7 @@ public class LogFilenameDialogTest {
     }
 
     @Test
-    public void recordLogTakesAGoodNameOnceAndGoesAway() {
+    public void recordLogTakesAGoodNameOnceAndGoesAway() throws InterruptedException {
         RecordLogDialogFragment fragment = RecordLogDialogFragment.getInstance(null, null);
         List<String> dismissed = new ArrayList<>();
         fragment.setOnDismissListener(d -> dismissed.add("dismissed"));
@@ -117,6 +120,17 @@ public class LogFilenameDialogTest {
         assertFalse(dialog.isShowing());
         assertFalse(fragment.isAdded());
         assertEquals(Collections.singletonList("dismissed"), dismissed);
+        // The recording starts once, from a background lookup; wait for it so it can't land in another test
+        Intent started = null;
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        while (started == null && System.nanoTime() < deadline) {
+            Thread.sleep(20);
+            idle();
+            started = shadowOf(mController.get().getApplication()).getNextStartedService();
+        }
+        assertNotNull(started);
+        assertEquals("mine.log", started.getStringExtra(LogcatRecordingService.EXTRA_FILENAME));
+        assertNull(shadowOf(mController.get().getApplication()).getNextStartedService());
     }
 
     private String goodFilename() {
