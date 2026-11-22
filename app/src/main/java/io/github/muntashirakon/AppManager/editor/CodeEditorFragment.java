@@ -93,6 +93,8 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
     private static final String TAG = CodeEditorFragment.class.getSimpleName();
 
     public static final String ARG_OPTIONS = "options";
+    private static final String STATE_UNSAVED_EDITS = "unsaved_edits";
+    private static final String STATE_PENDING_SAVE_AS = "pending_save_as";
 
     public static class Options implements Parcelable {
         @Nullable
@@ -237,6 +239,14 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
     private final List<Dialog> mOpenDialogs = new ArrayList<>();
     private final List<PopupMenu> mOpenPopups = new ArrayList<>();
     private boolean mTextModified = false;
+    // Whether this view has been given the text yet, or the news that it couldn't be read
+    private boolean mContentShown;
+    // A Save As answer that came back before the text was read: Android closed the app while the
+    // picker was open. It's saved once the text is in.
+    @Nullable
+    private Intent mPendingSaveAs;
+    // Made again after Android closed the app with edits that weren't saved, which went with it
+    private boolean mUnsavedEditsLost;
     private final Runnable mInvisibleCharHintsUpdater = this::updateInvisibleCharHints;
     private final ActivityResultLauncher<Intent> mSaveOpenedFile = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -248,35 +258,45 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
                         return;
                     }
                     Intent data = result.getData();
-                    Uri uri = IntentCompat.getDataUri(data);
-                    if (uri == null) {
+                    if (IntentCompat.getDataUri(data) == null) {
                         mViewModel.setExitAfterSave(false);
                         return;
                     }
-                    int takeFlags = data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION
-                            | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                    saveFile(mEditor.getText(), uri);
-                    if (takeFlags != 0) {
-                        // Make this URI the current URI, in the arguments too: a view made again (after
-                        // a rotation or the Java view) reads its options there, and keeps this text
-                        mOptions = new Options.Builder(mOptions)
-                                .setUri(uri)
-                                .setSubtitle(Paths.get(uri).getName())
-                                .build();
-                        String languageBefore = mViewModel.getLanguage();
-                        mViewModel.setOptions(mOptions);
-                        requireArguments().putParcelable(ARG_OPTIONS, mOptions);
-                        if (!Objects.equals(languageBefore, mViewModel.getLanguage())) {
-                            // The new file's extension picked another language
-                            showLanguage();
-                        }
-                        updateStartupMenu();
+                    if (!mContentShown) {
+                        // Back after Android closed the app while the picker was open. The file is
+                        // still being read, and saving now would write an empty file.
+                        mPendingSaveAs = data;
+                        return;
                     }
+                    saveAs(data);
                 } finally {
                     showProgressIndicator(false);
                     unlockEditor();
                 }
             });
+
+    private void saveAs(@NonNull Intent data) {
+        Uri uri = Objects.requireNonNull(IntentCompat.getDataUri(data));
+        int takeFlags = data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION
+                | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+        saveFile(mEditor.getText(), uri);
+        if (takeFlags != 0) {
+            // Make this URI the current URI, in the arguments too: a view made again (after
+            // a rotation or the Java view) reads its options there, and keeps this text
+            mOptions = new Options.Builder(mOptions)
+                    .setUri(uri)
+                    .setSubtitle(Paths.get(uri).getName())
+                    .build();
+            String languageBefore = mViewModel.getLanguage();
+            mViewModel.setOptions(mOptions);
+            requireArguments().putParcelable(ARG_OPTIONS, mOptions);
+            if (!Objects.equals(languageBefore, mViewModel.getLanguage())) {
+                // The new file's extension picked another language
+                showLanguage();
+            }
+            updateStartupMenu();
+        }
+    }
     private final OnBackPressedCallback mExitSearchBackPressedCallback = new OnBackPressedCallback(false) {
         @Override
         public void handleOnBackPressed() {
@@ -334,6 +354,8 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        // A view back from the back stack is given the text again when it starts
+        mContentShown = false;
         mViewModel = new ViewModelProvider(this).get(CodeEditorViewModel.class);
         mOptions = Objects.requireNonNull(BundleCompat.getParcelable(requireArguments(), ARG_OPTIONS, Options.class));
         mViewModel.setOptions(mOptions);
@@ -538,7 +560,11 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
 
         mViewModel.getContentLiveData().observe(getViewLifecycleOwner(), content -> {
             showProgressIndicator(false);
+            mContentShown = true;
             if (content == null) {
+                // Nothing was read, so a copy waiting for the text isn't written
+                mPendingSaveAs = null;
+                mUnsavedEditsLost = false;
                 UIUtils.displayLongToast(R.string.failed);
                 return;
             }
@@ -567,6 +593,15 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             updatePositionText();
             // setText() and setEditorLanguage() drop every inlay hint
             scheduleInvisibleCharHints();
+            if (mUnsavedEditsLost) {
+                mUnsavedEditsLost = false;
+                UIUtils.displayLongToast(R.string.editor_unsaved_edits_lost);
+            }
+            if (mPendingSaveAs != null) {
+                Intent pending = mPendingSaveAs;
+                mPendingSaveAs = null;
+                saveAs(pending);
+            }
         });
         mViewModel.getSaveFileLiveData().observe(getViewLifecycleOwner(), result -> {
             if (result.success) {
@@ -627,7 +662,24 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
         // Only the first view reads the file. A view made again (back from the Java view, or after a
         // rotation) shows the text the view model already holds, edits not saved yet included.
         if (mViewModel.getContentLiveData().getValue() == null) {
+            // A view model made again after Android closed the app holds none of the edits that
+            // weren't saved, so the editor says they're gone once the file is shown
+            mUnsavedEditsLost = savedInstanceState != null && savedInstanceState.getBoolean(STATE_UNSAVED_EDITS);
             mViewModel.loadFileContentIfAvailable();
+        }
+        if (savedInstanceState != null && mPendingSaveAs == null) {
+            mPendingSaveAs = BundleCompat.getParcelable(savedInstanceState, STATE_PENDING_SAVE_AS, Intent.class);
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        // Android can close the app while it's in the background, the file picker open over it, and
+        // the view model and its edits go with it
+        outState.putBoolean(STATE_UNSAVED_EDITS, mTextModified || mUnsavedEditsLost);
+        if (mPendingSaveAs != null) {
+            outState.putParcelable(STATE_PENDING_SAVE_AS, mPendingSaveAs);
         }
     }
 

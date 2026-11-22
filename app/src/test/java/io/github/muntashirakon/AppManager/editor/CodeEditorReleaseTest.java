@@ -16,6 +16,7 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Looper;
 import android.view.MenuItem;
 import android.view.View;
@@ -41,6 +42,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.fakes.RoboMenuItem;
 import org.robolectric.shadow.api.Shadow;
+import org.robolectric.shadows.ShadowActivity;
 import org.robolectric.shadows.ShadowDialog;
 import org.robolectric.shadows.ShadowToast;
 import org.robolectric.shadows.ShadowWindowManagerImpl;
@@ -342,6 +344,40 @@ public class CodeEditorReleaseTest {
     }
 
     @Test
+    public void aSaveAsAnswerAfterAndroidClosedTheAppSavesTheFileNotAnEmptyOne() throws Exception {
+        CodeEditorActivity activity = open(JSON);
+        waitForText(activity, JSON).getText().insert(0, 0, "// typed\n");
+        idle();
+        ShadowActivity.IntentForResult picker = openSaveAsPicker(activity);
+        File copy = mTemp.newFile("copy.json");
+
+        // Android closes the app while the picker is open, and the picker's answer is waiting when it starts again
+        CodeEditorActivity restored = restartAfterTheProcessWasKilled(activity, picker.requestCode,
+                new Intent().setData(Uri.fromFile(copy)));
+
+        // The file as it was read, not the empty editor the answer arrived to
+        waitForFile(copy, JSON);
+        waitForText(restored, JSON);
+        // The typed line went with the app, and the editor says so
+        assertTrue(ShadowToast.showedToast(restored.getString(R.string.editor_unsaved_edits_lost)));
+    }
+
+    @Test
+    public void aRestartWithNothingUnsavedSaysNothingIsLost() throws Exception {
+        CodeEditorActivity activity = open(JSON);
+        waitForText(activity, JSON);
+        ShadowActivity.IntentForResult picker = openSaveAsPicker(activity);
+        File copy = mTemp.newFile("copy.json");
+
+        CodeEditorActivity restored = restartAfterTheProcessWasKilled(activity, picker.requestCode,
+                new Intent().setData(Uri.fromFile(copy)));
+
+        waitForFile(copy, JSON);
+        waitForSavedToast(restored);
+        assertFalse(ShadowToast.showedToast(restored.getString(R.string.editor_unsaved_edits_lost)));
+    }
+
+    @Test
     public void aPopupLeftOpenGoesAwayWithTheView() throws Exception {
         CodeEditorActivity activity = open(JSON);
         waitForText(activity, JSON);
@@ -403,6 +439,31 @@ public class CodeEditorReleaseTest {
             idle();
             Thread.sleep(20);
         }
+    }
+
+    @NonNull
+    private static ShadowActivity.IntentForResult openSaveAsPicker(@NonNull CodeEditorActivity activity) {
+        assertTrue(fragment(activity).onMenuItemSelected(new RoboMenuItem(R.id.action_save_as)));
+        idle();
+        ShadowActivity.IntentForResult picker = shadowOf(activity).getNextStartedActivityForResult();
+        assertNotNull(picker);
+        return picker;
+    }
+
+    /**
+     * Only the saved state outlives the process: a new activity, with a new view model, is made from
+     * it, and the picker's answer is handed over before it starts, as Android does.
+     */
+    @NonNull
+    private CodeEditorActivity restartAfterTheProcessWasKilled(@NonNull CodeEditorActivity activity, int requestCode,
+                                                               @NonNull Intent answer) {
+        Bundle state = new Bundle();
+        mController.pause().stop().saveInstanceState(state).destroy();
+        mController = Robolectric.buildActivity(CodeEditorActivity.class, activity.getIntent());
+        mController.create(state);
+        mController.get().getActivityResultRegistry().dispatchResult(requestCode, Activity.RESULT_OK, answer);
+        mController.start().postCreate(state).resume().visible();
+        return mController.get();
     }
 
     private static void saveAs(@NonNull CodeEditorActivity activity, @NonNull File target, int grantFlags) {
