@@ -344,13 +344,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Acceptance: class decompilation has explicit input, output, time, and memory ceilings and is cancellable when its host screen closes; malformed, recursive, and oversized fixtures return classified errors without process death; a contract test proves AppManagerNG continues to set `skipResources(true)` and never invokes JADX APK export or GUI paths; reachable upstream fixes are backported or documented against the narrow fork.
   Complexity: M
 
-- [ ] P2: Restore Swift Backup APK plus OBB conversion coverage
-  Why: the only APK plus OBB regression test has been commented out since a legacy Robolectric limitation, while the project pins Robolectric 4.16.1 and v0.6.18 changed Swift manifest validation.
-  Evidence: `backup/convert/SBConverterTest.java:158-176`; `versions.gradle:64`; `backup/convert/SBConverter.java`; v0.6.18 Swift ZIP-comment validation changelog entry.
-  Touches: `SBConverterTest.java`, deterministic Swift fixtures, converter temporary-file cleanup.
-  Acceptance: the test runs in the normal unit suite and proves that a valid fixture emits `base.apk` and the expected OBB payload; malformed comment metadata, package mismatch, missing APK, interrupted conversion, and cleanup of temporary output are covered; no live Swift account is required.
-  Complexity: S
-
 ### P3
 
 - [ ] P3: Show AppOps proxy package and attribution provenance
