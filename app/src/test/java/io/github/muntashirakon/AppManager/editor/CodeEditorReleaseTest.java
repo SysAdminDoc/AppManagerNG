@@ -13,6 +13,7 @@ import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
@@ -378,6 +379,26 @@ public class CodeEditorReleaseTest {
     }
 
     @Test
+    public void anEditorBroughtBackBeforeTheAppIsUnlockedIsOnTheScreen() throws Exception {
+        CodeEditorActivity activity = open(JSON);
+        waitForText(activity, JSON).getText().insert(0, 0, "// typed\n");
+        idle();
+        ShadowActivity.IntentForResult picker = openSaveAsPicker(activity);
+        File copy = mTemp.newFile("copy.json");
+
+        CodeEditorActivity restored = restartAfterTheProcessWasKilled(activity, picker.requestCode,
+                new Intent().setData(Uri.fromFile(copy)), true);
+
+        // The restored editor made its view before the layout was there. The container is a
+        // FragmentContainerView, which puts that view on the screen once the layout is set; a plain
+        // layout in its place would leave an empty window over a file that was saved anyway.
+        waitForFile(copy, JSON);
+        waitForText(restored, JSON);
+        assertSame(restored.findViewById(R.id.container), fragment(restored).requireView().getParent());
+        assertTrue(ShadowToast.showedToast(restored.getString(R.string.editor_unsaved_edits_lost)));
+    }
+
+    @Test
     public void aPopupLeftOpenGoesAwayWithTheView() throws Exception {
         CodeEditorActivity activity = open(JSON);
         waitForText(activity, JSON);
@@ -457,12 +478,35 @@ public class CodeEditorReleaseTest {
     @NonNull
     private CodeEditorActivity restartAfterTheProcessWasKilled(@NonNull CodeEditorActivity activity, int requestCode,
                                                                @NonNull Intent answer) {
+        return restartAfterTheProcessWasKilled(activity, requestCode, answer, false);
+    }
+
+    /**
+     * As above. When {@code locked}, the app lock (or the mode check) is still running as the screen
+     * comes back, as it is after a real restart, so the layout is only set once that's done: after
+     * the restored editor has made its view.
+     */
+    @NonNull
+    private CodeEditorActivity restartAfterTheProcessWasKilled(@NonNull CodeEditorActivity activity, int requestCode,
+                                                               @NonNull Intent answer, boolean locked) {
         Bundle state = new Bundle();
         mController.pause().stop().saveInstanceState(state).destroy();
+        Context context = ApplicationProvider.getApplicationContext();
+        if (locked) {
+            Ops.setAuthenticated(context, false);
+        }
         mController = Robolectric.buildActivity(CodeEditorActivity.class, activity.getIntent());
         mController.create(state);
         mController.get().getActivityResultRegistry().dispatchResult(requestCode, Activity.RESULT_OK, answer);
         mController.start().postCreate(state).resume().visible();
+        if (locked) {
+            assertNull("the layout was set before the app was unlocked", mController.get().findViewById(R.id.container));
+            View early = fragment(mController.get()).requireView();
+            assertNull("the restored editor's view was on the screen with no layout", early.getParent());
+            Ops.setAuthenticated(context, true);
+            mController.get().onAuthenticated(state);
+            idle();
+        }
         return mController.get();
     }
 
