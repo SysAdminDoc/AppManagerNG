@@ -28,6 +28,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -784,6 +785,27 @@ public class NotificationFilterEngineTest {
         mEngine.check();
         assertNull(mShade.posted.get(copyTag));
         assertFalse(mEngine.hasSnoozed());
+    }
+
+    /**
+     * Android 8 and 9 snooze notifications too, but have no way to ask a notification whose it is. Asking threw, so
+     * a rule that took an ongoing notification there crashed the filter.
+     */
+    @Test
+    @Config(sdk = Build.VERSION_CODES.P)
+    public void anOngoingNotificationIsSnoozedOnAndroidNine() {
+        rules(ongoingRule("upload", Action.SILENT));
+        StatusBarNotification upload = withFlags(CHAT, 3, "Upload 10%", Notification.FLAG_ONGOING_EVENT);
+
+        mEngine.onPosted(upload);
+
+        assertTrue(mEngine.hasSnoozed());
+        String copyTag = NotificationReposter.copyTag(upload.getKey());
+        assertNotNull(mShade.posted.get(copyTag));
+        // A force stop still ends the copy, whichever user's app it came from
+        mShade.snoozed.add(upload);
+        mEngine.onPackageStopped(CHAT, UID);
+        assertNull(mShade.posted.get(copyTag));
     }
 
     @Test

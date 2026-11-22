@@ -5,6 +5,7 @@ package io.github.muntashirakon.AppManager.notificationfilter;
 import android.app.Notification;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.os.Build;
 import android.os.Bundle;
 import android.service.notification.StatusBarNotification;
 
@@ -162,7 +163,8 @@ final class NotificationFilterEngine {
         Snoozed(long sinceMillis, @NonNull StatusBarNotification sbn) {
             this.sinceMillis = sinceMillis;
             this.packageName = sbn.getPackageName();
-            this.uid = sbn.getUid();
+            // Android 8 and 9 snooze too, but only Android 10 says whose notification it is. Unknown matches any.
+            this.uid = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? sbn.getUid() : -1;
         }
     }
 
@@ -632,7 +634,7 @@ final class NotificationFilterEngine {
         while (it.hasNext()) {
             Map.Entry<String, Snoozed> entry = it.next();
             Snoozed state = entry.getValue();
-            if (!state.packageName.equals(packageName) || (uid >= 0 && state.uid != uid)) {
+            if (!state.packageName.equals(packageName) || (uid >= 0 && state.uid >= 0 && state.uid != uid)) {
                 continue;
             }
             if (snoozed == null) {
