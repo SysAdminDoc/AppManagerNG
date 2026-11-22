@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.debloat;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
@@ -28,8 +29,11 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 
@@ -314,6 +318,126 @@ public class DebloaterViewModelTest {
 
         viewModel.loadPackages(true);
         assertEquals("the next reload didn't try again", 3, source.loads.get());
+    }
+
+    @Test
+    public void loadsQueuedWhenTheScreenClosesNeverReadOrPost() {
+        QueueExecutor executor = new QueueExecutor();
+        FakeSource source = threeLists();
+        DebloaterViewModel viewModel = new DebloaterViewModel(app(), source, executor);
+        viewModel.loadPackages(true);
+        viewModel.setQuery("oem", AdvancedSearchView.SEARCH_TYPE_CONTAINS);
+
+        viewModel.onCleared();
+        executor.runAll();
+        idleMainLooper();
+
+        assertEquals(0, source.loads.get());
+        assertNull(viewModel.getDebloatObjectListLiveData().getValue());
+    }
+
+    @Test
+    public void aLoadRunningWhenTheScreenClosesPostsNothing() {
+        QueueExecutor executor = new QueueExecutor();
+        FakeSource source = threeLists();
+        DebloaterViewModel viewModel = new DebloaterViewModel(app(), source, executor);
+        viewModel.loadPackages(true);
+        source.onLoad = viewModel::onCleared;
+
+        executor.runOldest();
+        idleMainLooper();
+
+        assertEquals(1, source.loads.get());
+        assertNull(viewModel.getDebloatObjectListLiveData().getValue());
+    }
+
+    @Test
+    public void nothingIsQueuedAfterTheScreenCloses() {
+        QueueExecutor executor = new QueueExecutor();
+        DebloaterViewModel viewModel = new DebloaterViewModel(app(), threeLists(), executor);
+        viewModel.onCleared();
+
+        // A batch operation finishing late, and filter changes from a dying screen
+        viewModel.loadPackages(true);
+        viewModel.addFilterFlag(UNSAFE);
+        viewModel.setQuery("oem", AdvancedSearchView.SEARCH_TYPE_CONTAINS);
+
+        assertEquals(0, executor.queued());
+    }
+
+    @Test
+    public void fiftyScreensOpenedAndClosedLeaveNoLoadThreadsBehind() throws Exception {
+        List<Thread> workers = Collections.synchronizedList(new ArrayList<>());
+        AtomicInteger loads = new AtomicInteger();
+        List<DebloaterViewModel> viewModels = new ArrayList<>();
+        for (int i = 0; i < 50; ++i) {
+            ExecutorService executor = (ExecutorService) DebloaterViewModel.newLoadExecutor();
+            CountDownLatch reading = new CountDownLatch(1);
+            DebloaterViewModel viewModel = new DebloaterViewModel(app(), () -> {
+                workers.add(Thread.currentThread());
+                loads.incrementAndGet();
+                reading.countDown();
+                // A list that takes far longer to read than the screen stays open
+                try {
+                    new CountDownLatch(1).await(30, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                return Collections.singletonList(debloatObject("com.example.late", "aosp"));
+            }, executor);
+            viewModels.add(viewModel);
+            viewModel.loadPackages(true);
+            assertTrue(reading.await(10, TimeUnit.SECONDS));
+            // Waits behind the read that is still going
+            viewModel.loadPackages(true);
+
+            viewModel.onCleared();
+
+            assertTrue("load thread " + i + " didn't stop", executor.awaitTermination(10, TimeUnit.SECONDS));
+        }
+        for (Thread worker : workers) {
+            worker.join(10_000);
+            assertFalse(worker.getName() + " is still running", worker.isAlive());
+        }
+        assertEquals("a queued load ran after its screen closed", 50, loads.get());
+        idleMainLooper();
+        for (DebloaterViewModel viewModel : viewModels) {
+            assertNull(viewModel.getDebloatObjectListLiveData().getValue());
+        }
+    }
+
+    @Test
+    public void reloadsRacingTheScreenClosingAreDroppedWithoutAnError() throws Exception {
+        ExecutorService executor = (ExecutorService) DebloaterViewModel.newLoadExecutor();
+        DebloaterViewModel viewModel = new DebloaterViewModel(app(), threeLists(), executor);
+        AtomicBoolean closed = new AtomicBoolean();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        CountDownLatch reloading = new CountDownLatch(1);
+        Thread reloader = new Thread(() -> {
+            try {
+                int afterClose = 0;
+                for (int i = 0; afterClose < 100; ++i) {
+                    viewModel.loadPackages(i % 2 == 0);
+                    reloading.countDown();
+                    if (closed.get()) {
+                        ++afterClose;
+                    }
+                }
+            } catch (Throwable t) {
+                failure.set(t);
+            }
+        });
+        reloader.start();
+        assertTrue(reloading.await(10, TimeUnit.SECONDS));
+
+        viewModel.onCleared();
+        viewModel.onCleared();
+        closed.set(true);
+
+        reloader.join(30_000);
+        assertFalse(reloader.isAlive());
+        assertNull(failure.get());
+        assertTrue(executor.awaitTermination(10, TimeUnit.SECONDS));
     }
 
     @NonNull

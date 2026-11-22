@@ -67,6 +67,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - App details could close right after opening for a very large app like Google Play services, mostly on Android 10 and older. Its details are too big to fetch in one go, and the fallback that fetches them in parts gave up when one part was still too big. That part is fetched without its extra data now, and if even that doesn't fit it's left out so the rest still shows. The permissions the app asks for also came back empty after that fallback. They're there now.
 - The support bundle could pick up the name of an App details tab in the app's language from the log. The log says the tab's number now, so the bundle stays in English.
 - Restoring an app's APK in root mode no longer goes through /data/local/tmp. The restore used to write the APK files there as root and reset the folder's permissions on every run. That folder belongs to the ADB shell user, so anything running as that user could put a link where a file was about to be written and have root write the package somewhere else, or change the package before Android installed it. The APKs now go in the restore's own private folder and /data/local/tmp is left alone.
+- Leaving the Debloater while its list is still loading now stops the load. It used to read the whole list to the end in the background, along with any reloads still waiting behind it, and kept its thread for a while after.
 
 ## v0.8.0, 2026-11-15
 

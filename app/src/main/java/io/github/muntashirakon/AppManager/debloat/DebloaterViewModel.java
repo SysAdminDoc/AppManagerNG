@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -79,6 +80,8 @@ public class DebloaterViewModel extends AndroidViewModel {
     @AdvancedSearchView.SearchType
     private int mQueryType;
     private long mGeneration;
+    // Set once the screen is gone for good. No load starts or posts after that.
+    private boolean mCleared;
     // The first load always reads the list.
     private long mReloadsRequested = 1;
     // Only used by the load executor, which runs one load at a time
@@ -300,16 +303,38 @@ public class DebloaterViewModel extends AndroidViewModel {
      */
     @AnyThread
     public void loadPackages(boolean reloadInstallInfo) {
-        LoadRequest request;
         synchronized (mLock) {
+            if (mCleared) {
+                // A batch operation can finish after the screen closed
+                return;
+            }
             if (reloadInstallInfo) {
                 // Counted rather than passed with the request, so the reload still happens
                 // when a newer load replaces this one before it runs.
                 ++mReloadsRequested;
             }
-            request = new LoadRequest(++mGeneration, mFilterFlags, mQueryString, mQueryType);
+            LoadRequest request = new LoadRequest(++mGeneration, mFilterFlags, mQueryString, mQueryType);
+            // Queued under the lock, so onCleared() can't shut the executor down between the
+            // check above and this. Queueing never blocks.
+            mExecutor.execute(() -> runLoad(request));
         }
-        mExecutor.execute(() -> runLoad(request));
+    }
+
+    @Override
+    protected void onCleared() {
+        synchronized (mLock) {
+            if (mCleared) {
+                return;
+            }
+            mCleared = true;
+            // Every load already queued or running is now an old one, so none of them posts
+            ++mGeneration;
+        }
+        if (mExecutor instanceof ExecutorService) {
+            // Drops the queued loads and interrupts the running one, and lets the thread go now
+            // instead of after the idle timeout
+            ((ExecutorService) mExecutor).shutdownNow();
+        }
     }
 
     @WorkerThread
