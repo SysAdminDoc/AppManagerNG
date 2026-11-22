@@ -1916,6 +1916,11 @@
     <string name="about_device_size_px"><xliff:g id="width" example="1080">%1$d</xliff:g> × <xliff:g id="height" example="2400">%2$d</xliff:g> px</string>
     <string name="about_device_density_dpi"><xliff:g id="density" example="xxhdpi">%1$s</xliff:g> (<xliff:g id="dpi" example="420">%2$d</xliff:g> DPI)</string>
     <string name="about_device_refresh_rate_hz"><xliff:g id="rate" example="120">%1$s</xliff:g> Hz</string>
+    <string name="about_device_refresh_rate_supported"><xliff:g id="rate" example="120">%1$s</xliff:g> Hz (supported: <xliff:g id="rates" example="60, 90, 120">%2$s</xliff:g> Hz)</string>
+    <string name="about_device_ram">RAM</string>
+    <string name="about_device_amount_available"><xliff:g id="total" example="7.81 GB">%1$s</xliff:g> total, <xliff:g id="available" example="3.12 GB">%2$s</xliff:g> available</string>
+    <string name="about_device_amount_used"><xliff:g id="total" example="4.29 GB">%1$s</xliff:g> total, <xliff:g id="used" example="1.07 GB">%2$s</xliff:g> used</string>
+    <string name="about_device_amount_free"><xliff:g id="total" example="256 GB">%1$s</xliff:g> total, <xliff:g id="free" example="120 GB">%2$s</xliff:g> free</string>
     <string name="failed_to_disable_magisk_hide">Could not disable MagiskHide</string>
     <string name="failed_to_enable_magisk_hide">Could not enable MagiskHide</string>
     <string name="disable_background_run_description">Sets <i>Ignore</i> mode for the following app ops: <tt>RUN_IN_BACKGROUND</tt> (from Android 7.0) and <tt>RUN_ANY_IN_BACKGROUND</tt> (from Android 9).</string>

@@ -17,12 +17,13 @@ import android.opengl.GLES20;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.SELinux;
+import android.os.StatFs;
 import android.os.UserHandleHidden;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
-import android.text.format.Formatter;
 import android.util.DisplayMetrics;
 import android.view.Display;
 
@@ -38,6 +39,7 @@ import androidx.fragment.app.FragmentActivity;
 
 import com.android.internal.os.PowerProfile;
 
+import java.io.File;
 import java.security.Provider;
 import java.security.Security;
 import java.text.ParseException;
@@ -65,6 +67,7 @@ import io.github.muntashirakon.AppManager.utils.CpuUtils;
 import io.github.muntashirakon.AppManager.utils.TextUtilsCompat;
 import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.proc.ProcFs;
+import io.github.muntashirakon.proc.ProcMemoryInfo;
 import io.github.muntashirakon.util.LocalizedString;
 import io.github.muntashirakon.AppManager.logs.Log;
 
@@ -109,6 +112,15 @@ public class DeviceInfo2 implements LocalizedString {
     public String gpu;
     // Memory
     public final ActivityManager.MemoryInfo memoryInfo = new ActivityManager.MemoryInfo();
+    /** Swap (ZRAM on most phones) from /proc/meminfo, or -1 when it couldn't be read. */
+    public long swapTotal = -1;
+    public long swapFree;
+    /** The data partition, or -1 when it couldn't be read. */
+    public long internalStorageTotal = -1;
+    public long internalStorageFree;
+    /** Primary shared storage when it's a volume of its own rather than a view of the data partition, else -1. */
+    public long externalStorageTotal = -1;
+    public long externalStorageFree;
     // Battery
     public boolean batteryPresent;
     public double batteryCapacityMAh;
@@ -127,6 +139,9 @@ public class DeviceInfo2 implements LocalizedString {
     public int windowWidthPx;
     public int windowHeightPx;
     public float refreshRate;
+    /** The rate of each display mode, or {@code null} on Android 5, which can't list them. */
+    @Nullable
+    public float[] supportedRefreshRates;
     // Locales
     public final LocaleListCompat systemLocales = LocaleListCompat.getDefault();
     // Users
@@ -175,6 +190,8 @@ public class DeviceInfo2 implements LocalizedString {
         vulkanVersion = Utils.getVulkanVersion(mPm);
         gpu = getGpu();
         mActivityManager.getMemoryInfo(memoryInfo);
+        loadSwap();
+        loadStorage();
         getBatteryStats(mActivity);
         DisplayMetrics displayMetrics = new DisplayMetrics();
         // Actual size
@@ -187,6 +204,9 @@ public class DeviceInfo2 implements LocalizedString {
         windowWidthPx = displayMetrics.widthPixels;
         windowHeightPx = displayMetrics.heightPixels;
         refreshRate = mDisplay.getRefreshRate();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            supportedRefreshRates = getSupportedRefreshRates(mDisplay);
+        }
         users = Users.getAllUsers();
         for (UserInfo info : users) {
             userPackages.put(info.id, getPackageStats(info.id));
@@ -301,9 +321,22 @@ public class DeviceInfo2 implements LocalizedString {
         if (vulkanVersion != null) {
             builder.append(getStyledKeyValue(ctx, R.string.vulkan_version, vulkanVersion)).append("\n");
         }
-        // RAM info
+        // RAM, swap and storage
         builder.append("\n").append(getTitleText(ctx, R.string.memory)).append("\n")
-                .append(Formatter.formatFileSize(ctx, memoryInfo.totalMem)).append("\n");
+                .append(getStyledKeyValue(ctx, R.string.about_device_ram, DeviceInfoText.ramAmount(ctx,
+                        memoryInfo.totalMem, memoryInfo.availMem))).append("\n");
+        if (swapTotal >= 0) {
+            builder.append(getStyledKeyValue(ctx, R.string.swap, DeviceInfoText.swapAmount(ctx, swapTotal,
+                    swapFree))).append("\n");
+        }
+        if (internalStorageTotal >= 0) {
+            builder.append(getStyledKeyValue(ctx, R.string.internal_storage, DeviceInfoText.storageAmount(ctx,
+                    internalStorageTotal, internalStorageFree))).append("\n");
+        }
+        if (externalStorageTotal >= 0) {
+            builder.append(getStyledKeyValue(ctx, R.string.external_storage, DeviceInfoText.storageAmount(ctx,
+                    externalStorageTotal, externalStorageFree))).append("\n");
+        }
         // Battery info
         if (batteryPresent || batteryCapacityMAh > 0) {
             builder.append("\n").append(getTitleText(ctx, R.string.battery)).append("\n");
@@ -332,8 +365,8 @@ public class DeviceInfo2 implements LocalizedString {
         builder.append(getStyledKeyValue(ctx, R.string.window_size, DeviceInfoText.sizePx(ctx, windowWidthPx,
                 windowHeightPx))).append("\n");
         // Refresh rate
-        builder.append(getStyledKeyValue(ctx, R.string.refresh_rate, DeviceInfoText.refreshRate(ctx, refreshRate)))
-                .append("\n");
+        builder.append(getStyledKeyValue(ctx, R.string.refresh_rate, DeviceInfoText.refreshRate(ctx, refreshRate,
+                        supportedRefreshRates))).append("\n");
         // List system locales
         List<String> localeStrings = new ArrayList<>(systemLocales.size());
         for (int i = 0; i < systemLocales.size(); ++i) {
@@ -483,6 +516,58 @@ public class DeviceInfo2 implements LocalizedString {
             batteryHealth = mBatteryStatusBundle.getInt(BatteryManager.EXTRA_HEALTH,
                     BatteryManager.BATTERY_HEALTH_UNKNOWN);
         }
+    }
+
+    @WorkerThread
+    private void loadSwap() {
+        ProcMemoryInfo memInfo = ProcFs.getInstance().getMemoryInfo();
+        if (memInfo != null) {
+            swapTotal = memInfo.getTotalSwap();
+            swapFree = memInfo.getFreeSwap();
+        }
+    }
+
+    @WorkerThread
+    private void loadStorage() {
+        long[] internal = getVolumeSpace(Environment.getDataDirectory());
+        if (internal != null) {
+            internalStorageTotal = internal[0];
+            internalStorageFree = internal[1];
+        }
+        // Emulated shared storage lives on the data partition, so its numbers would repeat the line above.
+        if (!Environment.isExternalStorageEmulated()
+                && Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())) {
+            // The app's own folder sits on the primary volume and is readable without a storage permission.
+            File appFolder = mActivity.getExternalFilesDir(null);
+            long[] external = appFolder != null ? getVolumeSpace(appFolder) : null;
+            if (external != null) {
+                externalStorageTotal = external[0];
+                externalStorageFree = external[1];
+            }
+        }
+    }
+
+    /** The total size and the space apps can use, or {@code null} if the volume can't be read. */
+    @Nullable
+    private static long[] getVolumeSpace(@NonNull File path) {
+        try {
+            StatFs statFs = new StatFs(path.getPath());
+            return new long[]{statFs.getTotalBytes(), statFs.getAvailableBytes()};
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "Could not read the space on %s", e, path);
+            return null;
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    @NonNull
+    private static float[] getSupportedRefreshRates(@NonNull Display display) {
+        Display.Mode[] modes = display.getSupportedModes();
+        float[] rates = new float[modes.length];
+        for (int i = 0; i < modes.length; ++i) {
+            rates[i] = modes[i].getRefreshRate();
+        }
+        return rates;
     }
 
     @NonNull

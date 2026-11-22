@@ -38,7 +38,7 @@ public class DeviceInfo2TextTest {
     /** The English words the page used to build in code. Each one must now come from a resource. */
     private static final Pattern ENGLISH_LITERALS = Pattern.compile(
             "\\b(true|false|mAh|est|Good|Overheat|Dead|Cold|failure|cycles|px|Hz|verified|self-signed|unverified"
-                    + "|failed|locked|unlocked|Software|Build|This|Other)\\b");
+                    + "|failed|locked|unlocked|Software|Build|This|Other|RAM|Swap|total|available|used|free)\\b");
 
     private ActivityController<DisplayActivity> mController;
     private FragmentActivity mActivity;
@@ -78,6 +78,31 @@ public class DeviceInfo2TextTest {
         assertTrue(text, text.contains("{{battery_health_with_cycles|{{battery_health_good}}|342}}"));
         assertTrue(text, text.contains("{{battery_capacity_mah_with_estimate|4500|4370.5}}"));
         assertTrue(text, text.contains("{{about_device_size_px|1080|2400}}"));
+        // Issue 54: memory, swap, storage and the supported rates.
+        assertTrue(text, text.contains("{{about_device_refresh_rate_supported|120|60, 90, 120}}"));
+        assertTrue(text, text.contains("{{about_device_ram}}"));
+        assertTrue(text, text.contains("{{about_device_amount_available|"));
+        assertTrue(text, text.contains("{{swap}}"));
+        assertTrue(text, text.contains("{{about_device_amount_used|"));
+        assertTrue(text, text.contains("{{internal_storage}}"));
+        assertTrue(text, text.contains("{{external_storage}}"));
+        assertTrue(text, text.contains("{{about_device_amount_free|"));
+    }
+
+    @Test
+    public void swapAndStorageLinesNeedTheirNumbers() {
+        DeviceInfo2 info = filled(new DeviceInfo2(mActivity));
+        info.swapTotal = -1;
+        info.internalStorageTotal = -1;
+        info.externalStorageTotal = -1;
+        info.supportedRefreshRates = null;
+
+        String text = info.toLocalizedString(new ResourceNameContext(mActivity)).toString();
+
+        assertTrue(text, text.contains("{{about_device_ram}}"));
+        assertFalse(text, text.contains("{{swap}}"));
+        assertFalse(text, text.contains("{{internal_storage}}"));
+        assertFalse(text, text.contains("{{external_storage}}"));
         assertTrue(text, text.contains("{{about_device_refresh_rate_hz|120}}"));
     }
 
@@ -142,6 +167,15 @@ public class DeviceInfo2TextTest {
         info.windowWidthPx = 1080;
         info.windowHeightPx = 2400;
         info.refreshRate = 120f;
+        info.supportedRefreshRates = new float[]{60f, 120f, 90f, 60f};
+        info.memoryInfo.totalMem = 8_000_000_000L;
+        info.memoryInfo.availMem = 3_000_000_000L;
+        info.swapTotal = 4_000_000_000L;
+        info.swapFree = 1_000_000_000L;
+        info.internalStorageTotal = 256_000_000_000L;
+        info.internalStorageFree = 120_000_000_000L;
+        info.externalStorageTotal = 64_000_000_000L;
+        info.externalStorageFree = 10_000_000_000L;
         return info;
     }
 }

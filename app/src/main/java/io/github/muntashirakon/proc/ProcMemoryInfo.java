@@ -57,8 +57,13 @@ public class ProcMemoryInfo {
         for (String line : data.split("\\n")) {
             int idxOfColon = line.indexOf(':');
             int idxOfKb = line.lastIndexOf("kB");
-            if (idxOfColon != -1 && idxOfKb != -1) {
-                result.put(line.substring(0, idxOfColon).trim(), Long.decode(line.substring(idxOfColon + 1, idxOfKb).trim()) << 10);
+            if (idxOfColon != -1 && idxOfKb > idxOfColon) {
+                // Decimal always (Long.decode reads a leading 0 as octal), and one odd line doesn't lose the rest.
+                try {
+                    result.put(line.substring(0, idxOfColon).trim(),
+                            Long.parseLong(line.substring(idxOfColon + 1, idxOfKb).trim()) << 10);
+                } catch (NumberFormatException ignore) {
+                }
             }
         }
         return new ProcMemoryInfo(result);
