@@ -6,6 +6,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -221,8 +222,7 @@ public class AdbLaunchFilesTest {
         String command = AdbLaunchFiles.manualShellCommand(context, 60001, "0123456789abcdef",
                 AdbLaunchFiles.STAGING_DIR);
 
-        assertTrue(command, command.startsWith("{ mkdir -p '" + AdbLaunchFiles.STAGING_DIR + "' && chmod 700 '"
-                + AdbLaunchFiles.STAGING_DIR + "' && dd "));
+        assertTrue(command, command.startsWith("{ " + preparedDir(AdbLaunchFiles.STAGING_DIR) + " && dd "));
         assertTrue(command.contains(" count=" + jar.length + " "));
         assertTrue(command.contains(DigestUtils.getHexDigest(DigestUtils.SHA_256, jar)));
         assertTrue(command, command.contains("( ( trap '' HUP; CLASSPATH='" + AdbLaunchFiles.SERVER_JAR
@@ -242,7 +242,7 @@ public class AdbLaunchFilesTest {
         try {
             String command = ServerConfig.getManualAdbCommand(context);
 
-            assertTrue(command, command.startsWith("{ mkdir -p '" + dir + "' && chmod 700 '" + dir + "' && dd "));
+            assertTrue(command, command.startsWith("{ " + preparedDir(dir) + " && dd "));
             assertTrue(command, command.contains(" of=\"" + dir + "/" + Constants.JAR_NAME + ".$$\" "));
             assertTrue(command, command.contains("( ( trap '' HUP; CLASSPATH='" + dir + "/" + Constants.JAR_NAME
                     + "' exec app_process "));
@@ -351,8 +351,7 @@ public class AdbLaunchFilesTest {
         assertTrue(command.contains(" count=" + jar.length + " "));
         assertTrue(command.contains(DigestUtils.getHexDigest(DigestUtils.SHA_256, jar)));
         assertTrue(command.contains(" '" + AdbLaunchFiles.MAIN_JAR + "' "));
-        assertTrue(command, command.startsWith("{ mkdir -p '" + AdbLaunchFiles.STAGING_DIR + "' && chmod 700 '"
-                + AdbLaunchFiles.STAGING_DIR + "' && dd "));
+        assertTrue(command, command.startsWith("{ " + preparedDir(AdbLaunchFiles.STAGING_DIR) + " && dd "));
         assertTrue(command.endsWith(" && "));
         assertOutsideAppData(command.replace(context.getApplicationInfo().sourceDir, ""));
     }
@@ -439,8 +438,7 @@ public class AdbLaunchFilesTest {
     @Test
     public void lockCommandShutsTheDirectoryAndOnlyAFinishedRunSaysSo() throws Exception {
         String command = AdbLaunchFiles.lockDirCommand(AdbLaunchFiles.STAGING_DIR);
-        assertEquals("mkdir -p '" + AdbLaunchFiles.STAGING_DIR + "' && chmod 700 '" + AdbLaunchFiles.STAGING_DIR
-                + "' && echo AMNG_STAGING_''LOCKED", command);
+        assertEquals(preparedDir(AdbLaunchFiles.STAGING_DIR) + " && echo AMNG_STAGING_''LOCKED", command);
         // A shell that echoes its input must not be mistaken for one that ran it
         assertFalse(command.contains(AdbLaunchFiles.LOCKED_MARKER));
 
@@ -452,6 +450,34 @@ public class AdbLaunchFilesTest {
         assertTrue(dir.isDirectory());
         String failed = sh(AdbLaunchFiles.lockDirCommand(posix(tmp.newFile("in-the-way")) + "/stage"));
         assertFalse(failed, failed.contains(AdbLaunchFiles.LOCKED_MARKER));
+    }
+
+    /**
+     * A folder root made there (adbd running as root on a userdebug or "rooted debugging" build, or a
+     * root shell) can't be shut by the shell user, so every ADB start after that failed with
+     * "Operation not permitted". The shell user owns /data/local/tmp, so it can still move it aside.
+     */
+    @Test
+    public void aFolderTheShellCantLockIsMovedAsideForAFreshOne() throws Exception {
+        assumeTrue("needs a POSIX sh", shAvailable());
+        File stage = tmp.newFolder("parent", "stage");
+        assertTrue(new File(stage, "left-by-root").createNewFile());
+        // Stands in for chmod, refusing the folder root made the way Android does
+        File bin = tmp.newFolder("bin");
+        Files.write(new File(bin, "chmod").toPath(), ("#!/bin/sh\nfor a; do d=$a; done\n"
+                + "if [ -e \"$d/left-by-root\" ]; then echo \"chmod: chmod '$d' to 0700: Operation not permitted\" >&2;"
+                + " exit 1; fi\n").getBytes(StandardCharsets.UTF_8));
+
+        String output = sh("cd '" + posix(bin) + "' && chmod 755 chmod && PATH=\"$PWD:$PATH\" && "
+                + AdbLaunchFiles.lockDirCommand(posix(stage)));
+
+        assertEquals(output, AdbLaunchFiles.LOCKED_MARKER, output.trim());
+        assertTrue(stage.isDirectory());
+        assertFalse("Still the folder root made", new File(stage, "left-by-root").exists());
+        File[] aside = stage.getParentFile().listFiles((d, name) -> name.startsWith("stage.old."));
+        assertNotNull(aside);
+        assertEquals(1, aside.length);
+        assertTrue(new File(aside[0], "left-by-root").exists());
     }
 
     @Test
@@ -507,6 +533,15 @@ public class AdbLaunchFilesTest {
     }
 
     // Git for Windows' sh takes C:/ paths, and forward slashes are what the command splits on
+    /**
+     * Make the folder and shut it. One the shell user can't shut, which root made, goes aside for a
+     * fresh one.
+     */
+    private static String preparedDir(String dir) {
+        return "mkdir -p '" + dir + "' && { chmod 700 '" + dir + "' 2>/dev/null || { mv '" + dir + "' \"" + dir
+                + ".old.$$\" && mkdir '" + dir + "' && chmod 700 '" + dir + "'; }; }";
+    }
+
     private static String posix(File file) {
         return file.getAbsolutePath().replace('\\', '/');
     }

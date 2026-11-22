@@ -169,8 +169,21 @@ public final class AdbLaunchFiles {
     @NonNull
     static String lockDirCommand(@NonNull String dir) {
         // The empty quotes keep the marker out of the command text, so only a finished run prints it
-        return "mkdir -p " + quote(dir) + " && chmod 700 " + quote(dir)
-                + " && echo " + LOCKED_MARKER.replace("_LOCKED", "_''LOCKED");
+        return prepareDirCommand(dir) + " && echo " + LOCKED_MARKER.replace("_LOCKED", "_''LOCKED");
+    }
+
+    /**
+     * Makes the folder and shuts it to everyone but its owner. A folder root made there (adbd running
+     * as root on a userdebug or "rooted debugging" build, or a root shell) can't be shut by the shell
+     * user, and every later start failed on it with "Operation not permitted". The shell user owns
+     * /data/local/tmp, so it can still move that folder aside and start a fresh one.
+     */
+    @VisibleForTesting
+    @NonNull
+    static String prepareDirCommand(@NonNull String dir) {
+        String folder = quote(dir);
+        return "mkdir -p " + folder + " && { chmod 700 " + folder + " 2>/dev/null || { mv " + folder
+                + " \"" + dir + ".old.$$\" && mkdir " + folder + " && chmod 700 " + folder + "; }; }";
     }
 
     /**
@@ -270,7 +283,7 @@ public final class AdbLaunchFiles {
         // Write under a per-shell name and rename, so a service still running the old copy keeps
         // its file and two launches at once can't interleave their writes.
         String tmp = "\"" + dest + ".$$\"";
-        return "{ mkdir -p " + quote(dir) + " && chmod 700 " + quote(dir)
+        return "{ " + prepareDirCommand(dir)
                 + " && dd if=" + quote(apkPath) + " of=" + tmp + " bs=1 skip=" + offset + " count=" + expected.length
                 + " 2>/dev/null"
                 // Toybox has sha256sum from Android 8 on, and sha1sum and md5sum from Android 6.
