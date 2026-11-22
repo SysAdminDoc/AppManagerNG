@@ -2625,6 +2625,7 @@
     <string name="startup_recovery_request_local_network_permission">Request local network permission</string>
     <string name="startup_recovery_request_shizuku_permission">Request Shizuku permission</string>
     <string name="startup_recovery_cancel_pairing">Cancel pairing</string>
+    <string name="search_type">Search type</string>
     <string name="search_type_contains">Contains</string>
     <string name="search_type_prefix">Prefix</string>
     <string name="search_type_suffix">Suffix</string>

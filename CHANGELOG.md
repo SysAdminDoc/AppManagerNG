@@ -51,6 +51,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A watch rule made from the long-press menu in App Details didn't take a grant back right away (issue #15). The privileged process only heard about it the next time it connected, so the grant stayed until then or until the scheduled check. The menu passes new and removed rules on at once now, and checks the app straight away, so Always deny also works on a row that hasn't caught up with a grant made in Settings.
 - Toast history never listed AppManagerNG's own toasts, error messages included (issue #27). They're recorded now. The only one left out is the toast the history shows when it can't save, which would otherwise loop.
 - The + button in the Backup volume picker had no name, so TalkBack read it as an unlabeled button. It's called "Add a folder" now.
+- The button in search bars that switches between Contains, Regex and the other search types had no name either. TalkBack reads it as "Search type" now, and a long press shows that label.
 
 ## v0.8.0, 2026-11-15
 

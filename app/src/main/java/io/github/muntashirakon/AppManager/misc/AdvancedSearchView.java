@@ -25,6 +25,7 @@ import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.PopupMenu;
+import androidx.appcompat.widget.TooltipCompat;
 import androidx.customview.view.AbsSavedState;
 
 import com.google.android.material.internal.ThemeEnforcement;
@@ -174,6 +175,10 @@ public class AdvancedSearchView extends SearchView {
         mSearchTypeSelectionButton.setImageResource(R.drawable.ic_filter_menu);
         mSearchTypeSelectionButton.setBackground(UiUtils.getDrawable(context, android.R.attr.selectableItemBackgroundBorderless));
         mSearchTypeSelectionButton.setOnClickListener(onClickSearchIcon);
+        // A bare icon, so TalkBack and the long-press tooltip need a name for it.
+        CharSequence searchType = context.getString(R.string.search_type);
+        mSearchTypeSelectionButton.setContentDescription(searchType);
+        TooltipCompat.setTooltipText(mSearchTypeSelectionButton, searchType);
         final TypedArray a = ThemeEnforcement.obtainStyledAttributes(
                 context, attrs, io.github.muntashirakon.ui.R.styleable.SearchView, defStyleAttr, DEF_STYLE_RES);
         mQueryHint = a.getText(io.github.muntashirakon.ui.R.styleable.SearchView_queryHint);

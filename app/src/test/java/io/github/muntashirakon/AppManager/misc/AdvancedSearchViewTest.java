@@ -7,6 +7,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
+import android.view.ContextThemeWrapper;
 import android.view.Menu;
 import android.view.View;
 
@@ -85,5 +86,16 @@ public class AdvancedSearchViewTest {
         assertEquals(AdvancedSearchView.SEARCH_TYPE_RELATED,
                 AdvancedSearchView.typeOf(R.id.action_search_type_related));
         assertEquals(AdvancedSearchView.SEARCH_TYPE_REGEX, AdvancedSearchView.typeOf(R.id.action_search_type_regex));
+    }
+
+    /** The button that picks Contains, Regex or Related words is a bare icon, so TalkBack needs a name for it. */
+    @Test
+    public void theSearchTypeButtonHasAName() {
+        Context context = new ContextThemeWrapper(ApplicationProvider.getApplicationContext(), R.style.AppTheme_V2);
+        AdvancedSearchView searchView = new AdvancedSearchView(context);
+
+        View button = searchView.findViewById(androidx.appcompat.R.id.search_mag_icon);
+
+        assertEquals(context.getString(R.string.search_type), String.valueOf(button.getContentDescription()));
     }
 }
