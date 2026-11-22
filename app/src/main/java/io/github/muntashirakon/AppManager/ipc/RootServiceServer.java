@@ -12,6 +12,7 @@ import android.os.FileObserver;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.Process;
 import android.os.RemoteException;
 import android.os.UserHandle;
 import android.util.ArrayMap;
@@ -20,6 +21,7 @@ import android.util.SparseArray;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RestrictTo;
+import androidx.annotation.VisibleForTesting;
 
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.internal.UiThreadHandler;
@@ -139,10 +141,21 @@ public class RootServiceServer extends IRootServiceManager.Stub implements Runna
         }
     }
 
+    /**
+     * The app UID a broadcast or a stop is for. Root, and this server's own UID, may name it: the
+     * server sends its first broadcast itself at startup, outside any binder call, so the "caller"
+     * is its own UID, which in ADB mode is the shell's rather than root. Taking the caller's UID
+     * there sent the binder to user 0, and an instance in a work profile never got it. Any other
+     * caller gets its own UID.
+     */
+    @VisibleForTesting
+    static int resolveClientUid(int callingUid, int ownUid, int requestedUid) {
+        return callingUid == 0 || callingUid == ownUid ? requestedUid : callingUid;
+    }
+
     @Override
     public void broadcast(int uid) {
-        // Use the UID argument iff caller is root
-        uid = getCallingUid() == 0 ? uid : getCallingUid();
+        uid = resolveClientUid(getCallingUid(), Process.myUid(), uid);
         Utils.log(TAG, "broadcast to uid=" + uid);
         Intent intent = RootServiceManager.getBroadcastIntent(this, mIsDaemon);
         if (Build.VERSION.SDK_INT >= 24) {
@@ -178,8 +191,7 @@ public class RootServiceServer extends IRootServiceManager.Stub implements Runna
 
     @Override
     public void stop(ComponentName name, int uid) {
-        // Use the UID argument iff caller is root
-        int clientUid = getCallingUid() == 0 ? uid : getCallingUid();
+        int clientUid = resolveClientUid(getCallingUid(), Process.myUid(), uid);
         UiThreadHandler.run(() -> {
             Utils.log(TAG, name.getClassName() + " stop");
             unbindService(-1, name);

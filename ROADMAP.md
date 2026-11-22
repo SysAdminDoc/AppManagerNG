@@ -38,6 +38,7 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Evidence: API 35 emulator, `pm create-user --profileOf 0 --managed`, release build in user 10: `:priv:10` started on port 62011 as uid 1010209, then the app logged `RemoteException: Binder not running` from `ipc/LocalServices.bindAmService`.
   Touches: `server/.../RootServiceMain.java` (how it hands the binder to a non-zero user), `ipc/LocalServices.java`, `servermanager/LocalServerManager.java`.
   Acceptance: a profile instance in ADB mode either binds its service or drops to No root within a few seconds with the reason shown; a test covers the user the binder is delivered to.
+  Cause found 2026-11-22: `ipc/RootServiceServer.broadcast` kept the launch UID only when the caller was root. Its startup broadcast runs inside the server with no binder call, so the "caller" is the server's own UID, the shell (2000) in ADB mode, and the binder went to user 0. Fixed in code with `RootServiceServerClientUidTest` (root or the server's own UID may name the client). Still owed: the API 35 emulator run in a managed profile, after which this item goes. If it still doesn't bind there, the drop-to-No-root half is next.
   Complexity: M
 
 - [ ] P3: Let the debug and release builds run their servers side by side
