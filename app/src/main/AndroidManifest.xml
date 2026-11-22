@@ -2063,16 +2063,15 @@
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
-            <intent-filter>
-                <action android:name="${applicationId}.action.RECORD_OR_STOP" />
-
-                <data android:scheme="log_viewer_widget" />
-            </intent-filter>
 
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/recording_widget_info" />
         </receiver>
+        <!-- Widget taps. Not exported, so other apps can't start or stop a recording. -->
+        <receiver
+            android:name=".logcat.RecordingWidgetActionReceiver"
+            android:exported="false" />
         <receiver
             android:name=".self.BootReceiver"
             android:exported="false">

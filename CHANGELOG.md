@@ -71,6 +71,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - With No root chosen on a rooted phone, opening App Info or the device info dialog no longer brings up a superuser prompt (upstream App Manager #2048). Each one asked for root just to find out whether the phone had it. They now check for su without running it. Sharing an APK when the usual storage folder can't be made only tries root in root mode now.
 - The code editor lets go of its highlighter when you leave it. Each closed editor, and each trip to the Java view and back, used to leave a highlighting thread running with the old editor screen still in memory. Edits you haven't saved also stay put now when you come back from the Java view or turn the phone, in a new document too. Both used to read the file again and drop them.
 - In ADB mode, a copy of AppManagerNG in a work profile waited on its startup screen until the mode check timed out. The privileged service sent its connection to the main profile's copy instead of the one that started it, and now sends it to the one that asked.
+- Other apps can no longer start or stop a log recording. The recording widget's tap went to a part of the app every installed app could message, and now goes to one only the app itself can reach.
 - Settings search follows a language change right away. It kept showing and matching the titles of the language the app started in until you restarted it. Using or stopping a language file updates it too, even when the file is for the language already shown.
 
 ## v0.8.0, 2026-11-15

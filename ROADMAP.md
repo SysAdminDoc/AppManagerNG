@@ -492,16 +492,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Confidence: Verified
   Effort: M
 
-- [ ] P2 — Stop log recording through a non-exported receiver
-  Category: Component security
-  Where: `app/src/main/AndroidManifest.xml:1822-1838`; `app/src/main/java/io/github/muntashirakon/AppManager/logcat/RecordingWidgetProvider.java:42-63`; `app/src/main/java/io/github/muntashirakon/AppManager/logcat/helper/ServiceHelper.java:35-41`; `app/src/main/java/io/github/muntashirakon/AppManager/logcat/helper/WidgetHelper.java:70-79`
-  Problem: Any installed app can send the custom explicit widget action to the exported provider and stop active log recording.
-  Evidence: The provider must receive system widget broadcasts, but the same exported component also handles the app-only stop action without caller authentication.
-  Fix: Route the PendingIntent to a non-exported receiver or service and leave only required system widget actions on the exported provider.
-  Acceptance: External broadcasts cannot stop recording; the widget stop control still works from every supported launcher; system update, delete, enable, and disable broadcasts remain functional in instrumentation tests.
-  Confidence: Verified
-  Effort: S
-
 - [ ] P2 — Announce onboarding access checks only after they finish
   Category: Accessibility
   Where: `app/src/main/java/io/github/muntashirakon/AppManager/onboarding/OnboardingFragment.java:161-168,267-276,361-414,445-471,659-692`

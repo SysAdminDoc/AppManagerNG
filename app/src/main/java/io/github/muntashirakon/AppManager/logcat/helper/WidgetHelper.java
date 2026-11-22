@@ -11,10 +11,12 @@ import android.net.Uri;
 import android.widget.RemoteViews;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.app.PendingIntentCompat;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.logcat.LogcatRecordingService;
+import io.github.muntashirakon.AppManager.logcat.RecordingWidgetActionReceiver;
 import io.github.muntashirakon.AppManager.logcat.RecordingWidgetProvider;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.appearance.AppWidgetThemeUtils;
@@ -67,9 +69,11 @@ public class WidgetHelper {
         manager.updateAppWidget(appWidgetId, updateViews);
     }
 
-    private static PendingIntent getPendingIntent(Context context, int appWidgetId) {
-        Intent intent = new Intent(context, RecordingWidgetProvider.class);
-        intent.setAction(RecordingWidgetProvider.ACTION_RECORD_OR_STOP);
+    @VisibleForTesting
+    static PendingIntent getPendingIntent(Context context, int appWidgetId) {
+        // The receiver isn't exported: only this PendingIntent, which runs as the app, reaches it
+        Intent intent = new Intent(context, RecordingWidgetActionReceiver.class);
+        intent.setAction(RecordingWidgetActionReceiver.ACTION_RECORD_OR_STOP);
         intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
         // gotta make this unique for this appwidgetid - otherwise, the PendingIntents conflict
         // it seems to be a quasi-bug in Android
