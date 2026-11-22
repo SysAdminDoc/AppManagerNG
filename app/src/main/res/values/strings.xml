@@ -3522,6 +3522,39 @@
     <string name="title_labs_activity">Labs</string>
     <string name="labs_section_system_insight">System insight</string>
     <string name="labs_section_workbench">Workbench</string>
+    <string name="settings_editor_title">Settings editor</string>
+    <string name="settings_editor_tab_secure">Secure</string>
+    <string name="settings_editor_tab_global">Global</string>
+    <string name="settings_editor_tab_changes">Changes</string>
+    <string name="settings_editor_note_read_only">Read only. Changing these needs root, ADB or Shizuku.</string>
+    <string name="settings_editor_note_read_only_system">Read only. Allow Modify system settings for AppManagerNG, or use root, ADB or Shizuku. Tap to open it.</string>
+    <string name="settings_editor_note_limited">Without root, ADB or Shizuku, only the settings Android lets apps change can be saved here.</string>
+    <string name="settings_editor_read_failed">Couldn\'t read this table: <xliff:g id="reason" example="Permission denial">%1$s</xliff:g></string>
+    <string name="settings_editor_empty_title">No settings to show</string>
+    <string name="settings_editor_empty_summary">Nothing in this table matches, or Android doesn\'t let the app read it without root, ADB or Shizuku.</string>
+    <string name="settings_editor_changes_empty_title">No changes yet</string>
+    <string name="settings_editor_changes_empty_summary">Every setting you change here is listed with its old value, so you can put it back.</string>
+    <string name="settings_editor_risky">Risky</string>
+    <string name="settings_editor_risk_setup">Setting this to 0 can send the phone back to the setup wizard or leave the home screen unreachable.</string>
+    <string name="settings_editor_risk_adb">Turning this off can end the ADB or wireless debugging session AppManagerNG relies on.</string>
+    <string name="settings_editor_risk_radio">This only changes the stored value. The radio may not follow, and the system can get out of step with it.</string>
+    <string name="settings_editor_risk_verifier">Decides whether new installs are checked by the package verifier.</string>
+    <string name="settings_editor_risk_hidden_api">Changes which hidden APIs apps may call. Apps can crash or act up.</string>
+    <string name="settings_editor_risk_lock_screen">Can change how the lock screen behaves, or break it.</string>
+    <string name="settings_editor_invalid_key">Use letters, digits, dots, colons, dashes and underscores only</string>
+    <string name="settings_editor_not_set">(not set)</string>
+    <string name="settings_editor_deleted_value">(deleted)</string>
+    <string name="settings_editor_change_values"><xliff:g id="old" example="1">%1$s</xliff:g> → <xliff:g id="new" example="0">%2$s</xliff:g></string>
+    <string name="settings_editor_change_key"><xliff:g id="key" example="adb_enabled">%1$s</xliff:g> in <xliff:g id="table" example="Global">%2$s</xliff:g></string>
+    <string name="settings_editor_revert">Revert</string>
+    <string name="settings_editor_saved">Saved <xliff:g id="key" example="adb_enabled">%1$s</xliff:g></string>
+    <string name="settings_editor_deleted">Deleted <xliff:g id="key" example="adb_enabled">%1$s</xliff:g></string>
+    <string name="settings_editor_reverted">Put <xliff:g id="key" example="adb_enabled">%1$s</xliff:g> back</string>
+    <string name="settings_editor_unchanged"><xliff:g id="key" example="adb_enabled">%1$s</xliff:g> already has that value</string>
+    <string name="settings_editor_failed">Couldn\'t change <xliff:g id="key" example="adb_enabled">%1$s</xliff:g>: <xliff:g id="reason" example="Permission denial">%2$s</xliff:g></string>
+    <string name="settings_editor_export">Export snapshot</string>
+    <string name="settings_editor_exported">Snapshot saved</string>
+    <string name="settings_editor_export_failed">Couldn\'t save the snapshot: <xliff:g id="reason" example="No space left">%1$s</xliff:g></string>
     <string name="select_a_dex2oat_compiler_filter"><tt>dex2oat</tt> compiler filter</string>
     <string name="optimize_option_compile_layouts">Compile layout resources</string>
     <string name="optimize_option_clear_profile_data">Clear previous profile data</string>

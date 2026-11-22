@@ -30,6 +30,7 @@ import io.github.muntashirakon.AppManager.intercept.ActivityInterceptor;
 import io.github.muntashirakon.AppManager.logcat.LogViewerActivity;
 import io.github.muntashirakon.AppManager.terminal.TermActivity;
 import io.github.muntashirakon.AppManager.settings.FeatureController;
+import io.github.muntashirakon.AppManager.settingseditor.SettingsEditorActivity;
 import io.github.muntashirakon.AppManager.sysconfig.SysConfigActivity;
 
 public class LabsActivity extends BaseActivity {
@@ -82,6 +83,8 @@ public class LabsActivity extends BaseActivity {
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(intent);
                 });
+        addAction(this, actionContainer, R.string.settings_editor_title, R.drawable.ic_settings)
+                .setOnClickListener(v -> startActivity(new Intent(this, SettingsEditorActivity.class)));
         if (FeatureController.isCodeEditorEnabled()) {
             addAction(this, actionContainer, R.string.title_code_editor, R.drawable.ic_code)
                     .setOnClickListener(v -> {

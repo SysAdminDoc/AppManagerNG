@@ -115,6 +115,7 @@ own UID.
 | `DEVICE_POWER` | Self-Doze-exemption flip from `SelfBatteryOptimization`. |
 | `BACKUP` | Use the platform `BackupAgent` framework to read package data (legacy backup path). |
 | `WRITE_SECURE_SETTINGS` | Toggle `Settings.Secure` system bits (e.g., disable verifier). |
+| `WRITE_SETTINGS` | Labs → Settings editor saves the System settings apps may change without root, ADB or Shizuku, once "Modify system settings" is allowed for the app. |
 | `START_ANY_ACTIVITY` | Activity launcher / Intent Interceptor when the target is not exported. |
 | `CHANGE_OVERLAY_PACKAGES` | Per-app overlay enable/disable (T18 pull-from-upstream surface). |
 | `UPDATE_DOMAIN_VERIFICATION_USER_SELECTION` | App Details → "Open by default" link-handling state changes. |
