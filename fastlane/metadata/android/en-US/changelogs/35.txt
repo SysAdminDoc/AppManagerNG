@@ -1,0 +1,3 @@
+The file manager can sort and shows icons for common file types. App Info shows what's inside the APK, TV support and whether the app blocks screen capture. Labs has an editor for Android's own settings, and No root mode can freeze apps, set permissions and install through Dhizuku.
+
+Notification filter rules can pin or silence a notification and clear what's already in the shade. Mode toasts stay out of other apps, and App details no longer closes on very large apps like Play services.

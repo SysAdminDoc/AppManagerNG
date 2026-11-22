@@ -3,7 +3,7 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## Unreleased
+## v0.9.0, 2026-11-22
 
 ### Added
 - The file manager has a Sort menu (issue #37). Sort by name, last modified, type or size, or reverse the order. Folders stay on top, and the choice is kept per folder or for every folder, the same as before.
@@ -76,7 +76,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The manifest viewer no longer reads the APK again and starts over every time you turn the phone. You keep your place in the file, and a Save As copy picked around a turn of the phone, or after Android closed App Manager, gets the manifest instead of being left empty.
 - In ADB mode, a copy of AppManagerNG in a work profile waited on its startup screen until the mode check timed out. The privileged service sent its connection to the main profile's copy instead of the one that started it, and now sends it to the one that asked.
 - Other apps can no longer start or stop a log recording. The recording widget's tap went to a part of the app every installed app could message, and now goes to one only the app itself can reach. An old record shortcut sent to the log viewer, which any app or web link could also send, now opens the record dialog instead of starting a recording straight away.
-- Recording a log from the widget or an old shortcut now asks for storage access first, like Record in the log viewer, so you're no longer asked to start a recording that can't be saved. Turning the phone while that record dialog is open no longer stacks a second one that leaves an empty screen behind, and turning it while Android's storage screen is up no longer asks a second time or drops the answer you gave. That answer also gets through when Android closed App Manager in the meantime and it has to be unlocked again.
+- Recording a log from the widget or an old shortcut now asks for storage access first, like Record in the log viewer, so you're no longer asked to start a recording that can't be saved. Turning the phone while that record dialog is open no longer stacks a second one that leaves an empty screen behind, and turning it while Android's storage screen is up no longer asks a second time or drops the answer you gave. That answer also gets through when Android closed App Manager while its screen was up and the app has to be unlocked again.
 - Settings search follows a language change right away. It kept showing and matching the titles of the language the app started in until you restarted it. Using or stopping a language file updates it too, even when the file is for the language already shown.
 - A tag name (for an app or a backup tag policy), log file name or filter value that doesn't work no longer closes its dialog and throws away what you typed. The dialog stays open with the reason under the field, and the keyboard's Done key or a hardware Enter runs the same check as the button. A broken filter regex now says so instead of showing a general error.
 - With a larger font size, the medium screen-time widget keeps each app's name beside its bubble. The names and bubbles used to move with the font size, so at 200% a name sat well below the bubble it belonged to. A bubble's time now shrinks to fit the bubble instead of being cut off.

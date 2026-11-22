@@ -8,6 +8,24 @@
 <changelog>
     <release
         type="stable release"
+        version="v0.9.0"
+        code="35"
+        date="22 November 2026">
+        <new title="File manager">A Sort menu, and icons for documents, archives, APKs, media, fonts and other common file types.</new>
+        <new title="Inside the APK">App Info shows Xposed modules, the OpenGL ES version, split sizes, the license, TV support and whether the app blocks screen capture.</new>
+        <new title="Settings editor">Labs can edit Android's System, Secure and Global settings and keeps each old value so you can put it back.</new>
+        <new title="Dhizuku">With Dhizuku, No root mode can freeze apps, set permissions, clear data and install without the system prompt.</new>
+        <new title="Terminal keys">Esc, Ctrl, Alt, Tab and the arrows sit above the keyboard, and Open in Termux and Run in Termux work.</new>
+        <improve title="Notification filter">Rules can pin a copy or keep it silent with its icon, set a priority, and clear what's already in the shade.</improve>
+        <improve title="Permissions">Dangerous ones stand out, rows use the short names from Android's Settings, and watcher mismatches stay in the App change feed.</improve>
+        <improve title="Code editor">Invisible characters get a label, and unsaved edits survive turning the phone.</improve>
+        <fix title="Mode toasts">They show only while an AppManagerNG screen is open.</fix>
+        <fix title="Large apps">App details no longer closes on very large apps like Google Play services.</fix>
+        <fix title="Log recording">Other apps can't start or stop a recording anymore.</fix>
+    </release>
+
+    <release
+        type="stable release"
         version="v0.8.0"
         code="34"
         date="15 November 2026">
