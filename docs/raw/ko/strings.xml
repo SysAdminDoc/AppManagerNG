@@ -232,7 +232,6 @@
 \n\\begin{itemize}
 \n \\item \\texttt{X} -- 다수의 아키텍쳐 지원
 \n \\item \\texttt{0} -- 앱에 dex 파일이 존재하지 않습니다
-\n \\item \\texttt{°} -- 일시정지된 앱
 \n \\item \\texttt{\\#} -- 앱이 시스템에 큰 힙 할당을 요청했습니다 (i.e. 큰 런타임 메모리)
 \n \\item \\texttt{\?} -- 앱이 가상 머신이 안전 모드에 있도록 요청했습니다.
 \n\\end{itemize}</string>

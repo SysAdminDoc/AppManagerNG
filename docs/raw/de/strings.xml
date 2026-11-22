@@ -669,7 +669,6 @@
 \n\\begin{itemize}
 \n \\item \\texttt{X} -- Unterstützt mehrere Architekturen
 \n \\item \\texttt{0} -- Keine Dex-Dateien in der Anwendung vorhanden
-\n \\item \\texttt{\\°} -- Unterbrochene Anwendung
 \n \\item \\texttt{\\#} -- Die Anwendung hat das System aufgefordert, einen großen Heap, d. h. großen Laufzeitspeicher, zuzuweisen
 \n \\item \\texttt{\?} -- Die Anwendung forderte die virtuelle Maschine auf, in den sicheren Modus zu wechseln.
 \n\\end{itemize}</string>

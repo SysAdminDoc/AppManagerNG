@@ -129,7 +129,6 @@
 \n\\begin{itemize}
 \n \\item \\texttt{X} -- マルチアーキテクチャをサポートしています
 \n \\item \\texttt{0} -- アプリにDEXファイルが存在しません
-\n \\item \\texttt{°} -- 休止したアプリ
 \n \\item \\texttt{\\#} -- アプリはシステムに大きなヒープ、すなわち大きな実行時メモリを割り当てるよう要求しています
 \n \\item \\texttt{\?} -- アプリは仮想マシンをセーフモードにするよう要求しています
 \n\\end{itemize}</string>

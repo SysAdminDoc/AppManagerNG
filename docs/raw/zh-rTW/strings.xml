@@ -223,7 +223,6 @@
 \n\\begin{itemize}
 \n \\item \\texttt{X} -- 支持多種架構
 \n \\item \\texttt{0} -- 不含dex文件
-\n \\item \\texttt{°} -- 已暫停應用
 \n \\item \\texttt{\\#} -- 應用程序請求系統分配一個大堆，即\\ 大運行時內存
 \n \\item \\texttt{\?} -- 應用程序請求虛擬機處於安全模式。
 \n\\end{itemize}</string>
