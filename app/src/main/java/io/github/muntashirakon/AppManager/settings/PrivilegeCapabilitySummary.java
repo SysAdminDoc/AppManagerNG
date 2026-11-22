@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.settings;
 
 import android.content.Context;
+import android.os.UserHandleHidden;
 
 import androidx.annotation.NonNull;
 
@@ -11,6 +12,8 @@ import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuCapabilities;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuOps;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 
 final class PrivilegeCapabilitySummary {
@@ -20,7 +23,9 @@ final class PrivilegeCapabilitySummary {
     @NonNull
     static Snapshot probe() {
         return new Snapshot(
-                SelfPermissions.canInstallExistingPackages(),
+                SelfPermissions.canInstallExistingPackages()
+                        // Dhizuku runs installer sessions without a prompt too, for this user
+                        || DhizukuOps.canRun(DhizukuCapabilities.Operation.INSTALL_APPS, UserHandleHidden.myUserId()),
                 SelfPermissions.canModifyAppOpMode(),
                 SelfPermissions.canModifyRuntimePermissions(),
                 SelfPermissions.canFreezeUnfreezePackages(),

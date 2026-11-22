@@ -13,9 +13,29 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuSession;
+import io.github.muntashirakon.AppManager.dhizuku.FakeDhizuku;
 
 @RunWith(RobolectricTestRunner.class)
 public class PrivilegeCapabilitySummaryTest {
+    @Test
+    public void installsThroughDhizukuAreNotListedAsLimited() {
+        Context context = RuntimeEnvironment.getApplication();
+        FakeDhizuku.install();
+        try {
+            DhizukuSession.refresh(context);
+            // No root, ADB or Shizuku here, so a prompt-free install can only come from Dhizuku
+            String summary = PrivilegeCapabilitySummary.buildSummary(context,
+                    PrivilegeCapabilitySummary.probe()).toString();
+            String available = summary.substring(0, summary.indexOf('\n'));
+            assertTrue(summary, available.contains(
+                    context.getString(R.string.privilege_health_capability_feature_install)));
+        } finally {
+            FakeDhizuku.uninstall();
+            DhizukuSession.refresh(context);
+        }
+    }
+
     @Test
     public void fullPowerSummaryHasNoLimitedCapabilities() {
         Context context = RuntimeEnvironment.getApplication();
