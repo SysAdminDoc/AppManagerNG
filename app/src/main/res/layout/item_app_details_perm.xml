@@ -32,6 +32,17 @@
                 tools:text="android.permission.A_VERY_LONG_PERMISSION_NAME" />
 
             <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/perm_label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textIsSelectable="true"
+                android:visibility="gone"
+                tools:text="Music and audio"
+                tools:visibility="visible" />
+
+            <androidx.appcompat.widget.AppCompatTextView
                 android:id="@+id/perm_description"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

@@ -520,6 +520,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
             TextView textView6;
             TextView textView7;
             TextView textView8;
+            TextView subtitleView;
             ImageView imageView;
             MaterialSwitch toggleSwitch;
             MaterialButton settingButton;
@@ -558,6 +559,7 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                         break;
                     case USES_PERMISSIONS:
                         textView1 = itemView.findViewById(R.id.perm_name);
+                        subtitleView = itemView.findViewById(R.id.perm_label);
                         textView2 = itemView.findViewById(R.id.perm_description);
                         textView3 = itemView.findViewById(R.id.perm_protection_level);
                         textView4 = itemView.findViewById(R.id.perm_package_name);
@@ -840,10 +842,14 @@ public class AppDetailsPermissionsFragment extends AppDetailsFragment {
                 // Highlight searched query
                 holder.textView1.setText(UIUtils.getHighlightedText(permName, mConstraint, colorQueryStringHighlight));
             } else holder.textView1.setText(permName);
-            // Set others
-            // Description
-            CharSequence description = permissionInfo.loadDescription(packageManager);
-            if (description != null) {
+            // The short name Settings uses, like "Music and audio"
+            if (!TextUtils.isEmpty(permissionItem.label)) {
+                holder.subtitleView.setVisibility(View.VISIBLE);
+                holder.subtitleView.setText(permissionItem.label);
+            } else holder.subtitleView.setVisibility(View.GONE);
+            // Description, loaded with the row: the system's, or ours for a special permission it leaves out
+            CharSequence description = permissionItem.description;
+            if (!TextUtils.isEmpty(description)) {
                 holder.textView2.setVisibility(View.VISIBLE);
                 holder.textView2.setText(description);
             } else holder.textView2.setVisibility(View.GONE);

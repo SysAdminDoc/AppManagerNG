@@ -4730,6 +4730,17 @@ Components removed: %8$s</string>
     <string name="special_access_install_unknown_summary">Apps that can install other apps.</string>
     <string name="special_access_all_files">All files access</string>
     <string name="special_access_all_files_summary">Apps that can read and change every file on your storage.</string>
+    <!-- Shown under a permission when Android gives no description of its own -->
+    <string name="perm_desc_manage_external_storage">Lets the app read, change and delete every file in shared storage.</string>
+    <string name="perm_desc_system_alert_window">Lets the app draw on top of other apps.</string>
+    <string name="perm_desc_request_install_packages">Lets the app ask to install other apps.</string>
+    <string name="perm_desc_write_settings">Lets the app change system settings like brightness or the ringtone.</string>
+    <string name="perm_desc_package_usage_stats">Lets the app see which apps you use, how often and for how long.</string>
+    <string name="perm_desc_bind_accessibility_service">Lets Android run the app\'s accessibility service, which can read the screen and act for you.</string>
+    <string name="perm_desc_bind_notification_listener_service">Lets Android run the app\'s notification listener, which can read and dismiss your notifications.</string>
+    <string name="perm_desc_request_ignore_battery_optimizations">Lets the app ask to skip battery optimization so it can keep running in the background.</string>
+    <string name="perm_desc_schedule_exact_alarm">Lets the app set alarms and reminders that go off at an exact time.</string>
+    <string name="perm_desc_use_exact_alarm">Lets an alarm clock or calendar app set exact alarms without asking you first.</string>
     <string name="special_access_manage_media">Media management</string>
     <string name="special_access_manage_media_summary">Apps that can edit or delete your photos and videos without asking each time.</string>
     <string name="special_access_usage_summary">Apps that can see which apps you use and how often.</string>

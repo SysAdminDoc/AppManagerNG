@@ -107,6 +107,7 @@ import io.github.muntashirakon.AppManager.permission.DevelopmentPermission;
 import io.github.muntashirakon.AppManager.permission.PermUtils;
 import io.github.muntashirakon.AppManager.permission.Permission;
 import io.github.muntashirakon.AppManager.permission.PermissionException;
+import io.github.muntashirakon.AppManager.permission.PermissionTexts;
 import io.github.muntashirakon.AppManager.permission.ReadOnlyPermission;
 import io.github.muntashirakon.AppManager.permission.RuntimePermission;
 import io.github.muntashirakon.AppManager.rules.RuleType;
@@ -2423,6 +2424,13 @@ public class AppDetailsViewModel extends AndroidViewModel {
             }
             AppDetailsPermissionItem appDetailsItem = new AppDetailsPermissionItem(permissionInfo, permission, flags);
             appDetailsItem.name = permissionName;
+            try {
+                appDetailsItem.label = PermissionTexts.shortLabel(getApplication(), permissionInfo);
+                appDetailsItem.description = PermissionTexts.description(getApplication(), permissionInfo);
+            } catch (RuntimeException e) {
+                // The row still shows the permission without them
+                Log.w(TAG, "Couldn't load the label of %s", e, permissionName);
+            }
             appDetailsItem.setReference(getPermissionReference(permissionName));
             if (!mExternalApk && Manifest.permission.INTERNET.equals(permissionName)) {
                 // Also puts a saved block back if the firewall has lost it

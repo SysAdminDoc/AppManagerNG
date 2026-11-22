@@ -32,6 +32,16 @@ public class AppDetailsPermissionItem extends AppDetailsItem<PermissionInfo> {
     public final PermUtils.SettingItem settingItem;
     public boolean hasReference;
     public boolean referenceGranted;
+    /**
+     * The short name Settings shows for the permission, like "Music and audio", worked out on the loader thread.
+     */
+    @Nullable
+    public CharSequence label;
+    /**
+     * The permission's description, the system's own when it has one, worked out on the loader thread.
+     */
+    @Nullable
+    public CharSequence description;
     /** Set on the INTERNET row of an installed app, where the app's network access can be turned off. */
     @Nullable
     public volatile InternetAccess.Status internetAccess;
