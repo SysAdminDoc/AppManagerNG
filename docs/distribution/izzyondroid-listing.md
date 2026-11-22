@@ -3,7 +3,7 @@
 # IzzyOnDroid Listing Packet
 
 Status: ready for maintainer submission.
-Checked: 2026-11-15.
+Checked: 2026-11-22.
 
 This packet is the source-of-truth for the IzzyOnDroid inclusion request. It is
 not proof that the external issue has been filed.
@@ -11,18 +11,18 @@ not proof that the external issue has been filed.
 ## Current Release
 
 - Repository: `https://github.com/SysAdminDoc/AppManagerNG`
-- Tag: `v0.8.0`
-- Commit: `475cce8429d04ea0b04e46ed441cf38a7043bb50`
+- Tag: `v0.9.0`
+- Commit: `475b42e1854b1edb20c920e5802da4f6daa2ab08`
 - Package name: `io.github.sysadmindoc.AppManagerNG`
 - Display name: `AppManagerNG`
-- Version name: `0.8.0`
-- Version code: `34`
+- Version name: `0.9.0`
+- Version code: `35`
 - Preferred APK: `AppManagerNG-reproducible-floss-release.apk`
-- APK size: 20,232,969 bytes, under IzzyOnDroid's current 30 MB rule of thumb.
-- SHA-256: `d63be0670d71f8921fd8958d19e01a277c9c4151d4a94da560936dc77ad4815e`
+- APK size: 20,533,731 bytes, under IzzyOnDroid's current 30 MB rule of thumb.
+- SHA-256: `b84cba9b09436c46e585f0dff6cfbf312e04d6d90f279bcbabd92efbbcf9e1d9`
 - Signing certificate SHA-256:
   `21:5F:B4:70:63:2E:A6:CD:59:A4:BA:AB:35:0A:9E:0B:99:AD:11:0F:DD:FA:F5:A9:EA:64:61:E5:D0:C2:38:6C`
-- Release: `https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.8.0`
+- Release: `https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.9.0`
 
 The `floss` artifact is the listing target. The `full` artifact also exists on
 GitHub Releases for Obtainium users, but it enables optional online report
@@ -31,8 +31,8 @@ surfaces behind user opt-in gates and should not be the IzzyOnDroid artifact.
 ## APK Size
 
 Releases publish a single universal APK per flavor, carrying native libraries for
-`armeabi-v7a`, `arm64-v8a`, `x86`, and `x86_64`. It measures 20,232,969 bytes at
-v0.8.0, well under IzzyOnDroid's 30 MB rule of thumb. The local release build
+`armeabi-v7a`, `arm64-v8a`, `x86`, and `x86_64`. It measures 20,533,731 bytes at
+v0.9.0, well under IzzyOnDroid's 30 MB rule of thumb. The local release build
 enforces a hard size gate (`APK_SIZE_LIMIT_BYTES`, default 30 MiB) per APK.
 
 Per-ABI splits are configured in `app/build.gradle` but are **not enabled**, so no
@@ -72,7 +72,7 @@ Repository:
 https://github.com/SysAdminDoc/AppManagerNG
 
 Latest release:
-https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.8.0
+https://github.com/SysAdminDoc/AppManagerNG/releases/tag/v0.9.0
 
 Package:
 io.github.sysadmindoc.AppManagerNG
@@ -81,7 +81,7 @@ Preferred APK:
 AppManagerNG-reproducible-floss-release.apk
 
 APK SHA-256:
-d63be0670d71f8921fd8958d19e01a277c9c4151d4a94da560936dc77ad4815e
+b84cba9b09436c46e585f0dff6cfbf312e04d6d90f279bcbabd92efbbcf9e1d9
 
 Notes:
 - AppManagerNG is a maintained fork of MuntashirAkon/AppManager with a unique
