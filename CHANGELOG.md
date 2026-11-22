@@ -21,6 +21,10 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - App Info shows Android TV support (issue #40): Made for TV, Works without touch, or Touch only. A `TV apps` filter on the main list lists the ones with a TV launcher entry.
 - App Info has a Media capture section (issue #41). It shows whether other apps may record the app's audio, whether it likely blocks screenshots and screen recording (from what's in its code, plus a live check of its open windows with root, ADB or Shizuku), and whether it uses DRM. A `Blocks screen or audio capture` filter on the main list covers the apps already checked.
 - The line under each app's name on the main list shows the value you sort by (issue #38): install date and time, last update, size, last used, target SDK and so on. Turn off `App rows follow the sort order` in Appearance to keep the old line.
+- Local sync shows this device's own address next to the connect field (issue #22). With Share this device on it includes the port, and the copy button puts `address:port` on the clipboard for the other phone.
+- The notification icon is the AppManagerNG logo now (issue #22).
+- When an APK has the same version code as the installed app but another version name, the installer button says Modify and shows both names (issue #47).
+- Saved APK names can carry `%abi%` (the native code ABIs, or universal) and `%sha256_short%` (the first 8 characters of the file's SHA-256) (issue #44). Open a file named that way and the installer tells you whether the checksum in its name matches.
 
 ### Fixed
 - Mode toasts like "Working through Shizuku shell mode" no longer pop up over other apps (issue #56). Background work checks the mode too, around the clock, and each check toasted. Now the toast shows only while an AppManagerNG screen is open, once per mode, and again only when the mode changes.
@@ -30,6 +34,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The Properties sheet in the file manager came back every time you rotated the phone, even after you'd closed it, and an open one stacked a new copy per rotation (issue #34).
 - App Details tabs no longer flash their empty message, like "No requested permissions", while they're still loading.
 - Commands sent to Termux from App Info or the terminal did nothing on screen when Termux wasn't letting other apps run commands yet, which is how Termux starts out (issue #55). Termux now reports back, and you get the steps to allow it.
+- Local sync said "The downloaded APK is not validly signed" for apps that need a newer Android than the phone has (issue #22). Those rows now say which Android they need, offer no download, and Update all skips them. Older APKs signed with SHA-256 that support very old Android versions pass the check too.
+- The installer could uninstall AppManagerNG itself to put a copy signed with another key in its place, which closes it halfway through (issue #45). It now leaves the installed copy alone and explains the safe way to swap, and Local sync's Replace does the same.
 
 ## v0.8.0, 2026-11-15
 
