@@ -54,6 +54,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The button in search bars that switches between Contains, Regex and the other search types had no name either. TalkBack reads it as "Search type" now, and a long press shows that label.
 - Editing a notification filter rule showed "New rule" at the top. It says "Edit rule" now.
 - Picking a mode in the first-run setup only took effect at the next start. On a phone where ADB over TCP was already on, picking No root kept working through ADB until then. The pick applies right away now.
+- Freezing an app and unfreezing it again within half a minute raised a "reverted by the system" alert and marked the app, though nothing had undone anything. The same went for a component, an app op or battery optimization changed twice in a row. Only a change the system really undid is flagged now.
 
 ## v0.8.0, 2026-11-15
 

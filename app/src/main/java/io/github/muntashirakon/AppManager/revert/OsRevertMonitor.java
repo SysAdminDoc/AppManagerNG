@@ -12,7 +12,9 @@ import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 import androidx.lifecycle.LiveData;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
@@ -29,6 +31,9 @@ public final class OsRevertMonitor {
     private static final long DOZE_REPOLL_DELAY_MILLIS = 60_000L;
 
     private static final SingleLiveEvent<RevertEvent> sRevertEvents = new SingleLiveEvent<>();
+    // The newest watch per checked state; an older one for the same state is dropped
+    private static final Map<String, Long> sLatestWatches = new HashMap<>();
+    private static long sLastWatchId;
 
     private OsRevertMonitor() {
     }
@@ -44,7 +49,7 @@ public final class OsRevertMonitor {
         Context appContext = context.getApplicationContext();
         DozeAllowlistDiagnostics.Snapshot beforeSnapshot =
                 DozeAllowlistDiagnostics.snapshot(appContext, packageName);
-        schedule(packageName, () -> {
+        schedule("doze/" + packageName, packageName, () -> {
             boolean currentExempt = !DeviceIdleManagerCompat.isBatteryOptimizedApp(packageName);
             if (stateMatches(expectedExempt, currentExempt)) {
                 return null;
@@ -65,7 +70,7 @@ public final class OsRevertMonitor {
                                    int userId,
                                    boolean expectedFrozen) {
         Context appContext = context.getApplicationContext();
-        schedule(packageName, () -> {
+        schedule("freeze/" + packageName + "/" + userId, packageName, () -> {
             boolean currentFrozen = FreezeUtils.isFrozen(packageName, userId);
             if (stateMatches(expectedFrozen, currentFrozen)) {
                 return null;
@@ -84,7 +89,8 @@ public final class OsRevertMonitor {
                                       int userId,
                                       @PackageManagerCompat.EnabledState int expectedState) {
         Context appContext = context.getApplicationContext();
-        schedule(componentName.getPackageName(), () -> {
+        schedule("component/" + componentName.flattenToString() + "/" + userId,
+                componentName.getPackageName(), () -> {
             int currentState = PackageManagerCompat.getComponentEnabledSetting(componentName, userId);
             if (componentStateMatches(expectedState, currentState)) {
                 return null;
@@ -104,7 +110,7 @@ public final class OsRevertMonitor {
                                   int op,
                                   @AppOpsManagerCompat.Mode int expectedMode) {
         Context appContext = context.getApplicationContext();
-        schedule(packageName, () -> {
+        schedule("appop/" + packageName + "/" + uid + "/" + op, packageName, () -> {
             int currentMode = getConfiguredAppOpMode(packageName, uid, op);
             if (appOpModeMatches(expectedMode, currentMode)) {
                 return null;
@@ -113,12 +119,36 @@ public final class OsRevertMonitor {
         });
     }
 
-    private static void schedule(@NonNull String packageName, @NonNull Probe probe) {
-        schedule(packageName, probe, DEFAULT_REPOLL_DELAY_MILLIS);
+    private static void schedule(@NonNull String watchKey, @NonNull String packageName, @NonNull Probe probe) {
+        schedule(watchKey, packageName, probe, DEFAULT_REPOLL_DELAY_MILLIS);
     }
 
-    private static void schedule(@NonNull String packageName, @NonNull Probe probe, long delayMillis) {
-        ThreadUtils.postOnMainThreadDelayed(() -> ThreadUtils.postOnBackgroundThread(() -> {
+    /**
+     * Checks the state again after the delay. A newer watch on the same key replaces an older one: the
+     * user changed that state again in the meantime (froze the app, then unfroze it), so the older
+     * expectation no longer holds and a mismatch with it isn't the OS reverting anything.
+     */
+    private static void schedule(@NonNull String watchKey, @NonNull String packageName, @NonNull Probe probe,
+                                 long delayMillis) {
+        long watchId;
+        synchronized (sLatestWatches) {
+            watchId = ++sLastWatchId;
+            sLatestWatches.put(watchKey, watchId);
+        }
+        ThreadUtils.postOnMainThreadDelayed(() -> {
+            synchronized (sLatestWatches) {
+                Long latest = sLatestWatches.get(watchKey);
+                if (latest == null || latest != watchId) {
+                    return;
+                }
+                sLatestWatches.remove(watchKey);
+            }
+            runProbe(packageName, probe);
+        }, delayMillis);
+    }
+
+    private static void runProbe(@NonNull String packageName, @NonNull Probe probe) {
+        ThreadUtils.postOnBackgroundThread(() -> {
             try {
                 RevertEvent event = probe.run();
                 if (event != null) {
@@ -132,7 +162,7 @@ public final class OsRevertMonitor {
             } catch (Exception th) {
                 Log.w(TAG, "Could not verify post-operation state.", th);
             }
-        }), delayMillis);
+        });
     }
 
     @NonNull

@@ -2,14 +2,19 @@
 
 package io.github.muntashirakon.AppManager.revert;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.robolectric.Shadows.shadowOf;
 
 import android.app.AppOpsManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Looper;
 
 import androidx.test.core.app.ApplicationProvider;
+
+import java.time.Duration;
 
 import io.github.muntashirakon.AppManager.compat.AppOpsManagerCompat;
 
@@ -62,5 +67,29 @@ public class OsRevertMonitorTest {
         assertTrue(detail, detail.contains("Expected: " + AppOpsManagerCompat.modeToName(AppOpsManager.MODE_ALLOWED)));
         assertTrue(detail, detail.contains("Current: " + AppOpsManagerCompat.modeToName(AppOpsManager.MODE_IGNORED)));
         assertTrue(detail, detail.contains("AppOps mode no longer matches"));
+    }
+
+    @Test
+    public void freezingThenUnfreezingBeforeTheCheckIsNotARevert() throws Exception {
+        Context context = ApplicationProvider.getApplicationContext();
+        OsRevertCountTracker tracker = OsRevertCountTracker.getInstance();
+        tracker.clear();
+        // Neither package exists here, so both read as not frozen when checked
+        OsRevertMonitor.watchFreeze(context, "com.example.refrozen", 0, true);
+        OsRevertMonitor.watchFreeze(context, "com.example.refrozen", 0, false);
+        OsRevertMonitor.watchFreeze(context, "com.example.reverted", 0, true);
+
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(30));
+
+        long deadline = System.currentTimeMillis() + 5_000L;
+        while (tracker.countRecent("com.example.reverted", System.currentTimeMillis(), 60_000L) == 0
+                && System.currentTimeMillis() < deadline) {
+            Thread.sleep(20L);
+        }
+        assertEquals(1, tracker.countRecent("com.example.reverted", System.currentTimeMillis(), 60_000L));
+        // Give any check of the first freeze the same time to land
+        Thread.sleep(500L);
+        assertEquals(0, tracker.countRecent("com.example.refrozen", System.currentTimeMillis(), 60_000L));
+        tracker.clear();
     }
 }
