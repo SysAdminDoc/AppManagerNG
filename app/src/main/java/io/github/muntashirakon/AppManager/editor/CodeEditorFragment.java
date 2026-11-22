@@ -334,20 +334,32 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
         mEditor.setWordwrap(Prefs.Editor.isWordWrapEnabled());
         // Sora registers no inlay renderer by default; the invisible character badges need one
         mEditor.registerInlayHintRenderer(new TextInlayHintRenderer());
+        // Each handler checks the event comes from the editor on screen: one from an editor whose
+        // view is gone would touch views this fragment no longer has.
         mEditor.subscribeEvent(ContentChangeEvent.class, (event, unsubscribe) -> {
+            if (event.getEditor() != mEditor) {
+                return;
+            }
             if (!mTextModified && event.getAction() != ContentChangeEvent.ACTION_SET_NEW_TEXT) {
                 markTextModified();
             }
-            mEditor.postDelayed(this::updateLiveButtons, 50);
+            // Skipped once the editor is released
+            mEditor.postDelayedInLifecycle(this::updateLiveButtons, 50);
             scheduleInvisibleCharHints();
         });
-        mEditor.subscribeEvent(SelectionChangeEvent.class, (event, unsubscribe) -> getFragmentActivity()
-                .ifPresent(activity -> updatePositionText()));
-        mEditor.subscribeEvent(PublishSearchResultEvent.class, (event, unsubscribe) -> getFragmentActivity()
-                .ifPresent(activity -> {
+        mEditor.subscribeEvent(SelectionChangeEvent.class, (event, unsubscribe) -> {
+            if (event.getEditor() == mEditor) {
+                getFragmentActivity().ifPresent(activity -> updatePositionText());
+            }
+        });
+        mEditor.subscribeEvent(PublishSearchResultEvent.class, (event, unsubscribe) -> {
+            if (event.getEditor() == mEditor) {
+                getFragmentActivity().ifPresent(activity -> {
                     updatePositionText();
                     updateSearchResult();
-                }));
+                });
+            }
+        });
         DirectAccessProps props = mEditor.getProps();
         props.useICULibToSelectWords = false;
         props.symbolPairAutoCompletion = false;
@@ -532,6 +544,11 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             indentSizeButton.setText(buildTabSizeLabel());
             lineSeparatorButton.setEnabled(!mViewModel.isReadOnly());
             mEditor.setText(content);
+            // A view made again after a rotation is a new fragment, and the text it gets back can
+            // hold edits that aren't saved yet
+            if (!content.toString().equals(mViewModel.getOriginalContent())) {
+                markTextModified();
+            }
             lineSeparatorButton.setText(mEditor.getLineSeparator().name());
             updatePositionText();
             // setText() and setEditorLanguage() drop every inlay hint
@@ -580,7 +597,11 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
                     .addToBackStack(null)
                     .commit());
         });
-        mViewModel.loadFileContentIfAvailable();
+        // Only the first view reads the file. A view made again (back from the Java view, or after a
+        // rotation) shows the text the view model already holds, edits not saved yet included.
+        if (mViewModel.getContentLiveData().getValue() == null) {
+            mViewModel.loadFileContentIfAvailable();
+        }
     }
 
     @Override
@@ -590,6 +611,33 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             mDiffResult = null;
         }
         ++mDiffRequestId;
+        if (mEditor != null) {
+            mEditor.removeCallbacks(mInvisibleCharHintsUpdater);
+            // Stops the highlighter's thread, which otherwise holds this editor and the screen around
+            // it for as long as the app runs, and unhooks the editor from the text. The view model
+            // keeps that text for the next view, so an old editor must stop reacting to its edits.
+            // Sora releases an editor only once.
+            mEditor.release();
+        }
+        // The fragment outlives its view on the back stack. Holding these would keep the old view
+        // tree alive until the next one is made.
+        mEditor = null;
+        mSymbolInputView = null;
+        mPositionButton = null;
+        mLockButton = null;
+        mSearchWidget = null;
+        mSearchView = null;
+        mReplaceView = null;
+        mReplaceViewContainer = null;
+        mReplaceButton = null;
+        mReplaceAllButton = null;
+        mSearchResultCount = null;
+        mJavaDecompileUnsupportedBanner = null;
+        mSaveMenu = null;
+        mUndoMenu = null;
+        mRedoMenu = null;
+        mJavaSmaliToggleMenu = null;
+        mShareMenu = null;
         super.onDestroyView();
     }
 

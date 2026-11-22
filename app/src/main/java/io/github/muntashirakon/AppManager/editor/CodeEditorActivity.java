@@ -64,22 +64,26 @@ public class CodeEditorActivity extends BaseActivity {
         if (fileUri == null) {
             progressIndicator.hide();
         }
-        CodeEditorFragment.Options options = new CodeEditorFragment.Options.Builder()
-                .setUri(fileUri)
-                .setTitle(title)
-                .setSubtitle(subtitle)
-                .setEnableSharing(false)
-                .setJavaSmaliToggle(false)
-                .setReadOnly(readOnly)
-                .build();
-        CodeEditorFragment fragment = new CodeEditorFragment();
-        Bundle args = new Bundle();
-        args.putParcelable(CodeEditorFragment.ARG_OPTIONS, options);
-        fragment.setArguments(args);
-        getSupportFragmentManager()
-                .beginTransaction()
-                .replace(R.id.container, fragment)
-                .commit();
+        // A recreated activity (rotation, theme change) already has its editor back, along with the
+        // view model that holds the edits not saved yet. A new fragment would read the file again.
+        if (getSupportFragmentManager().findFragmentById(R.id.container) == null) {
+            CodeEditorFragment.Options options = new CodeEditorFragment.Options.Builder()
+                    .setUri(fileUri)
+                    .setTitle(title)
+                    .setSubtitle(subtitle)
+                    .setEnableSharing(false)
+                    .setJavaSmaliToggle(false)
+                    .setReadOnly(readOnly)
+                    .build();
+            CodeEditorFragment fragment = new CodeEditorFragment();
+            Bundle args = new Bundle();
+            args.putParcelable(CodeEditorFragment.ARG_OPTIONS, options);
+            fragment.setArguments(args);
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.container, fragment)
+                    .commit();
+        }
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.setTitle(title);
