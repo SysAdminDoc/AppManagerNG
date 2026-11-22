@@ -419,8 +419,15 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         });
         // A reinstall a signer pin refuses never uninstalls the app; this is the dialog the install
         // would have ended with
-        mModel.signerPinRefusalLiveData().observe(this, refusal -> showInstallationFinishedDialog(
-                mModel.getPackageName(), STATUS_FAILURE_SIGNER_PIN, null, "STATUS_FAILURE_SIGNER_PIN: " + refusal));
+        mModel.signerPinRefusalLiveData().observe(this, refusal -> {
+            if (SelfReplaceGuard.refuses(this, mModel.getPackageName())) {
+                // Not a signer pin: this app never uninstalls itself (#45)
+                showSelfReplaceExplanation();
+                return;
+            }
+            showInstallationFinishedDialog(mModel.getPackageName(), STATUS_FAILURE_SIGNER_PIN, null,
+                    "STATUS_FAILURE_SIGNER_PIN: " + refusal);
+        });
         // Init fragment
         mInstallerDialogFragment = new InstallerDialogFragment();
         mInstallerDialogFragment.setCancelable(false);
@@ -830,6 +837,40 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                 > PackageInfoCompat.getLongVersionCode(newPackageInfo);
     }
 
+    /**
+     * What the installer offers for an APK of an app that's already installed.
+     */
+    @VisibleForTesting
+    enum InstalledAppOffer {
+        INSTALL,
+        UNINSTALL_TO_DOWNGRADE,
+        UNINSTALL_FOR_OTHER_SIGNER,
+        INSTALL_ONLY,
+        EXPLAIN_SELF_DOWNGRADE,
+        EXPLAIN_SELF_OTHER_SIGNER
+    }
+
+    /**
+     * Android takes an APK over the installed copy only when the keys match and, without
+     * INSTALL_PACKAGES, it isn't older. Anything else needs an uninstall first, which this app
+     * never does to itself ({@code self}): it would end partway, leaving neither copy (#45).
+     */
+    @VisibleForTesting
+    @NonNull
+    static InstalledAppOffer offerFor(boolean self, long installedVersionCode, long newVersionCode,
+                                      boolean canInstallPackages, boolean signatureDifferent, boolean system) {
+        if (self && signatureDifferent) {
+            return InstalledAppOffer.EXPLAIN_SELF_OTHER_SIGNER;
+        }
+        if (installedVersionCode > newVersionCode && !canInstallPackages) {
+            return self ? InstalledAppOffer.EXPLAIN_SELF_DOWNGRADE : InstalledAppOffer.UNINSTALL_TO_DOWNGRADE;
+        }
+        if (!signatureDifferent) {
+            return InstalledAppOffer.INSTALL;
+        }
+        return system ? InstalledAppOffer.INSTALL_ONLY : InstalledAppOffer.UNINSTALL_FOR_OTHER_SIGNER;
+    }
+
     @UiThread
     private boolean maybeShowSplitCertMismatchDialog() {
         if (mSplitCertMismatchDialogShown
@@ -1028,37 +1069,67 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         };
         long installedVersionCode = PackageInfoCompat.getLongVersionCode(mModel.getInstalledPackageInfo());
         long thisVersionCode = PackageInfoCompat.getLongVersionCode(mModel.getNewPackageInfo());
-        if (installedVersionCode > thisVersionCode && !SelfPermissions.checkSelfOrRemotePermission(Manifest.permission.INSTALL_PACKAGES)) {
-            // Need to uninstall and install again
-            SpannableStringBuilder builder = new SpannableStringBuilder()
-                    .append(getString(R.string.do_you_want_to_uninstall_and_install)).append(" ")
-                    .append(UIUtils.getItalicString(getString(R.string.app_data_will_be_lost)))
-                    .append("\n\n");
-            mDialogHelper.showDowngradeReinstallWarning(builder, reinstallListener, mAppInfoClickListener);
-            return;
+        // Installed package info is never null here
+        ApplicationInfo info = mModel.getInstalledPackageInfo().applicationInfo;
+        InstalledAppOffer offer = offerFor(SelfReplaceGuard.refuses(this, mModel.getPackageName()),
+                installedVersionCode, thisVersionCode,
+                SelfPermissions.checkSelfOrRemotePermission(Manifest.permission.INSTALL_PACKAGES),
+                mModel.isSignatureDifferent(), ApplicationInfoCompat.isSystemApp(info));
+        switch (offer) {
+            case INSTALL:
+                // Signature is either matched or the app isn't installed
+                install();
+                return;
+            case UNINSTALL_TO_DOWNGRADE: {
+                // Need to uninstall and install again
+                SpannableStringBuilder builder = new SpannableStringBuilder()
+                        .append(getString(R.string.do_you_want_to_uninstall_and_install)).append(" ")
+                        .append(UIUtils.getItalicString(getString(R.string.app_data_will_be_lost)))
+                        .append("\n\n");
+                mDialogHelper.showDowngradeReinstallWarning(builder, reinstallListener, mAppInfoClickListener);
+                return;
+            }
+            case EXPLAIN_SELF_DOWNGRADE:
+                // Android won't take it in place, and this app can't uninstall itself (#45)
+                showSelfReplaceExplanation();
+                return;
+            case EXPLAIN_SELF_OTHER_SIGNER:
+            case INSTALL_ONLY:
+            case UNINSTALL_FOR_OTHER_SIGNER:
+            default: {
+                // Signature is different
+                boolean offerUninstall = offer == InstalledAppOffer.UNINSTALL_FOR_OTHER_SIGNER;
+                SpannableStringBuilder builder = new SpannableStringBuilder();
+                if (offer == InstalledAppOffer.EXPLAIN_SELF_OTHER_SIGNER) {
+                    builder.append(SelfReplaceGuard.explanation(this));
+                } else if (!offerUninstall) {
+                    // Cannot reinstall a system app with a different signature
+                    builder.append(getString(R.string.app_signing_signature_mismatch_for_system_apps));
+                } else {
+                    // Offer user to uninstall and then install the app again
+                    builder.append(getString(R.string.do_you_want_to_uninstall_and_install)).append(" ")
+                            .append(UIUtils.getItalicString(getString(R.string.app_data_will_be_lost)));
+                }
+                builder.append("\n\n");
+                int start = builder.length();
+                builder.append(getText(R.string.app_signing_install_without_data_loss));
+                builder.setSpan(new RelativeSizeSpan(0.8f), start, builder.length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
+                // Without the uninstall offer only Install only and Cancel are left
+                mDialogHelper.showSignatureMismatchReinstallWarning(builder, reinstallListener, v -> install(),
+                        !offerUninstall);
+            }
         }
-        if (!mModel.isSignatureDifferent()) {
-            // Signature is either matched or the app isn't installed
-            install();
-            return;
-        }
-        // Signature is different
-        ApplicationInfo info = mModel.getInstalledPackageInfo().applicationInfo;  // Installed package info is never null here.
-        boolean isSystem = ApplicationInfoCompat.isSystemApp(info);
-        SpannableStringBuilder builder = new SpannableStringBuilder();
-        if (isSystem) {
-            // Cannot reinstall a system app with a different signature
-            builder.append(getString(R.string.app_signing_signature_mismatch_for_system_apps));
-        } else {
-            // Offer user to uninstall and then install the app again
-            builder.append(getString(R.string.do_you_want_to_uninstall_and_install)).append(" ")
-                    .append(UIUtils.getItalicString(getString(R.string.app_data_will_be_lost)));
-        }
-        builder.append("\n\n");
-        int start = builder.length();
-        builder.append(getText(R.string.app_signing_install_without_data_loss));
-        builder.setSpan(new RelativeSizeSpan(0.8f), start, builder.length(), Spanned.SPAN_INCLUSIVE_EXCLUSIVE);
-        mDialogHelper.showSignatureMismatchReinstallWarning(builder, reinstallListener, v -> install(), isSystem);
+    }
+
+    /**
+     * Says why this app can't put another copy of itself in place and what to do instead. Nothing
+     * is uninstalled.
+     */
+    @UiThread
+    private void showSelfReplaceExplanation() {
+        mDialogHelper.showInstallFinishedDialog(SelfReplaceGuard.explanation(this),
+                hasNext() ? R.string.next : R.string.close, v -> triggerCancel(), null, mAppInfoClickListener,
+                R.string.app_info);
     }
 
     private void triggerBatchInstall() {
@@ -1103,6 +1174,11 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     }
 
     private void reinstall() {
+        if (SelfReplaceGuard.refuses(this, mModel.getPackageName())) {
+            // The uninstall would end this app before the install (#45)
+            showSelfReplaceExplanation();
+            return;
+        }
         if (!SelfPermissions.checkSelfOrRemotePermission(Manifest.permission.DELETE_PACKAGES)) {
             mMultiplexer.enableUninstall(true);
         }

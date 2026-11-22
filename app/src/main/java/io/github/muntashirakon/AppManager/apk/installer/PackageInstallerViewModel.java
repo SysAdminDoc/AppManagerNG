@@ -330,8 +330,8 @@ public class PackageInstallerViewModel extends AndroidViewModel {
     }
 
     /**
-     * @return the signer pin refusal, in which case {@code uninstall} didn't run, or {@code null}
-     * after it ran
+     * @return why the uninstall didn't run (this app itself, or a signer pin refusing the new
+     * copy), or {@code null} after it ran
      */
     @WorkerThread
     @Nullable
@@ -339,6 +339,10 @@ public class PackageInstallerViewModel extends AndroidViewModel {
     static String uninstallUnlessSignerPinRefuses(@NonNull Context context, @NonNull ApkFile apkFile,
                                                   @NonNull List<String> selectedSplits, boolean signApkFiles,
                                                   @NonNull Runnable uninstall) {
+        if (SelfReplaceGuard.refuses(context, apkFile.getPackageName())) {
+            // Uninstalling itself ends this app before the new copy goes in (#45)
+            return SelfReplaceGuard.explanation(context);
+        }
         String refusal = PackageInstallerCompat.signerPinRefusal(context, apkFile, selectedSplits, signApkFiles);
         if (refusal == null) {
             uninstall.run();

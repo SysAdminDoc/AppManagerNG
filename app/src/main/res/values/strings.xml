@@ -1573,6 +1573,7 @@
     <string name="do_you_want_to_uninstall_and_install">Uninstall the existing app, then install this APK?</string>
     <string name="app_signing_signature_mismatch_for_system_apps">Could not install app because a system app with a different signature has this package name.</string>
     <string name="app_data_will_be_lost">The existing data will be lost.</string>
+    <string name="installer_cannot_replace_self"><xliff:g id="app_name" example="AppManagerNG">%1$s</xliff:g> can\'t uninstall itself to put this copy in its place, since it would close partway through and leave you with neither copy. Back up first, then uninstall <xliff:g id="app_name" example="AppManagerNG">%1$s</xliff:g> and install this copy with Android\'s installer or adb.</string>
     <string name="app_signing_install_without_data_loss">If you have turned off signature verification, you can use the <b>Install only</b> option to install the app without losing data.</string>
     <string name="only_install">Install only</string>
     <string name="sys_config">System config</string>

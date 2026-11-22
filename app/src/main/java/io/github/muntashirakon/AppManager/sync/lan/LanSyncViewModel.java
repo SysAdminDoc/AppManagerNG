@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerCompat;
+import io.github.muntashirakon.AppManager.apk.installer.SelfReplaceGuard;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.settings.Prefs;
@@ -925,6 +926,11 @@ public class LanSyncViewModel extends AndroidViewModel {
                         SyncApp installed = mInstalledLookup.find(row.remote.packageName);
                         boolean replacing = replace && installed != null && SyncComparator.compare(row.remote,
                                 installed) == SyncComparator.Status.SIGNATURE_DIFFERS;
+                        if (replacing && SelfReplaceGuard.refuses(getApplication(), row.remote.packageName)) {
+                            // Uninstalling this app would end it before the new copy goes in
+                            mMessage.postValue(SelfReplaceGuard.explanation(getApplication()));
+                            continue;
+                        }
                         if (replacing && installed.system) {
                             // Its copy on the system partition would stay, still signed by the old key
                             mMessage.postValue(getApplication().getString(R.string.lan_sync_replace_system, label));

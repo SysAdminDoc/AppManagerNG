@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.apk.installer.SelfReplaceGuard;
 
 /**
  * Rows of the other device's apps. A pull button shows only where a pull can work: the other
@@ -66,9 +67,10 @@ class LanSyncAppsAdapter extends RecyclerView.Adapter<LanSyncAppsAdapter.ViewHol
         }
     }
 
-    static boolean canReplace(@NonNull LanSyncViewModel.AppRow row, boolean allowReplace) {
+    static boolean canReplace(@NonNull Context context, @NonNull LanSyncViewModel.AppRow row, boolean allowReplace) {
         return allowReplace && row.status == SyncComparator.Status.SIGNATURE_DIFFERS && row.local != null
-                && !row.local.system && !row.needsNewerAndroid;
+                && !row.local.system && !row.needsNewerAndroid
+                && !SelfReplaceGuard.refuses(context, row.remote.packageName);
     }
 
     @NonNull
@@ -90,7 +92,7 @@ class LanSyncAppsAdapter extends RecyclerView.Adapter<LanSyncAppsAdapter.ViewHol
                 R.string.lan_sync_version_here, row.local.versionName, row.local.versionCode));
         holder.note.setText(noteFor(context, row, mAllowReplace));
         boolean canPull = SyncComparator.canPull(row.status) && !row.needsNewerAndroid;
-        boolean canReplace = !canPull && canReplace(row, mAllowReplace);
+        boolean canReplace = !canPull && canReplace(context, row, mAllowReplace);
         holder.pull.setText(canReplace ? R.string.replace : R.string.lan_sync_get);
         holder.pull.setVisibility(canPull || canReplace ? View.VISIBLE : View.GONE);
         holder.pull.setEnabled((canPull || canReplace) && mEnabled);
@@ -116,8 +118,11 @@ class LanSyncAppsAdapter extends RecyclerView.Adapter<LanSyncAppsAdapter.ViewHol
         }
         switch (row.status) {
             case SIGNATURE_DIFFERS:
-                if (canReplace(row, allowReplace)) {
+                if (canReplace(context, row, allowReplace)) {
                     return context.getString(R.string.lan_sync_note_signature_replace);
+                }
+                if (allowReplace && SelfReplaceGuard.refuses(context, row.remote.packageName)) {
+                    return SelfReplaceGuard.explanation(context);
                 }
                 if (allowReplace) {
                     return context.getString(R.string.lan_sync_note_signature_system);
