@@ -136,6 +136,51 @@ public class PermissionWatchWorkerTest {
     }
 
     @Test
+    public void aPermissionAndAnAppOpOfTheSameNameAreRecordedApart() {
+        mBackend.privileged = false;
+        WatchRule cameraOp = WatchTestDb.appOp(ONE, 0, 26, "CAMERA", WatchRule.STATE_DENY);
+        mDao.upsertAll(Collections.singletonList(cameraOp));
+        mBackend.set(cameraOp, true);
+        AppChangeFeedStore feed = new AppChangeFeedStore(new File(mTemp.getRoot(), "feed.json"));
+
+        check(feed);
+
+        List<String> entries = watchEntries(feed);
+        assertEquals(entries.toString(), 5, entries.size());
+        assertTrue(entries.toString(), entries.contains(ONE + " | com.example.one: CAMERA didn't match your rule"
+                + " | It was allowed, and your rule says deny. Root or ADB mode isn't running, so nothing was changed."));
+        assertTrue(entries.toString(), entries.contains(ONE + " | com.example.one: app op CAMERA didn't match"
+                + " your rule | It was allowed, and your rule says deny. Root or ADB mode isn't running, so nothing"
+                + " was changed."));
+    }
+
+    @Test
+    public void aDriftThatComesBackAfterTheRuleWasKeptGoesInTheFeedAgain() {
+        mBackend.privileged = false;
+        AppChangeFeedStore feed = new AppChangeFeedStore(new File(mTemp.getRoot(), "feed.json"));
+        check(feed);
+        assertEquals(4, watchEntries(feed).size());
+
+        // The user turns the camera off themselves, so the next check finds the rule kept
+        mBackend.set(mOneCamera, false);
+        check(feed);
+        assertEquals(4, watchEntries(feed).size());
+
+        // Days later something turns it on again: that's a new drift, not the old one
+        mBackend.set(mOneCamera, true);
+        check(feed);
+        List<String> entries = watchEntries(feed);
+        assertEquals(entries.toString(), 5, entries.size());
+        String camera = ONE + " | com.example.one: CAMERA didn't match your rule | It was allowed, and your rule"
+                + " says deny. Root or ADB mode isn't running, so nothing was changed.";
+        assertEquals(entries.toString(), 2, Collections.frequency(entries, camera));
+
+        // The others never changed, so they're still on record once
+        check(feed);
+        assertEquals(5, watchEntries(feed).size());
+    }
+
+    @Test
     public void anUpdateChecksOnlyThatAppForThatUser() {
         mBackend.privileged = true;
 

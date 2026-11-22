@@ -4436,6 +4436,8 @@
     <string name="permission_watcher_line_should_be_denied">%1$s: %2$s is allowed but should be denied</string>
     <string name="permission_watcher_feed_title">%1$s: %2$s didn\'t match your rule</string>
     <string name="permission_watcher_feed_title_user">%1$s (user %3$d): %2$s didn\'t match your rule</string>
+    <string name="permission_watcher_feed_title_op">%1$s: app op %2$s didn\'t match your rule</string>
+    <string name="permission_watcher_feed_title_op_user">%1$s (user %3$d): app op %2$s didn\'t match your rule</string>
     <string name="permission_watcher_feed_found_allowed">It was allowed, and your rule says deny.</string>
     <string name="permission_watcher_feed_found_denied">It was denied, and your rule says allow.</string>
     <string name="permission_watcher_feed_changed_back">It was changed back.</string>

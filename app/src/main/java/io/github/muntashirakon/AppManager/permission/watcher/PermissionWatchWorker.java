@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.permission.watcher;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -11,8 +12,9 @@ import androidx.annotation.WorkerThread;
 import androidx.work.Data;
 import androidx.work.WorkerParameters;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -85,7 +87,8 @@ public class PermissionWatchWorker extends ScheduledWorker {
     /**
      * Runs the check and keeps each drift in the app change feed, which outlasts the alert. A drift
      * that's left as it is would be found again on every check, so it goes in once, and again only
-     * when what was found or done changes. Each time one is changed back is its own entry.
+     * when what was found or done changes. Each time one is changed back is its own entry, and so is
+     * a drift that comes back after a check found the rule kept.
      */
     @VisibleForTesting
     @WorkerThread
@@ -95,29 +98,65 @@ public class PermissionWatchWorker extends ScheduledWorker {
                                                    @Nullable String packageName, int userId,
                                                    @NonNull AppChangeFeedStore feed,
                                                    @NonNull PermissionWatchNotifier.LabelResolver labels) {
-        PermissionWatcher.Report report = runCheck(dao, backend, enforce, packageName, userId);
-        if (report.drifts.isEmpty()) {
-            return report;
-        }
-        List<AppChangeFeedEntry> recorded = new ArrayList<>(feed.readAll());
+        List<WatchRule> rules = rulesToCheck(dao, packageName, userId);
+        PermissionWatcher.Report report = PermissionWatcher.check(rules, backend, enforce);
+        // What each drift left as it is was last recorded as, so the next check can tell it's the same one
+        SharedPreferences open = context.getSharedPreferences(OPEN_DRIFTS, Context.MODE_PRIVATE);
+        SharedPreferences.Editor edit = open.edit();
+        Set<String> drifted = new HashSet<>();
         for (PermissionWatcher.Drift drift : report.drifts) {
             WatchRule rule = drift.rule;
-            String label = labels.label(rule.packageName);
-            String title = rule.userId == 0
-                    ? context.getString(R.string.permission_watcher_feed_title, label, rule.shortName())
-                    : context.getString(R.string.permission_watcher_feed_title_user, label, rule.shortName(),
-                    rule.userId);
+            String key = openDriftKey(rule);
+            drifted.add(key);
             String body = feedBody(context, drift);
-            if (drift.outcome != PermissionWatcher.OUTCOME_ENFORCED
-                    && body.equals(latestBody(recorded, rule.packageName, title))) {
+            boolean leftAsItIs = drift.outcome != PermissionWatcher.OUTCOME_ENFORCED;
+            if (leftAsItIs && body.equals(open.getString(key, null))) {
                 continue;
             }
-            AppChangeFeedEntry entry = AppChangeFeedEntry.now(FEED_KIND, rule.packageName, title, body);
-            if (feed.append(entry)) {
-                recorded.add(0, entry);
+            AppChangeFeedEntry entry = AppChangeFeedEntry.now(FEED_KIND, rule.packageName,
+                    feedTitle(context, rule, labels.label(rule.packageName)), body);
+            if (!feed.append(entry)) {
+                continue;
+            }
+            if (leftAsItIs) {
+                edit.putString(key, body);
+            } else {
+                edit.remove(key);
             }
         }
+        for (WatchRule rule : rules) {
+            String key = openDriftKey(rule);
+            if (!drifted.contains(key)) {
+                // Kept now, so if it drifts again that's a new entry
+                edit.remove(key);
+            }
+        }
+        edit.apply();
         return report;
+    }
+
+    /** The name of the preferences that hold each recorded drift that was left as it is. */
+    @VisibleForTesting
+    static final String OPEN_DRIFTS = "permission_watch_open_drifts";
+
+    @NonNull
+    private static String openDriftKey(@NonNull WatchRule rule) {
+        return rule.type + "|" + rule.userId + "|" + rule.packageName + "|" + rule.name;
+    }
+
+    @NonNull
+    private static String feedTitle(@NonNull Context context, @NonNull WatchRule rule, @NonNull String label) {
+        // A permission and an app op can share a short name (CAMERA), so an op says it's one
+        if (rule.type == WatchRule.TYPE_APP_OP) {
+            return rule.userId == 0
+                    ? context.getString(R.string.permission_watcher_feed_title_op, label, rule.name)
+                    : context.getString(R.string.permission_watcher_feed_title_op_user, label, rule.name,
+                    rule.userId);
+        }
+        return rule.userId == 0
+                ? context.getString(R.string.permission_watcher_feed_title, label, rule.shortName())
+                : context.getString(R.string.permission_watcher_feed_title_user, label, rule.shortName(),
+                rule.userId);
     }
 
     @NonNull
@@ -144,18 +183,6 @@ public class PermissionWatchWorker extends ScheduledWorker {
         return found + " " + done;
     }
 
-    /** The body of the newest watch entry with this title, newest first as the feed keeps them. */
-    @Nullable
-    private static String latestBody(@NonNull List<AppChangeFeedEntry> entries, @NonNull String packageName,
-                                     @NonNull String title) {
-        for (AppChangeFeedEntry entry : entries) {
-            if (FEED_KIND.equals(entry.kind) && packageName.equals(entry.packageName) && title.equals(entry.title)) {
-                return entry.body;
-            }
-        }
-        return null;
-    }
-
     /**
      * @param packageName {@code null} to walk every rule, as the scheduled check does
      */
@@ -164,7 +191,13 @@ public class PermissionWatchWorker extends ScheduledWorker {
     public static PermissionWatcher.Report runCheck(@NonNull WatchRuleDao dao,
                                                     @NonNull PermissionWatcher.Backend backend, boolean enforce,
                                                     @Nullable String packageName, int userId) {
-        List<WatchRule> rules = packageName != null ? dao.getForPackage(packageName, userId) : dao.getAll();
-        return PermissionWatcher.check(rules, backend, enforce);
+        return PermissionWatcher.check(rulesToCheck(dao, packageName, userId), backend, enforce);
+    }
+
+    @WorkerThread
+    @NonNull
+    private static List<WatchRule> rulesToCheck(@NonNull WatchRuleDao dao, @Nullable String packageName,
+                                                int userId) {
+        return packageName != null ? dao.getForPackage(packageName, userId) : dao.getAll();
     }
 }
