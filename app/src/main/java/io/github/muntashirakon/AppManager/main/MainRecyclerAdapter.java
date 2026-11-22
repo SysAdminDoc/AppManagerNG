@@ -578,9 +578,11 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
             installedState = context.getString(item.isInstalled ? R.string.main_list_installed_state
                     : item.isKnownArchived() ? R.string.archived_app : R.string.main_list_uninstalled_state);
         }
+        // An archived app or a backup-only row has no version, and the line above shows "-" for it too
+        String versionState = item.versionTag != null ? item.versionTag : "-";
         String sdkState = item.sdkString != null ? item.sdkString : "-";
         String contentDescription = context.getString(R.string.main_list_app_content_description,
-                item.label, installedState, item.packageName, item.versionTag, sdkState);
+                item.label, installedState, item.packageName, versionState, sdkState);
         String sortedDescription = MainListUidFormatter.sortedValueDescription(context, item, sortBy, followSort);
         if (!sortedDescription.isEmpty()) {
             contentDescription += " " + sortedDescription;

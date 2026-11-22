@@ -15,12 +15,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Acceptance: on the S22 or S25, in ADB mode and again in Shizuku mode, grant a permission watched as Always deny from Android's Settings. It's revoked within a few seconds and the notification says so. Reboot, start the server again and repeat once.
   Complexity: S
 
-- [ ] P2: Check an archived app's row on the S22
-  Why: 6be4b000e lists archived apps under the name and icon Android kept for them, with Archived at the front of the row's details line. The unit tests cover it, but the row hasn't been seen on a phone: the S22 was leased to other work both times it came up.
-  Touches: nothing unless it fails (`main/MainListUidFormatter.java`, `main/MainViewModel.java`).
-  Acceptance: on the S22, with the latest floss debug build installed, the archived `com.example.archiveprobe` (installed with `adb install --user 0 -i com.android.vending`, then `pm archive --user 0`) shows in the main list as its label and icon with "Archived ·" leading the details line, and TalkBack's text for the row starts with Archived. Afterwards clear the list's search, close the keyboard and `adb uninstall com.example.archiveprobe`, which is still on the phone from the first try.
-  Complexity: S
-
 - [ ] P2: Check a no-root restore on the S22 (upstream #1286)
   Why: upstream's #1286 crash was a no-root restore on a Samsung phone throwing a SecurityException from `createSession`, because the session was opened in the backup's installer's name. NG opens it in its own name, and the MIUI and HyperOS retry now runs inside the install call (upstream f3db2698a). Both are covered by Robolectric (`PackageInstallerSessionInstallerTest`, `PackageInstallerRetryTest`), but no restore has run on a phone since: the S22 was leased to other work.
   Touches: nothing unless it fails (`apk/installer/PackageInstallerCompat.java`, `backup/RestoreOp.java`).

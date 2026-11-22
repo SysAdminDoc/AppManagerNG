@@ -104,6 +104,23 @@ public class MainListStateTest {
     }
 
     @Test
+    public void aRowWithNoVersionDoesNotReadOutNull() {
+        // An archived app or a backup-only row has no version; TalkBack read "null" there
+        ApplicationItem item = item();
+        item.isInstalled = false;
+        item.isDisabled = true;
+        item.userIds = new int[0];
+        item.versionName = null;
+        item.versionTag = null;
+
+        FrameLayout row = bind(item);
+
+        assertFalse(description(row), description(row).contains("null"));
+        assertTrue(description(row), description(row).startsWith(
+                "Example, Not installed, package com.example.app, -, SDK 35. "));
+    }
+
+    @Test
     public void theWordCarriesTheStateAndTheTintOnlyBacksItUp() {
         Context context = RuntimeEnvironment.getApplication();
         ApplicationItem item = item();
