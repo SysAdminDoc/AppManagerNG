@@ -434,7 +434,7 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         DhizukuSession.requestPermission(context, state -> {
             onDhizukuStateChanged(state);
             if (isAdded()) {
-                UIUtils.displayShortToast(DhizukuStatusText.headlineRes(state));
+                UIUtils.displayLongToast(DhizukuStatusText.requestResultRes(state));
             }
         });
     }

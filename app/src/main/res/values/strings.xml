@@ -3054,6 +3054,7 @@
     <string name="dhizuku_status_not_connected">Dhizuku is the device owner but didn\'t answer. Open Dhizuku, then check again.</string>
     <string name="dhizuku_status_not_permitted">Dhizuku is the device owner, but it hasn\'t allowed AppManagerNG yet.</string>
     <string name="dhizuku_status_permitted">Dhizuku allows AppManagerNG.</string>
+    <string name="dhizuku_request_not_allowed">Dhizuku didn\'t allow AppManagerNG. If Dhizuku didn\'t ask, AppManagerNG is blocked there. Unblock it in Dhizuku under Application Management.</string>
     <string name="dhizuku_runs_through">Through Dhizuku, AppManagerNG can <xliff:g id="operations" example="hide and unhide apps, clear app data">%1$s</xliff:g>.</string>
     <string name="dhizuku_still_needs_other_mode">Force stop, clearing cache, blocking components, app ops, disabling apps and shell commands still need root, ADB or Shizuku. When the freeze method is Disable, Dhizuku hides the app instead.</string>
     <string name="dhizuku_capability_hide_apps">hide and unhide apps</string>

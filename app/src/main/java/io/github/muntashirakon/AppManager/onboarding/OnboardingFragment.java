@@ -458,6 +458,9 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
                 return;
             }
             applyDhizukuState(snapshot, state);
+            if (state == DhizukuState.NOT_PERMITTED) {
+                UIUtils.displayLongToast(DhizukuStatusText.requestResultRes(state));
+            }
         });
     }
 

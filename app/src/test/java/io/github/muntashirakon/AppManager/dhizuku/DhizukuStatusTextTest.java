@@ -68,4 +68,15 @@ public class DhizukuStatusTextTest {
         }
         assertTrue(permitted.contains(mContext.getString(R.string.dhizuku_status_permitted)));
     }
+
+    @Test
+    public void aRefusedRequestSaysWhereDhizukuBlocksApps() {
+        // Dhizuku refuses a blocked app without asking, so the reply has to name where to unblock it
+        String refused = mContext.getString(DhizukuStatusText.requestResultRes(DhizukuState.NOT_PERMITTED));
+        assertTrue(refused, refused.contains("Application Management"));
+        for (DhizukuState state : DhizukuState.values()) {
+            if (state == DhizukuState.NOT_PERMITTED) continue;
+            assertEquals(state.name(), DhizukuStatusText.headlineRes(state), DhizukuStatusText.requestResultRes(state));
+        }
+    }
 }

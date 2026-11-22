@@ -23,6 +23,15 @@ public final class DhizukuStatusText {
     }
 
     /**
+     * What to say once a request for Dhizuku's consent comes back. Dhizuku turns down an app that's
+     * blocked in its Application Management without asking the user, so a refusal says where to look.
+     */
+    @StringRes
+    public static int requestResultRes(@Nullable DhizukuState state) {
+        return state == DhizukuState.NOT_PERMITTED ? R.string.dhizuku_request_not_allowed : headlineRes(state);
+    }
+
+    /**
      * @param state {@code null} while nothing checked yet
      */
     @StringRes
