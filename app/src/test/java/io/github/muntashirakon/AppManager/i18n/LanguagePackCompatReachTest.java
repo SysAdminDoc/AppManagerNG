@@ -58,6 +58,7 @@ public class LanguagePackCompatReachTest {
             + "\"refresh_rate\": {\"translation\": \"Päivitystiheys\"},"
             + "\"sort_by_process_name\": {\"translation\": \"Prosessin nimi\"},"
             + "\"one_click_ops_notice\": {\"translation\": \"Nämä toiminnot koskevat monia sovelluksia.\"},"
+            + "\"file_size_with_bytes\": {\"translation\": \"%1$s (%2$,d tavua)\"},"
             + "\"change_owner_uid\": {\"translation\": \"Vaihda omistaja (UID)\"}";
 
     private Context mContext;
@@ -145,6 +146,10 @@ public class LanguagePackCompatReachTest {
             MaterialAlertView notice = root.findViewById(R.id.one_click_ops_notice);
             assertNotNull(notice.getEditText());
             assertEquals("Nämä toiminnot koskevat monia sovelluksia.", notice.getEditText().getText().toString());
+            // The byte count in file Properties is worded by the file too
+            Locale finnish = new Locale("fi");
+            assertEquals(String.format(finnish, "%1$s (%2$,d tavua)", "948 kt", 971078L),
+                    activity.getString(R.string.file_size_with_bytes, "948 kt", 971078L));
         } finally {
             controller.pause().stop().destroy();
         }

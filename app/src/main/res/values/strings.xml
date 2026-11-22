@@ -4051,6 +4051,7 @@
     <string name="finder_title">Finder</string>
     <string name="select_filter">Select a filter</string>
     <string name="size_in_bytes">Size (bytes)</string>
+    <string name="file_size_with_bytes">%1$s (%2$,d bytes)</string>
     <string name="invalid_regex">Invalid regular expression!</string>
     <string name="value_cannot_be_empty">Value cannot be empty!</string>
     <string name="date">Date</string>

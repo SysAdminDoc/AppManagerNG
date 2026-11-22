@@ -3987,6 +3987,7 @@
     <string name="finder_title">Поисковик</string>
     <string name="select_filter">Выберите фильтр</string>
     <string name="size_in_bytes">Размер (байты)</string>
+    <string name="file_size_with_bytes">%1$s (%2$,d байт)</string>
     <string name="invalid_regex">Недопустимое регулярное выражение!</string>
     <string name="value_cannot_be_empty">Значение не может быть пустым!</string>
     <string name="date">Дата</string>

@@ -282,7 +282,7 @@ public class FilePropertiesDialogFragment extends CapsuleBottomSheetDialogFragme
         }
         if (noInit || mFileProperties.size != fileProperties.size) {
             if (fileProperties.size != -1) {
-                mSizeView.setText(String.format(Locale.getDefault(), "%s (%,d bytes)",
+                mSizeView.setText(getString(R.string.file_size_with_bytes,
                         Formatter.formatShortFileSize(requireContext(), fileProperties.size), fileProperties.size));
             }
         }
