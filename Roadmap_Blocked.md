@@ -17,6 +17,11 @@ Items here wait on something the code can't settle, like an owner decision or a 
   Re-tested 2026-11-21: v0.8.0's 15 assets still use the old names.
   Complexity: S
 
+- [ ] P2. Put the security policy in a SECURITY.md so the Security tab shows it
+  Why: GitHub's Security tab only shows a policy from a `SECURITY.md` (repo root, `docs/` or `.github/`). The policy itself is written and live in the "Reporting A Security Problem" section of `CONTRIBUTING.md`, with private reporting on and the bug template and issue chooser pointing at it.
+  Blocker: the roadmap drain's file rules allow no new Markdown files past README, CLAUDE, AGENTS, CHANGELOG, ROADMAP, RESEARCH and Roadmap_Blocked, so adding `.github/SECURITY.md` is the owner's call. Once it's allowed, move that section into `.github/SECURITY.md` and leave CONTRIBUTING a one-line link to it.
+  Complexity: S
+
 - [ ] P3. On-device AI models (issue #46)
   Why: #46 proposes a small embedding model for meaning-based search in the toast, notification and app-op logs, and a Gemma-class model for an assistant, translation and screenshot help.
   Blocker: shipping or downloading a model and an inference runtime (LiteRT, ONNX Runtime or ExecuTorch) adds tens to thousands of MB and a native dependency to an offline-first GPL app. Whether the app takes that on, and where models would come from, is the owner's call. The search part of the request is covered without a model: Related words search in Toast, Notification and Operation history (`a28cf249c`, a built-in word list plus a stemmer). What's left here is the model-backed assistant, translation and screenshot help.

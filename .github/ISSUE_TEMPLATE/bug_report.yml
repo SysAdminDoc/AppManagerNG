@@ -3,6 +3,11 @@ description: Report a bug so AppManagerNG triage has the support context it need
 labels: [Bug]
 
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Found a security problem? Please don't file it here. Send it through the [private reporting form](https://github.com/SysAdminDoc/AppManagerNG/security/advisories/new) instead. [CONTRIBUTING.md](https://github.com/SysAdminDoc/AppManagerNG/blob/main/CONTRIBUTING.md#reporting-a-security-problem) says what to include.
+
   - type: checkboxes
     attributes:
        label: Please check before submitting an issue

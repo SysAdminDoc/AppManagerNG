@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Report a security problem privately
+    url: https://github.com/SysAdminDoc/AppManagerNG/security/advisories/new
+    about: Only you and the maintainer can see these reports, so exploit details stay out of public issues.
   - name: AppManagerNG ROADMAP
     url: https://github.com/SysAdminDoc/AppManagerNG/blob/main/ROADMAP.md
     about: Check whether the feature, bug, or follow-up is already tracked before opening a new issue.

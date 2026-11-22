@@ -37,6 +37,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Language files can be imported from a .zip and exported as one (issue #31), since translation forums often only take zip attachments. Import finds the language file inside the zip, and when there's more than one it tells you which it used.
 - Language files can carry the Debloater's descriptions and warnings (issue #31). Export with Debloater descriptions adds them, a starter file with only the Debloater descriptions lets someone translate just those, and importing one adds them to the language you already have.
 - Language files work on Android 5 to 10 now (issue #31). Those versions can't load them the way Android 11 does, so a compatibility mode puts the file's text in as screens and menus are built, and in notifications and quick settings tiles too. Home screen widgets keep following the phone's own language, as they always have.
+- Security problems have a private route now. CONTRIBUTING.md says how to send one through GitHub's private reporting form, what to put in it and what happens after, and the bug form, the new issue page and the user guide all point there.
 
 ### Fixed
 - Mode toasts like "Working through Shizuku shell mode" no longer pop up over other apps (issue #56). Background work checks the mode too, around the clock, and each check toasted. Now the toast shows only while an AppManagerNG screen is open, once per mode, and again only when the mode changes.

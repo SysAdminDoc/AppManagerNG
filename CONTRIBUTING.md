@@ -58,9 +58,22 @@ This app can operate with root, ADB, Shizuku, Dhizuku, or privileged-server
 capabilities. Treat destructive operations, backup/restore, app data access,
 network opt-ins, and release provenance as security-sensitive surfaces.
 
-Report sensitive security issues privately through the maintainer contact listed
-on the GitHub repository profile. Do not post exploit details, private device
-data, backup contents, or credentials in public issues.
+### Reporting A Security Problem
+
+Send it privately through GitHub's form at https://github.com/SysAdminDoc/AppManagerNG/security/advisories/new (the Security tab's "Report a vulnerability" button). Only you and the maintainer can see it. Please don't open a public issue or pull request about it, and keep exploit steps, proof-of-concept code, private device data, backup contents and credentials out of anything public.
+
+Fixes go into the newest release on GitHub Releases. Older releases don't get their own fixes, so check that the problem is still there in the newest one. If it's in upstream App Manager code that NG hasn't changed, upstream should hear about it too.
+
+A useful report has:
+
+- the AppManagerNG version and where you installed it from
+- the device and its Android version (and the ROM, if it isn't stock)
+- whether the app runs with no root, root, ADB, Shizuku or Dhizuku
+- what an attacker needs (another installed app, a USB cable, a spot on the same network, the unlocked phone) and what they get out of it
+- steps to reproduce, plus a proof of concept if you have one
+- whether it's already public anywhere
+
+You should hear back within a week, and updates come in the same private report. Please keep the details to yourself until a fix ships or 90 days pass, whichever comes first. The advisory goes public with the release that fixes it and credits you, unless you'd rather not be named.
 
 ## Translations
 

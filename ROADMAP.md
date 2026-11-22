@@ -141,14 +141,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Unblocked 2026-11-07: a Paparazzi release with AGP 9 support now exists. Confirm it builds against the repo's AGP 9.3.1 and compileSdk 37 before writing tests.
   Complexity: M
 
-- [ ] P2: Publish a concrete coordinated-disclosure policy
-  Why: the public repository has no `SECURITY.md`, and `CONTRIBUTING.md:61` still sends reporters to "the maintainer contact listed" for a root-capable app that handles credentials and backups.
-  Evidence: `.github/` holds only `ISSUE_TEMPLATE`. GitHub private vulnerability reporting is now enabled on the repo.
-  Touches: `.github/SECURITY.md`, `CONTRIBUTING.md`, `.github/ISSUE_TEMPLATE/bug_report.yml`.
-  Acceptance: the Security tab exposes supported versions, an explicit non-public reporting route, requested report fields, acknowledgment/disclosure expectations, and a warning against public exploit details; CONTRIBUTING and the bug template link to the same policy without conflicting instructions.
-  Unblocked 2026-11-07: the old blocker was one past pass's rule about which Markdown it could stage. Nothing outside the repo is missing, and private reporting is already on for the policy to point at.
-  Complexity: S
-
 - [ ] P2: Fix tracked documentation truth and links
   Why: canonical docs refer to removed files/workflows and describe shipped features/tests as future or disabled, so a clean clone gives maintainers contradictory architecture and release guidance.
   Evidence: `docs/architecture/README.md`, `launcher-icon-aliases.md`, `04-filter-finder.md`, `docs/roadmap/COMPLETED.md` (line 18 still names `PROJECT_CONTEXT.md`), `docs/policy/2026-05-26-minsdk-23-decision.md`, `design/README.md`.
