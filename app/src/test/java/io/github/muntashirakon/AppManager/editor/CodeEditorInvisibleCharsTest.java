@@ -15,6 +15,8 @@ import android.os.Looper;
 import androidx.fragment.app.Fragment;
 import androidx.test.core.app.ApplicationProvider;
 
+import com.google.android.material.color.MaterialColors;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,6 +42,7 @@ import io.github.rosemoe.sora.lang.styling.inlayHint.InlayHint;
 import io.github.rosemoe.sora.lang.styling.inlayHint.InlayHintsContainer;
 import io.github.rosemoe.sora.lang.styling.inlayHint.TextInlayHint;
 import io.github.rosemoe.sora.text.Content;
+import io.github.rosemoe.sora.widget.schemes.EditorColorScheme;
 
 /**
  * The code viewer marks zero-width and other invisible characters with a badge, and the marks
@@ -168,6 +171,49 @@ public class CodeEditorInvisibleCharsTest {
         settle();
 
         assertEquals(Arrays.asList("1:ZWSP"), describe(editor.getInlayHints().getForLine(0)));
+    }
+
+    /**
+     * Sora's setInlayHints() lays the lines out again but never redraws the view, so the marks stayed invisible until
+     * something else redrew it (turning word wrap on, for one). Each change of marks has to redraw.
+     */
+    @Test
+    public void changingTheMarksRedrawsTheEditor() throws Exception {
+        Prefs.Editor.setShowInvisibleCharsEnabled(true);
+        CodeEditorWidget editor = openEditor("a" + ZWSP + "b");
+        RoboMenuItem item = new RoboMenuItem(R.id.action_show_invisible_chars);
+        item.setCheckable(true);
+        item.setChecked(true);
+
+        // Checked before the looper runs: something else redraws the test editor a moment later (the cursor blink),
+        // which hid the missing redraw in a version of this test that waited first.
+        shadowOf(editor).clearWasInvalidated();
+        assertTrue(editorFragment().onMenuItemSelected(item));
+        assertNoHints(editor);
+        assertTrue("turning the marks off left the old ones on screen", shadowOf(editor).wasInvalidated());
+        settle();
+
+        shadowOf(editor).clearWasInvalidated();
+        assertTrue(editorFragment().onMenuItemSelected(item));
+        assertEquals(Arrays.asList("1:ZWSP"), describe(editor.getInlayHints().getForLine(0)));
+        assertTrue("the marks were set but never drawn", shadowOf(editor).wasInvalidated());
+        settle();
+    }
+
+    /**
+     * Opening a file loads its language, which reloads the TextMate theme and puts every color back to the theme's
+     * defaults. The badges came out black on a faint tint, unreadable on the dark theme. They keep the app's colors.
+     */
+    @Test
+    public void theMarksKeepTheAppsColorsAfterTheLanguageLoads() throws Exception {
+        Prefs.Editor.setShowInvisibleCharsEnabled(true);
+        CodeEditorWidget editor = openEditor("a" + ZWSP + "b");
+
+        EditorColorScheme scheme = editor.getColorScheme();
+        assertEquals(MaterialColors.getColor(editor, com.google.android.material.R.attr.colorTertiaryContainer),
+                scheme.getColor(EditorColorScheme.TEXT_INLAY_HINT_BACKGROUND));
+        assertEquals(MaterialColors.getColor(editor, com.google.android.material.R.attr.colorOnTertiaryContainer),
+                scheme.getColor(EditorColorScheme.TEXT_INLAY_HINT_FOREGROUND));
     }
 
     private CodeEditorWidget openEditor(String text) throws IOException, InterruptedException {

@@ -808,7 +808,11 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             mEditor.setInlayHints(EditorInvisibleChars.buildHints(mEditor.getText(), EditorInvisibleChars.MAX_HINTS));
         } else if (mEditor.getInlayHints() != null) {
             mEditor.setInlayHints(null);
+        } else {
+            return;
         }
+        // Sora lays the lines out again but doesn't redraw, so the badges would wait for something else to
+        mEditor.invalidate();
     }
 
     private void updateLiveButtons() {

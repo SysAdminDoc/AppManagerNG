@@ -6,6 +6,7 @@ import android.content.Context;
 import android.graphics.Color;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 
 import com.google.android.material.color.MaterialColors;
@@ -74,7 +75,13 @@ public final class EditorThemes {
         scheme.setColor(EditorColorScheme.SCROLL_BAR_THUMB_PRESSED, thumbColor);
         int trackColor = ColorUtils.setAlphaComponent(MaterialColors.getColor(context, androidx.appcompat.R.attr.colorControlNormal, EditorColor.class.getSimpleName()), 0x39);
         scheme.setColor(EditorColorScheme.SCROLL_BAR_TRACK, trackColor);
-        // Invisible character badges, in the same colors as the file manager's
+        setBadgeColors(context, scheme);
+    }
+
+    /**
+     * Invisible character badges, in the same colors as the file manager's.
+     */
+    private static void setBadgeColors(@NonNull Context context, @NonNull EditorColorScheme scheme) {
         scheme.setColor(EditorColorScheme.TEXT_INLAY_HINT_BACKGROUND, MaterialColors.getColor(context,
                 com.google.android.material.R.attr.colorTertiaryContainer,
                 scheme.getColor(EditorColorScheme.TEXT_INLAY_HINT_BACKGROUND)));
@@ -84,14 +91,37 @@ public final class EditorThemes {
     }
 
     private static class TextMateColorSchemeFixed extends TextMateColorScheme {
+        @Nullable
+        private Context mContext;
+
         public TextMateColorSchemeFixed(IThemeSource themeSource) throws Exception {
             super(ThemeRegistry.getInstance(), new ThemeModel(themeSource));
         }
 
         @Override
         public void attachEditor(CodeEditor editor) {
+            mContext = editor.getContext();
             super.attachEditor(editor);
             fixColor(editor.getContext(), this);
+        }
+
+        @Override
+        public void detachEditor(@NonNull CodeEditor editor) {
+            super.detachEditor(editor);
+            mContext = null;
+        }
+
+        /**
+         * Opening a file loads its language, which reloads the TextMate theme and runs this again, putting every
+         * color back to the theme's own. The badges then drew black on a faint tint, so they come back here. This
+         * also runs from the super constructor, before {@link #mContext} is set.
+         */
+        @Override
+        public void applyDefault() {
+            super.applyDefault();
+            if (mContext != null) {
+                setBadgeColors(mContext, this);
+            }
         }
     }
 
