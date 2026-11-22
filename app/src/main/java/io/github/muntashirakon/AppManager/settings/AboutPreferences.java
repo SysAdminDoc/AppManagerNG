@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.settings;
 
 import android.content.ClipData;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -24,8 +25,10 @@ import io.github.muntashirakon.AppManager.BuildConfig;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.changelog.ChangelogDialogUi;
 import io.github.muntashirakon.AppManager.changelog.ChangelogRecyclerAdapter;
+import io.github.muntashirakon.AppManager.misc.BugReportTemplate;
 import io.github.muntashirakon.AppManager.misc.DiagnosticUtils;
 import io.github.muntashirakon.AppManager.misc.HelpActivity;
+import io.github.muntashirakon.AppManager.utils.ClipboardUtils;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -93,6 +96,20 @@ public class AboutPreferences extends PreferenceFragment {
                             .enableAnchors()
                             .setNegativeButton(R.string.close, null)
                             .show();
+                    return true;
+                });
+        // The bug form's environment fields, filled in (#35)
+        ((Preference) Objects.requireNonNull(findPreference("copy_bug_report")))
+                .setOnPreferenceClickListener(preference -> {
+                    Context appContext = requireContext().getApplicationContext();
+                    ThreadUtils.postOnBackgroundThread(() -> {
+                        String text = BugReportTemplate.build(appContext);
+                        ThreadUtils.postOnMainThread(() -> {
+                            ClipboardUtils.copyToClipboard(appContext,
+                                    appContext.getString(R.string.pref_copy_bug_report), text);
+                            UIUtils.displayShortToast(R.string.copied_successfully);
+                        });
+                    });
                     return true;
                 });
         // Diagnostic dump

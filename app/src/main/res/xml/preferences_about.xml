@@ -69,6 +69,12 @@
         app:iconSpaceReserved="false" />
 
     <Preference
+        app:key="copy_bug_report"
+        app:title="@string/pref_copy_bug_report"
+        app:summary="@string/pref_copy_bug_report_summary"
+        app:iconSpaceReserved="false" />
+
+    <Preference
         app:key="export_diagnostics"
         app:title="@string/pref_export_diagnostics"
         app:summary="@string/pref_export_diagnostics_summary"
