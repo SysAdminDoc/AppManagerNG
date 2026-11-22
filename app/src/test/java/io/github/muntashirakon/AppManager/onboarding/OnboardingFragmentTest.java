@@ -47,18 +47,35 @@ public class OnboardingFragmentTest {
     @Test
     public void confidenceModeStatusReflectsCurrentModeReadiness() {
         assertEquals(R.string.onboarding_confidence_mode_root_ready,
-                OnboardingFragment.getConfidenceModeStatusRes(Ops.MODE_ROOT, true, false, false));
+                OnboardingFragment.getConfidenceModeStatusRes(Ops.MODE_ROOT, true, false, false, false));
         assertEquals(R.string.onboarding_confidence_mode_root_pending,
-                OnboardingFragment.getConfidenceModeStatusRes(Ops.MODE_ROOT, false, false, false));
+                OnboardingFragment.getConfidenceModeStatusRes(Ops.MODE_ROOT, false, false, false, false));
         assertEquals(R.string.onboarding_confidence_mode_shizuku_ready,
-                OnboardingFragment.getConfidenceModeStatusRes(Ops.MODE_SHIZUKU, false, true, false));
+                OnboardingFragment.getConfidenceModeStatusRes(Ops.MODE_SHIZUKU, false, true, false, false));
         assertEquals(R.string.onboarding_confidence_mode_adb_pending,
-                OnboardingFragment.getConfidenceModeStatusRes(Ops.MODE_ADB_WIFI, false, false, false));
+                OnboardingFragment.getConfidenceModeStatusRes(Ops.MODE_ADB_WIFI, false, false, false, false));
         assertEquals(R.string.onboarding_confidence_mode_no_root,
-                OnboardingFragment.getConfidenceModeStatusRes(Ops.MODE_NO_ROOT, false, false, false));
+                OnboardingFragment.getConfidenceModeStatusRes(Ops.MODE_NO_ROOT, false, false, false, false));
         assertEquals(R.string.onboarding_confidence_mode_auto_ready,
-                OnboardingFragment.getConfidenceModeStatusRes(Ops.MODE_AUTO, false, false, true));
+                OnboardingFragment.getConfidenceModeStatusRes(Ops.MODE_AUTO, false, false, true, false));
         assertEquals(R.string.onboarding_confidence_mode_auto_pending,
-                OnboardingFragment.getConfidenceModeStatusRes(Ops.MODE_AUTO, false, false, false));
+                OnboardingFragment.getConfidenceModeStatusRes(Ops.MODE_AUTO, false, false, false, false));
+    }
+
+    @Test
+    public void dhizukuNeverCountsAsShizukuReadiness() {
+        assertEquals(R.string.onboarding_confidence_mode_shizuku_pending,
+                OnboardingFragment.getConfidenceModeStatusRes(Ops.MODE_SHIZUKU, false, false, false, true));
+    }
+
+    @Test
+    public void dhizukuIsNamedWhenNoShellModeIsReady() {
+        assertEquals(R.string.onboarding_confidence_mode_no_root_dhizuku,
+                OnboardingFragment.getConfidenceModeStatusRes(Ops.MODE_NO_ROOT, false, false, false, true));
+        assertEquals(R.string.onboarding_confidence_mode_no_root_dhizuku,
+                OnboardingFragment.getConfidenceModeStatusRes(Ops.MODE_AUTO, false, false, false, true));
+        // A ready shell mode already covers what Dhizuku does
+        assertEquals(R.string.onboarding_confidence_mode_auto_ready,
+                OnboardingFragment.getConfidenceModeStatusRes(Ops.MODE_AUTO, true, false, false, true));
     }
 }

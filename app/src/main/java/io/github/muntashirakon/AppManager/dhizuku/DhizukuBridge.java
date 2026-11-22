@@ -8,7 +8,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.content.pm.ProviderInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
@@ -17,7 +16,6 @@ import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
-import androidx.core.content.ContextCompat;
 
 import java.util.List;
 import java.util.Objects;
@@ -46,10 +44,7 @@ public final class DhizukuBridge {
         Context appContext = context.getApplicationContext();
         String installedVersionName = getInstalledVersionName(appContext);
         ComponentName ownerComponent = getOwnerComponent(appContext);
-        boolean providerVisible = isProviderVisible(appContext);
-        boolean apiPermissionGranted = hasApiPermission(appContext);
-        return new Result(Build.VERSION.SDK_INT, installedVersionName, ownerComponent,
-                providerVisible, apiPermissionGranted);
+        return new Result(Build.VERSION.SDK_INT, installedVersionName, ownerComponent);
     }
 
     @AnyThread
@@ -106,26 +101,6 @@ public final class DhizukuBridge {
     }
 
     @AnyThread
-    public static boolean isProviderVisible(@NonNull Context context) {
-        try {
-            ProviderInfo providerInfo = context.getPackageManager().resolveContentProvider(PROVIDER_AUTHORITY, 0);
-            return providerInfo != null;
-        } catch (Throwable e) {
-            return false;
-        }
-    }
-
-    @AnyThread
-    public static boolean hasApiPermission(@NonNull Context context) {
-        try {
-            return ContextCompat.checkSelfPermission(context, PERMISSION_API)
-                    == PackageManager.PERMISSION_GRANTED;
-        } catch (Throwable e) {
-            return false;
-        }
-    }
-
-    @AnyThread
     @NonNull
     public static Intent getSettingsIntent(@NonNull Context context) {
         PackageManager pm = context.getPackageManager();
@@ -179,23 +154,18 @@ public final class DhizukuBridge {
         public final String installedVersionName;
         @Nullable
         public final ComponentName ownerComponent;
-        public final boolean providerVisible;
-        public final boolean apiPermissionGranted;
 
-        private Result(int sdk, @Nullable String installedVersionName, @Nullable ComponentName ownerComponent,
-                       boolean providerVisible, boolean apiPermissionGranted) {
+        private Result(int sdk, @Nullable String installedVersionName, @Nullable ComponentName ownerComponent) {
             this.sdk = sdk;
             this.installedVersionName = installedVersionName;
             this.ownerComponent = ownerComponent;
-            this.providerVisible = providerVisible;
-            this.apiPermissionGranted = apiPermissionGranted;
         }
 
         @VisibleForTesting
         @NonNull
         public static Result forTesting(int sdk, @Nullable String installedVersionName,
                                         @Nullable ComponentName ownerComponent) {
-            return new Result(sdk, installedVersionName, ownerComponent, false, false);
+            return new Result(sdk, installedVersionName, ownerComponent);
         }
 
         public boolean isInstalled() {

@@ -39,6 +39,9 @@ import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.adb.AdbUtils;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuSession;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuState;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuStatusText;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.servermanager.AdbFailure;
 import io.github.muntashirakon.AppManager.servermanager.AdbLaunchFiles;
@@ -48,6 +51,7 @@ import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.users.Users;
 import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.ClipboardUtils;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.dialog.SearchableSingleChoiceDialogBuilder;
@@ -539,6 +543,35 @@ public class ModeOfOpsPreference extends Fragment {
                             ? R.string.mode_of_op_capability_status_enabled
                             : R.string.mode_of_op_capability_status_disabled)));
         }
+        MaterialTextView dhizukuRow = view.findViewById(R.id.capability_dhizuku);
+        if (dhizukuRow != null) {
+            bindDhizukuRow(dhizukuRow, DhizukuSession.getCachedState());
+            // Whether Dhizuku answers takes IPC to find out
+            Context appContext = requireContext().getApplicationContext();
+            ThreadUtils.postOnBackgroundThread(() -> {
+                DhizukuSession.refreshQuietly(appContext);
+                DhizukuState state = DhizukuSession.getCachedState();
+                ThreadUtils.postOnMainThread(() -> {
+                    if (isAdded() && getView() == view) {
+                        bindDhizukuRow(dhizukuRow, state);
+                    }
+                });
+            });
+        }
+    }
+
+    /**
+     * Dhizuku isn't a mode, it works next to the one picked here, so it gets its own line and
+     * only once it's installed.
+     */
+    private void bindDhizukuRow(@NonNull MaterialTextView row, @Nullable DhizukuState state) {
+        if (state == null || state == DhizukuState.NOT_INSTALLED) {
+            row.setVisibility(View.GONE);
+            return;
+        }
+        row.setVisibility(View.VISIBLE);
+        row.setText(getString(R.string.mode_of_op_capability_dhizuku,
+                getString(DhizukuStatusText.capabilityStatusRes(state))));
     }
 
     private void bindShizukuAutoStartControls(@Nullable MaterialTextView hint, @Nullable MaterialButton action) {

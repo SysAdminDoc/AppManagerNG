@@ -839,7 +839,7 @@
     <string name="onboarding_confidence_tracker_rules">Проверьте обнаруженные трекеры перед применением изменений.</string>
     <string name="onboarding_confidence_mode_root_ready">Root готов для резервных копий, правил IFW и исправлений.</string>
     <string name="onboarding_confidence_mode_root_pending">Root выбран, но не обнаружен. Привилегированные действия могут не сработать.</string>
-    <string name="onboarding_confidence_mode_shizuku_ready">Shizuku/Dhizuku готов. Данные приложений и IFW по-прежнему требуют root.</string>
+    <string name="onboarding_confidence_mode_shizuku_ready">Shizuku готов. Данные приложений и IFW по-прежнему требуют root.</string>
     <string name="onboarding_confidence_mode_shizuku_pending">Запустите или авторизуйте Shizuku, чтобы продолжить.</string>
     <string name="onboarding_confidence_mode_adb_ready">ADB готов. Данные приложений и IFW по-прежнему требуют root.</string>
     <string name="onboarding_confidence_mode_adb_pending">Выполните сопряжение или подключите ADB, чтобы продолжить.</string>
@@ -2830,10 +2830,6 @@
     <string name="onboarding_mode_shizuku_status_needs_permission">Shizuku требует авторизации.</string>
     <string name="onboarding_mode_shizuku_status_update_recommended">Обновите Shizuku %1$s до v13.6.0+.</string>
     <string name="onboarding_mode_shizuku_status_missing">Запустите Shizuku, чтобы продолжить.</string>
-    <string name="onboarding_mode_dhizuku_status_ready">Dhizuku активен и разрешение API выдано</string>
-    <string name="onboarding_mode_dhizuku_status_needs_permission">Dhizuku активен. Требуется разрешение API.</string>
-    <string name="onboarding_mode_dhizuku_status_inactive">Dhizuku установлен. Активируйте Device Owner в Dhizuku.</string>
-    <string name="onboarding_mode_dhizuku_status_unsupported">Dhizuku требует Android 8.0–16</string>
     <string name="onboarding_mode_shizuku_autostart_tip">Автозапуск в доверенной WLAN может восстановить Shizuku после перезагрузки.</string>
     <string name="onboarding_mode_shizuku_update_for_autostart">Shizuku 13.6.0+ поддерживает Android 16 QPR1 и автозапуск в доверенной WLAN.</string>
     <string name="shizuku_autostart_configure">Настроить автозапуск в Shizuku</string>
@@ -3011,12 +3007,9 @@
     <string name="privilege_health_shizuku_android17_warning">Риск совместимости с Android 17 всё ещё открыт; используйте беспроводной ADB, если действия Shizuku не работают.</string>
     <string name="privilege_health_shizuku_root_backed_warning">Shizuku работает с root-бэкендом. Предпочтительнее ADB-бэкенд Shizuku или режим ADB AppManagerNG, когда доступно, чтобы избежать побочных эффектов банковских приложений и Play Integrity.</string>
     <string name="privilege_health_shizuku_update_recommended">Обновите Shizuku до %1$s или новее для поддержки Android 16 QPR1 и автозапуска в доверенной WLAN.</string>
-    <string name="privilege_health_dhizuku_unsupported">Dhizuku требует Android 8.0–16. Это устройство ниже этого порога.</string>
-    <string name="privilege_health_dhizuku_active_summary">Обнаружен активный владелец. Менеджер: %1$s. Провайдер: %2$s. Разрешение API: %3$s. Владелец: %4$s. Операции DPM не подключены, пока не решена стратегия API/minSdk.</string>
     <string name="privilege_health_dhizuku_installed_summary">Установлен: %1$s, но не активен как владелец устройства/профиля. Команда активации: %2$s</string>
     <string name="privilege_health_dhizuku_missing_summary">Не установлен или не виден. Если установите Dhizuku, активируйте его командой: %1$s</string>
     <string name="privilege_health_dhizuku_android_newer_warning">Dhizuku сейчас заявляет поддержку до Android API %1$d; проверьте совместимость перед использованием на этой версии Android.</string>
-    <string name="privilege_health_dhizuku_dialog_message">Установленная версия: %1$s\nКомпонент владельца: %2$s\nПровайдер: %3$s\nРазрешение API: %4$s\n\nКоманда активации:\n%5$s\n\nAppManagerNG обнаруживает Dhizuku без привязки AAR Dhizuku-API. Фактические операции DPM остаются отключёнными, пока не разрешён конфликт нижнего порога API-21.</string>
     <string name="privilege_health_adb_title">ADB и беспроводная отладка</string>
     <string name="privilege_health_adb_summary">USB-отладка: %1$s. Беспроводная отладка: %2$s. Последний порт сопряжения: %3$s.</string>
     <string name="privilege_health_remote_services_title">Удалённый сервер и службы</string>

@@ -34,6 +34,10 @@ import com.topjohnwu.superuser.NoShellException;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.adb.AdbTcpipProbe;
 import io.github.muntashirakon.AppManager.dhizuku.DhizukuBridge;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuCapabilities;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuSession;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuState;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuStatusText;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
 import io.github.muntashirakon.AppManager.runner.RunnerUtils;
@@ -304,7 +308,7 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
 
     @VisibleForTesting
     static int getConfidenceModeStatusRes(@NonNull String mode, boolean rootAvailable,
-                                          boolean shizukuReady, boolean adbReady) {
+                                          boolean shizukuReady, boolean adbReady, boolean dhizukuPermitted) {
         switch (mode) {
             case Ops.MODE_ROOT:
                 return rootAvailable
@@ -320,11 +324,16 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
                         ? R.string.onboarding_confidence_mode_adb_ready
                         : R.string.onboarding_confidence_mode_adb_pending;
             case Ops.MODE_NO_ROOT:
-                return R.string.onboarding_confidence_mode_no_root;
+                return dhizukuPermitted
+                        ? R.string.onboarding_confidence_mode_no_root_dhizuku
+                        : R.string.onboarding_confidence_mode_no_root;
             case Ops.MODE_AUTO:
             default:
-                return rootAvailable || shizukuReady || adbReady
-                        ? R.string.onboarding_confidence_mode_auto_ready
+                if (rootAvailable || shizukuReady || adbReady) {
+                    return R.string.onboarding_confidence_mode_auto_ready;
+                }
+                return dhizukuPermitted
+                        ? R.string.onboarding_confidence_mode_no_root_dhizuku
                         : R.string.onboarding_confidence_mode_auto_pending;
         }
     }
@@ -333,17 +342,21 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         TextView checklist = view.findViewById(R.id.onboarding_confidence_checklist);
         if (checklist == null) return;
         int modeStatusRes = getConfidenceModeStatusRes(Ops.getMode(),
-                snapshot.rootAvailable, isShizukuReady(snapshot), isAdbReady(snapshot));
+                snapshot.rootAvailable, isShizukuReady(snapshot), isAdbReady(snapshot),
+                snapshot.dhizukuState == DhizukuState.PERMITTED);
+        String modeStatus = modeStatusRes == R.string.onboarding_confidence_mode_no_root_dhizuku
+                ? getString(modeStatusRes, DhizukuStatusText.joinLabels(requireContext(),
+                DhizukuCapabilities.runnable(snapshot.dhizukuState, Build.VERSION.SDK_INT)))
+                : getString(modeStatusRes);
         checklist.setText(getString(R.string.onboarding_confidence_checklist_body,
-                getString(modeStatusRes),
+                modeStatus,
                 getString(R.string.onboarding_confidence_backup_restore),
                 getString(R.string.onboarding_confidence_tracker_rules)));
         checklist.setContentDescription(checklist.getText());
     }
 
     private static boolean isShizukuReady(@NonNull CapabilitySnapshot snapshot) {
-        return snapshot.shizukuHasPermission
-                || (snapshot.dhizukuResult.providerVisible && snapshot.dhizukuResult.apiPermissionGranted);
+        return snapshot.shizukuHasPermission;
     }
 
     private static boolean isAdbReady(@NonNull CapabilitySnapshot snapshot) {
@@ -366,6 +379,8 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         snapshot.shizukuOfferAutoStart = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
                 && ShizukuBridge.shouldOfferTrustedWlanAutoStart(requireContext());
         snapshot.dhizukuResult = DhizukuBridge.probe(requireContext());
+        // Asking Dhizuku itself takes IPC, so that answer comes from refreshDhizukuStatus
+        snapshot.dhizukuState = DhizukuSession.getCachedState();
         snapshot.wirelessDebuggingActive = isWirelessDebuggingActive();
         snapshot.hasPairedAdbDevice = ServerConfig.hasPairedAdbDevice();
         snapshot.usbDebuggingEnabled = isUsbDebuggingEnabled();
@@ -399,7 +414,49 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         if (runAsyncProbes) {
             refreshRootManagerStatus(rootStatus, snapshot, generation);
             refreshAdbTcpipSessionStatus(adbTcpStatus, adbTcpipAction, snapshot, generation);
+            refreshDhizukuStatus(snapshot, generation);
         }
+    }
+
+    /**
+     * Ask Dhizuku itself whether it answers and allows this app, then rebind its line and the
+     * checklist.
+     */
+    private void refreshDhizukuStatus(@NonNull CapabilitySnapshot snapshot, int generation) {
+        final Context appContext = requireContext().getApplicationContext();
+        ThreadUtils.postOnBackgroundThread(() -> {
+            DhizukuState state;
+            try {
+                state = DhizukuSession.refresh(appContext);
+            } catch (Throwable e) {
+                Log.w(TAG, "Could not check Dhizuku.", e);
+                state = DhizukuSession.getCachedState();
+            }
+            final DhizukuState finalState = state;
+            ThreadUtils.postOnMainThread(() -> {
+                if (!isAdded() || generation != mCapabilityProbeGeneration || snapshot != mCapabilitySnapshot) {
+                    return;
+                }
+                applyDhizukuState(snapshot, finalState);
+            });
+        });
+    }
+
+    private void applyDhizukuState(@NonNull CapabilitySnapshot snapshot, @Nullable DhizukuState state) {
+        snapshot.dhizukuState = state;
+        View view = getView();
+        if (view == null) return;
+        bindDhizukuStatus(view.findViewById(R.id.status_dhizuku), snapshot);
+        bindConfidenceChecklist(view, snapshot);
+    }
+
+    private void requestDhizukuPermission(@NonNull CapabilitySnapshot snapshot) {
+        DhizukuSession.requestPermission(requireContext(), state -> {
+            if (!isAdded() || snapshot != mCapabilitySnapshot) {
+                return;
+            }
+            applyDhizukuState(snapshot, state);
+        });
     }
 
     /**
@@ -560,29 +617,27 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     private void bindDhizukuStatus(@Nullable TextView statusView, @NonNull CapabilitySnapshot snapshot) {
         if (statusView == null) return;
         DhizukuBridge.Result result = snapshot.dhizukuResult;
-        if (!result.isInstalled() && !result.isOfficialOwner()) {
+        DhizukuState state = snapshot.dhizukuState;
+        // A fork that acts as Dhizuku answers without the official app installed
+        boolean answered = state == DhizukuState.NOT_PERMITTED || state == DhizukuState.PERMITTED;
+        if (!result.isInstalled() && !result.isOfficialOwner() && !answered) {
             statusView.setVisibility(View.GONE);
             return;
         }
         statusView.setVisibility(View.VISIBLE);
-        int statusRes;
-        boolean available;
-        if (DhizukuBridge.isBelowMinimumSupportedAndroidVersion(result.sdk)) {
-            statusRes = R.string.onboarding_mode_dhizuku_status_unsupported;
-            available = false;
-        } else if (result.isOfficialOwner()) {
-            statusRes = result.apiPermissionGranted
-                    ? R.string.onboarding_mode_dhizuku_status_ready
-                    : R.string.onboarding_mode_dhizuku_status_needs_permission;
-            available = result.apiPermissionGranted;
+        boolean available = state == DhizukuState.PERMITTED;
+        String text = DhizukuStatusText.describe(requireContext(), state, Build.VERSION.SDK_INT);
+        if (state == DhizukuState.NOT_PERMITTED) {
+            text = text + "\n" + getString(R.string.privilege_health_dhizuku_allow);
+            statusView.setOnClickListener(v -> requestDhizukuPermission(snapshot));
         } else {
-            statusRes = R.string.onboarding_mode_dhizuku_status_inactive;
-            available = false;
+            statusView.setOnClickListener(null);
+            statusView.setClickable(false);
         }
         int color = MaterialColors.getColor(statusView, available
                 ? androidx.appcompat.R.attr.colorPrimary
                 : com.google.android.material.R.attr.colorOnSurfaceVariant);
-        statusView.setText(statusRes);
+        statusView.setText(text);
         statusView.setTextColor(color);
         statusView.setBackground(null);
         statusView.setCompoundDrawablePadding(getResources()
@@ -1206,6 +1261,8 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
         boolean shizukuOfferAutoStart;
         @NonNull
         DhizukuBridge.Result dhizukuResult;
+        @Nullable
+        DhizukuState dhizukuState;
         boolean wirelessDebuggingActive;
         boolean hasPairedAdbDevice;
         boolean usbDebuggingEnabled;

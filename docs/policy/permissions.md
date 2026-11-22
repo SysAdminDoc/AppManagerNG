@@ -40,7 +40,7 @@ them at runtime on Android 6+ before use.
 | `QUERY_ALL_PACKAGES` | Required by every cross-app surface (main list, Finder, Permission Inspector, Debloater). Without this AppManagerNG can only see itself on Android 11+. **The single most-load-bearing permission in the app.** | `db/utils/AppDb`, `filters/FilteringUtils` |
 | `INSTALL_SHORTCUT` (`com.android.launcher.permission.INSTALL_SHORTCUT`) | Pinned home-screen shortcuts (freeze / force-stop / clear-cache). | `shortcut/CreateShortcutDialogFragment` |
 | `RUN_COMMAND` (`com.termux.permission.RUN_COMMAND`) | Optional Termux integration: launch a shell command in Termux when the user picks "Open in Termux" from the editor / file manager. | `terminal/TermActivity` |
-| `API` (`com.rosan.dhizuku.permission.API`) | Dhizuku Provider detection (iter-91); not yet used for DPM operations (gated on the minSdk-26 contract). | `dhizuku/DhizukuBridge` |
+| `API` (`com.rosan.dhizuku.permission.API`) | Lets Dhizuku-API reach the Dhizuku server. Dhizuku keeps its own allow list, so this permission alone doesn't mean AppManagerNG is allowed. Through Dhizuku, NG hides, suspends, grants and revokes runtime permissions, clears app data, installs and uninstalls (Android 6.0 and later). | `dhizuku/DhizukuSession`, `dhizuku/DhizukuOps`, `dhizuku/DhizukuInstaller` |
 
 ## 2. Privileged permissions (Shizuku / root / Sui / Dhizuku)
 
@@ -144,7 +144,7 @@ TV, foldables, and devices without the listed hardware:
 | `RECORD_AUDIO` / `CAMERA` / `READ_CONTACTS` / `READ_SMS` / `READ_CALL_LOG` | Same — observed surfaces only. |
 | `BIND_VPN_SERVICE` | NG is not a VPN. The roadmap row "VPN plugin flags" is parked behind this absence. |
 | `BIND_ACCESSIBILITY_SERVICE` (registered) | NG ships an Accessibility-Service-based foreground-component tracker (`accessibility/`) but it stays user-opt-in; the manifest does not auto-bind. |
-| `BIND_DEVICE_ADMIN` | Dhizuku detection alone — NG never asks to be a device admin. |
+| `BIND_DEVICE_ADMIN` | NG never asks to be a device admin. Device owner calls go through Dhizuku, which is the admin. |
 | Push-messaging permissions (FCM, JPush, etc.) | No remote notifications. |
 | Play Billing | F-Droid build is unconditionally free; the `full` flavor has no commercial Play surface. |
 | Telemetry / analytics SDK auto-grant permissions | None of those SDKs ship in NG. |

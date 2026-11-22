@@ -27,6 +27,9 @@ import io.github.muntashirakon.AppManager.compat.AdvancedProtectionCompat;
 import io.github.muntashirakon.AppManager.compat.PlatformSupport;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
 import io.github.muntashirakon.AppManager.dhizuku.DhizukuBridge;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuSession;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuState;
+import io.github.muntashirakon.AppManager.dhizuku.DhizukuStatusText;
 import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.runner.KernelSuDiagnostics;
 import io.github.muntashirakon.AppManager.runner.RootCapabilityDiagnostics;
@@ -374,10 +377,34 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
     }
 
     private void bindDhizuku(@NonNull Context context) {
+        bindDhizuku(context, DhizukuSession.getCachedState());
+        // Whether Dhizuku answers and allows this app takes IPC to find out
+        Context appContext = context.getApplicationContext();
+        ThreadUtils.postOnBackgroundThread(() -> {
+            DhizukuSession.refreshQuietly(appContext);
+            DhizukuState state = DhizukuSession.getCachedState();
+            ThreadUtils.postOnMainThread(() -> onDhizukuStateChanged(state));
+        });
+    }
+
+    private void onDhizukuStateChanged(@Nullable DhizukuState state) {
+        if (!isAdded()) return;
+        Context context = getContext();
+        if (context == null) return;
+        bindDhizuku(context, state);
+        // What the app can do changes with Dhizuku
+        bindCapabilityCoverage(context);
+    }
+
+    private void bindDhizuku(@NonNull Context context, @Nullable DhizukuState state) {
         DhizukuBridge.Result result = DhizukuBridge.probe(context);
         if (DhizukuBridge.isBelowMinimumSupportedAndroidVersion(result.sdk)) {
-            mDhizukuPref.setSummary(R.string.privilege_health_dhizuku_unsupported);
+            mDhizukuPref.setSummary(R.string.dhizuku_status_unsupported);
             return;
+        }
+        if (state == null && result.ownerComponent == null) {
+            // Nothing to ask without an owner
+            state = result.isInstalled() ? DhizukuState.NO_OWNER : DhizukuState.NOT_INSTALLED;
         }
         String version = result.installedVersionName != null
                 ? result.installedVersionName
@@ -386,25 +413,30 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
                 ? "\n" + getString(R.string.privilege_health_dhizuku_android_newer_warning,
                         DhizukuBridge.MAX_DECLARED_SUPPORTED_SDK)
                 : "";
-        if (result.isOfficialOwner()) {
-            mDhizukuPref.setSummary(getString(R.string.privilege_health_dhizuku_active_summary,
-                    version,
-                    getString(result.providerVisible
-                            ? R.string.mode_of_op_capability_status_active
-                            : R.string.mode_of_op_capability_status_inactive),
-                    getString(result.apiPermissionGranted
-                            ? R.string.mode_of_op_capability_status_authorized
-                            : R.string.mode_of_op_capability_status_permission_required),
-                    result.ownerLabel()) + compatibilityWarning);
+        if (state == DhizukuState.NOT_INSTALLED) {
+            mDhizukuPref.setSummary(getString(R.string.privilege_health_dhizuku_missing_summary,
+                    DhizukuBridge.ACTIVATION_COMMAND) + compatibilityWarning);
             return;
         }
-        if (result.isInstalled()) {
+        if (state == DhizukuState.NO_OWNER) {
             mDhizukuPref.setSummary(getString(R.string.privilege_health_dhizuku_installed_summary,
                     version, DhizukuBridge.ACTIVATION_COMMAND) + compatibilityWarning);
             return;
         }
-        mDhizukuPref.setSummary(getString(R.string.privilege_health_dhizuku_missing_summary,
-                DhizukuBridge.ACTIVATION_COMMAND) + compatibilityWarning);
+        mDhizukuPref.setSummary(DhizukuStatusText.describe(context, state, Build.VERSION.SDK_INT) + "\n"
+                + getString(R.string.privilege_health_dhizuku_owner_summary, version, result.ownerLabel())
+                + compatibilityWarning);
+    }
+
+    private void requestDhizukuPermission() {
+        Context context = getContext();
+        if (context == null) return;
+        DhizukuSession.requestPermission(context, state -> {
+            onDhizukuStateChanged(state);
+            if (isAdded()) {
+                UIUtils.displayShortToast(DhizukuStatusText.headlineRes(state));
+            }
+        });
     }
 
     private void bindAdb(@NonNull Context context) {
@@ -579,25 +611,25 @@ public class PrivilegeHealthPreferences extends PreferenceFragment {
         Context context = getContext();
         if (context == null) return;
         DhizukuBridge.Result result = DhizukuBridge.probe(context);
+        DhizukuState state = DhizukuSession.getCachedState();
         String version = result.installedVersionName != null
                 ? result.installedVersionName
                 : getString(R.string.state_unknown);
-        String message = getString(R.string.privilege_health_dhizuku_dialog_message,
+        String message = getString(R.string.privilege_health_dhizuku_details_message,
                 version,
                 result.ownerLabel(),
-                result.providerVisible
-                        ? getString(R.string.mode_of_op_capability_status_active)
-                        : getString(R.string.mode_of_op_capability_status_inactive),
-                result.apiPermissionGranted
-                        ? getString(R.string.mode_of_op_capability_status_authorized)
-                        : getString(R.string.mode_of_op_capability_status_permission_required),
+                DhizukuStatusText.describe(context, state, Build.VERSION.SDK_INT),
                 DhizukuBridge.ACTIVATION_COMMAND);
         MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(context)
                 .setTitle(R.string.privilege_health_dhizuku_title)
                 .setMessage(message)
                 .setNeutralButton(R.string.copy, (dialog, which) ->
                         Utils.copyToClipboard(context, "Dhizuku activation", DhizukuBridge.ACTIVATION_COMMAND));
-        if (result.isInstalled()) {
+        if (state == DhizukuState.NOT_PERMITTED) {
+            builder.setPositiveButton(R.string.privilege_health_dhizuku_allow,
+                    (dialog, which) -> requestDhizukuPermission())
+                    .setNegativeButton(R.string.close, null);
+        } else if (result.isInstalled()) {
             builder.setPositiveButton(R.string.open,
                     (dialog, which) -> launchSettingsIntent(DhizukuBridge.getSettingsIntent(context)))
                     .setNegativeButton(R.string.close, null);

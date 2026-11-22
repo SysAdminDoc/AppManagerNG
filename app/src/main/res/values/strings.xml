@@ -863,11 +863,12 @@
     <string name="onboarding_confidence_tracker_rules">Review detected trackers before applying changes.</string>
     <string name="onboarding_confidence_mode_root_ready">Root is ready for backups, IFW rules, and repairs.</string>
     <string name="onboarding_confidence_mode_root_pending">Root is selected but not detected. Privileged actions may fail.</string>
-    <string name="onboarding_confidence_mode_shizuku_ready">Shizuku/Dhizuku is ready. App data and IFW still require root.</string>
+    <string name="onboarding_confidence_mode_shizuku_ready">Shizuku is ready. App data and IFW still require root.</string>
     <string name="onboarding_confidence_mode_shizuku_pending">Start or authorize Shizuku to continue.</string>
     <string name="onboarding_confidence_mode_adb_ready">ADB is ready. App data and IFW still require root.</string>
     <string name="onboarding_confidence_mode_adb_pending">Pair or connect ADB to continue.</string>
     <string name="onboarding_confidence_mode_no_root">Privileged actions are disabled.</string>
+    <string name="onboarding_confidence_mode_no_root_dhizuku">With Dhizuku, AppManagerNG can <xliff:g id="operations" example="hide and unhide apps, clear app data">%1$s</xliff:g>. Everything else needs root, ADB or Shizuku.</string>
     <string name="onboarding_confidence_mode_auto_ready">Auto will use the strongest available access.</string>
     <string name="onboarding_confidence_mode_auto_pending">Auto will use no root until a privileged mode is ready.</string>
     <string name="blocking_rules">Blocking rules</string>
@@ -2855,10 +2856,6 @@
     <string name="onboarding_mode_shizuku_status_needs_permission">Shizuku needs authorization.</string>
     <string name="onboarding_mode_shizuku_status_update_recommended">Update Shizuku %1$s to v13.6.0+.</string>
     <string name="onboarding_mode_shizuku_status_missing">Start Shizuku to continue.</string>
-    <string name="onboarding_mode_dhizuku_status_ready">Dhizuku is active and API permission is granted</string>
-    <string name="onboarding_mode_dhizuku_status_needs_permission">Dhizuku is active. API permission required.</string>
-    <string name="onboarding_mode_dhizuku_status_inactive">Dhizuku is installed. Activate Device Owner in Dhizuku.</string>
-    <string name="onboarding_mode_dhizuku_status_unsupported">Dhizuku requires Android 8.0 through 16</string>
     <string name="onboarding_mode_shizuku_autostart_tip">Trusted WLAN auto-start can restore Shizuku after reboot.</string>
     <string name="onboarding_mode_shizuku_update_for_autostart">Shizuku 13.6.0+ supports Android 16 QPR1 and trusted WLAN auto-start.</string>
     <string name="shizuku_autostart_configure">Configure auto-start in Shizuku</string>
@@ -2912,6 +2909,7 @@
     <string name="mode_of_op_capabilities_title">Available on this device</string>
     <string name="mode_of_op_capability_root">• Root: <xliff:g id="status" example="detected">%1$s</xliff:g></string>
     <string name="mode_of_op_capability_shizuku">• Shizuku: <xliff:g id="status" example="authorized">%1$s</xliff:g></string>
+    <string name="mode_of_op_capability_dhizuku">• Dhizuku: <xliff:g id="status" example="authorized">%1$s</xliff:g></string>
     <string name="mode_of_op_shizuku_autostart_hint">Shizuku v13.6.0+ can restart rootless mode after reboot when the device joins a trusted WLAN. Configure the trusted network in Shizuku.</string>
     <string name="mode_of_op_shizuku_root_backed_hint">Shizuku is running with root behind the scenes. Banking and Play Integrity-strict apps may still react to that root-backed service even when they were never granted Shizuku access.</string>
     <string name="mode_of_op_shizuku_root_backed_action">Switch to ADB mode</string>
@@ -3043,12 +3041,12 @@
     <string name="privilege_health_shizuku_root_backed_warning">Shizuku is root-backed. Prefer ADB-backed Shizuku or AppManagerNG ADB mode when available to avoid banking-app and Play Integrity side effects.</string>
     <string name="privilege_health_shizuku_update_recommended">Update Shizuku to <xliff:g id="version" example="13.6.0">%1$s</xliff:g> or newer for Android 16 QPR1 and trusted-WLAN auto-start support.</string>
     <string name="privilege_health_dhizuku_title">Dhizuku</string>
-    <string name="privilege_health_dhizuku_unsupported">Dhizuku requires Android 8.0 through 16. This device is below that floor.</string>
-    <string name="privilege_health_dhizuku_active_summary">Active owner detected. Manager: <xliff:g id="version" example="2.11.2">%1$s</xliff:g>. Provider: <xliff:g id="provider" example="active">%2$s</xliff:g>. API permission: <xliff:g id="permission" example="authorized">%3$s</xliff:g>. Owner: <xliff:g id="owner" example="com.rosan.dhizuku/.server.DhizukuDAReceiver">%4$s</xliff:g>. DPM operations are not wired until the API/minSdk strategy is resolved.</string>
     <string name="privilege_health_dhizuku_installed_summary">Installed: <xliff:g id="version" example="2.11.2">%1$s</xliff:g>, but not active as device/profile owner. Activation command: <xliff:g id="command" example="adb shell dpm set-device-owner --user 0 com.rosan.dhizuku/.server.DhizukuDAReceiver">%2$s</xliff:g></string>
     <string name="privilege_health_dhizuku_missing_summary">Not installed or not visible. If you install Dhizuku, activate it with: <xliff:g id="command" example="adb shell dpm set-device-owner --user 0 com.rosan.dhizuku/.server.DhizukuDAReceiver">%1$s</xliff:g></string>
     <string name="privilege_health_dhizuku_android_newer_warning">Dhizuku currently declares support through Android API <xliff:g id="sdk" example="36">%1$d</xliff:g>; verify compatibility before using it on this Android version.</string>
-    <string name="privilege_health_dhizuku_dialog_message">Installed version: <xliff:g id="version" example="2.11.2">%1$s</xliff:g>\nOwner component: <xliff:g id="owner" example="com.rosan.dhizuku/.server.DhizukuDAReceiver">%2$s</xliff:g>\nProvider: <xliff:g id="provider" example="active">%3$s</xliff:g>\nAPI permission: <xliff:g id="permission" example="authorized">%4$s</xliff:g>\n\nActivation command:\n<xliff:g id="command" example="adb shell dpm set-device-owner --user 0 com.rosan.dhizuku/.server.DhizukuDAReceiver">%5$s</xliff:g>\n\nAppManagerNG detects Dhizuku without linking the Dhizuku-API AAR. Actual DPM operations stay disabled until the API-21 floor conflict is resolved.</string>
+    <string name="privilege_health_dhizuku_owner_summary">Dhizuku version: <xliff:g id="version" example="2.13.0">%1$s</xliff:g>. Owner: <xliff:g id="owner" example="com.rosan.dhizuku/.server.DhizukuDAReceiver">%2$s</xliff:g>.</string>
+    <string name="privilege_health_dhizuku_details_message">Installed version: <xliff:g id="version" example="2.13.0">%1$s</xliff:g>\nOwner component: <xliff:g id="owner" example="com.rosan.dhizuku/.server.DhizukuDAReceiver">%2$s</xliff:g>\n\n<xliff:g id="status" example="Dhizuku allows AppManagerNG.">%3$s</xliff:g>\n\nDhizuku works next to whichever operating mode you pick. Activation command:\n<xliff:g id="command" example="adb shell dpm set-device-owner --user 0 com.rosan.dhizuku/.server.DhizukuDAReceiver">%4$s</xliff:g></string>
+    <string name="privilege_health_dhizuku_allow">Allow in Dhizuku</string>
     <string name="dhizuku_status_checking">Checking Dhizuku</string>
     <string name="dhizuku_status_unsupported">Dhizuku needs Android 6.0 or later.</string>
     <string name="dhizuku_status_not_installed">Dhizuku isn\'t installed.</string>
