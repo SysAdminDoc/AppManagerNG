@@ -2,23 +2,16 @@
 
 package io.github.muntashirakon.AppManager.details.info;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.robolectric.Shadows.shadowOf;
 
-import android.app.PendingIntent;
-import android.content.Context;
 import android.content.Intent;
 
 import androidx.annotation.NonNull;
-import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
-import io.github.muntashirakon.AppManager.terminal.TermuxResultReceiver;
 import io.github.muntashirakon.AppManager.utils.Utils;
 
 /**
@@ -27,34 +20,31 @@ import io.github.muntashirakon.AppManager.utils.Utils;
  * argument that isn't an option is read as a script file name: {@code login su - 10123} makes bash
  * look for a file called {@code su}. The command has to arrive as one {@code -c} argument.
  * <p>
- * Termux also turns a command down without a word on screen while allow-external-apps is off, so
- * each command asks it to report back.
+ * Both are sent through {@code TermuxBridge.send}, which asks Termux to report a refusal and brings
+ * Termux forward (see {@code TermuxBridgeTest}).
  */
 @RunWith(RobolectricTestRunner.class)
 public class AppInfoTermuxIntentTest {
-    private final Context mContext = ApplicationProvider.getApplicationContext();
-
     private static void assertRunsThroughLoginShell(@NonNull Intent intent, @NonNull String command) {
         assertEquals("com.termux.RUN_COMMAND", intent.getAction());
         assertEquals("com.termux", intent.getComponent().getPackageName());
         assertEquals(Utils.TERMUX_LOGIN_PATH, intent.getStringExtra("com.termux.RUN_COMMAND_PATH"));
-        assertArrayEquals(new String[]{"-c", command},
-                intent.getStringArrayExtra("com.termux.RUN_COMMAND_ARGUMENTS"));
-        PendingIntent result = intent.getParcelableExtra("com.termux.RUN_COMMAND_PENDING_INTENT");
-        assertNotNull("Termux has no way to say it refused the command", result);
-        assertEquals(TermuxResultReceiver.class.getName(),
-                shadowOf(result).getSavedIntent().getComponent().getClassName());
+        // The command is the first line; the session then carries on in the user's shell (see TermuxBridgeTest)
+        String[] args = intent.getStringArrayExtra("com.termux.RUN_COMMAND_ARGUMENTS");
+        assertEquals(2, args.length);
+        assertEquals("-c", args[0]);
+        assertEquals(command, args[1].split("\n")[0]);
     }
 
     @Test
     public void openInTermuxStartsAShellAsTheAppsUid() {
-        assertRunsThroughLoginShell(AppInfoFragment.buildOpenInTermuxIntent(mContext, 10123), "su - 10123");
+        assertRunsThroughLoginShell(AppInfoFragment.buildOpenInTermuxIntent(10123), "su - 10123");
     }
 
     @Test
     public void runInTermuxHandsRunAsItsPackageInOneCommand() {
         // su -c takes one command string; "su -c run-as pkg" would read pkg as the user to switch to
-        assertRunsThroughLoginShell(AppInfoFragment.buildRunInTermuxIntent(mContext, "com.example.debuggable"),
+        assertRunsThroughLoginShell(AppInfoFragment.buildRunInTermuxIntent("com.example.debuggable"),
                 "su -c 'run-as com.example.debuggable'");
     }
 }

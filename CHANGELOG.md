@@ -34,6 +34,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The Properties sheet in the file manager came back every time you rotated the phone, even after you'd closed it, and an open one stacked a new copy per rotation (issue #34).
 - App Details tabs no longer flash their empty message, like "No requested permissions", while they're still loading.
 - Commands sent to Termux from App Info or the terminal did nothing on screen when Termux wasn't letting other apps run commands yet, which is how Termux starts out (issue #55). Termux now reports back, and you get the steps to allow it.
+- Once Termux allowed it, a command still often seemed to vanish (issue #55). Termux can only bring itself forward with its Display over other apps permission, and it closed the session the moment the command ended. AppManagerNG now opens Termux on the command's session, and the session stays open in your shell afterwards so you can read the output and keep going.
 - Local sync said "The downloaded APK is not validly signed" for apps that need a newer Android than the phone has (issue #22). Those rows now say which Android they need, offer no download, and Update all skips them. Older APKs signed with SHA-256 that support very old Android versions pass the check too.
 - The installer could uninstall AppManagerNG itself to put a copy signed with another key in its place, which closes it halfway through (issue #45). It now leaves the installed copy alone and explains the safe way to swap, and Local sync's Replace does the same.
 

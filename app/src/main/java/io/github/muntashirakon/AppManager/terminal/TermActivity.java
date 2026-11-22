@@ -36,7 +36,6 @@ import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 import androidx.appcompat.widget.AppCompatEditText;
 import androidx.appcompat.widget.AppCompatTextView;
-import androidx.core.content.ContextCompat;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.color.MaterialColors;
@@ -417,8 +416,7 @@ public class TermActivity extends BaseActivity {
 
     private void sendToTermux(@NonNull String command) {
         try {
-            ContextCompat.startForegroundService(this,
-                    TermuxBridge.withResult(this, TermuxBridge.buildRunCommandIntent(command)));
+            TermuxBridge.send(this, TermuxBridge.buildRunCommandIntent(command));
         } catch (RuntimeException e) {
             // SecurityException once the permission is taken back, IllegalStateException when
             // Android refuses the start

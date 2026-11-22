@@ -71,7 +71,6 @@ import androidx.annotation.UiThread;
 import androidx.annotation.VisibleForTesting;
 import androidx.annotation.WorkerThread;
 import androidx.collection.ArrayMap;
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.pm.PackageInfoCompat;
 import androidx.core.view.MenuProvider;
@@ -1475,35 +1474,37 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     }
 
     private void openInTermux() {
-        runWithTermux(buildOpenInTermuxIntent(mActivity, mApplicationInfo.uid));
+        runWithTermux(buildOpenInTermuxIntent(mApplicationInfo.uid));
     }
 
     private void runInTermux() {
-        runWithTermux(buildRunInTermuxIntent(mActivity, mPackageName));
+        runWithTermux(buildRunInTermuxIntent(mPackageName));
     }
 
     /**
      * Termux's {@code login} passes its arguments to {@code $SHELL -l}, so the command goes over as
      * one {@code -c} string. Bare words would make the shell look for a script named {@code su}.
-     * Termux reports back, so a refusal shows here instead of nothing happening.
      */
     @VisibleForTesting
     @NonNull
-    static Intent buildOpenInTermuxIntent(@NonNull Context context, int uid) {
-        return TermuxBridge.withResult(context, TermuxBridge.buildRunCommandIntent("su - " + uid));
+    static Intent buildOpenInTermuxIntent(int uid) {
+        return TermuxBridge.buildRunCommandIntent("su - " + uid);
     }
 
     @VisibleForTesting
     @NonNull
-    static Intent buildRunInTermuxIntent(@NonNull Context context, @NonNull String packageName) {
+    static Intent buildRunInTermuxIntent(@NonNull String packageName) {
         // A package name is letters, digits, dots and underscores, so single quotes hold it safely
-        return TermuxBridge.withResult(context,
-                TermuxBridge.buildRunCommandIntent("su -c 'run-as " + packageName + "'"));
+        return TermuxBridge.buildRunCommandIntent("su -c 'run-as " + packageName + "'");
     }
 
-    private void runWithTermux(@NonNull Intent intent) {
+    /**
+     * Termux reports back, so a refusal shows here instead of nothing happening, and Termux comes to the
+     * front with the session.
+     */
+    private void runWithTermux(@NonNull Intent command) {
         try {
-            ActivityCompat.startForegroundService(mActivity, intent);
+            TermuxBridge.send(mActivity, command);
         } catch (Exception e) {
             Log.w(TAG, "Could not start Termux command", e);
             UIUtils.displayLongToast(R.string.termux_run_command_failed);

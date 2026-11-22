@@ -30,6 +30,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.shadows.ShadowToast;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,13 +59,50 @@ public class TermuxBridgeTest {
         // Termux's login runs the user's own shell with their profile
         assertEquals("/data/data/com.termux/files/usr/bin/login",
                 intent.getStringExtra("com.termux.RUN_COMMAND_PATH"));
-        // One argument for the shell's -c, so quotes, pipes and && reach the shell untouched
-        assertArrayEquals(new String[]{"-c", command},
+        // One argument for the shell's -c, so quotes, pipes and && reach the shell untouched. Termux closes a
+        // session as soon as its command ends, so the session carries on in the user's shell afterwards and
+        // the output stays readable. A line of its own, so a trailing # comment can't swallow it.
+        assertArrayEquals(new String[]{"-c", command + "\nexec \"${SHELL:-/data/data/com.termux/files/usr/bin/sh}\" -l"},
                 intent.getStringArrayExtra("com.termux.RUN_COMMAND_ARGUMENTS"));
         assertEquals("/data/data/com.termux/files/home", intent.getStringExtra("com.termux.RUN_COMMAND_WORKDIR"));
         assertFalse(intent.getBooleanExtra("com.termux.RUN_COMMAND_BACKGROUND", true));
-        // Open the new session in front so the output is visible
-        assertEquals("0", intent.getStringExtra("com.termux.RUN_COMMAND_SESSION_ACTION"));
+        // Switch to the new session (Termux: 2) but leave opening the screen to this app (see send). 1 would keep
+        // whichever session was showing, so a second command opened Termux on the first one.
+        assertEquals("2", intent.getStringExtra("com.termux.RUN_COMMAND_SESSION_ACTION"));
+    }
+
+    /**
+     * On Android 10 and later Termux opens its own screen only with Display over other apps allowed. Without
+     * it the command ran in a session nobody saw, so the tap looked like it did nothing. This app is in
+     * front when the user taps, so it brings Termux forward itself.
+     */
+    @Test
+    public void termuxComesForwardOnceItHadAMomentToTurnTheCommandDown() {
+        installTermux();
+
+        TermuxBridge.send(mApp, TermuxBridge.buildRunCommandIntent("ls"));
+
+        Intent service = shadowOf(mApp).getNextStartedService();
+        assertEquals(new ComponentName("com.termux", "com.termux.app.RunCommandService"), service.getComponent());
+        assertNotNull("Termux has no way to report back", service.getParcelableExtra("com.termux.RUN_COMMAND_PENDING_INTENT"));
+        assertNull("Opened before Termux could turn it down", shadowOf(mApp).getNextStartedActivity());
+
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(TermuxBridge.OPEN_DELAY_MS));
+
+        Intent opened = shadowOf(mApp).getNextStartedActivity();
+        assertNotNull("Termux stayed in the background", opened);
+        assertEquals("com.termux", opened.getComponent().getPackageName());
+    }
+
+    @Test
+    public void aRefusalKeepsTermuxClosedSoTheStepsShowHere() {
+        installTermux();
+
+        TermuxBridge.send(mApp, TermuxBridge.buildRunCommandIntent("ls"));
+        new TermuxResultReceiver().onReceive(mApp, termuxResultIntent(2, EXTERNAL_APPS_OFF));
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(TermuxBridge.OPEN_DELAY_MS * 2));
+
+        assertNull(shadowOf(mApp).getNextStartedActivity());
     }
 
     @Test
@@ -131,7 +169,8 @@ public class TermuxBridgeTest {
             assertTrue("Termux couldn't add its result", (shadowOf(result).getFlags() & PendingIntent.FLAG_MUTABLE) != 0);
         }
         // The command itself is unchanged
-        assertArrayEquals(new String[]{"-c", "ls"}, intent.getStringArrayExtra("com.termux.RUN_COMMAND_ARGUMENTS"));
+        assertArrayEquals(TermuxBridge.buildRunCommandIntent("ls").getStringArrayExtra("com.termux.RUN_COMMAND_ARGUMENTS"),
+                intent.getStringArrayExtra("com.termux.RUN_COMMAND_ARGUMENTS"));
     }
 
     @Test

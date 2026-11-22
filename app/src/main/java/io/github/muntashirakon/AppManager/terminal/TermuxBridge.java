@@ -10,6 +10,8 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.widget.Toast;
 
 import androidx.annotation.IntDef;
@@ -24,6 +26,7 @@ import java.lang.annotation.RetentionPolicy;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
+import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.Utils;
 
 /**
@@ -34,6 +37,7 @@ import io.github.muntashirakon.AppManager.utils.Utils;
 public final class TermuxBridge {
     public static final String PACKAGE_NAME = "com.termux";
     public static final String PERMISSION_RUN_COMMAND = ManifestCompat.permission.TERMUX_RUN_COMMAND;
+    private static final String TAG = TermuxBridge.class.getSimpleName();
 
     static final String RUN_COMMAND_SERVICE = "com.termux.app.RunCommandService";
     static final String EXTRA_PENDING_INTENT = "com.termux.RUN_COMMAND_PENDING_INTENT";
@@ -48,9 +52,19 @@ public final class TermuxBridge {
     static final String EXTRA_WORKDIR = "com.termux.RUN_COMMAND_WORKDIR";
     static final String EXTRA_BACKGROUND = "com.termux.RUN_COMMAND_BACKGROUND";
     static final String EXTRA_SESSION_ACTION = "com.termux.RUN_COMMAND_SESSION_ACTION";
-    /** Open the new session and bring Termux to the front, so the output can be read. */
-    static final String SESSION_ACTION_SWITCH_AND_OPEN = "0";
+    /**
+     * Make the new session Termux's current one without opening its screen. Termux can open its screen from
+     * the background only with Display over other apps allowed, so {@link #send} opens it instead.
+     */
+    static final String SESSION_ACTION_SWITCH_DONT_OPEN = "2";
+    /** How long Termux gets to turn a command down before its screen is brought forward. */
+    static final long OPEN_DELAY_MS = 1000;
+    private static final Handler MAIN = new Handler(Looper.getMainLooper());
+    @Nullable
+    private static Runnable sPendingOpen;
     static final String HOME = "/data/data/com.termux/files/home";
+    // Termux's login exports SHELL; sh is there in every Termux install should it be missing
+    private static final String KEEP_SESSION = "\nexec \"${SHELL:-/data/data/com.termux/files/usr/bin/sh}\" -l";
     private static final String MAIN_ACTIVITY = "com.termux.app.TermuxActivity";
     private static final String INSTALL_URL = "https://f-droid.org/packages/com.termux/";
 
@@ -106,16 +120,56 @@ public final class TermuxBridge {
      * Runs the command in a new Termux session through the user's login shell, so their shell
      * choice and profile apply. The command goes over as one {@code -c} argument: quotes, pipes
      * and {@code &&} reach the shell untouched.
+     * <p>
+     * Termux closes a session as soon as its command ends (right away when, like here, the sender asked
+     * for the result), so the output of a short command was gone before anyone could read it. The
+     * session carries on in the user's shell instead. The hand-off sits on its own line so a trailing
+     * {@code #} comment can't swallow it, and it skips {@code login}, which would print the welcome text
+     * over the output.
      */
     @NonNull
     public static Intent buildRunCommandIntent(@NonNull String command) {
         return new Intent(ACTION_RUN_COMMAND)
                 .setClassName(PACKAGE_NAME, RUN_COMMAND_SERVICE)
                 .putExtra(EXTRA_PATH, Utils.TERMUX_LOGIN_PATH)
-                .putExtra(EXTRA_ARGUMENTS, new String[]{"-c", command})
+                .putExtra(EXTRA_ARGUMENTS, new String[]{"-c", command + KEEP_SESSION})
                 .putExtra(EXTRA_WORKDIR, HOME)
                 .putExtra(EXTRA_BACKGROUND, false)
-                .putExtra(EXTRA_SESSION_ACTION, SESSION_ACTION_SWITCH_AND_OPEN);
+                .putExtra(EXTRA_SESSION_ACTION, SESSION_ACTION_SWITCH_DONT_OPEN);
+    }
+
+    /**
+     * Hands the command to Termux and brings Termux to the front. Termux opens its own screen from the
+     * background only with Display over other apps allowed, so without it the command ran in a session
+     * nobody saw. This app is in front when the user taps, so it may open Termux itself. It waits a moment
+     * first: Termux turns a command down within that time when allow-external-apps is off, and then the
+     * setup steps show here instead of the user landing in Termux with nothing run.
+     *
+     * @throws RuntimeException when Android refuses to start Termux's service
+     */
+    @MainThread
+    public static void send(@NonNull Context context, @NonNull Intent command) {
+        ContextCompat.startForegroundService(context, withResult(context, command));
+        Context app = context.getApplicationContext();
+        cancelPendingOpen();
+        sPendingOpen = () -> {
+            sPendingOpen = null;
+            try {
+                app.startActivity(getLaunchIntent(app));
+            } catch (RuntimeException e) {
+                // ActivityNotFoundException if Termux went away, SecurityException if Android blocks the start
+                Log.w(TAG, "Could not bring Termux forward", e);
+            }
+        };
+        MAIN.postDelayed(sPendingOpen, OPEN_DELAY_MS);
+    }
+
+    @MainThread
+    private static void cancelPendingOpen() {
+        if (sPendingOpen != null) {
+            MAIN.removeCallbacks(sPendingOpen);
+            sPendingOpen = null;
+        }
     }
 
     /**
@@ -167,6 +221,8 @@ public final class TermuxBridge {
      */
     @MainThread
     static void reportRefusal(@NonNull Context context, @NonNull String refusal) {
+        // Nothing ran, so there's nothing to see in Termux
+        cancelPendingOpen();
         if (REFUSALS.hasActiveObservers()) {
             REFUSALS.setValue(refusal);
             return;
