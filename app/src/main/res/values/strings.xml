@@ -1181,6 +1181,7 @@
     <string name="run_in_termux">Run in Termux</string>
     <string name="termux_run_command_failed">Couldn\'t reach Termux. Make sure it\'s installed and its RunCommand service is enabled.</string>
     <string name="termux_not_installed">Termux isn\'t installed. Install the Termux app (package <xliff:g id="package" example="com.termux">%1$s</xliff:g>) and try again.</string>
+    <string name="termux_external_apps_off">Termux didn\'t run it. Turn on allow-external-apps in Termux first.</string>
     <string name="termux_permission_title">Allow commands in Termux</string>
     <string name="termux_permission_steps">Termux runs commands sent from other apps only after two steps.\n\n1. Open App info, then Permissions, then Additional permissions, and allow Run commands in Termux environment.\n\n2. In Termux, add the line allow-external-apps = true to ~/.termux/termux.properties, then run termux-reload-settings.</string>
     <string name="installer_launch_failed">Couldn\'t open the installer.</string>

@@ -196,6 +196,7 @@ import io.github.muntashirakon.AppManager.ssaid.ChangeSsaidDialog;
 import io.github.muntashirakon.AppManager.types.PackageSizeInfo;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
 import io.github.muntashirakon.AppManager.terminal.TermuxBridge;
+import io.github.muntashirakon.AppManager.terminal.TermuxDialogs;
 import io.github.muntashirakon.AppManager.uri.GrantUriUtils;
 import android.app.usage.UsageStatsManager;
 
@@ -356,6 +357,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         mAdapter = new AppInfoRecyclerAdapter(requireContext());
         recyclerView.setAdapter(mAdapter);
         mActivity.addMenuProvider(this, getViewLifecycleOwner(), Lifecycle.State.RESUMED);
+        TermuxDialogs.observeRefusals(getViewLifecycleOwner(), mActivity);
         // Set observer
         mMainModel.get(AppDetailsFragment.APP_INFO).observe(getViewLifecycleOwner(), appDetailsItems -> {
             mLoadedItemCount = 0;
@@ -602,6 +604,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             } else {
                 mRequestPerm.launch(TERMUX_RUN_COMMAND, granted -> {
                     if (granted) openInTermux();
+                    else TermuxDialogs.showSetupSteps(mActivity);
                 });
             }
         } else if (itemId == R.id.action_run_in_termux) {
@@ -610,6 +613,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             } else {
                 mRequestPerm.launch(TERMUX_RUN_COMMAND, granted -> {
                     if (granted) runInTermux();
+                    else TermuxDialogs.showSetupSteps(mActivity);
                 });
             }
         } else if (itemId == R.id.action_magisk_hide) {
@@ -1471,28 +1475,30 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     }
 
     private void openInTermux() {
-        runWithTermux(buildOpenInTermuxIntent(mApplicationInfo.uid));
+        runWithTermux(buildOpenInTermuxIntent(mActivity, mApplicationInfo.uid));
     }
 
     private void runInTermux() {
-        runWithTermux(buildRunInTermuxIntent(mPackageName));
+        runWithTermux(buildRunInTermuxIntent(mActivity, mPackageName));
     }
 
     /**
      * Termux's {@code login} passes its arguments to {@code $SHELL -l}, so the command goes over as
      * one {@code -c} string. Bare words would make the shell look for a script named {@code su}.
+     * Termux reports back, so a refusal shows here instead of nothing happening.
      */
     @VisibleForTesting
     @NonNull
-    static Intent buildOpenInTermuxIntent(int uid) {
-        return TermuxBridge.buildRunCommandIntent("su - " + uid);
+    static Intent buildOpenInTermuxIntent(@NonNull Context context, int uid) {
+        return TermuxBridge.withResult(context, TermuxBridge.buildRunCommandIntent("su - " + uid));
     }
 
     @VisibleForTesting
     @NonNull
-    static Intent buildRunInTermuxIntent(@NonNull String packageName) {
+    static Intent buildRunInTermuxIntent(@NonNull Context context, @NonNull String packageName) {
         // A package name is letters, digits, dots and underscores, so single quotes hold it safely
-        return TermuxBridge.buildRunCommandIntent("su -c 'run-as " + packageName + "'");
+        return TermuxBridge.withResult(context,
+                TermuxBridge.buildRunCommandIntent("su -c 'run-as " + packageName + "'"));
     }
 
     private void runWithTermux(@NonNull Intent intent) {

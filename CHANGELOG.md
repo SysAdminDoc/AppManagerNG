@@ -29,6 +29,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Open in Termux and Run in Termux in App Info didn't run anything. Termux's login shell took the first word, `su`, for a script file name. The command now goes over whole, and Run in Termux hands `run-as` its package name the way `su -c` expects.
 - The Properties sheet in the file manager came back every time you rotated the phone, even after you'd closed it, and an open one stacked a new copy per rotation (issue #34).
 - App Details tabs no longer flash their empty message, like "No requested permissions", while they're still loading.
+- Commands sent to Termux from App Info or the terminal did nothing on screen when Termux wasn't letting other apps run commands yet, which is how Termux starts out (issue #55). Termux now reports back, and you get the steps to allow it.
 
 ## v0.8.0, 2026-11-15
 

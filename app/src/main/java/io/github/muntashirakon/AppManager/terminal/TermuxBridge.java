@@ -2,19 +2,27 @@
 
 package io.github.muntashirakon.AppManager.terminal;
 
+import android.app.Activity;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.os.Build;
+import android.os.Bundle;
+import android.widget.Toast;
 
 import androidx.annotation.IntDef;
+import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.lifecycle.MutableLiveData;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
+import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
 import io.github.muntashirakon.AppManager.utils.Utils;
 
@@ -28,6 +36,12 @@ public final class TermuxBridge {
     public static final String PERMISSION_RUN_COMMAND = ManifestCompat.permission.TERMUX_RUN_COMMAND;
 
     static final String RUN_COMMAND_SERVICE = "com.termux.app.RunCommandService";
+    static final String EXTRA_PENDING_INTENT = "com.termux.RUN_COMMAND_PENDING_INTENT";
+    // Termux's result bundle: err is Activity.RESULT_OK when the command ran, errmsg says why it didn't
+    static final String EXTRA_RESULT_BUNDLE = "result";
+    static final String RESULT_ERR = "err";
+    static final String RESULT_ERRMSG = "errmsg";
+    private static final MutableLiveData<String> REFUSALS = new MutableLiveData<>();
     static final String ACTION_RUN_COMMAND = "com.termux.RUN_COMMAND";
     static final String EXTRA_PATH = "com.termux.RUN_COMMAND_PATH";
     static final String EXTRA_ARGUMENTS = "com.termux.RUN_COMMAND_ARGUMENTS";
@@ -102,6 +116,63 @@ public final class TermuxBridge {
                 .putExtra(EXTRA_WORKDIR, HOME)
                 .putExtra(EXTRA_BACKGROUND, false)
                 .putExtra(EXTRA_SESSION_ACTION, SESSION_ACTION_SWITCH_AND_OPEN);
+    }
+
+    /**
+     * Asks Termux to report back. Without this, a command Termux turns down (allow-external-apps off, the
+     * usual first-run case) only reaches Termux's own log and a notice Android may hide, so nothing happens
+     * on screen. Termux adds its result to the intent as extras, so on Android 12 and later the
+     * PendingIntent has to be mutable, and it names the receiver explicitly as Android 14 requires.
+     */
+    @NonNull
+    public static Intent withResult(@NonNull Context context, @NonNull Intent command) {
+        Intent result = new Intent(context, TermuxResultReceiver.class);
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            flags |= PendingIntent.FLAG_MUTABLE;
+        }
+        return command.putExtra(EXTRA_PENDING_INTENT, PendingIntent.getBroadcast(context, 0, result, flags));
+    }
+
+    /**
+     * Termux's reason for not running a command, or {@code null} when it ran (or the result isn't Termux's).
+     */
+    @Nullable
+    static String getRefusal(@Nullable Bundle result) {
+        if (result == null) {
+            return null;
+        }
+        int err = result.getInt(RESULT_ERR, Activity.RESULT_OK);
+        if (err == Activity.RESULT_OK) {
+            return null;
+        }
+        String errmsg = result.getString(RESULT_ERRMSG);
+        return errmsg != null ? errmsg : "";
+    }
+
+    static boolean isExternalAppsOff(@NonNull String refusal) {
+        return refusal.contains("allow-external-apps");
+    }
+
+    /**
+     * Refusals for the screen that sent the command. A screen that shows one sets the value back to null.
+     */
+    @NonNull
+    public static MutableLiveData<String> getRefusals() {
+        return REFUSALS;
+    }
+
+    /**
+     * Hands a refusal to the screen that's open, or says it in a toast when none is listening.
+     */
+    @MainThread
+    static void reportRefusal(@NonNull Context context, @NonNull String refusal) {
+        if (REFUSALS.hasActiveObservers()) {
+            REFUSALS.setValue(refusal);
+            return;
+        }
+        Toast.makeText(context, isExternalAppsOff(refusal) ? R.string.termux_external_apps_off
+                : R.string.termux_run_command_failed, Toast.LENGTH_LONG).show();
     }
 
     /**

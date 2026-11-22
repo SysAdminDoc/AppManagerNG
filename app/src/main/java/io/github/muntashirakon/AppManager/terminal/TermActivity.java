@@ -10,7 +10,6 @@ import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.PowerManager;
-import android.provider.Settings;
 import android.text.Editable;
 import android.text.Spanned;
 import android.text.TextWatcher;
@@ -122,6 +121,7 @@ public class TermActivity extends BaseActivity {
         mDefaultForegroundColor = mCommandInput.getCurrentTextColor();
         mDefaultBackgroundColor = MaterialColors.getColor(mCommandInput, com.google.android.material.R.attr.colorSurface);
         mHistory = new CommandHistory(this);
+        TermuxDialogs.observeRefusals(this, this);
         mCommandInput.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 String command = Objects.requireNonNull(mCommandInput.getText()).toString();
@@ -417,7 +417,8 @@ public class TermActivity extends BaseActivity {
 
     private void sendToTermux(@NonNull String command) {
         try {
-            ContextCompat.startForegroundService(this, TermuxBridge.buildRunCommandIntent(command));
+            ContextCompat.startForegroundService(this,
+                    TermuxBridge.withResult(this, TermuxBridge.buildRunCommandIntent(command)));
         } catch (RuntimeException e) {
             // SecurityException once the permission is taken back, IllegalStateException when
             // Android refuses the start
@@ -447,24 +448,8 @@ public class TermActivity extends BaseActivity {
         builder.show();
     }
 
-    /**
-     * Termux runs nothing from other apps until its permission is granted here and
-     * allow-external-apps is set on its side, and neither can be done from this app.
-     */
     private void showTermuxPermissionDialog() {
-        new MaterialAlertDialogBuilder(this)
-                .setTitle(R.string.termux_permission_title)
-                .setMessage(R.string.termux_permission_steps)
-                .setNegativeButton(R.string.close, null)
-                .setPositiveButton(R.string.app_info, (dialog, which) -> {
-                    try {
-                        startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                Uri.fromParts("package", getPackageName(), null)));
-                    } catch (ActivityNotFoundException e) {
-                        Log.w(TAG, "Could not open App info", e);
-                    }
-                })
-                .show();
+        TermuxDialogs.showSetupSteps(this);
     }
 
     @Override
