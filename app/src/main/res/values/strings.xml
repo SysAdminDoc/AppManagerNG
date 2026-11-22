@@ -159,7 +159,7 @@
     <string name="package_state_disabled">disabled</string>
     <string name="package_state_not_installed">not installed</string>
     <string name="package_user_state_short">u%1$d %2$s</string>
-    <string name="package_user_state_dialog_label">%1$s - %2$s</string>
+    <string name="package_user_state_dialog_label">%1$s · %2$s</string>
     <string name="finder_user_state">User %1$d: %2$s</string>
     <string name="finder_known_preinstall_oems">Known preinstall OEMs: <xliff:g id="oems" example="Samsung, Xiaomi">%1$s</xliff:g></string>
     <string name="finder_matched_permissions">Permissions: <xliff:g id="permissions" example="android.permission.CAMERA">%1$s</xliff:g></string>
@@ -1708,7 +1708,7 @@
     <string name="user_profile_with_id">Profile: %1$s (%2$d)</string>
     <string name="user_unnamed_this">This user</string>
     <string name="user_unnamed_other">Other user</string>
-    <string name="user_profile_label_with_diagnostics"><xliff:g id="user" example="Owner (0)">%1$s</xliff:g> - <xliff:g id="details" example="Private Space, quiet/locked">%2$s</xliff:g></string>
+    <string name="user_profile_label_with_diagnostics"><xliff:g id="user" example="Owner (0)">%1$s</xliff:g> · <xliff:g id="details" example="Private Space, quiet/locked">%2$s</xliff:g></string>
     <string name="user_profile_kind_private_space">Private Space</string>
     <string name="user_profile_kind_work">Work profile</string>
     <string name="user_profile_kind_clone">Clone profile</string>
