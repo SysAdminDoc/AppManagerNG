@@ -16,11 +16,12 @@ import java.util.regex.PatternSyntaxException;
  * A search a user typed, worked out once and then tried against many rows. Plain text matches anywhere in a field,
  * ignoring case. A regular expression is compiled once, also ignoring case, and matches anywhere unless it anchors
  * itself. A pattern that doesn't compile matches nothing, and {@link #isValid()} says so, so the screen can tell the
- * user instead of showing an empty list with no reason.
+ * user instead of showing an empty list with no reason. Plain text can also match by meaning ({@link RelatedWords}),
+ * on top of matching as typed.
  */
 @AnyThread
 public final class TextQuery {
-    private static final TextQuery EMPTY = new TextQuery("", false, null, true);
+    private static final TextQuery EMPTY = new TextQuery("", false, null, true, null);
 
     /** As typed, so a screen can put it back in the search box. */
     @NonNull
@@ -32,13 +33,18 @@ public final class TextQuery {
     @Nullable
     private final Pattern mPattern;
     private final boolean mValid;
+    /** The words related to the query's, when they count too. */
+    @Nullable
+    private final RelatedWords.Query mRelated;
 
-    private TextQuery(@NonNull String query, boolean regex, @Nullable Pattern pattern, boolean valid) {
+    private TextQuery(@NonNull String query, boolean regex, @Nullable Pattern pattern, boolean valid,
+                      @Nullable RelatedWords.Query related) {
         mQuery = query;
         mNeedle = query.toLowerCase(Locale.ROOT);
         mRegex = regex;
         mPattern = pattern;
         mValid = valid;
+        mRelated = related;
     }
 
     /** A query that matches every row. */
@@ -53,17 +59,29 @@ public final class TextQuery {
             return EMPTY;
         }
         if (!regex) {
-            return new TextQuery(query, false, null, true);
+            return new TextQuery(query, false, null, true, null);
         }
         if (couldStall(query)) {
-            return new TextQuery(query, true, null, false);
+            return new TextQuery(query, true, null, false, null);
         }
         try {
             return new TextQuery(query, true, Pattern.compile(query, Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE),
-                    true);
+                    true, null);
         } catch (PatternSyntaxException e) {
-            return new TextQuery(query, true, null, false);
+            return new TextQuery(query, true, null, false, null);
         }
+    }
+
+    /**
+     * @param related Also match words related to the query's ({@link RelatedWords}). A regular expression ignores
+     *                it, since it already says exactly what to match.
+     */
+    @NonNull
+    public static TextQuery of(@Nullable String query, boolean regex, boolean related) {
+        if (!related || regex || query == null || query.isEmpty()) {
+            return of(query, regex);
+        }
+        return new TextQuery(query, false, null, true, RelatedWords.parse(query));
     }
 
     /** @return Whether the regular expression compiles and can't run away on a long text. */
@@ -174,6 +192,11 @@ public final class TextQuery {
         return mRegex;
     }
 
+    /** Whether related words count too. */
+    public boolean isRelated() {
+        return mRelated != null;
+    }
+
     /** {@code false} for a regular expression that doesn't compile. Such a query matches nothing. */
     public boolean isValid() {
         return mValid;
@@ -200,7 +223,8 @@ public final class TextQuery {
                 return true;
             }
         }
-        return false;
+        // Each word of the query, or one related to it, may be in a different field.
+        return mRelated != null && mRelated.matches(fields);
     }
 
     private boolean matchesOne(@NonNull CharSequence field) {

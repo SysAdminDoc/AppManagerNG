@@ -38,11 +38,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.settings.Ops;
 
 @RunWith(RobolectricTestRunner.class)
 public class NotificationHistoryActivityTest {
     private static final String CHAT = "com.example.chat";
+    private static final String SHOP = "com.example.shop";
 
     private Application mApp;
     private NotificationHistoryDb mDb;
@@ -128,6 +130,34 @@ public class NotificationHistoryActivityTest {
             }
         }
         throw new AssertionError("No " + title + " in the menu");
+    }
+
+    @Test
+    public void relatedWordsFindNotificationsByMeaning() {
+        record(3_000L, CHAT, "Carol", "Wi-Fi calling is off");
+        record(2_000L, SHOP, "Sale", "Your order shipped");
+        record(1_000L, SHOP, "Sync", "Couldn't reach the network");
+        NotificationHistoryActivity activity = open();
+        waitForRows(activity, 3);
+        AdvancedSearchView searchView = (AdvancedSearchView) shadowOf(activity).getOptionsMenu()
+                .findItem(R.id.action_search).getActionView();
+        assertTrue((searchView.getEnabledTypes() & AdvancedSearchView.SEARCH_TYPE_RELATED) != 0);
+        assertTrue((searchView.getEnabledTypes() & AdvancedSearchView.SEARCH_TYPE_REGEX) != 0);
+
+        activity.onQueryTextChange("internet", AdvancedSearchView.SEARCH_TYPE_CONTAINS);
+        waitForRows(activity, 0);
+
+        activity.onQueryTextChange("internet", AdvancedSearchView.SEARCH_TYPE_RELATED);
+        waitForRows(activity, 2);
+        assertEquals("Couldn't reach the network", activity.getVisibleEntries().get(0).text);
+        assertEquals("Wi-Fi calling is off", activity.getVisibleEntries().get(1).text);
+
+        activity.onQueryTextChange("error", AdvancedSearchView.SEARCH_TYPE_RELATED);
+        waitForRows(activity, 1);
+
+        // Regex says exactly what to match.
+        activity.onQueryTextChange("internet|error", AdvancedSearchView.SEARCH_TYPE_REGEX);
+        waitForRows(activity, 0);
     }
 
     @Test

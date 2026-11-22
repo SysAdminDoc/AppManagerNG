@@ -23,6 +23,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
 import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
+import io.github.muntashirakon.AppManager.misc.TextQuery;
 import io.github.muntashirakon.AppManager.profiles.ProfileManager;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
 import io.github.muntashirakon.AppManager.utils.JSONUtils;
@@ -208,6 +209,18 @@ public class OpHistoryItem {
         return metadata != null
                 ? metadata.getLocalizedRollbackHint(context)
                 : context.getString(R.string.op_history_rollback_none);
+    }
+
+    /**
+     * Plain text matches any field, the saved data included. Related words ({@link TextQuery#isRelated()}) are looked
+     * for only in what the list shows, since the saved data holds keys such as {@code failed_count} on every row.
+     */
+    public boolean matchesQuery(@NonNull Context context, @NonNull TextQuery query) {
+        if (query.isEmpty() || matchesQuery(context, query.getQuery())) {
+            return true;
+        }
+        return query.isRelated() && query.matches(getLocalizedType(context), getLabel(context),
+                getMetadataSummary(context), getFailureMessage());
     }
 
     public boolean matchesQuery(@NonNull Context context, @NonNull String query) {

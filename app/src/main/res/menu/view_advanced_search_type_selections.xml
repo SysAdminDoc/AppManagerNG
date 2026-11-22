@@ -17,4 +17,9 @@
         android:id="@+id/action_search_type_regex"
         android:title="@string/search_type_regular_expressions" />
 
+    <item
+        android:id="@+id/action_search_type_related"
+        android:title="@string/search_type_related"
+        android:visible="false" />
+
 </menu>

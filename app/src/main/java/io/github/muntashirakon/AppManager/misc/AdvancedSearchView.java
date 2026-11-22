@@ -48,7 +48,8 @@ public class AdvancedSearchView extends SearchView {
             SEARCH_TYPE_CONTAINS,
             SEARCH_TYPE_PREFIX,
             SEARCH_TYPE_SUFFIX,
-            SEARCH_TYPE_REGEX})
+            SEARCH_TYPE_REGEX,
+            SEARCH_TYPE_RELATED})
     @Retention(RetentionPolicy.SOURCE)
     public @interface SearchType {
     }
@@ -69,6 +70,11 @@ public class AdvancedSearchView extends SearchView {
      * Search using {@link String#matches(String)} or {@link java.util.regex.Pattern}.
      */
     public static final int SEARCH_TYPE_REGEX = 1 << 3;
+    /**
+     * Plain text that also matches words related to the query's, see {@link RelatedWords}. Only screens that ask for
+     * it offer it.
+     */
+    public static final int SEARCH_TYPE_RELATED = 1 << 4;
 
     private static final int DEF_STYLE_RES = io.github.muntashirakon.ui.R.style.Widget_AppTheme_SearchView;
 
@@ -109,15 +115,9 @@ public class AdvancedSearchView extends SearchView {
         PopupMenu popupMenu = new PopupMenu(getContext(), v);
         popupMenu.inflate(R.menu.view_advanced_search_type_selections);
         popupMenu.setOnMenuItemClickListener(item -> {
-            int id = item.getItemId();
-            if (id == R.id.action_search_type_contains) {
-                mType = SEARCH_TYPE_CONTAINS;
-            } else if (id == R.id.action_search_type_prefix) {
-                mType = SEARCH_TYPE_PREFIX;
-            } else if (id == R.id.action_search_type_suffix) {
-                mType = SEARCH_TYPE_SUFFIX;
-            } else if (id == R.id.action_search_type_regex) {
-                mType = SEARCH_TYPE_REGEX;
+            int type = typeOf(item.getItemId());
+            if (type != 0) {
+                mType = type;
             }
             if (mOnQueryTextListener != null) {
                 mOnQueryTextListener.onQueryTextChange(getQuery().toString(), mType);
@@ -125,21 +125,35 @@ public class AdvancedSearchView extends SearchView {
             updateQueryHint();
             return true;
         });
-        Menu menu = popupMenu.getMenu();
-        if ((mEnabledTypes & SEARCH_TYPE_CONTAINS) == 0) {
-            menu.findItem(R.id.action_search_type_contains).setVisible(false);
-        }
-        if ((mEnabledTypes & SEARCH_TYPE_PREFIX) == 0) {
-            menu.findItem(R.id.action_search_type_prefix).setVisible(false);
-        }
-        if ((mEnabledTypes & SEARCH_TYPE_SUFFIX) == 0) {
-            menu.findItem(R.id.action_search_type_suffix).setVisible(false);
-        }
-        if ((mEnabledTypes & SEARCH_TYPE_REGEX) == 0) {
-            menu.findItem(R.id.action_search_type_regex).setVisible(false);
-        }
+        showEnabledTypes(popupMenu.getMenu(), mEnabledTypes);
         popupMenu.show();
     };
+
+    /** @return The search type a menu item of {@code R.menu.view_advanced_search_type_selections} picks, or 0. */
+    @SearchType
+    static int typeOf(int itemId) {
+        if (itemId == R.id.action_search_type_contains) {
+            return SEARCH_TYPE_CONTAINS;
+        } else if (itemId == R.id.action_search_type_prefix) {
+            return SEARCH_TYPE_PREFIX;
+        } else if (itemId == R.id.action_search_type_suffix) {
+            return SEARCH_TYPE_SUFFIX;
+        } else if (itemId == R.id.action_search_type_regex) {
+            return SEARCH_TYPE_REGEX;
+        } else if (itemId == R.id.action_search_type_related) {
+            return SEARCH_TYPE_RELATED;
+        }
+        return 0;
+    }
+
+    /** Shows only the types in {@code enabledTypes} in a menu inflated from the type selections. */
+    static void showEnabledTypes(@NonNull Menu menu, @SearchType int enabledTypes) {
+        menu.findItem(R.id.action_search_type_contains).setVisible((enabledTypes & SEARCH_TYPE_CONTAINS) != 0);
+        menu.findItem(R.id.action_search_type_prefix).setVisible((enabledTypes & SEARCH_TYPE_PREFIX) != 0);
+        menu.findItem(R.id.action_search_type_suffix).setVisible((enabledTypes & SEARCH_TYPE_SUFFIX) != 0);
+        menu.findItem(R.id.action_search_type_regex).setVisible((enabledTypes & SEARCH_TYPE_REGEX) != 0);
+        menu.findItem(R.id.action_search_type_related).setVisible((enabledTypes & SEARCH_TYPE_RELATED) != 0);
+    }
 
     public AdvancedSearchView(@NonNull Context context) {
         this(context, null);
@@ -321,6 +335,11 @@ public class AdvancedSearchView extends SearchView {
         }
     }
 
+    @SearchType
+    public int getEnabledTypes() {
+        return mEnabledTypes;
+    }
+
     public void addEnabledTypes(@SearchType int enabledTypes) {
         this.mEnabledTypes |= enabledTypes;
     }
@@ -351,6 +370,8 @@ public class AdvancedSearchView extends SearchView {
                 } catch (PatternSyntaxException e) {
                     return false;
                 }
+            case SEARCH_TYPE_RELATED:
+                return TextQuery.of(query, false, true).matches(text);
         }
         return false;
     }
@@ -386,11 +407,13 @@ public class AdvancedSearchView extends SearchView {
             }
             return results;
         }
+        // Worked out once for every row.
+        TextQuery related = type == SEARCH_TYPE_RELATED ? TextQuery.of(query, false, true) : null;
         // Rests are typical
         for (T choice : choices) {
             String text = generator.getChoice(choice);
             if (text == null) continue;
-            if (matches(query, text, type)) {
+            if (related != null ? related.matches(text) : matches(query, text, type)) {
                 results.add(choice);
             }
         }
@@ -425,12 +448,20 @@ public class AdvancedSearchView extends SearchView {
             }
             return results;
         }
+        TextQuery related = type == SEARCH_TYPE_RELATED ? TextQuery.of(query, false, true) : null;
         // Rests are typical
         for (T choice : choices) {
             if (ThreadUtils.isInterrupted()) {
                 return Collections.emptyList();
             }
             List<String> texts = generator.getChoices(choice);
+            if (related != null) {
+                // The query's words may be spread over the texts.
+                if (related.matches(texts.toArray(new CharSequence[0]))) {
+                    results.add(choice);
+                }
+                continue;
+            }
             for (String text : texts) {
                 if (text == null) continue;
                 if (matches(query, text, type)) {
@@ -477,6 +508,8 @@ public class AdvancedSearchView extends SearchView {
                 return getContext().getString(R.string.search_type_regular_expressions);
             case SEARCH_TYPE_SUFFIX:
                 return getContext().getString(R.string.search_type_suffix);
+            case SEARCH_TYPE_RELATED:
+                return getContext().getString(R.string.search_type_related);
         }
     }
 

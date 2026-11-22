@@ -128,7 +128,12 @@ public class ToastHistoryViewModel extends AndroidViewModel {
 
     /** Narrows the list to toasts whose text, app name or package matches, on top of the app filter. */
     public void setQuery(@Nullable String query, boolean regex) {
-        mQuery = TextQuery.of(query, regex);
+        setQuery(query, regex, false);
+    }
+
+    /** @param related Also find related words, see {@link io.github.muntashirakon.AppManager.misc.RelatedWords}. */
+    public void setQuery(@Nullable String query, boolean regex, boolean related) {
+        mQuery = TextQuery.of(query, regex, related);
         mExecutor.execute(this::searchNow);
     }
 

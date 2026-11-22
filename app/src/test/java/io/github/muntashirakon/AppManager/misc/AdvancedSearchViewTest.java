@@ -6,12 +6,22 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.content.Context;
+import android.view.Menu;
+import android.view.View;
+
+import androidx.appcompat.widget.PopupMenu;
+import androidx.test.core.app.ApplicationProvider;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import io.github.muntashirakon.AppManager.R;
 
 @RunWith(RobolectricTestRunner.class)
 public class AdvancedSearchViewTest {
@@ -39,5 +49,41 @@ public class AdvancedSearchViewTest {
                 (AdvancedSearchView.ChoiceGenerator<String>) s -> s, AdvancedSearchView.SEARCH_TYPE_REGEX);
         assertEquals("string and collection regex overloads must agree",
                 single, !collection.isEmpty());
+    }
+
+    @Test
+    public void relatedWordsMatchByMeaningAndByText() {
+        assertTrue(AdvancedSearchView.matches("internet", "Wi-Fi is off", AdvancedSearchView.SEARCH_TYPE_RELATED));
+        assertTrue(AdvancedSearchView.matches("lost", "Connection lost", AdvancedSearchView.SEARCH_TYPE_RELATED));
+        assertFalse(AdvancedSearchView.matches("internet", "Battery low", AdvancedSearchView.SEARCH_TYPE_RELATED));
+        assertFalse(AdvancedSearchView.matches("internet", "Wi-Fi is off", AdvancedSearchView.SEARCH_TYPE_CONTAINS));
+        List<String> found = AdvancedSearchView.matches("internet", Arrays.asList("Wi-Fi is off", "Battery low"),
+                (AdvancedSearchView.ChoiceGenerator<String>) s -> s, AdvancedSearchView.SEARCH_TYPE_RELATED);
+        assertEquals(Collections.singletonList("Wi-Fi is off"), found);
+    }
+
+    @Test
+    public void relatedWordsIsOfferedOnlyWhereAScreenAsksForIt() {
+        Context context = ApplicationProvider.getApplicationContext();
+        PopupMenu popupMenu = new PopupMenu(context, new View(context));
+        popupMenu.inflate(R.menu.view_advanced_search_type_selections);
+        Menu menu = popupMenu.getMenu();
+
+        // What every other search offers.
+        AdvancedSearchView.showEnabledTypes(menu, AdvancedSearchView.SEARCH_TYPE_CONTAINS
+                | AdvancedSearchView.SEARCH_TYPE_PREFIX | AdvancedSearchView.SEARCH_TYPE_SUFFIX
+                | AdvancedSearchView.SEARCH_TYPE_REGEX);
+        assertFalse(menu.findItem(R.id.action_search_type_related).isVisible());
+        assertTrue(menu.findItem(R.id.action_search_type_regex).isVisible());
+
+        AdvancedSearchView.showEnabledTypes(menu, AdvancedSearchView.SEARCH_TYPE_CONTAINS
+                | AdvancedSearchView.SEARCH_TYPE_REGEX | AdvancedSearchView.SEARCH_TYPE_RELATED);
+        assertTrue(menu.findItem(R.id.action_search_type_related).isVisible());
+        assertTrue(menu.findItem(R.id.action_search_type_regex).isVisible());
+        assertTrue(menu.findItem(R.id.action_search_type_contains).isVisible());
+        assertFalse(menu.findItem(R.id.action_search_type_prefix).isVisible());
+        assertEquals(AdvancedSearchView.SEARCH_TYPE_RELATED,
+                AdvancedSearchView.typeOf(R.id.action_search_type_related));
+        assertEquals(AdvancedSearchView.SEARCH_TYPE_REGEX, AdvancedSearchView.typeOf(R.id.action_search_type_regex));
     }
 }

@@ -69,17 +69,34 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/history_filters_button"
-            style="@style/Widget.AppTheme.Button.AppInfoAction"
-            android:layout_width="wrap_content"
-            android:layout_height="@dimen/premium_button_min_height"
-            android:layout_marginStart="@dimen/premium_space_8"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/premium_space_4"
-            android:gravity="start|center_vertical"
-            android:text="@string/filters"
-            app:backgroundTint="@android:color/transparent"
-            app:icon="@drawable/ic_filter_list" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/history_filters_button"
+                style="@style/Widget.AppTheme.Button.AppInfoAction"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/premium_button_min_height"
+                android:layout_marginStart="@dimen/premium_space_8"
+                android:gravity="start|center_vertical"
+                android:text="@string/filters"
+                app:backgroundTint="@android:color/transparent"
+                app:icon="@drawable/ic_filter_list" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/history_related_words"
+                style="@style/Widget.AppTheme.Chip.MainFilter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/premium_space_8"
+                android:checkable="true"
+                android:text="@string/search_type_related" />
+
+        </LinearLayout>
 
         <HorizontalScrollView
             android:id="@+id/history_filter_scroll"

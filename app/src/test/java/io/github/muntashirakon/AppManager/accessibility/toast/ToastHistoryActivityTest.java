@@ -467,6 +467,34 @@ public class ToastHistoryActivityTest {
     }
 
     @Test
+    public void relatedWordsFindToastsByMeaning() {
+        mHistory.record(T0 + 1_000L, ONE, "Wi-Fi is off");
+        mHistory.record(T0 + 2_000L, TWO, "Connection lost");
+        mHistory.record(T0 + 3_000L, TWO, "Battery saver on");
+        ToastHistoryActivity activity = open();
+        waitForRows(activity, 3);
+        AdvancedSearchView searchView = (AdvancedSearchView) shadowOf(activity).getOptionsMenu()
+                .findItem(R.id.action_search).getActionView();
+        // Offered next to Regex.
+        assertTrue((searchView.getEnabledTypes() & AdvancedSearchView.SEARCH_TYPE_RELATED) != 0);
+        assertTrue((searchView.getEnabledTypes() & AdvancedSearchView.SEARCH_TYPE_REGEX) != 0);
+
+        activity.onQueryTextChange("internet", AdvancedSearchView.SEARCH_TYPE_CONTAINS);
+        waitForRows(activity, 0);
+
+        activity.onQueryTextChange("internet", AdvancedSearchView.SEARCH_TYPE_RELATED);
+        waitForRows(activity, 2);
+        assertEquals("Connection lost", activity.getVisibleEntries().get(0).text);
+        assertEquals("Wi-Fi is off", activity.getVisibleEntries().get(1).text);
+
+        activity.onQueryTextChange("power", AdvancedSearchView.SEARCH_TYPE_RELATED);
+        waitForRows(activity, 1);
+        assertEquals("Battery saver on", activity.getVisibleEntries().get(0).text);
+        activity.onQueryTextChange("connecting", AdvancedSearchView.SEARCH_TYPE_RELATED);
+        waitForRows(activity, 2);
+    }
+
+    @Test
     public void clearingIsImmediateAndOffersUndo() {
         mHistory.record(T0 + 1_000L, ONE, "Older");
         mHistory.record(T0 + 2_000L, TWO, "Newer");

@@ -2617,6 +2617,7 @@
     <string name="search_type_prefix">Prefix</string>
     <string name="search_type_suffix">Suffix</string>
     <string name="search_type_regular_expressions">Regex</string>
+    <string name="search_type_related">Related words</string>
     <string name="toggle_internet">Use the Internet</string>
     <string name="pref_toggle_internet_msg">Enable optional Internet features in AppManagerNG.</string>
     <string name="pref_toggle_internet_msg_floss_disabled">Optional Internet features are disabled in this FLOSS build. Install the full build from GitHub Releases to enable VirusTotal and debloat-definition auto-updates.</string>

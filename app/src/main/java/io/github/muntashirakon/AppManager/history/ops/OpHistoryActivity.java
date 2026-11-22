@@ -54,6 +54,7 @@ import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsService;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.misc.TextQuery;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.ClipboardUtils;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
@@ -108,6 +109,11 @@ public class OpHistoryActivity extends BaseActivity {
     private Chip mChipLastDay;
     private Chip mChipLastWeek;
     private Chip mChipClearFilters;
+    /** Not a filter: it widens the search to related words. */
+    private Chip mRelatedWords;
+    /** The search, worked out once each time the filters apply. */
+    @NonNull
+    private TextQuery mQuery = TextQuery.empty();
     private int mSortMode = SORT_NEWEST_FIRST;
     @Nullable
     private String mPendingExport;
@@ -264,6 +270,8 @@ public class OpHistoryActivity extends BaseActivity {
         });
         mChipClearFilters = findViewById(R.id.chip_history_clear_filters);
         mChipClearFilters.setOnClickListener(v -> clearFilters());
+        mRelatedWords = findViewById(R.id.history_related_words);
+        mRelatedWords.setOnCheckedChangeListener((buttonView, isChecked) -> applyFilters());
     }
 
     private void showHistoryFiltersDialog() {
@@ -354,6 +362,7 @@ public class OpHistoryActivity extends BaseActivity {
         if (mAdapter == null) {
             return;
         }
+        mQuery = TextQuery.of(getFilterQuery(), false, mRelatedWords.isChecked());
         List<OpHistoryItem> filteredList = new ArrayList<>();
         for (OpHistoryItem history : mCurrentOpHistories) {
             if (matchesFilters(history)) {
@@ -449,8 +458,7 @@ public class OpHistoryActivity extends BaseActivity {
     }
 
     private boolean matchesQuery(@NonNull OpHistoryItem history) {
-        String query = getFilterQuery();
-        return TextUtils.isEmpty(query) || history.matchesQuery(this, query);
+        return mQuery.isEmpty() || history.matchesQuery(this, mQuery);
     }
 
     private boolean matchesStatus(@NonNull OpHistoryItem history) {

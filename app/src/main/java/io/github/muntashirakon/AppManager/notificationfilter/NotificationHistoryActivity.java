@@ -105,7 +105,8 @@ public class NotificationHistoryActivity extends BaseActivity implements Advance
         MenuItem searchItem = menu.findItem(R.id.action_search);
         AdvancedSearchView searchView = (AdvancedSearchView) searchItem.getActionView();
         if (searchView != null) {
-            searchView.setEnabledTypes(AdvancedSearchView.SEARCH_TYPE_CONTAINS | AdvancedSearchView.SEARCH_TYPE_REGEX);
+            searchView.setEnabledTypes(AdvancedSearchView.SEARCH_TYPE_CONTAINS | AdvancedSearchView.SEARCH_TYPE_REGEX
+                    | AdvancedSearchView.SEARCH_TYPE_RELATED);
             searchView.setQueryHint(getString(R.string.notification_history_search_hint));
             searchItem.setOnActionExpandListener(new MenuItem.OnActionExpandListener() {
                 @Override
@@ -131,7 +132,8 @@ public class NotificationHistoryActivity extends BaseActivity implements Advance
 
     @Override
     public boolean onQueryTextChange(@NonNull String newText, @AdvancedSearchView.SearchType int type) {
-        mViewModel.setQuery(newText, type == AdvancedSearchView.SEARCH_TYPE_REGEX);
+        mViewModel.setQuery(newText, type == AdvancedSearchView.SEARCH_TYPE_REGEX,
+                type == AdvancedSearchView.SEARCH_TYPE_RELATED);
         return true;
     }
 

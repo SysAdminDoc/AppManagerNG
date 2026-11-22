@@ -27,6 +27,7 @@ import io.github.muntashirakon.AppManager.apk.installer.PackageInstallerService;
 import io.github.muntashirakon.AppManager.batchops.BatchOpsManager;
 import io.github.muntashirakon.AppManager.db.entity.OpHistory;
 import io.github.muntashirakon.AppManager.intercept.IntentCompat;
+import io.github.muntashirakon.AppManager.misc.TextQuery;
 import io.github.muntashirakon.AppManager.oneclickops.LeftoverCleanupHistoryItem;
 import io.github.muntashirakon.AppManager.oneclickops.LeftoverScanner;
 import io.github.muntashirakon.AppManager.oneclickops.OneClickOpsViewModel;
@@ -63,6 +64,33 @@ public class OpHistoryItemTest {
         assertEquals(1, item.getFailedCount());
         assertFalse(item.isReplayable());
         assertFalse(item.isReversible());
+    }
+
+    @Test
+    public void relatedWordsFindAnOperationByMeaning() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        String operation = context.getString(R.string.detect_leftover_files);
+        LeftoverCleanupHistoryItem cleanup = new LeftoverCleanupHistoryItem(operation, Collections.emptyList(), 0, 0L);
+        OpHistory row = new OpHistory();
+        row.id = 9L;
+        row.type = OpHistoryManager.HISTORY_TYPE_CLEANUP;
+        row.execTime = 1_700_000_000_000L;
+        row.status = OpHistoryManager.STATUS_SUCCESS;
+        row.serializedData = cleanup.serializeToJson().toString();
+        row.serializedExtra = OperationJournalMetadata.forOneClickCleanup(
+                context, operation, 1, 0, Collections.singletonList("com.example.gone")).serializeToJson().toString();
+        OpHistoryItem item = new OpHistoryItem(row);
+        assertEquals("Detect leftover folders", item.getLabel(context));
+
+        // "folders" goes with storage.
+        assertFalse(item.matchesQuery(context, TextQuery.of("storage", false, false)));
+        assertTrue(item.matchesQuery(context, TextQuery.of("storage", false, true)));
+        assertFalse(item.matchesQuery(context, TextQuery.of("battery", false, true)));
+        // Plain text still finds the saved data, as it always did.
+        assertTrue(item.matchesQuery(context, TextQuery.of("example.gone", false, true)));
+        assertTrue(item.matchesQuery(context, TextQuery.of("example.gone", false, false)));
+        // The saved data has a failed_count on every row, which isn't a failure.
+        assertFalse(item.matchesQuery(context, TextQuery.of("error", false, true)));
     }
 
     @Test

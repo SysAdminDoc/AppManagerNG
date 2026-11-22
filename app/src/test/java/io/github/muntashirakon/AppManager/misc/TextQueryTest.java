@@ -107,4 +107,42 @@ public class TextQueryTest {
         assertFalse(TextQuery.couldStall("(?:ab)+c"));
         assertTrue(TextQuery.isUsableRegex("(foo|bar)+"));
     }
+
+    @Test
+    public void withRelatedWordsOffNothingChanges() {
+        TextQuery query = TextQuery.of("internet", false, false);
+        assertFalse(query.isRelated());
+        assertTrue(query.matches("No INTERNET"));
+        assertTrue(query.matches("internetwork"));
+        assertFalse(query.matches("Wi-Fi is off"));
+        assertEquals("internet", query.getQuery());
+    }
+
+    @Test
+    public void relatedWordsFindByMeaningAndStillByText() {
+        TextQuery query = TextQuery.of("internet", false, true);
+        assertTrue(query.isRelated());
+        assertTrue(query.isValid());
+        assertTrue(query.matches("Wi-Fi is off"));
+        assertTrue(query.matches(null, "Connection lost"));
+        assertTrue(query.matches("No internet"));
+        assertFalse(query.matches("Battery low"));
+        // Half a word still finds what it's part of, like plain text does.
+        assertTrue(TextQuery.of("conn", false, true).matches("Connection lost"));
+        assertTrue(TextQuery.of("connecting", false, true).matches("Connection lost"));
+        assertFalse(TextQuery.of("connecting", false, false).matches("Connection lost"));
+        assertTrue(TextQuery.of("", false, true).matches("anything"));
+    }
+
+    @Test
+    public void aRegexIgnoresRelatedWords() {
+        TextQuery query = TextQuery.of("internet", true, true);
+        assertTrue(query.isRegex());
+        assertFalse(query.isRelated());
+        assertTrue(query.matches("No internet"));
+        assertFalse(query.matches("Wi-Fi is off"));
+        TextQuery broken = TextQuery.of("internet (", true, true);
+        assertFalse(broken.isValid());
+        assertFalse(broken.matches("Wi-Fi is off"));
+    }
 }
