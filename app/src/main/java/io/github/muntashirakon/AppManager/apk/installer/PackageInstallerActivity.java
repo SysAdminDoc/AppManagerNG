@@ -455,30 +455,10 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     @UiThread
     private void displayChangesOrInstallationPrompt() {
         // This dialog either calls triggerInstall() or triggerCancel()
-        boolean displayChanges;
         PackageInfo installedPackageInfo = mModel.getInstalledPackageInfo();
-        int actionRes;
-        if (installedPackageInfo == null) {
-            // App not installed or data not cleared
-            displayChanges = false;
-            actionRes = R.string.install;
-        } else {
-            // App is installed or the app is uninstalled without clearing data, or the app is uninstalled,
-            // but it's a system app
-            long installedVersionCode = PackageInfoCompat.getLongVersionCode(installedPackageInfo);
-            long thisVersionCode = PackageInfoCompat.getLongVersionCode(mModel.getNewPackageInfo());
-            displayChanges = Prefs.Installer.displayChanges();
-            if (installedVersionCode < thisVersionCode) {
-                // Needs update
-                actionRes = R.string.update;
-            } else if (installedVersionCode == thisVersionCode) {
-                // Issue reinstall
-                actionRes = R.string.reinstall;
-            } else {
-                // Downgrade
-                actionRes = R.string.downgrade;
-            }
-        }
+        // Not installed, or installed (also uninstalled with data kept, or an uninstalled system app)
+        boolean displayChanges = installedPackageInfo != null && Prefs.Installer.displayChanges();
+        int actionRes = installAction(mModel.getNewPackageInfo()).labelRes;
         if (displayChanges) {
             WhatsNewFragment dialogFragment = WhatsNewFragment.getInstance(mModel.getNewPackageInfo(),
                     mModel.getInstalledPackageInfo());
@@ -1173,13 +1153,28 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
         }
     }
 
+    /**
+     * What installing this APK does to the copy installed now (#47).
+     */
+    @NonNull
+    private InstallAction installAction(@NonNull PackageInfo newPackageInfo) {
+        PackageInfo installed = mModel.getInstalledPackageInfo();
+        return InstallAction.of(installed != null,
+                installed != null ? PackageInfoCompat.getLongVersionCode(installed) : 0,
+                installed != null ? installed.versionName : null,
+                PackageInfoCompat.getLongVersionCode(newPackageInfo), newPackageInfo.versionName,
+                mModel.isSignatureDifferent());
+    }
+
     @NonNull
     private String getVersionInfoWithTrackers(@NonNull final PackageInfo newPackageInfo) {
         Resources res = getApplication().getResources();
         long newVersionCode = PackageInfoCompat.getLongVersionCode(newPackageInfo);
         String newVersionName = newPackageInfo.versionName;
         int trackers = mModel.getTrackerCount();
-        StringBuilder sb = new StringBuilder(res.getString(R.string.version_name_with_code, newVersionName, newVersionCode));
+        PackageInfo installed = mModel.getInstalledPackageInfo();
+        StringBuilder sb = new StringBuilder(installAction(newPackageInfo).versionLine(this,
+                installed != null ? installed.versionName : null, newVersionName, newVersionCode));
         if (trackers > 0) {
             sb.append(", ").append(res.getQuantityString(R.plurals.no_of_trackers, trackers, trackers));
         }
