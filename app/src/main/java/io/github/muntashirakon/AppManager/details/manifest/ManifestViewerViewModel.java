@@ -7,6 +7,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 
+import androidx.annotation.MainThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.AndroidViewModel;
@@ -55,31 +56,38 @@ public class ManifestViewerViewModel extends AndroidViewModel {
         return mManifestLiveData;
     }
 
+    @MainThread
     public void loadApkFile(@Nullable ApkSource apkSource, @Nullable String packageName) {
         if (mManifestLoaderResult != null) {
-            // A screen made again asks again. The manifest it gets is the one already read, or
-            // being read, so the APK isn't opened a second time and the first one left open.
-            return;
+            // A screen made again asks again. While the manifest is being read, or was read into a
+            // file that's still there, it gets that one, and the APK isn't opened a second time.
+            if (!mManifestLoaderResult.isDone() || isReadableFile(mManifestLiveData.getValue())) {
+                return;
+            }
+            // The read failed, or the cache was cleared since: a viewer for that file would be empty
+            mManifestLiveData.setValue(null);
         }
         mManifestLoaderResult = ThreadUtils.postOnBackgroundThread(() -> {
-            final PackageManager pm = getApplication().getPackageManager();
-            ApkSource realApkSource;
-            if (apkSource != null) {
-                realApkSource = apkSource;
-            } else {
+            if (mApkFile == null) {
+                final PackageManager pm = getApplication().getPackageManager();
+                ApkSource realApkSource;
+                if (apkSource != null) {
+                    realApkSource = apkSource;
+                } else {
+                    try {
+                        ApplicationInfo applicationInfo = pm.getApplicationInfo(packageName, 0);
+                        realApkSource = ApkSource.getApkSource(applicationInfo);
+                    } catch (PackageManager.NameNotFoundException e) {
+                        Log.e(TAG, "Error: ", e);
+                        return;
+                    }
+                }
                 try {
-                    ApplicationInfo applicationInfo = pm.getApplicationInfo(packageName, 0);
-                    realApkSource = ApkSource.getApkSource(applicationInfo);
-                } catch (PackageManager.NameNotFoundException e) {
+                    mApkFile = realApkSource.resolve();
+                } catch (ApkFile.ApkFileException e) {
                     Log.e(TAG, "Error: ", e);
                     return;
                 }
-            }
-            try {
-                mApkFile = realApkSource.resolve();
-            } catch (ApkFile.ApkFileException e) {
-                Log.e(TAG, "Error: ", e);
-                return;
             }
             if (ThreadUtils.isInterrupted()) {
                 return;
@@ -100,5 +108,10 @@ public class ManifestViewerViewModel extends AndroidViewModel {
                 }
             }
         });
+    }
+
+    private static boolean isReadableFile(@Nullable Uri uri) {
+        String path = uri != null ? uri.getPath() : null;
+        return path != null && new File(path).canRead();
     }
 }

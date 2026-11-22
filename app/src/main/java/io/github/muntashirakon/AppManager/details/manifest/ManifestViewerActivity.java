@@ -55,7 +55,12 @@ public class ManifestViewerActivity extends BaseActivity {
             return;
         }
         final ApkSource apkSource = packageUri != null ? ApkSource.getApkSource(packageUri, intent.getType()) : null;
+        // Asked first, so a manifest the cache has lost since is dropped before it reaches a viewer
+        mModel.loadApkFile(apkSource, packageName);
         mModel.getManifestLiveData().observe(this, manifest -> {
+            if (manifest == null) {
+                return;
+            }
             CodeEditorFragment.Options options = new CodeEditorFragment.Options.Builder()
                     .setTitle(getString(R.string.manifest_viewer))
                     .setSubtitle("AndroidManifest.xml")
@@ -73,7 +78,6 @@ public class ManifestViewerActivity extends BaseActivity {
                     .replace(R.id.container, fragment)
                     .commit();
         });
-        mModel.loadApkFile(apkSource, packageName);
     }
 
     private static boolean showsAReadableFile(@Nullable Fragment fragment) {

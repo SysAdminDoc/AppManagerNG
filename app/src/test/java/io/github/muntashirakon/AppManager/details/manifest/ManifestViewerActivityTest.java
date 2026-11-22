@@ -14,6 +14,7 @@ import android.net.Uri;
 import android.os.Looper;
 
 import androidx.annotation.NonNull;
+import androidx.core.os.BundleCompat;
 import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.After;
@@ -87,6 +88,23 @@ public class ManifestViewerActivityTest {
                 new Intent().setData(Uri.fromFile(copy)));
 
         waitForFile(copy, manifest);
+        assertEquals(manifest, waitForManifest(turned));
+    }
+
+    @Test
+    public void turningThePhoneAfterTheCacheWasClearedShowsTheManifestAgain() throws Exception {
+        ManifestViewerActivity activity = open();
+        String manifest = waitForManifest(activity);
+        CodeEditorFragment.Options options = BundleCompat.getParcelable(fragment(activity).requireArguments(),
+                CodeEditorFragment.ARG_OPTIONS, CodeEditorFragment.Options.class);
+        assertNotNull(options);
+        assertNotNull(options.uri);
+        File cached = new File(options.uri.getPath());
+        // Android, or the app's own cache sweep, can clear the cache while the screen is open
+        assertTrue(cached.delete());
+
+        ManifestViewerActivity turned = mController.recreate().get();
+
         assertEquals(manifest, waitForManifest(turned));
     }
 
