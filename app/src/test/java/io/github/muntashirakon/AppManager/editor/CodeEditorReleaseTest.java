@@ -9,6 +9,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
+import android.app.Activity;
+import android.app.Dialog;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Looper;
 
@@ -26,8 +29,11 @@ import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
+import org.robolectric.fakes.RoboMenuItem;
+import org.robolectric.shadows.ShadowDialog;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -52,6 +58,7 @@ public class CodeEditorReleaseTest {
     public TemporaryFolder mTemp = new TemporaryFolder();
 
     private ActivityController<CodeEditorActivity> mController;
+    private File mFile;
 
     @Before
     public void setUp() {
@@ -138,13 +145,132 @@ public class CodeEditorReleaseTest {
         assertEquals(1, waitForNewAnalyzers(before, 1));
     }
 
+    @Test
+    public void anEarlierSaveDoesNotCountLaterEditsAsSavedOnANewView() throws Exception {
+        CodeEditorActivity activity = open(JSON);
+        CodeEditorWidget editor = waitForText(activity, JSON);
+        editor.getText().insert(0, 0, "// one\n");
+        assertTrue(fragment(activity).onMenuItemSelected(new RoboMenuItem(R.id.action_save)));
+        waitForFile(mFile, "// one\n" + JSON);
+        waitForSubtitle(activity, "Subtitle");
+        editor.getText().insert(0, 0, "// two\n");
+        idle();
+        assertEquals("* Subtitle", subtitle(activity));
+
+        activity = mController.recreate().get();
+
+        // The save above is old news to the new view: these edits still aren't saved
+        waitForText(activity, "// two\n// one\n" + JSON);
+        idle();
+        assertEquals("* Subtitle", subtitle(activity));
+    }
+
+    @Test
+    public void aSaveAsTargetIsStillTheTargetAfterARotation() throws Exception {
+        CodeEditorActivity activity = open(JSON);
+        CodeEditorWidget editor = waitForText(activity, JSON);
+        editor.getText().insert(0, 0, "// mine\n");
+        File copy = mTemp.newFile("copy.json");
+        assertTrue(fragment(activity).onMenuItemSelected(new RoboMenuItem(R.id.action_save_as)));
+        idle();
+        Intent picker = shadowOf(activity).getNextStartedActivityForResult().intent;
+        shadowOf(activity).receiveResult(picker, Activity.RESULT_OK, new Intent()
+                .setData(Uri.fromFile(copy))
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION));
+        waitForFile(copy, "// mine\n" + JSON);
+
+        activity = mController.recreate().get();
+        editor = waitForText(activity, "// mine\n" + JSON);
+        editor.getText().insert(0, 0, "// more\n");
+        assertTrue(fragment(activity).onMenuItemSelected(new RoboMenuItem(R.id.action_save)));
+
+        waitForFile(copy, "// more\n// mine\n" + JSON);
+        assertEquals(JSON, read(mFile));
+    }
+
+    @Test
+    public void aDialogLeftOpenGoesAwayWithTheView() throws Exception {
+        CodeEditorActivity activity = open(JSON);
+        waitForText(activity, JSON).getText().insert(0, 0, "x");
+        idle();
+        activity.getOnBackPressedDispatcher().onBackPressed();
+        idle();
+        Dialog unsaved = ShadowDialog.getLatestDialog();
+        assertTrue("Back with unsaved edits asks first", unsaved != null && unsaved.isShowing());
+
+        // The Java view replacing the editor while the question is up
+        leaveForAnotherScreen(activity);
+
+        // Its Save and exit would reach an editor that's gone
+        assertFalse(unsaved.isShowing());
+    }
+
+    @Test
+    public void aNewDocumentKeepsItsTextAcrossARotation() throws Exception {
+        mController = Robolectric.buildActivity(CodeEditorActivity.class,
+                new Intent(ApplicationProvider.getApplicationContext(), CodeEditorActivity.class)
+                        .putExtra(Intent.EXTRA_TITLE, "Title")
+                        .putExtra(Intent.EXTRA_SUBJECT, "Subtitle"));
+        CodeEditorActivity activity = mController.setup().get();
+        CodeEditorWidget first = waitForText(activity, "");
+        first.getText().insert(0, 0, "notes\n");
+        idle();
+
+        activity = mController.recreate().get();
+
+        waitForText(activity, "notes\n");
+        idle();
+        assertEquals("* Subtitle", subtitle(activity));
+    }
+
     @NonNull
     private CodeEditorActivity open(@NonNull String text) throws Exception {
-        File file = mTemp.newFile("file.json");
-        Files.write(file.toPath(), text.getBytes(StandardCharsets.UTF_8));
+        mFile = mTemp.newFile("file.json");
+        Files.write(mFile.toPath(), text.getBytes(StandardCharsets.UTF_8));
         mController = Robolectric.buildActivity(CodeEditorActivity.class, CodeEditorActivity.getIntent(
-                ApplicationProvider.getApplicationContext(), Uri.fromFile(file), "Title", "Subtitle"));
+                ApplicationProvider.getApplicationContext(), Uri.fromFile(mFile), "Title", "Subtitle"));
         return mController.setup().get();
+    }
+
+    @NonNull
+    private static CodeEditorFragment fragment(@NonNull CodeEditorActivity activity) {
+        return (CodeEditorFragment) activity.getSupportFragmentManager().findFragmentById(R.id.container);
+    }
+
+    @NonNull
+    private static String subtitle(@NonNull CodeEditorActivity activity) {
+        return String.valueOf(activity.getSupportActionBar().getSubtitle());
+    }
+
+    @NonNull
+    private static String read(@NonNull File file) throws IOException {
+        return new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+    }
+
+    private static void waitForFile(@NonNull File file, @NonNull String text) throws Exception {
+        // Saves are written on a background thread
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        while (!text.equals(read(file))) {
+            if (System.nanoTime() > deadline) {
+                assertEquals(text, read(file));
+            }
+            idle();
+            Thread.sleep(20);
+        }
+        idle();
+    }
+
+    private static void waitForSubtitle(@NonNull CodeEditorActivity activity, @NonNull String text)
+            throws InterruptedException {
+        // The saved result comes back through the main thread
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        while (!text.equals(subtitle(activity))) {
+            if (System.nanoTime() > deadline) {
+                assertEquals(text, subtitle(activity));
+            }
+            idle();
+            Thread.sleep(20);
+        }
     }
 
     private static void leaveForAnotherScreen(@NonNull CodeEditorActivity activity) {

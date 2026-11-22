@@ -118,7 +118,9 @@ public class CodeEditorViewModel extends AndroidViewModel {
     private final MutableLiveData<Content> mContentLiveData = new MutableLiveData<>();
     // Only for smali
     private final SingleLiveEvent<Uri> mJavaFileLiveData = new SingleLiveEvent<>();
-    private final MutableLiveData<SaveResult> mSaveFileLiveData = new MutableLiveData<>();
+    // An event, not state: a view made again (rotation, back from the Java view) must not take an old
+    // "saved" as news and mark edits made since then as saved
+    private final SingleLiveEvent<SaveResult> mSaveFileLiveData = new SingleLiveEvent<>();
     // Save and exit leaves only after a save lands, so the request outlives a configuration change.
     private volatile boolean mExitAfterSave;
 
@@ -210,7 +212,13 @@ public class CodeEditorViewModel extends AndroidViewModel {
     }
 
     public void loadFileContentIfAvailable() {
-        if (mSourceFile == null) return;
+        if (mSourceFile == null) {
+            // A new document starts empty. The editor types into this text, so the view model holds
+            // it for a view made again after a rotation, as it does a file's.
+            mOriginalContent = "";
+            mContentLiveData.postValue(new Content());
+            return;
+        }
         if (mContentLoaderResult != null) {
             mContentLoaderResult.cancel(true);
         }

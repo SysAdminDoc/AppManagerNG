@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.editor;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
@@ -51,6 +52,9 @@ import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Future;
 import java.util.regex.PatternSyntaxException;
@@ -230,6 +234,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
     @Nullable
     private Future<?> mDiffResult;
     private int mDiffRequestId;
+    private final List<Dialog> mOpenDialogs = new ArrayList<>();
     private boolean mTextModified = false;
     private final Runnable mInvisibleCharHintsUpdater = this::updateInvisibleCharHints;
     private final ActivityResultLauncher<Intent> mSaveOpenedFile = registerForActivityResult(
@@ -251,12 +256,14 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
                             | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                     saveFile(mEditor.getText(), uri);
                     if (takeFlags != 0) {
-                        // Make this URI the current URI
+                        // Make this URI the current URI, in the arguments too: a view made again (after
+                        // a rotation or the Java view) reads its options there, and keeps this text
                         mOptions = new Options.Builder(mOptions)
                                 .setUri(uri)
                                 .setSubtitle(Paths.get(uri).getName())
                                 .build();
                         mViewModel.setOptions(mOptions);
+                        requireArguments().putParcelable(ARG_OPTIONS, mOptions);
                     }
                 } finally {
                     showProgressIndicator(false);
@@ -278,7 +285,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
         @Override
         public void handleOnBackPressed() {
             if (mTextModified) {
-                new MaterialAlertDialogBuilder(requireContext())
+                showDialog(new MaterialAlertDialogBuilder(requireContext())
                         .setTitle(R.string.exit_confirmation)
                         .setMessage(R.string.file_modified_are_you_sure)
                         .setPositiveButton(R.string.no, null)
@@ -293,7 +300,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
                             mViewModel.setExitAfterSave(true);
                             saveFile();
                         })
-                        .show();
+                        .create());
                 return;
             }
             setEnabled(false);
@@ -611,6 +618,14 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             mDiffResult = null;
         }
         ++mDiffRequestId;
+        // Cancelling (not dismissing) runs a dialog's cancel listener, so a Save and exit waiting on
+        // the read-only prompt is called off as if the user had backed out of it
+        for (Dialog dialog : mOpenDialogs) {
+            if (dialog.isShowing()) {
+                dialog.cancel();
+            }
+        }
+        mOpenDialogs.clear();
         if (mEditor != null) {
             mEditor.removeCallbacks(mInvisibleCharHintsUpdater);
             // Stops the highlighter's thread, which otherwise holds this editor and the screen around
@@ -999,7 +1014,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
     private void showGoToLineDialog() {
         if (mViewModel == null) return;
         int lineCount = mEditor.getText().getLineCount();
-        new TextInputDialogBuilder(requireContext(), R.string.editor_go_to_line_input_label)
+        showDialog(new TextInputDialogBuilder(requireContext(), R.string.editor_go_to_line_input_label)
                 .setTitle(R.string.editor_go_to_line_title)
                 .setInputInputType(android.text.InputType.TYPE_CLASS_NUMBER)
                 .setNegativeButton(R.string.cancel, null)
@@ -1015,7 +1030,21 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
                     if (line > lineCount) line = lineCount;
                     mEditor.setSelection(line - 1, 0);
                 })
-                .show();
+                .create());
+    }
+
+    /**
+     * Shows a dialog that is cancelled when this view goes away. Its buttons use the editor and
+     * other views, so one left open (the Java view replacing this one, say) must not be tapped.
+     */
+    private void showDialog(@NonNull Dialog dialog) {
+        for (Iterator<Dialog> it = mOpenDialogs.iterator(); it.hasNext(); ) {
+            if (!it.next().isShowing()) {
+                it.remove();
+            }
+        }
+        mOpenDialogs.add(dialog);
+        dialog.show();
     }
 
     @MainThread
@@ -1067,13 +1096,13 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
         } else if (mViewModel.canWrite()) {
             saveFile(mEditor.getText(), null);
         } else {
-            new MaterialAlertDialogBuilder(requireContext())
+            showDialog(new MaterialAlertDialogBuilder(requireContext())
                     .setTitle(R.string.read_only_file)
                     .setMessage(R.string.read_only_file_warning)
                     .setPositiveButton(R.string.yes, (dialog, which) -> launchIntentSaver())
                     .setNegativeButton(R.string.no, (dialog, which) -> mViewModel.setExitAfterSave(false))
                     .setOnCancelListener(dialog -> mViewModel.setExitAfterSave(false))
-                    .show();
+                    .create());
         }
     }
 
