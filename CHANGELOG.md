@@ -74,6 +74,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Other apps can no longer start or stop a log recording. The recording widget's tap went to a part of the app every installed app could message, and now goes to one only the app itself can reach. An old record shortcut sent to the log viewer, which any app or web link could also send, now opens the record dialog instead of starting a recording straight away.
 - Settings search follows a language change right away. It kept showing and matching the titles of the language the app started in until you restarted it. Using or stopping a language file updates it too, even when the file is for the language already shown.
 - A tag name, log file name or filter value that doesn't work no longer closes its dialog and throws away what you typed. The dialog stays open with the reason under the field, and the keyboard's Done key runs the same check as the button.
+- With a larger font size, the medium screen-time widget keeps each app's name beside its bubble. The names and bubbles used to move with the font size, so at 200% a name sat well below the bubble it belonged to. A bubble's time now shrinks to fit the bubble instead of being cut off.
 
 ## v0.8.0, 2026-11-15
 

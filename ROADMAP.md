@@ -502,16 +502,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Confidence: Verified
   Effort: M
 
-- [ ] P2 — Use density units for screen-time widget geometry
-  Category: Responsive layout
-  Where: `app/src/main/res/layout/app_widget_screen_time.xml:63-153`; `app/src/main/res/xml/app_widget_info_screen_time.xml:6-16`; `app/src/main/java/io/github/muntashirakon/AppManager/usage/ScreenTimeAppWidget.java:64-72`
-  Problem: Margins and positional geometry use `sp`, so font scaling moves non-text layout independently of widget bounds and can cause overlap or clipping.
-  Evidence: Bubble sizes use `dp`, but several layout margins and top offsets use `sp` in the same fixed widget composition.
-  Fix: Use `dp` or constraints for geometry, reserve `sp` for text size, and provide size-specific resources where launcher bounds require different composition.
-  Acceptance: Widget snapshots at 100, 130, and 200 percent font scale and minimum and expanded launcher sizes show no overlap, clipping, or displaced controls in light and dark themes.
-  Confidence: Likely
-  Effort: S
-
 - [ ] P2 — Stop screens probing for root while no-root is selected
   Category: Privilege boundaries
   Where: `app/src/main/java/io/github/muntashirakon/AppManager/details/info/AppInfoFragment.java:468-471`; `app/src/main/java/io/github/muntashirakon/AppManager/misc/DeviceInfo2.java:158`; `app/src/main/java/io/github/muntashirakon/AppManager/utils/FileUtils.java:241`; `app/src/main/java/io/github/muntashirakon/AppManager/runner/RunnerUtils.java:104-122`
@@ -665,11 +655,11 @@ Sources and reasoning: RESEARCH.md (2026-11-13). The four crash fixes come first
   Acceptance: a Save As result that lands before the content is loaded waits for it and saves the loaded text, never an empty file. When the edits from before the kill can't be recovered the editor says so instead of writing silently, and a test covers the early result.
   Complexity: S
 
-- [ ] P2: Check the log recording widget on a phone's launcher
-  Why: widget taps now go through a non-exported receiver instead of the widget provider (9f65e25ed). Robolectric covers the tap's PendingIntent and the receiver, but not a real launcher's broadcasts to the provider.
-  Evidence: `logcat/RecordingWidgetActionReceiver.java`, `logcat/RecordingWidgetProvider.java`, `AndroidManifest.xml`.
+- [ ] P2: Check the log recording and screen-time widgets on a phone's launcher
+  Why: widget taps now go through a non-exported receiver instead of the widget provider (9f65e25ed), and the medium screen-time widget now places its bubbles in dp with each label centred on its bubble. Robolectric covers the tap's PendingIntent, the receiver and the layout geometry, but not a real launcher's broadcasts to the provider or how the widgets look there.
+  Evidence: `logcat/RecordingWidgetActionReceiver.java`, `logcat/RecordingWidgetProvider.java`, `AndroidManifest.xml`, `res/layout/app_widget_screen_time.xml`.
   Touches: device check only, on the S22 or S25.
-  Acceptance: on a phone, add the widget, tap it to start and again to stop a recording, then confirm it still updates after a reboot and after another widget instance is added and removed. `adb shell am broadcast -a <applicationId>.action.RECORD_OR_STOP -n <applicationId>/io.github.muntashirakon.AppManager.logcat.RecordingWidgetActionReceiver` is refused (not exported) and the provider still gets `APPWIDGET_UPDATE`, `APPWIDGET_ENABLED` and `APPWIDGET_DELETED`.
+  Acceptance: on a phone, add the recording widget, tap it to start and again to stop a recording, then confirm it still updates after a reboot and after another widget instance is added and removed. `adb shell am broadcast -a <applicationId>.action.RECORD_OR_STOP -n <applicationId>/io.github.muntashirakon.AppManager.logcat.RecordingWidgetActionReceiver` is refused (not exported) and the provider still gets `APPWIDGET_UPDATE`, `APPWIDGET_ENABLED` and `APPWIDGET_DELETED`. Screenshots of the screen-time widget at its smallest, medium and largest launcher sizes, at 100%, 130% and 200% font size (`settings put system font_scale`, put back after), in light and dark, show no overlap, clipping or label away from its bubble.
   Complexity: S
 
 ### P3
