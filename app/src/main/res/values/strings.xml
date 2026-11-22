@@ -1774,6 +1774,7 @@
     <string name="filter_apps_with_granted_perms">Granted permissions</string>
     <string name="filter_apps_possible_ad_sources">Possible ad sources</string>
     <string name="filter_apps_tv">TV apps</string>
+    <string name="filter_apps_block_capture">Blocks screen or audio capture</string>
     <string name="value">Value</string>
     <string name="matching_activities">Matching activities</string>
     <string name="send_edited_intent">Send edited Intent</string>
@@ -3873,6 +3874,22 @@
     <string name="apex_status_apex">APEX package</string>
     <string name="apex_status_mainline_apex">Mainline module, shipped as an APEX</string>
     <string name="apex_status_mainline_apk">Mainline module, shipped as an APK</string>
+    <string name="media_capture">Media capture</string>
+    <string name="media_capture_audio">Audio playback capture</string>
+    <string name="media_capture_audio_allowed">Other apps can record what it plays</string>
+    <string name="media_capture_audio_blocked">The app doesn\'t let other apps record what it plays</string>
+    <string name="media_capture_audio_unsupported">Android only offers this from version 10</string>
+    <string name="media_capture_audio_policy_in_code">Likely also limited in its code</string>
+    <string name="media_capture_screen">Screen capture</string>
+    <string name="media_capture_screen_blocked_now">Blocked right now by one of its secure windows</string>
+    <string name="media_capture_screen_likely_blocked">Likely blocked. Its code marks windows or video as secure.</string>
+    <string name="media_capture_screen_hides_recents">Likely hidden in Recents</string>
+    <string name="media_capture_screen_no_evidence">No sign of blocking in its code</string>
+    <string name="media_capture_drm">DRM</string>
+    <string name="media_capture_drm_found">Likely uses DRM through MediaDrm, Widevine or ExoPlayer</string>
+    <string name="media_capture_drm_none">No DRM code found</string>
+    <string name="media_capture_scanning">Reading the app\'s code</string>
+    <string name="media_capture_unreadable">Couldn\'t read the app\'s code</string>
     <string name="version_with_apk_sha"><xliff:g id="version" example="Version 0.8.0 (34)">%1$s</xliff:g> · SHA <xliff:g id="sha" example="7a4b8c2e">%2$s</xliff:g></string>
     <string name="app_manager_is_running">AppManagerNG is running</string>
     <string name="tap_to_open_notification_settings">Tap for notification settings</string>

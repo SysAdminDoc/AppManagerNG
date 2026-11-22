@@ -292,6 +292,8 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     private volatile AppInfoViewModel.ApkContents mApkContents;
     @Nullable
     private volatile Integer mTvSupport;
+    @Nullable
+    private volatile AppInfoViewModel.MediaCapture mMediaCapture;
 
     @GuardedBy("mListItems")
     private final List<ListItem> mListItems = new ArrayList<>();
@@ -393,6 +395,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             mAppInfoModel.loadApkSha256(mApplicationInfo);
             mAppInfoModel.loadApkContents(mPackageInfo, mIsExternalApk);
             mAppInfoModel.loadTvSupport(mPackageInfo, mIsExternalApk);
+            mAppInfoModel.loadMediaCapture(mPackageInfo, mIsExternalApk);
         });
         mAppInfoModel.getAppLabel().observe(getViewLifecycleOwner(), appLabel -> {
             ++mLoadedItemCount;
@@ -454,6 +457,10 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         });
         mAppInfoModel.getTvSupport().observe(getViewLifecycleOwner(), tvSupport -> {
             mTvSupport = tvSupport;
+            refreshVerticalView();
+        });
+        mAppInfoModel.getMediaCapture().observe(getViewLifecycleOwner(), mediaCapture -> {
+            mMediaCapture = mediaCapture;
             refreshVerticalView();
         });
         mAppInfoModel.getInstallExistingResult().observe(getViewLifecycleOwner(), statusMessagePair ->
@@ -4127,6 +4134,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 }
                 setMoreInfo(appContext, appInfo);
                 addApkContents(appContext);
+                addMediaCapture(appContext);
                 addPendingJobInfo(appContext, appInfo);
                 addExitHistoryInfo(appContext, appInfo);
                 ThreadUtils.postOnMainThread(() -> {
@@ -4234,6 +4242,53 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 .setItems(files.toArray(new String[0]), null)
                 .setPositiveButton(R.string.close, null)
                 .show();
+    }
+
+    @GuardedBy("mListItems")
+    private void addMediaCapture(@NonNull Context appContext) {
+        AppInfoViewModel.MediaCapture capture = mMediaCapture;
+        synchronized (mListItems) {
+            mListItems.add(ListItem.newGroupStart(appContext.getString(R.string.media_capture)));
+            if (capture == null) {
+                mListItems.add(ListItem.newRegularItem(appContext.getString(R.string.media_capture_screen),
+                        appContext.getString(R.string.media_capture_scanning)));
+                return;
+            }
+            // Screen
+            int screen;
+            if (Boolean.TRUE.equals(capture.secureWindowNow)) {
+                screen = R.string.media_capture_screen_blocked_now;
+            } else if (!capture.readable) {
+                screen = R.string.media_capture_unreadable;
+            } else if (MediaCaptureScanner.blocksScreenCapture(capture.flags)) {
+                screen = R.string.media_capture_screen_likely_blocked;
+            } else if ((capture.flags & MediaCaptureScanner.FLAG_HIDES_RECENTS) != 0) {
+                screen = R.string.media_capture_screen_hides_recents;
+            } else {
+                screen = R.string.media_capture_screen_no_evidence;
+            }
+            mListItems.add(ListItem.newSelectableRegularItem(appContext.getString(R.string.media_capture_screen),
+                    appContext.getString(screen)));
+            // Audio
+            String audio;
+            if (!capture.audioSupported) {
+                audio = appContext.getString(R.string.media_capture_audio_unsupported);
+            } else {
+                audio = appContext.getString(capture.audioAllowed ? R.string.media_capture_audio_allowed
+                        : R.string.media_capture_audio_blocked);
+                if ((capture.flags & MediaCaptureScanner.FLAG_AUDIO_CAPTURE_POLICY) != 0) {
+                    audio += "\n" + appContext.getString(R.string.media_capture_audio_policy_in_code);
+                }
+            }
+            mListItems.add(ListItem.newSelectableRegularItem(appContext.getString(R.string.media_capture_audio),
+                    audio));
+            // DRM
+            int drm = !capture.readable ? R.string.media_capture_unreadable
+                    : (capture.flags & MediaCaptureScanner.FLAG_DRM) != 0 ? R.string.media_capture_drm_found
+                    : R.string.media_capture_drm_none;
+            mListItems.add(ListItem.newSelectableRegularItem(appContext.getString(R.string.media_capture_drm),
+                    appContext.getString(drm)));
+        }
     }
 
     @Nullable

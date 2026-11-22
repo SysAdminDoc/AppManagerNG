@@ -63,6 +63,7 @@ import io.github.muntashirakon.AppManager.compat.ActivityManagerCompat;
 import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.db.entity.App;
 import io.github.muntashirakon.AppManager.db.utils.AppDb;
+import io.github.muntashirakon.AppManager.details.info.MediaCaptureCache;
 import io.github.muntashirakon.AppManager.details.info.TvSupport;
 import io.github.muntashirakon.AppManager.filters.FilterItem;
 import io.github.muntashirakon.AppManager.logs.Log;
@@ -954,6 +955,11 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                     continue;
                 }
                 if ((mFilterFlags & MainListOptions.FILTER_APPS_TV) != 0 && !tvPackages.contains(item.packageName)) {
+                    continue;
+                }
+                // Only what App Info's scan already found: scanning every APK here would stall the list
+                if ((mFilterFlags & MainListOptions.FILTER_APPS_BLOCK_CAPTURE) != 0
+                        && !MediaCaptureCache.blocksCapture(getApplication(), item)) {
                     continue;
                 }
                 filteredApplicationItems.add(item);

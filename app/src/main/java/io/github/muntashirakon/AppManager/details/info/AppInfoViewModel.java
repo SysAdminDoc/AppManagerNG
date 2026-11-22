@@ -70,6 +70,7 @@ import io.github.muntashirakon.AppManager.magisk.MagiskUtils;
 import io.github.muntashirakon.AppManager.misc.OsEnvironment;
 import io.github.muntashirakon.AppManager.misc.XposedModuleInfo;
 import io.github.muntashirakon.AppManager.permission.RestrictedSettingsDetector;
+import io.github.muntashirakon.AppManager.runner.Runner;
 import io.github.muntashirakon.AppManager.rules.RuleType;
 import io.github.muntashirakon.AppManager.scanner.NativeLibReadiness;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
@@ -104,10 +105,12 @@ public class AppInfoViewModel extends AndroidViewModel {
     private final MutableLiveData<String> mApkSha256 = new MutableLiveData<>();
     private final MutableLiveData<ApkContents> mApkContents = new MutableLiveData<>();
     private final MutableLiveData<Integer> mTvSupport = new MutableLiveData<>();
+    private final MutableLiveData<MediaCapture> mMediaCapture = new MutableLiveData<>();
     private final ExecutorService mExecutor = Executors.newFixedThreadPool(4);
     private Future<?> mTagCloudFuture;
     private Future<?> mAppInfoFuture;
     private Future<?> mApkSha256Future;
+    private Future<?> mMediaCaptureFuture;
     @Nullable
     private AppDetailsViewModel mMainModel;
 
@@ -125,6 +128,9 @@ public class AppInfoViewModel extends AndroidViewModel {
         }
         if (mApkSha256Future != null) {
             mApkSha256Future.cancel(true);
+        }
+        if (mMediaCaptureFuture != null) {
+            mMediaCaptureFuture.cancel(true);
         }
         mExecutor.shutdownNow();
         super.onCleared();
@@ -166,6 +172,10 @@ public class AppInfoViewModel extends AndroidViewModel {
      */
     public LiveData<Integer> getTvSupport() {
         return mTvSupport;
+    }
+
+    public LiveData<MediaCapture> getMediaCapture() {
+        return mMediaCapture;
     }
 
     @AnyThread
@@ -637,6 +647,77 @@ public class AppInfoViewModel extends AndroidViewModel {
         });
     }
 
+    /**
+     * Whether the app keeps its screen and audio from being captured, from its manifest and its code. A scan is
+     * kept per version, which is all the main list's filter reads. With root or ADB, the window list also says
+     * whether a secure window of the app is on screen right now.
+     */
+    @AnyThread
+    public void loadMediaCapture(@NonNull PackageInfo packageInfo, boolean isExternalApk) {
+        if (mMediaCaptureFuture != null) {
+            mMediaCaptureFuture.cancel(true);
+        }
+        mMediaCaptureFuture = ThreadUtils.postOnBackgroundThread(() -> {
+            ApplicationInfo applicationInfo = packageInfo.applicationInfo;
+            MediaCapture capture = new MediaCapture();
+            capture.audioSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
+            capture.audioAllowed = MediaCaptureScanner.allowsAudioCapture(
+                    ApplicationInfoCompat.getPrivateFlags(applicationInfo), Build.VERSION.SDK_INT);
+            long versionCode = androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(packageInfo);
+            Integer kept = isExternalApk ? null : MediaCaptureCache.get(getApplication(), packageInfo.packageName,
+                    versionCode, packageInfo.lastUpdateTime);
+            if (kept != null) {
+                capture.flags = kept;
+                capture.readable = true;
+            } else {
+                int flags = 0;
+                for (String apk : apkFiles(applicationInfo)) {
+                    try {
+                        flags |= MediaCaptureScanner.scanApk(new File(apk));
+                        capture.readable = true;
+                    } catch (IOException e) {
+                        if (ThreadUtils.isInterrupted()) {
+                            return;
+                        }
+                        Log.w(TAG, "Couldn't scan %s", e, apk);
+                    }
+                }
+                if (capture.audioSupported && !capture.audioAllowed) {
+                    flags |= MediaCaptureScanner.FLAG_AUDIO_CAPTURE_BLOCKED;
+                }
+                capture.flags = flags;
+                if (capture.readable && !isExternalApk) {
+                    MediaCaptureCache.put(getApplication(), packageInfo.packageName, versionCode,
+                            packageInfo.lastUpdateTime, flags);
+                }
+            }
+            if (!isExternalApk && SelfPermissions.isSystemOrRootOrShell()) {
+                Runner.Result result = Runner.runCommand(new String[]{"dumpsys", "window", "windows"});
+                if (result.isSuccessful()) {
+                    capture.secureWindowNow = MediaCaptureScanner.hasSecureWindow(result.getOutputAsList(),
+                            packageInfo.packageName);
+                }
+            }
+            if (!ThreadUtils.isInterrupted()) {
+                mMediaCapture.postValue(capture);
+            }
+        });
+    }
+
+    @NonNull
+    private static List<String> apkFiles(@NonNull ApplicationInfo applicationInfo) {
+        List<String> files = new ArrayList<>();
+        String base = applicationInfo.publicSourceDir != null ? applicationInfo.publicSourceDir
+                : applicationInfo.sourceDir;
+        if (base != null) {
+            files.add(base);
+        }
+        if (applicationInfo.splitPublicSourceDirs != null) {
+            Collections.addAll(files, applicationInfo.splitPublicSourceDirs);
+        }
+        return files;
+    }
+
     @WorkerThread
     private void loadAppInfoInternal(@NonNull PackageInfo packageInfo, boolean isExternalApk) {
         String packageName = packageInfo.packageName;
@@ -974,5 +1055,23 @@ public class AppInfoViewModel extends AndroidViewModel {
         public Integer apexStatus;
         @Nullable
         public LicenseDetector.Result license;
+    }
+
+    public static class MediaCapture {
+        /**
+         * {@link MediaCaptureScanner}'s flags for the app's code and manifest.
+         */
+        public int flags;
+        /**
+         * Whether any of the app's code could be read.
+         */
+        public boolean readable;
+        /**
+         * Whether a secure window of the app is on screen now, or {@code null} when that can't be checked.
+         */
+        @Nullable
+        public Boolean secureWindowNow;
+        public boolean audioSupported;
+        public boolean audioAllowed;
     }
 }

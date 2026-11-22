@@ -116,6 +116,7 @@ public class MainListOptions extends ListOptions {
             FILTER_APPS_WITH_GRANTED_PERMS,
             FILTER_APPS_POSSIBLE_AD_SOURCES,
             FILTER_APPS_TV,
+            FILTER_APPS_BLOCK_CAPTURE,
     })
     @Retention(RetentionPolicy.SOURCE)
     public @interface Filter {
@@ -144,6 +145,8 @@ public class MainListOptions extends ListOptions {
     public static final int FILTER_APPS_POSSIBLE_AD_SOURCES = 1 << 18;
     /** Apps a TV launcher lists: an activity handles MAIN with LEANBACK_LAUNCHER. */
     public static final int FILTER_APPS_TV = 1 << 19;
+    /** Apps whose last App Info scan found they keep the screen or audio from being captured. */
+    public static final int FILTER_APPS_BLOCK_CAPTURE = 1 << 20;
 
     public static final int OPTION_PROFILE_FILTER_INVERSE = 1;
 
@@ -451,6 +454,7 @@ public class MainListOptions extends ListOptions {
             put(FILTER_APPS_WITH_GRANTED_PERMS, R.string.filter_apps_with_granted_perms);
             put(FILTER_APPS_POSSIBLE_AD_SOURCES, R.string.filter_apps_possible_ad_sources);
             put(FILTER_APPS_TV, R.string.filter_apps_tv);
+            put(FILTER_APPS_BLOCK_CAPTURE, R.string.filter_apps_block_capture);
             if (Ops.isWorkingUidRoot()) {
                 put(FILTER_APPS_WITH_KEYSTORE, R.string.filter_apps_with_keystore);
                 put(FILTER_APPS_WITH_SAF, R.string.filter_apps_with_saf);
