@@ -201,6 +201,9 @@ public class ReceivedApksViewModel extends AndroidViewModel {
             }
             try {
                 mReady.postValue(LanSyncDownloader.prepare(store, current, mDir, installed, mReader));
+            } catch (LanSyncDownloader.NeedsNewerAndroidException e) {
+                mMessage.postValue(getApplication().getString(R.string.received_apks_install_failed, label,
+                        e.describe(getApplication())));
             } catch (IOException e) {
                 Log.w(TAG, "Could not install %s", e, current.app.packageName);
                 mMessage.postValue(getApplication().getString(R.string.received_apks_install_failed, label,
@@ -260,7 +263,12 @@ public class ReceivedApksViewModel extends AndroidViewModel {
                 return;
             }
             try {
-                LanSyncDownloader.verify(store, current, installed, mReader);
+                List<File> files = LanSyncDownloader.verify(store, current, installed, mReader);
+                LanSyncDownloader.checkInstallableHere(files, current.app);
+            } catch (LanSyncDownloader.NeedsNewerAndroidException e) {
+                mMessage.postValue(getApplication().getString(R.string.received_apks_install_failed, label,
+                        e.describe(getApplication())));
+                return;
             } catch (IOException e) {
                 Log.w(TAG, "Could not open %s in the system installer", e, current.app.packageName);
                 mMessage.postValue(getApplication().getString(R.string.received_apks_install_failed, label,

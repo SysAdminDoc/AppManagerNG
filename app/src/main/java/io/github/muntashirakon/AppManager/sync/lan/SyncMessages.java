@@ -47,8 +47,10 @@ public final class SyncMessages {
      * older peers still pair, and a peer learns the other's revision by asking: an older host
      * answers a PING with a bare PONG, which reads as revision 1. Revision 3 adds each app's
      * signing certificate subjects to the app list, sent only when both sides said they're on 3.
+     * Revision 4 adds each app's minimum Android version after the subjects, again only when both
+     * sides are on 4, so a client can tell an app this device can't run before downloading it.
      */
-    public static final int REVISION = 3;
+    public static final int REVISION = 4;
     /**
      * The first revision that accepts a start offset in GET.
      */
@@ -57,6 +59,10 @@ public final class SyncMessages {
      * The first revision whose app list carries signer subjects.
      */
     public static final int REVISION_SIGNER_SUBJECTS = 3;
+    /**
+     * The first revision whose app list carries each app's minimum Android version.
+     */
+    public static final int REVISION_MIN_SDK = 4;
 
     /**
      * Requests and small replies (accept, reject, errors, file headers and ends).
@@ -72,6 +78,10 @@ public final class SyncMessages {
     public static final int MAX_LABEL_CHARS = 255;
     public static final int MAX_APPS = 10_000;
     public static final int MAX_SIGNERS = 16;
+    /**
+     * The largest API level the app list can carry.
+     */
+    static final int MAX_SDK = 0xFFFF;
     public static final int MAX_FILES = 64;
     public static final long MAX_FILE_SIZE = 8L * 1024 * 1024 * 1024;
 
@@ -100,12 +110,20 @@ public final class SyncMessages {
         return listResponse(apps, false);
     }
 
-    /**
-     * The app list. {@code withSignerSubjects} appends each app's signer subjects after its
-     * files, which only a client of {@link #REVISION_SIGNER_SUBJECTS} or later can read.
-     */
     @NonNull
     public static byte[] listResponse(@NonNull List<SyncApp> apps, boolean withSignerSubjects) throws IOException {
+        return listResponse(apps, withSignerSubjects, false);
+    }
+
+    /**
+     * The app list. {@code withSignerSubjects} appends each app's signer subjects after its
+     * files, which only a client of {@link #REVISION_SIGNER_SUBJECTS} or later can read, and
+     * {@code withMinSdk} each app's minimum Android version after that, for a client of
+     * {@link #REVISION_MIN_SDK} or later.
+     */
+    @NonNull
+    public static byte[] listResponse(@NonNull List<SyncApp> apps, boolean withSignerSubjects,
+                                      boolean withMinSdk) throws IOException {
         if (apps.size() > MAX_APPS) {
             throw new SyncProtocolException("Too many apps to list.");
         }
@@ -134,6 +152,9 @@ public final class SyncMessages {
                 for (String subject : subjects) {
                     w.writeString(clip(subject, MAX_LABEL_CHARS), MAX_LABEL_CHARS);
                 }
+            }
+            if (withMinSdk) {
+                w.out.writeShort(Math.max(0, Math.min(app.minSdk, MAX_SDK)));
             }
         }
         byte[] bytes = w.toByteArray();
@@ -255,12 +276,18 @@ public final class SyncMessages {
         return parseList(message, false);
     }
 
-    /**
-     * Reads an app list. {@code withSignerSubjects} must match what the host was told to send,
-     * since the field has no marker of its own.
-     */
     @NonNull
     public static List<SyncApp> parseList(@NonNull byte[] message, boolean withSignerSubjects) throws IOException {
+        return parseList(message, withSignerSubjects, false);
+    }
+
+    /**
+     * Reads an app list. {@code withSignerSubjects} and {@code withMinSdk} must match what the
+     * host was told to send, since the fields have no marker of their own.
+     */
+    @NonNull
+    public static List<SyncApp> parseList(@NonNull byte[] message, boolean withSignerSubjects, boolean withMinSdk)
+            throws IOException {
         Reader r = read(message, LIST_RESPONSE);
         int count = r.in.readInt();
         if (count < 0 || count > MAX_APPS) {
@@ -302,8 +329,9 @@ public final class SyncMessages {
                     subjects.add(r.readString(MAX_LABEL_CHARS));
                 }
             }
+            int minSdk = withMinSdk ? r.in.readUnsignedShort() : 0;
             apps.add(new SyncApp(packageName, label, versionCode, versionName, system, signers, pastSigners, files,
-                    subjects));
+                    subjects, minSdk));
         }
         r.expectEnd();
         return apps;

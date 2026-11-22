@@ -2,9 +2,16 @@
 
 package io.github.muntashirakon.AppManager.sync.lan;
 
+import android.content.Context;
+import android.os.Build;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.WorkerThread;
+
+import com.android.apksig.apk.ApkFormatException;
+import com.android.apksig.apk.ApkUtils;
+import com.android.apksig.util.DataSources;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -13,6 +20,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.util.HashSet;
 import java.util.List;
@@ -20,6 +29,8 @@ import java.util.Set;
 import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+
+import io.github.muntashirakon.AppManager.R;
 
 /**
  * Pulls one app's APK files from a host into the {@link ReceivedApkStore}, checks their
@@ -76,7 +87,54 @@ public final class LanSyncDownloader {
         }
     }
 
+    /**
+     * The app needs a newer Android than this device runs, so the installer would refuse it. Its
+     * files may still be fine to keep and move to another device.
+     */
+    public static final class NeedsNewerAndroidException extends IOException {
+        public final int minSdk;
+
+        NeedsNewerAndroidException(int minSdk) {
+            super("Needs Android API " + minSdk + " or newer.");
+            this.minSdk = minSdk;
+        }
+
+        /**
+         * Which Android it needs and which one this device has, for people to read.
+         */
+        @NonNull
+        public String describe(@NonNull Context context) {
+            return context.getString(R.string.lan_sync_needs_newer_android, AndroidReleases.describe(minSdk),
+                    AndroidReleases.describe(Build.VERSION.SDK_INT));
+        }
+    }
+
     private LanSyncDownloader() {
+    }
+
+    /**
+     * Throws when the app needs a newer Android than this device runs. The base APK's manifest
+     * decides; when it can't be read, the minimum the other device listed does.
+     */
+    @WorkerThread
+    public static void checkInstallableHere(@NonNull List<File> files, @NonNull SyncApp claimed)
+            throws NeedsNewerAndroidException {
+        Integer fromFile = files.isEmpty() ? null : minSdkOf(files.get(0));
+        int minSdk = fromFile != null ? fromFile : claimed.minSdk;
+        if (minSdk > Build.VERSION.SDK_INT) {
+            throw new NeedsNewerAndroidException(minSdk);
+        }
+    }
+
+    @WorkerThread
+    @Nullable
+    private static Integer minSdkOf(@NonNull File apk) {
+        try (RandomAccessFile in = new RandomAccessFile(apk, "r")) {
+            ByteBuffer manifest = ApkUtils.getAndroidManifest(DataSources.asDataSource(in));
+            return ApkUtils.getMinSdkVersionFromBinaryAndroidManifest(manifest);
+        } catch (IOException | ApkFormatException | RuntimeException e) {
+            return null;
+        }
     }
 
     @WorkerThread
@@ -102,6 +160,10 @@ public final class LanSyncDownloader {
         replacing = replacing && status == SyncComparator.Status.SIGNATURE_DIFFERS;
         if (!replacing && !SyncComparator.canPull(status)) {
             throw new IOException("This app is not newer on the other device or is signed differently.");
+        }
+        if (app.minSdk > Build.VERSION.SDK_INT) {
+            // The installer would refuse it, so it isn't downloaded at all
+            throw new NeedsNewerAndroidException(app.minSdk);
         }
         if (replacing) {
             // Checked against the listed keys only: the installed copy goes before the install
@@ -152,7 +214,9 @@ public final class LanSyncDownloader {
 
     /**
      * Checks a finished entry's files again and hands back what the installer opens. A failed
-     * check deletes the entry. A bundle is packed into a new temporary file in {@code dir}.
+     * signature check deletes the entry. An app for a newer Android than this one stays, since it
+     * can still be saved and installed elsewhere. A bundle is packed into a new temporary file in
+     * {@code dir}.
      */
     @WorkerThread
     @NonNull
@@ -160,6 +224,7 @@ public final class LanSyncDownloader {
                                  @NonNull File dir, @Nullable SyncApp installed,
                                  @NonNull ApkSignatureGate.DigestReader reader) throws IOException {
         List<File> files = verify(store, entry, installed, reader);
+        checkInstallableHere(files, entry.app);
         if (!entry.isBundle()) {
             return new Result(files.get(0), MIME_APK, false, entry);
         }

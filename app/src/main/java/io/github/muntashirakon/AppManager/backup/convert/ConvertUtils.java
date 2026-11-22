@@ -3,7 +3,6 @@
 package io.github.muntashirakon.AppManager.backup.convert;
 
 import android.annotation.SuppressLint;
-import android.os.Build;
 
 import androidx.annotation.NonNull;
 
@@ -36,6 +35,7 @@ import io.github.muntashirakon.AppManager.self.filecache.FileCache;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
 import io.github.muntashirakon.AppManager.utils.ArrayUtils;
+import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.io.FileSystemManager;
 import io.github.muntashirakon.io.Path;
 
@@ -236,9 +236,8 @@ public final class ConvertUtils {
         try {
             DataSource dataSource = DataSources.asDataSource(fileChannel);
             List<String> checksums = new ArrayList<>(1);
-            ApkVerifier verifier = new ApkVerifier.Builder(dataSource)
-                    .setMaxCheckedPlatformVersion(Build.VERSION.SDK_INT)
-                    .build();
+            // The APK is restored here, so its signers are the ones this device would see
+            ApkVerifier verifier = PackageUtils.checkedAtThisDevice(new ApkVerifier.Builder(dataSource)).build();
             ApkVerifier.Result apkVerifierResult = verifier.verify();
             // Get signer certificates
             List<X509Certificate> certificates = apkVerifierResult.getSignerCertificates();

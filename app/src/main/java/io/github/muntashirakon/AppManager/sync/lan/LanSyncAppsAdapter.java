@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.sync.lan;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.os.Build;
 import android.text.format.Formatter;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -67,7 +68,7 @@ class LanSyncAppsAdapter extends RecyclerView.Adapter<LanSyncAppsAdapter.ViewHol
 
     static boolean canReplace(@NonNull LanSyncViewModel.AppRow row, boolean allowReplace) {
         return allowReplace && row.status == SyncComparator.Status.SIGNATURE_DIFFERS && row.local != null
-                && !row.local.system;
+                && !row.local.system && !row.needsNewerAndroid;
     }
 
     @NonNull
@@ -88,7 +89,7 @@ class LanSyncAppsAdapter extends RecyclerView.Adapter<LanSyncAppsAdapter.ViewHol
         holder.versions.setText(row.local == null ? there : there + "\n" + context.getString(
                 R.string.lan_sync_version_here, row.local.versionName, row.local.versionCode));
         holder.note.setText(noteFor(context, row, mAllowReplace));
-        boolean canPull = SyncComparator.canPull(row.status);
+        boolean canPull = SyncComparator.canPull(row.status) && !row.needsNewerAndroid;
         boolean canReplace = !canPull && canReplace(row, mAllowReplace);
         holder.pull.setText(canReplace ? R.string.replace : R.string.lan_sync_get);
         holder.pull.setVisibility(canPull || canReplace ? View.VISIBLE : View.GONE);
@@ -109,6 +110,10 @@ class LanSyncAppsAdapter extends RecyclerView.Adapter<LanSyncAppsAdapter.ViewHol
 
     @NonNull
     static String noteFor(@NonNull Context context, @NonNull LanSyncViewModel.AppRow row, boolean allowReplace) {
+        if (row.needsNewerAndroid) {
+            return context.getString(R.string.lan_sync_needs_newer_android,
+                    AndroidReleases.describe(row.remote.minSdk), AndroidReleases.describe(Build.VERSION.SDK_INT));
+        }
         switch (row.status) {
             case SIGNATURE_DIFFERS:
                 if (canReplace(row, allowReplace)) {

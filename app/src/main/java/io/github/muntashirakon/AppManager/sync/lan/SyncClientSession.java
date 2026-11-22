@@ -126,16 +126,19 @@ public final class SyncClientSession implements Closeable {
     /**
      * The host's apps. Asks the host's revision first (once per session), which also tells the
      * host this client's, so a host of {@link SyncMessages#REVISION_SIGNER_SUBJECTS} or later adds
-     * signer subjects for search.
+     * signer subjects for search, and one of {@link SyncMessages#REVISION_MIN_SDK} or later each
+     * app's minimum Android version.
      */
     @WorkerThread
     @NonNull
     public List<SyncApp> list(boolean includeSystem) throws IOException {
-        boolean withSignerSubjects = hostRevision() >= SyncMessages.REVISION_SIGNER_SUBJECTS;
+        int hostRevision = hostRevision();
+        boolean withSignerSubjects = hostRevision >= SyncMessages.REVISION_SIGNER_SUBJECTS;
+        boolean withMinSdk = hostRevision >= SyncMessages.REVISION_MIN_SDK;
         mChannel.send(SyncMessages.listRequest(includeSystem));
         byte[] reply = mChannel.receive(SyncMessages.MAX_LIST);
         throwIfError(reply);
-        return SyncMessages.parseList(reply, withSignerSubjects);
+        return SyncMessages.parseList(reply, withSignerSubjects, withMinSdk);
     }
 
     @WorkerThread

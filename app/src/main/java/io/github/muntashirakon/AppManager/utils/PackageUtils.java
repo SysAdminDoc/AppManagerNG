@@ -695,27 +695,49 @@ public final class PackageUtils {
 
     @Nullable
     private static SignerInfo getSignerInfo(@NonNull File apkFile) {
-        ApkVerifier apkVerifier = new ApkVerifier.Builder(apkFile)
-                .setMaxCheckedPlatformVersion(Build.VERSION.SDK_INT)
-                .build();
+        ApkVerifier apkVerifier = checkedAt(new ApkVerifier.Builder(apkFile), Build.VERSION.SDK_INT).build();
         try {
             return new SignerInfo(apkVerifier.verify());
-        } catch (IOException | ApkFormatException | NoSuchAlgorithmException e) {
+        } catch (IOException | ApkFormatException | NoSuchAlgorithmException | RuntimeException e) {
             Log.w(TAG, e);
             return null;
         }
     }
 
     /**
-     * Signers of an APK file whose signature fully verifies, or {@code null} when it does not
-     * verify or cannot be read.
+     * Has the verifier check a signature the way this device's package manager does: at this
+     * device's Android version only. Left to itself, apksig checks every version from the APK's
+     * own minimum up, which fails a v1 signature this device accepts, and throws when the APK
+     * needs a newer Android than this device has.
+     */
+    @NonNull
+    public static ApkVerifier.Builder checkedAtThisDevice(@NonNull ApkVerifier.Builder builder) {
+        return checkedAt(builder, Build.VERSION.SDK_INT);
+    }
+
+    @NonNull
+    private static ApkVerifier.Builder checkedAt(@NonNull ApkVerifier.Builder builder, int sdk) {
+        return builder.setMinCheckedPlatformVersion(sdk).setMaxCheckedPlatformVersion(sdk);
+    }
+
+    /**
+     * Signers of an APK file whose signature fully verifies on this device, or {@code null} when
+     * it does not verify or cannot be read.
      */
     @WorkerThread
     @Nullable
     public static SignerInfo getVerifiedSignerInfo(@NonNull File apkFile) {
-        ApkVerifier apkVerifier = new ApkVerifier.Builder(apkFile)
-                .setMaxCheckedPlatformVersion(Build.VERSION.SDK_INT)
-                .build();
+        return getVerifiedSignerInfo(apkFile, Build.VERSION.SDK_INT);
+    }
+
+    /**
+     * Signers of an APK file whose signature verifies on Android {@code sdk}, or {@code null}.
+     */
+    @VisibleForTesting
+    @WorkerThread
+    @Nullable
+    public static SignerInfo getVerifiedSignerInfo(@NonNull File apkFile, int sdk) {
+        ApkVerifier apkVerifier = checkedAt(new ApkVerifier.Builder(apkFile), sdk).build();
         try {
             ApkVerifier.Result result = apkVerifier.verify();
             return result.isVerified() ? new SignerInfo(result) : null;

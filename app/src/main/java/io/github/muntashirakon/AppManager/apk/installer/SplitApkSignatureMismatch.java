@@ -4,7 +4,6 @@ package io.github.muntashirakon.AppManager.apk.installer;
 
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.os.Build;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
@@ -36,6 +35,7 @@ import io.github.muntashirakon.AppManager.apk.ApkFile;
 import io.github.muntashirakon.AppManager.apk.signing.SignerInfo;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.utils.DigestUtils;
+import io.github.muntashirakon.AppManager.utils.PackageUtils;
 
 public final class SplitApkSignatureMismatch {
     private static final String TAG = SplitApkSignatureMismatch.class.getSimpleName();
@@ -148,8 +148,7 @@ public final class SplitApkSignatureMismatch {
     @NonNull
     private static List<String> loadCurrentSignerSha256(@NonNull File apkFile) {
         try {
-            ApkVerifier.Result result = new ApkVerifier.Builder(apkFile)
-                    .setMaxCheckedPlatformVersion(Build.VERSION.SDK_INT)
+            ApkVerifier.Result result = PackageUtils.checkedAtThisDevice(new ApkVerifier.Builder(apkFile))
                     .build()
                     .verify();
             SignerInfo signerInfo = new SignerInfo(result);

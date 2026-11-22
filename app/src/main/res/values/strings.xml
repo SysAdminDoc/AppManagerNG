@@ -4965,6 +4965,7 @@ Components removed: %8$s</string>
     <string name="lan_sync_replace_pin_refused">%1$s wasn\'t uninstalled because its signer pin refuses the new copy (it\'s in Received APKs). Reason: %2$s</string>
     <string name="lan_sync_note_same">Same version on both devices</string>
     <string name="lan_sync_note_older">The copy on this device is newer</string>
+    <string name="lan_sync_needs_newer_android">Needs Android <xliff:g id="needed" example="12L (API 32)">%1$s</xliff:g> or newer. This device has Android <xliff:g id="here" example="11 (API 30)">%2$s</xliff:g>.</string>
     <string name="lan_sync_apps_summary">Apps on %1$s: %2$d</string>
     <string name="lan_sync_apps_not_connected">Connect to another device to see its apps</string>
     <string name="lan_sync_apps_empty_bucket">Nothing in this group</string>

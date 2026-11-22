@@ -55,6 +55,11 @@ public final class SyncApp {
      */
     @NonNull
     public final List<String> signerSubjects;
+    /**
+     * The oldest Android version (API level) the app runs on, from its base APK, or 0 when the
+     * other device's revision doesn't send it.
+     */
+    public final int minSdk;
 
     public SyncApp(@NonNull String packageName, @NonNull String label, long versionCode,
                    @NonNull String versionName, boolean system, @NonNull List<String> signers,
@@ -67,6 +72,14 @@ public final class SyncApp {
                    @NonNull String versionName, boolean system, @NonNull List<String> signers,
                    @NonNull List<String> pastSigners, @NonNull List<ApkFileInfo> files,
                    @NonNull List<String> signerSubjects) {
+        this(packageName, label, versionCode, versionName, system, signers, pastSigners, files, signerSubjects, 0);
+    }
+
+    public SyncApp(@NonNull String packageName, @NonNull String label, long versionCode,
+                   @NonNull String versionName, boolean system, @NonNull List<String> signers,
+                   @NonNull List<String> pastSigners, @NonNull List<ApkFileInfo> files,
+                   @NonNull List<String> signerSubjects, int minSdk) {
+        this.minSdk = minSdk;
         this.packageName = packageName;
         this.label = label;
         this.versionCode = versionCode;

@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.os.Build;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -131,8 +132,10 @@ public final class AndroidPackageCatalog implements HostCatalog {
         }
         String label = String.valueOf(appInfo.loadLabel(mPm));
         String versionName = info.versionName != null ? info.versionName : "";
+        // Android 7.0 and later report it; on older ones the client reads it from the file
+        int minSdk = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ? appInfo.minSdkVersion : 0;
         return new SyncApp(info.packageName, label, PackageInfoCompat.getLongVersionCode(info), versionName,
-                system, signers.current, signers.lineage, fileInfos, signerSubjects(signerInfo));
+                system, signers.current, signers.lineage, fileInfos, signerSubjects(signerInfo), minSdk);
     }
 
     /**

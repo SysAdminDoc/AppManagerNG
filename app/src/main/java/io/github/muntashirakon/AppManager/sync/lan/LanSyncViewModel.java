@@ -89,11 +89,16 @@ public class LanSyncViewModel extends AndroidViewModel {
         public final SyncApp local;
         @NonNull
         public final SyncComparator.Status status;
+        /**
+         * The other device listed this app as needing a newer Android than this device runs.
+         */
+        public final boolean needsNewerAndroid;
 
         AppRow(@NonNull SyncApp remote, @Nullable SyncApp local) {
             this.remote = remote;
             this.local = local;
             this.status = SyncComparator.compare(remote, local);
+            this.needsNewerAndroid = remote.minSdk > Build.VERSION.SDK_INT;
         }
     }
 
@@ -835,7 +840,7 @@ public class LanSyncViewModel extends AndroidViewModel {
         }
         List<AppRow> newer = new ArrayList<>();
         for (AppRow row : rows) {
-            if (row.status == SyncComparator.Status.NEWER) {
+            if (row.status == SyncComparator.Status.NEWER && !row.needsNewerAndroid) {
                 newer.add(row);
             }
         }
@@ -897,6 +902,10 @@ public class LanSyncViewModel extends AndroidViewModel {
                         Log.w(TAG, "Could not get %s", e, row.remote.packageName);
                         mMessage.postValue(getApplication().getString(R.string.lan_sync_pull_failed, label,
                                 describe(e)));
+                    } catch (LanSyncDownloader.NeedsNewerAndroidException e) {
+                        // Not for this device. Files that did arrive stay in Received APKs
+                        mMessage.postValue(getApplication().getString(R.string.lan_sync_pull_failed, label,
+                                e.describe(getApplication())));
                     }
                 }
             } catch (IOException e) {

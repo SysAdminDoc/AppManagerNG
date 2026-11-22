@@ -137,7 +137,7 @@ public final class HostSession {
                     byte[] reply;
                     try {
                         reply = SyncMessages.listResponse(mCatalog.listApps(includeSystem),
-                                sendsSignerSubjects());
+                                sendsSignerSubjects(), sendsMinSdk());
                     } catch (SyncProtocolException e) {
                         reply = SyncMessages.error(SyncMessages.ERR_TOO_LARGE, e.getMessage());
                     }
@@ -189,6 +189,14 @@ public final class HostSession {
     private boolean sendsSignerSubjects() {
         return mRevision >= SyncMessages.REVISION_SIGNER_SUBJECTS
                 && mClientRevision >= SyncMessages.REVISION_SIGNER_SUBJECTS;
+    }
+
+    /**
+     * Whether the app list carries each app's minimum Android version, again only when both sides
+     * are on {@link SyncMessages#REVISION_MIN_SDK}.
+     */
+    private boolean sendsMinSdk() {
+        return mRevision >= SyncMessages.REVISION_MIN_SDK && mClientRevision >= SyncMessages.REVISION_MIN_SDK;
     }
 
     /**

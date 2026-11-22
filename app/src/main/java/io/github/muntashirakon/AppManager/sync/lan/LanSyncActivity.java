@@ -733,7 +733,7 @@ public class LanSyncActivity extends BaseActivity {
         int newer = 0;
         if (rows != null) {
             for (LanSyncViewModel.AppRow row : rows) {
-                if (row.status == SyncComparator.Status.NEWER) {
+                if (row.status == SyncComparator.Status.NEWER && !row.needsNewerAndroid) {
                     // Update all gets every newer app, whatever the search shows
                     ++newer;
                 }
