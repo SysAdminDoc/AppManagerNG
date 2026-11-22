@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.editor;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -14,8 +15,15 @@ import android.app.Dialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Looper;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ListAdapter;
+import android.widget.ListView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.test.core.app.ApplicationProvider;
@@ -30,14 +38,20 @@ import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.fakes.RoboMenuItem;
+import org.robolectric.shadow.api.Shadow;
 import org.robolectric.shadows.ShadowDialog;
+import org.robolectric.shadows.ShadowToast;
+import org.robolectric.shadows.ShadowWindowManagerImpl;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -223,6 +237,58 @@ public class CodeEditorReleaseTest {
         assertEquals("* Subtitle", subtitle(activity));
     }
 
+    @Test
+    public void anEditTypedWhileSavingStillCountsAsUnsaved() throws Exception {
+        CodeEditorActivity activity = open(JSON);
+        CodeEditorWidget editor = waitForText(activity, JSON);
+        editor.getText().insert(0, 0, "// one\n");
+        assertTrue(fragment(activity).onMenuItemSelected(new RoboMenuItem(R.id.action_save)));
+        // Typed while the file is being written, before the result comes back
+        editor.getText().insert(0, 0, "// two\n");
+
+        waitForFile(mFile, "// one\n" + JSON);
+        waitForSavedToast(activity);
+        assertEquals("* Subtitle", subtitle(activity));
+
+        // A new view compares against what was written, not against what was on screen
+        activity = mController.recreate().get();
+        waitForText(activity, "// two\n// one\n" + JSON);
+        idle();
+        assertEquals("* Subtitle", subtitle(activity));
+    }
+
+    @Test
+    public void aLanguagePickedByHandIsKeptAcrossARotation() throws Exception {
+        CodeEditorActivity activity = open(JSON);
+        waitForText(activity, JSON);
+        TextView language = activity.findViewById(R.id.language);
+        assertEquals("json", String.valueOf(language.getText()));
+
+        language.performClick();
+        idle();
+        pick(onlyPopup(activity), "xml");
+        assertEquals("xml", String.valueOf(language.getText()));
+
+        activity = mController.recreate().get();
+        waitForText(activity, JSON);
+        idle();
+        assertEquals("xml", String.valueOf(((TextView) activity.findViewById(R.id.language)).getText()));
+    }
+
+    @Test
+    public void aPopupLeftOpenGoesAwayWithTheView() throws Exception {
+        CodeEditorActivity activity = open(JSON);
+        waitForText(activity, JSON);
+        activity.findViewById(R.id.language).performClick();
+        idle();
+        onlyPopup(activity);
+
+        leaveForAnotherScreen(activity);
+
+        // Picking from it would reach an editor that's gone
+        assertEquals(Collections.emptyList(), popupWindows(activity));
+    }
+
     @NonNull
     private CodeEditorActivity open(@NonNull String text) throws Exception {
         mFile = mTemp.newFile("file.json");
@@ -271,6 +337,72 @@ public class CodeEditorReleaseTest {
             idle();
             Thread.sleep(20);
         }
+    }
+
+    private static void waitForSavedToast(@NonNull CodeEditorActivity activity) throws InterruptedException {
+        // The file is complete before the result is posted back, so the toast is the sign it arrived
+        String saved = activity.getString(R.string.saved_successfully);
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        while (!saved.equals(ShadowToast.getTextOfLatestToast())) {
+            if (System.nanoTime() > deadline) {
+                assertEquals(saved, ShadowToast.getTextOfLatestToast());
+            }
+            idle();
+            Thread.sleep(20);
+        }
+    }
+
+    /** The popup windows on screen: what PopupMenu adds to the window manager when it shows. */
+    @NonNull
+    private static List<View> popupWindows(@NonNull Activity activity) {
+        ShadowWindowManagerImpl windowManager = Shadow.extract(activity.getWindowManager());
+        List<View> popups = new ArrayList<>();
+        for (View view : windowManager.getViews()) {
+            if (view.getClass().getName().endsWith("PopupDecorView")) {
+                popups.add(view);
+            }
+        }
+        return popups;
+    }
+
+    @NonNull
+    private static View onlyPopup(@NonNull Activity activity) {
+        List<View> popups = popupWindows(activity);
+        assertEquals("popups on screen", 1, popups.size());
+        return popups.get(0);
+    }
+
+    private static void pick(@NonNull View popupWindow, @NonNull String title) {
+        ListView list = findListView(popupWindow);
+        assertNotNull("the popup has no list", list);
+        ListAdapter adapter = list.getAdapter();
+        for (int i = 0; i < adapter.getCount(); ++i) {
+            Object item = adapter.getItem(i);
+            if (item instanceof MenuItem && title.contentEquals(((MenuItem) item).getTitle())) {
+                // What a tap on the row does
+                list.performItemClick(null, i, adapter.getItemId(i));
+                idle();
+                return;
+            }
+        }
+        throw new AssertionError("No " + title + " in the popup");
+    }
+
+    @Nullable
+    private static ListView findListView(@NonNull View view) {
+        if (view instanceof ListView) {
+            return (ListView) view;
+        }
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); ++i) {
+                ListView list = findListView(group.getChildAt(i));
+                if (list != null) {
+                    return list;
+                }
+            }
+        }
+        return null;
     }
 
     private static void leaveForAnotherScreen(@NonNull CodeEditorActivity activity) {

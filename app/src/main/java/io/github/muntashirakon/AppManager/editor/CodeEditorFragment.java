@@ -235,6 +235,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
     private Future<?> mDiffResult;
     private int mDiffRequestId;
     private final List<Dialog> mOpenDialogs = new ArrayList<>();
+    private final List<PopupMenu> mOpenPopups = new ArrayList<>();
     private boolean mTextModified = false;
     private final Runnable mInvisibleCharHintsUpdater = this::updateInvisibleCharHints;
     private final ActivityResultLauncher<Intent> mSaveOpenedFile = registerForActivityResult(
@@ -443,7 +444,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
                         search(mSearchView.getText());
                         return true;
                     });
-            popupMenu.show();
+            showPopup(popupMenu);
         });
         view.findViewById(R.id.search_close_button).setOnClickListener(v -> hideSearchWidget());
         mSearchResultCount = view.findViewById(R.id.search_result_count);
@@ -518,7 +519,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
                     return true;
                 });
             }
-            popupMenu.show();
+            showPopup(popupMenu);
         });
         mPositionButton = view.findViewById(R.id.position);
         mPositionButton.setOnClickListener(v -> showGoToLineDialog());
@@ -564,12 +565,16 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
         mViewModel.getSaveFileLiveData().observe(getViewLifecycleOwner(), result -> {
             if (result.success) {
                 UIUtils.displayShortToast(R.string.saved_successfully);
-                if (mEditor != null) {
-                    mViewModel.updateOriginalContent(mEditor.getText().toString());
+                // What was written is the text as it was when Save was tapped. Anything typed while
+                // it was being written is still unsaved.
+                mViewModel.updateOriginalContent(result.savedText);
+                if (mEditor != null && !result.savedText.contentEquals(mEditor.getText())) {
+                    markTextModified();
+                } else {
+                    mTextModified = false;
+                    mTextModifiedBackPressedCallback.setEnabled(false);
+                    getActionBar().ifPresent(actionBar -> actionBar.setSubtitle(mOptions.subtitle));
                 }
-                mTextModified = false;
-                mTextModifiedBackPressedCallback.setEnabled(false);
-                getActionBar().ifPresent(actionBar -> actionBar.setSubtitle(mOptions.subtitle));
                 if (mViewModel.consumeExitAfterSave(true)) {
                     requireActivity().getOnBackPressedDispatcher().onBackPressed();
                 }
@@ -626,6 +631,10 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             }
         }
         mOpenDialogs.clear();
+        for (PopupMenu popup : new ArrayList<>(mOpenPopups)) {
+            popup.dismiss();
+        }
+        mOpenPopups.clear();
         if (mEditor != null) {
             mEditor.removeCallbacks(mInvisibleCharHintsUpdater);
             // Stops the highlighter's thread, which otherwise holds this editor and the screen around
@@ -967,7 +976,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
             }).setChecked(lang.equals(current));
         }
         menu.setGroupCheckable(0, true, true);
-        popup.show();
+        showPopup(popup);
     }
 
     /**
@@ -988,7 +997,7 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
                 return true;
             });
         }
-        popup.show();
+        showPopup(popup);
     }
 
     /**
@@ -1045,6 +1054,13 @@ public class CodeEditorFragment extends AndroidFragment implements MenuProvider 
         }
         mOpenDialogs.add(dialog);
         dialog.show();
+    }
+
+    /** Shows a popup menu that is dismissed when this view goes away, for the same reason. */
+    private void showPopup(@NonNull PopupMenu popup) {
+        mOpenPopups.add(popup);
+        popup.setOnDismissListener(menu -> mOpenPopups.remove(popup));
+        popup.show();
     }
 
     @MainThread
