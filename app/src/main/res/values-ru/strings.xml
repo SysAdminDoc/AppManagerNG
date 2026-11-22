@@ -2206,7 +2206,7 @@
     <string name="toast_history_settings_summary">Просмотр toast других приложений с временем и приложением, которое их показало</string>
     <string name="toast_history_record">Записывать toast</string>
     <string name="toast_history_empty_title">Пока нет toast</string>
-    <string name="toast_history_empty_on">Новые toast из других приложений появляются здесь по мере появления.</string>
+    <string name="toast_history_empty_on">Новые toast появляются здесь по мере появления.</string>
     <string name="toast_history_empty_off">Включите «Записывать toast», чтобы хранить до 2000 toast за последние 30 дней на этом устройстве с указанием приложения. Ничего не покидает телефон.</string>
     <string name="toast_history_turn_on">Включить</string>
     <string name="toast_history_service_off">Служба специальных возможностей выключена, ничего не записывается.</string>

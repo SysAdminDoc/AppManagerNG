@@ -2215,7 +2215,7 @@
     <string name="toast_history_settings_summary">Review toasts from other apps, with the time and the app that showed each one</string>
     <string name="toast_history_record">Record toasts</string>
     <string name="toast_history_empty_title">No toasts yet</string>
-    <string name="toast_history_empty_on">New toasts from other apps show up here as they appear.</string>
+    <string name="toast_history_empty_on">New toasts show up here as they appear.</string>
     <string name="toast_history_empty_off">Turn on Record toasts to keep up to 2,000 toasts from the last 30 days on this device, with the app that showed each one. Nothing leaves your phone.</string>
     <string name="toast_history_turn_on">Turn on</string>
     <string name="toast_history_service_off">The accessibility service is off, so nothing is being recorded.</string>
