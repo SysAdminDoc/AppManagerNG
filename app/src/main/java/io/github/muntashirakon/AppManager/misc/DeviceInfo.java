@@ -50,7 +50,8 @@ public class DeviceInfo {
             versionCode = -1;
             versionName = null;
         }
-        inferredMode = Ops.getInferredMode(context);
+        // English whatever the app shows: this goes into crash reports and the diagnostic ZIP (#31).
+        inferredMode = Ops.getInferredMode(ReportLocale.english(context));
     }
 
     @NonNull

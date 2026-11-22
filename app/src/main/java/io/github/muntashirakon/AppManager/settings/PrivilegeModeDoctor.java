@@ -18,6 +18,7 @@ import java.util.List;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.AdvancedProtectionCompat;
 import io.github.muntashirakon.AppManager.dhizuku.DhizukuBridge;
+import io.github.muntashirakon.AppManager.misc.ReportLocale;
 import io.github.muntashirakon.AppManager.misc.SupportInfoBundle;
 import io.github.muntashirakon.AppManager.runner.RootManagerInfo;
 import io.github.muntashirakon.AppManager.runner.Runner;
@@ -42,24 +43,26 @@ public final class PrivilegeModeDoctor {
     @NonNull
     static Report runReport(@NonNull Context context) {
         Context appContext = context.getApplicationContext();
+        // The report is English like the rest of its text, since it's shared in the support bundle (#31).
+        Context english = ReportLocale.english(appContext);
         List<Probe> probes = new ArrayList<>();
         String configuredMode = Ops.getMode();
-        String inferredMode = String.valueOf(Ops.getInferredMode(appContext));
+        String inferredMode = String.valueOf(Ops.getInferredMode(english));
         int workingUid = Users.getSelfOrRemoteUid();
         probes.add(probeModeSelection(configuredMode, inferredMode, workingUid));
         probes.add(probeRootBinary());
         RootManagerInfo rootManagerInfo = RootManagerInfo.detect(appContext);
         probes.add(probeRootManager(rootManagerInfo));
         probes.add(probeSui(rootManagerInfo));
-        probes.add(probeShizuku(appContext));
+        probes.add(probeShizuku(english));
         probes.add(probeDhizuku(appContext));
         probes.add(probeAdb(appContext));
-        probes.add(probeRestrictedSettings(appContext));
+        probes.add(probeRestrictedSettings(english));
         probes.add(probeAdvancedProtection(appContext));
         probes.add(probeLocalServer());
         probes.add(probeSelinux());
         probes.add(probeAbi());
-        return new Report(appContext, configuredMode, inferredMode, workingUid, probes);
+        return new Report(english, configuredMode, inferredMode, workingUid, probes);
     }
 
     @NonNull

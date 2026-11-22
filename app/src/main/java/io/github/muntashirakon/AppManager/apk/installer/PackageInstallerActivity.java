@@ -92,6 +92,7 @@ import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
 import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
 import io.github.muntashirakon.AppManager.intercept.IntentCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.AppManager.misc.ReportLocale;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.settings.Prefs;
@@ -1321,7 +1322,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
 
     public void showInstallationFinishedDialog(String packageName, int result, @Nullable String blockingPackage,
                                                @Nullable String statusMessage) {
-        showInstallationFinishedDialog(packageName, getStringFromStatus(result, blockingPackage), statusMessage,
+        showInstallationFinishedDialog(packageName, getStringFromStatus(this, result, blockingPackage), statusMessage,
                 result == STATUS_SUCCESS, result);
     }
 
@@ -1665,14 +1666,6 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
     @NonNull
     private InstallTranscript buildInstallTranscript(@NonNull String packageName, int statusCode,
                                                      @Nullable String statusMessage) {
-        SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ROOT);
-        fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
-        String timestamp = fmt.format(new Date());
-        String version = String.format(Locale.ROOT, "%s (%d)", BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE);
-        String device = String.format(Locale.ROOT, "%s %s (%s)", Build.MANUFACTURER, Build.MODEL, Build.DEVICE);
-        String patch = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? Build.VERSION.SECURITY_PATCH : "";
-        String abi = Build.SUPPORTED_ABIS != null && Build.SUPPORTED_ABIS.length > 0 ? Build.SUPPORTED_ABIS[0] : "";
-        String mode = Ops.getMode();
         String sourceUri = null;
         ApkQueueItem currentItem = mCurrentItem;
         if (currentItem != null && currentItem.getApkSource() != null) {
@@ -1681,51 +1674,72 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                 sourceUri = rawUri.toString();
             }
         }
+        return newInstallTranscript(this, packageName, statusCode, statusMessage, sourceUri);
+    }
+
+    /**
+     * The transcript is pasted into issues for the maintainer, so its explanation and hint are English whatever
+     * language the app shows (issue #31).
+     */
+    @VisibleForTesting
+    @NonNull
+    static InstallTranscript newInstallTranscript(@NonNull Context context, @NonNull String packageName,
+                                                  int statusCode, @Nullable String statusMessage,
+                                                  @Nullable String sourceUri) {
+        SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ROOT);
+        fmt.setTimeZone(TimeZone.getTimeZone("UTC"));
+        String timestamp = fmt.format(new Date());
+        String version = String.format(Locale.ROOT, "%s (%d)", BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE);
+        String device = String.format(Locale.ROOT, "%s %s (%s)", Build.MANUFACTURER, Build.MODEL, Build.DEVICE);
+        String patch = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? Build.VERSION.SECURITY_PATCH : "";
+        String abi = Build.SUPPORTED_ABIS != null && Build.SUPPORTED_ABIS.length > 0 ? Build.SUPPORTED_ABIS[0] : "";
+        String mode = Ops.getMode();
+        Context english = ReportLocale.english(context);
         return new InstallTranscript(timestamp, version, device, Build.VERSION.RELEASE, Build.VERSION.SDK_INT,
                 patch, abi, mode, packageName, statusCode, InstallTranscript.statusName(statusCode),
-                getStringFromStatus(statusCode, null),
-                PackageInstallerService.getRecoveryHintFromStatus(this, statusCode),
+                getStringFromStatus(english, statusCode, null),
+                PackageInstallerService.getRecoveryHintFromStatus(english, statusCode),
                 statusMessage, sourceUri, true);
     }
 
     @NonNull
-    private String getStringFromStatus(@PackageInstallerCompat.Status int status,
-                                       @Nullable String blockingPackage) {
+    private static String getStringFromStatus(@NonNull Context context, @PackageInstallerCompat.Status int status,
+                                              @Nullable String blockingPackage) {
         switch (status) {
             case STATUS_SUCCESS:
-                return getString(R.string.installer_app_installed);
+                return context.getString(R.string.installer_app_installed);
             case STATUS_FAILURE_ABORTED:
-                return getString(R.string.installer_error_aborted);
+                return context.getString(R.string.installer_error_aborted);
             case STATUS_FAILURE_BLOCKED:
-                String blocker = getString(R.string.installer_error_blocked_device);
+                String blocker = context.getString(R.string.installer_error_blocked_device);
                 if (blockingPackage != null) {
-                    blocker = PackageUtils.getPackageLabel(getPackageManager(), blockingPackage);
+                    blocker = PackageUtils.getPackageLabel(context.getPackageManager(), blockingPackage);
                 }
-                return getString(R.string.installer_error_blocked, blocker);
+                return context.getString(R.string.installer_error_blocked, blocker);
             case STATUS_FAILURE_CONFLICT:
-                return getString(R.string.installer_error_conflict);
+                return context.getString(R.string.installer_error_conflict);
             case STATUS_FAILURE_INCOMPATIBLE:
-                return getString(R.string.installer_error_incompatible);
+                return context.getString(R.string.installer_error_incompatible);
             case STATUS_FAILURE_INVALID:
-                return getString(R.string.installer_error_bad_apks);
+                return context.getString(R.string.installer_error_bad_apks);
             case STATUS_FAILURE_STORAGE:
-                return getString(R.string.installer_error_storage);
+                return context.getString(R.string.installer_error_storage);
             case STATUS_FAILURE_SECURITY:
-                return getString(R.string.installer_error_security);
+                return context.getString(R.string.installer_error_security);
             case STATUS_FAILURE_SESSION_CREATE:
-                return getString(R.string.installer_error_session_create);
+                return context.getString(R.string.installer_error_session_create);
             case STATUS_FAILURE_SESSION_WRITE:
-                return getString(R.string.installer_error_session_write);
+                return context.getString(R.string.installer_error_session_write);
             case STATUS_FAILURE_SESSION_COMMIT:
-                return getString(R.string.installer_error_session_commit);
+                return context.getString(R.string.installer_error_session_commit);
             case STATUS_FAILURE_SESSION_ABANDON:
-                return getString(R.string.installer_error_session_abandon);
+                return context.getString(R.string.installer_error_session_abandon);
             case STATUS_FAILURE_INCOMPATIBLE_ROM:
-                return getString(R.string.installer_error_lidl_rom);
+                return context.getString(R.string.installer_error_lidl_rom);
             case STATUS_FAILURE_SIGNER_PIN:
-                return getString(R.string.installer_error_signer_pin);
+                return context.getString(R.string.installer_error_signer_pin);
         }
-        return getString(R.string.installer_error_generic);
+        return context.getString(R.string.installer_error_generic);
     }
 
     public void setInstallFinishedListener() {

@@ -195,7 +195,7 @@ public final class SupportInfoBundle {
             sb.append("Privilege state").append('\n');
             sb.append("---------------").append('\n');
             appendLine(sb, "Configured mode", Ops.getMode());
-            appendLine(sb, "Inferred mode", Ops.getInferredMode(context).toString());
+            appendLine(sb, "Inferred mode", Ops.getInferredMode(ReportLocale.english(context)).toString());
             appendLine(sb, "Working UID", REDACTED);
             appendLine(sb, "App UID", REDACTED);
             appendLine(sb, "Remote server alive", String.valueOf(LocalServer.alive(context)));
