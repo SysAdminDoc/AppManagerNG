@@ -65,6 +65,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Opening App details without usage access asked for it twice, since the screen loads its details twice while it opens. It asks once now.
 - File Properties showed the size in bytes with the word "bytes" in English whatever the app's language. It can be translated now, and Russian has it.
 - App details could close right after opening for a very large app like Google Play services, mostly on Android 10 and older. Its details are too big to fetch in one go, and the fallback that fetches them in parts gave up when one part was still too big. That part is fetched without its extra data now, and if even that doesn't fit it's left out so the rest still shows. The permissions the app asks for also came back empty after that fallback. They're there now.
+- The support bundle could pick up the name of an App details tab in the app's language from the log. The log says the tab's number now, so the bundle stays in English.
 
 ## v0.8.0, 2026-11-15
 

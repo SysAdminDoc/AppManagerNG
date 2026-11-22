@@ -473,7 +473,8 @@ public class AppDetailsActivity extends BaseActivity {
             return;
         }
         mLoadedTabs[id] = true;
-        Log.d("ADA - " + mTabTitles[id], "loading selected tab");
+        // The number, not the title: this log goes into support bundles, which stay English (#31)
+        Log.d("ADA", "Loading tab %d", id);
         model.load(id);
     }
 
