@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import io.github.muntashirakon.AppManager.ipc.LocalServices;
 import io.github.muntashirakon.AppManager.misc.DeviceInfo2;
 import io.github.muntashirakon.AppManager.misc.DeviceInfo2TextTest;
 import io.github.muntashirakon.AppManager.settings.Ops;
@@ -39,11 +40,13 @@ import io.github.muntashirakon.AppManager.utils.FileUtils;
  * prompt on a rooted phone (upstream App Manager #2048). The shadow records that root shell probe.
  */
 @RunWith(RobolectricTestRunner.class)
-@Config(shadows = {RootWithoutAskingTest.RecordingRunnerUtils.class, RootWithoutAskingTest.RecordingRunner.class})
+@Config(shadows = {RootWithoutAskingTest.RecordingRunnerUtils.class, RootWithoutAskingTest.RecordingRunner.class,
+        RootWithoutAskingTest.FakeLocalServices.class})
 public class RootWithoutAskingTest {
     static final List<String> sProbes = new ArrayList<>();
     static final List<String> sCommands = new ArrayList<>();
     static boolean sSuOnPath;
+    static boolean sServicesAlive;
 
     @Rule
     public TemporaryFolder mTemp = new TemporaryFolder();
@@ -62,6 +65,7 @@ public class RootWithoutAskingTest {
         sProbes.clear();
         sCommands.clear();
         sSuOnPath = false;
+        sServicesAlive = false;
         setDirectRoot(false);
         Ops.setWorkingUid(mWorkingUid);
     }
@@ -115,6 +119,27 @@ public class RootWithoutAskingTest {
     }
 
     @Test
+    public void sharedStorageFallbackUsesAPrivilegedServiceRunningAsRoot() throws Exception {
+        // Sui, Shizuku as root or ADB as root: no root shell, but Runner goes through the privileged
+        // service, which runs as root
+        sServicesAlive = true;
+        Ops.setWorkingUid(Ops.ROOT_UID);
+        File notAFolder = mTemp.newFile("external");
+        File[] extDirs = {new File(notAFolder, "cache")};
+
+        assertThrows(FileNotFoundException.class, () -> FileUtils.getBestExternalPathWithRoot(extDirs));
+
+        assertFalse("the root fallback was skipped", sCommands.isEmpty());
+        assertEquals(Collections.emptyList(), sProbes);
+
+        // The same UID left behind with the service gone has no root shell behind it
+        sCommands.clear();
+        sServicesAlive = false;
+        assertThrows(FileNotFoundException.class, () -> FileUtils.getBestExternalPathWithRoot(extDirs));
+        assertEquals(Collections.emptyList(), sCommands);
+    }
+
+    @Test
     public void deviceInfoDoesNotAskForRootOutsideRootMode() {
         sSuOnPath = true;
         FragmentActivity activity = Robolectric.buildActivity(DeviceInfo2TextTest.DisplayActivity.class).setup().get();
@@ -149,6 +174,14 @@ public class RootWithoutAskingTest {
         @Implementation
         protected static boolean isSuOnPath() {
             return sSuOnPath;
+        }
+    }
+
+    @Implements(LocalServices.class)
+    public static class FakeLocalServices {
+        @Implementation
+        protected static boolean alive() {
+            return sServicesAlive;
         }
     }
 
