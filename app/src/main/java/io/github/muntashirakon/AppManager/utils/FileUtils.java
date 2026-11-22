@@ -238,9 +238,10 @@ public final class FileUtils {
         try {
             return getBestExternalPath(extDirs);
         } catch (FileNotFoundException originalError) {
-            // Only when the commands below run as root. Asking su in any other mode is a superuser
-            // prompt, and an ADB shell can't hand the folder to its owner anyway.
-            if (extDirs == null || !Ops.isWorkingUidRoot()) {
+            // Only when the commands below run as root, which for Runner is root mode, even while the
+            // privileged service is down and the working UID is the app's. Asking su in any other
+            // mode is a superuser prompt, and an ADB shell can't hand the folder to its owner anyway.
+            if (extDirs == null || !Ops.isDirectRoot()) {
                 throw originalError;
             }
             for (File extDir : extDirs) {

@@ -39,9 +39,10 @@ import io.github.muntashirakon.AppManager.utils.FileUtils;
  * prompt on a rooted phone (upstream App Manager #2048). The shadow records that root shell probe.
  */
 @RunWith(RobolectricTestRunner.class)
-@Config(shadows = RootWithoutAskingTest.RecordingRunnerUtils.class)
+@Config(shadows = {RootWithoutAskingTest.RecordingRunnerUtils.class, RootWithoutAskingTest.RecordingRunner.class})
 public class RootWithoutAskingTest {
     static final List<String> sProbes = new ArrayList<>();
+    static final List<String> sCommands = new ArrayList<>();
     static boolean sSuOnPath;
 
     @Rule
@@ -52,12 +53,14 @@ public class RootWithoutAskingTest {
     @Before
     public void setUp() {
         sProbes.clear();
+        sCommands.clear();
         mWorkingUid = Ops.getWorkingUid();
     }
 
     @After
     public void tearDown() throws ReflectiveOperationException {
         sProbes.clear();
+        sCommands.clear();
         sSuOnPath = false;
         setDirectRoot(false);
         Ops.setWorkingUid(mWorkingUid);
@@ -92,6 +95,22 @@ public class RootWithoutAskingTest {
 
         assertThrows(FileNotFoundException.class, () -> FileUtils.getBestExternalPathWithRoot(extDirs));
 
+        assertEquals(Collections.emptyList(), sProbes);
+        assertEquals(Collections.emptyList(), sCommands);
+    }
+
+    @Test
+    public void sharedStorageFallbackStillUsesRootInRootModeWithTheServiceDown() throws Exception {
+        // Root mode, but the privileged service was stopped or unbound, which puts the working UID
+        // back to the app's. Runner still runs its commands in the root shell.
+        setDirectRoot(true);
+        Ops.setWorkingUid(android.os.Process.myUid());
+        File notAFolder = mTemp.newFile("external");
+        File[] extDirs = {new File(notAFolder, "cache")};
+
+        assertThrows(FileNotFoundException.class, () -> FileUtils.getBestExternalPathWithRoot(extDirs));
+
+        assertFalse("the root fallback was skipped", sCommands.isEmpty());
         assertEquals(Collections.emptyList(), sProbes);
     }
 
@@ -130,6 +149,16 @@ public class RootWithoutAskingTest {
         @Implementation
         protected static boolean isSuOnPath() {
             return sSuOnPath;
+        }
+    }
+
+    @Implements(Runner.class)
+    public static class RecordingRunner {
+        /** The real one runs the command in a root shell in root mode. */
+        @Implementation
+        protected static Runner.Result runCommand(String[] command) {
+            sCommands.add(command[0]);
+            return new Runner.Result(1);
         }
     }
 }
