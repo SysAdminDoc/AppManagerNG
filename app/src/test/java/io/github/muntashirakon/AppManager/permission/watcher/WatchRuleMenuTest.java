@@ -103,6 +103,38 @@ public class WatchRuleMenuTest {
         assertEquals(WatchRuleMenu.ID_ALLOW, mMenu.getItem(0).getItemId());
     }
 
+    /**
+     * The privileged process takes a grant back the moment it's made, but only for the apps it was told about. A
+     * rule saved from this menu wasn't passed on, so a grant made in Settings stayed until the server next connected
+     * or the scheduled check ran (#15).
+     */
+    @Test
+    public void aRuleSavedOrRemovedHereReachesTheLiveWatchAtOnce() {
+        PermissionWatchDb db = WatchTestDb.install(mApp);
+        RecordingWorkSink sink = RecordingWorkSink.install();
+        List<Integer> rulesWhenTold = new ArrayList<>();
+        WatchRuleMenu.RulesChanged original = WatchRuleMenu.sRulesChanged;
+        WatchRuleMenu.sRulesChanged = context ->
+                rulesWhenTold.add(PermissionWatchDb.getInstance(context).ruleDao().getAll().size());
+        try {
+            WatchRule rule = permission("com.example.app", 0, "android.permission.CAMERA", WatchRule.STATE_DENY);
+
+            assertTrue(WatchRuleMenu.saveNow(mApp, rule));
+            assertEquals("told after the rule was saved", Collections.singletonList(1), rulesWhenTold);
+            // App Details only reloads after its own trips to Settings, so the row can say "denied" for a permission
+            // granted since. A check reads the real state and applies the new rule, as the other places that save
+            // rules do.
+            assertEquals(Collections.singletonList("permission_watch_package:com.example.app:0"), sink.enqueuedNames);
+
+            assertTrue(WatchRuleMenu.removeNow(mApp, rule));
+            assertEquals("told again once it was gone", Arrays.asList(1, 0), rulesWhenTold);
+        } finally {
+            WatchRuleMenu.sRulesChanged = original;
+            RecordingWorkSink.uninstall();
+            WatchTestDb.uninstall(db);
+        }
+    }
+
     @Test
     public void eachStateItemMapsToItsState() {
         assertEquals(WatchRule.STATE_ALLOW, WatchRuleMenu.stateFor(WatchRuleMenu.ID_ALLOW));

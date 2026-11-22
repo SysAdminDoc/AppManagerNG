@@ -43,6 +43,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Crash reports, the support bundle, the privilege doctor and install transcripts stay in English whatever language the app is set to, so whoever reads the report can follow it (issue #31). They used to mix in words like "Без-ROOT".
 - Words in About the device that were typed in English, like Build, Software, the screen size and density units and the battery health, can be translated now (issue #31).
 - ADB and Wireless debugging modes stopped starting for good with "Operation not permitted" once root had made AppManagerNG's folder in /data/local/tmp, say after using rooted debugging or a root shell. That folder is moved aside now and a fresh one takes its place, and the command for starting it by hand does the same.
+- A watch rule made from the long-press menu in App Details didn't take a grant back right away (issue #15). The privileged process only heard about it the next time it connected, so the grant stayed until then or until the scheduled check. The menu passes new and removed rules on at once now, and checks the app straight away, so Always deny also works on a row that hasn't caught up with a grant made in Settings.
 
 ## v0.8.0, 2026-11-15
 

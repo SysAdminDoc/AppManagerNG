@@ -62,6 +62,19 @@ public final class WatchRuleMenu {
         void onRuleChanged(@Nullable WatchRule rule);
     }
 
+    @VisibleForTesting
+    interface RulesChanged {
+        @WorkerThread
+        void onRulesChanged(@NonNull Context context);
+    }
+
+    /**
+     * Hands the apps with rules to the privileged process, which takes a grant back the moment it's made. Rules
+     * saved anywhere else go through a check that does this, so this menu's own changes have to as well.
+     */
+    @VisibleForTesting
+    static RulesChanged sRulesChanged = PermissionWatchRelayClient::push;
+
     private WatchRuleMenu() {
     }
 
@@ -177,19 +190,7 @@ public final class WatchRuleMenu {
 
     private static void save(@NonNull Context context, @NonNull WatchRule rule, @NonNull OnRuleChanged listener) {
         ThreadUtils.postOnBackgroundThread(() -> {
-            boolean saved;
-            try {
-                PermissionWatchDb.getInstance(context).ruleDao().upsert(rule);
-                saved = true;
-            } catch (RuntimeException e) {
-                Log.e(TAG, "Couldn't save the watch rule.", e);
-                saved = false;
-            }
-            if (saved) {
-                // So an app update is noticed, and the rule checked, while the app isn't running.
-                PackageEventSync.scheduleOrCancel(context);
-            }
-            boolean ok = saved;
+            boolean ok = saveNow(context, rule);
             ThreadUtils.postOnMainThread(() -> {
                 UIUtils.displayShortToast(ok ? R.string.permission_watcher_rule_saved
                         : R.string.permission_watcher_rule_save_failed);
@@ -202,10 +203,7 @@ public final class WatchRuleMenu {
 
     private static void remove(@NonNull Context context, @NonNull WatchRule rule, @NonNull OnRuleChanged listener) {
         ThreadUtils.postOnBackgroundThread(() -> {
-            try {
-                PermissionWatchDb.getInstance(context).ruleDao().delete(rule);
-            } catch (RuntimeException e) {
-                Log.e(TAG, "Couldn't remove the watch rule.", e);
+            if (!removeNow(context, rule)) {
                 ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(
                         R.string.permission_watcher_rule_save_failed));
                 return;
@@ -215,5 +213,36 @@ public final class WatchRuleMenu {
                 listener.onRuleChanged(null);
             });
         });
+    }
+
+    @VisibleForTesting
+    @WorkerThread
+    static boolean saveNow(@NonNull Context context, @NonNull WatchRule rule) {
+        try {
+            PermissionWatchDb.getInstance(context).ruleDao().upsert(rule);
+        } catch (RuntimeException e) {
+            Log.e(TAG, "Couldn't save the watch rule.", e);
+            return false;
+        }
+        // So an app update is noticed, and the rule checked, while the app isn't running.
+        PackageEventSync.scheduleOrCancel(context);
+        sRulesChanged.onRulesChanged(context);
+        // The row may be out of date (App Details reloads only after its own trips to Settings), so a check reads
+        // the real state and applies the rule, as everywhere else a rule is saved.
+        PermissionWatchScheduler.checkSoon(context, rule.packageName, rule.userId);
+        return true;
+    }
+
+    @VisibleForTesting
+    @WorkerThread
+    static boolean removeNow(@NonNull Context context, @NonNull WatchRule rule) {
+        try {
+            PermissionWatchDb.getInstance(context).ruleDao().delete(rule);
+        } catch (RuntimeException e) {
+            Log.e(TAG, "Couldn't remove the watch rule.", e);
+            return false;
+        }
+        sRulesChanged.onRulesChanged(context);
+        return true;
     }
 }
