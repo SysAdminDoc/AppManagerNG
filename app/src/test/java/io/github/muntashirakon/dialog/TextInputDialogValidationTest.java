@@ -14,6 +14,7 @@ import android.text.InputType;
 import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -31,6 +32,7 @@ import org.robolectric.android.controller.ActivityController;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
@@ -103,6 +105,40 @@ public class TextInputDialogValidationTest {
         idle();
         assertFalse(dialog.isShowing());
         assertEquals(Arrays.asList("bad", "good"), mChecked);
+    }
+
+    @Test
+    public void anOlderAndroidsHardwareEnterSubmitsOncePerPress() {
+        // Before Android reported a hardware Enter as the field's action, it came as IME_NULL
+        List<String> runs = new ArrayList<>();
+        EditText field = new EditText(mController.get());
+        field.setInputType(InputType.TYPE_CLASS_TEXT);
+        TextView.OnEditorActionListener listener = TextInputDialogBuilder.submitOnEnter(() -> runs.add("submit"));
+
+        assertTrue(listener.onEditorAction(field, EditorInfo.IME_NULL, new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER)));
+        assertTrue(listener.onEditorAction(field, EditorInfo.IME_NULL, new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER)));
+        assertTrue(listener.onEditorAction(field, EditorInfo.IME_NULL,
+                new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_NUMPAD_ENTER)));
+        assertFalse(listener.onEditorAction(field, EditorInfo.IME_NULL, new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_TAB)));
+
+        assertEquals(Arrays.asList("submit", "submit"), runs);
+    }
+
+    @Test
+    public void enterInAFieldOfSeveralLinesStillStartsANewLine() {
+        List<String> runs = new ArrayList<>();
+        EditText field = new EditText(mController.get());
+        field.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+        field.setOnEditorActionListener(TextInputDialogBuilder.submitOnEnter(() -> runs.add("submit")));
+        field.setText("a");
+        field.setSelection(1);
+
+        field.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER));
+        field.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER));
+        idle();
+
+        assertEquals("a\n", field.getText().toString());
+        assertEquals(Collections.emptyList(), runs);
     }
 
     @Test

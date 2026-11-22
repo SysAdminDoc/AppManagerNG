@@ -68,6 +68,7 @@ import io.github.muntashirakon.widget.MaterialSpinner;
 import io.github.muntashirakon.widget.RecyclerView;
 import mobi.upod.timedurationpicker.TimeDurationPickerDialog;
 import io.github.muntashirakon.AppManager.logs.Log;
+import io.github.muntashirakon.dialog.TextInputDialogBuilder;
 
 public class EditFilterOptionFragment extends DialogFragment {
     public static final String TAG = EditFilterOptionFragment.class.getSimpleName();
@@ -230,16 +231,12 @@ public class EditFilterOptionFragment extends DialogFragment {
             }
         }));
         mGenericEditText.setImeOptions(EditorInfo.IME_ACTION_DONE);
-        mGenericEditText.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId != EditorInfo.IME_ACTION_DONE) {
-                return false;
-            }
+        mGenericEditText.setOnEditorActionListener(TextInputDialogBuilder.submitOnEnter(() -> {
             Button positive = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
             if (positive != null) {
                 positive.performClick();
             }
-            return true;
-        });
+        }));
         return dialog;
     }
 
@@ -249,14 +246,13 @@ public class EditFilterOptionFragment extends DialogFragment {
      * @return {@code false} when a value doesn't work, with the reason shown at the field it's about
      */
     private boolean applyInput(boolean editMode, @NonNull MaterialSpinner filterSpinner) {
+        // The pickers' text can't take focus, so their errors are only shown
         if (mCurrentFilterOption == null) {
             filterSpinner.setError(getText(R.string.key_name_cannot_be_null));
-            filterSpinner.requestFocus();
             return false;
         }
         if (mCurrentKey == null) {
             mKeySpinner.setError(getText(R.string.key_name_cannot_be_null));
-            mKeySpinner.requestFocus();
             return false;
         }
         Editable editable = mGenericEditText.getText();
@@ -264,7 +260,16 @@ public class EditFilterOptionFragment extends DialogFragment {
             mCurrentFilterOption.setKeyValue(mCurrentKey, TextUtils.isEmpty(editable) ? null : editable.toString());
         } catch (Exception e) {
             Log.w(TAG, e);
-            showValueError(getText(R.string.error_evaluating_input));
+            // The same words the field shows while typing, where they apply
+            int error;
+            if (mCurrentKeyType != TYPE_NONE && TextUtils.isEmpty(editable)) {
+                error = R.string.value_cannot_be_empty;
+            } else if (mCurrentKeyType == TYPE_REGEX) {
+                error = R.string.invalid_regex;
+            } else {
+                error = R.string.error_evaluating_input;
+            }
+            showValueError(getText(error));
             return false;
         }
         if (editMode) {

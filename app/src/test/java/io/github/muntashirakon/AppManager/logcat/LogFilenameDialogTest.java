@@ -96,6 +96,29 @@ public class LogFilenameDialogTest {
         assertEquals(goodFilename(), errorOf(dialog));
     }
 
+    @Test
+    public void recordLogTakesAGoodNameOnceAndGoesAway() {
+        RecordLogDialogFragment fragment = RecordLogDialogFragment.getInstance(null, null);
+        List<String> dismissed = new ArrayList<>();
+        fragment.setOnDismissListener(d -> dismissed.add("dismissed"));
+        fragment.showNow(mController.get().getSupportFragmentManager(), RecordLogDialogFragment.TAG);
+        idle();
+        AlertDialog dialog = (AlertDialog) fragment.getDialog();
+        assertNotNull(dialog);
+        EditText input = dialog.findViewById(android.R.id.input);
+
+        input.setText("mine.log");
+        dialog.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+        // A second tap and the keyboard's Done before it's gone
+        dialog.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+        input.onEditorAction(EditorInfo.IME_ACTION_DONE);
+        idle();
+
+        assertFalse(dialog.isShowing());
+        assertFalse(fragment.isAdded());
+        assertEquals(Collections.singletonList("dismissed"), dismissed);
+    }
+
     private String goodFilename() {
         return mController.get().getString(R.string.enter_good_filename);
     }

@@ -2,13 +2,17 @@
 
 package io.github.muntashirakon.AppManager.settings;
 
+import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
+import android.view.inputmethod.EditorInfo;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.collection.ArrayMap;
+import androidx.core.util.Consumer;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceScreen;
@@ -191,23 +195,36 @@ public class BackupTagPoliciesPreferences extends PreferenceFragment {
     }
 
     private void showTagStep(int index, @Nullable BackupTagPolicyStore.Policy policy) {
-        new TextInputDialogBuilder(requireContext(), R.string.backup_tag_policy_tag_prompt)
-                .setTitle(index >= 0 ? R.string.backup_tag_policy_edit : R.string.backup_tag_policy_add)
-                .setInputText(policy != null ? policy.tag : "")
+        tagStepDialog(requireContext(), index >= 0, policy != null ? policy.tag : "", tag -> {
+            Draft draft = policy != null ? new Draft(policy) : new Draft();
+            draft.tag = tag;
+            showPartsStep(index, draft);
+        }).show();
+    }
+
+    /**
+     * The first step: a tag that doesn't work stays in the field with the reason under it, and a
+     * good one moves on to the next step.
+     */
+    @VisibleForTesting
+    @NonNull
+    static TextInputDialogBuilder tagStepDialog(@NonNull Context context, boolean editing, @NonNull String tag,
+                                                @NonNull Consumer<String> onTag) {
+        return new TextInputDialogBuilder(context, R.string.backup_tag_policy_tag_prompt)
+                .setTitle(editing ? R.string.backup_tag_policy_edit : R.string.backup_tag_policy_add)
+                .setInputText(tag)
                 .setHelperText(R.string.backup_tag_policy_tag_helper)
-                .setPositiveButton(R.string.backup_tag_policy_continue, (dialog, which, input, checked) -> {
-                    String tag = input != null ? input.toString() : "";
-                    String normalized = AppTagStore.normalizeTag(tag);
+                .setInputInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS)
+                .setInputImeOptions(EditorInfo.IME_ACTION_DONE)
+                .setValidatedPositiveButton(R.string.backup_tag_policy_continue, (dialog, which, input, checked) -> {
+                    String normalized = AppTagStore.normalizeTag(input != null ? input.toString() : "");
                     if (normalized == null) {
-                        UIUtils.displayShortToast(R.string.invalid_tag);
-                        return;
+                        return context.getText(R.string.invalid_tag);
                     }
-                    Draft draft = policy != null ? new Draft(policy) : new Draft();
-                    draft.tag = normalized;
-                    showPartsStep(index, draft);
+                    onTag.accept(normalized);
+                    return null;
                 })
-                .setNegativeButton(R.string.cancel, null)
-                .show();
+                .setNegativeButton(R.string.cancel, null);
     }
 
     private void showPartsStep(int index, @NonNull Draft draft) {

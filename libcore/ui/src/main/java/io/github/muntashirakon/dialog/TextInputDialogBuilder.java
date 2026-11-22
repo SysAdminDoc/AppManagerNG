@@ -7,11 +7,13 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Typeface;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.TextWatcher;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -224,22 +226,7 @@ public class TextInputDialogBuilder {
         AlertDialog dialog = mBuilder.create();
         OnValidatedClickListener validatedListener = mValidatedPositiveListener;
         if (validatedListener != null) {
-            mEditText.setOnEditorActionListener((v, actionId, event) -> {
-                boolean imeAction = actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_GO
-                        || actionId == EditorInfo.IME_ACTION_SEND;
-                boolean enterKey = actionId == EditorInfo.IME_NULL && event != null
-                        && (event.getKeyCode() == KeyEvent.KEYCODE_ENTER
-                        || event.getKeyCode() == KeyEvent.KEYCODE_NUMPAD_ENTER);
-                if (!imeAction && !enterKey) {
-                    return false;
-                }
-                // A hardware Enter arrives as a press and then a release, under the field's action
-                // on newer Android and as IME_NULL before. Act on the press, and take the release too.
-                if (event == null || event.getAction() == KeyEvent.ACTION_DOWN) {
-                    submit(dialog, validatedListener);
-                }
-                return true;
-            });
+            mEditText.setOnEditorActionListener(submitOnEnter(() -> submit(dialog, validatedListener)));
             mEditText.addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -278,6 +265,31 @@ public class TextInputDialogBuilder {
 
     public void show() {
         create().show();
+    }
+
+    /**
+     * An editor action listener that runs {@code submit} once for Done, Go, Send or a hardware Enter.
+     * A hardware Enter arrives as a press and then a release, under the field's action on newer
+     * Android and as IME_NULL before. It acts on the press and takes the release too. In a field of
+     * several lines Enter still starts a new line.
+     */
+    @NonNull
+    public static TextView.OnEditorActionListener submitOnEnter(@NonNull Runnable submit) {
+        return (v, actionId, event) -> {
+            boolean imeAction = actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_GO
+                    || actionId == EditorInfo.IME_ACTION_SEND;
+            boolean enterKey = actionId == EditorInfo.IME_NULL && event != null
+                    && (event.getKeyCode() == KeyEvent.KEYCODE_ENTER
+                    || event.getKeyCode() == KeyEvent.KEYCODE_NUMPAD_ENTER)
+                    && (v.getInputType() & InputType.TYPE_TEXT_FLAG_MULTI_LINE) == 0;
+            if (!imeAction && !enterKey) {
+                return false;
+            }
+            if (event == null || event.getAction() == KeyEvent.ACTION_DOWN) {
+                submit.run();
+            }
+            return true;
+        };
     }
 
     private void submit(@NonNull AlertDialog dialog, @NonNull OnValidatedClickListener listener) {

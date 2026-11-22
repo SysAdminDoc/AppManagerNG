@@ -11,6 +11,7 @@ import static org.robolectric.Shadows.shadowOf;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Looper;
+import android.view.KeyEvent;
 import android.view.inputmethod.EditorInfo;
 
 import androidx.annotation.NonNull;
@@ -35,6 +36,7 @@ import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.filters.options.FilterOption;
+import io.github.muntashirakon.AppManager.filters.options.PackageNameOption;
 import io.github.muntashirakon.AppManager.filters.options.TargetSdkOption;
 import io.github.muntashirakon.view.TextInputLayoutCompat;
 
@@ -90,6 +92,40 @@ public class EditFilterOptionValidationTest {
 
         value.setText("33");
         dialog.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+        idle();
+
+        assertFalse(dialog.isShowing());
+        assertEquals(Collections.singletonList("update 4 target_sdk_eq_33"), mCalls);
+    }
+
+    @Test
+    public void aBrokenRegexSaysTheRegexIsInvalid() {
+        PackageNameOption option = new PackageNameOption();
+        option.setKeyValue("regex", "com.*");
+        AlertDialog dialog = open(option);
+        TextInputEditText value = dialog.findViewById(R.id.input_string);
+        TextInputLayout valueLayout = TextInputLayoutCompat.fromTextInputEditText(value);
+
+        value.setText("com.(");
+        dialog.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+        idle();
+
+        assertTrue(dialog.isShowing());
+        // The same words the field showed while it was typed, not a general error
+        assertEquals(mController.get().getString(R.string.invalid_regex), String.valueOf(valueLayout.getError()));
+        assertEquals(Collections.emptyList(), mCalls);
+    }
+
+    @Test
+    public void aHardwareEnterUpdatesOnce() {
+        TargetSdkOption option = new TargetSdkOption();
+        option.setKeyValue("eq", "30");
+        AlertDialog dialog = open(option);
+        TextInputEditText value = dialog.findViewById(R.id.input_string);
+
+        value.setText("33");
+        value.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER));
+        value.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER));
         idle();
 
         assertFalse(dialog.isShowing());
