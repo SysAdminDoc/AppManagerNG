@@ -382,6 +382,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
             setupHorizontalActions();
             // Load other info
             mAppInfoModel.loadAppInfo(mPackageInfo, mIsExternalApk);
+            mAppInfoModel.loadApkSha256(mApplicationInfo);
         });
         mAppInfoModel.getAppLabel().observe(getViewLifecycleOwner(), appLabel -> {
             ++mLoadedItemCount;
@@ -436,6 +437,7 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
         });
         mAppInfoModel.getTagCloud().observe(getViewLifecycleOwner(), this::setupTagCloud);
         mAppInfoModel.getAppInfo().observe(getViewLifecycleOwner(), this::setupVerticalView);
+        mAppInfoModel.getApkSha256().observe(getViewLifecycleOwner(), this::setApkSha256);
         mAppInfoModel.getInstallExistingResult().observe(getViewLifecycleOwner(), statusMessagePair ->
                 new MaterialAlertDialogBuilder(requireActivity())
                         .setTitle(mAppLabel)
@@ -4118,6 +4120,27 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
                 });
             }
         });
+    }
+
+    /**
+     * Adds the base APK's short SHA-256 to the version line. A long press copies the whole hash.
+     */
+    private void setApkSha256(@Nullable String sha256) {
+        if (mPackageInfo == null) {
+            return;
+        }
+        CharSequence version = getString(R.string.version_name_with_code, mPackageInfo.versionName,
+                PackageInfoCompat.getLongVersionCode(mPackageInfo));
+        mVersionView.setText(ApkHashCache.versionWithShortSha(requireContext(), version, sha256));
+        if (sha256 != null) {
+            mVersionView.setOnLongClickListener(v -> {
+                Utils.copyToClipboard(ContextUtils.getContext(), "SHA-256", sha256);
+                return true;
+            });
+        } else {
+            mVersionView.setOnLongClickListener(null);
+            mVersionView.setLongClickable(false);
+        }
     }
 
     @Nullable

@@ -101,9 +101,11 @@ public class AppInfoViewModel extends AndroidViewModel {
     private final MutableLiveData<TagCloud> mTagCloud = new MutableLiveData<>();
     private final MutableLiveData<AppInfo> mAppInfo = new MutableLiveData<>();
     private final MutableLiveData<Pair<Integer, CharSequence>> mInstallExistingResult = new MutableLiveData<>();
+    private final MutableLiveData<String> mApkSha256 = new MutableLiveData<>();
     private final ExecutorService mExecutor = Executors.newFixedThreadPool(4);
     private Future<?> mTagCloudFuture;
     private Future<?> mAppInfoFuture;
+    private Future<?> mApkSha256Future;
     @Nullable
     private AppDetailsViewModel mMainModel;
 
@@ -118,6 +120,9 @@ public class AppInfoViewModel extends AndroidViewModel {
         }
         if (mAppInfoFuture != null) {
             mAppInfoFuture.cancel(true);
+        }
+        if (mApkSha256Future != null) {
+            mApkSha256Future.cancel(true);
         }
         mExecutor.shutdownNow();
         super.onCleared();
@@ -141,6 +146,13 @@ public class AppInfoViewModel extends AndroidViewModel {
 
     public LiveData<Pair<Integer, CharSequence>> getInstallExistingResult() {
         return mInstallExistingResult;
+    }
+
+    /**
+     * The lowercase SHA-256 of the base APK, or {@code null} when it can't be read.
+     */
+    public LiveData<String> getApkSha256() {
+        return mApkSha256;
     }
 
     @AnyThread
@@ -545,6 +557,27 @@ public class AppInfoViewModel extends AndroidViewModel {
             mAppInfoFuture.cancel(true);
         }
         mAppInfoFuture = ThreadUtils.postOnBackgroundThread(() -> loadAppInfoInternal(packageInfo, isExternalApk));
+    }
+
+    /**
+     * Hashes the base APK off the main thread. A file hashed before, unchanged, comes from the cache.
+     */
+    @AnyThread
+    public void loadApkSha256(@NonNull ApplicationInfo applicationInfo) {
+        if (mApkSha256Future != null) {
+            mApkSha256Future.cancel(true);
+        }
+        String path = applicationInfo.sourceDir != null ? applicationInfo.sourceDir : applicationInfo.publicSourceDir;
+        if (path == null) {
+            mApkSha256.postValue(null);
+            return;
+        }
+        mApkSha256Future = ThreadUtils.postOnBackgroundThread(() -> {
+            String sha256 = ApkHashCache.getInstance().sha256(new File(path));
+            if (!ThreadUtils.isInterrupted()) {
+                mApkSha256.postValue(sha256);
+            }
+        });
     }
 
     @WorkerThread

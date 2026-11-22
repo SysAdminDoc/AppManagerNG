@@ -3851,6 +3851,7 @@
     <string name="xposed_module_info">Xposed module info</string>
     <string name="title_description">Description</string>
     <string name="module_name">Module name</string>
+    <string name="version_with_apk_sha"><xliff:g id="version" example="Version 0.8.0 (34)">%1$s</xliff:g> · SHA <xliff:g id="sha" example="7a4b8c2e">%2$s</xliff:g></string>
     <string name="app_manager_is_running">AppManagerNG is running</string>
     <string name="tap_to_open_notification_settings">Tap for notification settings</string>
     <string name="app_manager_is_unlocked">AppManagerNG is unlocked</string>
