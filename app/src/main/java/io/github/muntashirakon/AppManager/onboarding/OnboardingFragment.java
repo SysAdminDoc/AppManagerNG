@@ -26,6 +26,7 @@ import androidx.annotation.WorkerThread;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.fragment.app.FragmentActivity;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.color.MaterialColors;
@@ -44,6 +45,7 @@ import io.github.muntashirakon.AppManager.runner.RunnerUtils;
 import io.github.muntashirakon.AppManager.servermanager.ServerConfig;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.settings.Ops;
+import io.github.muntashirakon.AppManager.settings.SecurityAndOpsViewModel;
 import io.github.muntashirakon.AppManager.shizuku.ShizukuBridge;
 import io.github.muntashirakon.AppManager.utils.AppPref;
 import io.github.muntashirakon.AppManager.utils.NotificationUtils;
@@ -1236,6 +1238,13 @@ public class OnboardingFragment extends BottomSheetDialogFragment {
     private void commit(@NonNull @Ops.Mode String mode) {
         Ops.setMode(mode);
         AppPref.set(AppPref.PrefKey.PREF_ONBOARDING_SHOWN_BOOL, true);
+        // Saving alone kept the session on whatever the startup check had connected, so a No root
+        // pick on a device with ADB over TCP still ran everything as shell until the next start.
+        // Wireless ADB picked without setup pairs on the next launch, as its prompt says.
+        FragmentActivity activity = getActivity();
+        if (activity != null && !Ops.MODE_ADB_WIFI.equals(mode)) {
+            new ViewModelProvider(activity).get(SecurityAndOpsViewModel.class).applyPickedMode();
+        }
         dismissAllowingStateLoss();
     }
 

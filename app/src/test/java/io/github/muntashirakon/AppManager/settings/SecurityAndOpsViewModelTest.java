@@ -3,6 +3,7 @@
 package io.github.muntashirakon.AppManager.settings;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -247,6 +248,33 @@ public class SecurityAndOpsViewModelTest {
         // Posting both keeps the dialog request; postValue() used to drop all but the last one
         assertEquals(Arrays.asList(Ops.STATUS_ADB_CONNECT_REQUIRED, Ops.STATUS_FAILURE), received);
         owner.destroy();
+    }
+
+    @Test
+    public void aPickedNoRootModeLeavesTheAdbSessionTheStartupCheckMade() throws Exception {
+        java.lang.reflect.Field isAdb = Ops.class.getDeclaredField("sIsAdb");
+        isAdb.setAccessible(true);
+        String savedMode = Ops.getMode();
+        // Auto found ADB over TCP at startup, then the user picked No root in onboarding
+        isAdb.setBoolean(null, true);
+        try {
+            Ops.setMode(Ops.MODE_NO_ROOT);
+            SecurityAndOpsViewModel viewModel = newViewModel();
+
+            viewModel.applyPickedMode();
+
+            long deadline = System.currentTimeMillis() + 5_000L;
+            while (viewModel.getStartupInitStateSnapshot().getStatus() == StartupInitState.Status.RUNNING
+                    && System.currentTimeMillis() < deadline) {
+                Thread.sleep(20L);
+                idleMainLooper();
+            }
+            assertEquals(Ops.STATUS_SUCCESS, viewModel.getStartupInitStateSnapshot().getOpsStatus());
+            assertFalse(Ops.isAdb());
+        } finally {
+            isAdb.setBoolean(null, false);
+            Ops.setMode(savedMode);
+        }
     }
 
     private static void idleMainLooper() {

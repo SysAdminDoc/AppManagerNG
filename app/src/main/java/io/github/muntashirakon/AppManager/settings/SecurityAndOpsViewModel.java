@@ -152,6 +152,20 @@ public class SecurityAndOpsViewModel extends AndroidViewModel implements Ops.Adb
         });
     }
 
+    /**
+     * Puts the mode the user just picked (in onboarding) into effect for this session. Saving it
+     * alone left the session on whatever the startup check had connected, until the next start.
+     */
+    @AnyThread
+    public void applyPickedMode() {
+        mStatusDialogs.clear();
+        long attemptId = beginStartupInitAttempt();
+        mExecutor.submit(() -> {
+            postStartupInitStage(attemptId, StartupInitState.Stage.OPS_INIT, null);
+            postStartupInitStatus(attemptId, Ops.init(getApplication(), true), null);
+        });
+    }
+
     @AnyThread
     @RequiresApi(Build.VERSION_CODES.R)
     public void autoConnectWirelessDebugging() {
