@@ -46,17 +46,35 @@ public class StoragePermission {
             return;
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            mStoragePermApi30.launch(new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION), result -> {
-                if (callback != null) {
-                    callback.onResult(Environment.isExternalStorageManager());
-                }
-            });
+            mStoragePermApi30.launch(new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION),
+                    result -> answer(callback));
         } else {
-            mStoragePerm.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE, result -> {
-                if (callback != null) {
-                    callback.onResult(SelfPermissions.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE));
-                }
-            });
+            mStoragePerm.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE, result -> answer(callback));
+        }
+    }
+
+    /**
+     * Waits for the answer to a request made before the screen was made again (turned, or brought
+     * back after Android closed the app while its storage screen was open). Android hands that
+     * answer to the new screen, so this asks nothing.
+     */
+    public void awaitResult(@NonNull StoragePermissionCallback callback) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            mStoragePermApi30.setOnActivityResult(result -> answer(callback));
+        } else {
+            mStoragePerm.setOnActivityResult(result -> answer(callback));
+        }
+    }
+
+    @SuppressWarnings("InlinedApi")
+    private static void answer(@Nullable StoragePermissionCallback callback) {
+        if (callback == null) {
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            callback.onResult(Environment.isExternalStorageManager());
+        } else {
+            callback.onResult(SelfPermissions.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE));
         }
     }
 

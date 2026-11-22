@@ -102,6 +102,30 @@ public class RecordLogDialogActivityTest {
 
     @Test
     @Config(sdk = 29)
+    public void turnedWhileAskingItWaitsForThatAnswerInsteadOfAskingAgain() {
+        RecordLogDialogActivity activity = start();
+        ShadowActivity.PermissionsRequest asked = shadowOf(activity).getLastRequestedPermission();
+        assertNotNull(asked);
+
+        RecordLogDialogActivity turned = mController.recreate().get();
+        idle();
+
+        assertNull("asked a second time", shadowOf(turned).getLastRequestedPermission());
+        assertNull(dialog(turned));
+        assertFalse(turned.isFinishing());
+
+        // The answer to the first request comes back to the screen as it is now
+        shadowOf(mContext).grantPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        turned.onRequestPermissionsResult(asked.requestCode, asked.requestedPermissions,
+                new int[]{PackageManager.PERMISSION_GRANTED});
+        idle();
+
+        assertNotNull(dialog(turned));
+        assertFalse(turned.isFinishing());
+    }
+
+    @Test
+    @Config(sdk = 29)
     public void afterARotationTheSameDialogStillClosesTheScreen() {
         shadowOf(mContext).grantPermissions(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         start();
