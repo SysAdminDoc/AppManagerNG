@@ -817,7 +817,8 @@ public class BackupRestorePreferences extends PreferenceFragment {
                             mSafSelectBackupVolume.launch(getSafIntent("AppManager"));
                         })
                         .setNeutralButton(R.string.cancel, null)
-                        .show());
+                        .show())
+                .setEndIconContentDescription(R.string.backup_volume_add_folder);
 
         if (storageLocations.isEmpty()) {
             alertDialog.set(new MaterialAlertDialogBuilder(mActivity)
