@@ -206,6 +206,7 @@ public class DebloatObject {
     }
 
     /** The debloat list's own description, for matching and for language files. */
+    @Nullable
     public String getEnglishDescription() {
         return mDescription;
     }

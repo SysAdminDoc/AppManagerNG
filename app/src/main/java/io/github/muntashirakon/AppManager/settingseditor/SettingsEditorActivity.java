@@ -196,12 +196,12 @@ public class SettingsEditorActivity extends BaseActivity implements SearchView.O
     }
 
     @Override
-    public boolean onQueryTextSubmit(String query) {
+    public boolean onQueryTextSubmit(@NonNull String query) {
         return false;
     }
 
     @Override
-    public boolean onQueryTextChange(String newText) {
+    public boolean onQueryTextChange(@NonNull String newText) {
         String query = newText.toLowerCase(Locale.ROOT);
         mEntryAdapter.setQuery(query);
         mChangeAdapter.setQuery(query);
