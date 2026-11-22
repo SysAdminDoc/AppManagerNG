@@ -45,11 +45,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -189,10 +187,24 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             menuInflater.inflate(R.menu.fragment_app_details_components_actions, menu);
             mBlockingToggler = menu.findItem(R.id.action_toggle_blocking);
         } else menuInflater.inflate(R.menu.fragment_app_details_refresh_actions, menu);
+        menuInflater.inflate(R.menu.fragment_app_details_components_view_actions, menu);
     }
 
     @Override
     public void onPrepareMenu(@NonNull Menu menu) {
+        MenuItem expandAll = menu.findItem(R.id.action_expand_all);
+        if (expandAll != null) {
+            boolean allExpanded = mAdapter != null && mAdapter.areAllExpanded();
+            expandAll.setTitle(allExpanded ? R.string.collapse_all : R.string.expand_all);
+            expandAll.setEnabled(mAdapter != null && mAdapter.getItemCount() > 0);
+        }
+        MenuItem launchableOnly = menu.findItem(R.id.action_launchable_only);
+        if (launchableOnly != null) {
+            // An APK that isn't installed has nothing to launch
+            boolean offered = mNeededProperty == ACTIVITIES && viewModel != null && !viewModel.isExternalApk();
+            launchableOnly.setVisible(offered);
+            launchableOnly.setChecked(offered && Prefs.AppDetailsPage.showLaunchableActivitiesOnly());
+        }
         if (viewModel == null || viewModel.isExternalApk()) {
             return;
         }
@@ -219,6 +231,18 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             showTrackerReviewDialog();
         } else if (id == R.id.action_component_guide) {  // Components
             showComponentGuideDialog();
+        } else if (id == R.id.action_expand_all) {  // All
+            if (mAdapter != null) {
+                mAdapter.setAllExpanded(!mAdapter.areAllExpanded());
+                requireActivity().invalidateMenu();
+            }
+        } else if (id == R.id.action_launchable_only) {  // Activities
+            boolean launchableOnly = !item.isChecked();
+            item.setChecked(launchableOnly);
+            Prefs.AppDetailsPage.setShowLaunchableActivitiesOnly(launchableOnly);
+            if (viewModel != null) {
+                viewModel.filterAndSortItems(mNeededProperty);
+            }
         } else if (id == R.id.action_sort_by_name) {  // All
             setSortBy(AppDetailsFragment.SORT_BY_NAME);
             item.setChecked(true);
@@ -560,7 +584,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
         private final int mTrackerIndicatorColor;
         private final int mRunningIndicatorColor;
         @NonNull
-        private final Set<String> mExpandedComponents = new HashSet<>();
+        private final ComponentExpansionState mExpansion = new ComponentExpansionState();
 
         AppDetailsRecyclerAdapter() {
             mAdapterList = new ArrayList<>();
@@ -590,8 +614,43 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                     synchronized (mAdapterList) {
                         AdapterUtils.notifyDataSetChanged(this, mAdapterList, list);
                     }
+                    // Expand all or Collapse all follows the rows now shown
+                    requireActivity().invalidateMenu();
                 });
             });
+        }
+
+        /**
+         * Whether every row the tab shows is expanded, so the menu offers Collapse all.
+         */
+        @UiThread
+        boolean areAllExpanded() {
+            return mExpansion.areAllExpanded(visibleNames());
+        }
+
+        /**
+         * Expands or collapses the rows the tab shows now. A row hidden by a search keeps its state.
+         */
+        @UiThread
+        void setAllExpanded(boolean expanded) {
+            List<String> names = visibleNames();
+            if (expanded) {
+                mExpansion.expandAll(names);
+            } else {
+                mExpansion.collapseAll(names);
+            }
+            notifyItemRangeChanged(0, getItemCount());
+        }
+
+        @NonNull
+        private List<String> visibleNames() {
+            synchronized (mAdapterList) {
+                List<String> names = new ArrayList<>(mAdapterList.size());
+                for (AppDetailsItem<?> item : mAdapterList) {
+                    names.add(item.name);
+                }
+                return names;
+            }
         }
 
         @NonNull
@@ -700,7 +759,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
             synchronized (mAdapterList) {
                 item = mAdapterList.get(position);
             }
-            boolean expanded = mExpandedComponents.contains(item.name);
+            boolean expanded = mExpansion.isExpanded(item.name);
             bindNameExpansion(holder.nameView, expanded);
             holder.detailsContainer.setVisibility(expanded ? View.VISIBLE : View.GONE);
             boolean supportsActivityMetadata = mRequestedProperty != SERVICES;
@@ -722,10 +781,9 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                 synchronized (mAdapterList) {
                     componentName = mAdapterList.get(currentPosition).name;
                 }
-                if (!mExpandedComponents.remove(componentName)) {
-                    mExpandedComponents.add(componentName);
-                }
+                mExpansion.toggle(componentName);
                 notifyItemChanged(currentPosition);
+                requireActivity().invalidateMenu();
             };
             holder.itemView.setOnClickListener(toggleDetails);
             holder.detailsToggle.setOnClickListener(toggleDetails);
@@ -857,7 +915,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                         getString(R.string.process_name), processName));
             } else holder.processNameView.setVisibility(View.GONE);
             boolean isExported = activityInfo.exported;
-            if (componentItem.canLaunch || componentItem.canLaunchAssist) {
+            if (componentItem.isLaunchable()) {
                 holder.launchBtn.setOnClickListener(v -> {
                     ComponentName cn = new ComponentName(mPackageName, activityName);
                     if (componentItem.canLaunch) {

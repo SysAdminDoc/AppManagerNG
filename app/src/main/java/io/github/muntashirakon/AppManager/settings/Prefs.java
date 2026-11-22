@@ -132,6 +132,17 @@ public final class Prefs {
             AppPref.set(AppPref.PrefKey.PREF_COMPONENTS_SORT_ORDER_INT, sortOrder);
         }
 
+        /**
+         * Whether the Activities tab lists only the activities its rows offer to launch.
+         */
+        public static boolean showLaunchableActivitiesOnly() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_COMPONENTS_LAUNCHABLE_ONLY_BOOL);
+        }
+
+        public static void setShowLaunchableActivitiesOnly(boolean launchableOnly) {
+            AppPref.set(AppPref.PrefKey.PREF_COMPONENTS_LAUNCHABLE_ONLY_BOOL, launchableOnly);
+        }
+
         @AppDetailsFragment.SortOrder
         public static int getPermissionsSortOrder() {
             return AppPref.getInt(AppPref.PrefKey.PREF_PERMISSIONS_SORT_ORDER_INT);

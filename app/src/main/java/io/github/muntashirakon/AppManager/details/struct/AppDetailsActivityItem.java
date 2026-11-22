@@ -12,4 +12,12 @@ public class AppDetailsActivityItem extends AppDetailsComponentItem {
     public AppDetailsActivityItem(@NonNull ActivityInfo componentInfo) {
         super(componentInfo);
     }
+
+    /**
+     * Whether the row offers a Launch button, directly or through the assistant. The Activities tab's
+     * "Launchable only" filter uses the same test, so the two can't disagree.
+     */
+    public boolean isLaunchable() {
+        return canLaunch || canLaunchAssist;
+    }
 }

@@ -99,6 +99,7 @@ public class AppPref {
         PREF_BACKUP_SCHEDULE_LAST_ORIGIN_STR,
         PREF_BACKUP_VOLUME_STR,
 
+        PREF_COMPONENTS_LAUNCHABLE_ONLY_BOOL,
         PREF_COMPONENTS_SORT_ORDER_INT,
         PREF_CONCURRENCY_THREAD_COUNT_INT,
         PREF_CUSTOM_LOCALE_STR,
@@ -646,6 +647,7 @@ public class AppPref {
             case PREF_USE_SYSTEM_FONT_BOOL:
             case PREF_PREMIUM_PREVIEW_BOOL:
             case PREF_DEBLOAT_DEFINITIONS_AUTO_UPDATE_BOOL:
+            case PREF_COMPONENTS_LAUNCHABLE_ONLY_BOOL:
                 return false;
             case PREF_APP_OP_SHOW_DEFAULT_BOOL:
             case PREF_SHOW_DISCLAIMER_BOOL:

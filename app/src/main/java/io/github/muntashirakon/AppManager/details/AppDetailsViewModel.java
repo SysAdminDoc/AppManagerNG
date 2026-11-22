@@ -581,7 +581,9 @@ public class AppDetailsViewModel extends AndroidViewModel {
         switch (property) {
             case AppDetailsFragment.ACTIVITIES:
                 synchronized (mActivityItems) {
-                    mActivities.postValue(filterAndSortComponents(mActivityItems));
+                    List<AppDetailsItem<ComponentInfo>> activities = filterAndSortComponents(mActivityItems);
+                    mActivities.postValue(activities == null ? null : ComponentListFilter.launchableOnly(
+                            activities, !mExternalApk && Prefs.AppDetailsPage.showLaunchableActivitiesOnly()));
                 }
                 break;
             case AppDetailsFragment.PROVIDERS:

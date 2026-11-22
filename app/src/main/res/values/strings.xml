@@ -2277,6 +2277,7 @@
     <string name="file">File</string>
     <string name="expand_all">Expand all</string>
     <string name="collapse_all">Collapse all</string>
+    <string name="launchable_only">Launchable only</string>
     <string name="show_component_details">Show component details</string>
     <string name="hide_component_details">Hide component details</string>
     <string name="pause_unpause">Play/pause</string>
