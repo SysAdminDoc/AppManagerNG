@@ -39,6 +39,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackCompat;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.util.UiUtils;
 import io.github.muntashirakon.widget.SearchView;
@@ -114,6 +115,7 @@ public class AdvancedSearchView extends SearchView {
     private final View.OnClickListener onClickSearchIcon = v -> {
         PopupMenu popupMenu = new PopupMenu(getContext(), v);
         popupMenu.inflate(R.menu.view_advanced_search_type_selections);
+        LanguagePackCompat.translateMenu(getContext(), R.menu.view_advanced_search_type_selections, popupMenu.getMenu());
         popupMenu.setOnMenuItemClickListener(item -> {
             int type = typeOf(item.getItemId());
             if (type != 0) {

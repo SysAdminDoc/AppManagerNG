@@ -39,6 +39,7 @@ import io.github.muntashirakon.AppManager.backup.BackupFlags;
 import io.github.muntashirakon.AppManager.backup.BackupPathExclusionPatterns;
 import io.github.muntashirakon.AppManager.filters.EditFiltersDialogFragment;
 import io.github.muntashirakon.AppManager.filters.FilterItem;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackCompat;
 import io.github.muntashirakon.AppManager.profiles.struct.AppsBaseProfile;
 import io.github.muntashirakon.AppManager.profiles.struct.BaseProfile;
 import io.github.muntashirakon.AppManager.profiles.trigger.ProfileTrigger;
@@ -87,6 +88,8 @@ public class ConfPreferences extends PreferenceFragmentCompat {
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         setPreferencesFromResource(R.xml.preferences_profile_config, rootKey);
+        LanguagePackCompat.translatePreferences(getPreferenceManager().getContext(), R.xml.preferences_profile_config,
+                getPreferenceScreen(), rootKey, false);
         getPreferenceManager().setPreferenceDataStore(new ConfDataStore());
         mActivity = (AppsBaseProfileActivity) requireActivity();
         if (mActivity.model == null) {

@@ -10,6 +10,7 @@ import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.annotation.XmlRes;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.recyclerview.widget.RecyclerView;
@@ -17,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackCompat;
 import io.github.muntashirakon.util.UiUtils;
 
 public abstract class PreferenceFragment extends PreferenceFragmentCompat {
@@ -67,6 +69,21 @@ public abstract class PreferenceFragment extends PreferenceFragmentCompat {
 
     @StringRes
     public abstract int getTitle();
+
+    @Override
+    public void setPreferencesFromResource(@XmlRes int preferencesResId, @Nullable String key) {
+        super.setPreferencesFromResource(preferencesResId, key);
+        LanguagePackCompat.translatePreferences(getPreferenceManager().getContext(), preferencesResId,
+                getPreferenceScreen(), key, false);
+    }
+
+    @Override
+    public void addPreferencesFromResource(@XmlRes int preferencesResId) {
+        boolean merged = getPreferenceScreen() != null;
+        super.addPreferencesFromResource(preferencesResId);
+        LanguagePackCompat.translatePreferences(getPreferenceManager().getContext(), preferencesResId,
+                getPreferenceScreen(), null, merged);
+    }
 
     public void setPrefKey(@Nullable String prefKey) {
         mPrefKey = prefKey;

@@ -77,6 +77,7 @@ import io.github.muntashirakon.AppManager.fm.dialogs.NewFileDialogFragment;
 import io.github.muntashirakon.AppManager.fm.dialogs.NewFolderDialogFragment;
 import io.github.muntashirakon.AppManager.fm.dialogs.NewSymbolicLinkDialogFragment;
 import io.github.muntashirakon.AppManager.fm.dialogs.RenameDialogFragment;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackCompat;
 import io.github.muntashirakon.AppManager.oneclickops.ApkDuplicateOperations;
 import io.github.muntashirakon.AppManager.oneclickops.ApkDuplicateSelector;
 import io.github.muntashirakon.AppManager.settings.Prefs;
@@ -266,6 +267,7 @@ public class FmFragment extends Fragment implements MenuProvider, SearchView.OnQ
         });
         mFabGroup = view.findViewById(R.id.fab);
         mFabGroup.inflate(R.menu.fragment_fm_speed_dial);
+        LanguagePackCompat.translateSpeedDial(requireContext(), R.menu.fragment_fm_speed_dial, mFabGroup);
         mFabGroup.setOnActionSelectedListener(this);
         mFabGroup.setContentDescription(getString(R.string.add));
         UiUtils.applyWindowInsetsAsMargin(view.findViewById(R.id.fab_holder));

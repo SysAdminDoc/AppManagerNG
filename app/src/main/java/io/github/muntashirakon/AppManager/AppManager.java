@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.os.Build;
 import android.os.StrictMode;
 import android.sun.security.provider.JavaKeyStoreProvider;
@@ -30,6 +31,7 @@ import io.github.muntashirakon.AppManager.backup.BackupDestinationGrants;
 import io.github.muntashirakon.AppManager.compat.ProcessCompat;
 import io.github.muntashirakon.AppManager.debloat.DebloatDefinitionsUpdater;
 import io.github.muntashirakon.AppManager.history.ops.OpHistoryPruneScheduler;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackCompat;
 import io.github.muntashirakon.AppManager.i18n.LanguagePackManager;
 import io.github.muntashirakon.AppManager.logcat.helper.WidgetHelper;
 import io.github.muntashirakon.AppManager.misc.AMExceptionHandler;
@@ -47,6 +49,7 @@ import io.github.muntashirakon.AppManager.utils.Utils;
 import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 
 public class AppManager extends Application {
+    private final LanguagePackCompat.Host mLanguagePack = new LanguagePackCompat.Host();
     private AutoFreezeOnLockReceiver mAutoFreezeOnLockReceiver;
     private int mNightModeMask;
 
@@ -105,6 +108,14 @@ public class AppManager extends Application {
                 ThreadUtils.postOnBackgroundThread(() -> FailedScheduleRevival.reviveFailedSchedules(this));
             }
         }
+    }
+
+    @Override
+    public Resources getResources() {
+        Resources base = super.getResources();
+        // Null while the application is being constructed
+        //noinspection ConstantValue
+        return mLanguagePack != null ? mLanguagePack.resources(base) : base;
     }
 
     private void configureActivityEmbeddingSplits() {

@@ -62,6 +62,7 @@ import io.github.muntashirakon.AppManager.details.struct.AppDetailsActivityItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsComponentItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsItem;
 import io.github.muntashirakon.AppManager.details.struct.AppDetailsServiceItem;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackCompat;
 import io.github.muntashirakon.AppManager.intercept.ActivityInterceptor;
 import io.github.muntashirakon.AppManager.rules.RuleType;
 import io.github.muntashirakon.AppManager.rules.compontents.ComponentUtils;
@@ -834,6 +835,7 @@ public class AppDetailsComponentsFragment extends AppDetailsFragment {
                 Menu menu = popupMenu.getMenu();
                 boolean canBlockByIfw = !(item.item instanceof ProviderInfo) && SelfPermissions.canBlockByIFW();
                 popupMenu.inflate(R.menu.fragment_app_details_components_selection_actions);
+                LanguagePackCompat.translateMenu(activity, R.menu.fragment_app_details_components_selection_actions, menu);
                 menu.findItem(R.id.action_ifw_and_disable).setEnabled(canBlockByIfw);
                 menu.findItem(R.id.action_ifw).setEnabled(canBlockByIfw);
                 popupMenu.setOnMenuItemClickListener(item1 -> {

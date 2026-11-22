@@ -151,11 +151,11 @@ public class LanguagePacksPreferences extends PreferenceFragment {
     private void bindStatic() {
         PreferenceScreen screen = getPreferenceScreen();
         screen.removeAll();
-        if (!LanguagePackManager.canUse()) {
+        if (!LanguagePackManager.hasResourcesLoader()) {
             Preference note = new Preference(requireContext());
             note.setSelectable(false);
             note.setIconSpaceReserved(false);
-            note.setSummary(R.string.language_files_needs_android_11);
+            note.setSummary(R.string.language_files_compat_note);
             screen.addPreference(note);
         }
         Preference importRow = new Preference(requireContext());
@@ -250,14 +250,12 @@ public class LanguagePacksPreferences extends PreferenceFragment {
     private void showActions(@NonNull LanguagePackManager.Installed pack) {
         List<String> labels = new ArrayList<>(5);
         List<Runnable> actions = new ArrayList<>(5);
-        if (LanguagePackManager.canUse()) {
-            if (pack.inUse) {
-                labels.add(getString(R.string.language_files_stop_using));
-                actions.add(() -> mManager.stop());
-            } else {
-                labels.add(getString(R.string.language_files_use));
-                actions.add(() -> use(pack.code));
-            }
+        if (pack.inUse) {
+            labels.add(getString(R.string.language_files_stop_using));
+            actions.add(() -> mManager.stop());
+        } else {
+            labels.add(getString(R.string.language_files_use));
+            actions.add(() -> use(pack.code));
         }
         labels.add(getString(R.string.language_files_export));
         actions.add(() -> {
@@ -347,11 +345,9 @@ public class LanguagePacksPreferences extends PreferenceFragment {
                         imported.debloatEntries, imported.debloatEntries, imported.name)
                         : getString(imported.replaced ? R.string.language_files_updated
                         : R.string.language_files_added, imported.name);
-                Snackbar snackbar = Snackbar.make(requireView(), message, Snackbar.LENGTH_LONG);
-                if (LanguagePackManager.canUse()) {
-                    snackbar.setAction(R.string.language_files_use, v -> use(imported.code));
-                }
-                snackbar.show();
+                Snackbar.make(requireView(), message, Snackbar.LENGTH_LONG)
+                        .setAction(R.string.language_files_use, v -> use(imported.code))
+                        .show();
             });
         });
     }

@@ -61,6 +61,7 @@ import io.github.muntashirakon.AppManager.compat.PackageManagerCompat;
 import io.github.muntashirakon.AppManager.crypto.auth.ActionAuthGate;
 import io.github.muntashirakon.AppManager.db.entity.Backup;
 import io.github.muntashirakon.AppManager.details.AppDetailsActivity;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackCompat;
 import io.github.muntashirakon.AppManager.revert.OsRevertCountTracker;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
@@ -876,6 +877,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
     private void showQuickActionsPopup(@NonNull View anchor, @NonNull ApplicationItem item) {
         androidx.appcompat.widget.PopupMenu popup = new androidx.appcompat.widget.PopupMenu(mActivity, anchor);
         popup.getMenuInflater().inflate(R.menu.main_quick_actions, popup.getMenu());
+        LanguagePackCompat.translateMenu(mActivity, R.menu.main_quick_actions, popup.getMenu());
         boolean canLaunch = item.isInstalled && !item.isDisabled
                 && io.github.muntashirakon.AppManager.compat.PackageManagerCompat
                         .getLaunchIntentForPackage(item.packageName,

@@ -35,6 +35,7 @@ import java.util.List;
 
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.compat.ManifestCompat;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackCompat;
 import io.github.muntashirakon.AppManager.logcat.LogViewerActivity;
 import io.github.muntashirakon.AppManager.logcat.struct.SearchCriteria;
 import io.github.muntashirakon.AppManager.self.SelfPermissions;
@@ -286,6 +287,7 @@ public class RunningAppsAdapter extends MultiSelectionView.Adapter<MultiSelectio
             popupMenu.setForceShowIcon(true);
             popupMenu.inflate(R.menu.activity_running_apps_popup_actions);
             Menu menu = popupMenu.getMenu();
+            LanguagePackCompat.translateMenu(mActivity, R.menu.activity_running_apps_popup_actions, menu);
             // Set kill
             MenuItem killItem = menu.findItem(R.id.action_kill);
             if ((processItem.uid >= Process.FIRST_APPLICATION_UID || Prefs.RunningApps.enableKillForSystemApps()) && Ops.isWorkingUidRoot()) {

@@ -49,6 +49,7 @@ import java.util.Objects;
 import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.history.ops.DestructiveActionConfirmation;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackCompat;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.profiles.importers.ExternalProfileImporter;
 import io.github.muntashirakon.AppManager.profiles.importers.UpstreamCompatProfileExporter;
@@ -537,6 +538,7 @@ public class ProfilesActivity extends BaseActivity implements NewProfileDialogFr
             PopupMenu popupMenu = new PopupMenu(mActivity, anchor);
             popupMenu.setForceShowIcon(true);
             popupMenu.inflate(R.menu.activity_profiles_popup_actions);
+            LanguagePackCompat.translateMenu(mActivity, R.menu.activity_profiles_popup_actions, popupMenu.getMenu());
             boolean quickFreezeSelected = QuickFreezeTileController.isSelectedProfile(profile.profileId);
             MenuItem quickFreezeItem = popupMenu.getMenu().findItem(R.id.action_quick_freeze_tile);
             quickFreezeItem.setVisible(quickFreezeSelected || QuickFreezeTileController.isProfileEligible(profile));

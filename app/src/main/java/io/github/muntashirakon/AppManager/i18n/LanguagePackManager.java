@@ -50,8 +50,10 @@ import io.github.muntashirakon.AppManager.utils.appearance.AppearanceUtils;
 /**
  * Language files people import to translate the app themselves. A file is kept as imported, checked
  * against the running app's English, and on Android 11 and later compiled into a small resources
- * table that a {@code ResourcesLoader} lays over the app's own strings for that language. Using one
- * switches the app to its language, and stopping switches back to whatever was chosen before.
+ * table that a {@code ResourcesLoader} lays over the app's own strings for that language. Older
+ * Android has no {@code ResourcesLoader}, so there the file's text is shown through
+ * {@link LanguagePackCompat}. Using one switches the app to its language, and stopping switches
+ * back to whatever was chosen before.
  */
 public final class LanguagePackManager {
     public static final String TAG = "LanguagePacks";
@@ -64,6 +66,7 @@ public final class LanguagePackManager {
     /** Debloater descriptions imported on their own, kept next to the language file they belong to. */
     private static final String DEBLOAT_SUFFIX = ".debloat";
     private static final String TABLE_SUFFIX = ".arsc";
+    private static final String COMPAT_SUFFIX = ".compat";
     private static final String STAMP_SUFFIX = ".stamp";
     private static final String REMOVED_SUFFIX = ".removed";
     private static final String TEMP_SUFFIX = ".tmp";
@@ -160,9 +163,12 @@ public final class LanguagePackManager {
         sInstance = manager;
     }
 
-    /** Using a language file needs {@code ResourcesLoader}, which arrived in Android 11. */
+    /**
+     * Android 11 and later lay a language file over the app's strings with a
+     * {@code ResourcesLoader}. Older Android shows it through {@link LanguagePackCompat}.
+     */
     @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.R)
-    public static boolean canUse() {
+    public static boolean hasResourcesLoader() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.R;
     }
 
@@ -171,9 +177,6 @@ public final class LanguagePackManager {
      */
     @Nullable
     public static String getActiveCode(@NonNull Context context) {
-        if (!canUse()) {
-            return null;
-        }
         String code = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_ACTIVE, null);
         return code != null && code.equals(LanguagePackReader.normalizeCode(code)) ? code : null;
     }
@@ -189,7 +192,7 @@ public final class LanguagePackManager {
     @SuppressLint("WrongThread")
     @MainThread
     public static void installOnStartup(@NonNull Application app) {
-        if (!canUse() || getActiveCode(app) == null) {
+        if (getActiveCode(app) == null) {
             return;
         }
         LanguagePackManager manager = getInstance(app);
@@ -199,7 +202,7 @@ public final class LanguagePackManager {
         }
         long start = SystemClock.elapsedRealtime();
         try {
-            manager.loadTable(manager.prepare(code));
+            manager.load(manager.prepare(code));
             Log.i(TAG, "Loaded the " + code + " language file in " + (SystemClock.elapsedRealtime() - start) + " ms");
         } catch (Exception e) {
             Log.e(TAG, "Couldn't load the " + code + " language file", e);
@@ -210,7 +213,7 @@ public final class LanguagePackManager {
     @MainThread
     public static void attachToActivity(@NonNull Activity activity) {
         LanguagePackManager manager = sInstance;
-        if (manager != null && manager.mLoader != null && canUse()) {
+        if (manager != null && manager.mLoader != null && hasResourcesLoader()) {
             Api30.attach(activity.getResources(), manager.mLoader);
         }
     }
@@ -359,36 +362,40 @@ public final class LanguagePackManager {
                 pack.debloat.size());
     }
 
-    /** Compiles {@code code}'s table for this app build unless it's already cached. */
+    /**
+     * Gets {@code code}'s text ready for this app build unless it already is: a resources table on
+     * Android 11 and later, the text by resource ID before that.
+     */
     @WorkerThread
     @NonNull
     public File prepare(@NonNull String code) throws IOException, LanguagePackException {
         synchronized (mTableLock) {
+            boolean loader = hasResourcesLoader();
             File packFile = packFile(code);
-            File table = new File(mTableDir, code + TABLE_SUFFIX);
-            File stampFile = new File(mTableDir, code + STAMP_SUFFIX);
-            String stamp = stamp(packFile);
+            String suffix = loader ? TABLE_SUFFIX : COMPAT_SUFFIX;
+            File table = new File(mTableDir, code + suffix);
+            File stampFile = new File(mTableDir, code + suffix + STAMP_SUFFIX);
+            String stamp = stamp(packFile, loader ? TABLE_FORMAT : CompatPack.FORMAT);
             if (table.isFile() && stampFile.isFile() && stamp.equals(readText(stampFile))) {
                 return table;
             }
             LanguagePack pack = readStored(code);
-            byte[] arsc = LanguagePackCompiler.compile(mContext.getResources(), source(), pack);
-            writeAtomically(table, arsc);
+            byte[] prepared = loader
+                    ? LanguagePackCompiler.compile(mContext.getResources(), source(), pack)
+                    : CompatPack.build(source(), pack).toBytes();
+            writeAtomically(table, prepared);
             writeAtomically(stampFile, stamp.getBytes(StandardCharsets.UTF_8));
             return table;
         }
     }
 
     /**
-     * Shows the app in {@code code}'s language using the table {@link #prepare} built, and
-     * remembers the language that was chosen before so {@link #stop} can go back to it.
+     * Shows the app in {@code code}'s language using what {@link #prepare} made, and remembers
+     * the language that was chosen before so {@link #stop} can go back to it.
      */
     @MainThread
-    public void use(@NonNull String code, @NonNull File table) throws IOException {
-        if (!canUse()) {
-            throw new IOException("Needs Android 11");
-        }
-        loadTable(table);
+    public void use(@NonNull String code, @NonNull File prepared) throws IOException {
+        load(prepared);
         SharedPreferences.Editor editor = mPrefs.edit().putString(KEY_ACTIVE, code);
         if (inUseCode() == null) {
             editor.putString(KEY_PREVIOUS, Prefs.Appearance.getLanguage(mContext));
@@ -403,9 +410,10 @@ public final class LanguagePackManager {
         boolean inUse = inUseCode() != null;
         String previous = mPrefs.getString(KEY_PREVIOUS, LangUtils.LANG_AUTO);
         mPrefs.edit().remove(KEY_ACTIVE).remove(KEY_PREVIOUS).apply();
-        if (mLoader != null && canUse()) {
+        if (mLoader != null && hasResourcesLoader()) {
             Api30.clear(mLoader);
         }
+        LanguagePackCompat.setActive(null);
         if (inUse) {
             applyLanguage(previous == null ? LangUtils.LANG_AUTO : previous);
         } else {
@@ -678,6 +686,20 @@ public final class LanguagePackManager {
         AppearanceUtils.applyConfigurationChangesToActivities();
     }
 
+    /** Lays what {@link #prepare} made over the app's strings. */
+    @MainThread
+    private void load(@NonNull File prepared) throws IOException {
+        if (hasResourcesLoader()) {
+            loadTable(prepared);
+        } else {
+            byte[] data;
+            try (InputStream in = new FileInputStream(prepared)) {
+                data = readAll(in);
+            }
+            LanguagePackCompat.setActive(CompatPack.fromBytes(data));
+        }
+    }
+
     @RequiresApi(Build.VERSION_CODES.R)
     @MainThread
     private void loadTable(@NonNull File table) throws IOException {
@@ -717,17 +739,22 @@ public final class LanguagePackManager {
 
     private void deleteTable(@NonNull String code) {
         synchronized (mTableLock) {
-            //noinspection ResultOfMethodCallIgnored
-            new File(mTableDir, code + TABLE_SUFFIX).delete();
+            for (String suffix : new String[]{TABLE_SUFFIX, COMPAT_SUFFIX}) {
+                //noinspection ResultOfMethodCallIgnored
+                new File(mTableDir, code + suffix).delete();
+                //noinspection ResultOfMethodCallIgnored
+                new File(mTableDir, code + suffix + STAMP_SUFFIX).delete();
+            }
+            // Written by builds before compatibility mode
             //noinspection ResultOfMethodCallIgnored
             new File(mTableDir, code + STAMP_SUFFIX).delete();
         }
     }
 
     @NonNull
-    private String stamp(@NonNull File packFile) {
+    private String stamp(@NonNull File packFile, int format) {
         File apk = new File(mContext.getApplicationInfo().sourceDir);
-        return TABLE_FORMAT + ":" + BuildConfig.VERSION_CODE + ":" + apk.lastModified() + ":"
+        return format + ":" + BuildConfig.VERSION_CODE + ":" + apk.lastModified() + ":"
                 + packFile.length() + ":" + packFile.lastModified();
     }
 
@@ -755,6 +782,18 @@ public final class LanguagePackManager {
         return out.toByteArray();
     }
 
+    /** Reads a file this class wrote itself, which a language file's size cap doesn't apply to. */
+    @NonNull
+    private static byte[] readAll(@NonNull InputStream in) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        byte[] buf = new byte[65536];
+        int n;
+        while ((n = in.read(buf)) != -1) {
+            out.write(buf, 0, n);
+        }
+        return out.toByteArray();
+    }
+
     @NonNull
     private static String readText(@NonNull File file) throws IOException {
         try (InputStream in = new FileInputStream(file)) {
@@ -764,7 +803,7 @@ public final class LanguagePackManager {
 
     private static void writeAtomically(@NonNull File target, @NonNull byte[] data) throws IOException {
         File dir = target.getParentFile();
-        if (dir != null && !dir.isDirectory() && !dir.mkdirs()) {
+        if (dir != null && !dir.mkdirs() && !dir.isDirectory()) {
             throw new IOException("Can't create " + dir);
         }
         File temp = new File(dir, target.getName() + TEMP_SUFFIX);

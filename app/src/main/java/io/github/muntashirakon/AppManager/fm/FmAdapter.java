@@ -40,6 +40,7 @@ import io.github.muntashirakon.AppManager.fm.dialogs.OpenWithDialogFragment;
 import io.github.muntashirakon.AppManager.fm.dialogs.RenameDialogFragment;
 import io.github.muntashirakon.AppManager.fm.hex.HexViewerActivity;
 import io.github.muntashirakon.AppManager.fm.icons.FmIconFetcher;
+import io.github.muntashirakon.AppManager.i18n.LanguagePackCompat;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
 import io.github.muntashirakon.AppManager.utils.DateUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
@@ -287,6 +288,7 @@ class FmAdapter extends MultiSelectionView.Adapter<FmAdapter.ViewHolder> {
         popupMenu.setForceShowIcon(true);
         popupMenu.inflate(R.menu.fragment_fm_item_actions);
         Menu menu = popupMenu.getMenu();
+        LanguagePackCompat.translateMenu(anchor.getContext(), R.menu.fragment_fm_item_actions, menu);
         MenuItem openWithAction = menu.findItem(R.id.action_open_with);
         MenuItem openAsHexAction = menu.findItem(R.id.action_open_as_hex);
         MenuItem extractArchiveAction = menu.findItem(R.id.action_extract_archive);
