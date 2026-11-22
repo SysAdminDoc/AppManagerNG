@@ -59,6 +59,7 @@ import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.types.ForegroundService;
 import io.github.muntashirakon.AppManager.utils.ContextUtils;
 import io.github.muntashirakon.AppManager.utils.StorageUtils;
+import io.github.muntashirakon.test.CachedAppContext;
 import io.github.muntashirakon.test.shadows.ShadowCpuUtils;
 
 @RunWith(RobolectricTestRunner.class)
@@ -78,6 +79,9 @@ public class BackupDestinationGrantsTest {
 
     @Before
     public void setUp() {
+        // Settings and the file they're saved to both follow this test's context. A language test that ran earlier
+        // can leave the settings on an older one, so a check of the file on disk would look in the wrong folder.
+        CachedAppContext.forgetWithPrefs();
         mContext = ApplicationProvider.getApplicationContext();
         mContext.getSharedPreferences(BackupDestinationGrants.PREFS_NAME, Context.MODE_PRIVATE).edit().clear().commit();
         mContext.getSharedPreferences(BackupTagPolicyStore.PREFS_NAME, Context.MODE_PRIVATE).edit().clear().commit();
@@ -657,7 +661,7 @@ public class BackupDestinationGrantsTest {
     }
 
     private boolean savedOnDisk(@NonNull String value) {
-        // AppPref keeps the context it was first made with, which in a test run can be an earlier test's
+        // Where AppPref writes, which setUp binds to this test's context
         File[] files = new File(ContextUtils.getContext().getDataDir(), "shared_prefs").listFiles();
         if (files == null) {
             return false;
