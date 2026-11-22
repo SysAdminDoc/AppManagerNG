@@ -159,10 +159,12 @@ public class AppInfoViewModel extends AndroidViewModel {
     /**
      * The lowercase SHA-256 of the base APK, or {@code null} when it can't be read.
      */
+    @NonNull
     public LiveData<String> getApkSha256() {
         return mApkSha256;
     }
 
+    @NonNull
     public LiveData<ApkContents> getApkContents() {
         return mApkContents;
     }
@@ -170,10 +172,12 @@ public class AppInfoViewModel extends AndroidViewModel {
     /**
      * One of {@link TvSupport}'s levels.
      */
+    @NonNull
     public LiveData<Integer> getTvSupport() {
         return mTvSupport;
     }
 
+    @NonNull
     public LiveData<MediaCapture> getMediaCapture() {
         return mMediaCapture;
     }
@@ -613,7 +617,7 @@ public class AppInfoViewModel extends AndroidViewModel {
             ApplicationInfo applicationInfo = packageInfo.applicationInfo;
             ApkContents contents = new ApkContents();
             contents.glEsVersion = GlEsRequirement.fromFeatures(packageInfo.reqFeatures);
-            contents.splits = ApkSplits.from(applicationInfo);
+            contents.splits = ApkSplits.from(packageInfo);
             if (!isExternalApk && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 contents.apexStatus = ApexStatus.of(getApplication(), packageInfo);
             }

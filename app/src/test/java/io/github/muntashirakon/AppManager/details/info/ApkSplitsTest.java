@@ -5,12 +5,14 @@ package io.github.muntashirakon.AppManager.details.info;
 import static org.junit.Assert.assertEquals;
 
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -58,11 +60,31 @@ public class ApkSplitsTest {
 
     @Test
     public void theSplitsComeWithTheirSizes() throws IOException {
-        ApplicationInfo info = new ApplicationInfo();
-        info.splitNames = new String[]{"config.arm64_v8a", "config.en", "camera"};
-        info.splitSourceDirs = new String[]{file(3000), file(20), file(500)};
+        assertSplitsWithTheirSizes();
+    }
 
-        List<ApkSplits.Split> splits = ApkSplits.from(info);
+    @Test
+    @Config(sdk = 23)
+    public void theSplitsAreReadOnAndroidVersionsBeforeEight() throws IOException {
+        // ApplicationInfo has no list of split names before Android 8, and reading it there threw
+        assertSplitsWithTheirSizes();
+    }
+
+    @Test
+    public void anAppWithoutSplitsHasNone() {
+        PackageInfo packageInfo = new PackageInfo();
+        packageInfo.applicationInfo = new ApplicationInfo();
+        assertEquals(0, ApkSplits.from(packageInfo).size());
+        assertEquals(0, ApkSplits.from(new PackageInfo()).size());
+    }
+
+    private void assertSplitsWithTheirSizes() throws IOException {
+        PackageInfo packageInfo = new PackageInfo();
+        packageInfo.splitNames = new String[]{"config.arm64_v8a", "config.en", "camera"};
+        packageInfo.applicationInfo = new ApplicationInfo();
+        packageInfo.applicationInfo.splitSourceDirs = new String[]{file(3000), file(20), file(500)};
+
+        List<ApkSplits.Split> splits = ApkSplits.from(packageInfo);
 
         assertEquals(3, splits.size());
         assertEquals("config.arm64_v8a", splits.get(0).name);
@@ -71,11 +93,6 @@ public class ApkSplitsTest {
         assertEquals(ApkSplits.TYPE_LANGUAGE, splits.get(1).type);
         assertEquals(20, splits.get(1).size);
         assertEquals(ApkSplits.TYPE_FEATURE, splits.get(2).type);
-    }
-
-    @Test
-    public void anAppWithoutSplitsHasNone() {
-        assertEquals(0, ApkSplits.from(new ApplicationInfo()).size());
     }
 
     private String file(int size) throws IOException {

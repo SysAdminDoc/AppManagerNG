@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.details.info;
 
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.text.TextUtils;
 import android.text.format.Formatter;
 
@@ -94,14 +95,17 @@ public final class ApkSplits {
      * The installed splits with their sizes, read from the split files. Call off the main thread.
      */
     @NonNull
-    public static List<Split> from(@NonNull ApplicationInfo info) {
-        if (info.splitNames == null || info.splitNames.length == 0) {
+    public static List<Split> from(@NonNull PackageInfo packageInfo) {
+        // The package's list, since ApplicationInfo only has one from Android 8 and reading it before throws
+        String[] names = packageInfo.splitNames;
+        ApplicationInfo info = packageInfo.applicationInfo;
+        if (names == null || names.length == 0) {
             return Collections.emptyList();
         }
-        List<Split> splits = new ArrayList<>(info.splitNames.length);
-        for (int i = 0; i < info.splitNames.length; ++i) {
-            String name = info.splitNames[i];
-            String path = info.splitSourceDirs != null && i < info.splitSourceDirs.length
+        List<Split> splits = new ArrayList<>(names.length);
+        for (int i = 0; i < names.length; ++i) {
+            String name = names[i];
+            String path = info != null && info.splitSourceDirs != null && i < info.splitSourceDirs.length
                     ? info.splitSourceDirs[i] : null;
             long size = path != null ? new File(path).length() : 0;
             splits.add(new Split(name, classify(name), size));
