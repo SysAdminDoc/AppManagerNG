@@ -25,6 +25,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The notification icon is the AppManagerNG logo now (issue #22).
 - When an APK has the same version code as the installed app but another version name, the installer button says Modify and shows both names (issue #47).
 - Saved APK names can carry `%abi%` (the native code ABIs, or universal) and `%sha256_short%` (the first 8 characters of the file's SHA-256) (issue #44). Open a file named that way and the installer tells you whether the checksum in its name matches.
+- `Copy for a bug report` in About puts the app and device details the GitHub bug form asks for on the clipboard, ready to paste (issue #35).
+- About the device shows RAM, swap and storage with what's free, and every refresh rate the screen supports next to the current one (issue #54).
+- Labs has a Settings editor (issue #48). It lists Android's System, Secure and Global settings with search, lets you edit, add or delete one, and keeps every change with its old value so you can put it back. Settings known to cause trouble carry a Risky label, and a snapshot exports to JSON. Changing System settings without root, ADB or Shizuku needs the Modify system settings permission. Secure and Global need root, ADB or Shizuku.
 
 ### Fixed
 - Mode toasts like "Working through Shizuku shell mode" no longer pop up over other apps (issue #56). Background work checks the mode too, around the clock, and each check toasted. Now the toast shows only while an AppManagerNG screen is open, once per mode, and again only when the mode changes.
@@ -37,6 +40,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Once Termux allowed it, a command still often seemed to vanish (issue #55). Termux can only bring itself forward with its Display over other apps permission, and it closed the session the moment the command ended. AppManagerNG now opens Termux on the command's session, and the session stays open in your shell afterwards so you can read the output and keep going.
 - Local sync said "The downloaded APK is not validly signed" for apps that need a newer Android than the phone has (issue #22). Those rows now say which Android they need, offer no download, and Update all skips them. Older APKs signed with SHA-256 that support very old Android versions pass the check too.
 - The installer could uninstall AppManagerNG itself to put a copy signed with another key in its place, which closes it halfway through (issue #45). It now leaves the installed copy alone and explains the safe way to swap, and Local sync's Replace does the same.
+- Crash reports, the support bundle, the privilege doctor and install transcripts stay in English whatever language the app is set to, so whoever reads the report can follow it (issue #31). They used to mix in words like "Без-ROOT".
+- Words in About the device that were typed in English, like Build, Software, the screen size and density units and the battery health, can be translated now (issue #31).
 
 ## v0.8.0, 2026-11-15
 
