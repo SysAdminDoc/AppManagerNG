@@ -32,12 +32,20 @@ import io.github.muntashirakon.AppManager.R;
 public final class NotificationReposter {
     public static final String CHANNEL_SILENT = BuildConfig.APPLICATION_ID + ".channel.NOTIFICATION_FILTER_SILENT";
     public static final String CHANNEL_VIBRATE = BuildConfig.APPLICATION_ID + ".channel.NOTIFICATION_FILTER_VIBRATE";
+    /** Silent copies of low priority rules, below the other silent ones. */
+    public static final String CHANNEL_SILENT_LOW = BuildConfig.APPLICATION_ID
+            + ".channel.NOTIFICATION_FILTER_SILENT_LOW";
+    /** Default importance with no sound or vibration, so the copy keeps its status bar icon. */
+    public static final String CHANNEL_ICON = BuildConfig.APPLICATION_ID + ".channel.NOTIFICATION_FILTER_ICON";
     /** Every copy and summary uses this id. The tag tells them apart. */
     static final int NOTIFICATION_ID = 1;
     static final String COPY_TAG_PREFIX = "notification_filter:";
     static final String SUMMARY_TAG_PREFIX = "notification_filter_summary:";
     /** The app that posted the original, so the listener can find its copies again after a restart. */
     static final String EXTRA_SOURCE_PACKAGE = BuildConfig.APPLICATION_ID + ".extra.NOTIFICATION_FILTER_PACKAGE";
+    /** The rule action and priority a copy was made with, so the listener knows its style again after a restart. */
+    static final String EXTRA_COPY_ACTION = BuildConfig.APPLICATION_ID + ".extra.NOTIFICATION_FILTER_ACTION";
+    static final String EXTRA_COPY_PRIORITY = BuildConfig.APPLICATION_ID + ".extra.NOTIFICATION_FILTER_PRIORITY";
     private static final String GROUP_PREFIX = "notification_filter:";
     private static final long[] VIBRATION = {0, 250, 150, 250};
 
@@ -71,7 +79,7 @@ public final class NotificationReposter {
 
     @NonNull
     static String channelOf(@NonNull NotificationFilterRule.Action action) {
-        return action == NotificationFilterRule.Action.VIBRATE ? CHANNEL_VIBRATE : CHANNEL_SILENT;
+        return CopyStyle.of(action, NotificationFilterRule.Priority.NORMAL).channel;
     }
 
     static void ensureChannels(@NonNull Context context) {
@@ -92,6 +100,21 @@ public final class NotificationReposter {
                 .setVibrationPattern(VIBRATION)
                 .setShowBadge(true)
                 .build());
+        // Default importance keeps the status bar icon. With no sound and no vibration it stays quiet.
+        manager.createNotificationChannel(new NotificationChannelCompat.Builder(CHANNEL_ICON,
+                NotificationManagerCompat.IMPORTANCE_DEFAULT)
+                .setName(context.getString(R.string.notification_filter_channel_icon))
+                .setSound(null, null)
+                .setVibrationEnabled(false)
+                .setShowBadge(true)
+                .build());
+        manager.createNotificationChannel(new NotificationChannelCompat.Builder(CHANNEL_SILENT_LOW,
+                NotificationManagerCompat.IMPORTANCE_MIN)
+                .setName(context.getString(R.string.notification_filter_channel_silent_low))
+                .setSound(null, null)
+                .setVibrationEnabled(false)
+                .setShowBadge(false)
+                .build());
     }
 
     /**
@@ -99,6 +122,11 @@ public final class NotificationReposter {
      * removing it would lose it.
      */
     static boolean canPost(@NonNull Context context, @NonNull NotificationFilterRule.Action action) {
+        return canPostOn(context, channelOf(action));
+    }
+
+    /** Whether a notification on this channel would be shown. A channel not made yet will be, with its default. */
+    static boolean canPostOn(@NonNull Context context, @NonNull String channelId) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
                 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -108,7 +136,7 @@ public final class NotificationReposter {
         if (!manager.areNotificationsEnabled()) {
             return false;
         }
-        NotificationChannelCompat channel = manager.getNotificationChannelCompat(channelOf(action));
+        NotificationChannelCompat channel = manager.getNotificationChannelCompat(channelId);
         return channel == null || channel.getImportance() != NotificationManagerCompat.IMPORTANCE_NONE;
     }
 
@@ -120,6 +148,20 @@ public final class NotificationReposter {
     static Notification buildCopy(@NonNull Context context, @NonNull StatusBarNotification sbn,
                                   @NonNull NotificationFilterRule.Action action, @NonNull CharSequence appLabel,
                                   @Nullable Bitmap appIcon, boolean alertAgain) {
+        return buildCopy(context, sbn, action, NotificationFilterRule.Priority.NORMAL, appLabel, appIcon, alertAgain,
+                false, System.currentTimeMillis(), 0);
+    }
+
+    /**
+     * @param quiet          Never alerts, for a notification that was already in the shade when a rule took it.
+     * @param pinUntilMillis For {@link NotificationFilterRule.Action#PIN}: when the pin runs out.
+     */
+    @NonNull
+    static Notification buildCopy(@NonNull Context context, @NonNull StatusBarNotification sbn,
+                                  @NonNull NotificationFilterRule.Action action,
+                                  @NonNull NotificationFilterRule.Priority priority, @NonNull CharSequence appLabel,
+                                  @Nullable Bitmap appIcon, boolean alertAgain, boolean quiet, long nowMillis,
+                                  long pinUntilMillis) {
         Notification original = sbn.getNotification();
         Bundle extras = original.extras != null ? original.extras : Bundle.EMPTY;
         CharSequence title = extras.getCharSequence(Notification.EXTRA_TITLE);
@@ -132,9 +174,9 @@ public final class NotificationReposter {
             text = expanded;
         }
         CharSequence subText = extras.getCharSequence(Notification.EXTRA_SUB_TEXT);
-        String channel = channelOf(action);
+        CopyStyle style = CopyStyle.of(action, priority);
+        String channel = style.channel;
         Notification.Builder builder = newBuilder(context, channel)
-                .setSmallIcon(R.drawable.ic_default_notification)
                 .setContentTitle(title != null ? title : appLabel)
                 .setContentText(text)
                 .setSubText(TextUtils.isEmpty(subText) ? appLabel
@@ -149,8 +191,13 @@ public final class NotificationReposter {
                         .setContentTitle(appLabel)
                         .build())
                 .setAutoCancel((original.flags & Notification.FLAG_AUTO_CANCEL) != 0)
-                .setOnlyAlertOnce(!alertAgain || (original.flags & Notification.FLAG_ONLY_ALERT_ONCE) != 0);
-        if (original.when != 0) {
+                .setOnlyAlertOnce(quiet || !alertAgain || (original.flags & Notification.FLAG_ONLY_ALERT_ONCE) != 0)
+                .setSortKey(style.sortKey);
+        setSmallIcon(context, builder, action, original);
+        if (style.whenIsNow) {
+            // A newer time sorts it above the app's older notifications.
+            builder.setWhen(nowMillis).setShowWhen(true);
+        } else if (original.when != 0) {
             builder.setWhen(original.when).setShowWhen(true);
         }
         if (appIcon != null) {
@@ -170,12 +217,35 @@ public final class NotificationReposter {
         }
         Bundle ours = new Bundle();
         ours.putString(EXTRA_SOURCE_PACKAGE, sbn.getPackageName());
+        ours.putString(EXTRA_COPY_ACTION, action.name());
+        ours.putString(EXTRA_COPY_PRIORITY, priority.name());
         builder.addExtras(ours);
         if (groupsCopies()) {
             builder.setGroup(groupOf(sbn.getPackageName()));
         }
-        applyChannelBehavior(builder, action);
+        if (action == NotificationFilterRule.Action.PIN) {
+            // After the app's own buttons, so Unpin comes last.
+            NotificationPins.decorate(context, builder, copyTag(sbn.getKey()),
+                    pinUntilMillis > 0 ? pinUntilMillis : NotificationPins.FOREVER, nowMillis);
+        }
+        applyChannelBehavior(builder, action, style, quiet);
         return builder.build();
+    }
+
+    /**
+     * Ours, which is what the shade shows for a filtered copy. A copy that keeps its status bar icon shows the app's
+     * own icon there instead, from Android 6, where a notification can carry another app's icon.
+     */
+    private static void setSmallIcon(@NonNull Context context, @NonNull Notification.Builder builder,
+                                     @NonNull NotificationFilterRule.Action action, @NonNull Notification original) {
+        if (action == NotificationFilterRule.Action.KEEP_ICON && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Icon icon = original.getSmallIcon();
+            if (icon != null) {
+                builder.setSmallIcon(icon);
+                return;
+            }
+        }
+        builder.setSmallIcon(R.drawable.ic_default_notification);
     }
 
     /** Holds the copies of one app together, and never alerts on its own. */
@@ -239,26 +309,31 @@ public final class NotificationReposter {
 
     @NonNull
     @SuppressWarnings("deprecation")
-    private static Notification.Builder newBuilder(@NonNull Context context, @NonNull String channel) {
+    static Notification.Builder newBuilder(@NonNull Context context, @NonNull String channel) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             return new Notification.Builder(context, channel);
         }
         return new Notification.Builder(context);
     }
 
-    /** Before channels, the copy carries its own sound, vibration and priority. */
+    /**
+     * Before channels, the copy carries its own sound, vibration and priority. A quiet copy is a group child that
+     * leaves alerting to its summary, which never alerts, so even the vibrating channel stays still.
+     */
     @SuppressWarnings("deprecation")
     private static void applyChannelBehavior(@NonNull Notification.Builder builder,
-                                             @NonNull NotificationFilterRule.Action action) {
+                                             @NonNull NotificationFilterRule.Action action, @NonNull CopyStyle style,
+                                             boolean quiet) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            builder.setGroupAlertBehavior(Notification.GROUP_ALERT_CHILDREN);
+            builder.setGroupAlertBehavior(quiet ? Notification.GROUP_ALERT_SUMMARY
+                    : Notification.GROUP_ALERT_CHILDREN);
             return;
         }
-        builder.setDefaults(0).setSound(null);
-        if (action == NotificationFilterRule.Action.VIBRATE) {
-            builder.setPriority(Notification.PRIORITY_DEFAULT).setVibrate(VIBRATION);
+        builder.setDefaults(0).setSound(null).setPriority(style.legacyPriority);
+        if (action == NotificationFilterRule.Action.VIBRATE && !quiet) {
+            builder.setVibrate(VIBRATION);
         } else {
-            builder.setPriority(Notification.PRIORITY_LOW).setVibrate(null);
+            builder.setVibrate(null);
         }
     }
 }

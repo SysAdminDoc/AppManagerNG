@@ -81,6 +81,7 @@ public class ToastHistoryActivityTest {
         }
         Prefs.Privacy.setToastHistoryEnabled(false);
         Prefs.Privacy.setToastHistoryShadeEnabled(false);
+        Prefs.Privacy.setToastHistoryShadeKeepEnabled(false);
         ToastHistoryTestAccess.reset();
         Ops.setAuthenticated(mApp, mAuthenticatedBefore);
         Settings.Secure.putString(mApp.getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, null);
@@ -259,6 +260,26 @@ public class ToastHistoryActivityTest {
         shade.setChecked(false);
 
         assertNull(shadeNotification());
+    }
+
+    @Test
+    public void keepInTheShadeShowsWithTheShadeSwitchAndIsSaved() {
+        shadowOf(mApp).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
+        ToastHistoryActivity activity = open();
+        MaterialSwitch shade = activity.findViewById(R.id.shade_switch);
+        MaterialSwitch keep = activity.findViewById(R.id.shade_keep_switch);
+        assertEquals(View.GONE, keep.getVisibility());
+
+        shade.setChecked(true);
+        assertEquals(View.VISIBLE, keep.getVisibility());
+        assertFalse(keep.isChecked());
+
+        keep.setChecked(true);
+        assertTrue(Prefs.Privacy.isToastHistoryShadeKeepEnabled());
+
+        shade.setChecked(false);
+        assertEquals(View.GONE, keep.getVisibility());
+        assertTrue("the choice is kept for when the notification is back", Prefs.Privacy.isToastHistoryShadeKeepEnabled());
     }
 
     /** #27: the reporter asked for a way to show a toast on purpose and see whether it's recorded. */

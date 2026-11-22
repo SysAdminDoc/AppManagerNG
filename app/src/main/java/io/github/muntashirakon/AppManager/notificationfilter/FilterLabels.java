@@ -21,6 +21,10 @@ final class FilterLabels {
                 return R.string.notification_filter_action_silent;
             case VIBRATE:
                 return R.string.notification_filter_action_vibrate;
+            case KEEP_ICON:
+                return R.string.notification_filter_action_keep_icon;
+            case PIN:
+                return R.string.signer_pin_action_pin;
             case BLOCK:
             default:
                 return R.string.block;
@@ -37,6 +41,10 @@ final class FilterLabels {
                 return R.string.notification_filter_action_silent_summary;
             case VIBRATE:
                 return R.string.notification_filter_action_vibrate_summary;
+            case KEEP_ICON:
+                return R.string.notification_filter_action_keep_icon_summary;
+            case PIN:
+                return R.string.notification_filter_action_pin_summary;
             case BLOCK:
             default:
                 return R.string.notification_filter_action_block_summary;
@@ -65,6 +73,32 @@ final class FilterLabels {
             case ANY:
             default:
                 return R.string.notification_filter_field_any;
+        }
+    }
+
+    @StringRes
+    static int of(@NonNull NotificationFilterRule.Priority priority) {
+        switch (priority) {
+            case HIGH:
+                return R.string.notification_filter_priority_high;
+            case LOW:
+                return R.string.notification_filter_priority_low;
+            case NORMAL:
+            default:
+                return R.string.notification_filter_priority_normal;
+        }
+    }
+
+    @StringRes
+    static int of(@NonNull NotificationFilterRule.PinLength length) {
+        switch (length) {
+            case ONE_HOUR:
+                return R.string.notification_filter_pin_one_hour;
+            case TODAY:
+                return R.string.notification_filter_pin_today;
+            case UNTIL_UNPINNED:
+            default:
+                return R.string.notification_filter_pin_until_unpinned;
         }
     }
 }

@@ -19,6 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.shadows.ShadowLooper;
 
 import java.util.Arrays;
 import java.util.List;
@@ -159,5 +160,31 @@ public class NotificationFilterSettingsTest {
 
         mSettings.setRecordAll(true);
         assertTrue(new NotificationFilterSettings(mPrefs).isRecordAll());
+    }
+
+    /** #32: the listener sweeps the shade when a rule is saved, so it hears about rule changes and only those. */
+    @Test
+    public void aRulesListenerHearsEveryRuleChangeAndNothingElse() {
+        int[] heard = {0};
+        Runnable listener = () -> ++heard[0];
+        mSettings.registerRulesListener(listener);
+
+        mSettings.setRules(Arrays.asList(rule("a", "alpha", Action.SILENT)));
+        ShadowLooper.idleMainLooper();
+        assertEquals(1, heard[0]);
+
+        mSettings.setRecordAll(true);
+        mSettings.setRetentionDays(30);
+        ShadowLooper.idleMainLooper();
+        assertEquals(1, heard[0]);
+
+        mSettings.saveRule(rule("b", "beta", Action.BLOCK));
+        ShadowLooper.idleMainLooper();
+        assertEquals(2, heard[0]);
+
+        mSettings.unregisterRulesListener(listener);
+        mSettings.setRules(Arrays.asList(rule("c", "gamma", Action.SILENT)));
+        ShadowLooper.idleMainLooper();
+        assertEquals(2, heard[0]);
     }
 }

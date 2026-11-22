@@ -1134,6 +1134,15 @@ public final class Prefs {
             AppPref.set(AppPref.PrefKey.PREF_TOAST_HISTORY_SHADE_BOOL, enabled);
         }
 
+        /** Whether that notification is put back when it's swiped away, which Android 14 and later allow. */
+        public static boolean isToastHistoryShadeKeepEnabled() {
+            return AppPref.getBoolean(AppPref.PrefKey.PREF_TOAST_HISTORY_SHADE_KEEP_BOOL);
+        }
+
+        public static void setToastHistoryShadeKeepEnabled(boolean enabled) {
+            AppPref.set(AppPref.PrefKey.PREF_TOAST_HISTORY_SHADE_KEEP_BOOL, enabled);
+        }
+
         /** Whether a watched permission that changed gets put back when root or ADB mode allows it. */
         public static boolean isPermissionWatcherEnforceEnabled() {
             return AppPref.getBoolean(AppPref.PrefKey.PREF_ENABLE_PERMISSION_WATCHER_ENFORCE_BOOL);

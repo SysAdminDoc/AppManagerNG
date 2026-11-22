@@ -89,6 +89,16 @@
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/pin"
+            style="@style/Widget.AppTheme.Button.IconButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="top"
+            android:contentDescription="@string/notification_history_pin"
+            app:icon="@drawable/ic_push_pin"
+            app:iconSize="24dp" />
+
     </androidx.appcompat.widget.LinearLayoutCompat>
 
 </com.google.android.material.card.MaterialCardView>

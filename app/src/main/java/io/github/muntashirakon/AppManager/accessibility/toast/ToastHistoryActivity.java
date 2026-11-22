@@ -70,6 +70,7 @@ public class ToastHistoryActivity extends BaseActivity implements AdvancedSearch
     private LinearProgressIndicator mProgressIndicator;
     private MaterialSwitch mRecordSwitch;
     private MaterialSwitch mShadeSwitch;
+    private MaterialSwitch mShadeKeepSwitch;
     @Nullable
     private AlertDialog mTestDialog;
     private View mServiceOffGroup;
@@ -100,6 +101,7 @@ public class ToastHistoryActivity extends BaseActivity implements AdvancedSearch
 
         mRecordSwitch = findViewById(R.id.record_switch);
         mShadeSwitch = findViewById(R.id.shade_switch);
+        mShadeKeepSwitch = findViewById(R.id.shade_keep_switch);
         mServiceOffGroup = findViewById(R.id.service_off_group);
         MaterialButton openSettings = findViewById(R.id.open_accessibility_settings);
         openSettings.setOnClickListener(v -> openAccessibilitySettings());
@@ -244,10 +246,22 @@ public class ToastHistoryActivity extends BaseActivity implements AdvancedSearch
         mRecordSwitch.setOnCheckedChangeListener(null);
         mRecordSwitch.setChecked(recording);
         mRecordSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> onRecordingToggled(isChecked));
+        boolean shade = Prefs.Privacy.isToastHistoryShadeEnabled();
         mShadeSwitch.setOnCheckedChangeListener(null);
-        mShadeSwitch.setChecked(Prefs.Privacy.isToastHistoryShadeEnabled());
+        mShadeSwitch.setChecked(shade);
         mShadeSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> onShadeToggled(isChecked));
+        // Only means something while the notification is wanted, and the choice is kept while it isn't.
+        mShadeKeepSwitch.setOnCheckedChangeListener(null);
+        mShadeKeepSwitch.setChecked(Prefs.Privacy.isToastHistoryShadeKeepEnabled());
+        mShadeKeepSwitch.setVisibility(shade ? View.VISIBLE : View.GONE);
+        mShadeKeepSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> onShadeKeepToggled(isChecked));
         updateGuidance();
+    }
+
+    private void onShadeKeepToggled(boolean keep) {
+        Prefs.Privacy.setToastHistoryShadeKeepEnabled(keep);
+        // Posted again with or without the swipe watch.
+        ToastHistory.getInstance(this).refreshShade();
     }
 
     private void onShadeToggled(boolean show) {

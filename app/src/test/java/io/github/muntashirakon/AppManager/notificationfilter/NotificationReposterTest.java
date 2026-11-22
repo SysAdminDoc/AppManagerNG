@@ -19,6 +19,7 @@ import android.app.PendingIntent;
 import android.app.RemoteInput;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Icon;
 import android.os.Process;
 import android.service.notification.StatusBarNotification;
 
@@ -30,7 +31,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
+import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterRule.Action;
+import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterRule.Priority;
 
 @RunWith(RobolectricTestRunner.class)
 public class NotificationReposterTest {
@@ -158,6 +161,107 @@ public class NotificationReposterTest {
         assertEquals(NotificationManager.IMPORTANCE_DEFAULT, vibrate.getImportance());
         assertNull(vibrate.getSound());
         assertTrue(vibrate.shouldVibrate());
+    }
+
+    /** #32: a status bar channel with no sound, and a lower one for low priority rules. */
+    @Test
+    public void theIconAndLowChannelsMakeNoSound() {
+        NotificationReposter.ensureChannels(mApp);
+        NotificationManager manager = mApp.getSystemService(NotificationManager.class);
+
+        NotificationChannel icon = manager.getNotificationChannel(NotificationReposter.CHANNEL_ICON);
+        NotificationChannel low = manager.getNotificationChannel(NotificationReposter.CHANNEL_SILENT_LOW);
+        assertNotNull(icon);
+        assertEquals(NotificationManager.IMPORTANCE_DEFAULT, icon.getImportance());
+        assertNull(icon.getSound());
+        assertFalse(icon.shouldVibrate());
+        assertNotNull(low);
+        assertEquals(NotificationManager.IMPORTANCE_MIN, low.getImportance());
+        assertNull(low.getSound());
+        assertFalse(low.shouldVibrate());
+    }
+
+    @Test
+    public void keepIconCopyCarriesTheOriginalsSmallIcon() {
+        Notification original = new Notification.Builder(mApp, "their_channel")
+                .setSmallIcon(Icon.createWithResource(CHAT, 0x7f080042))
+                .setContentTitle("Carol")
+                .setContentText("Are you coming?")
+                .build();
+
+        Notification keep = NotificationReposter.buildCopy(mApp, sbn(original), Action.KEEP_ICON, Priority.NORMAL,
+                "Chat", null, true, false, 5_000L, 0);
+        Notification silent = NotificationReposter.buildCopy(mApp, sbn(original), Action.SILENT, Priority.NORMAL,
+                "Chat", null, true, false, 5_000L, 0);
+
+        assertEquals(NotificationReposter.CHANNEL_ICON, keep.getChannelId());
+        assertEquals(CHAT, keep.getSmallIcon().getResPackage());
+        assertEquals(0x7f080042, keep.getSmallIcon().getResId());
+        assertEquals(mApp.getPackageName(), silent.getSmallIcon().getResPackage());
+    }
+
+    @Test
+    public void priorityPicksTheChannelSortKeyAndTime() {
+        Notification original = new Notification.Builder(mApp, "their_channel")
+                .setSmallIcon(android.R.drawable.ic_dialog_email)
+                .setContentTitle("Carol")
+                .setWhen(1_234L)
+                .build();
+
+        Notification high = NotificationReposter.buildCopy(mApp, sbn(original), Action.SILENT, Priority.HIGH, "Chat",
+                null, true, false, 5_000L, 0);
+        Notification low = NotificationReposter.buildCopy(mApp, sbn(original), Action.SILENT, Priority.LOW, "Chat",
+                null, true, false, 5_000L, 0);
+
+        assertEquals(NotificationReposter.CHANNEL_ICON, high.getChannelId());
+        assertEquals("0", high.getSortKey());
+        assertEquals(5_000L, high.when);
+        assertEquals(NotificationReposter.CHANNEL_SILENT_LOW, low.getChannelId());
+        assertEquals("2", low.getSortKey());
+        assertEquals(1_234L, low.when);
+    }
+
+    @Test
+    public void aQuietCopyNeverAlerts() {
+        Notification quiet = NotificationReposter.buildCopy(mApp, sbn(original()), Action.VIBRATE, Priority.NORMAL,
+                "Chat", null, true, true, 5_000L, 0);
+        Notification loud = NotificationReposter.buildCopy(mApp, sbn(original()), Action.VIBRATE, Priority.NORMAL,
+                "Chat", null, true, false, 5_000L, 0);
+
+        assertEquals(Notification.GROUP_ALERT_SUMMARY, quiet.getGroupAlertBehavior());
+        assertEquals(Notification.GROUP_ALERT_CHILDREN, loud.getGroupAlertBehavior());
+    }
+
+    @Test
+    public void pinnedCopyIsOngoingWithUnpinAndKeepsTheAppsDismissalToItself() {
+        long now = 5_000L;
+        Notification pin = NotificationReposter.buildCopy(mApp, sbn(original()), Action.PIN, Priority.NORMAL, "Chat",
+                null, true, false, now, now + 3_600_000L);
+
+        assertTrue((pin.flags & Notification.FLAG_ONGOING_EVENT) != 0);
+        assertEquals(now + 3_600_000L, NotificationPins.pinnedUntil(pin));
+        assertEquals(3_600_000L, pin.getTimeoutAfter());
+        assertEquals(NotificationReposter.CHANNEL_SILENT, pin.getChannelId());
+        // The app's own buttons stay, Unpin comes last.
+        assertEquals(3, pin.actions.length);
+        assertSame(mReply, pin.actions[0].actionIntent);
+        assertEquals(mApp.getString(R.string.notification_filter_unpin), pin.actions[2].title.toString());
+        // A swipe puts it back, so the app isn't told it was dismissed.
+        assertEquals(NotificationPins.ACTION_DISMISSED, shadowOf(pin.deleteIntent).getSavedIntent().getAction());
+        assertFalse((pin.flags & Notification.FLAG_AUTO_CANCEL) != 0);
+    }
+
+    @Test
+    public void canPostOnFollowsEachChannel() {
+        shadowOf(mApp).grantPermissions(Manifest.permission.POST_NOTIFICATIONS);
+        NotificationReposter.ensureChannels(mApp);
+        NotificationManager manager = mApp.getSystemService(NotificationManager.class);
+        NotificationChannel icon = manager.getNotificationChannel(NotificationReposter.CHANNEL_ICON);
+        icon.setImportance(NotificationManager.IMPORTANCE_NONE);
+        manager.createNotificationChannel(icon);
+
+        assertFalse(NotificationReposter.canPostOn(mApp, NotificationReposter.CHANNEL_ICON));
+        assertTrue(NotificationReposter.canPostOn(mApp, NotificationReposter.CHANNEL_SILENT));
     }
 
     @Test

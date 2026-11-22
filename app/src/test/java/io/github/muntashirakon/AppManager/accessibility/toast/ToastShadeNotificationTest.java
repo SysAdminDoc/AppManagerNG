@@ -15,6 +15,7 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.Intent;
 import android.service.notification.StatusBarNotification;
 
 import androidx.annotation.Nullable;
@@ -54,6 +55,7 @@ public class ToastShadeNotificationTest {
     public void tearDown() {
         Prefs.Privacy.setToastHistoryEnabled(false);
         Prefs.Privacy.setToastHistoryShadeEnabled(false);
+        Prefs.Privacy.setToastHistoryShadeKeepEnabled(false);
         ToastHistoryTestAccess.reset();
     }
 
@@ -157,6 +159,35 @@ public class ToastShadeNotificationTest {
 
         Prefs.Privacy.setToastHistoryEnabled(false);
         mHistory.refreshShade();
+        assertNull(shown());
+    }
+
+    /** Android 14 and later let an ongoing notification be swiped away; Keep in the shade puts it back. */
+    @Test
+    public void keptItComesBackAfterASwipe() {
+        bothOn();
+        mHistory.record(T0, ONE, "Saved");
+        assertNull("nothing watches for a swipe unless asked", shown().deleteIntent);
+
+        Prefs.Privacy.setToastHistoryShadeKeepEnabled(true);
+        mHistory.refreshShade();
+        Notification kept = shown();
+        assertNotNull(kept);
+        assertNotNull(kept.deleteIntent);
+        Intent swiped = shadowOf(kept.deleteIntent).getSavedIntent();
+        assertEquals(ToastShadeKeepReceiver.class.getName(), swiped.getComponent().getClassName());
+        assertTrue(shadowOf(kept.deleteIntent).isBroadcast());
+
+        mManager.cancel(ToastShadeNotification.NOTIFICATION_TAG, ToastShadeNotification.NOTIFICATION_ID);
+        assertNull(shown());
+        new ToastShadeKeepReceiver().onReceive(mApp, swiped);
+        assertNotNull(shown());
+        assertEquals("Saved", shown().extras.getCharSequence(Notification.EXTRA_TEXT).toString());
+
+        // Turned off in between: a late swipe broadcast doesn't bring it back.
+        Prefs.Privacy.setToastHistoryShadeKeepEnabled(false);
+        mManager.cancel(ToastShadeNotification.NOTIFICATION_TAG, ToastShadeNotification.NOTIFICATION_ID);
+        new ToastShadeKeepReceiver().onReceive(mApp, swiped);
         assertNull(shown());
     }
 

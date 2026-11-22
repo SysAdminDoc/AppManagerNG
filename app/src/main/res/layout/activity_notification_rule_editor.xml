@@ -126,6 +126,25 @@
                 android:layout_marginTop="@dimen/premium_space_8"
                 android:text="@string/notification_filter_rule_regex" />
 
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/rule_ongoing"
+                style="@style/Widget.AppTheme.MaterialSwitch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/premium_space_8"
+                android:text="@string/notification_filter_rule_ongoing" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/rule_ongoing_note"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/premium_space_4"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:visibility="gone"
+                tools:text="@string/notification_filter_ongoing_snooze"
+                tools:visibility="visible" />
+
             <com.google.android.material.textfield.TextInputLayout
                 style="@style/Widget.AppTheme.TextInputLayout.ExposedDropdownMenu"
                 android:layout_width="match_parent"
@@ -150,6 +169,44 @@
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 tools:text="@string/notification_filter_action_silent_summary" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/rule_pin_for_layout"
+                style="@style/Widget.AppTheme.TextInputLayout.ExposedDropdownMenu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/premium_space_8"
+                android:hint="@string/notification_filter_rule_pin_for"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <io.github.muntashirakon.widget.MaterialAutoCompleteTextView
+                    android:id="@+id/rule_pin_for"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none"
+                    android:maxLines="1" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/rule_priority_layout"
+                style="@style/Widget.AppTheme.TextInputLayout.ExposedDropdownMenu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/premium_space_8"
+                android:hint="@string/priority"
+                app:helperText="@string/notification_filter_rule_priority_note"
+                app:helperTextEnabled="true">
+
+                <io.github.muntashirakon.widget.MaterialAutoCompleteTextView
+                    android:id="@+id/rule_priority"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none"
+                    android:maxLines="1" />
+
+            </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/rule_save"

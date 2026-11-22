@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.notificationfilter;
 
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -11,6 +12,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -35,6 +37,7 @@ import io.github.muntashirakon.AppManager.misc.AdvancedSearchView;
 import io.github.muntashirakon.AppManager.misc.TextQuery;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
 import io.github.muntashirakon.AppManager.utils.LiveDataChanges;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.adapters.AnyFilterArrayAdapter;
 import io.github.muntashirakon.util.AdapterUtils;
@@ -48,7 +51,9 @@ public class NotificationHistoryActivity extends BaseActivity implements Advance
     private static final String[] ACTIONS = {
             NotificationFilterRule.Action.BLOCK.name(),
             NotificationFilterRule.Action.SILENT.name(),
+            NotificationFilterRule.Action.KEEP_ICON.name(),
             NotificationFilterRule.Action.VIBRATE.name(),
+            NotificationFilterRule.Action.PIN.name(),
             NotificationFilterRule.Action.ALLOW.name(),
             NotificationHistoryEntry.ACTION_NONE,
     };
@@ -85,7 +90,7 @@ public class NotificationHistoryActivity extends BaseActivity implements Advance
         emptyView.findViewById(R.id.empty_state_action).setVisibility(View.GONE);
         listView.setEmptyView(emptyView);
         UiUtils.applyWindowInsetsAsPaddingNoTop(listView);
-        mAdapter = new EntryAdapter();
+        mAdapter = new EntryAdapter(this::showPinChoices);
         listView.setAdapter(mAdapter);
 
         mViewModel.getState().observe(this, this::showState);
@@ -223,17 +228,53 @@ public class NotificationHistoryActivity extends BaseActivity implements Advance
                 mViewModel.setFilterAction(actions.get(position)));
     }
 
+    /** Pins a copy of the row to the shade, for as long as the user picks. */
+    private void showPinChoices(@NonNull View anchor, @NonNull NotificationHistoryEntry entry) {
+        NotificationFilterRule.PinLength[] lengths = NotificationFilterRule.PinLength.values();
+        PopupMenu popup = new PopupMenu(this, anchor);
+        for (int i = 0; i < lengths.length; ++i) {
+            popup.getMenu().add(Menu.NONE, i, i, FilterLabels.of(lengths[i]));
+        }
+        popup.setOnMenuItemClickListener(item -> {
+            pin(entry, lengths[item.getItemId()]);
+            return true;
+        });
+        popup.show();
+    }
+
+    private void pin(@NonNull NotificationHistoryEntry entry, @NonNull NotificationFilterRule.PinLength length) {
+        Context appContext = getApplicationContext();
+        // The app's icon is read from its package, so not on the main thread.
+        ThreadUtils.postOnBackgroundThread(() -> {
+            Bitmap icon = new NotificationFilterService.AppLookup(appContext).icon(entry.packageName);
+            boolean pinned = NotificationPins.pinFromHistory(appContext, entry, icon, length,
+                    System.currentTimeMillis());
+            ThreadUtils.postOnMainThread(() -> UIUtils.displayShortToast(pinned ? R.string.notification_history_pinned
+                    : R.string.notification_history_pin_needs_permission));
+        });
+    }
+
     @VisibleForTesting
     @NonNull
     List<NotificationHistoryEntry> getVisibleEntries() {
         return mVisible;
     }
 
+    private interface OnPinListener {
+        void onPin(@NonNull View anchor, @NonNull NotificationHistoryEntry entry);
+    }
+
     private static final class EntryAdapter extends RecyclerView.Adapter<EntryAdapter.ViewHolder> {
+        @NonNull
+        private final OnPinListener mOnPin;
         private final List<NotificationHistoryEntry> mEntries = new ArrayList<>();
         private final DateFormat mTimeFormat = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.MEDIUM);
         @NonNull
         private Map<String, ApplicationInfo> mAppInfos = Collections.emptyMap();
+
+        EntryAdapter(@NonNull OnPinListener onPin) {
+            mOnPin = onPin;
+        }
 
         void setEntries(@NonNull List<NotificationHistoryEntry> entries,
                         @NonNull Map<String, ApplicationInfo> appInfos) {
@@ -270,6 +311,7 @@ public class NotificationHistoryActivity extends BaseActivity implements Advance
             holder.time.setText(mTimeFormat.format(new Date(entry.timestampMillis)));
             holder.icon.setTag(entry.packageName);
             ImageLoader.getInstance().displayImage(entry.packageName, mAppInfos.get(entry.packageName), holder.icon);
+            holder.pin.setOnClickListener(v -> mOnPin.onPin(v, entry));
         }
 
         @Override
@@ -285,6 +327,7 @@ public class NotificationHistoryActivity extends BaseActivity implements Advance
             final TextView text;
             final TextView outcome;
             final TextView time;
+            final View pin;
 
             ViewHolder(@NonNull View itemView) {
                 super(itemView);
@@ -295,6 +338,7 @@ public class NotificationHistoryActivity extends BaseActivity implements Advance
                 text = itemView.findViewById(R.id.text);
                 outcome = itemView.findViewById(R.id.outcome);
                 time = itemView.findViewById(R.id.time);
+                pin = itemView.findViewById(R.id.pin);
             }
         }
     }

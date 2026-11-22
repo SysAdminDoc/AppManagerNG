@@ -6,10 +6,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -30,6 +32,7 @@ import io.github.muntashirakon.AppManager.BaseActivity;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.logs.Log;
 import io.github.muntashirakon.AppManager.misc.TextQuery;
+import io.github.muntashirakon.AppManager.settings.Ops;
 import io.github.muntashirakon.AppManager.utils.PackageUtils;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
@@ -44,8 +47,20 @@ public class NotificationRuleEditorActivity extends BaseActivity {
     private static final String STATE_PACKAGE = "package";
     private static final String STATE_FIELD = "field";
     private static final String STATE_ACTION = "action";
+    private static final String STATE_PRIORITY = "priority";
+    private static final String STATE_PIN_FOR = "pin_for";
     private static final NotificationFilterRule.Field[] FIELDS = NotificationFilterRule.Field.values();
-    private static final NotificationFilterRule.Action[] ACTIONS = NotificationFilterRule.Action.values();
+    /** From leaving it alone to taking it away. */
+    private static final NotificationFilterRule.Action[] ACTIONS = {
+            NotificationFilterRule.Action.ALLOW,
+            NotificationFilterRule.Action.SILENT,
+            NotificationFilterRule.Action.KEEP_ICON,
+            NotificationFilterRule.Action.VIBRATE,
+            NotificationFilterRule.Action.PIN,
+            NotificationFilterRule.Action.BLOCK,
+    };
+    private static final NotificationFilterRule.Priority[] PRIORITIES = NotificationFilterRule.Priority.values();
+    private static final NotificationFilterRule.PinLength[] PIN_LENGTHS = NotificationFilterRule.PinLength.values();
 
     @NonNull
     public static Intent newIntent(@NonNull Context context, @Nullable String ruleId) {
@@ -90,8 +105,14 @@ public class NotificationRuleEditorActivity extends BaseActivity {
     private TextInputLayout mPatternLayout;
     private TextInputEditText mPattern;
     private MaterialSwitch mRegex;
+    private MaterialSwitch mOngoing;
+    private TextView mOngoingNote;
     private MaterialAutoCompleteTextView mAction;
     private TextView mActionSummary;
+    private View mPinForLayout;
+    private MaterialAutoCompleteTextView mPinFor;
+    private View mPriorityLayout;
+    private MaterialAutoCompleteTextView mPriority;
     @NonNull
     private AppItem mAnyApp = new AppItem(null, "");
     /** The chosen app, or the "any app" row. */
@@ -101,6 +122,10 @@ public class NotificationRuleEditorActivity extends BaseActivity {
     private NotificationFilterRule.Field mSelectedField = NotificationFilterRule.Field.ANY;
     @NonNull
     private NotificationFilterRule.Action mSelectedAction = NotificationFilterRule.Action.SILENT;
+    @NonNull
+    private NotificationFilterRule.Priority mSelectedPriority = NotificationFilterRule.Priority.NORMAL;
+    @NonNull
+    private NotificationFilterRule.PinLength mSelectedPinFor = NotificationFilterRule.PinLength.UNTIL_UNPINNED;
 
     @Override
     protected void onAuthenticated(@Nullable Bundle savedInstanceState) {
@@ -117,8 +142,14 @@ public class NotificationRuleEditorActivity extends BaseActivity {
         mPatternLayout = findViewById(R.id.rule_pattern_layout);
         mPattern = findViewById(R.id.rule_pattern);
         mRegex = findViewById(R.id.rule_regex);
+        mOngoing = findViewById(R.id.rule_ongoing);
+        mOngoingNote = findViewById(R.id.rule_ongoing_note);
         mAction = findViewById(R.id.rule_action);
         mActionSummary = findViewById(R.id.rule_action_summary);
+        mPinForLayout = findViewById(R.id.rule_pin_for_layout);
+        mPinFor = findViewById(R.id.rule_pin_for);
+        mPriorityLayout = findViewById(R.id.rule_priority_layout);
+        mPriority = findViewById(R.id.rule_priority);
         mAnyApp = new AppItem(null, getString(R.string.notification_filter_rule_any_app));
         mSelectedApp = mAnyApp;
 
@@ -137,10 +168,13 @@ public class NotificationRuleEditorActivity extends BaseActivity {
                 mName.setText(mEditing.name);
                 mPattern.setText(mEditing.pattern);
                 mRegex.setChecked(mEditing.regex);
+                mOngoing.setChecked(mEditing.ongoing);
             }
             packageName = mEditing.packageName;
             mSelectedField = mEditing.field;
             mSelectedAction = mEditing.action;
+            mSelectedPriority = mEditing.priority;
+            mSelectedPinFor = mEditing.pinFor;
         }
         if (savedInstanceState != null) {
             packageName = savedInstanceState.getString(STATE_PACKAGE);
@@ -148,6 +182,10 @@ public class NotificationRuleEditorActivity extends BaseActivity {
                     mSelectedField);
             mSelectedAction = enumOr(NotificationFilterRule.Action.class, savedInstanceState.getString(STATE_ACTION),
                     mSelectedAction);
+            mSelectedPriority = enumOr(NotificationFilterRule.Priority.class,
+                    savedInstanceState.getString(STATE_PRIORITY), mSelectedPriority);
+            mSelectedPinFor = enumOr(NotificationFilterRule.PinLength.class,
+                    savedInstanceState.getString(STATE_PIN_FOR), mSelectedPinFor);
         }
         if (packageName != null) {
             mSelectedApp = new AppItem(packageName, PackageUtils.getPackageLabel(getPackageManager(), packageName));
@@ -155,6 +193,10 @@ public class NotificationRuleEditorActivity extends BaseActivity {
         setUpApps();
         setUpFields();
         setUpActions();
+        setUpPriorities();
+        setUpPinLengths();
+        mOngoing.setOnCheckedChangeListener((buttonView, isChecked) -> showOngoingNote());
+        showOngoingNote();
         mPattern.addTextChangedListener(new SimpleTextWatcher(() -> mPatternLayout.setError(null)));
         mRegex.setOnCheckedChangeListener((buttonView, isChecked) -> mPatternLayout.setError(null));
         findViewById(R.id.rule_save).setOnClickListener(v -> save());
@@ -166,6 +208,8 @@ public class NotificationRuleEditorActivity extends BaseActivity {
         outState.putString(STATE_PACKAGE, mSelectedApp.packageName);
         outState.putString(STATE_FIELD, mSelectedField.name());
         outState.putString(STATE_ACTION, mSelectedAction.name());
+        outState.putString(STATE_PRIORITY, mSelectedPriority.name());
+        outState.putString(STATE_PIN_FOR, mSelectedPinFor.name());
     }
 
     @Override
@@ -244,11 +288,52 @@ public class NotificationRuleEditorActivity extends BaseActivity {
         mAction.setAdapter(new AnyFilterArrayAdapter<>(this,
                 io.github.muntashirakon.ui.R.layout.auto_complete_dropdown_item, labels));
         mAction.setText(getString(FilterLabels.of(mSelectedAction)), false);
-        mActionSummary.setText(FilterLabels.summaryOf(mSelectedAction));
+        showActionOptions();
         mAction.setOnItemClickListener((parent, view, position, id) -> {
-            mSelectedAction = ACTIONS[labels.indexOf((String) parent.getItemAtPosition(position))];
-            mActionSummary.setText(FilterLabels.summaryOf(mSelectedAction));
+            mSelectedAction = ACTIONS[labels.indexOf(String.valueOf(mAction.getAdapter().getItem(position)))];
+            showActionOptions();
         });
+    }
+
+    /** The priority applies only to what posts a copy, and only a pin has a length. */
+    private void showActionOptions() {
+        mActionSummary.setText(FilterLabels.summaryOf(mSelectedAction));
+        mPriorityLayout.setVisibility(NotificationFilterRule.postsCopy(mSelectedAction) ? View.VISIBLE : View.GONE);
+        mPinForLayout.setVisibility(mSelectedAction == NotificationFilterRule.Action.PIN ? View.VISIBLE : View.GONE);
+    }
+
+    private void setUpPriorities() {
+        List<String> labels = new ArrayList<>(PRIORITIES.length);
+        for (NotificationFilterRule.Priority priority : PRIORITIES) {
+            labels.add(getString(FilterLabels.of(priority)));
+        }
+        mPriority.setAdapter(new AnyFilterArrayAdapter<>(this,
+                io.github.muntashirakon.ui.R.layout.auto_complete_dropdown_item, labels));
+        mPriority.setText(getString(FilterLabels.of(mSelectedPriority)), false);
+        mPriority.setOnItemClickListener((parent, view, position, id) -> mSelectedPriority =
+                PRIORITIES[labels.indexOf(String.valueOf(mPriority.getAdapter().getItem(position)))]);
+    }
+
+    private void setUpPinLengths() {
+        List<String> labels = new ArrayList<>(PIN_LENGTHS.length);
+        for (NotificationFilterRule.PinLength length : PIN_LENGTHS) {
+            labels.add(getString(FilterLabels.of(length)));
+        }
+        mPinFor.setAdapter(new AnyFilterArrayAdapter<>(this,
+                io.github.muntashirakon.ui.R.layout.auto_complete_dropdown_item, labels));
+        mPinFor.setText(getString(FilterLabels.of(mSelectedPinFor)), false);
+        mPinFor.setOnItemClickListener((parent, view, position, id) -> mSelectedPinFor =
+                PIN_LENGTHS[labels.indexOf(String.valueOf(mPinFor.getAdapter().getItem(position)))]);
+    }
+
+    /** Says what happens to an ongoing notification on this phone, since it depends on the version and the mode. */
+    private void showOngoingNote() {
+        if (mOngoing.isChecked()) {
+            mOngoingNote.setText(OngoingPolicy.describe(Build.VERSION.SDK_INT, Ops.isWorkingUidRoot()));
+            mOngoingNote.setVisibility(View.VISIBLE);
+        } else {
+            mOngoingNote.setVisibility(View.GONE);
+        }
     }
 
     private void save() {
@@ -280,7 +365,7 @@ public class NotificationRuleEditorActivity extends BaseActivity {
             rule = NotificationFilterRule.create(name, mSelectedApp.packageName, mSelectedField, pattern, regex,
                     mSelectedAction);
         }
-        mSettings.saveRule(rule);
+        mSettings.saveRule(rule.withOptions(mOngoing.isChecked(), mSelectedPriority, mSelectedPinFor));
         UIUtils.displayShortToast(R.string.notification_filter_rule_saved);
         finish();
     }

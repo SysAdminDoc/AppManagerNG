@@ -1949,6 +1949,13 @@
         <receiver
             android:name=".permission.watcher.WatchRuleActionReceiver"
             android:exported="false" />
+        <!-- Reached only through this app's own PendingIntents (delete intent, Unpin button), so no export -->
+        <receiver
+            android:name=".accessibility.toast.ToastShadeKeepReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".notificationfilter.NotificationPinReceiver"
+            android:exported="false" />
         <!-- Termux answers through the PendingIntent it was given, so this needs no export -->
         <receiver
             android:name=".terminal.TermuxResultReceiver"

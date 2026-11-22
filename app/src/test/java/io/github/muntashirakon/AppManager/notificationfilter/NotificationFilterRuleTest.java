@@ -4,6 +4,7 @@ package io.github.muntashirakon.AppManager.notificationfilter;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -18,6 +19,8 @@ import org.robolectric.RobolectricTestRunner;
 
 import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterRule.Action;
 import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterRule.Field;
+import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterRule.PinLength;
+import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterRule.Priority;
 
 // Robolectric only for org.json, which android.jar stubs out.
 @RunWith(RobolectricTestRunner.class)
@@ -121,6 +124,46 @@ public class NotificationFilterRuleTest {
         assertEquals(anyApp, anyAppBack);
         assertNull(anyAppBack.packageName);
         assertTrue(oneAppBack.matches(SHOP, fields("Promo inside", "", "")));
+    }
+
+    @Test
+    public void ongoingPriorityAndPinLengthAreSaved() throws Exception {
+        NotificationFilterRule pinned = new NotificationFilterRule("p1", "Boarding", SHOP, Field.ANY, "", false,
+                Action.PIN, true, Priority.HIGH, PinLength.TODAY);
+
+        NotificationFilterRule back = NotificationFilterRule.fromJson(new JSONObject(pinned.toJson().toString()));
+
+        assertNotNull(back);
+        assertTrue(back.ongoing);
+        assertEquals(Priority.HIGH, back.priority);
+        assertEquals(PinLength.TODAY, back.pinFor);
+        assertEquals(Action.PIN, back.action);
+        assertEquals(pinned, back);
+        assertNotEquals(pinned, pinned.withOptions(false, Priority.HIGH, PinLength.TODAY));
+        assertNotEquals(pinned, pinned.withOptions(true, Priority.LOW, PinLength.TODAY));
+        assertNotEquals(pinned, pinned.withOptions(true, Priority.HIGH, PinLength.ONE_HOUR));
+    }
+
+    @Test
+    public void aRuleSavedBeforeTheOptionsReadsWithTheDefaults() throws Exception {
+        JSONObject old = new JSONObject().put("id", "o1").put("name", "Old").put("field", "ANY")
+                .put("pattern", "sale").put("regex", false).put("action", "SILENT");
+
+        NotificationFilterRule rule = NotificationFilterRule.fromJson(old);
+
+        assertNotNull(rule);
+        assertFalse(rule.ongoing);
+        assertEquals(Priority.NORMAL, rule.priority);
+        assertEquals(PinLength.UNTIL_UNPINNED, rule.pinFor);
+
+        // A choice from a newer version falls back instead of losing the rule.
+        JSONObject newer = new NotificationFilterRule("n1", "New", null, Field.ANY, "", false, Action.PIN, true,
+                Priority.LOW, PinLength.ONE_HOUR).toJson().put("priority", "URGENT").put("pin", "A_WEEK");
+        NotificationFilterRule fallback = NotificationFilterRule.fromJson(newer);
+        assertNotNull(fallback);
+        assertTrue(fallback.ongoing);
+        assertEquals(Priority.NORMAL, fallback.priority);
+        assertEquals(PinLength.UNTIL_UNPINNED, fallback.pinFor);
     }
 
     @Test

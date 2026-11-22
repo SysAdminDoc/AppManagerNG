@@ -22,6 +22,8 @@ import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterD
 import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterDecision.Result;
 import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterRule.Action;
 import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterRule.Field;
+import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterRule.PinLength;
+import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterRule.Priority;
 
 public class NotificationFilterDecisionTest {
     private static final String OWN = "io.github.sysadmindoc.AppManagerNG";
@@ -148,5 +150,68 @@ public class NotificationFilterDecisionTest {
         assertNull(result.action);
         assertFalse(result.exempt);
         assertFalse(result.byQuietMode);
+    }
+
+    @NonNull
+    private static NotificationFilterRule ongoingRule(@NonNull String name, @NonNull String pattern,
+                                                      @NonNull Action action) {
+        return rule(name, pattern, action).withOptions(true, Priority.NORMAL, PinLength.UNTIL_UNPINNED);
+    }
+
+    /** #32: ongoing ones are only taken by a rule that asks for them, and never by quiet mode. */
+    @Test
+    public void ongoingOnesAreTakenOnlyByARuleThatAsksForThem() {
+        int[] ongoingFlags = {Notification.FLAG_ONGOING_EVENT, Notification.FLAG_FOREGROUND_SERVICE,
+                Notification.FLAG_NO_CLEAR};
+        List<NotificationFilterRule> rules = Arrays.asList(rule("All", "", Action.SILENT),
+                ongoingRule("Uploads", "sale", Action.BLOCK));
+        for (int flag : ongoingFlags) {
+            Facts facts = new Facts(CHAT, flag, (flag & Notification.FLAG_NO_CLEAR) == 0, null, false, false, SALE);
+            assertTrue("flag " + flag, NotificationFilterDecision.isOngoing(facts));
+            Result result = decide(facts, rules, Action.SILENT);
+            assertFalse("flag " + flag, result.exempt);
+            assertEquals("flag " + flag, Action.BLOCK, result.action);
+            assertEquals("Uploads", result.ruleName);
+        }
+        Facts unclearable = new Facts(CHAT, 0, false, null, false, false, SALE);
+        assertTrue(NotificationFilterDecision.isOngoing(unclearable));
+        assertFalse(NotificationFilterDecision.isOngoing(facts(CHAT, SALE)));
+
+        // No ongoing rule matches: left out entirely, quiet mode included, as before.
+        Facts upload = new Facts(CHAT, Notification.FLAG_ONGOING_EVENT, false, null, false, false, MOM);
+        assertTrue(decide(upload, rules, Action.SILENT).exempt);
+        assertTrue(decide(upload, Collections.emptyList(), Action.SILENT).exempt);
+        // A plain one still goes by the first rule.
+        assertEquals(Action.SILENT, decide(facts(CHAT, SALE), rules, null).action);
+    }
+
+    @Test
+    public void callsAlarmsMediaAndSummariesStayExemptForOngoingRulesToo() {
+        List<NotificationFilterRule> blockAll = Collections.singletonList(ongoingRule("Block", "", Action.BLOCK));
+        int ongoing = Notification.FLAG_ONGOING_EVENT;
+
+        assertTrue(decide(new Facts(CHAT, ongoing, false, Notification.CATEGORY_CALL, false, false, SALE), blockAll,
+                null).exempt);
+        assertTrue(decide(new Facts(CHAT, ongoing, false, Notification.CATEGORY_ALARM, false, false, SALE), blockAll,
+                null).exempt);
+        assertTrue(decide(new Facts(CHAT, ongoing, false, null, true, false, SALE), blockAll, null).exempt);
+        assertTrue(decide(new Facts(CHAT, ongoing, false, null, false, true, SALE), blockAll, null).exempt);
+        assertTrue(decide(new Facts(CHAT, ongoing | Notification.FLAG_GROUP_SUMMARY, false, null, false, false, SALE),
+                blockAll, null).exempt);
+        assertTrue(decide(new Facts(OWN, ongoing, false, null, false, false, SALE), blockAll, null).exempt);
+    }
+
+    @Test
+    public void theRulesPriorityAndPinLengthComeWithTheResult() {
+        NotificationFilterRule pin = rule("Pin", "sale", Action.PIN).withOptions(false, Priority.HIGH,
+                PinLength.TODAY);
+
+        Result ruled = decide(facts(CHAT, SALE), Collections.singletonList(pin), null);
+        Result quiet = decide(facts(CHAT, MOM), Collections.singletonList(pin), Action.SILENT);
+
+        assertEquals(Action.PIN, ruled.action);
+        assertEquals(Priority.HIGH, ruled.priority);
+        assertEquals(PinLength.TODAY, ruled.pinFor);
+        assertEquals(Priority.NORMAL, quiet.priority);
     }
 }

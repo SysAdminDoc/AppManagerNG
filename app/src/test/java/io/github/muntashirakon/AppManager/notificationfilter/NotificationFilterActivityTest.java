@@ -7,13 +7,16 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.robolectric.Shadows.shadowOf;
 
 import android.app.Application;
 import android.content.Intent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AutoCompleteTextView;
 import android.widget.EditText;
+import android.widget.ListAdapter;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -37,6 +40,8 @@ import java.util.List;
 import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterRule.Action;
 import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterRule.Field;
+import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterRule.PinLength;
+import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterRule.Priority;
 import io.github.muntashirakon.AppManager.settings.Ops;
 
 /** The filter screen and the rule editor, opened for real. */
@@ -215,6 +220,85 @@ public class NotificationFilterActivityTest {
         assertEquals(Arrays.asList("a", "b"), ruleIds());
         assertEquals("gamma", mSettings.findRule("b").pattern);
         assertEquals("Rule b", mSettings.findRule("b").name);
+    }
+
+    private static void pick(@NonNull AutoCompleteTextView view, @NonNull String label) {
+        ListAdapter adapter = view.getAdapter();
+        for (int i = 0; i < adapter.getCount(); ++i) {
+            if (label.equals(String.valueOf(adapter.getItem(i)))) {
+                view.setText(label, false);
+                view.getOnItemClickListener().onItemClick(null, null, i, i);
+                return;
+            }
+        }
+        fail("No " + label + " in the list");
+    }
+
+    /** #32: ongoing, the pin length and the priority are saved with the rule. */
+    @Test
+    public void editorSavesOngoingPinLengthAndPriority() {
+        NotificationRuleEditorActivity editor = openEditor(null);
+        View pinFor = editor.findViewById(R.id.rule_pin_for_layout);
+        View priority = editor.findViewById(R.id.rule_priority_layout);
+        TextView ongoingNote = editor.findViewById(R.id.rule_ongoing_note);
+        assertEquals("Silent posts a copy", View.VISIBLE, priority.getVisibility());
+        assertEquals(View.GONE, pinFor.getVisibility());
+        assertEquals(View.GONE, ongoingNote.getVisibility());
+
+        pick(editor.findViewById(R.id.rule_action), editor.getString(R.string.signer_pin_action_pin));
+        assertEquals(View.VISIBLE, pinFor.getVisibility());
+        pick(editor.findViewById(R.id.rule_pin_for), editor.getString(R.string.notification_filter_pin_one_hour));
+        pick(editor.findViewById(R.id.rule_priority), editor.getString(R.string.notification_filter_priority_high));
+        ((MaterialSwitch) editor.findViewById(R.id.rule_ongoing)).setChecked(true);
+        assertEquals(View.VISIBLE, ongoingNote.getVisibility());
+        // Android 8 and later snooze what they can't remove, and say so.
+        assertEquals(editor.getString(R.string.notification_filter_ongoing_snooze), ongoingNote.getText().toString());
+
+        editor.findViewById(R.id.rule_save).performClick();
+
+        NotificationFilterRule saved = mSettings.getRules().get(0);
+        assertEquals(Action.PIN, saved.action);
+        assertTrue(saved.ongoing);
+        assertEquals(Priority.HIGH, saved.priority);
+        assertEquals(PinLength.ONE_HOUR, saved.pinFor);
+    }
+
+    @Test
+    public void priorityShowsOnlyForActionsThatPostACopy() {
+        NotificationRuleEditorActivity editor = openEditor(null);
+        AutoCompleteTextView action = editor.findViewById(R.id.rule_action);
+        View priority = editor.findViewById(R.id.rule_priority_layout);
+        View pinFor = editor.findViewById(R.id.rule_pin_for_layout);
+
+        pick(action, editor.getString(R.string.notification_filter_action_allow));
+        assertEquals(View.GONE, priority.getVisibility());
+        pick(action, editor.getString(R.string.block));
+        assertEquals(View.GONE, priority.getVisibility());
+        pick(action, editor.getString(R.string.notification_filter_action_keep_icon));
+        assertEquals(View.VISIBLE, priority.getVisibility());
+        assertEquals(View.GONE, pinFor.getVisibility());
+        assertEquals(editor.getString(R.string.notification_filter_action_keep_icon_summary),
+                ((TextView) editor.findViewById(R.id.rule_action_summary)).getText().toString());
+        pick(action, editor.getString(R.string.notification_filter_action_vibrate));
+        assertEquals(View.VISIBLE, priority.getVisibility());
+    }
+
+    @Test
+    public void editorKeepsTheOptionsOfTheRuleItEdits() {
+        mSettings.setRules(Arrays.asList(rule("a", "alpha").withOptions(true, Priority.LOW, PinLength.TODAY)));
+        NotificationRuleEditorActivity editor = openEditor("a");
+        assertTrue(((MaterialSwitch) editor.findViewById(R.id.rule_ongoing)).isChecked());
+        assertEquals(editor.getString(R.string.notification_filter_priority_low),
+                ((TextView) editor.findViewById(R.id.rule_priority)).getText().toString());
+
+        ((EditText) editor.findViewById(R.id.rule_pattern)).setText("alphabet");
+        editor.findViewById(R.id.rule_save).performClick();
+
+        NotificationFilterRule saved = mSettings.findRule("a");
+        assertEquals("alphabet", saved.pattern);
+        assertTrue(saved.ongoing);
+        assertEquals(Priority.LOW, saved.priority);
+        assertEquals(PinLength.TODAY, saved.pinFor);
     }
 
     @Test

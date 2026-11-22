@@ -125,7 +125,13 @@ public final class ToastShadeNotification {
                 .setSmallIcon(R.drawable.ic_default_notification)
                 .setContentTitle(title)
                 .build();
-        return new NotificationCompat.Builder(context, CHANNEL_ID)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID);
+        if (Prefs.Privacy.isToastHistoryShadeKeepEnabled()) {
+            // Android 14 and later let an ongoing notification be swiped away. This puts it back.
+            builder.setDeleteIntent(PendingIntentCompat.getBroadcast(context, 0,
+                    new Intent(context, ToastShadeKeepReceiver.class), PendingIntent.FLAG_UPDATE_CURRENT, false));
+        }
+        return builder
                 .setSmallIcon(R.drawable.ic_default_notification)
                 .setContentTitle(latest.appLabel)
                 .setContentText(oneLine(context, latest))

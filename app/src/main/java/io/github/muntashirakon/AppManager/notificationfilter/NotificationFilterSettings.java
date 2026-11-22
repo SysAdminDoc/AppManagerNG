@@ -15,7 +15,9 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -76,6 +78,8 @@ public final class NotificationFilterSettings {
     private String mParsedFrom;
     @NonNull
     private List<NotificationFilterRule> mParsed = Collections.emptyList();
+    private final Map<Runnable, SharedPreferences.OnSharedPreferenceChangeListener> mRulesListeners =
+            new HashMap<>();
 
     @VisibleForTesting
     NotificationFilterSettings(@NonNull SharedPreferences prefs) {
@@ -106,6 +110,33 @@ public final class NotificationFilterSettings {
             throw new IllegalStateException(e);
         }
         mPrefs.edit().putString(KEY_RULES, array.toString()).apply();
+    }
+
+    /** Runs on the main thread each time the rules change, until it's unregistered. */
+    public void registerRulesListener(@NonNull Runnable listener) {
+        SharedPreferences.OnSharedPreferenceChangeListener onChange = (prefs, key) -> {
+            if (KEY_RULES.equals(key)) {
+                listener.run();
+            }
+        };
+        synchronized (mRulesListeners) {
+            if (mRulesListeners.containsKey(listener)) {
+                return;
+            }
+            // SharedPreferences holds its listeners weakly, so this map keeps them alive.
+            mRulesListeners.put(listener, onChange);
+        }
+        mPrefs.registerOnSharedPreferenceChangeListener(onChange);
+    }
+
+    public void unregisterRulesListener(@NonNull Runnable listener) {
+        SharedPreferences.OnSharedPreferenceChangeListener onChange;
+        synchronized (mRulesListeners) {
+            onChange = mRulesListeners.remove(listener);
+        }
+        if (onChange != null) {
+            mPrefs.unregisterOnSharedPreferenceChangeListener(onChange);
+        }
     }
 
     /** Replaces the rule with the same id, or adds it at the end. */

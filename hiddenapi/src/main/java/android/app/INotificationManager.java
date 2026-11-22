@@ -32,6 +32,12 @@ public interface INotificationManager extends IInterface {
     StatusBarNotification[] getActiveNotifications(String callingPkg) throws RemoteException;
 
     /**
+     * Android 5 to 9. Android 10 added the calling package after {@code pkg}. Root may cancel another app's
+     * notification this way, except one from a foreground service.
+     */
+    void cancelNotificationWithTag(String pkg, String tag, int id, int userId) throws RemoteException;
+
+    /**
      * Updates the notification's enabled state. Additionally locks importance for all of the
      * notifications belonging to the app, such that future notifications aren't reconsidered for
      * blocking helper.

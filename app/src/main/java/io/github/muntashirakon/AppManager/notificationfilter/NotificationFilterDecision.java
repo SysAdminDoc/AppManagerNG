@@ -72,20 +72,33 @@ public final class NotificationFilterDecision {
         public final boolean byQuietMode;
         /** Never filtered at all, whatever the rules say, so it isn't recorded either. */
         public final boolean exempt;
+        /** The matching rule's priority for its copy. Quiet mode's copies are normal. */
+        @NonNull
+        public final NotificationFilterRule.Priority priority;
+        @NonNull
+        public final NotificationFilterRule.PinLength pinFor;
 
         Result(@Nullable NotificationFilterRule.Action action, @Nullable String ruleName, boolean byQuietMode,
                boolean exempt) {
+            this(action, ruleName, byQuietMode, exempt, NotificationFilterRule.Priority.NORMAL,
+                    NotificationFilterRule.PinLength.UNTIL_UNPINNED);
+        }
+
+        Result(@Nullable NotificationFilterRule.Action action, @Nullable String ruleName, boolean byQuietMode,
+               boolean exempt, @NonNull NotificationFilterRule.Priority priority,
+               @NonNull NotificationFilterRule.PinLength pinFor) {
             this.action = action;
             this.ruleName = ruleName;
             this.byQuietMode = byQuietMode;
             this.exempt = exempt;
+            this.priority = priority;
+            this.pinFor = pinFor;
         }
     }
 
-    private static final int UNTOUCHABLE_FLAGS = Notification.FLAG_ONGOING_EVENT
+    private static final int ONGOING_FLAGS = Notification.FLAG_ONGOING_EVENT
             | Notification.FLAG_FOREGROUND_SERVICE
-            | Notification.FLAG_NO_CLEAR
-            | Notification.FLAG_GROUP_SUMMARY;
+            | Notification.FLAG_NO_CLEAR;
 
     private NotificationFilterDecision() {
     }
@@ -102,15 +115,31 @@ public final class NotificationFilterDecision {
         if (isExempt(facts, ownPackage)) {
             return Result.EXEMPT;
         }
+        boolean ongoing = isOngoing(facts);
         for (NotificationFilterRule rule : rules) {
-            if (rule.matches(facts.packageName, facts.fields)) {
-                return new Result(rule.action, rule.name, false, false);
+            if (ongoing && !rule.ongoing) {
+                continue;
             }
+            if (rule.matches(facts.packageName, facts.fields)) {
+                return new Result(rule.action, rule.name, false, false, rule.priority, rule.pinFor);
+            }
+        }
+        if (ongoing) {
+            // Nothing asked for it, so it stays out of the filter and the history, as it always did.
+            return Result.EXEMPT;
         }
         if (quietAction != null && !isPlatform(facts.packageName)) {
             return new Result(quietAction, null, true, false);
         }
         return Result.UNTOUCHED;
+    }
+
+    /**
+     * Whether the app keeps the notification up while something runs: ongoing, from a foreground service, or one the
+     * user can't clear. Only a rule that asks for ongoing ones takes them.
+     */
+    public static boolean isOngoing(@NonNull Facts facts) {
+        return (facts.flags & ONGOING_FLAGS) != 0 || !facts.clearable;
     }
 
     /** The system's own warnings, like low battery, aren't silenced by quiet mode. A rule can still name them. */
@@ -119,14 +148,14 @@ public final class NotificationFilterDecision {
     }
 
     /**
-     * Calls, alarms and media keep working, and anything the user can't swipe away stays where it is: the system
-     * wouldn't let it be removed anyway. Group summaries are handled with their children.
+     * Calls, alarms and media keep working, whatever the rules say. Group summaries are handled with their children.
+     * Ongoing notifications aren't exempt here: {@link #decide} gives them only to a rule that asks for them.
      */
     public static boolean isExempt(@NonNull Facts facts, @NonNull String ownPackage) {
         if (ownPackage.equals(facts.packageName)) {
             return true;
         }
-        if ((facts.flags & UNTOUCHABLE_FLAGS) != 0 || !facts.clearable) {
+        if ((facts.flags & Notification.FLAG_GROUP_SUMMARY) != 0) {
             return true;
         }
         if (Notification.CATEGORY_CALL.equals(facts.category) || Notification.CATEGORY_ALARM.equals(facts.category)) {

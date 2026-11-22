@@ -36,6 +36,30 @@ public final class NotificationFilterRule {
         VIBRATE,
         /** Taken out of the shade. It still goes in the history. */
         BLOCK,
+        /** Moved to the shade without sound, vibration or a pop-up, but with its icon in the status bar. */
+        KEEP_ICON,
+        /** Kept in the shade as a pinned copy that comes back when swiped away, until unpinned or for a while. */
+        PIN,
+    }
+
+    /** Where the filter's copies of a rule sit among each other and among other notifications. */
+    public enum Priority {
+        HIGH,
+        NORMAL,
+        LOW,
+    }
+
+    /** How long a pinned copy stays. */
+    public enum PinLength {
+        UNTIL_UNPINNED,
+        ONE_HOUR,
+        TODAY,
+    }
+
+    /** Whether the action puts a copy of its own in the shade. */
+    public static boolean postsCopy(@Nullable Action action) {
+        return action == Action.SILENT || action == Action.VIBRATE || action == Action.KEEP_ICON
+                || action == Action.PIN;
     }
 
     @NonNull
@@ -53,6 +77,16 @@ public final class NotificationFilterRule {
     public final boolean regex;
     @NonNull
     public final Action action;
+    /**
+     * Whether the rule also takes ongoing notifications, the ones the app keeps up while something runs. Off by
+     * default, so a rule for every notification of an app doesn't hide its download or its call in progress.
+     */
+    public final boolean ongoing;
+    @NonNull
+    public final Priority priority;
+    /** Used by {@link Action#PIN} only. */
+    @NonNull
+    public final PinLength pinFor;
     // Compiled once. A pattern that can't be used matches nothing.
     @NonNull
     private final TextQuery mQuery;
@@ -60,6 +94,13 @@ public final class NotificationFilterRule {
     public NotificationFilterRule(@NonNull String id, @NonNull String name, @Nullable String packageName,
                                   @NonNull Field field, @NonNull String pattern, boolean regex,
                                   @NonNull Action action) {
+        this(id, name, packageName, field, pattern, regex, action, false, Priority.NORMAL, PinLength.UNTIL_UNPINNED);
+    }
+
+    public NotificationFilterRule(@NonNull String id, @NonNull String name, @Nullable String packageName,
+                                  @NonNull Field field, @NonNull String pattern, boolean regex,
+                                  @NonNull Action action, boolean ongoing, @NonNull Priority priority,
+                                  @NonNull PinLength pinFor) {
         this.id = id;
         this.name = name;
         this.packageName = packageName == null || packageName.isEmpty() ? null : packageName;
@@ -67,7 +108,18 @@ public final class NotificationFilterRule {
         this.pattern = pattern;
         this.regex = regex;
         this.action = action;
+        this.ongoing = ongoing;
+        this.priority = priority;
+        this.pinFor = pinFor;
         mQuery = TextQuery.of(pattern, regex);
+    }
+
+    /** The same rule with the options the editor shows under the action. */
+    @NonNull
+    public NotificationFilterRule withOptions(boolean ongoing, @NonNull Priority priority,
+                                              @NonNull PinLength pinFor) {
+        return new NotificationFilterRule(id, name, packageName, field, pattern, regex, action, ongoing, priority,
+                pinFor);
     }
 
     @NonNull
@@ -112,20 +164,41 @@ public final class NotificationFilterRule {
         json.put("pattern", pattern);
         json.put("regex", regex);
         json.put("action", action.name());
+        json.put("ongoing", ongoing);
+        json.put("priority", priority.name());
+        json.put("pin", pinFor.name());
         return json;
     }
 
-    /** @return The rule, or {@code null} if the saved form is missing something or names an unknown choice. */
+    /**
+     * @return The rule, or {@code null} if the saved form is missing something or names an unknown action or field.
+     * The options under the action are newer: a rule saved before them gets the defaults, and an option this version
+     * doesn't know falls back to its default rather than losing the rule.
+     */
     @Nullable
     public static NotificationFilterRule fromJson(@NonNull JSONObject json) {
         try {
             String packageName = json.optString("package", "");
             return new NotificationFilterRule(json.getString("id"), json.getString("name"),
                     packageName.isEmpty() ? null : packageName, Field.valueOf(json.getString("field")),
-                    json.getString("pattern"), json.getBoolean("regex"), Action.valueOf(json.getString("action")));
+                    json.getString("pattern"), json.getBoolean("regex"), Action.valueOf(json.getString("action")),
+                    json.optBoolean("ongoing", false), optEnum(json, "priority", Priority.NORMAL),
+                    optEnum(json, "pin", PinLength.UNTIL_UNPINNED));
         } catch (JSONException | IllegalArgumentException e) {
             return null;
         }
+    }
+
+    @NonNull
+    private static <E extends Enum<E>> E optEnum(@NonNull JSONObject json, @NonNull String key,
+                                                 @NonNull E fallback) {
+        String name = json.optString(key, "");
+        for (E value : fallback.getDeclaringClass().getEnumConstants()) {
+            if (value.name().equals(name)) {
+                return value;
+            }
+        }
+        return fallback;
     }
 
     @Override
@@ -139,11 +212,14 @@ public final class NotificationFilterRule {
                 && Objects.equals(packageName, that.packageName)
                 && field == that.field
                 && pattern.equals(that.pattern)
-                && action == that.action;
+                && action == that.action
+                && ongoing == that.ongoing
+                && priority == that.priority
+                && pinFor == that.pinFor;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, packageName, field, pattern, regex, action);
+        return Objects.hash(id, name, packageName, field, pattern, regex, action, ongoing, priority, pinFor);
     }
 }

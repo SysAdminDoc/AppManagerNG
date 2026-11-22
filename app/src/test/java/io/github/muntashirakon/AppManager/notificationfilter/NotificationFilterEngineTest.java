@@ -10,15 +10,20 @@ import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
 import android.app.Notification;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Icon;
+import android.os.Build;
 import android.os.Process;
+import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.core.app.ApplicationProvider;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,12 +32,16 @@ import org.robolectric.RobolectricTestRunner;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterRule.Action;
 import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterRule.Field;
+import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterRule.PinLength;
+import io.github.muntashirakon.AppManager.notificationfilter.NotificationFilterRule.Priority;
 
 @RunWith(RobolectricTestRunner.class)
 public class NotificationFilterEngineTest {
@@ -44,10 +53,15 @@ public class NotificationFilterEngineTest {
     /** Records what the engine asked of the shade, in order. */
     private static final class FakeShade implements NotificationFilterEngine.Shade {
         final List<StatusBarNotification> active = new ArrayList<>();
+        final List<StatusBarNotification> snoozed = new ArrayList<>();
+        final Map<String, Integer> importance = new HashMap<>();
         final List<String> log = new ArrayList<>();
         final Map<String, Notification> posted = new LinkedHashMap<>();
         boolean canPost = true;
         boolean postWorks = true;
+        int sdk = Build.VERSION_CODES.BAKLAVA;
+        boolean root;
+        boolean canUnsnooze;
 
         @NonNull
         @Override
@@ -61,8 +75,52 @@ public class NotificationFilterEngineTest {
         }
 
         @Override
-        public boolean canPost(@NonNull Action action) {
+        public boolean canPost(@NonNull String channelId) {
             return canPost;
+        }
+
+        @Override
+        public int sdkInt() {
+            return sdk;
+        }
+
+        @Override
+        public boolean isRoot() {
+            return root;
+        }
+
+        @Override
+        public boolean canUnsnooze() {
+            return canUnsnooze;
+        }
+
+        @Override
+        public boolean snooze(@NonNull String key, long durationMillis) {
+            log.add("snooze " + key + " " + durationMillis);
+            return true;
+        }
+
+        @Override
+        public boolean cancelAsRoot(@NonNull StatusBarNotification sbn) {
+            log.add("rootCancel " + sbn.getKey());
+            return true;
+        }
+
+        @Override
+        public void unsnooze(@NonNull String key) {
+            log.add("unsnooze " + key);
+        }
+
+        @NonNull
+        @Override
+        public StatusBarNotification[] snoozed() {
+            return snoozed.toArray(new StatusBarNotification[0]);
+        }
+
+        @Override
+        public int importanceOf(@NonNull String key) {
+            Integer value = importance.get(key);
+            return value != null ? value : -1000;
         }
 
         @Override
@@ -101,6 +159,7 @@ public class NotificationFilterEngineTest {
     private FakeShade mShade;
     private final List<NotificationHistoryEntry> mHistory = new ArrayList<>();
     private NotificationFilterEngine mEngine;
+    private long mNow = NOW;
 
     @Before
     public void setUp() {
@@ -111,9 +170,14 @@ public class NotificationFilterEngineTest {
         mEngine = newEngine();
     }
 
+    @After
+    public void tearDown() {
+        NotificationPins.forgetAllForTesting();
+    }
+
     @NonNull
     private NotificationFilterEngine newEngine() {
-        return new NotificationFilterEngine(mApp, mShade, APPS, mSettings, mHistory::add, () -> NOW);
+        return new NotificationFilterEngine(mApp, mShade, APPS, mSettings, mHistory::add, () -> mNow);
     }
 
     private void rules(@NonNull NotificationFilterRule... rules) {
@@ -124,6 +188,23 @@ public class NotificationFilterEngineTest {
     private static NotificationFilterRule rule(@NonNull String pattern, @NonNull Action action) {
         return new NotificationFilterRule("id-" + pattern, "Rule " + pattern, null, Field.ANY, pattern, false,
                 action);
+    }
+
+    @NonNull
+    private static NotificationFilterRule ongoingRule(@NonNull String pattern, @NonNull Action action) {
+        return rule(pattern, action).withOptions(true, Priority.NORMAL, PinLength.UNTIL_UNPINNED);
+    }
+
+    @NonNull
+    private StatusBarNotification withFlags(@NonNull String packageName, int id, @NonNull String text, int flags) {
+        Notification notification = builder("Upload", text).build();
+        notification.flags |= flags;
+        return sbn(packageName, id, null, notification, NOW);
+    }
+
+    @NonNull
+    private static String text(@NonNull Notification notification) {
+        return notification.extras.getCharSequence(Notification.EXTRA_TEXT).toString();
     }
 
     @NonNull
@@ -446,5 +527,308 @@ public class NotificationFilterEngineTest {
         assertNull(mHistory.get(0).ruleName);
         assertEquals("ALLOW", mHistory.get(1).action);
         assertFalse(mHistory.get(1).byQuietMode);
+    }
+
+    private int countStartingWith(@NonNull String prefix) {
+        int count = 0;
+        for (String line : mShade.log) {
+            if (line.startsWith(prefix)) {
+                ++count;
+            }
+        }
+        return count;
+    }
+
+    /** #32: a rule saved now applies to what's already in the shade, without buzzing for each one. */
+    @Test
+    public void sweepAppliesTheRulesToWhatIsAlreadyInTheShadeQuietly() {
+        StatusBarNotification sale = notification(SHOP, 1, "Big sale today");
+        StatusBarNotification lunch = notification(CHAT, 2, "Lunch tomorrow?");
+        StatusBarNotification own = notification(mApp.getPackageName(), 3, "Big sale in the toast history");
+        StatusBarNotification summary = summary(100, 0);
+        mShade.active.addAll(Arrays.asList(sale, lunch, own, summary));
+        rules(rule("sale", Action.VIBRATE));
+
+        mEngine.sweep();
+
+        assertEquals(1, count("cancel " + sale.getKey()));
+        assertEquals(0, count("cancel " + lunch.getKey()));
+        assertEquals(0, count("cancel " + own.getKey()));
+        assertEquals(0, count("cancel " + summary.getKey()));
+        Notification copy = mShade.posted.get(NotificationReposter.copyTag(sale.getKey()));
+        assertNotNull(copy);
+        assertEquals(Notification.GROUP_ALERT_SUMMARY, copy.getGroupAlertBehavior());
+        assertEquals(1, mHistory.size());
+        assertEquals("VIBRATE", mHistory.get(0).action);
+
+        // One that arrives after still alerts as its rule says.
+        StatusBarNotification another = notification(SHOP, 4, "Another sale");
+        mEngine.onPosted(another);
+        assertEquals(Notification.GROUP_ALERT_CHILDREN,
+                mShade.posted.get(NotificationReposter.copyTag(another.getKey())).getGroupAlertBehavior());
+    }
+
+    @Test
+    public void connectingSweepsTheShade() {
+        StatusBarNotification sale = notification(SHOP, 1, "Big sale today");
+        mShade.active.add(sale);
+        rules(rule("sale", Action.BLOCK));
+
+        mEngine.onConnected();
+
+        assertEquals(1, count("cancel " + sale.getKey()));
+        assertEquals(1, mHistory.size());
+        assertEquals("BLOCK", mHistory.get(0).action);
+    }
+
+    @Test
+    public void ongoingIsLeftAloneUnlessTheRuleAsksForIt() {
+        StatusBarNotification upload = withFlags(CHAT, 3, "Upload 10%", Notification.FLAG_ONGOING_EVENT);
+        rules(rule("upload", Action.SILENT));
+        mSettings.setRecordAll(true);
+
+        mEngine.onPosted(upload);
+        assertTrue(mShade.log.isEmpty());
+        assertTrue(mHistory.isEmpty());
+
+        rules(ongoingRule("upload", Action.SILENT));
+        mShade.importance.put(upload.getKey(), NotificationManager.IMPORTANCE_LOW);
+        mEngine.onPosted(upload);
+
+        String copyTag = NotificationReposter.copyTag(upload.getKey());
+        assertEquals(Arrays.asList("post " + copyTag, "post " + NotificationReposter.summaryTag(CHAT),
+                "snooze " + upload.getKey() + " " + OngoingPolicy.SHORT_SNOOZE_MILLIS), mShade.log);
+        assertEquals("Upload 10%", text(mShade.posted.get(copyTag)));
+        assertEquals(1, mHistory.size());
+        assertEquals("SILENT", mHistory.get(0).action);
+    }
+
+    @Test
+    public void anOngoingOneThatMayAlertIsKeptAwayLonger() {
+        StatusBarNotification upload = withFlags(CHAT, 3, "Upload 10%", Notification.FLAG_ONGOING_EVENT);
+        rules(ongoingRule("upload", Action.BLOCK));
+        mShade.importance.put(upload.getKey(), NotificationManager.IMPORTANCE_DEFAULT);
+
+        mEngine.onPosted(upload);
+
+        assertEquals(Collections.singletonList("snooze " + upload.getKey() + " " + OngoingPolicy.LONG_SNOOZE_MILLIS),
+                mShade.log);
+    }
+
+    @Test
+    public void ongoingRemovalFollowsTheAndroidVersionAndMode() {
+        rules(ongoingRule("upload", Action.BLOCK));
+        // From Android 13 a listener may cancel a foreground service's notification that isn't marked ongoing.
+        StatusBarNotification service = withFlags(CHAT, 1, "Upload 1", Notification.FLAG_FOREGROUND_SERVICE);
+        mEngine.onPosted(service);
+        assertEquals(Collections.singletonList("cancel " + service.getKey()), mShade.log);
+
+        mShade.log.clear();
+        mShade.sdk = Build.VERSION_CODES.S;
+        mEngine.onPosted(withFlags(CHAT, 2, "Upload 2", Notification.FLAG_FOREGROUND_SERVICE));
+        assertEquals(1, countStartingWith("snooze "));
+        assertEquals(0, countStartingWith("cancel "));
+
+        mShade.log.clear();
+        mShade.sdk = Build.VERSION_CODES.N_MR1;
+        mShade.root = true;
+        StatusBarNotification ongoing = withFlags(CHAT, 3, "Upload 3", Notification.FLAG_ONGOING_EVENT);
+        mEngine.onPosted(ongoing);
+        assertEquals(Collections.singletonList("rootCancel " + ongoing.getKey()), mShade.log);
+
+        // Not even root removes a running service's notification before Android 8.
+        mShade.log.clear();
+        mEngine.onPosted(withFlags(CHAT, 4, "Upload 4",
+                Notification.FLAG_ONGOING_EVENT | Notification.FLAG_FOREGROUND_SERVICE));
+        assertTrue(mShade.log.isEmpty());
+
+        // And without root nothing ongoing can be removed there, so no copy goes up either.
+        mShade.root = false;
+        rules(ongoingRule("upload", Action.SILENT));
+        mEngine.onPosted(withFlags(CHAT, 5, "Upload 5", Notification.FLAG_ONGOING_EVENT));
+        assertTrue(mShade.log.isEmpty());
+        assertEquals(3, mHistory.size());
+    }
+
+    /** #32: an app updates its snoozed notification out of sight, and the copy follows. */
+    @Test
+    public void aSnoozedOriginalsUpdatesReachItsCopy() {
+        rules(ongoingRule("upload", Action.SILENT));
+        StatusBarNotification first = withFlags(CHAT, 3, "Upload 10%", Notification.FLAG_ONGOING_EVENT);
+        mEngine.onPosted(first);
+        String copyTag = NotificationReposter.copyTag(first.getKey());
+        mShade.log.clear();
+
+        mShade.snoozed.add(withFlags(CHAT, 3, "Upload 60%", Notification.FLAG_ONGOING_EVENT));
+        mEngine.onPosted(notification(SHOP, 9, "Something else"));
+
+        assertEquals("Upload 60%", text(mShade.posted.get(copyTag)));
+        assertEquals("it's already snoozed", 0, countStartingWith("snooze "));
+        assertEquals(Collections.singletonList(first.getKey()), mEngine.copiedKeys());
+        assertEquals(2, mHistory.size());
+        assertEquals("Upload 60%", mHistory.get(1).text);
+    }
+
+    @Test
+    public void aSnoozedUpdateNoRuleTakesComesBackWhereItCan() {
+        rules(ongoingRule("upload 10", Action.SILENT));
+        StatusBarNotification first = withFlags(CHAT, 3, "Upload 10%", Notification.FLAG_ONGOING_EVENT);
+        mEngine.onPosted(first);
+        String copyTag = NotificationReposter.copyTag(first.getKey());
+
+        // Without root or ADB it stays snoozed, and its copy shows the update, so nothing is lost.
+        mShade.snoozed.add(withFlags(CHAT, 3, "Upload done", Notification.FLAG_ONGOING_EVENT));
+        mEngine.onPosted(notification(SHOP, 9, "Something else"));
+        assertEquals("Upload done", text(mShade.posted.get(copyTag)));
+        assertEquals(0, count("unsnooze " + first.getKey()));
+
+        mShade.canUnsnooze = true;
+        mEngine.onPosted(notification(SHOP, 10, "Something else again"));
+        assertEquals(1, count("unsnooze " + first.getKey()));
+        assertNull(mShade.posted.get(copyTag));
+        assertTrue(mEngine.copiedKeys().isEmpty());
+    }
+
+    @Test
+    public void aCopyGoesWhenItsSnoozedOriginalIsGone() {
+        rules(ongoingRule("upload", Action.SILENT), rule("sale", Action.SILENT));
+        StatusBarNotification upload = withFlags(CHAT, 3, "Upload 10%", Notification.FLAG_ONGOING_EVENT);
+        StatusBarNotification download = withFlags(CHAT, 4, "Upload 5%", Notification.FLAG_ONGOING_EVENT);
+        StatusBarNotification sale = notification(SHOP, 1, "Big sale today");
+        mEngine.onPosted(upload);
+        mEngine.onPosted(download);
+        mEngine.onPosted(sale);
+        mShade.snoozed.add(upload);
+        mEngine.onPosted(notification(CHAT, 9, "Lunch?"));
+        assertEquals(Arrays.asList(upload.getKey(), download.getKey(), sale.getKey()), mEngine.copiedKeys());
+
+        // The app ended the upload while it was snoozed, so it's in neither list now. A plain copy, like the
+        // sale's, always stands for an original that's gone, and stays.
+        mShade.snoozed.clear();
+        mEngine.onPosted(notification(CHAT, 10, "Lunch, then?"));
+        assertNull(mShade.posted.get(NotificationReposter.copyTag(upload.getKey())));
+        assertNotNull(mShade.posted.get(NotificationReposter.copyTag(sale.getKey())));
+        // The download was never seen snoozed, so it gets a moment for the snooze to land.
+        assertNotNull(mShade.posted.get(NotificationReposter.copyTag(download.getKey())));
+
+        mNow = NOW + TimeUnit.MINUTES.toMillis(1);
+        mEngine.onPosted(notification(CHAT, 11, "Lunch, really"));
+        assertNull(mShade.posted.get(NotificationReposter.copyTag(download.getKey())));
+        assertEquals(Collections.singletonList(sale.getKey()), mEngine.copiedKeys());
+    }
+
+    @Test
+    public void editingTheRulesBringsBackWhatTheyNoLongerTake() {
+        StatusBarNotification upload = withFlags(CHAT, 3, "Upload 10%", Notification.FLAG_ONGOING_EVENT);
+        rules(ongoingRule("upload", Action.SILENT));
+        mEngine.onPosted(upload);
+        mShade.snoozed.add(upload);
+        String copyTag = NotificationReposter.copyTag(upload.getKey());
+
+        rules(rule("upload", Action.SILENT));
+        mEngine.sweep();
+        assertEquals("no root or ADB: it stays hidden and the copy stays", 0, count("unsnooze " + upload.getKey()));
+        assertNotNull(mShade.posted.get(copyTag));
+
+        mShade.canUnsnooze = true;
+        mEngine.sweep();
+        assertEquals(1, count("unsnooze " + upload.getKey()));
+        assertNull(mShade.posted.get(copyTag));
+    }
+
+    /** #32: a pinned copy that's swiped away comes back, once each time, until it runs out or is unpinned. */
+    @Test
+    public void aPinComesBackWhenSwipedAwayUntilItRunsOut() {
+        rules(rule("boarding", Action.PIN).withOptions(false, Priority.NORMAL, PinLength.ONE_HOUR));
+        StatusBarNotification pass = notification(CHAT, 1, "Your boarding pass");
+        mEngine.onPosted(pass);
+        String copyTag = NotificationReposter.copyTag(pass.getKey());
+        Notification pin = mShade.posted.get(copyTag);
+        assertNotNull(pin);
+        assertTrue((pin.flags & Notification.FLAG_ONGOING_EVENT) != 0);
+        assertEquals(NOW + TimeUnit.HOURS.toMillis(1), NotificationPins.pinnedUntil(pin));
+        assertEquals(1, count("cancel " + pass.getKey()));
+        assertEquals("PIN", mHistory.get(0).action);
+
+        mEngine.onRemoved(ownCopy(pass.getKey(), NOW), NotificationListenerService.REASON_CANCEL);
+        assertEquals(2, count("post " + copyTag));
+        mEngine.onRemoved(ownCopy(pass.getKey(), NOW), NotificationListenerService.REASON_CANCEL_ALL);
+        assertEquals(3, count("post " + copyTag));
+        assertEquals(Collections.singletonList(pass.getKey()), mEngine.copiedKeys());
+
+        mNow = NOW + TimeUnit.HOURS.toMillis(1);
+        mEngine.onRemoved(ownCopy(pass.getKey(), NOW), NotificationListenerService.REASON_CANCEL);
+        assertEquals(3, count("post " + copyTag));
+        assertTrue(mEngine.copiedKeys().isEmpty());
+    }
+
+    @Test
+    public void unpinningEndsThePin() {
+        rules(rule("boarding", Action.PIN));
+        StatusBarNotification pass = notification(CHAT, 1, "Your boarding pass");
+        mEngine.onPosted(pass);
+        String copyTag = NotificationReposter.copyTag(pass.getKey());
+
+        // Unpin cancels it from this app, which the listener hears as the app's own cancel.
+        mEngine.onRemoved(ownCopy(pass.getKey(), NOW), NotificationListenerService.REASON_APP_CANCEL);
+
+        assertEquals(1, count("post " + copyTag));
+        assertTrue(mEngine.copiedKeys().isEmpty());
+    }
+
+    @Test
+    public void aPinFromTheHistoryComesBackToo() {
+        NotificationHistoryEntry entry = new NotificationHistoryEntry(NOW, CHAT, "Chat",
+                new NotificationFields("Carol", "Gate 12", "Carol"), "SILENT", null, false);
+        entry.id = 5;
+        Notification pin = NotificationPins.buildFromHistory(mApp, entry, null, PinLength.UNTIL_UNPINNED, NOW);
+        String tag = NotificationPins.historyTag(5);
+        StatusBarNotification shown = sbn(mApp.getPackageName(), NotificationReposter.NOTIFICATION_ID, tag, pin, NOW);
+
+        mEngine.onRemoved(shown, NotificationListenerService.REASON_CANCEL);
+
+        assertEquals(Collections.singletonList("post " + tag), mShade.log);
+    }
+
+    /** #32: a copy that keeps the original app's icon in the status bar, still with no sound. */
+    @Test
+    public void keepIconCopyShowsTheAppsOwnIcon() {
+        rules(rule("sale", Action.KEEP_ICON));
+        Icon theirs = Icon.createWithResource(SHOP, 0x7f080042);
+        StatusBarNotification sale = sbn(SHOP, 1, null, builder("Shop", "Big sale today").setSmallIcon(theirs)
+                .build(), NOW);
+
+        mEngine.onPosted(sale);
+
+        Notification copy = mShade.posted.get(NotificationReposter.copyTag(sale.getKey()));
+        assertNotNull(copy);
+        assertEquals(NotificationReposter.CHANNEL_ICON, copy.getChannelId());
+        assertEquals(SHOP, copy.getSmallIcon().getResPackage());
+        assertEquals(0x7f080042, copy.getSmallIcon().getResId());
+        assertEquals(1, count("cancel " + sale.getKey()));
+        assertEquals("KEEP_ICON", mHistory.get(0).action);
+    }
+
+    /** #32: a high priority rule's copies sort above the rest, a low one's below. */
+    @Test
+    public void priorityDecidesWhereCopiesSort() {
+        rules(rule("mom", Action.SILENT).withOptions(false, Priority.HIGH, PinLength.UNTIL_UNPINNED),
+                rule("sale", Action.SILENT).withOptions(false, Priority.LOW, PinLength.UNTIL_UNPINNED));
+        long earlier = NOW - 60_000L;
+        StatusBarNotification mom = sbn(CHAT, 1, null, builder("Mom", "Mom: call me").setWhen(earlier).build(), NOW);
+        StatusBarNotification sale = sbn(SHOP, 2, null, builder("Shop", "Big sale").setWhen(earlier).build(), NOW);
+        mNow = NOW + 5_000L;
+
+        mEngine.onPosted(sale);
+        mEngine.onPosted(mom);
+
+        Notification high = mShade.posted.get(NotificationReposter.copyTag(mom.getKey()));
+        Notification low = mShade.posted.get(NotificationReposter.copyTag(sale.getKey()));
+        assertEquals(NotificationReposter.CHANNEL_ICON, high.getChannelId());
+        assertEquals("0", high.getSortKey());
+        assertEquals(NOW + 5_000L, high.when);
+        assertEquals(NotificationReposter.CHANNEL_SILENT_LOW, low.getChannelId());
+        assertEquals("2", low.getSortKey());
+        assertEquals(earlier, low.when);
     }
 }
