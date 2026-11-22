@@ -195,6 +195,7 @@ import io.github.muntashirakon.AppManager.shortcut.CreateShortcutDialogFragment;
 import io.github.muntashirakon.AppManager.ssaid.ChangeSsaidDialog;
 import io.github.muntashirakon.AppManager.types.PackageSizeInfo;
 import io.github.muntashirakon.AppManager.types.UserPackagePair;
+import io.github.muntashirakon.AppManager.terminal.TermuxBridge;
 import io.github.muntashirakon.AppManager.uri.GrantUriUtils;
 import android.app.usage.UsageStatsManager;
 
@@ -1470,20 +1471,31 @@ public class AppInfoFragment extends Fragment implements SwipeRefreshLayout.OnRe
     }
 
     private void openInTermux() {
-        runWithTermux(new String[]{"su", "-", String.valueOf(mApplicationInfo.uid)});
+        runWithTermux(buildOpenInTermuxIntent(mApplicationInfo.uid));
     }
 
     private void runInTermux() {
-        runWithTermux(new String[]{"su", "-c", "run-as", mPackageName});
+        runWithTermux(buildRunInTermuxIntent(mPackageName));
     }
 
-    private void runWithTermux(String[] command) {
-        Intent intent = new Intent();
-        intent.setClassName("com.termux", "com.termux.app.RunCommandService");
-        intent.setAction("com.termux.RUN_COMMAND");
-        intent.putExtra("com.termux.RUN_COMMAND_PATH", Utils.TERMUX_LOGIN_PATH);
-        intent.putExtra("com.termux.RUN_COMMAND_ARGUMENTS", command);
-        intent.putExtra("com.termux.RUN_COMMAND_BACKGROUND", false);
+    /**
+     * Termux's {@code login} passes its arguments to {@code $SHELL -l}, so the command goes over as
+     * one {@code -c} string. Bare words would make the shell look for a script named {@code su}.
+     */
+    @VisibleForTesting
+    @NonNull
+    static Intent buildOpenInTermuxIntent(int uid) {
+        return TermuxBridge.buildRunCommandIntent("su - " + uid);
+    }
+
+    @VisibleForTesting
+    @NonNull
+    static Intent buildRunInTermuxIntent(@NonNull String packageName) {
+        // A package name is letters, digits, dots and underscores, so single quotes hold it safely
+        return TermuxBridge.buildRunCommandIntent("su -c 'run-as " + packageName + "'");
+    }
+
+    private void runWithTermux(@NonNull Intent intent) {
         try {
             ActivityCompat.startForegroundService(mActivity, intent);
         } catch (Exception e) {
