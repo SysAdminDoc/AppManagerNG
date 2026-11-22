@@ -427,13 +427,6 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Research 2026-11-13: realme's ColorOS 16 shell lacks `CREATE_VIRTUAL_DISPLAY` (ccch1mneyyy/dsh-Go #1153), and ColorOS 16 changed dumpsys output (Verlintas/NOIR #19). Both belong in the OEM codes, and fork discussion #5 is from a ColorOS 16 user.
   Complexity: S
 
-- [ ] P2: Honor Android 16 outlined text in custom usage charts
-  Why: `BarChartView` draws labels directly on Canvas, bypassing the platform's automatic outlined-text treatment for users who enable it.
-  Evidence: Android 16 accessibility features; WCAG 2.2 contrast guidance; `usage/BarChartView.java`.
-  Touches: `BarChartView.java`, accessibility-setting adapter, chart paint calculation, light and dark screenshot tests.
-  Acceptance: on Android 16 and later, when outlined text is requested, chart labels draw a contrast-calculated stroke followed by the existing fill without changing metrics; the outline is absent when the setting is off and on older APIs; labels remain legible in light, dark, high-contrast, and large-text snapshots; TalkBack content is unchanged.
-  Complexity: S
-
 - [ ] P2: Keep UI Tracker focused and bound its event work
   Why: on affected Samsung builds, AppManagerNG's own overlay can replace the external target, while every accessibility event can also start a new UsageStats scan and later publish stale data.
   Evidence: upstream App Manager #2039 and #1848; `accessibility/NoRootAccessibilityService.java:42-50`; `accessibility/activity/TrackerWindow.java:194-240,377-408,429-461`; the current fixed-pool queries do not debounce events, honor interruption during the scan, or reject an obsolete callback.
