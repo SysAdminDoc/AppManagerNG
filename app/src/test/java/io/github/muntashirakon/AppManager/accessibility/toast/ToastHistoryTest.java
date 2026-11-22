@@ -7,7 +7,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import android.content.Context;
 import android.database.sqlite.SQLiteFullException;
+import android.view.accessibility.AccessibilityEvent;
 
 import androidx.annotation.NonNull;
 import androidx.test.core.app.ApplicationProvider;
@@ -243,6 +245,56 @@ public class ToastHistoryTest {
         runQueued();
         assertEquals(before + 2, ShadowToast.shownToastCount());
         assertEquals(Collections.singletonList("Saved"), texts(history.readAll()));
+    }
+
+    /**
+     * Plays the accessibility service: every toast on screen goes through the filter and, if it's kept, into the
+     * history. With saving broken, the failure toast must not come back as a toast to save.
+     */
+    @Test
+    public void theSaveFailureToastIsNotRecordedSoItCanNotLoop() {
+        Context context = ApplicationProvider.getApplicationContext();
+        String own = context.getPackageName();
+        FlakyDao dao = new FlakyDao(mDb.dao());
+        ToastHistory history = history(dao);
+        dao.failing = true;
+        int before = ShadowToast.shownToastCount();
+
+        history.record(NOW, APP, "Lost");
+        runQueued();
+        int seen = before;
+        for (int round = 0; round < 5 && ShadowToast.shownToastCount() > seen; ++round) {
+            seen = ShadowToast.shownToastCount();
+            ToastEventFilter.CapturedToast toast = ToastEventFilter.read(ownToast(own,
+                    ShadowToast.getTextOfLatestToast()), own, ToastHistory.ownToastTexts(context));
+            if (toast != null) {
+                history.record(NOW, toast.packageName, toast.text);
+                runQueued();
+            }
+        }
+
+        assertEquals(before + 1, ShadowToast.shownToastCount());
+        assertEquals(context.getString(R.string.toast_history_save_failed), ShadowToast.getTextOfLatestToast());
+        assertNull(ToastEventFilter.read(ownToast(own, ShadowToast.getTextOfLatestToast()), own,
+                ToastHistory.ownToastTexts(context)));
+
+        // Any other toast of this app's own is saved once saving works.
+        dao.failing = false;
+        ToastEventFilter.CapturedToast other = ToastEventFilter.read(ownToast(own, "Failed to get Chat"), own,
+                ToastHistory.ownToastTexts(context));
+        assertNotNull(other);
+        history.record(NOW, other.packageName, other.text);
+        runQueued();
+        assertEquals(Collections.singletonList("Failed to get Chat"), texts(history.readAll()));
+    }
+
+    @NonNull
+    private static AccessibilityEvent ownToast(@NonNull String ownPackage, @NonNull String text) {
+        AccessibilityEvent event = AccessibilityEvent.obtain(AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED);
+        event.setPackageName(ownPackage);
+        event.setClassName("android.widget.Toast");
+        event.getText().add(text);
+        return event;
     }
 
     @Test

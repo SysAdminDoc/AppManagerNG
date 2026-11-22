@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_marginTop="@dimen/padding_medium"
+    android:scrollIndicators="top|bottom"
+    tools:ignore="UnusedAttribute"
+    tools:theme="@style/AppTheme">
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/padding_medium"
+        android:paddingVertical="@dimen/padding_small">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/test_toast_note"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/toast_history_test_note"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/test_toast_text_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_medium"
+            android:hint="@string/toast_history_test_text_hint">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/test_toast_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textMultiLine|textNoSuggestions"
+                android:text="@string/toast_history_test_sample" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/test_toast_long"
+            style="@style/Widget.AppTheme.MaterialSwitch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_small"
+            android:text="@string/toast_history_test_long" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/test_toast_show"
+            style="@style/Widget.AppTheme.Button.FilledTonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_small"
+            android:text="@string/toast_history_test_show" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/test_toast_background"
+            style="@style/Widget.AppTheme.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/toast_history_test_background" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/test_toast_burst"
+            style="@style/Widget.AppTheme.Button.TextButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/toast_history_test_burst" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+</ScrollView>

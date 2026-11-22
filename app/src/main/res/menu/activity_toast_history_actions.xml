@@ -22,4 +22,9 @@
         android:title="@string/clear_history"
         app:showAsAction="ifRoom" />
 
+    <item
+        android:id="@+id/action_test_toast"
+        android:title="@string/toast_history_test"
+        app:showAsAction="never" />
+
 </menu>

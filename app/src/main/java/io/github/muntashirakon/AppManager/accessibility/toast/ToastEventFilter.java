@@ -10,6 +10,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -53,15 +55,25 @@ public final class ToastEventFilter {
         }
     }
 
+    /** Same as {@link #read(AccessibilityEvent, String, Collection)} with nothing of this app's own skipped. */
+    @Nullable
+    public static CapturedToast read(@NonNull AccessibilityEvent event, @NonNull String ownPackage) {
+        return read(event, ownPackage, Collections.emptySet());
+    }
+
     /**
      * Must be called while the event is being delivered, as it gets recycled afterwards.
      *
-     * @param ownPackage this app's package. Its own toasts are skipped since a toast about a failure to save a toast
-     *                   would otherwise feed itself.
+     * @param ownPackage  This app's package. Its toasts are recorded like any other app's.
+     * @param ownSkipped  What the toast history itself says when it can't save, from
+     *                    {@link ToastHistory#ownToastTexts}.
+     *                    Only an own toast saying exactly that is skipped, since recording it would feed the failure
+     *                    it reports. The event text is all every Android version hands over, so the text is the mark.
      * @return The toast, or {@code null} if the event isn't one.
      */
     @Nullable
-    public static CapturedToast read(@NonNull AccessibilityEvent event, @NonNull String ownPackage) {
+    public static CapturedToast read(@NonNull AccessibilityEvent event, @NonNull String ownPackage,
+                                     @NonNull Collection<String> ownSkipped) {
         if (event.getEventType() != AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED
                 || event.getParcelableData() instanceof Notification
                 || event.isPassword()) {
@@ -74,14 +86,27 @@ public final class ToastEventFilter {
             return null;
         }
         CharSequence packageName = event.getPackageName();
-        if (TextUtils.isEmpty(packageName) || ownPackage.contentEquals(packageName)) {
+        if (TextUtils.isEmpty(packageName)) {
             return null;
         }
         String text = readText(event);
         if (text.isEmpty() && !(className != null && className.toString().startsWith(TOAST_CLASS_PREFIX))) {
             return null;
         }
+        if (ownPackage.contentEquals(packageName) && isSkipped(text, ownSkipped)) {
+            return null;
+        }
         return new CapturedToast(packageName.toString(), text);
+    }
+
+    /** From Android 12 the app's name comes as a last line under the message, so that line doesn't count. */
+    private static boolean isSkipped(@NonNull String text, @NonNull Collection<String> skipped) {
+        for (String skip : skipped) {
+            if (!skip.isEmpty() && (text.equals(skip) || text.startsWith(skip + "\n"))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

@@ -3,18 +3,23 @@
 package io.github.muntashirakon.AppManager.accessibility.toast;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -23,6 +28,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
@@ -30,6 +36,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.snackbar.Snackbar;
@@ -50,6 +57,7 @@ import io.github.muntashirakon.AppManager.misc.TextQuery;
 import io.github.muntashirakon.AppManager.self.imagecache.ImageLoader;
 import io.github.muntashirakon.AppManager.settings.Prefs;
 import io.github.muntashirakon.AppManager.utils.LiveDataChanges;
+import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.adapters.AnyFilterArrayAdapter;
 import io.github.muntashirakon.util.AdapterUtils;
@@ -62,6 +70,8 @@ public class ToastHistoryActivity extends BaseActivity implements AdvancedSearch
     private LinearProgressIndicator mProgressIndicator;
     private MaterialSwitch mRecordSwitch;
     private MaterialSwitch mShadeSwitch;
+    @Nullable
+    private AlertDialog mTestDialog;
     private View mServiceOffGroup;
     private TextInputLayout mFilterLayout;
     private MaterialAutoCompleteTextView mFilterView;
@@ -176,8 +186,56 @@ public class ToastHistoryActivity extends BaseActivity implements AdvancedSearch
             mViewModel.copy(mVisible);
         } else if (id == R.id.action_clear) {
             mViewModel.clear();
+        } else if (id == R.id.action_test_toast) {
+            showTestToastDialog();
         } else return super.onOptionsItemSelected(item);
         return true;
+    }
+
+    @Override
+    protected void onDestroy() {
+        // A dialog that goes with the activity never hears of it otherwise.
+        if (mTestDialog != null) {
+            mTestDialog.dismiss();
+            mTestDialog = null;
+        }
+        super.onDestroy();
+    }
+
+    /**
+     * Shows toasts from this app on request (#27), so the user can check what the history records: the text as
+     * typed, short or long, from a background thread, or three in a row. It stays open for another try.
+     */
+    @SuppressLint("InflateParams") // A dialog's view has no parent to inflate into.
+    private void showTestToastDialog() {
+        View view = LayoutInflater.from(this).inflate(R.layout.dialog_toast_test, null, false);
+        TextView text = view.findViewById(R.id.test_toast_text);
+        MaterialSwitch longToast = view.findViewById(R.id.test_toast_long);
+        view.findViewById(R.id.test_toast_show).setOnClickListener(v ->
+                ToastTester.show(this, testToastText(text), longToast.isChecked()));
+        view.findViewById(R.id.test_toast_background).setOnClickListener(v ->
+                ToastTester.showFromBackground(this, testToastText(text), longToast.isChecked(),
+                        ThreadUtils::postOnBackgroundThread));
+        view.findViewById(R.id.test_toast_burst).setOnClickListener(v ->
+                ToastTester.showBurst(this, testToastText(text), longToast.isChecked(),
+                        new Handler(Looper.getMainLooper())));
+        mTestDialog = new MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.toast_history_test)
+                .setView(view)
+                .setPositiveButton(R.string.close, null)
+                .show();
+        // The keyboard pushes the buttons up instead of covering them.
+        Window window = mTestDialog.getWindow();
+        if (window != null) {
+            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
+    }
+
+    @NonNull
+    private String testToastText(@NonNull TextView text) {
+        CharSequence typed = text.getText();
+        return typed != null && typed.length() > 0 ? typed.toString()
+                : getString(R.string.toast_history_test_sample);
     }
 
     private void refreshRecording() {

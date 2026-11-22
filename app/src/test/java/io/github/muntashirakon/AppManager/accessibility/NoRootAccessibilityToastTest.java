@@ -23,6 +23,7 @@ import org.robolectric.RobolectricTestRunner;
 
 import java.util.List;
 
+import io.github.muntashirakon.AppManager.R;
 import io.github.muntashirakon.AppManager.accessibility.toast.ToastEntry;
 import io.github.muntashirakon.AppManager.accessibility.toast.ToastHistory;
 import io.github.muntashirakon.AppManager.accessibility.toast.ToastHistoryTestAccess;
@@ -140,14 +141,23 @@ public class NoRootAccessibilityToastTest {
         assertTrue(saved().isEmpty());
     }
 
+    /** #27: this app's own toasts are recorded too, all but the one the history shows when it can't save. */
     @Test
-    public void thisAppsOwnToastsAreNotRecorded() {
+    public void thisAppsOwnToastsAreRecordedButNotTheSaveFailure() {
         Prefs.Privacy.setToastHistoryEnabled(true);
         AccessibilityEvent own = toast();
         own.setPackageName(mApp.getPackageName());
+        AccessibilityEvent saveFailed = toast();
+        saveFailed.setPackageName(mApp.getPackageName());
+        saveFailed.getText().clear();
+        saveFailed.getText().add(mApp.getString(R.string.toast_history_save_failed));
 
         mService.onAccessibilityEvent(own);
+        mService.onAccessibilityEvent(saveFailed);
 
-        assertTrue(saved().isEmpty());
+        List<ToastEntry> saved = saved();
+        assertEquals(1, saved.size());
+        assertEquals(mApp.getPackageName(), saved.get(0).packageName);
+        assertEquals("Saved", saved.get(0).text);
     }
 }

@@ -17,12 +17,16 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
+import java.util.Collections;
+import java.util.Set;
+
 @RunWith(RobolectricTestRunner.class)
 public class ToastEventFilterTest {
     private static final String OWN = "com.example.self";
     private static final String SENDER = "com.example.sender";
     private static final String TOAST_CLASS = "android.widget.Toast";
     private static final String NOTIFICATION_CLASS = "android.app.Notification";
+    private static final String SAVE_FAILED = "Couldn't save a toast to the history.";
 
     @NonNull
     private static AccessibilityEvent event(@Nullable String className, @Nullable String text) {
@@ -76,12 +80,40 @@ public class ToastEventFilterTest {
         assertNull(ToastEventFilter.read(event, OWN));
     }
 
+    /** #27: Local sync's own error toast showed on screen but never reached the history. */
     @Test
-    public void thisAppsOwnToastsAreSkippedSoAFailureToastCantLoop() {
-        AccessibilityEvent event = event(TOAST_CLASS, "Couldn't save");
+    public void thisAppsOwnToastsAreRecordedLikeAnyOtherApps() {
+        String text = "Failed to get Chat: The downloaded APK is not validly signed.";
+        AccessibilityEvent event = event(TOAST_CLASS, text);
         event.setPackageName(OWN);
 
-        assertNull(ToastEventFilter.read(event, OWN));
+        ToastEventFilter.CapturedToast toast = ToastEventFilter.read(event, OWN, Collections.singleton(SAVE_FAILED));
+
+        assertNotNull(toast);
+        assertEquals(OWN, toast.packageName);
+        assertEquals(text, toast.text);
+        assertNotNull(ToastEventFilter.read(event, OWN));
+    }
+
+    @Test
+    public void onlyTheHistorysOwnSaveFailureToastIsSkipped() {
+        Set<String> skipped = Collections.singleton(SAVE_FAILED);
+        AccessibilityEvent failure = event(TOAST_CLASS, SAVE_FAILED);
+        failure.setPackageName(OWN);
+        assertNull(ToastEventFilter.read(failure, OWN, skipped));
+
+        // Android 12 and later put the app's name under the message.
+        AccessibilityEvent withName = event(TOAST_CLASS, SAVE_FAILED);
+        withName.getText().add("AppManagerNG");
+        withName.setPackageName(OWN);
+        assertNull(ToastEventFilter.read(withName, OWN, skipped));
+
+        // The same words from another app are that app's toast.
+        assertNotNull(ToastEventFilter.read(event(TOAST_CLASS, SAVE_FAILED), OWN, skipped));
+        // A different toast of this app's own that only starts the same way is kept.
+        AccessibilityEvent longer = event(TOAST_CLASS, SAVE_FAILED + " Again.");
+        longer.setPackageName(OWN);
+        assertNotNull(ToastEventFilter.read(longer, OWN, skipped));
     }
 
     @Test

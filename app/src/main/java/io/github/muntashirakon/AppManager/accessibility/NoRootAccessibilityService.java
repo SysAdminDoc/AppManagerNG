@@ -127,7 +127,9 @@ public class NoRootAccessibilityService extends BaseAccessibilityService {
                 || !Prefs.Privacy.isToastHistoryEnabled()) {
             return;
         }
-        ToastEventFilter.CapturedToast toast = ToastEventFilter.read(event, getPackageName());
+        // This app's own toasts count too (#27), all but the one the history shows when it can't save.
+        ToastEventFilter.CapturedToast toast = ToastEventFilter.read(event, getPackageName(),
+                ToastHistory.ownToastTexts(this));
         if (toast != null) {
             ToastHistory.getInstance(this).record(ToastEventFilter.wallClockMillis(event.getEventTime(),
                     SystemClock.uptimeMillis(), System.currentTimeMillis()), toast.packageName, toast.text);

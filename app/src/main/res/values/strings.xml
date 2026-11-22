@@ -2226,6 +2226,15 @@
     <string name="toast_history_shade">Show recent toasts in the notification shade</string>
     <string name="toast_history_shade_line">%1$s  %2$s: %3$s</string>
     <string name="toast_history_shade_needs_permission">Allow notifications to keep recent toasts in the shade.</string>
+    <string name="toast_history_test">Test toast</string>
+    <string name="toast_history_test_note">Shows a toast from AppManagerNG. This app\'s own toasts are recorded too, so it should show up in the list.</string>
+    <string name="toast_history_test_text_hint">Toast text</string>
+    <string name="toast_history_test_sample" translatable="false">Test: &lt;b&gt; &amp; \"quotes\" \'single\' #@*~ ✓ 🎉 مرحبا بالعالم שלום עולם. This line is long on purpose, to see whether the history keeps all of it after the toast on screen cuts it off.</string>
+    <string name="toast_history_test_long">Long toast</string>
+    <string name="toast_history_test_show">Show toast</string>
+    <string name="toast_history_test_background">Show from a background thread</string>
+    <string name="toast_history_test_burst">Show three within 300 ms</string>
+    <string name="toast_history_test_burst_item">%1$s (%2$d of %3$d)</string>
     <string name="notification_filter_title">Notification filter</string>
     <string name="notification_filter_settings_summary">Silence or block notifications by app and text, and see what was filtered.</string>
     <string name="notification_filter_access_title">Notification access</string>

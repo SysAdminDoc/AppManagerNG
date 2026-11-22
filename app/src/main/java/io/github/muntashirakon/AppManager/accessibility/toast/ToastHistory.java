@@ -15,7 +15,9 @@ import androidx.core.util.Consumer;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -78,6 +80,15 @@ public final class ToastHistory {
         sInstance = instance;
     }
 
+    /**
+     * What the history itself toasts when saving fails. Recording that toast would need a save, which would fail
+     * again, so it's the one toast of this app's own that is never written down. Every other toast this app shows is.
+     */
+    @NonNull
+    public static Set<String> ownToastTexts(@NonNull Context context) {
+        return Collections.singleton(context.getString(R.string.toast_history_save_failed));
+    }
+
     @NonNull
     private final ToastHistoryDao mDao;
     @NonNull
@@ -133,7 +144,7 @@ public final class ToastHistory {
                 Log.w(TAG, "Could not save a toast.", e);
                 if (!mSaveFailing) {
                     mSaveFailing = true;
-                    // This app's own toasts are never recorded, so this can't feed itself.
+                    // The filter skips this one toast (ownToastTexts), so it can't feed itself.
                     ThreadUtils.postOnMainThread(() -> UIUtils.displayLongToast(R.string.toast_history_save_failed));
                 }
             }

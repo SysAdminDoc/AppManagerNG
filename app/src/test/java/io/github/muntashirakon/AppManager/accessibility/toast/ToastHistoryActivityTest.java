@@ -11,17 +11,21 @@ import static org.robolectric.Shadows.shadowOf;
 
 import android.Manifest;
 import android.app.Application;
+import android.app.Dialog;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Looper;
 import android.provider.Settings;
 import android.service.notification.StatusBarNotification;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.AutoCompleteTextView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -38,9 +42,11 @@ import org.robolectric.Robolectric;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.shadows.ShadowActivity;
+import org.robolectric.shadows.ShadowDialog;
 import org.robolectric.shadows.ShadowLooper;
 import org.robolectric.shadows.ShadowToast;
 
+import java.time.Duration;
 import java.util.function.BooleanSupplier;
 
 import io.github.muntashirakon.AppManager.R;
@@ -253,6 +259,46 @@ public class ToastHistoryActivityTest {
         shade.setChecked(false);
 
         assertNull(shadeNotification());
+    }
+
+    /** #27: the reporter asked for a way to show a toast on purpose and see whether it's recorded. */
+    @Test
+    public void theTestToolShowsToastsFromThisAppOnRequest() {
+        ToastHistoryActivity activity = open();
+
+        shadowOf(activity).clickMenuItem(R.id.action_test_toast);
+        ShadowLooper.idleMainLooper();
+
+        Dialog dialog = ShadowDialog.getLatestDialog();
+        assertNotNull(dialog);
+        assertTrue(dialog.isShowing());
+        assertEquals(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE,
+                dialog.getWindow().getAttributes().softInputMode & WindowManager.LayoutParams.SOFT_INPUT_MASK_ADJUST);
+        TextView text = dialog.findViewById(R.id.test_toast_text);
+        String sample = text.getText().toString();
+        assertEquals(mApp.getString(R.string.toast_history_test_sample), sample);
+        assertTrue("the sample mixes in right-to-left text", sample.chars().anyMatch(c ->
+                Character.getDirectionality(c) == Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC));
+        assertTrue("and an emoji", sample.codePoints().anyMatch(Character::isSupplementaryCodePoint));
+
+        text.setText("Hello from the test");
+        ((MaterialSwitch) dialog.findViewById(R.id.test_toast_long)).setChecked(true);
+        int before = ShadowToast.shownToastCount();
+        dialog.findViewById(R.id.test_toast_show).performClick();
+        ShadowLooper.idleMainLooper();
+
+        assertEquals(before + 1, ShadowToast.shownToastCount());
+        assertEquals("Hello from the test", ShadowToast.getTextOfLatestToast());
+        assertEquals(Toast.LENGTH_LONG, ShadowToast.getLatestToast().getDuration());
+
+        dialog.findViewById(R.id.test_toast_burst).performClick();
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(300L));
+        assertEquals(before + 4, ShadowToast.shownToastCount());
+
+        dialog.findViewById(R.id.test_toast_background).performClick();
+        waitFor(() -> ShadowToast.shownToastCount() == before + 5);
+        assertEquals("Hello from the test", ShadowToast.getTextOfLatestToast());
+        assertTrue("it stays open for another try", dialog.isShowing());
     }
 
     @Test
