@@ -8,6 +8,7 @@ import android.text.Editable;
 import android.text.InputType;
 import android.text.TextUtils;
 import android.view.View;
+import android.widget.TextView;
 import android.view.inputmethod.EditorInfo;
 
 import androidx.annotation.NonNull;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Objects;
 
 import io.github.muntashirakon.AppManager.R;
+import io.github.muntashirakon.AppManager.apk.ApkUtils;
 import io.github.muntashirakon.AppManager.servermanager.LocalServer;
 import io.github.muntashirakon.AppManager.users.ProfileVisibilityDiagnostics;
 import io.github.muntashirakon.AppManager.utils.MotionUtils;
@@ -50,7 +52,9 @@ public class AdvancedPreferences extends PreferenceFragment {
             "%version_code%",
             "%min_sdk%",
             "%target_sdk%",
-            "%datetime%"
+            "%datetime%",
+            ApkUtils.TOKEN_ABI,
+            ApkUtils.TOKEN_SHA256_SHORT
     };
 
     private int mThreadCount;
@@ -75,6 +79,9 @@ public class AdvancedPreferences extends PreferenceFragment {
             View view = getLayoutInflater().inflate(R.layout.dialog_set_apk_format, null);
             TextInputEditText inputApkNameFormat = view.findViewById(R.id.input_apk_name_format);
             inputApkNameFormat.setText(AppPref.getString(AppPref.PrefKey.PREF_SAVED_APK_FORMAT_STR));
+            TextView tokenHint = view.findViewById(R.id.apk_name_format_hint);
+            tokenHint.setText(getString(R.string.pref_saved_apk_name_format_tokens, ApkUtils.TOKEN_ABI,
+                    ApkUtils.TOKEN_SHA256_SHORT));
             ChipGroup apkNameFormats = view.findViewById(R.id.apk_name_formats);
             for (String apkNameFormatStr : APK_NAME_FORMATS) {
                 if ("%min_sdk%".equals(apkNameFormatStr) && Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {

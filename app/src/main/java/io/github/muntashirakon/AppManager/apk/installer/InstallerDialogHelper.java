@@ -4,6 +4,9 @@ package io.github.muntashirakon.AppManager.apk.installer;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -18,6 +21,7 @@ import androidx.fragment.app.FragmentContainerView;
 
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.color.MaterialColors;
 import com.google.android.material.textview.MaterialTextView;
 
 import java.util.Collections;
@@ -110,6 +114,21 @@ public final class InstallerDialogHelper {
             mTitleBuilder.setEndIcon(R.drawable.ic_settings, optionsClickListener)
                     .setEndIconContentDescription(R.string.installer_options);
         } else mTitleBuilder.setEndIcon(null, null);
+    }
+
+    /**
+     * Puts one line under the version line: whether the checksum at the end of the file name
+     * matches the file. It says nothing about who made the file.
+     */
+    public void showFileNameChecksum(@NonNull CharSequence subtitle, boolean matches) {
+        SpannableStringBuilder line = new SpannableStringBuilder(subtitle).append('\n');
+        int start = line.length();
+        line.append(mContext.getString(matches ? R.string.installer_file_name_checksum_matches
+                : R.string.installer_file_name_checksum_differs));
+        int color = MaterialColors.getColor(mContext, matches ? androidx.appcompat.R.attr.colorPrimary
+                : androidx.appcompat.R.attr.colorError, "InstallerDialogHelper");
+        line.setSpan(new ForegroundColorSpan(color), start, line.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        mTitleBuilder.setSubtitle(line);
     }
 
     public void showWhatsNewDialog(@StringRes int installButtonRes, Fragment fragment,

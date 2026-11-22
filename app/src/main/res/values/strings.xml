@@ -1289,6 +1289,8 @@
     <string name="default_app_role_home">Home</string>
     <string name="default_app_role_browser">Browser</string>
     <string name="install_app_message">Review the APK details and installer options before continuing.</string>
+    <string name="installer_file_name_checksum_matches">File name checksum matches</string>
+    <string name="installer_file_name_checksum_differs">File name checksum doesn\'t match this file</string>
     <string name="reinstall">Reinstall</string>
     <string name="modify">Modify</string>
     <string name="unblock_trackers">Unblock trackers</string>
@@ -2706,6 +2708,7 @@
     <string name="save_and_exit">Save and exit</string>
     <string name="pref_saved_apk_name_format">Saved APK name format</string>
     <string name="pref_saved_apk_name_format_msg">The format to be used for naming the APK files when you save them.</string>
+    <string name="pref_saved_apk_name_format_tokens"><xliff:g id="abi_token" example="ABI token">%1$s</xliff:g> names the native code ABIs, like arm64-v8a, or says universal. <xliff:g id="sha_token" example="checksum token">%2$s</xliff:g> is the first 8 characters of the saved file\'s SHA-256, which the installer checks when you open the file.</string>
     <string name="auth_manager_description">Trusted third-party apps can launch AppManagerNG intents only when they include this key in the <tt>auth</tt> extra.</string>
     <string name="auth_manager_key_label">Authorization key</string>
     <string name="auth_manager_title">Authorization manager</string>

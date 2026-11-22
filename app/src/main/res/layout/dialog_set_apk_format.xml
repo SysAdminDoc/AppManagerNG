@@ -28,6 +28,15 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/apk_name_format_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="@dimen/padding_very_small"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            tools:text="@string/pref_saved_apk_name_format_tokens" />
+
         <com.google.android.material.chip.ChipGroup
             android:id="@+id/apk_name_formats"
             android:theme="@style/Widget.AppTheme.ChipGroup.Assist"

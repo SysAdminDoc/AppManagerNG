@@ -48,6 +48,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.annotation.VisibleForTesting;
+import androidx.annotation.WorkerThread;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.pm.PackageInfoCompat;
@@ -55,6 +56,8 @@ import androidx.core.os.BundleCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -101,6 +104,7 @@ import io.github.muntashirakon.AppManager.utils.StoragePermission;
 import io.github.muntashirakon.AppManager.utils.ThreadUtils;
 import io.github.muntashirakon.AppManager.utils.UIUtils;
 import io.github.muntashirakon.AppManager.utils.Utils;
+import io.github.muntashirakon.io.Paths;
 
 /**
  * Activity that manages installing and confirming package installation. Actual installation is done by
@@ -394,7 +398,8 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                 return;
             }
             mPendingDependencyIssues = collectDependencyIssues(newPackageInfo, false);
-            mDialogHelper.onParseSuccess(mModel.getAppLabel(), getVersionInfoWithTrackers(newPackageInfo),
+            String versionInfo = getVersionInfoWithTrackers(newPackageInfo);
+            mDialogHelper.onParseSuccess(mModel.getAppLabel(), versionInfo,
                     mModel.getAppIcon(), v -> displayInstallerOptions((dialog1, which, options) -> {
                         if (options != null) {
                             mInstallerOptions.copy(options);
@@ -404,6 +409,7 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                 triggerBatchInstall();
                 return;
             }
+            showFileNameChecksumAsync(versionInfo, mModel.getApkFile(), mCurrentItem);
             displayChangesOrInstallationPrompt();
         });
         mModel.packageUninstalledLiveData().observe(this, success -> {
@@ -526,6 +532,62 @@ public class PackageInstallerActivity extends BaseActivity implements InstallerD
                         mAppInfoClickListener, callout, privilegePlan.getChipLabels(this));
             });
         });
+    }
+
+    /**
+     * When the file name ends with a checksum (#44), adds a line saying whether it matches the
+     * file. Hashing a large file takes a while, so the prompt doesn't wait for it.
+     */
+    @UiThread
+    private void showFileNameChecksumAsync(@NonNull String versionInfo, @Nullable ApkFile apkFile,
+                                           @Nullable ApkQueueItem checkedItem) {
+        if (apkFile == null || checkedItem == null) {
+            return;
+        }
+        ApkSource source = checkedItem.getApkSource() != null ? checkedItem.getApkSource() : mModel.getApkSource();
+        ThreadUtils.postOnBackgroundThread(() -> {
+            FileNameChecksum.Verdict verdict = fileNameChecksumVerdict(source, apkFile);
+            if (verdict == null) {
+                return;
+            }
+            ThreadUtils.postOnMainThread(() -> {
+                if (isFinishing() || checkedItem != mCurrentItem) {
+                    return;
+                }
+                mDialogHelper.showFileNameChecksum(versionInfo, verdict == FileNameChecksum.Verdict.MATCHES);
+            });
+        });
+    }
+
+    /**
+     * The file as opened is what the name speaks for. Its SHA-256 was taken while staging it, except
+     * for an encrypted APKM, which was decrypted into another file and is hashed here.
+     *
+     * @return {@code null} when the name carries no checksum or the file can't be read
+     */
+    @WorkerThread
+    @Nullable
+    static FileNameChecksum.Verdict fileNameChecksumVerdict(@Nullable ApkSource source, @NonNull ApkFile apkFile) {
+        String name = InstallSessionDetails.apkNameOf(source);
+        String claimed = FileNameChecksum.parse(name);
+        if (claimed == null || source == null) {
+            return null;
+        }
+        String staged = apkFile.getPayloadSha256();
+        if (staged != null && !ApkFile.CONTAINER_APKM_ENCRYPTED.equals(apkFile.getContainerType())) {
+            return FileNameChecksum.matches(claimed, staged) ? FileNameChecksum.Verdict.MATCHES
+                    : FileNameChecksum.Verdict.DIFFERS;
+        }
+        Uri uri = source.getUri();
+        if (uri == null) {
+            return null;
+        }
+        try (InputStream in = Paths.get(uri).openInputStream()) {
+            return FileNameChecksum.check(name, in);
+        } catch (IOException | RuntimeException e) {
+            Log.w(TAG, "Could not hash %s", e, name);
+            return null;
+        }
     }
 
     private void displayInstallerOptions(InstallerOptionsFragment.OnClickListener clickListener) {
