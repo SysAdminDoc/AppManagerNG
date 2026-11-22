@@ -13,7 +13,7 @@ filed or accepted.
 
 - Repository: `https://github.com/SysAdminDoc/AppManagerNG`
 - Tag: `v0.8.0`
-- Commit: `b32438a12c4ce2b5ad790d8015eb721530c2b8d0`
+- Commit: `475cce8429d04ea0b04e46ed441cf38a7043bb50`
 - Package name: `io.github.sysadmindoc.AppManagerNG`
 - Display name: `AppManagerNG`
 - Version name: `0.8.0`
@@ -53,7 +53,7 @@ Repo: https://github.com/SysAdminDoc/AppManagerNG.git
 Builds:
   - versionName: 0.8.0
     versionCode: 34
-    commit: b32438a12c4ce2b5ad790d8015eb721530c2b8d0
+    commit: 475cce8429d04ea0b04e46ed441cf38a7043bb50
     submodules: true
     gradle:
       - floss
