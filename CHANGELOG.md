@@ -3,6 +3,21 @@
 All notable changes to AppManagerNG are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## Unreleased
+
+### Added
+- The file manager has a Sort menu (issue #37). Sort by name, last modified, type or size, or reverse the order. Folders stay on top, and the choice is kept per folder or for every folder, the same as before.
+- Common file types get their own icons in the file manager (issue #36), among them documents, PDFs, spreadsheets, slides, code, archives, APKs, audio, video, e-books, fonts, databases, contacts, calendars and keys. The extension picks the icon when the detected type is too generic. Thumbnails still show where there is one.
+- Invisible characters show up (issue #53). The code editor marks zero-width spaces, non-breaking spaces, direction marks and similar characters with a small label (there's a switch in its menu, on by default), and the saved file stays exactly as it was. File names and App Details component names that hide such characters get the same marks.
+- The terminal has a row of extra keys (issue #55): Esc, Ctrl and Alt (tap once for the next key), Tab, the arrows and a few symbols that are hard to reach on a phone keyboard. The menu hides the row if you don't want it. Open in Termux and Run in Termux hand the session or a command to Termux and walk you through allowing it the first time.
+- A `Toast the mode when it connects` switch in Mode of operation (issue #56). It's on by default.
+
+### Fixed
+- Mode toasts like "Working through Shizuku shell mode" no longer pop up over other apps (issue #56). Background work checks the mode too, around the clock, and each check toasted. Now the toast shows only while an AppManagerNG screen is open, once per mode, and again only when the mode changes.
+- Switches in settings rows with just a title, like Use VirusTotal, were cut flat at the top and bottom (issue #57). They now get their full height.
+- Release builds of the file manager closed when they tried to guess a file's type (issue #49). The shrinker moved a library's classes in a way that broke how it names its own logger. Those classes now keep their names, and if type detection fails anyway, the file manager falls back to the file extension instead of closing.
+- The Properties sheet in the file manager came back every time you rotated the phone, even after you'd closed it, and an open one stacked a new copy per rotation (issue #34).
+
 ## v0.8.0, 2026-11-15
 
 ### Added
