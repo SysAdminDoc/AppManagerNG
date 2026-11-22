@@ -604,8 +604,8 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 synchronized (mAppOpItems) {
                     if (!TextUtils.isEmpty(mSearchQuery)) {
                         appDetailsItems = AdvancedSearchView.matches(mSearchQuery, mAppOpItems,
-                                (ChoiceGenerator<AppDetailsAppOpItem>) item ->
-                                        lowercaseIfNotRegex(item.name, mSearchType),
+                                (ChoicesGenerator<AppDetailsAppOpItem>) item ->
+                                        AppDetailsSearchChoices.forAppOp(item, mSearchType),
                                 mSearchType);
                     } else appDetailsItems = new ArrayList<>(mAppOpItems);
                 }
@@ -633,8 +633,8 @@ public class AppDetailsViewModel extends AndroidViewModel {
                 synchronized (mUsesPermissionItems) {
                     if (!TextUtils.isEmpty(mSearchQuery)) {
                         appDetailsItems = AdvancedSearchView.matches(mSearchQuery, mUsesPermissionItems,
-                                (ChoiceGenerator<AppDetailsPermissionItem>) item -> lowercaseIfNotRegex(item.name,
-                                        mSearchType), mSearchType);
+                                (ChoicesGenerator<AppDetailsPermissionItem>) item ->
+                                        AppDetailsSearchChoices.forUsesPermission(item, mSearchType), mSearchType);
                     } else appDetailsItems = new ArrayList<>(mUsesPermissionItems);
                 }
                 Collections.sort(appDetailsItems, (o1, o2) -> {
@@ -680,20 +680,8 @@ public class AppDetailsViewModel extends AndroidViewModel {
             return appDetailsItems;
         }
         List<AppDetailsItem<ComponentInfo>> appDetailsItemsInt = AdvancedSearchView.matches(mSearchQuery, appDetailsItems,
-                (ChoicesGenerator<AppDetailsItem<ComponentInfo>>) item -> {
-                    List<String> choices = new ArrayList<>();
-                    choices.add(lowercaseIfNotRegex(item.name, mSearchType));
-                    if (item instanceof AppDetailsComponentItem) {
-                        AppDetailsComponentItem ci = (AppDetailsComponentItem) item;
-                        for (String action : ci.getIntentActions()) {
-                            choices.add(lowercaseIfNotRegex(action, mSearchType));
-                        }
-                        for (String category : ci.getIntentCategories()) {
-                            choices.add(lowercaseIfNotRegex(category, mSearchType));
-                        }
-                    }
-                    return choices;
-                }, mSearchType);
+                (ChoicesGenerator<AppDetailsItem<ComponentInfo>>) item ->
+                        AppDetailsSearchChoices.forComponent(item, mSearchType), mSearchType);
         sortComponents(appDetailsItemsInt);
         return appDetailsItemsInt;
     }
@@ -709,10 +697,25 @@ public class AppDetailsViewModel extends AndroidViewModel {
             return appDetailsItems;
         }
         List<AppDetailsItem<PermissionInfo>> appDetailsItemsInt = AdvancedSearchView.matches(mSearchQuery,
-                appDetailsItems, (ChoiceGenerator<AppDetailsItem<PermissionInfo>>) item ->
-                        lowercaseIfNotRegex(item.name, mSearchType), mSearchType);
+                appDetailsItems, (ChoicesGenerator<AppDetailsItem<PermissionInfo>>) item ->
+                        AppDetailsSearchChoices.forDefinedPermission(item, permissionLabel(item.item), mSearchType),
+                mSearchType);
         Collections.sort(appDetailsItemsInt, (o1, o2) -> o1.name.compareToIgnoreCase(o2.name));
         return appDetailsItemsInt;
+    }
+
+    /**
+     * The label a declared permission's row shows, or {@code null} when it has none of its own.
+     */
+    @WorkerThread
+    @Nullable
+    private CharSequence permissionLabel(@NonNull PermissionInfo info) {
+        try {
+            CharSequence label = info.loadLabel(mPackageManager);
+            return label.toString().equals(info.name) ? null : label;
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 
     /**
