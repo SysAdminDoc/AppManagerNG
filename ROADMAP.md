@@ -324,11 +324,11 @@ Every report is fixed or built and has a reply posted or queued. What's left nee
   Acceptance: each tab applies lists in the order LiveData delivers them; no permission or binder call runs on the main thread; a test posts two lists back to back and sees the second on screen.
   Complexity: M
 
-- [ ] P2: Show Disabled, Frozen, and Suspended as text in app rows
-  Why: upstream #2006 reports difficulty distinguishing state colors, while the compact V2 row still encodes suspension as `°` and announces only installed or uninstalled state.
-  Evidence: `https://github.com/MuntashirAkon/AppManager/issues/2006`; WCAG 2.2 Use of Color; Android accessibility guidance; `main/ApplicationItem.java:323`; `main/MainRecyclerAdapter.java:564`; `res/layout/item_main_v2.xml`.
-  Touches: a shared app-state formatter, `main/ApplicationItem.java`, `main/MainRecyclerAdapter.java`, `item_main_v2.xml`, localized strings, accessibility tests.
-  Acceptance: every non-normal state renders concise inline text in the metadata row, not a new status pill; the row content description uses the same state; color remains reinforcement only; combined states have deterministic precedence; monochrome, large-text, and TalkBack tests retain package-name readability and row density.
+- [ ] P3: Tell a disabled app from a hidden one in app rows
+  Why: app rows now name a suspended app "Suspended" and any other frozen app "Frozen", because the list cache keeps one `is_enabled` bit for disabled and hidden apps alike.
+  Evidence: `db/entity/App.java` (`isEnabled = !FreezeUtils.isFrozen(...)`); `main/MainListStateFormatter.java`; `utils/FreezeUtils.java:78`.
+  Touches: a cached freeze-kind column with a Room migration, `db/entity/App.java`, `main/MainViewModel.java`, `main/MainListStateFormatter.java`, migration and row tests.
+  Acceptance: a disabled app's row says Disabled and a hidden one's says Hidden, read from the cache with no package manager call at bind time; suspended still wins; existing caches migrate without a full rescan losing the state.
   Complexity: S
 
 - [ ] P2: Support complete regex replacement semantics in Code Editor

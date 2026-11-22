@@ -515,8 +515,8 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         holder.version.setText(item.versionTag);
         // Set version color to dark cyan if the app is inactive
         holder.version.setTextColor(item.isAppInactive ? mColorGreen : mColorSecondary);
-        // Set app type: system or user app (along with large heap, suspended, multi-arch,
-        // has code, vm safe mode)
+        // Set app type: system or user app (along with large heap, multi-arch, has code,
+        // vm safe mode). A suspended or frozen app's state leads the metadata line in words.
         if (item.isInstalled) {
             String appType = context.getString(item.isSystem ? R.string.system : R.string.user);
             String isSystemApp = TextUtils.isEmpty(item.appTypePostfix)
@@ -572,8 +572,12 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<MainRecycler
         holder.metadata.setText(MainListUidFormatter.metadataLine(context, item, holder.isSystemApp.getText(),
                 getBadgeWarningContentColor(context), sortBy, followSort));
         limitVisibleStatuses(holder, MAX_INLINE_STATUSES);
-        String installedState = context.getString(item.isInstalled ? R.string.main_list_installed_state
-                : item.isKnownArchived() ? R.string.archived_app : R.string.main_list_uninstalled_state);
+        // The same state the metadata line leads with, in place of "Installed"
+        String installedState = MainListStateFormatter.label(context, item);
+        if (installedState.isEmpty()) {
+            installedState = context.getString(item.isInstalled ? R.string.main_list_installed_state
+                    : item.isKnownArchived() ? R.string.archived_app : R.string.main_list_uninstalled_state);
+        }
         String sdkState = item.sdkString != null ? item.sdkString : "-";
         String contentDescription = context.getString(R.string.main_list_app_content_description,
                 item.label, installedState, item.packageName, item.versionTag, sdkState);

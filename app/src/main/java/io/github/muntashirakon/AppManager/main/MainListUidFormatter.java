@@ -156,17 +156,31 @@ final class MainListUidFormatter {
     @NonNull
     private static CharSequence withUid(@NonNull Context context, @NonNull ApplicationItem item,
                                         @NonNull String details, @ColorInt int highlightColor) {
+        // A frozen or suspended app's state comes first, ahead of the UID, so no ellipsis cuts it.
+        // The tint only backs the word up.
+        String state = MainListStateFormatter.label(context, item);
+        String lead = state.isEmpty() ? "" : state + SEPARATOR;
         String uid = valueFor(item);
         if (uid.isEmpty()) {
             // An archived app has no UID, so the mark takes its place at the front, where the ellipsis
             // can't cut it. The lookup ran on the loader thread, so this makes no call.
-            return item.isKnownArchived() ? context.getString(R.string.archived_app) + SEPARATOR + details : details;
+            String line = item.isKnownArchived() ? context.getString(R.string.archived_app) + SEPARATOR + details : details;
+            return withState(lead + line, state, highlightColor);
         }
         String token = context.getString(R.string.main_list_uid_label, uid);
-        SpannableString line = new SpannableString(token + SEPARATOR + details);
+        SpannableString line = withState(lead + token + SEPARATOR + details, state, highlightColor);
         if (isHighlighted(item)) {
-            line.setSpan(new ForegroundColorSpan(highlightColor), 0, token.length(),
+            line.setSpan(new ForegroundColorSpan(highlightColor), lead.length(), lead.length() + token.length(),
                     Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        return line;
+    }
+
+    @NonNull
+    private static SpannableString withState(@NonNull String text, @NonNull String state, @ColorInt int highlightColor) {
+        SpannableString line = new SpannableString(text);
+        if (!state.isEmpty()) {
+            line.setSpan(new ForegroundColorSpan(highlightColor), 0, state.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         return line;
     }

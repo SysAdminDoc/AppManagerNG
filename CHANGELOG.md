@@ -75,6 +75,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Settings search follows a language change right away. It kept showing and matching the titles of the language the app started in until you restarted it. Using or stopping a language file updates it too, even when the file is for the language already shown.
 - A tag name, log file name or filter value that doesn't work no longer closes its dialog and throws away what you typed. The dialog stays open with the reason under the field, and the keyboard's Done key runs the same check as the button.
 - With a larger font size, the medium screen-time widget keeps each app's name beside its bubble. The names and bubbles used to move with the font size, so at 200% a name sat well below the bubble it belonged to. A bubble's time now shrinks to fit the bubble instead of being cut off.
+- A frozen or suspended app now says so in words at the front of its row's info line, and a screen reader says "Frozen" or "Suspended" in place of "Installed". Before, a frozen app showed only as a tinted UID and a suspended one as a "°" after the app type.
 
 ## v0.8.0, 2026-11-15
 

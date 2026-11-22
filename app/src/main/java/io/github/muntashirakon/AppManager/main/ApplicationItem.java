@@ -326,7 +326,6 @@ public class ApplicationItem extends PackageItemInfo implements IFilterableAppIn
         // App type flags
         appTypePostfix = "";
         if ((flags & ApplicationInfo.FLAG_LARGE_HEAP) != 0) appTypePostfix += "#";
-        if ((flags & ApplicationInfo.FLAG_SUSPENDED) != 0) appTypePostfix += "°";
         if ((flags & ApplicationInfo.FLAG_MULTIARCH) != 0) appTypePostfix += "X";
         if ((flags & ApplicationInfo.FLAG_HAS_CODE) == 0) appTypePostfix += "0";
         if ((flags & ApplicationInfo.FLAG_VM_SAFE_MODE) != 0) appTypePostfix += "?";
