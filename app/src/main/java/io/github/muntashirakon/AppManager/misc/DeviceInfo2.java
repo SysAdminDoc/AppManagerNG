@@ -19,7 +19,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.SELinux;
 import android.os.UserHandleHidden;
-import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
@@ -90,7 +89,6 @@ public class DeviceInfo2 implements LocalizedString {
     public String dmVerity; // enforcing, disabled, eio, ...
     @Nullable
     public String verifiedBootState; // green (verified), yellow (self-signed), orange (unverified), red (failed) ?: orange (unverified)
-    public String verifiedBootStateString;
     public String avbVersion;
     public String bootloaderState;
     public boolean debuggable;
@@ -106,6 +104,9 @@ public class DeviceInfo2 implements LocalizedString {
     public String openGlEsVersion;
     @Nullable
     public String vulkanVersion;
+    /** GL vendor and renderer, read with the rest so drawing the page never sets up EGL. */
+    @Nullable
+    public String gpu;
     // Memory
     public final ActivityManager.MemoryInfo memoryInfo = new ActivityManager.MemoryInfo();
     // Battery
@@ -115,7 +116,8 @@ public class DeviceInfo2 implements LocalizedString {
     @Nullable
     public String batteryTechnology;
     public int batteryCycleCount;
-    public String batteryHealth;
+    /** One of {@code BatteryManager.BATTERY_HEALTH_*}, or -1 when the battery wasn't read. */
+    public int batteryHealth = -1;
     // Display
     public final int displayDensityDpi = StaticDataset.DEVICE_DENSITY;
     public final String displayDensity = getDensity();
@@ -148,7 +150,9 @@ public class DeviceInfo2 implements LocalizedString {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             patchLevel = getSecurityPatch();
         } else patchLevel = null;
-        features = mPm.getSystemAvailableFeatures();
+        // Documented to be null when the system lists no features.
+        FeatureInfo[] systemFeatures = mPm.getSystemAvailableFeatures();
+        features = systemFeatures != null ? systemFeatures : new FeatureInfo[0];
         hardwareBackedFeatures = getHardwareBackedFeatures();
         strongBoxBackedFeatures = getStrongBoxBackedFeatures();
     }
@@ -160,7 +164,6 @@ public class DeviceInfo2 implements LocalizedString {
         encryptionStatus = getEncryptionStatus();
         if (mPm.hasSystemFeature(PackageManager.FEATURE_VERIFIED_BOOT)) {
             verifiedBootState = SystemProperties.get("ro.boot.verifiedbootstate", "");
-            verifiedBootStateString = getVerifiedBootStateString(verifiedBootState);
             dmVerity = SystemProperties.get("ro.boot.veritymode", "");
             avbVersion = SystemProperties.get("ro.boot.avb_version", "");
             bootloaderState = SystemProperties.get("ro.boot.vbmeta.device_state", "");
@@ -170,6 +173,7 @@ public class DeviceInfo2 implements LocalizedString {
         availableProcessors = Runtime.getRuntime().availableProcessors();
         openGlEsVersion = Utils.getGlEsVersion(mActivityManager.getDeviceConfigurationInfo().reqGlEsVersion);
         vulkanVersion = Utils.getVulkanVersion(mPm);
+        gpu = getGpu();
         mActivityManager.getMemoryInfo(memoryInfo);
         getBatteryStats(mActivity);
         DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -195,7 +199,7 @@ public class DeviceInfo2 implements LocalizedString {
         SpannableStringBuilder builder = new SpannableStringBuilder();
         // Android platform info
         builder.append(getStyledKeyValue(ctx, R.string.os_version, osVersion)).append(", ")
-                .append(getStyledKeyValue(ctx, "Build", Build.DISPLAY)).append("\n")
+                .append(getStyledKeyValue(ctx, R.string.about_device_build, Build.DISPLAY)).append("\n")
                 .append(getStyledKeyValue(ctx, R.string.bootloader, bootloader)).append(", ")
                 .append(getStyledKeyValue(ctx, "VM", vm)).append("\n")
                 .append(getStyledKeyValue(ctx, R.string.kernel, kernel)).append("\n")
@@ -215,19 +219,19 @@ public class DeviceInfo2 implements LocalizedString {
         if (patchLevel != null) {
             builder.append(getStyledKeyValue(ctx, R.string.patch_level, patchLevel)).append("\n");
         }
-        builder.append(getStyledKeyValue(ctx, R.string.root, String.valueOf(hasRoot))).append(", ")
-                .append(getStyledKeyValue(ctx, R.string.debuggable, String.valueOf(debuggable)))
+        builder.append(getStyledKeyValue(ctx, R.string.root, DeviceInfoText.yesNo(ctx, hasRoot))).append(", ")
+                .append(getStyledKeyValue(ctx, R.string.debuggable, DeviceInfoText.yesNo(ctx, debuggable)))
                 .append("\n");
         if (selinux != 2) {
-            builder.append(getStyledKeyValue(ctx, R.string.selinux, getString(selinux == 1 ?
+            builder.append(getStyledKeyValue(ctx, R.string.selinux, ctx.getString(selinux == 1 ?
                     R.string.enforcing : R.string.permissive))).append(", ");
         }
         builder.append(getStyledKeyValue(ctx, R.string.encryption, encryptionStatus)).append("\n");
         boolean verifiedBoot = false;
         if (!TextUtils.isEmpty(verifiedBootState)) {
             verifiedBoot = true;
-            builder.append(getStyledKeyValue(ctx, R.string.verified_boot, verifiedBootState))
-                    .append(" (").append(verifiedBootStateString).append(")");
+            builder.append(getStyledKeyValue(ctx, R.string.verified_boot,
+                    DeviceInfoText.verifiedBootState(ctx, verifiedBootState)));
         }
         if (!TextUtils.isEmpty(avbVersion)) {
             if (verifiedBoot) {
@@ -246,7 +250,8 @@ public class DeviceInfo2 implements LocalizedString {
             if (isDmVerity) {
                 builder.append(", ");
             }
-            builder.append(getStyledKeyValue(ctx, R.string.bootloader, bootloaderState)).append("\n");
+            builder.append(getStyledKeyValue(ctx, R.string.bootloader_locked,
+                    DeviceInfoText.bootloaderLocked(ctx, bootloaderState))).append("\n");
         } else if (isDmVerity) {
             builder.append("\n");
         }
@@ -264,16 +269,16 @@ public class DeviceInfo2 implements LocalizedString {
         if (hasAndroidKeyStore) {
             builder.append("\n").append(getTitleText(ctx, "Android KeyStore")).append("\n");
         }
-        StringBuilder sb = new StringBuilder("Software");
+        StringBuilder sb = new StringBuilder(ctx.getString(R.string.about_device_keystore_software));
         if (hardwareBackedFeatures != null) {
-            sb.append(", Hardware");
+            sb.append(", ").append(ctx.getString(R.string.hardware));
         }
         if (strongBoxBackedFeatures != null) {
             sb.append(", StrongBox");
         }
         builder.append(getStyledKeyValue(ctx, R.string.features, sb)).append("\n");
         if (hardwareBackedFeatures != null) {
-            builder.append("   ").append(getStyledKeyValue(ctx, "Hardware", hardwareBackedFeatures)).append("\n");
+            builder.append("   ").append(getStyledKeyValue(ctx, R.string.hardware, hardwareBackedFeatures)).append("\n");
         }
         if (strongBoxBackedFeatures != null) {
             builder.append("   ").append(getStyledKeyValue(ctx, "StrongBox", strongBoxBackedFeatures)).append("\n");
@@ -288,9 +293,11 @@ public class DeviceInfo2 implements LocalizedString {
                 .append(getStyledKeyValue(ctx, R.string.no_of_cores, String.format(Locale.getDefault(), "%d",
                         availableProcessors))).append("\n");
         // GPU info
-        builder.append("\n").append(getTitleText(ctx, R.string.graphics)).append("\n")
-                .append(getGlInfo(ctx))
-                .append(getStyledKeyValue(ctx, R.string.gles_version, openGlEsVersion)).append("\n");
+        builder.append("\n").append(getTitleText(ctx, R.string.graphics)).append("\n");
+        if (gpu != null) {
+            builder.append(getStyledKeyValue(ctx, "GPU", gpu)).append("\n");
+        }
+        builder.append(getStyledKeyValue(ctx, R.string.gles_version, openGlEsVersion)).append("\n");
         if (vulkanVersion != null) {
             builder.append(getStyledKeyValue(ctx, R.string.vulkan_version, vulkanVersion)).append("\n");
         }
@@ -304,40 +311,29 @@ public class DeviceInfo2 implements LocalizedString {
                 builder.append(getStyledKeyValue(ctx, R.string.battery_technology, batteryTechnology))
                         .append("\n");
             }
-            if (batteryCapacityMAh > 0) {
-                builder.append(getStyledKeyValue(ctx, R.string.battery_capacity, String.valueOf(batteryCapacityMAh)))
-                        .append(" mAh");
-                if (batteryCapacityMAhAlt > 0) {
-                    builder.append(" (est. ")
-                            .append(String.format(Locale.ROOT, "%.1f", batteryCapacityMAhAlt))
-                            .append(" mAh)");
-                }
-                builder.append("\n");
-            } else if (batteryCapacityMAhAlt > 0) {
-                builder.append(getStyledKeyValue(ctx, R.string.battery_capacity, String.format(Locale.ROOT, "%.1f", batteryCapacityMAhAlt)))
-                        .append(" mAh (est.)").append("\n");
+            String capacity = DeviceInfoText.batteryCapacity(ctx, batteryCapacityMAh, batteryCapacityMAhAlt);
+            if (capacity != null) {
+                builder.append(getStyledKeyValue(ctx, R.string.battery_capacity, capacity)).append("\n");
             }
-            if (batteryHealth != null) {
-                builder.append(getStyledKeyValue(ctx, R.string.battery_health, batteryHealth));
-                if (batteryCycleCount > 0) {
-                    builder.append(" (").append(String.valueOf(batteryCycleCount)).append(" cycles)");
-                }
-                builder.append("\n");
+            if (batteryHealth >= 0) {
+                builder.append(getStyledKeyValue(ctx, R.string.battery_health,
+                        DeviceInfoText.batteryHealthWithCycles(ctx, batteryHealth, batteryCycleCount))).append("\n");
             }
         }
         // Screen resolution
         builder.append("\n").append(getTitleText(ctx, R.string.screen)).append("\n")
-                .append(getStyledKeyValue(ctx, R.string.density, String.format(Locale.getDefault(), "%s (%d DPI)",
-                        displayDensity, displayDensityDpi))).append("\n");
+                .append(getStyledKeyValue(ctx, R.string.density, DeviceInfoText.density(ctx, displayDensity,
+                        displayDensityDpi))).append("\n");
         // Actual size
         builder.append(getStyledKeyValue(ctx, R.string.scaling_factor, String.valueOf(scalingFactor))).append("\n")
-                .append(getStyledKeyValue(ctx, R.string.size, actualWidthPx + "px × " + actualHeightPx + "px\n"));
+                .append(getStyledKeyValue(ctx, R.string.size, DeviceInfoText.sizePx(ctx, actualWidthPx,
+                        actualHeightPx))).append("\n");
         // Window size
-        builder.append(getStyledKeyValue(ctx, R.string.window_size, windowWidthPx + "px × " + windowHeightPx
-                + "px\n"));
+        builder.append(getStyledKeyValue(ctx, R.string.window_size, DeviceInfoText.sizePx(ctx, windowWidthPx,
+                windowHeightPx))).append("\n");
         // Refresh rate
-        builder.append(getStyledKeyValue(ctx, R.string.refresh_rate, String.format(Locale.getDefault(), "%.1f Hz",
-                refreshRate))).append("\n");
+        builder.append(getStyledKeyValue(ctx, R.string.refresh_rate, DeviceInfoText.refreshRate(ctx, refreshRate)))
+                .append("\n");
         // List system locales
         List<String> localeStrings = new ArrayList<>(systemLocales.size());
         for (int i = 0; i < systemLocales.size(); ++i) {
@@ -352,7 +348,7 @@ public class DeviceInfo2 implements LocalizedString {
                     .append("\n");
             List<String> userNames = new ArrayList<>();
             for (UserInfo user : users) {
-                userNames.add(user.name != null ? user.name : String.valueOf(user.id));
+                userNames.add(user.getDisplayName(ctx));
             }
             builder.append(String.format(Locale.getDefault(), "%d", users.size())).append(" (")
                     .append(TextUtilsCompat.joinSpannable(", ", userNames))
@@ -402,24 +398,23 @@ public class DeviceInfo2 implements LocalizedString {
     }
 
     /**
-     * Queries EGL/GL for information, then formats it all into one giant string.
+     * Queries EGL/GL for the GPU's vendor and renderer.
      */
+    @WorkerThread
     @NonNull
-    private Spannable getGlInfo(@NonNull Context ctx) {
+    private String getGpu() {
         // We need a GL context to examine, which means we need an EGL surface. Create a 1x1 pbuffer.
         EglCore eglCore = new EglCore();
         OffscreenSurface surface = new OffscreenSurface(eglCore, 1, 1);
         surface.makeCurrent();
 
         String gpu = GLES20.glGetString(GLES20.GL_VENDOR) + " " + GLES20.glGetString(GLES20.GL_RENDERER);
-        SpannableStringBuilder sb = new SpannableStringBuilder();
-        sb.append(getStyledKeyValue(ctx, "GPU", gpu)).append("\n");
         // sb.append(formatExtensions(GLES20.glGetString(GLES20.GL_EXTENSIONS)));
 
         surface.release();
         eglCore.release();
 
-        return sb;
+        return gpu;
     }
 
 //    private String formatExtensions(@NonNull String ext) {
@@ -485,29 +480,8 @@ public class DeviceInfo2 implements LocalizedString {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 batteryCycleCount = mBatteryStatusBundle.getInt(BatteryManager.EXTRA_CYCLE_COUNT, 0);
             }
-            int health = mBatteryStatusBundle.getInt(BatteryManager.EXTRA_HEALTH, BatteryManager.BATTERY_HEALTH_UNKNOWN);
-            switch (health) {
-                case BatteryManager.BATTERY_HEALTH_GOOD:
-                    batteryHealth = "Good";
-                    break;
-                case BatteryManager.BATTERY_HEALTH_OVERHEAT:
-                    batteryHealth = "Overheat";
-                    break;
-                case BatteryManager.BATTERY_HEALTH_DEAD:
-                    batteryHealth = "Dead";
-                    break;
-                case BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE:
-                    batteryHealth = "Over voltage";
-                    break;
-                case BatteryManager.BATTERY_HEALTH_UNSPECIFIED_FAILURE:
-                    batteryHealth = "failure";
-                    break;
-                case BatteryManager.BATTERY_HEALTH_COLD:
-                    batteryHealth = "Cold";
-                    break;
-                default:
-                    batteryHealth = "Unknown";
-            }
+            batteryHealth = mBatteryStatusBundle.getInt(BatteryManager.EXTRA_HEALTH,
+                    BatteryManager.BATTERY_HEALTH_UNKNOWN);
         }
     }
 
@@ -601,21 +575,6 @@ public class DeviceInfo2 implements LocalizedString {
         } else if ("unencrypted".equals(state)) {
             return getString(R.string.unencrypted);
         } else return getString(R.string.state_unknown);
-    }
-
-    @NonNull
-    private String getVerifiedBootStateString(@NonNull String color) {
-        switch (color) {
-            case "green":
-                return "verified";
-            case "yellow":
-                return "self-signed";
-            case "red":
-                return "failed";
-            case "orange":
-            default:
-                return "unverified";
-        }
     }
 
     @Nullable

@@ -1706,6 +1706,8 @@
     <string name="simple">Simple</string>
     <string name="advanced">Advanced</string>
     <string name="user_profile_with_id">Profile: %1$s (%2$d)</string>
+    <string name="user_unnamed_this">This user</string>
+    <string name="user_unnamed_other">Other user</string>
     <string name="user_profile_label_with_diagnostics"><xliff:g id="user" example="Owner (0)">%1$s</xliff:g> - <xliff:g id="details" example="Private Space, quiet/locked">%2$s</xliff:g></string>
     <string name="user_profile_kind_private_space">Private Space</string>
     <string name="user_profile_kind_work">Work profile</string>
@@ -1909,6 +1911,11 @@
     <string name="scaling_factor">Scaling factor</string>
     <string name="refresh_rate">Refresh rate</string>
     <string name="window_size">Window size</string>
+    <string name="about_device_build">Build</string>
+    <string name="about_device_keystore_software">Software</string>
+    <string name="about_device_size_px"><xliff:g id="width" example="1080">%1$d</xliff:g> × <xliff:g id="height" example="2400">%2$d</xliff:g> px</string>
+    <string name="about_device_density_dpi"><xliff:g id="density" example="xxhdpi">%1$s</xliff:g> (<xliff:g id="dpi" example="420">%2$d</xliff:g> DPI)</string>
+    <string name="about_device_refresh_rate_hz"><xliff:g id="rate" example="120">%1$s</xliff:g> Hz</string>
     <string name="failed_to_disable_magisk_hide">Could not disable MagiskHide</string>
     <string name="failed_to_enable_magisk_hide">Could not enable MagiskHide</string>
     <string name="disable_background_run_description">Sets <i>Ignore</i> mode for the following app ops: <tt>RUN_IN_BACKGROUND</tt> (from Android 7.0) and <tt>RUN_ANY_IN_BACKGROUND</tt> (from Android 9).</string>
@@ -4023,7 +4030,26 @@
     <string name="vulkan_version">Vulkan version</string>
     <string name="battery_technology">Technology</string>
     <string name="battery_health">Health</string>
+    <string name="battery_health_good">Good</string>
+    <string name="battery_health_overheat">Overheating</string>
+    <string name="battery_health_dead">Dead battery</string>
+    <string name="battery_health_over_voltage">Over voltage</string>
+    <string name="battery_health_failure">Failure</string>
+    <string name="battery_health_cold">Cold</string>
+    <plurals name="battery_health_with_cycles">
+        <item quantity="one"><xliff:g id="health" example="Good">%1$s</xliff:g> (<xliff:g id="count" example="1">%2$d</xliff:g> cycle)</item>
+        <item quantity="other"><xliff:g id="health" example="Good">%1$s</xliff:g> (<xliff:g id="count" example="342">%2$d</xliff:g> cycles)</item>
+    </plurals>
+    <string name="battery_capacity_mah"><xliff:g id="capacity" example="4500">%1$s</xliff:g> mAh</string>
+    <string name="battery_capacity_mah_estimated"><xliff:g id="capacity" example="4370.5">%1$s</xliff:g> mAh (estimated)</string>
+    <string name="battery_capacity_mah_with_estimate"><xliff:g id="capacity" example="4500">%1$s</xliff:g> mAh (estimated from the charge: <xliff:g id="estimate" example="4370.5">%2$s</xliff:g> mAh)</string>
     <string name="verified_boot">Verified boot</string>
+    <string name="verified_boot_state_green">green (verified)</string>
+    <string name="verified_boot_state_yellow">yellow (self-signed)</string>
+    <string name="verified_boot_state_orange">orange (unverified)</string>
+    <string name="verified_boot_state_red">red (failed)</string>
+    <string name="verified_boot_state_other"><xliff:g id="state" example="purple">%1$s</xliff:g> (unverified)</string>
+    <string name="bootloader_locked">Bootloader locked</string>
     <string name="android_verified_bootloader_version">AVB version</string>
     <string name="op_history">History</string>
     <string name="no_history">No history</string>

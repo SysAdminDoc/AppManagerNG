@@ -16,6 +16,7 @@ public class UserInfo implements LocalizedString {
     @NonNull
     public final UserHandle userHandle;
     public final int id;
+    /** The name the system gave the user, {@code null} when it has none. Shown through {@link #getDisplayName}. */
     @Nullable
     public final String name;
     @NonNull
@@ -24,17 +25,24 @@ public class UserInfo implements LocalizedString {
     UserInfo(@NonNull android.content.pm.UserInfo userInfo) {
         userHandle = userInfo.getUserHandle();
         id = userInfo.id;
-        String username = userInfo.name;
-        if (username == null) {
-            this.name = id == UserHandleHidden.myUserId() ? "This" : "Other";
-        } else this.name = username;
+        name = userInfo.name;
         profileFacts = ProfileVisibilityDiagnostics.buildFacts(userInfo);
+    }
+
+    /** The user's name, or "This user" or "Other user" in the app's language when the system has none (#31). */
+    @NonNull
+    public String getDisplayName(@NonNull Context context) {
+        if (name != null) {
+            return name;
+        }
+        return context.getString(id == UserHandleHidden.myUserId() ? R.string.user_unnamed_this
+                : R.string.user_unnamed_other);
     }
 
     @NonNull
     @Override
     public CharSequence toLocalizedString(@NonNull Context context) {
-        String label = name == null ? String.valueOf(id) : (name + " (" + id + ")");
+        String label = getDisplayName(context) + " (" + id + ")";
         CharSequence details = ProfileVisibilityDiagnostics.getUserProfileDetails(context, profileFacts);
         return details.length() == 0
                 ? label

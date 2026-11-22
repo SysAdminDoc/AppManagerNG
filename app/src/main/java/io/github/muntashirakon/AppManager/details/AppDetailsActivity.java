@@ -269,7 +269,7 @@ public class AppDetailsActivity extends BaseActivity {
         model.getUserInfo().observe(this, userInfo -> {
             ActionBar ab = getSupportActionBar();
             if (ab != null) {
-                ab.setSubtitle(getString(R.string.user_profile_with_id, userInfo.name, userInfo.id));
+                ab.setSubtitle(getString(R.string.user_profile_with_id, userInfo.getDisplayName(this), userInfo.id));
             }
         });
         // Check for package changes
