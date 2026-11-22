@@ -763,6 +763,13 @@ Sources and reasoning: RESEARCH.md (2026-11-13). The four crash fixes come first
   Acceptance: in dual pane a link that opens no page falls back to the default fill, an empty link leaves the saved path alone, and both have a Robolectric case.
   Complexity: S
 
+- [ ] P3: Building the language list rewrites the live configuration's locale
+  Why: `LangUtils.loadAppLanguages` takes `res.getConfiguration()` (the live object, not a copy) and calls `setLocale` on it for every entry in locales_config, so the context it was handed claims the last listed locale (zh-TW) until something rewrites it. `applyOnlyLocale` happens to correct it right after on the usual path, but `ChangeLanguageFragment` and `LanguagePacksPreferences` call `getAppLanguages` with an activity, and anything reading that configuration before the next update sees the wrong locale. `sLocaleMap` is also filled in place without a lock, so a second thread can get a half-built map.
+  Evidence: `utils/LangUtils.java` `loadAppLanguages` (`Configuration conf = res.getConfiguration(); conf.setLocale(...)`). Found 2026-11-22 while fixing the Settings search locale cache.
+  Touches: `LangUtils`, a Robolectric test that reads the configuration's locales before and after `getAppLanguages`.
+  Acceptance: building the list leaves the passed context's configuration unchanged (work on `new Configuration(...)`), the map is published whole, and a test pins both.
+  Complexity: S
+
 ## Research-Driven Additions (2026-11-14)
 
 Sources and reasoning: RESEARCH.md (2026-11-14).
